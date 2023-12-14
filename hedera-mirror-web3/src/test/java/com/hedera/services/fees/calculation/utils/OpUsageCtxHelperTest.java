@@ -78,7 +78,7 @@ class OpUsageCtxHelperTest {
 
     @BeforeEach
     void setUp() {
-        subject = new OpUsageCtxHelper();
+        subject = new OpUsageCtxHelper(store, aliasManager);
     }
 
     @Test
@@ -93,7 +93,7 @@ class OpUsageCtxHelperTest {
         given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
         given(merkleAccount.getProxy()).willReturn(Id.DEFAULT);
 
-        final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance(), store, aliasManager);
+        final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
 
         assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
         assertEquals(now, ctx.currentExpiry());
@@ -113,7 +113,7 @@ class OpUsageCtxHelperTest {
         given(accessor.getTxn()).willReturn(TransactionBody.getDefaultInstance());
         given(accessor.getPayer()).willReturn(AccountID.getDefaultInstance());
 
-        final var ctx = subject.ctxForCryptoAllowance(accessor, store, aliasManager);
+        final var ctx = subject.ctxForCryptoAllowance(accessor);
 
         assertEquals(maxAutomaticAssociations, ctx.currentMaxAutomaticAssociations());
         assertEquals(Map.of(spender1.getAccountNum(), 10L), ctx.currentCryptoAllowances());
@@ -126,7 +126,7 @@ class OpUsageCtxHelperTest {
     void returnsMissingCtxWhenAccountNotFound() {
         given(store.getAccount(any(), any())).willReturn(Account.getEmptyAccount());
 
-        final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance(), store, aliasManager);
+        final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
 
         assertEquals("", ctx.currentMemo());
         assertEquals(0, ctx.currentExpiry());
@@ -138,7 +138,7 @@ class OpUsageCtxHelperTest {
         given(accessor.getPayer()).willReturn(AccountID.getDefaultInstance());
         given(store.getAccount(any(), any())).willReturn(Account.getEmptyAccount());
 
-        final var ctx = subject.ctxForCryptoAllowance(accessor, store, aliasManager);
+        final var ctx = subject.ctxForCryptoAllowance(accessor);
 
         assertEquals("", ctx.currentMemo());
         assertEquals(Collections.emptySet(), ctx.currentNftAllowances());
@@ -190,7 +190,7 @@ class OpUsageCtxHelperTest {
 
         given(store.getToken(asTypedEvmAddress(target), OnMissing.THROW)).willReturn(extant);
 
-        final var tokenMintMeta = subject.metaForTokenMint(accessor, store);
+        final var tokenMintMeta = subject.metaForTokenMint(accessor);
 
         // then:
         assertEquals(1, tokenMintMeta.getBpt());

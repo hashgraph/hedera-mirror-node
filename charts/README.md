@@ -7,6 +7,7 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 - [Hedera Mirror Importer](hedera-mirror-importer)
 - [Hedera Mirror Monitor](hedera-mirror-monitor)
 - [Hedera Mirror REST API](hedera-mirror-rest)
+- [Hedera Mirror Java REST API](hedera-mirror-rest-java)
 - [Hedera Mirror Rosetta API](hedera-mirror-rosetta)
 - [Hedera Mirror Web3 API](hedera-mirror-web3)
 
@@ -175,6 +176,12 @@ To access the REST API:
 
 ```shell script
 curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
+```
+
+To access the Java REST API:
+
+```shell script
+curl -s "http://${SERVICE_IP}/api/v1/dummy"
 ```
 
 To access the Rosetta API:

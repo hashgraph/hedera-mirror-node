@@ -52,6 +52,7 @@ public class HederaEvmStackedWorldStateUpdater
     private final EntityAddressSequencer entityAddressSequencer;
 
     private final TokenAccessor tokenAccessor;
+    private final MirrorEvmContractAliases mirrorEvmContractAliases;
 
     public HederaEvmStackedWorldStateUpdater(
             final AbstractLedgerWorldUpdater<HederaEvmMutableWorldState, Account> updater,
@@ -62,11 +63,12 @@ public class HederaEvmStackedWorldStateUpdater
             final EntityAddressSequencer entityAddressSequencer,
             final MirrorEvmContractAliases mirrorEvmContractAliases,
             final Store store) {
-        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, mirrorEvmContractAliases, store);
+        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess, store);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
         this.evmProperties = evmProperties;
         this.entityAddressSequencer = entityAddressSequencer;
         this.tokenAccessor = tokenAccessor;
+        this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 
     @Override
@@ -104,7 +106,7 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     private void persistAccount(Address address, long nonce, Wei balance) {
-        final var resolvedAddress = aliases().resolveForEvm(address);
+        final var resolvedAddress = mirrorEvmContractAliases.resolveForEvm(address);
         final var isResolvedAddressZero = Address.ZERO.equals(resolvedAddress);
 
         final var accountModel = new com.hedera.services.store.models.Account(
@@ -142,7 +144,9 @@ public class HederaEvmStackedWorldStateUpdater
      * @return its mirror form
      */
     public byte[] permissivelyUnaliased(final byte[] evmAddress) {
-        return aliases().resolveForEvm(Address.wrap(Bytes.wrap(evmAddress))).toArrayUnsafe();
+        return mirrorEvmContractAliases
+                .resolveForEvm(Address.wrap(Bytes.wrap(evmAddress)))
+                .toArrayUnsafe();
     }
 
     /**
@@ -158,7 +162,7 @@ public class HederaEvmStackedWorldStateUpdater
         if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
             return NON_CANONICAL_REFERENCE;
         }
-        return aliases().resolveForEvm(addressOrAlias).toArrayUnsafe();
+        return mirrorEvmContractAliases.resolveForEvm(addressOrAlias).toArrayUnsafe();
     }
 
     @Override

@@ -40,12 +40,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.81.0")
@@ -105,7 +107,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
         var nftTransfer = MigrationNftTransfer.builder()
                 .consensusTimestamp(domainBuilder.timestamp())
                 .receiverAccountId(nft1Treasury)
-                .serialNumber(domainBuilder.id())
+                .serialNumber(domainBuilder.number())
                 .tokenId(domainBuilder.id())
                 .build();
         long nextTimestamp = nftTransfer.getConsensusTimestamp() + 10L;
@@ -150,7 +152,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
         nftTransfer = MigrationNftTransfer.builder()
                 .consensusTimestamp(domainBuilder.timestamp())
                 .receiverAccountId(nft2Treasury)
-                .serialNumber(domainBuilder.id())
+                .serialNumber(domainBuilder.number())
                 .tokenId(domainBuilder.id())
                 .build();
         nextTimestamp = nftTransfer.getConsensusTimestamp() + 15L;
@@ -183,7 +185,7 @@ class AddNftHistoryMigrationTest extends IntegrationTest {
         nftTransfer = MigrationNftTransfer.builder()
                 .consensusTimestamp(domainBuilder.timestamp())
                 .receiverAccountId(nft3Treasury)
-                .serialNumber(domainBuilder.id())
+                .serialNumber(domainBuilder.number())
                 .tokenId(domainBuilder.id())
                 .build();
         var expectedNft3 = Nft.builder()

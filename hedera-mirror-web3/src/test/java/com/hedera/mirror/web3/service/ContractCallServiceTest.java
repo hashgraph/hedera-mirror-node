@@ -52,6 +52,18 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
+    void callWithoutDataToAddressWithNoBytecodeReturnsEmptyResult() {
+        final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
+
+        final var serviceParameters =
+                serviceParametersForExecution(Bytes.EMPTY, ETH_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+
+        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+    }
+
+    @Test
     void pureCall() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
 

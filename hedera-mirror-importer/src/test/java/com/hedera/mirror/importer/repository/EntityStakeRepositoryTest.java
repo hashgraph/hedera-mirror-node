@@ -435,7 +435,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
     void getEndStakePeriod() {
         assertThat(entityStakeRepository.getEndStakePeriod()).isEmpty();
 
-        long endStakePeriod = domainBuilder.id();
+        long endStakePeriod = domainBuilder.number();
         domainBuilder
                 .entityStake()
                 .customize(es -> es.endStakePeriod(endStakePeriod).id(STAKING_REWARD_ACCOUNT))

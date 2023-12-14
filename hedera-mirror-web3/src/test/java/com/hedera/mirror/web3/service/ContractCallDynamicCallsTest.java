@@ -169,7 +169,6 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 "approveTokenGetAllowance",
                 new Object[] {NFT_ADDRESS, SPENDER_ALIAS, BigInteger.ZERO, BigInteger.ONE},
                 null),
-
         APPROVE_FUNGIBLE_TOKEN_TRANSFER_FROM_GET_ALLOWANCE(
                 "approveTokenTransferFromGetAllowanceGetBalance",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, BigInteger.ONE, BigInteger.ZERO},

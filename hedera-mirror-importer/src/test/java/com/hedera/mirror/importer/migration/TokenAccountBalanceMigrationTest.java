@@ -35,7 +35,6 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
-import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import java.time.Duration;
 import java.util.Objects;
@@ -54,13 +53,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Tag("migration")
 class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
+    private static final String DELETE_TOKEN_BALANCE_SQL = "delete from token_balance where consensus_timestamp <= ?";
+
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordFileRepository recordFileRepository;
 
     private final @Owner JdbcTemplate jdbcTemplate;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
-    private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final MirrorProperties mirrorProperties;
 
@@ -210,7 +210,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     void migrateWhenNoTokenBalance() {
         // given
         setup();
-        tokenBalanceRepository.prune(accountBalanceFile2.getConsensusTimestamp());
+        jdbcTemplate.update(DELETE_TOKEN_BALANCE_SQL, accountBalanceFile2.getConsensusTimestamp());
 
         // when
         tokenAccountBalanceMigration.doMigrate();

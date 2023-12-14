@@ -44,8 +44,15 @@ import org.hyperledger.besu.datatypes.Address;
  */
 public class OpUsageCtxHelper {
 
-    public ExtantCryptoContext ctxForCryptoUpdate(
-            TransactionBody txn, final Store store, final HederaEvmContractAliases hederaEvmContractAliases) {
+    private final Store store;
+    private final HederaEvmContractAliases hederaEvmContractAliases;
+
+    public OpUsageCtxHelper(final Store store, final HederaEvmContractAliases hederaEvmContractAliases) {
+        this.store = store;
+        this.hederaEvmContractAliases = hederaEvmContractAliases;
+    }
+
+    public ExtantCryptoContext ctxForCryptoUpdate(TransactionBody txn) {
         final var op = txn.getCryptoUpdateAccount();
         final var id = op.getAccountIDToUpdate();
         final var accountOrAlias = id.getAlias().isEmpty()
@@ -83,8 +90,7 @@ public class OpUsageCtxHelper {
         return cryptoContext;
     }
 
-    public ExtantCryptoContext ctxForCryptoAllowance(
-            TxnAccessor accessor, final Store store, final HederaEvmContractAliases hederaEvmContractAliases) {
+    public ExtantCryptoContext ctxForCryptoAllowance(TxnAccessor accessor) {
         final var id = accessor.getPayer();
         final var accountOrAlias = id.getAlias().isEmpty()
                 ? Address.wrap(Bytes.wrap(asEvmAddress(id)))
@@ -123,7 +129,7 @@ public class OpUsageCtxHelper {
         return cryptoContext;
     }
 
-    public TokenMintMeta metaForTokenMint(TxnAccessor accessor, final Store store) {
+    public TokenMintMeta metaForTokenMint(TxnAccessor accessor) {
         final var subType = accessor.getSubType();
 
         long lifeTime = 0L;

@@ -165,7 +165,6 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
-        sqlProperties.setBatchSize(20_000);
         sqlEntityListener.onStart();
     }
 
@@ -177,7 +176,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void executeBatch() {
         // given
-        sqlProperties.setBatchSize(1);
         Entity entity1 = domainBuilder.entity().get();
         Entity entity2 = domainBuilder.entity().get();
 
@@ -842,7 +840,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         var balanceChange = Entity.builder()
-                .balance(domainBuilder.id())
+                .balance(domainBuilder.number())
                 .balanceTimestamp(domainBuilder.timestamp())
                 .id(entity.getId())
                 .build();
@@ -866,7 +864,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         var balanceChange = Entity.builder()
-                .balance(domainBuilder.id())
+                .balance(domainBuilder.number())
                 .balanceTimestamp(domainBuilder.timestamp())
                 .id(entity.getId())
                 .build();
@@ -1081,7 +1079,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityUpdate.setReceiverSigRequired(true);
         entityUpdate.setStakedAccountId(domainBuilder.id());
         entityUpdate.setStakedNodeId(-1L);
-        entityUpdate.setStakePeriodStart(domainBuilder.id());
+        entityUpdate.setStakePeriodStart(domainBuilder.number());
         entityUpdate.setSubmitKey(domainBuilder.key());
         entityUpdate.setType(ACCOUNT);
 

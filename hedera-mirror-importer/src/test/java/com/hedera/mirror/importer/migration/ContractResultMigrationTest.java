@@ -35,6 +35,7 @@ import java.util.Objects;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
@@ -42,6 +43,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.46.7")
 class ContractResultMigrationTest extends IntegrationTest {

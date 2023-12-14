@@ -39,7 +39,7 @@ var (
 	accountBalances = []*domain.AccountBalance{
 		// From the first account balance snapshot
 		{
-			AccountId:          domain.MustDecodeEntityId(2),
+			AccountId:          treasuryEntityId,
 			Balance:            5_000_000_000,
 			ConsensusTimestamp: 90,
 		},
@@ -50,7 +50,7 @@ var (
 		},
 		// From the second account balance snapshot
 		{
-			AccountId:          domain.MustDecodeEntityId(2),
+			AccountId:          treasuryEntityId,
 			Balance:            5_000_000_000,
 			ConsensusTimestamp: 10000,
 		},
@@ -61,7 +61,7 @@ var (
 		},
 		// From the third account balance snapshot
 		{
-			AccountId:          domain.MustDecodeEntityId(2),
+			AccountId:          treasuryEntityId,
 			Balance:            5_000_000_000,
 			ConsensusTimestamp: 20000,
 		},

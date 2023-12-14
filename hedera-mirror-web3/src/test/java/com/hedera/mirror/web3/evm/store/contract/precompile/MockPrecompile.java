@@ -18,13 +18,12 @@ package com.hedera.mirror.web3.evm.store.contract.precompile;
 
 import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
 
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.EmptyRunResult;
 import com.hedera.services.store.contracts.precompile.codec.RunResult;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -45,7 +44,8 @@ public class MockPrecompile implements Precompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final AccountID sender) {
         return 0;
     }
 
@@ -63,10 +63,7 @@ public class MockPrecompile implements Precompile {
 
     @Override
     public long getGasRequirement(
-            final long blockTimestamp,
-            final TransactionBody.Builder transactionBody,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
+            final long blockTimestamp, final TransactionBody.Builder transactionBody, final AccountID sender) {
         return 0;
     }
 

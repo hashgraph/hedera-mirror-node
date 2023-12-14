@@ -40,12 +40,11 @@ public interface QueryResourceUsageEstimator {
      * world and response type.
      *
      * @param query the query in question
-     * @param store
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    default FeeData usageGivenType(final Query query, Store store) {
-        return usageGiven(query, store);
+    default FeeData usageGivenType(final Query query) {
+        return usageGiven(query);
     }
 
     /**
@@ -53,12 +52,11 @@ public interface QueryResourceUsageEstimator {
      * world.
      *
      * @param query the query in question
-     * @param store
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    default FeeData usageGiven(final Query query, Store store) {
-        return usageGiven(query, store, null);
+    default FeeData usageGiven(final Query query) {
+        return usageGiven(query, null);
     }
 
     /**
@@ -67,10 +65,9 @@ public interface QueryResourceUsageEstimator {
      * the query answer flow.
      *
      * @param query    the query in question
-     * @param store
      * @param queryCtx the context of the query being answered
      * @return the estimated resource usage
      * @throws NullPointerException or analogous if the estimator does not apply to the query
      */
-    FeeData usageGiven(final Query query, final Store store, @Nullable final Map<String, Object> queryCtx);
+    FeeData usageGiven(final Query query, @Nullable final Map<String, Object> queryCtx);
 }

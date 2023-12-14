@@ -111,7 +111,7 @@ func (d dbParams) toJdbcUrl(endpoint string) string {
 
 func (d dbParams) toConfig() config.Db {
 	hostPort := strings.Split(d.endpoint, ":")
-	port, _ := strconv.ParseInt(hostPort[1], 10, 32)
+	port, _ := strconv.ParseUint(hostPort[1], 10, 16)
 	return config.Db{
 		Host:     hostPort[0],
 		Name:     d.name,
@@ -253,7 +253,7 @@ func runFlywayMigration(pool *dockertest.Pool, network *dockertest.Network, para
 		"placeholders.idPartitionSize":                  "1000000000000000",
 		"placeholders.maxEntityId":                      "5000000",
 		"placeholders.maxEntityIdRatio":                 "2.0",
-		"placeholders.partitionStartDate":               "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')",
+		"placeholders.partitionStartDate":               "'1970-01-01'",
 		"placeholders.partitionTimeInterval":            "'10 years'",
 		"placeholders.db-name":                          params.name,
 		"placeholders.db-user":                          params.username,

@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.entity.sql;
 
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER;
-
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -28,10 +26,6 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.contract.ContractTransaction;
-import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
-import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
-import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
-import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -41,8 +35,6 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
-import com.hedera.mirror.common.domain.token.AbstractNft;
-import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftTransfer;
@@ -59,7 +51,6 @@ import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
@@ -72,19 +63,18 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.CollectionUtils;
@@ -93,7 +83,10 @@ import org.springframework.util.CollectionUtils;
 @Named
 @Order(0)
 @ConditionOnEntityRecordParser
+@RequiredArgsConstructor
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
+
+    private static final List<Class<?>> NFT_FLUSH = List.of(Token.class, TokenAccount.class, Nft.class);
 
     private final BatchPersister batchPersister;
     private final EntityIdService entityIdService;
@@ -103,124 +96,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final RecordFileRepository recordFileRepository;
     private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
-    private final BatchPersister tokenDissociateTransferBatchPersister;
 
-    // lists of insert only domains
-    private final Collection<AssessedCustomFee> assessedCustomFees;
-    private final Collection<Contract> contracts;
-    private final Collection<ContractAction> contractActions;
-    private final Collection<ContractLog> contractLogs;
-    private final Collection<ContractResult> contractResults;
-    private final Collection<ContractStateChange> contractStateChanges;
-    private final Collection<ContractTransaction> contractTransactions;
-    private final Collection<ContractTransactionHash> contractTransactionHashes;
-    private final Collection<CryptoAllowance> cryptoAllowances;
-    private final Collection<CryptoTransfer> cryptoTransfers;
-    private final Collection<CustomFee> customFees;
-    private final Collection<TokenTransfer> deletedTokenDissociateTransfers;
-    private final Collection<Entity> entities;
-    private final Collection<EntityTransaction> entityTransactions;
-    private final Collection<EthereumTransaction> ethereumTransactions;
-    private final Collection<FileData> fileData;
-    private final Collection<LiveHash> liveHashes;
-    private final Collection<NetworkFreeze> networkFreezes;
-    private final Collection<NetworkStake> networkStakes;
-    private final Collection<NftAllowance> nftAllowances;
-    private final Collection<Nft> nfts;
-    private final Collection<NodeStake> nodeStakes;
-    private final Collection<Prng> prngs;
-    private final Collection<StakingRewardTransfer> stakingRewardTransfers;
-    private final Collection<TokenAccount> tokenAccounts;
-    private final Collection<TokenAllowance> tokenAllowances;
-    private final Collection<Token> tokens;
-    private final Collection<TokenTransfer> tokenTransfers;
-    private final Collection<TopicMessage> topicMessages;
-    private final Collection<Transaction> transactions;
-    private final Collection<TransactionHash> transactionHashes;
-    private final Collection<TransactionSignature> transactionSignatures;
-
-    // maps of upgradable domains
-    private final Map<Long, CustomFee> customFeeState;
-    private final Map<ContractState.Id, ContractState> contractStates;
-    private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
-    private final Map<Long, Entity> entityState;
-    private final Map<AbstractNft.Id, Nft> nftState;
-    private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
-    private final Map<Long, Schedule> schedules;
-    private final Map<Long, Token> tokenState;
-    private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState;
-
-    // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
-    // for each <token, account> update, merge the state and the update, save the merged state to the batch.
-    // during batch upsert, the merged state at time T is again merged with the initial state before the batch to
-    // get the full state at time T
-    private final Map<AbstractTokenAccount.Id, TokenAccount> tokenAccountState;
-
-    @SuppressWarnings("java:S107")
-    public SqlEntityListener(
-            BatchPersister batchPersister,
-            EntityIdService entityIdService,
-            EntityProperties entityProperties,
-            ApplicationEventPublisher eventPublisher,
-            NftRepository nftRepository,
-            RecordFileRepository recordFileRepository,
-            SidecarFileRepository sidecarFileRepository,
-            SqlProperties sqlProperties,
-            @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
-        this.batchPersister = batchPersister;
-        this.entityIdService = entityIdService;
-        this.entityProperties = entityProperties;
-        this.eventPublisher = eventPublisher;
-        this.nftRepository = nftRepository;
-        this.recordFileRepository = recordFileRepository;
-        this.sidecarFileRepository = sidecarFileRepository;
-        this.sqlProperties = sqlProperties;
-        this.tokenDissociateTransferBatchPersister = tokenDissociateTransferBatchPersister;
-
-        assessedCustomFees = new ArrayList<>();
-        contracts = new ArrayList<>();
-        contractActions = new ArrayList<>();
-        contractLogs = new ArrayList<>();
-        contractResults = new ArrayList<>();
-        contractStateChanges = new ArrayList<>();
-        contractTransactions = new ArrayList<>();
-        contractTransactionHashes = new ArrayList<>();
-        cryptoAllowances = new ArrayList<>();
-        cryptoTransfers = new ArrayList<>();
-        customFees = new ArrayList<>();
-        deletedTokenDissociateTransfers = new ArrayList<>();
-        entities = new ArrayList<>();
-        entityTransactions = new ArrayList<>();
-        ethereumTransactions = new ArrayList<>();
-        fileData = new ArrayList<>();
-        liveHashes = new ArrayList<>();
-        networkFreezes = new ArrayList<>();
-        networkStakes = new ArrayList<>();
-        nftAllowances = new ArrayList<>();
-        nfts = new ArrayList<>();
-        nodeStakes = new ArrayList<>();
-        prngs = new ArrayList<>();
-        stakingRewardTransfers = new ArrayList<>();
-        tokenAccounts = new ArrayList<>();
-        tokenAllowances = new ArrayList<>();
-        tokens = new ArrayList<>();
-        tokenTransfers = new ArrayList<>();
-        topicMessages = new ArrayList<>();
-        transactions = new ArrayList<>();
-        transactionHashes = new ArrayList<>();
-        transactionSignatures = new ArrayList<>();
-
-        customFeeState = new HashMap<>();
-        contractStates = new HashMap<>();
-        cryptoAllowanceState = new HashMap<>();
-        entityState = new HashMap<>();
-        nftState = new HashMap<>();
-        nftAllowanceState = new HashMap<>();
-        schedules = new HashMap<>();
-        tokenState = new HashMap<>();
-        tokenAccountState = new HashMap<>();
-        tokenAllowanceState = new HashMap<>();
-    }
+    private final ParserContext context = new ParserContext();
 
     @Override
     public boolean isEnabled() {
@@ -253,35 +130,35 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
-        assessedCustomFees.add(assessedCustomFee);
+        context.add(assessedCustomFee);
     }
 
     @Override
     public void onContract(Contract contract) {
-        contracts.add(contract);
+        context.add(contract);
     }
 
     @Override
     public void onContractAction(ContractAction contractAction) {
-        contractActions.add(contractAction);
+        context.add(contractAction);
     }
 
     @Override
     public void onContractLog(ContractLog contractLog) {
-        contractLogs.add(contractLog);
+        context.add(contractLog);
     }
 
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
-        contractResults.add(contractResult);
+        context.add(contractResult);
         if (entityProperties.getPersist().isContractTransactionHash()) {
-            contractTransactionHashes.add(contractResult.toContractTransactionHash());
+            context.add(contractResult.toContractTransactionHash());
         }
     }
 
     @Override
     public void onContractStateChange(ContractStateChange contractStateChange) {
-        contractStateChanges.add(contractStateChange);
+        context.add(contractStateChange);
 
         var valueRead = contractStateChange.getValueRead();
         var valueWritten = contractStateChange.getValueWritten();
@@ -293,25 +170,20 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             state.setModifiedTimestamp(contractStateChange.getConsensusTimestamp());
             state.setSlot(contractStateChange.getSlot());
             state.setValue(value);
-            contractStates.merge(state.getId(), state, this::mergeContractState);
+            context.merge(state.getId(), state, this::mergeContractState);
         }
     }
 
     @Override
     public void onContractTransactions(Collection<ContractTransaction> contractTransactions) {
         if (entityProperties.getPersist().isContractTransaction()) {
-            this.contractTransactions.addAll(contractTransactions);
+            context.addAll(contractTransactions);
         }
     }
 
     @Override
     public void onCryptoAllowance(CryptoAllowance cryptoAllowance) {
-        var merged = cryptoAllowanceState.merge(cryptoAllowance.getId(), cryptoAllowance, this::mergeFungibleAllowance);
-        if (merged == cryptoAllowance) {
-            // Only add the merged object to the collection if it is a crypto allowance grant rather than
-            // just a debit to an existing grant.
-            cryptoAllowances.add(merged);
-        }
+        context.merge(cryptoAllowance.getId(), cryptoAllowance, this::mergeFungibleAllowance);
     }
 
     @Override
@@ -324,13 +196,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             onEntity(entity);
         }
 
-        cryptoTransfers.add(cryptoTransfer);
+        context.add(cryptoTransfer);
     }
 
     @Override
     public void onCustomFee(CustomFee customFee) throws ImporterException {
-        var merged = customFeeState.merge(customFee.getTokenId(), customFee, this::mergeCustomFee);
-        customFees.add(merged);
+        context.merge(customFee.getTokenId(), customFee, this::mergeCustomFee);
     }
 
     @Override
@@ -340,82 +211,70 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return;
         }
 
-        Entity merged = entityState.merge(entity.getId(), entity, this::mergeEntity);
-        if (merged == entity) {
-            // only add the merged object to the collection if the state is replaced with the new entity object, i.e.,
-            // attributes only in the previous state are merged into the new entity object
-            entities.add(entity);
-        }
+        context.merge(entity.getId(), entity, this::mergeEntity);
         entityIdService.notify(entity);
     }
 
     @Override
     public void onEntityTransactions(Collection<EntityTransaction> entityTransactions) throws ImporterException {
-        this.entityTransactions.addAll(entityTransactions);
+        context.addAll(entityTransactions);
     }
 
     @Override
     public void onEthereumTransaction(EthereumTransaction ethereumTransaction) throws ImporterException {
-        ethereumTransactions.add(ethereumTransaction);
+        context.add(ethereumTransaction);
     }
 
     @Override
-    public void onFileData(FileData fd) {
-        fileData.add(fd);
+    public void onFileData(FileData fileData) {
+        context.add(fileData);
     }
 
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
-        liveHashes.add(liveHash);
+        context.add(liveHash);
     }
 
     @Override
     public void onNetworkFreeze(NetworkFreeze networkFreeze) {
-        networkFreezes.add(networkFreeze);
+        context.add(networkFreeze);
     }
 
     @Override
     public void onNetworkStake(NetworkStake networkStake) throws ImporterException {
-        networkStakes.add(networkStake);
+        context.add(networkStake);
     }
 
     @Override
     public void onNft(Nft nft) throws ImporterException {
-        var merged = nftState.merge(nft.getId(), nft, this::mergeNft);
-        if (merged == nft) {
-            // only add the merged object to the collection if the state is replaced with the new nft object, i.e.,
-            // attributes only in the previous state are merged into the new nft object
-            nfts.add(nft);
-        }
+        context.merge(nft.getId(), nft, this::mergeNft);
     }
 
     @Override
     public void onNftAllowance(NftAllowance nftAllowance) {
-        var merged = nftAllowanceState.merge(nftAllowance.getId(), nftAllowance, this::mergeNftAllowance);
-        nftAllowances.add(merged);
+        context.merge(nftAllowance.getId(), nftAllowance, this::mergeNftAllowance);
     }
 
     @Override
     public void onNodeStake(NodeStake nodeStake) {
-        nodeStakes.add(nodeStake);
+        context.add(nodeStake);
     }
 
     @Override
     public void onPrng(Prng prng) {
-        prngs.add(prng);
+        context.add(prng);
     }
 
     @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
-        // schedules could experience multiple updates in a single record file, handle updates in memory for this case
-        schedules.merge(schedule.getScheduleId(), schedule, this::mergeSchedule);
+        context.merge(schedule.getScheduleId(), schedule, this::mergeSchedule);
     }
 
     @Override
     public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
-        stakingRewardTransfers.add(stakingRewardTransfer);
+        context.add(stakingRewardTransfer);
 
-        var current = entityState.get(stakingRewardTransfer.getConsensusTimestamp());
+        var current = context.get(Entity.class, stakingRewardTransfer.getAccountId());
         long consensusTimestamp = stakingRewardTransfer.getConsensusTimestamp();
         // The new stake period start is set to today - 1, so that when today ends, the account / contract will earn
         // staking reward for today
@@ -439,28 +298,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onToken(Token token) throws ImporterException {
-        var merged = tokenState.merge(token.getTokenId(), token, this::mergeToken);
-        if (merged == token) {
-            tokens.add(merged);
-        }
+        context.merge(token.getTokenId(), token, this::mergeToken);
     }
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        var merged = tokenAccountState.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
-        if (merged == tokenAccount) {
-            tokenAccounts.add(merged);
-        }
+        context.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
     }
 
     @Override
     public void onTokenAllowance(TokenAllowance tokenAllowance) {
-        var merged = tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance, this::mergeFungibleAllowance);
-        // Only add the merged object to the collection if it is a token allowance grant rather than
-        // just a debit to an existing grant.
-        if (merged == tokenAllowance) {
-            tokenAllowances.add(merged);
-        }
+        context.merge(tokenAllowance.getId(), tokenAllowance, this::mergeFungibleAllowance);
     }
 
     @Override
@@ -476,83 +324,33 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             onTokenAccount(tokenAccount);
         }
 
-        if (tokenTransfer.isDeletedTokenDissociate()) {
-            deletedTokenDissociateTransfers.add(tokenTransfer);
-            return;
-        }
-
-        tokenTransfers.add(tokenTransfer);
+        context.add(tokenTransfer);
     }
 
     @Override
     public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-        topicMessages.add(topicMessage);
+        context.add(topicMessage);
     }
 
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
-        transactions.add(transaction);
+        context.add(transaction);
 
         if (entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.of(transaction.getType()))) {
-            transactionHashes.add(transaction.toTransactionHash());
+            context.add(transaction.toTransactionHash());
         }
 
         onNftTransferList(transaction);
-
-        if (transactions.size() == sqlProperties.getBatchSize()) {
-            flush();
-        }
     }
 
     @Override
     public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
-        transactionSignatures.add(transactionSignature);
+        context.add(transactionSignature);
     }
 
     private void cleanup() {
         try {
-            assessedCustomFees.clear();
-            customFeeState.clear();
-            contracts.clear();
-            contractActions.clear();
-            contractLogs.clear();
-            contractResults.clear();
-            contractStateChanges.clear();
-            contractStates.clear();
-            contractTransactions.clear();
-            contractTransactionHashes.clear();
-            cryptoAllowances.clear();
-            cryptoAllowanceState.clear();
-            cryptoTransfers.clear();
-            customFees.clear();
-            entities.clear();
-            entityState.clear();
-            entityTransactions.clear();
-            ethereumTransactions.clear();
-            fileData.clear();
-            liveHashes.clear();
-            networkFreezes.clear();
-            networkStakes.clear();
-            nftState.clear();
-            nfts.clear();
-            nftAllowances.clear();
-            nftAllowanceState.clear();
-            nodeStakes.clear();
-            prngs.clear();
-            schedules.clear();
-            stakingRewardTransfers.clear();
-            topicMessages.clear();
-            tokenAccounts.clear();
-            tokenAccountState.clear();
-            tokenAllowances.clear();
-            tokenAllowanceState.clear();
-            tokens.clear();
-            tokenState.clear();
-            deletedTokenDissociateTransfers.clear();
-            tokenTransfers.clear();
-            transactions.clear();
-            transactionHashes.clear();
-            transactionSignatures.clear();
+            context.drainTo(i -> {});
             eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
         } catch (BeanCreationNotAllowedException e) {
             // This error can occur during shutdown
@@ -564,50 +362,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // batch save action may run asynchronously, triggering it before other operations can reduce latency
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
 
-            Stopwatch stopwatch = Stopwatch.createStarted();
-
-            // insert only operations
-            batchPersister.persist(assessedCustomFees);
-            batchPersister.persist(contractActions);
-            batchPersister.persist(contractLogs);
-            batchPersister.persist(contractResults);
-            batchPersister.persist(contractStateChanges);
-            batchPersister.persist(contractTransactions);
-            batchPersister.persist(contractTransactionHashes);
-            batchPersister.persist(cryptoTransfers);
-            batchPersister.persist(customFees);
-            batchPersister.persist(entityTransactions);
-            batchPersister.persist(ethereumTransactions);
-            batchPersister.persist(fileData);
-            batchPersister.persist(liveHashes);
-            batchPersister.persist(networkFreezes);
-            batchPersister.persist(networkStakes);
-            batchPersister.persist(nodeStakes);
-            batchPersister.persist(prngs);
-            batchPersister.persist(topicMessages);
-            batchPersister.persist(transactions);
-            batchPersister.persist(transactionHashes);
-            batchPersister.persist(transactionSignatures);
-
-            // insert operations with conflict management
-            batchPersister.persist(contracts);
-            batchPersister.persist(contractStates.values());
-            batchPersister.persist(cryptoAllowances);
-            batchPersister.persist(entities);
-            batchPersister.persist(nftAllowances);
-            batchPersister.persist(tokens);
-            // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
-            batchPersister.persist(tokenAccounts);
-            batchPersister.persist(tokenAllowances);
-            batchPersister.persist(nfts); // persist nft after token entity
-            batchPersister.persist(schedules.values());
-
-            // transfers operations should be last to ensure insert logic completeness, entities should already exist
-            batchPersister.persist(stakingRewardTransfers);
-            batchPersister.persist(tokenTransfers);
-
-            // handle the transfers from token dissociate transactions after nft is processed
-            tokenDissociateTransferBatchPersister.persist(deletedTokenDissociateTransfers);
+            var stopwatch = Stopwatch.createStarted();
+            context.drainTo(batchPersister::persist);
 
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
@@ -622,19 +378,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void flushNftState() {
         try {
             // flush tables required for an accurate nft state in database to ensure correct state-dependent changes
-            batchPersister.persist(tokens);
-            batchPersister.persist(tokenAccounts);
-            batchPersister.persist(nfts);
+            context.drainTo(NFT_FLUSH, batchPersister::persist);
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {
             throw new ParserException(e);
-        } finally {
-            tokens.clear();
-            tokenAccounts.clear();
-            tokenState.clear();
-            nftState.clear();
-            nfts.clear();
         }
     }
 

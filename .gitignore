@@ -151,4 +151,5 @@ build
 snyk
 **/secret.*
 
-hedera-mirror-rest/report.html*
+hedera-mirror-rest/report.*
+hedera-mirror-rest/monitoring/config/serverlist.json

@@ -39,12 +39,14 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @TestPropertySource(properties = "spring.flyway.target=1.45.1")
 @Tag("migration")
 class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {

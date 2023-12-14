@@ -16,8 +16,10 @@
 
 package com.hedera.mirror.importer.repository;
 
+import static com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TREASURY;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -48,26 +50,63 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .entity()
                 .customize(e -> e.deleted(null).type(EntityType.CONTRACT))
                 .persist();
-        domainBuilder.entity().customize(e -> e.balance(null)).persist();
-        domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+        domainBuilder
+                .entity()
+                .customize(e -> e.balanceTimestamp(null).balance(null))
+                .persist();
+        var deletedAccount = domainBuilder
+                .entity()
+                .customize(e -> e.balance(0L).deleted(true))
+                .persist();
         var fileWithBalance =
                 domainBuilder.entity().customize(e -> e.type(EntityType.FILE)).persist();
         var unknownWithBalance = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.UNKNOWN))
                 .persist();
-        domainBuilder
-                .entity()
-                .customize(e -> e.balance(null).type(EntityType.TOPIC))
-                .persist();
+        domainBuilder.topic().persist();
 
-        var expected = Stream.of(account, contract, fileWithBalance, unknownWithBalance)
+        var expected = Stream.of(account, contract, deletedAccount, fileWithBalance, unknownWithBalance)
                 .map(e -> AccountBalance.builder()
                         .balance(e.getBalance())
                         .id(new AccountBalance.Id(timestamp, e.toEntityId()))
                         .build())
                 .toList();
         assertThat(accountBalanceRepository.balanceSnapshot(timestamp)).isEqualTo(expected.size());
+        assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void balanceSnapshotWithDeletedAccounts() {
+        // given
+        long lastSnapshotTimestamp = domainBuilder.timestamp();
+        var treasuryAccountBalance = domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(lastSnapshotTimestamp, EntityId.of(TREASURY))))
+                .persist();
+        // deleted before last snapshot, will not appear in full snapshot
+        domainBuilder
+                .entity()
+                .customize(e -> e.balance(0L)
+                        .balanceTimestamp(lastSnapshotTimestamp - 1)
+                        .deleted(true)
+                        .timestampRange(Range.atLeast(lastSnapshotTimestamp - 1)))
+                .persist();
+        var account = domainBuilder.entity().persist();
+        var deletedAccount = domainBuilder
+                .entity()
+                .customize(e -> e.balance(0L).deleted(true))
+                .persist();
+        long newSnapshotTimestamp = domainBuilder.timestamp();
+        var expected = List.of(
+                treasuryAccountBalance,
+                buildAccountBalance(account, newSnapshotTimestamp),
+                buildAccountBalance(deletedAccount, newSnapshotTimestamp));
+
+        // when
+        accountBalanceRepository.balanceSnapshot(newSnapshotTimestamp);
+
+        // then
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
@@ -170,7 +209,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .accountBalance()
                 .customize(a -> a.id(new AccountBalance.Id(5L, EntityId.of(1))))
                 .persist();
-        // With no treasury account present the max consensus timestamp is 0
+        // With no treasury account present the max consensus timestamp is empty
         assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 10L))
                 .isEmpty();
 
@@ -192,8 +231,8 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
                 .get()
                 .isEqualTo(5L);
 
-        // Only the timestamp within the range is returned
-        assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(0L, 4L))
+        // Only the timestamp within the range is returned, also verifies lower is inclusive and upper is exclusive
+        assertThat(accountBalanceRepository.getMaxConsensusTimestampInRange(3L, 5L))
                 .get()
                 .isEqualTo(3L);
 
@@ -210,17 +249,6 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
         List<AccountBalance> result = accountBalanceRepository.findByIdConsensusTimestamp(1);
         assertThat(result).containsExactlyInAnyOrder(accountBalance1, accountBalance2);
-    }
-
-    @Test
-    void prune() {
-        domainBuilder.accountBalance().persist();
-        var accountBalance2 = domainBuilder.accountBalance().persist();
-        var accountBalance3 = domainBuilder.accountBalance().persist();
-
-        accountBalanceRepository.prune(accountBalance2.getId().getConsensusTimestamp());
-
-        assertThat(accountBalanceRepository.findAll()).containsExactly(accountBalance3);
     }
 
     private AccountBalance create(long consensusTimestamp, int accountNum, long balance, int numberOfTokenBalances) {

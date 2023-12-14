@@ -25,7 +25,6 @@ import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -37,24 +36,11 @@ import org.springframework.jdbc.core.RowMapper;
 @RequiredArgsConstructor
 public class TimePartitionServiceImpl implements TimePartitionService {
 
-    private static final String GET_TIME_PARTITIONS_SQL =
-            """
-                    select
-                      parent.relname as parent,
-                      child.relname as name,
-                      pg_get_expr(child.relpartbound, child.oid) as range
-                    from pg_inherits
-                    join pg_class parent on pg_inherits.inhparent = parent.oid
-                    join pg_class child  on pg_inherits.inhrelid = child.oid
-                    join pg_namespace nmsp_parent on nmsp_parent.oid = parent.relnamespace
-                    join pg_namespace nmsp_child  on nmsp_child.oid = child.relnamespace
-                    where parent.relname = ? and pg_get_expr(child.relpartbound, child.oid) like 'FOR VALUES FROM%';
-                    """;
-    private static final Pattern RANGE_PATTERN = Pattern.compile("^FOR VALUES FROM \\('(\\d+)'\\) TO \\('(\\d+)'\\)$");
+    private static final String GET_TIME_PARTITIONS_SQL = "select * from mirror_node_time_partitions where parent = ?";
     private static final RowMapper<TimePartition> ROW_MAPPER = (rs, rowNum) -> TimePartition.builder()
             .name(rs.getString("name"))
             .parent(rs.getString("parent"))
-            .range(rs.getString("range"))
+            .timestampRange(Range.closedOpen(rs.getLong("from_timestamp"), rs.getLong("to_timestamp")))
             .build();
 
     private final JdbcTemplate jdbcTemplate;
@@ -115,27 +101,9 @@ public class TimePartitionServiceImpl implements TimePartitionService {
                 return Collections.emptyList();
             }
 
-            var timePartitions = new ArrayList<TimePartition>();
-            for (var partition : partitions) {
-                var matcher = RANGE_PATTERN.matcher(partition.getRange());
-                if (!matcher.matches()) {
-                    log.warn(
-                            "Unable to parse time partition range for partition {}: {}",
-                            partition.getName(),
-                            partition.getRange());
-                    return Collections.emptyList();
-                }
-
-                var lowerBound = Long.parseLong(matcher.group(1));
-                var upperBound = Long.parseLong(matcher.group(2));
-                partition.setTimestampRange(Range.closedOpen(lowerBound, upperBound));
-                timePartitions.add(partition);
-            }
-
-            Collections.sort(timePartitions);
-            return Collections.unmodifiableList(timePartitions);
+            return Collections.unmodifiableList(partitions);
         } catch (Exception e) {
-            log.warn("Unable to query time partitions for table {}: {}", tableName, e);
+            log.warn("Unable to query time partitions for table {}", tableName, e);
             return Collections.emptyList();
         }
     }

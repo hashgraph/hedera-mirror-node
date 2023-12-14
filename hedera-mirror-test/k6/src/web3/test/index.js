@@ -62,6 +62,7 @@ import * as contractCallEstimateUnfreezeToken from './contractCallEstimateUnfree
 import * as contractCallEstimateUnfreezeNft from './contractCallEstimateUnfreezeNft.js';
 import * as contractCallEstimateTransferToken from './contractCallEstimateTransferToken.js';
 import * as contractCallEstimateTransferNft from './contractCallEstimateTransferNft.js';
+import * as rampUp from './rampUp.js';
 
 // add test modules here
 const tests = {
@@ -91,7 +92,8 @@ const tests = {
   contractCallTokenKey,
   contractCallTokenType,
   contractCallTokenURI,
-  contractCallTotalSupply
+  contractCallTotalSupply,
+  rampUp,
 };
 
 if (__ENV.RUN_ESTIMATE_TESTS) {
@@ -113,7 +115,7 @@ if (__ENV.RUN_ESTIMATE_TESTS) {
     contractCallEstimateUnfreezeToken,
     contractCallEstimateUnfreezeNft,
     contractCallEstimateTransferToken,
-    contractCallEstimateTransferNft
+    contractCallEstimateTransferNft,
   });
 }
 

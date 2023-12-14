@@ -66,8 +66,8 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
                     """
                     with balance_snapshot as (
                       select consensus_timestamp
-                      from account_balance_file
-                      where consensus_timestamp <= ?3
+                      from account_balance
+                      where account_id = 2 and consensus_timestamp <= ?3
                       order by consensus_timestamp desc
                       limit 1
                     ), base as (

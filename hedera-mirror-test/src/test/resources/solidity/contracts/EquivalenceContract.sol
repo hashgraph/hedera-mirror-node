@@ -22,38 +22,41 @@ contract EquivalenceContract {
         (success, returnData) = _to.delegatecall(_data);
     }
 
-    function callCodeToContractWithoutAmount(address _address, bytes32 _sig) external returns (address) {
-        bytes memory result;
-        bool success;
-
+    function callCodeToContractWithoutAmount(address _addr, bytes calldata _customData) external returns (bytes32 output) {
         assembly {
             let x := mload(0x40)
-            mstore(x, _sig)
+            calldatacopy(x, _customData.offset, calldatasize())
 
-            success := callcode(600000, _address, 0, x, 0x4, x, 0x20)
+            let success := callcode(
+                900000, // gas
+                _addr, // target address
+                0, // value
+                x, // extracted and loaded calldata for the internal call
+                calldatasize(), // as far as the data is dynamic, we can use calldatasize() to get the variable size
+                x, // memory overlapping to save some space
+                0x20 // output is 32 bytes long
+            )
 
-            mstore(0x40, add(x, 0x20))
-            mstore(result, x)
+            output := mload(x) // assign output value to the var
         }
-
-        return abi.decode(result, (address));
     }
 
-    function callCodeToContractWithAmount(address _address, bytes32 _sig) external payable returns (address) {
-        bytes memory result;
-        bool success;
+    function callCodeToContractWithAmount(address _addr, bytes calldata _customData) external payable returns (bytes32 output) {
         assembly {
             let x := mload(0x40)
-            mstore(x, _sig)
+            calldatacopy(x, _customData.offset, calldatasize())
+            let success := callcode(
+                900000, // gas
+                _addr, // target address
+                callvalue(), // value
+                x, // extracted and loaded calldata for the internal call
+                calldatasize(), // as far as the data is dynamic, we can use calldatasize() to get the variable size
+                x, // memory overlapping to save some space
+                0x20 // output is 32 bytes long
+            )
 
-            let callValue := callvalue()
-            success := callcode(600000, _address, callValue, x, 0x4, x, 0x20)
-
-            mstore(0x40, add(x, 0x20))
-            mstore(result, x)
+            output := mload(x) // assign output value to the var
         }
-
-        return abi.decode(result, (address));
     }
 
     function getBalance(address _address) external view returns (uint256) {

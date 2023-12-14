@@ -3,14 +3,8 @@
   "setup": {
     "accounts": [
       {
-        "num": 3
-      },
-      {
-        "num": 7
-      },
-      {
         "balance": 80,
-        "balance_timestamp": "1234567890000000004",
+        "balance_timestamp": "1234567890000000009",
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
@@ -27,48 +21,73 @@
         "timestamp_range": "[1234567880000000007, 1234567890000000007)",
         "staked_node_id": 2,
         "staked_account_id": 2
-      },
-      {
-        "balance": 75,
-        "balance_timestamp": "5000000000",
-        "num": 9,
-        "alias": "HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA",
-        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d8",
-        "timestamp_range": "[1234567890000000007,)",
-        "staked_node_id": 1,
-        "staked_account_id": 1
-      },
-      {
-        "num": 98
       }
     ],
     "balances": [
       {
         "timestamp": "1234567890000000004",
-        "id": 8,
-        "balance": 555
+        "id": 2,
+        "balance": 2
       },
       {
-        "timestamp": "5000000000",
-        "id": 9,
-        "balance": 400
+        "timestamp": "1234567890000000004",
+        "id": 8,
+        "balance": 555
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/0.0.8?timestamp=lte:1234567880.000000006",
-    "/api/v1/accounts/0.0.8?timestamp=ne:1234567890.000000004",
-    "/api/v1/accounts/0.0.9?timestamp=ne:5.000&order=asc",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:1234567880.000000006"
-  ],
-  "responseStatus": 404,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Not found"
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/accounts/0.0.8?timestamp=lte:1234567880.000000006",
+        "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lte:1234567880.000000006"
+      ],
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Not found"
+            }
+          ]
         }
-      ]
+      }
+    },
+    {
+      "_description": "no valid balance snapshot timestamp found, falls back to balance and balance_timestamp in entity / entity_history table",
+      "urls": [
+        "/api/v1/accounts/0.0.8?timestamp=lt:1234567881.000000007",
+        "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=lt:1234567881.000000007"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "account": "0.0.8",
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "auto_renew_period": null,
+        "balance": {
+          "balance": 30,
+          "timestamp": "1234567890.000000004",
+          "tokens": []
+        },
+        "created_timestamp": null,
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x0000000000000000000000000000000000000008",
+        "expiry_timestamp": null,
+        "key": null,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "pending_reward": 0,
+        "receiver_sig_required": false,
+        "stake_period_start": null,
+        "staked_account_id": "0.0.2",
+        "staked_node_id": 2,
+        "transactions": [],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }

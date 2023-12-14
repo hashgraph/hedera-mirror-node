@@ -41,11 +41,13 @@ repositories {
     maven {
         url = uri("https://artifacts.consensys.net/public/maven/maven/")
     }
+    maven { url = uri("https://repo.spring.io/milestone") }
 }
 
 dependencyManagement {
     imports {
-        mavenBom("io.grpc:grpc-bom:1.58.0")
+        val grpcVersion: String by rootProject.extra
+        mavenBom("io.grpc:grpc-bom:${grpcVersion}")
         mavenBom(SpringBootPlugin.BOM_COORDINATES)
     }
 }

@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.properties;
 
-import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.mirror.common.domain.entity.EntityType;

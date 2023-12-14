@@ -44,19 +44,16 @@ class TimePartitionServiceTest extends IntegrationTest {
             TimePartition.builder()
                     .name("event_00")
                     .parent("event")
-                    .range("FOR VALUES FROM ('1000000000') TO ('2000000000')")
                     .timestampRange(Range.closedOpen(1000000000L, 2000000000L))
                     .build(),
             TimePartition.builder()
                     .name("event_01")
                     .parent("event")
-                    .range("FOR VALUES FROM ('2000000000') TO ('3000000000')")
                     .timestampRange(Range.closedOpen(2000000000L, 3000000000L))
                     .build(),
             TimePartition.builder()
                     .name("event_02")
                     .parent("event")
-                    .range("FOR VALUES FROM ('3000000000') TO ('4000000000')")
                     .timestampRange(Range.closedOpen(3000000000L, 4000000000L))
                     .build());
 

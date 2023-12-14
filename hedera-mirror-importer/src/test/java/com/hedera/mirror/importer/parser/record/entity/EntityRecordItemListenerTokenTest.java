@@ -690,11 +690,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var tokenTransferId = new TokenTransfer.Id(dissociateTimeStamp, EntityId.of(TOKEN_ID), EntityId.of(PAYER2));
         var expectedDissociateTransfer = domainBuilder
                 .tokenTransfer()
-                .customize(t -> t.amount(-amount)
-                        .id(tokenTransferId)
-                        .isApproval(false)
-                        .payerAccountId(PAYER_ACCOUNT_ID)
-                        .deletedTokenDissociate(false))
+                .customize(t ->
+                        t.amount(-amount).id(tokenTransferId).isApproval(false).payerAccountId(PAYER_ACCOUNT_ID))
                 .get();
         assertThat(tokenTransferRepository.findById(tokenTransferId)).get().isEqualTo(expectedDissociateTransfer);
 
@@ -3599,8 +3596,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .customize(t -> t.amount(amount)
                         .id(new TokenTransfer.Id(consensusTimestamp, EntityId.of(tokenID), EntityId.of(accountID)))
                         .isApproval(isApproval)
-                        .payerAccountId(PAYER_ACCOUNT_ID)
-                        .deletedTokenDissociate(false))
+                        .payerAccountId(PAYER_ACCOUNT_ID))
                 .get();
         assertThat(tokenTransferRepository.findById(expected.getId())).get().isEqualTo(expected);
     }

@@ -16,8 +16,12 @@
 
 package com.hedera.mirror.common.util;
 
+import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.google.protobuf.ByteString;
@@ -36,7 +40,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.stream.Stream;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -278,8 +281,8 @@ class DomainUtilsTest {
 
     @Test
     void toBytes() {
-        byte[] smallArray = RandomUtils.nextBytes(DomainUtils.UnsafeByteOutput.SIZE);
-        byte[] largeArray = RandomUtils.nextBytes(256);
+        byte[] smallArray = nextBytes(DomainUtils.UnsafeByteOutput.SIZE);
+        byte[] largeArray = nextBytes(256);
 
         assertThat(DomainUtils.toBytes(null)).isNull();
         assertThat(DomainUtils.toBytes(ByteString.EMPTY)).isEqualTo(new byte[0]).isSameAs(Internal.EMPTY_BYTE_ARRAY);
@@ -298,7 +301,7 @@ class DomainUtilsTest {
 
     @Test
     void fromBytes() {
-        byte[] bytes = RandomUtils.nextBytes(16);
+        byte[] bytes = nextBytes(16);
 
         assertThat(DomainUtils.fromBytes(null)).isNull();
         assertThat(DomainUtils.fromBytes(new byte[0])).isEqualTo(ByteString.EMPTY);

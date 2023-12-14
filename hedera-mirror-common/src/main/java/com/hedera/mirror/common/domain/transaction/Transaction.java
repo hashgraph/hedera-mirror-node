@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -36,7 +35,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
@@ -54,7 +55,7 @@ public class Transaction implements Persistable<Long> {
     private EntityId entityId;
 
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private ErrataType errata;
 
     private Integer index;

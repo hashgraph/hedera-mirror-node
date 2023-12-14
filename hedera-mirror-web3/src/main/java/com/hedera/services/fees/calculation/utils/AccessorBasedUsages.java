@@ -32,8 +32,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevoke
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
@@ -78,12 +76,7 @@ public class AccessorBasedUsages {
         this.opUsageCtxHelper = opUsageCtxHelper;
     }
 
-    public void assess(
-            SigUsage sigUsage,
-            TxnAccessor accessor,
-            UsageAccumulator into,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
+    public void assess(SigUsage sigUsage, TxnAccessor accessor, UsageAccumulator into) {
         final var function = accessor.getFunction();
         if (!supportedOps.contains(function)) {
             throw new IllegalArgumentException("Usage estimation for " + function + " not yet migrated");
@@ -95,9 +88,9 @@ public class AccessorBasedUsages {
         } else if (function == CryptoCreate) {
             estimateCryptoCreate(sigUsage, accessor, baseMeta, into);
         } else if (function == CryptoUpdate) {
-            estimateCryptoUpdate(sigUsage, accessor, baseMeta, into, store, hederaEvmContractAliases);
+            estimateCryptoUpdate(sigUsage, accessor, baseMeta, into);
         } else if (function == CryptoApproveAllowance) {
-            estimateCryptoApproveAllowance(sigUsage, accessor, baseMeta, into, store, hederaEvmContractAliases);
+            estimateCryptoApproveAllowance(sigUsage, accessor, baseMeta, into);
         } else if (function == CryptoDeleteAllowance) {
             estimateCryptoDeleteAllowance(sigUsage, accessor, baseMeta, into);
         } else if (function == TokenCreate) {
@@ -105,7 +98,7 @@ public class AccessorBasedUsages {
         } else if (function == TokenBurn) {
             estimateTokenBurn(sigUsage, accessor, baseMeta, into);
         } else if (function == TokenMint) {
-            estimateTokenMint(sigUsage, accessor, baseMeta, into, store);
+            estimateTokenMint(sigUsage, accessor, baseMeta, into);
         } else if (function == TokenFreezeAccount) {
             estimateTokenFreezeAccount(sigUsage, accessor, baseMeta, into);
         } else if (function == TokenUnfreezeAccount) {
@@ -136,29 +129,18 @@ public class AccessorBasedUsages {
     }
 
     private void estimateCryptoUpdate(
-            SigUsage sigUsage,
-            TxnAccessor accessor,
-            BaseTransactionMeta baseMeta,
-            UsageAccumulator into,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
+            SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var cryptoUpdateMeta = accessor.getSpanMapAccessor().getCryptoUpdateMeta(accessor);
-        final var cryptoContext =
-                opUsageCtxHelper.ctxForCryptoUpdate(accessor.getTxn(), store, hederaEvmContractAliases);
+        final var cryptoContext = opUsageCtxHelper.ctxForCryptoUpdate(accessor.getTxn());
         // explicitAutoAssocSlotLifetime is three months in services
         cryptoOpsUsage.cryptoUpdateUsage(
                 sigUsage, baseMeta, cryptoUpdateMeta, cryptoContext, into, THREE_MONTHS_IN_SECONDS);
     }
 
     private void estimateCryptoApproveAllowance(
-            SigUsage sigUsage,
-            TxnAccessor accessor,
-            BaseTransactionMeta baseMeta,
-            UsageAccumulator into,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
+            SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var cryptoApproveMeta = accessor.getSpanMapAccessor().getCryptoApproveMeta(accessor);
-        final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor, store, hederaEvmContractAliases);
+        final var cryptoContext = opUsageCtxHelper.ctxForCryptoAllowance(accessor);
         cryptoOpsUsage.cryptoApproveAllowanceUsage(sigUsage, baseMeta, cryptoApproveMeta, cryptoContext, into);
     }
 
@@ -181,8 +163,8 @@ public class AccessorBasedUsages {
     }
 
     private void estimateTokenMint(
-            SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into, Store store) {
-        final var tokenMintMeta = opUsageCtxHelper.metaForTokenMint(accessor, store);
+            SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
+        final var tokenMintMeta = opUsageCtxHelper.metaForTokenMint(accessor);
         tokenOpsUsage.tokenMintUsage(sigUsage, baseMeta, tokenMintMeta, into, accessor.getSubType());
     }
 

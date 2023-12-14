@@ -357,16 +357,22 @@ stackgres:
 
 testkube:
   enabled: false
+  executor:
+    image:
+      registry: docker.io
+      repository: grafana/k6
+      tag: 0.47.0
   namespace: testkube
   test:
-    duration: 300s
+    config:
+      rest: {}
+      web3: {}
     extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
     target:
       namespace: ""
       release: mirror
-    vus: 500
   trigger:
     enabled: false
 

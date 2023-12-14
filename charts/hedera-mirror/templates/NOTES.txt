@@ -32,6 +32,16 @@ To access the REST API:
   curl -s "http://${REST_IP:-127.0.0.1}:{{.Values.rest.service.port}}/api/v1/transactions?limit=1"
 {{- end }}
 
+{{- if and .Values.restjava.enabled .Values.restjava.service }}
+To access the Java REST API:
+{{- if contains "LoadBalancer" .Values.restjava.service.type }}
+  REST_IP="$(kubectl get "service/{{ .Release.Name }}-rest-java" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+{{- else if contains "ClusterIP" .Values.restjava.service.type }}
+  kubectl port-forward "service/{{ .Release.Name }}-rest-java" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.rest.service.port }}:80 &
+{{- end }}
+  curl -s "http://${REST_IP:-127.0.0.1}:{{.Values.restjava.service.port}}/api/v1/dummy"
+{{- end }}
+
 {{- if and .Values.rosetta.enabled .Values.rosetta.service }}
 To access the Rosetta API:
 {{- if contains "LoadBalancer" .Values.rosetta.service.type }}

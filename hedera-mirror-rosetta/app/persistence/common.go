@@ -25,6 +25,7 @@ import "github.com/jackc/pgtype"
 const (
 	genesisTimestampQuery = `select consensus_timestamp as timestamp
                              from account_balance
+                             where account_id = 2
                              order by consensus_timestamp
                              limit 1`
 	genesisTimestampCte = " genesis as (" + genesisTimestampQuery + ") "

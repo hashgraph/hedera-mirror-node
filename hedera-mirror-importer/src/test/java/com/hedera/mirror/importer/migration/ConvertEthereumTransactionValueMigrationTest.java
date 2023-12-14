@@ -32,11 +32,13 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
 @EnabledIfV1
+@Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.59.2")
@@ -91,7 +93,7 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
                 .gasLimit(20_000_000L)
                 .hash(domainBuilder.bytes(32))
                 .maxGasAllowance(20_000_000L)
-                .nonce(domainBuilder.id())
+                .nonce(domainBuilder.number())
                 .payerAccountId(domainBuilder.id())
                 .signatureR(domainBuilder.bytes(32))
                 .signatureS(domainBuilder.bytes(32))

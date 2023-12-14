@@ -33,6 +33,7 @@ import com.hedera.mirror.test.e2e.acceptance.config.SdkProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import jakarta.inject.Named;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,13 +46,14 @@ import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Value;
-import org.apache.commons.lang3.RandomUtils;
 import org.springframework.util.CollectionUtils;
 
 @CustomLog
 @Named
 @Value
 public class SDKClient implements Cleanable {
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final Client client;
     private final ExpandedAccountId defaultOperator;
@@ -87,7 +89,7 @@ public class SDKClient implements Cleanable {
     }
 
     public AccountId getRandomNodeAccountId() {
-        int randIndex = RandomUtils.nextInt(0, validateNetworkMap.size() - 1);
+        int randIndex = RANDOM.nextInt(0, validateNetworkMap.size() - 1);
         return new ArrayList<>(validateNetworkMap.values()).get(randIndex);
     }
 

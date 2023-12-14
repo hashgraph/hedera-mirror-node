@@ -112,11 +112,10 @@ class PricedUsageCalculatorTest {
         given(calculator.fees(inHandleAccum, mockPrices, mockRate, multiplier)).willReturn(mockFees);
 
         // when:
-        final var actual =
-                subject.inHandleFees(accessor, mockPrices, mockRate, payerKey, store, hederaEvmContractAliases);
+        final var actual = subject.inHandleFees(accessor, mockPrices, mockRate, payerKey);
 
         // then:
-        verify(accessorBasedUsages).assess(su, accessor, inHandleAccum, store, hederaEvmContractAliases);
+        verify(accessorBasedUsages).assess(su, accessor, inHandleAccum);
         assertEquals(mockFees, actual);
     }
 
@@ -133,12 +132,10 @@ class PricedUsageCalculatorTest {
                 .willReturn(mockFees);
 
         // when:
-        final var actual =
-                subject.extraHandleFees(accessor, mockPrices, mockRate, payerKey, store, hederaEvmContractAliases);
+        final var actual = subject.extraHandleFees(accessor, mockPrices, mockRate, payerKey);
 
         // then:
-        verify(accessorBasedUsages)
-                .assess(eq(su), eq(accessor), assessCaptor.capture(), eq(store), eq(hederaEvmContractAliases));
+        verify(accessorBasedUsages).assess(eq(su), eq(accessor), assessCaptor.capture());
         assertEquals(mockFees, actual);
         assertSame(feesCaptor.getValue(), assessCaptor.getValue());
         assertNotSame(inHandleAccum, feesCaptor.getValue());

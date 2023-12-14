@@ -252,8 +252,8 @@ abstract class AbstractFeature {
                 "classpath:solidity/artifacts/contracts/EquivalenceDestruct.sol/EquivalenceDestruct.json", 10000),
         EQUIVALENCE_PAYABLE(
                 "classpath:solidity/artifacts/contracts/EquivalenceContract.sol/EquivalencePayableContract.json",
-                10000),
-        PRECOMPILE("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
+                10000), PRECOMPILE(
+                "classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json", 0),
         ESTIMATE_GAS(
                 "classpath:solidity/artifacts/contracts/EstimateGasContract.sol/EstimateGasContract.json", 1000000),
         PARENT_CONTRACT("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json", 10000000);

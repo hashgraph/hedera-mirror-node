@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.account;
 
 import static com.hedera.services.utils.MiscUtils.isRecoveredEvmAddress;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
@@ -27,8 +26,6 @@ import com.hedera.services.jproto.JECDSASecp256k1Key;
 import com.hedera.services.jproto.JKey;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import jakarta.inject.Named;
-import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -43,7 +40,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         final var evmAddress = tryAddressRecovery(key);
         if (isRecoveredEvmAddress(evmAddress)) {
             if (evmAddress != null) { // NOSONAR - null check is required
-                link(Address.wrap(Bytes.wrap(evmAddress)), address);
+                store.linkAlias(Address.wrap(Bytes.wrap(evmAddress)), address);
             }
             return true;
         } else {
@@ -72,64 +69,20 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             return addressOrAlias;
         }
 
-        return resolveFromAliases(addressOrAlias).orElseGet(() -> resolveFromStore(addressOrAlias));
-    }
-
-    private Optional<Address> resolveFromAliases(Address alias) {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        Map<Address, Address> pendingAliases = contractCallContext.getPendingAliases();
-        if (pendingAliases.containsKey(alias)) {
-            return Optional.ofNullable(pendingAliases.get(alias));
-        }
-        Map<Address, Address> aliases = contractCallContext.getAliases();
-        if (aliases.containsKey(alias)
-                && !contractCallContext.getPendingRemovals().contains(alias)) {
-            return Optional.ofNullable(aliases.get(alias));
-        }
-        return Optional.empty();
-    }
-
-    private Address resolveFromStore(Address addressOrAlias) {
         final var account = store.getAccount(addressOrAlias, OnMissing.DONT_THROW);
 
         if (account.isEmptyAccount()) {
             return Address.ZERO;
         } else {
-            final var resolvedAddress = account.getId().asEvmAddress();
-
-            link(addressOrAlias, resolvedAddress);
-            return resolvedAddress;
+            return account.getId().asEvmAddress();
         }
     }
 
     public boolean isInUse(final Address address) {
-        return ContractCallContext.get().containsAlias(address);
+        return store.exists(address);
     }
 
     public void link(final Address alias, final Address address) {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        contractCallContext.getPendingAliases().put(alias, address);
-        contractCallContext.getPendingRemovals().remove(alias);
-    }
-
-    public void unlink(Address alias) {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        contractCallContext.getPendingRemovals().add(alias);
-        contractCallContext.getPendingAliases().remove(alias);
-    }
-
-    public void commit() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        Map<Address, Address> aliases = contractCallContext.getAliases();
-        aliases.putAll(contractCallContext.getPendingAliases());
-        aliases.keySet().removeAll(contractCallContext.getPendingRemovals());
-
-        resetPendingChanges();
-    }
-
-    public void resetPendingChanges() {
-        ContractCallContext contractCallContext = ContractCallContext.get();
-        contractCallContext.getPendingAliases().clear();
-        contractCallContext.getPendingRemovals().clear();
+        store.linkAlias(alias, address);
     }
 }

@@ -28,8 +28,6 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.contracts.precompile.codec.BodyParams;
 import com.hedera.services.store.contracts.precompile.codec.Dissociation;
@@ -83,13 +81,8 @@ public class DissociatePrecompile extends AbstractDissociatePrecompile {
     }
 
     @Override
-    public long getGasRequirement(
-            final long blockTimestamp,
-            final Builder transactionBody,
-            final Store store,
-            final HederaEvmContractAliases hederaEvmContractAliases) {
-        return pricingUtils.computeGasRequirement(
-                blockTimestamp, this, transactionBody, store, hederaEvmContractAliases);
+    public long getGasRequirement(final long blockTimestamp, final Builder transactionBody, final AccountID sender) {
+        return pricingUtils.computeGasRequirement(blockTimestamp, this, transactionBody, sender);
     }
 
     @Override

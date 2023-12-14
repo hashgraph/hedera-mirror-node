@@ -33,7 +33,7 @@
         "num": 20,
         "realm": 1,
         "shard": 0,
-        "public_key": "c7e81a0c1444c6e5b5c1bfb1a02ae5faae44c11e621f286d21242cc584280692",
+        "public_key": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
         "expiration_timestamp": 123456784,
         "auto_renew_period": 44444,
         "key": [4, 4, 4]
@@ -81,6 +81,16 @@
       }
     ],
     "balances": [
+      {
+        "timestamp": 1566560001000000000,
+        "id": 2,
+        "balance": 180
+      },
+      {
+        "timestamp": 1566560003000000000,
+        "id": 2,
+        "balance": 200
+      },
       {
         "timestamp": 1566560001000000000,
         "id": 17,
@@ -144,7 +154,7 @@
           {
             "token_realm": 20,
             "token_num": 1,
-            "balance": 20
+            "balance": 46
           },
           {
             "token_realm": 20,
@@ -206,48 +216,12 @@
             "balance": 190190
           }
         ]
-      },
-      {
-        "timestamp": 1566560003000000000,
-        "id": 20,
-        "realm_num": 1,
-        "balance": 1000,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 200
-          },
-          {
-            "token_realm": 20,
-            "token_num": 2,
-            "balance": 200200
-          }
-        ]
-      },
-      {
-        "timestamp": 1566560009000000000,
-        "id": 19,
-        "realm_num": 1,
-        "balance": 999,
-        "tokens": [
-          {
-            "token_realm": 20,
-            "token_num": 1,
-            "balance": 1900
-          },
-          {
-            "token_realm": 20,
-            "token_num": 2,
-            "balance": 19001900
-          }
-        ]
       }
     ],
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/tokens/0.20.1/balances?account.id=gte:0.1.18&account.id=lt:0.1.20&account.balance=gt:45&account.publicKey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be&timestamp=1566560003.000000000&order=asc",
+  "url": "/api/v1/tokens/0.20.1/balances?account.id=gte:0.1.18&account.id=lt:0.1.21&account.balance=gt:45&account.publicKey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be&timestamp=1566560003.000000000&order=asc",
   "responseStatus": 200,
   "responseJson": {
     "timestamp": "1566560003.000000000",
@@ -255,6 +229,10 @@
       {
         "account": "0.1.19",
         "balance": 190
+      },
+      {
+        "account": "0.1.20",
+        "balance": 46
       }
     ],
     "links": {

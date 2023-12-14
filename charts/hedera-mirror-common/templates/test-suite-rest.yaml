@@ -1,25 +1,14 @@
 {{- if .Values.testkube.enabled -}}
-apiVersion: tests.testkube.io/v2
+apiVersion: tests.testkube.io/v3
 kind: TestSuite
 metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
   name: test-suite-rest
   namespace: {{ .Values.testkube.namespace }}
 spec:
   description: Mirrornode REST API performance test suite
   executionRequest:
     variables:
-      BASE_URL:
-        name: BASE_URL
-        type: basic
-        value: http://{{ .Values.testkube.test.target.release }}-rest.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
-      DEFAULT_DURATION:
-        name: DEFAULT_DURATION
-        type: basic
-        value: {{ .Values.testkube.test.duration }}
-      DEFAULT_VUS:
-        name: DEFAULT_VUS
-        type: basic
-        value: {{ quote .Values.testkube.test.vus }}
       TEST_REPORTS_DIR:
         name: TEST_REPORTS_DIR
         type: basic
@@ -31,8 +20,16 @@ spec:
   schedule: {{ quote .Values.testkube.test.schedule }}
   {{- end }}
   steps:
-    - delay:
-        duration: 600000
     - execute:
-        name: test-rest
+      - delay: 10s
+      stopOnFailure: false
+    - execute:
+      - test: test-rest
+      stopOnFailure: false
+    - execute:
+      - delay: 60s
+      stopOnFailure: false
+    - execute:
+      - test: test-web3
+      stopOnFailure: false
 {{- end }}

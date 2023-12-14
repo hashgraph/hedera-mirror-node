@@ -29,7 +29,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
         extends AbstractLedgerEvmWorldUpdater<W, A> {
 
-    private final Store store;
+    protected final Store store;
 
     protected AbstractLedgerWorldUpdater(W world, AccountAccessor accountAccessor, Store store) {
         super(world, accountAccessor);

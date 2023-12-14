@@ -1,0 +1,33 @@
+{{- if .Values.testkube.enabled -}}
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  name: test-web3
+  namespace: {{ .Values.testkube.namespace }}
+spec:
+  content:
+    repository:
+      branch: {{ .Values.testkube.test.gitBranch | default (print "v" .Chart.AppVersion) }}
+      path: hedera-mirror-test/k6
+      type: git
+      uri: https://github.com/hashgraph/hedera-mirror-node
+    type: git-dir
+  executionRequest:
+    args:
+      - /data/repo/hedera-mirror-test/k6/src/web3/apis.js
+    artifactRequest:
+      storageClassName: standard
+      volumeMountPath: /share
+    envConfigMaps:
+      - mapToVariables: true
+        mount: false
+        reference:
+          name: {{ include "hedera-mirror-common.fullname" . }}-test-web3
+    variables:
+      BASE_URL:
+        name: BASE_URL
+        type: basic
+        value: http://{{ .Values.testkube.test.target.release }}-web3.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
+  type: k6-custom/script
+{{- end }}

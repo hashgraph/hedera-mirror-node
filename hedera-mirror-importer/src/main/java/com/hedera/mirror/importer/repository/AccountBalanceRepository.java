@@ -26,7 +26,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface AccountBalanceRepository
-        extends BalanceSnapshotRepository, CrudRepository<AccountBalance, AccountBalance.Id>, RetentionRepository {
+        extends BalanceSnapshotRepository, CrudRepository<AccountBalance, AccountBalance.Id> {
 
     @Modifying
     @Override
@@ -37,7 +37,12 @@ public interface AccountBalanceRepository
         insert into account_balance (account_id, balance, consensus_timestamp)
         select id, balance, :consensusTimestamp
         from entity
-        where deleted is not true and balance is not null
+        where balance is not null and
+          (deleted is not true or balance_timestamp > (
+              select coalesce(max(consensus_timestamp), 0)
+              from account_balance
+              where account_id = 2 and consensus_timestamp > :consensusTimestamp - 2592000000000000
+            ))
         order by id
         """)
     @Transactional
@@ -69,7 +74,6 @@ public interface AccountBalanceRepository
           from account_balance
           where account_id = 2 and consensus_timestamp >= :lowerRangeTimestamp and consensus_timestamp < :upperRangeTimestamp
         """)
-    @Transactional
     Optional<Long> getMaxConsensusTimestampInRange(long lowerRangeTimestamp, long upperRangeTimestamp);
 
     @Override
@@ -78,9 +82,4 @@ public interface AccountBalanceRepository
 
     @EntityGraph("AccountBalance.tokenBalances")
     List<AccountBalance> findByIdConsensusTimestamp(long consensusTimestamp);
-
-    @Modifying
-    @Override
-    @Query(nativeQuery = true, value = "delete from account_balance where consensus_timestamp <= ?1")
-    int prune(long consensusTimestamp);
 }

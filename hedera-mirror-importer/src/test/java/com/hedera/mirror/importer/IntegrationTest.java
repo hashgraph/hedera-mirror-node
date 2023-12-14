@@ -158,6 +158,11 @@ public abstract class IntegrationTest {
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
     }
 
+    protected Boolean tableExists(String name) {
+        return jdbcOperations.queryForObject(
+                "select exists(select 1 from information_schema.tables where table_name = ?)", Boolean.class, name);
+    }
+
     private String getDefaultIdColumns(Class<?> entityClass) {
         Stream<Field> idFields;
         var idClassAnnotation = AnnotationUtils.findAnnotation(entityClass, IdClass.class);

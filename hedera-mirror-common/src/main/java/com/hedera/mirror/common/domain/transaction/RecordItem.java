@@ -159,6 +159,18 @@ public class RecordItem implements StreamItem {
         return transactionRecord.hasParentConsensusTimestamp();
     }
 
+    public boolean isInvalidIdError() {
+        return switch (transactionRecord.getReceipt().getStatus()) {
+            case INVALID_ACCOUNT_ID,
+                    INVALID_CONTRACT_ID,
+                    INVALID_FILE_ID,
+                    INVALID_SCHEDULE_ID,
+                    INVALID_TOKEN_ID,
+                    INVALID_TOPIC_ID -> true;
+            default -> false;
+        };
+    }
+
     // Whether this is a top level, user submitted transaction that could possibly trigger other internal transactions.
     public boolean isTopLevel() {
         return transactionRecord.getTransactionID().getNonce() == 0;

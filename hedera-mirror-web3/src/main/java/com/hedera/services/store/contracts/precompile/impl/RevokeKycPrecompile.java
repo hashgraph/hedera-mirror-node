@@ -79,7 +79,8 @@ public class RevokeKycPrecompile extends AbstractGrantRevokeKycPrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            Timestamp consensusTime, TransactionBody transactionBody, final AccountID sender) {
         requireNonNull(transactionBody, "`body` method should be called before `getMinimumFeeInTinybars`");
         return pricingUtils.getMinimumPriceInTinybars(REVOKE_KYC, consensusTime);
     }

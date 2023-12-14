@@ -46,11 +46,13 @@ var (
 	thirdEntityId         = domain.MustDecodeEntityId(54350)
 	newEntityId           = domain.MustDecodeEntityId(55000)
 	feeCollectorEntityId  = domain.MustDecodeEntityId(98)
+	treasuryEntityId      = domain.MustDecodeEntityId(2)
 	firstAccountId        = types.NewAccountIdFromEntityId(firstEntityId)
 	secondAccountId       = types.NewAccountIdFromEntityId(secondEntityId)
 	newAccountId          = types.NewAccountIdFromEntityId(newEntityId)
 	nodeAccountId         = types.NewAccountIdFromEntityId(nodeEntityId)
 	feeCollectorAccountId = types.NewAccountIdFromEntityId(feeCollectorEntityId)
+	treasuryAccountId     = types.NewAccountIdFromEntityId(treasuryEntityId)
 	tokenId2              = domain.MustDecodeEntityId(26700)
 	tokenId3              = domain.MustDecodeEntityId(26750) // nft
 )
@@ -372,13 +374,13 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 	// given
 	genesisTimestamp := int64(100)
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, genesisTimestamp).
-		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000).
 		Persist()
 
-	transaction := tdomain.NewTransactionBuilder(dbClient, treasury, genesisTimestamp+10).Persist()
+	transaction := tdomain.NewTransactionBuilder(dbClient, treasuryEntityId.EncodedId, genesisTimestamp+10).Persist()
 	transferTimestamp := transaction.ConsensusTimestamp
 	// add crypto transfers
-	tdomain.NewCryptoTransferBuilder(dbClient).Amount(-20).EntityId(treasury).Timestamp(transferTimestamp).Persist()
+	tdomain.NewCryptoTransferBuilder(dbClient).Amount(-20).EntityId(treasuryEntityId.EncodedId).Timestamp(transferTimestamp).Persist()
 	tdomain.NewCryptoTransferBuilder(dbClient).Amount(20).EntityId(3).Timestamp(transferTimestamp).Persist()
 
 	expected := []*types.Transaction{
@@ -387,14 +389,14 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 			Memo: []byte{},
 			Operations: types.OperationSlice{
 				{
-					AccountId: types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(3)),
-					Amount:    &types.HbarAmount{Value: 20},
+					AccountId: treasuryAccountId,
+					Amount:    &types.HbarAmount{Value: -20},
 					Type:      types.OperationTypeFee,
 					Status:    resultSuccess,
 				},
 				{
-					AccountId: types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(treasury)),
-					Amount:    &types.HbarAmount{Value: -20},
+					AccountId: types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(3)),
+					Amount:    &types.HbarAmount{Value: 20},
 					Index:     1,
 					Type:      types.OperationTypeFee,
 					Status:    resultSuccess,
@@ -509,7 +511,7 @@ func (suite *transactionRepositorySuite) setupDb() []*types.Transaction {
 	// create account balance file
 	genesisTimestamp := consensusStart - 200
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, genesisTimestamp).
-		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000).
 		Persist()
 
 	// successful crypto transfer transaction

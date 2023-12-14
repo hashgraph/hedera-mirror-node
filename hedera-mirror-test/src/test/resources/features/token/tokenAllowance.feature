@@ -17,4 +17,4 @@ Feature: Account Crypto Allowance Coverage Feature
     Then the mirror node REST API should confirm the approved allowance for <tokenName> and <spender> no longer exists
     Examples:
       | tokenName  | spender | recipient | approvedAmount | transferAmount |
-      | "FUNGIBLE" | "BOB"   | "ALICE"   | 10000          | 100            |
+      | ALLOWANCEFUNGIBLE | "BOB"   | "ALICE"   | 10000          | 100            |

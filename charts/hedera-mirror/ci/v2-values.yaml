@@ -5,7 +5,6 @@ graphql:
 importer:
   env:
     SPRING_FLYWAY_PLACEHOLDERS_IDPARTITIONSIZE: "1000000000000000"
-    SPRING_FLYWAY_PLACEHOLDERS_PARTITIONSTARTDATE: "(CURRENT_TIMESTAMP - '1970-01-01 00:00:00.000')"
     SPRING_FLYWAY_PLACEHOLDERS_PARTITIONTIMEINTERVAL: "'10 years'"
     SPRING_FLYWAY_PLACEHOLDERS_SHARDCOUNT: "2"
     SPRING_PROFILES_ACTIVE: v2
@@ -36,6 +35,11 @@ rest:
         ],
         "stateproof": { "enabled": false }
       }
+  resources:
+    requests:
+      cpu: 200m
+restjava:
+  enabled: true
   resources:
     requests:
       cpu: 200m

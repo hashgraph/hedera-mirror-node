@@ -38,7 +38,6 @@ import (
 
 const (
 	account1 = int64(9000) + iota
-	treasury
 	account2
 	account3
 	account4
@@ -105,13 +104,13 @@ func (suite *accountRepositorySuite) SetupTest() {
 		Alias(suite.accountAlias).
 		Persist()
 
-	// account balance files, always add an account_balance row for feeCollector
+	// account balance files, always add an account_balance row for treasury
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, firstSnapshotTimestamp).
-		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000_000).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000_000).
 		AddAccountBalance(account1, initialAccountBalance).
 		Persist()
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, thirdSnapshotTimestamp).
-		AddAccountBalance(feeCollectorAccountId.GetId(), 2_000_000_000).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000_000).
 		Persist()
 
 	// crypto transfers happened at <= first snapshot timestamp
@@ -241,7 +240,6 @@ func (suite *accountRepositorySuite) TestGetAccountIdDbConnectionError() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	// given
-	// tokens created at or before first account balance snapshot will not show up in account balance response
 	// transfers before or at the snapshot timestamp should not affect balance calculation
 	accountId := suite.accountId
 	repo := NewAccountRepository(dbClient)
@@ -262,16 +260,15 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapshot() {
 	// given
 	// remove any transfers in db. with the balance info in the second snapshot, this test verifies the account balance
-	// is computed with additional transfers applied on top of the snapshot
+	// is directly read from the snapshot
 	accountId := suite.accountId
 	truncateTables(domain.CryptoTransfer{})
+	balance := initialAccountBalance + sum(cryptoTransferAmounts)
 	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, secondSnapshotTimestamp).
-		AddAccountBalance(account1, initialAccountBalance+sum(cryptoTransferAmounts)).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000_000).
+		AddAccountBalance(account1, balance).
 		Persist()
-	// extra transfers
-	// account balance file time offset is -1, which means the transfer at secondSnapshotTimestamp is not included in
-	// the snapshot. The balance response should include the amount in this transfer too.
-	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
+	hbarAmount := &types.HbarAmount{Value: balance}
 	expectedAmount := types.AmountSlice{hbarAmount}
 	repo := NewAccountRepository(dbClient)
 
@@ -283,6 +280,57 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapsh
 	)
 
 	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
+	assert.ElementsMatch(suite.T(), expectedAmount, actualAmounts)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterThirdSnapshot() {
+	// given
+	accountId := suite.accountId
+	truncateTables(domain.CryptoTransfer{})
+	balance := initialAccountBalance + sum(cryptoTransferAmounts)
+	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, secondSnapshotTimestamp).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000_000).
+		AddAccountBalance(account1, balance).
+		Persist()
+	// No balance info for account1 in the third snapshot due to dedup, i.e., account1's balances at
+	// thirdSnapshotTimestamp is the same as the balance at secondSnapshotTimestamp
+	tdomain.NewAccountBalanceSnapshotBuilder(dbClient, thirdSnapshotTimestamp).
+		AddAccountBalance(treasuryAccountId.GetId(), 2_000_000_000).
+		Persist()
+	// Add a crypto transfer after the third snapshot timestamp
+	tdomain.NewCryptoTransferBuilder(dbClient).
+		Amount(10).
+		EntityId(account1).
+		Timestamp(thirdSnapshotTimestamp + 1).
+		Persist()
+
+	hbarAmount := &types.HbarAmount{Value: balance}
+	expectedAmount := types.AmountSlice{hbarAmount}
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
+		defaultContext,
+		accountId,
+		thirdSnapshotTimestamp,
+	)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
+	assert.ElementsMatch(suite.T(), expectedAmount, actualAmounts)
+
+	// when
+	actualAmounts, accountIdString, err = repo.RetrieveBalanceAtBlock(
+		defaultContext,
+		accountId,
+		thirdSnapshotTimestamp+1,
+	)
+
+	// then
+	hbarAmount.Value += 10
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
 	assert.ElementsMatch(suite.T(), expectedAmount, actualAmounts)
@@ -365,7 +413,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountEntity()
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance() {
 	// given
 	accountId := suite.accountId
-	dbClient.GetDb().Where("account_id <> ?", feeCollectorAccountId.GetId()).Delete(&domain.AccountBalance{})
+	dbClient.GetDb().Where("account_id <> ?", treasuryAccountId.GetId()).Delete(&domain.AccountBalance{})
 
 	hbarAmount := &types.HbarAmount{Value: sum(cryptoTransferAmounts)}
 	expectedAmounts := types.AmountSlice{hbarAmount}

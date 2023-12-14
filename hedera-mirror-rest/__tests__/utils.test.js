@@ -142,6 +142,40 @@ describe('Utils incrementTimestampByOneDay tests', () => {
   });
 });
 
+describe('Utils getFirstDayOfMonth tests', () => {
+  test('Verify 0', () => {
+    const val = utils.getFirstDayOfMonth(0n);
+    expect(val).toBe(0n);
+  });
+
+  test('Verify undefined', () => {
+    expect(utils.getFirstDayOfMonth(undefined)).toBeNull();
+  });
+
+  test('Verify negative', () => {
+    expect(utils.getFirstDayOfMonth(-100n)).toBe(0n);
+  });
+
+  test('Verify end of month', () => {
+    // December 31, 2023 11:59:59 PM
+    const val = utils.getFirstDayOfMonth(1704067199000000000n);
+    // Expected to return: December 1, 2023 12:00:00 AM
+    expect(val).toBe(1701388800000000000n);
+  });
+
+  test('Verify beginning of month', () => {
+    // February 1, 2022 12:00:00 AM
+    const timestamp = 1643673600000000000n;
+    const val = utils.getFirstDayOfMonth(timestamp);
+    expect(val).toBe(timestamp);
+  });
+
+  test('Non BigInt Input', () => {
+    const val = utils.getFirstDayOfMonth(2345);
+    expect(val).toBe(0n);
+  });
+});
+
 describe('Utils createTransactionId tests', () => {
   test('Verify createTransactionId returns correct result for valid inputs', () => {
     expect(utils.createTransactionId('1.2.995', '9223372036854775837')).toEqual('1.2.995-9223372036-854775837');

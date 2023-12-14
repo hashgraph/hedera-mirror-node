@@ -17,16 +17,22 @@
 package com.hedera.mirror.web3.evm.config;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
-import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -51,6 +57,7 @@ import com.hedera.services.hapi.fees.usage.TxnUsageEstimator;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.hapi.utils.fees.CryptoFeeBuilder;
 import com.hedera.services.ledger.TransferLogic;
+import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract;
@@ -113,7 +120,6 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -151,8 +157,9 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    TokenAssociateResourceUsage tokenAssociateResourceUsage(final EstimatorFactory estimatorFactory) {
-        return new TokenAssociateResourceUsage(estimatorFactory);
+    TokenAssociateResourceUsage tokenAssociateResourceUsage(
+            final EstimatorFactory estimatorFactory, final Store store) {
+        return new TokenAssociateResourceUsage(estimatorFactory, store);
     }
 
     @Bean
@@ -161,13 +168,14 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    TokenDissociateResourceUsage tokenDissociateResourceUsage(final EstimatorFactory estimatorFactory) {
-        return new TokenDissociateResourceUsage(estimatorFactory);
+    TokenDissociateResourceUsage tokenDissociateResourceUsage(
+            final EstimatorFactory estimatorFactory, final Store store) {
+        return new TokenDissociateResourceUsage(estimatorFactory, store);
     }
 
     @Bean
-    TokenUpdateResourceUsage tokenUpdateResourceUsage(final EstimatorFactory estimatorFactory) {
-        return new TokenUpdateResourceUsage(estimatorFactory);
+    TokenUpdateResourceUsage tokenUpdateResourceUsage(final EstimatorFactory estimatorFactory, final Store store) {
+        return new TokenUpdateResourceUsage(estimatorFactory, store);
     }
 
     @Bean
@@ -335,8 +343,9 @@ public class ServicesConfiguration {
     AutoCreationLogic autocreationLogic(
             final FeeCalculator feeCalculator,
             final EvmProperties evmProperties,
-            final SyntheticTxnFactory syntheticTxnFactory) {
-        return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory);
+            final SyntheticTxnFactory syntheticTxnFactory,
+            final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory, mirrorEvmContractAliases);
     }
 
     @Bean
@@ -364,8 +373,9 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    TransferLogic transferLogic(final AutoCreationLogic autoCreationLogic) {
-        return new TransferLogic(autoCreationLogic);
+    TransferLogic transferLogic(
+            final AutoCreationLogic autoCreationLogic, final MirrorEvmContractAliases mirrorEvmContractAliases) {
+        return new TransferLogic(autoCreationLogic, mirrorEvmContractAliases);
     }
 
     @Bean
@@ -492,8 +502,8 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    OpUsageCtxHelper opUsageCtxHelper() {
-        return new OpUsageCtxHelper();
+    OpUsageCtxHelper opUsageCtxHelper(final Store store, final HederaEvmContractAliases hederaEvmContractAliases) {
+        return new OpUsageCtxHelper(store, hederaEvmContractAliases);
     }
 
     @Bean
@@ -688,7 +698,36 @@ public class ServicesConfiguration {
     }
 
     @Bean
-    HederaPrngSeedOperation hederaPrngSeedOperation(final GasCalculator gasCalculator, final PrngLogic prngLogic) {
-        return new HederaPrngSeedOperation(gasCalculator, prngLogic);
+    EvmEncodingFacade evmEncodingFacade() {
+        return new EvmEncodingFacade();
+    }
+
+    @Bean
+    EvmInfrastructureFactory evmInfrastructureFactory() {
+        return new EvmInfrastructureFactory(evmEncodingFacade());
+    }
+
+    @Bean
+    EvmHTSPrecompiledContract evmHTSPrecompiledContract() {
+        return new EvmHTSPrecompiledContract(evmInfrastructureFactory());
+    }
+
+    @Bean
+    HTSPrecompiledContract htsPrecompiledContract(
+            final EvmInfrastructureFactory evmInfrastructureFactory,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final PrecompileMapper precompileMapper,
+            final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
+            final Store store,
+            final TokenAccessorImpl tokenAccessor,
+            final PrecompilePricingUtils precompilePricingUtils) {
+        return new HTSPrecompiledContract(
+                evmInfrastructureFactory,
+                mirrorNodeEvmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
     }
 }

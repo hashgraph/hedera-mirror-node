@@ -36,8 +36,11 @@ public class TokenAssociateResourceUsage extends AbstractTokenResourceUsage impl
     private static final BiFunction<TransactionBody, TxnUsageEstimator, TokenAssociateUsage> factory =
             TokenAssociateUsage::newEstimate;
 
-    public TokenAssociateResourceUsage(EstimatorFactory estimatorFactory) {
+    private final Store store;
+
+    public TokenAssociateResourceUsage(EstimatorFactory estimatorFactory, Store store) {
         super(estimatorFactory);
+        this.store = store;
     }
 
     @Override
@@ -46,7 +49,7 @@ public class TokenAssociateResourceUsage extends AbstractTokenResourceUsage impl
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo, Store store) throws Exception {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj svo) throws Exception {
         final var op = txn.getTokenAssociate();
         final var account = store.getAccount(EntityIdUtils.asTypedEvmAddress(op.getAccount()), OnMissing.DONT_THROW);
 

@@ -61,6 +61,8 @@ public interface Store {
 
     void updateAccount(Account updatedAccount);
 
+    void linkAlias(final Address alias, final Address address);
+
     void deleteAccount(Address accountAddress);
 
     void updateTokenRelationship(TokenRelationship updatedTokenRelationship);
@@ -89,7 +91,7 @@ public interface Store {
 
     Token loadUniqueTokens(Token token, List<Long> serialNumbers);
 
-    boolean exists(AccountID accountID);
+    boolean exists(Address accountID);
 
     enum OnMissing {
         THROW,

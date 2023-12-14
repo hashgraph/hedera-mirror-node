@@ -43,6 +43,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.TokenModificationResult;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.txn.token.MintLogic;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -116,7 +117,8 @@ public class MintPrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime, final TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            final Timestamp consensusTime, final TransactionBody transactionBody, final AccountID sender) {
         final var isNftMint = transactionBody.getTokenMint().getMetadataCount() > 0;
         return pricingUtils.getMinimumPriceInTinybars(isNftMint ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
     }

@@ -30,15 +30,18 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
 
     private static final String INITIALIZE_ENTITY_BALANCE_SQL =
             """
-            with timestamp_range as (
+            with last_record_file as (
+              select consensus_end
+              from record_file
+              order by consensus_end desc
+              limit 1
+            ), timestamp_range as (
               select
                 consensus_timestamp as snapshot_timestamp,
                 consensus_timestamp + time_offset as from_timestamp,
                 consensus_end as to_timestamp
-              from account_balance_file
-              join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
-                on consensus_timestamp + time_offset <= consensus_end
-              where synthetic is false
+              from account_balance_file, last_record_file
+              where synthetic is false and consensus_timestamp + time_offset <= consensus_end
               order by consensus_timestamp desc
               limit 1
             ), snapshot as (
@@ -55,15 +58,18 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
               select
                 coalesce(account_id, entity_id) as account_id,
                 coalesce(balance, 0) + coalesce(amount, 0) as balance,
+                consensus_end as balance_timestamp,
                 case when balance is not null then false end as deleted
               from snapshot
-              full outer join change on account_id = entity_id
+                full outer join change on account_id = entity_id,
+                last_record_file
             )
-            insert into entity (balance, deleted, id, num, realm, shard, timestamp_range)
-            select s.balance, s.deleted, s.account_id, (s.account_id & 4294967295), ((s.account_id >> 32) & 65535), (s.account_id  >> 48), '[0,)'
+            insert into entity (balance, balance_timestamp, deleted, id, num, realm, shard, timestamp_range)
+            select s.balance, s.balance_timestamp, s.deleted, s.account_id, (s.account_id & 4294967295), ((s.account_id >> 32) & 65535), (s.account_id  >> 48), '[0,)'
             from state s
             on conflict (id) do update
-            set balance = excluded.balance;
+            set balance = excluded.balance,
+                balance_timestamp = coalesce(entity.balance_timestamp, excluded.balance_timestamp);
             """;
 
     private final JdbcOperations jdbcOperations;
@@ -85,7 +91,7 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.86.0");
+        return MigrationVersion.fromVersion("1.87.2"); // The version entity.balance_timestamp is added
     }
 
     @Override

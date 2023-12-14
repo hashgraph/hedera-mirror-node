@@ -44,6 +44,44 @@ Feature: in-equivalence tests
     Then I verify extcodecopy opcode against a system account "0.0.999" address returns empty bytes
     Then I verify extcodehash opcode against a system account "0.0.999" address returns empty bytes
 
+  Scenario Outline: Validate direct calls
+    Given I successfully create estimate precompile contract
+    Given I successfully create equivalence call contract
+    Then I execute directCall to "0.0.0" address without amount
+    Then I execute directCall to "0.0.0" address with amount 10000
+    #Then I execute directCall to range <account> addresses via HTS Precompile without amount
+    #Then I execute directCall to range <accountsMiddleRange> addresses without amount
+    #Then I execute directCall to range <accountsMiddleRange> addresses with amount 10000
+    Then I execute directCall to address "0.0.1005" with contract without amount
+    Then I execute directCall to address above 1000 with invalid contractID without amount
+    Then I execute directCall to address above 1000 with contract without amount 1000
+    #Then I execute directCall to address "0.0.1005" with contract with amount 100
+    Then I execute directCall to address with non-payable contract with amount 500
+    Then I execute directCall to address with contract with amount 500 with receiverSig false
+    Then I execute directCall to address with contract with amount 400 with receiverSig true
+    Then I execute directCall to address with contract with amount 100 with hollow account
+    Examples:
+      | account   | accountsMiddleRange | accountsUpperRange |
+      | "0.0.0"   | "0.0.359"           | "0.0.749"          |
+      | "0.0.1"   | "0.0.360"           | "0.0.750"          |
+      | "0.0.2"   | "0.0.361"           | "0.0.751"          |
+      | "0.0.3"   | "0.0.362"           | "0.0.752"          |
+      | "0.0.4"   | "0.0.363"           | "0.0.753"          |
+      | "0.0.5"   | "0.0.364"           | "0.0.754"          |
+      | "0.0.6"   | "0.0.365"           | "0.0.859"          |
+      | "0.0.7"   | "0.0.366"           | "0.0.860"          |
+      | "0.0.8"   | "0.0.367"           | "0.0.925"          |
+      | "0.0.9"   | "0.0.368"           | "0.0.978"          |
+      | "0.0.10"  | "0.0.500"           | "0.0.990"          |
+      | "0.0.11"  | "0.0.555"           | "0.0.991"          |
+      | "0.0.356" | "0.0.628"           | "0.0.992"          |
+      | "0.0.357" | "0.0.629"           | "0.0.993"          |
+      | "0.0.358" | "0.0.747"           | "0.0.997"          |
+      | "0.0.359" | "0.0.748"           | "0.0.998"          |
+      | "0.0.360" | "0.0.749"           | "0.0.999"          |
+      | "0.0.361" | "0.0.750"           | "0.0.1000"         |
+      | "0.0.750" | "0.0.751"           | "0.0.1001"         |
+
   Scenario Outline: Validate in-equivalence tests for system accounts with call, staticcall, delegatecall
   and callcode
     Given I successfully create equivalence call contract
@@ -94,16 +132,27 @@ Feature: in-equivalence tests
     Then I execute internal "call" against Ripemd-160 precompile
     Then I execute internal "staticcall" against Ripemd-160 precompile
     Then I execute internal "delegatecall" against Ripemd-160 precompile
-    Then I execute directCall to "0.0.0" address without amount
-    Then I execute directCall to "0.0.0" address with amount 10000
-    Then I make internal call to ethereum precompile "0.0.1" address with amount
-    Then I make internal call to ethereum precompile "0.0.9" address with amount
-    Then I execute internal call against PRNG precompile address without amount
-    Then I execute internal call against PRNG precompile address with amount
-    Then I execute internal call against exchange rate precompile address without amount
-    Then I execute internal call against exchange rate precompile address with amount
-    Then I execute internal "call" against HTS precompile with approve function for "FUNGIBLE" "without" amount
-    Then I execute internal "call" against HTS precompile with approve function for "FUNGIBLE" "with" amount
+    Then I make internal "call" to ethereum precompile "0.0.1" address with amount
+    Then I make internal "call" to ethereum precompile "0.0.9" address with amount
+    Then I make internal "callcode" to ethereum precompile "0.0.1" address with amount
+    Then I make internal "callcode" to ethereum precompile "0.0.9" address with amount
+    Then I execute internal "call" against PRNG precompile address "without" amount
+    Then I execute internal "call" against PRNG precompile address "with" amount
+    Then I execute internal "staticcall" against PRNG precompile address "without" amount
+    Then I execute internal "delegatecall" against PRNG precompile address "without" amount
+    Then I execute internal "callcode" against PRNG precompile address "without" amount
+    Then I execute internal "callcode" against PRNG precompile address "with" amount
+    Then I execute internal "call" against exchange rate precompile address "without" amount
+    Then I execute internal "call" against exchange rate precompile address "with" amount
+    Then I execute internal "staticcall" against exchange rate precompile address "without" amount
+    Then I execute internal "delegatecall" against exchange rate precompile address "without" amount
+    Then I execute internal "call" against HTS precompile with isToken function for "FUNGIBLE" "without" amount
+    Then I execute internal "call" against HTS precompile with isToken function for "FUNGIBLE" "with" amount
+    Then I execute internal "staticcall" against HTS precompile with isToken function for "FUNGIBLE" "without" amount
+    Then I execute internal "delegatecall" against HTS precompile with isToken function for "FUNGIBLE" "without" amount
+#    Then I execute internal "callcode" against HTS precompile with isToken function for "FUNGIBLE" "without" amount -> throws precompile_error needs to be invesitgated
+#    Then I execute internal "callcode" against HTS precompile with isToken function for "FUNGIBLE" "with" amount -> throws precompile_error needs to be invesitgated
+
 
   Scenario Outline: Validate in-equivalence tests for HTS Transfers
     Given I successfully create estimate precompile contract
@@ -115,7 +164,6 @@ Feature: in-equivalence tests
     Then I call precompile with transfer "NFT" token to a <account> address
     Then I call precompile with transferFrom "FUNGIBLE" token to a <account> address
     Then I call precompile with transferFrom "NFT" token to a <account> address
-
 
     Examples:
       | account     |
@@ -152,8 +200,8 @@ Feature: in-equivalence tests
     Then I call precompile with transferFromNFT to a "0.0.9" address
     Then I call precompile with transferFromNFT to a "0.0.10" address
     Then I call precompile with transferFromNFT to a "0.0.11" address
-    #Then I call precompile with transferFromNFT to a "0.0.350" address  INVALID_ALIAS_KEY
-    #Then I call precompile with transferFromNFT to a "0.0.357" address  INVALID_ALIAS_KEY
+#    Then I call precompile with transferFromNFT to a "0.0.350" address  INVALID_ALIAS_KEY
+#    Then I call precompile with transferFromNFT to a "0.0.357" address  INVALID_ALIAS_KEY
 #    Then I call precompile with transferFromNFT to a "0.0.358" address  INVALID_ALIAS_KEY
 #    Then I call precompile with transferFromNFT to a "0.0.359" address  INVALID_ALIAS_KEY
 #    Then I call precompile with transferFromNFT to a "0.0.360" address  INVALID_ALIAS_KEY
@@ -163,7 +211,7 @@ Feature: in-equivalence tests
     Then I call precompile with transferFrom "NFT" token to a contract
     Then I call precompile with transferFrom "FUNGIBLE" token to a contract
     Then I call precompile with transferFrom "FUNGIBLE" token to a "BOB" EVM address
-    #Then I call precompile with transferFrom "NFT" token to a "BOB" EVM address //success, should fail
+#    Then I call precompile with transferFrom "NFT" token to a "BOB" EVM address //success, should fail
     Given I mint a new nft
     Then I call precompile with transferFrom "NFT" token to a "ALICE" EVM address
     Then I call precompile with transferFrom "FUNGIBLE" token to a "ALICE" EVM address

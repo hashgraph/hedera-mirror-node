@@ -27,6 +27,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
-    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     @ParameterizedTest
     @EnumSource(ContractReadFunctions.class)
@@ -163,8 +163,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessage(ERROR_MESSAGE);
+                .isInstanceOf(InvalidTransactionException.class)
+                .hasMessage("Precompile result is null");
     }
 
     private static long getValue(SupportedContractModificationFunctions contractFunc) {

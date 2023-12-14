@@ -16,10 +16,13 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.DEFAULT_GAS_PRICE;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.fungible;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.successResult;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.impl.WipeFungiblePrecompile.getWipeWrapper;
@@ -30,15 +33,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mockStatic;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
@@ -61,19 +63,18 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,12 +92,9 @@ class WipeFungiblePrecompileTest {
     private static final Bytes FUNGIBLE_WIPE_INPUT_V2 = Bytes.fromHexString(
             "0xefef57f900000000000000000000000000000000000000000000000000000000000006aa00000000000000000000000000000000000000000000000000000000000006a8000000000000000000000000000000000000000000000000000000000000000a");
     private final TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
-            .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder().setToken(fungible));
-
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
+            .setTokenWipe(TokenWipeAccountTransactionBody.newBuilder()
+                    .setToken(fungible)
+                    .setAccount(HTSTestsUtil.contract));
 
     @Mock
     private MessageFrame frame;
@@ -135,9 +133,6 @@ class WipeFungiblePrecompileTest {
     private Store store;
 
     @Mock
-    private HederaEvmContractAliases hederaEvmContractAliases;
-
-    @Mock
     private Token token;
 
     @Mock
@@ -152,15 +147,26 @@ class WipeFungiblePrecompileTest {
     @Mock
     private TokenModificationResult tokenModificationResult;
 
+    @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
+    private Deque<MessageFrame> stack;
+
+    @Mock
+    private TokenAccessor tokenAccessor;
+
+    @Mock
+    private PrecompileContext precompileContext;
+
     @InjectMocks
     private MirrorNodeEvmProperties evmProperties;
 
     private HTSPrecompiledContract subject;
+    private WipeFungiblePrecompile wipeFungiblePrecompile;
 
     @BeforeEach
     void setUp() throws IOException {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(
                 HederaFunctionality.TokenAccountWipe, Map.of(SubType.TOKEN_FUNGIBLE_COMMON, BigDecimal.valueOf(0)));
@@ -170,16 +176,17 @@ class WipeFungiblePrecompileTest {
 
         SyntheticTxnFactory syntheticTxnFactory = new SyntheticTxnFactory();
         WipeLogic wipeLogic = new WipeLogic(evmProperties);
-        final var wipePrecompile = new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
-        PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipePrecompile));
+        wipeFungiblePrecompile = new WipeFungiblePrecompile(precompilePricingUtils, syntheticTxnFactory, wipeLogic);
+        PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(wipeFungiblePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
-    }
-
-    @AfterEach
-    void closeMocks() {
-        staticMock.close();
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
     }
 
     @Test
@@ -191,13 +198,19 @@ class WipeFungiblePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(wipeFungiblePrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
         subject.prepareFields(frame);
-        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -212,13 +225,19 @@ class WipeFungiblePrecompileTest {
 
         given(feeCalculator.estimatedGasPriceInTinybars(HederaFunctionality.ContractCall, timestamp))
                 .willReturn(1L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any())).willReturn(mockFeeObject);
+        given(feeCalculator.computeFee(any(), any(), any())).willReturn(mockFeeObject);
         given(mockFeeObject.getServiceFee()).willReturn(1L);
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(wipeFungiblePrecompile);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
         subject.prepareFields(frame);
-        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a, precompileContext);
+        subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
         final var result = subject.computeInternal(frame);
 
         assertEquals(successResult, result);
@@ -229,18 +248,25 @@ class WipeFungiblePrecompileTest {
         // given
         givenMinFrameContext();
         givenPricingUtilsContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(DEFAULT_GAS_PRICE);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
 
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(wipeFungiblePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+
         subject.prepareFields(frame);
-        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.prepareComputation(FUNGIBLE_WIPE_INPUT, a -> a, precompileContext);
+        final long result =
+                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
 
         // then
         assertEquals(EXPECTED_GAS_PRICE, result);
@@ -296,6 +322,5 @@ class WipeFungiblePrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(contractAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
     }
 }

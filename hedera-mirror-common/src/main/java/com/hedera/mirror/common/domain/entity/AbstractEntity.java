@@ -22,7 +22,6 @@ import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.util.DomainUtils;
-import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -34,7 +33,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Data
 @MappedSuperclass
@@ -59,9 +59,9 @@ public abstract class AbstractEntity implements History {
     @UpsertColumn(
             coalesce =
                     """
-            case when coalesce(e_type, type) in (''ACCOUNT'', ''CONTRACT'') then coalesce(e_{0}, 0) + coalesce({0}, 0)
-                 when e_{0} is not null then e_{0} + coalesce({0}, 0)
-            end""")
+                            case when coalesce(e_type, type) in (''ACCOUNT'', ''CONTRACT'') then coalesce(e_{0}, 0) + coalesce({0}, 0)
+                                 when e_{0} is not null then e_{0} + coalesce({0}, 0)
+                            end""")
     private Long balance;
 
     private Long balanceTimestamp;
@@ -76,9 +76,9 @@ public abstract class AbstractEntity implements History {
     @UpsertColumn(
             coalesce =
                     """
-            case when coalesce(e_type, type) = ''ACCOUNT'' then coalesce({0}, e_{0}, {1})
-                 else coalesce({0}, e_{0})
-            end""")
+                            case when coalesce(e_type, type) = ''ACCOUNT'' then coalesce({0}, e_{0}, {1})
+                                 else coalesce({0}, e_{0})
+                            end""")
     private Long ethereumNonce;
 
     @Column(updatable = false)
@@ -128,7 +128,7 @@ public abstract class AbstractEntity implements History {
     private Range<Long> timestampRange;
 
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private EntityType type;
 
     public void addBalance(Long balance) {

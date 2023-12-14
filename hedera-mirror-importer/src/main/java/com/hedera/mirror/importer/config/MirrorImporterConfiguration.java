@@ -16,16 +16,9 @@
 
 package com.hedera.mirror.importer.config;
 
-import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 import com.hedera.mirror.importer.leader.LeaderService;
-import com.hedera.mirror.importer.parser.CommonParserProperties;
-import com.hedera.mirror.importer.parser.batch.BatchPersister;
-import com.hedera.mirror.importer.parser.batch.BatchUpserter;
-import com.hedera.mirror.importer.repository.upsert.DeletedTokenDissociateTransferUpsertQueryGenerator;
-import io.micrometer.core.instrument.MeterRegistry;
-import javax.sql.DataSource;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -48,10 +41,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @CustomLog
 @RequiredArgsConstructor
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
-public class MirrorImporterConfiguration {
-
-    public static final String DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER =
-            "deletedTokenDissociateTransferBatchPersister";
+class MirrorImporterConfiguration {
 
     private final MirrorProperties mirrorProperties;
 
@@ -81,17 +71,6 @@ public class MirrorImporterConfiguration {
             }
             configuration.getPlaceholders().put("topicRunningHashV2AddedTimestamp", timestamp.toString());
         };
-    }
-
-    @Bean(name = DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER)
-    BatchPersister deletedTokenDissociateTransferBatchPersister(
-            DataSource dataSource, MeterRegistry meterRegistry, CommonParserProperties parserProperties) {
-        return new BatchUpserter(
-                TokenTransfer.class,
-                dataSource,
-                meterRegistry,
-                parserProperties,
-                new DeletedTokenDissociateTransferUpsertQueryGenerator());
     }
 
     @Configuration

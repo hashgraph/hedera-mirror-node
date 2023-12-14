@@ -32,6 +32,7 @@ import com.hedera.services.store.contracts.precompile.codec.RunResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.tokens.HederaTokenStore;
 import com.hedera.services.txns.validation.OptionValidator;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Objects;
@@ -65,7 +66,7 @@ public abstract class AbstractTokenUpdatePrecompile extends AbstractWritePrecomp
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody, AccountID sender) {
         return pricingUtils.getMinimumPriceInTinybars(UPDATE, consensusTime);
     }
 

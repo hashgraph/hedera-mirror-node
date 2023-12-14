@@ -45,7 +45,6 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQ
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
 import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -54,6 +53,7 @@ import com.hedera.services.hapi.utils.fees.FeeBuilder;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -140,11 +140,7 @@ public class PrecompilePricingUtils {
         return FeeBuilder.getTinybarsFromTinyCents(exchange.rate(timestamp), getCanonicalPriceInTinyCents(gasCostType));
     }
 
-    public long gasFeeInTinybars(
-            final TransactionBody.Builder txBody,
-            final Timestamp timestamp,
-            final Store store,
-            final HederaEvmContractAliases mirrorEvmContractAliases) {
+    public long gasFeeInTinybars(final TransactionBody.Builder txBody, final Timestamp timestamp) {
         final var signedTxn = SignedTransaction.newBuilder()
                 .setBodyBytes(txBody.build().toByteString())
                 .setSigMap(SignatureMap.getDefaultInstance())
@@ -153,13 +149,13 @@ public class PrecompilePricingUtils {
                 .setSignedTransactionBytes(signedTxn.toByteString())
                 .build();
         final var accessor = accessorFactory.uncheckedSpecializedAccessor(txn);
-        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, store, timestamp, mirrorEvmContractAliases);
+        final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost, final Store store) {
+    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
         final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
-        final var fees = feeCalculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, store, now, ANSWER_ONLY);
+        final var fees = feeCalculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, now, ANSWER_ONLY);
 
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, now);
         final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
@@ -176,8 +172,7 @@ public class PrecompilePricingUtils {
             final long blockTimestamp,
             final Precompile precompile,
             final TransactionBody.Builder transactionBody,
-            final Store store,
-            final HederaEvmContractAliases mirrorEvmContractAliases) {
+            final AccountID sender) {
         final Timestamp timestamp =
                 Timestamp.newBuilder().setSeconds(blockTimestamp).build();
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, timestamp);
@@ -186,11 +181,10 @@ public class PrecompilePricingUtils {
                 transactionBody.setTransactionID(TransactionID.newBuilder()
                         .setTransactionValidStart(timestamp)
                         .build()),
-                timestamp,
-                store,
-                mirrorEvmContractAliases);
+                timestamp);
 
-        final long minimumFeeInTinybars = precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build());
+        final long minimumFeeInTinybars =
+                precompile.getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender);
         final long actualFeeInTinybars = Math.max(minimumFeeInTinybars, calculatedFeeInTinybars);
 
         // convert to gas cost

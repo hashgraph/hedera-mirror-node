@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.parser.record.entity.notify;
 
 import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT_MAPPER;
+import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
@@ -26,7 +27,6 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import javax.sql.DataSource;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.postgresql.jdbc.PgConnection;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +49,7 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
     void onTopicMessagePayloadTooLong() throws InterruptedException {
         // given
         TopicMessage topicMessage = domainBuilder.topicMessage().get();
-        topicMessage.setMessage(RandomUtils.nextBytes(5824)); // Just exceeds 8000B
+        topicMessage.setMessage(nextBytes(5824)); // Just exceeds 8000B
         var topicMessages = subscribe(topicMessage.getTopicId());
 
         // when

@@ -39,9 +39,6 @@ spec:
             - containerPort: 3000
               name: api
               protocol: TCP
-            - containerPort: 8080
-              name: ui
-              protocol: TCP
           readinessProbe:
             httpGet:
               path: /health/readiness
@@ -57,8 +54,6 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
-            - name: pm2
-              mountPath: /home/node/.pm2
       imagePullSecrets: {{ toYaml .Values.monitor.imagePullSecrets | nindent 8 }}
       nodeSelector: {{ toYaml .Values.monitor.nodeSelector | nindent 8 }}
       priorityClassName: {{ .Values.monitor.priorityClassName }}
@@ -75,7 +70,4 @@ spec:
         - name: config
           secret:
             secretName: {{ include "hedera-mirror-rest.fullname" . }}-monitor
-        - name: pm2
-          emptyDir:
-            medium: Memory
 {{- end }}

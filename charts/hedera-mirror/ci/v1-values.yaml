@@ -34,5 +34,10 @@ rest:
   resources:
     requests:
       cpu: 200m
-  rosetta:
-    enabled: true
+restjava:
+  enabled: true
+  resources:
+    requests:
+      cpu: 200m
+rosetta:
+  enabled: true

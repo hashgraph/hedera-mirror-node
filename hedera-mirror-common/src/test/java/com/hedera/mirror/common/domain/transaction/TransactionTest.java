@@ -71,7 +71,7 @@ class TransactionTest {
 
         var domainBuilder = new DomainBuilder();
         var itemizedTransfer1 = ItemizedTransfer.builder()
-                .amount(domainBuilder.id())
+                .amount(domainBuilder.number())
                 .entityId(domainBuilder.entityId())
                 .isApproval(false)
                 .build();
@@ -79,7 +79,7 @@ class TransactionTest {
         assertThat(transaction.getItemizedTransfer()).containsExactly(itemizedTransfer1);
 
         var itemizedTransfer2 = ItemizedTransfer.builder()
-                .amount(domainBuilder.id())
+                .amount(domainBuilder.number())
                 .entityId(domainBuilder.entityId())
                 .isApproval(true)
                 .build();

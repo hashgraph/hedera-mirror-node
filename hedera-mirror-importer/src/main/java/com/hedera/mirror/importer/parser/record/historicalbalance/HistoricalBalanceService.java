@@ -20,13 +20,13 @@ import static com.hedera.mirror.common.domain.balance.AccountBalanceFile.INVALID
 import static com.hedera.mirror.importer.parser.AbstractStreamFileParser.STREAM_PARSE_DURATION_METRIC_NAME;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.domain.StreamFilename.FileType;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.RecordFileParsedEvent;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
@@ -57,7 +57,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class HistoricalBalanceService {
 
     private static final String ACCOUNT_BALANCE_TABLE_NAME = "account_balance";
-    private static final Range<Long> DEFAULT_RANGE = Range.closedOpen(0L, Long.MAX_VALUE);
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
@@ -132,10 +131,11 @@ public class HistoricalBalanceService {
                         // This should never happen since the function is triggered after a record file is parsed
                         .orElseThrow(() -> new ParserException("Record file table is empty"));
 
-                Optional<Long> maxConsensusTimestamp = getMaxConsensusTimestamp(timestamp);
+                var maxConsensusTimestamp = getMaxConsensusTimestamp(timestamp);
+                boolean full = maxConsensusTimestamp.isEmpty();
                 int accountBalancesCount;
                 int tokenBalancesCount;
-                if (maxConsensusTimestamp.isEmpty()) {
+                if (full) {
                     // get a full snapshot
                     accountBalancesCount = accountBalanceRepository.balanceSnapshot(timestamp);
                     tokenBalancesCount =
@@ -164,7 +164,8 @@ public class HistoricalBalanceService {
                 accountBalanceFileRepository.save(accountBalanceFile);
 
                 log.info(
-                        "Generated historical account balance file {} with {} account balances and {} token balances in {}",
+                        "Generated {} historical account balance file {} with {} account balances and {} token balances in {}",
+                        full ? "full" : "deduped",
                         filename,
                         accountBalancesCount,
                         tokenBalancesCount,
@@ -185,15 +186,14 @@ public class HistoricalBalanceService {
     }
 
     private Optional<Long> getMaxConsensusTimestamp(long timestamp) {
-        if (!properties.isDeduplicate()) {
-            return Optional.empty();
-        }
-
         var partitions =
                 timePartitionService.getOverlappingTimePartitions(ACCOUNT_BALANCE_TABLE_NAME, timestamp, timestamp);
-        // After v1 account_balance and token_balance are partitioned an empty partition should throw an exception
-        var partitionRange =
-                partitions.isEmpty() ? DEFAULT_RANGE : partitions.get(0).getTimestampRange();
+        if (partitions.isEmpty()) {
+            throw new InvalidDatasetException(
+                    String.format("No account_balance partition found for timestamp %s", timestamp));
+        }
+
+        var partitionRange = partitions.get(0).getTimestampRange();
         return accountBalanceRepository.getMaxConsensusTimestampInRange(
                 partitionRange.lowerEndpoint(), partitionRange.upperEndpoint());
     }

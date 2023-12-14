@@ -19,7 +19,6 @@ package com.hedera.mirror.common.domain.contract;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import io.hypersistence.utils.hibernate.type.basic.PostgreSQLEnumType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -31,7 +30,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
@@ -47,7 +47,7 @@ public class ContractAction implements Persistable<ContractAction.Id> {
     private EntityId caller;
 
     @Enumerated(EnumType.STRING)
-    @Type(PostgreSQLEnumType.class)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private EntityType callerType;
 
     private int callOperationType;

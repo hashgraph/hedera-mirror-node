@@ -16,9 +16,12 @@
 
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.TEST_CONSENSUS_TIME;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.recipientAddress;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.senderAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.timestamp;
 import static com.hedera.services.store.contracts.precompile.TokenCreateWrapper.FixedFeeWrapper.FixedFeePayment.USE_CURRENTLY_CREATED_TOKEN;
@@ -50,8 +53,7 @@ import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -59,6 +61,7 @@ import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdat
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
@@ -173,8 +176,8 @@ class TokenCreatePrecompileTest {
     @Mock
     private CreateLogic createLogic;
 
-    @Mock
-    private TransactionBody transactionBody;
+    private TransactionBody.Builder transactionBody =
+            TransactionBody.newBuilder().setTokenCreation(TokenCreateTransactionBody.newBuilder());
 
     @Mock
     private MessageFrame frame;
@@ -210,18 +213,19 @@ class TokenCreatePrecompileTest {
     private Iterator<MessageFrame> dequeIterator;
 
     @Mock
+    private MessageFrame lastFrame;
+
+    @Mock
     private HederaEvmContractAliases hederaEvmContractAliases;
 
     @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
+    private TokenAccessor tokenAccessor;
+
+    @Mock
+    private PrecompileContext precompileContext;
 
     private TokenCreatePrecompile tokenCreatePrecompile;
     private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
-
-    private MockedStatic<ContractCallContext> staticMock;
-
-    @Mock
-    private ContractCallContext contractCallContext;
 
     private HTSPrecompiledContract subject;
     protected static final byte[] ED25519_KEY = new byte[] {
@@ -231,13 +235,11 @@ class TokenCreatePrecompileTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        staticMock = mockStatic(ContractCallContext.class);
-        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
         final Map<HederaFunctionality, Map<SubType, BigDecimal>> canonicalPrices = new HashMap<>();
         canonicalPrices.put(TokenCreate, Map.of(SubType.DEFAULT, BigDecimal.valueOf(0)));
         given(assetLoader.loadCanonicalPrices()).willReturn(canonicalPrices);
 
-        final var precompilePricingUtils =
+        final PrecompilePricingUtils precompilePricingUtils =
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
         final var syntheticTxnFactory = new SyntheticTxnFactory();
         tokenCreatePrecompile = new TokenCreatePrecompile(
@@ -245,7 +247,13 @@ class TokenCreatePrecompileTest {
         final var precompileMapper = new PrecompileMapper(Set.of(tokenCreatePrecompile));
 
         subject = new HTSPrecompiledContract(
-                infrastructureFactory, evmProperties, precompileMapper, evmHTSPrecompiledContract);
+                infrastructureFactory,
+                evmProperties,
+                precompileMapper,
+                evmHTSPrecompiledContract,
+                store,
+                tokenAccessor,
+                precompilePricingUtils);
     }
 
     @AfterEach
@@ -253,13 +261,13 @@ class TokenCreatePrecompileTest {
         if (staticTokenCreatePrecompile != null) {
             staticTokenCreatePrecompile.close();
         }
-        staticMock.close();
     }
 
     @Test
     void testMinimumFeeInTinyBars() {
         final var expectedFee = 100_000L;
-        final var minimumFee = tokenCreatePrecompile.getMinimumFeeInTinybars(HTSTestsUtil.timestamp, transactionBody);
+        final var minimumFee =
+                tokenCreatePrecompile.getMinimumFeeInTinybars(HTSTestsUtil.timestamp, transactionBody.build(), sender);
         assertEquals(expectedFee, minimumFee);
     }
 
@@ -631,6 +639,7 @@ class TokenCreatePrecompileTest {
     void gasAndValueRequirementCalculationWorksAsExpected() {
         // given
         givenMinFrameContext();
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(worldUpdater.permissivelyUnaliased(any()))
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         final var transactionBody =
@@ -641,14 +650,21 @@ class TokenCreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenCreatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
 
         subject.prepareFields(frame);
-        subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a);
-        final long result = subject.getPrecompile()
-                .getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, store, hederaEvmContractAliases);
+        subject.prepareComputation(CREATE_NON_FUNGIBLE_NO_FEES_INPUT, a -> a, precompileContext);
+        final long result =
+                subject.getPrecompile(frame).getGasRequirement(TEST_CONSENSUS_TIME, transactionBody, sender);
 
         // then
-        assertEquals(subject.getPrecompile().getMinimumFeeInTinybars(timestamp, transactionBody.build()), result);
+        assertEquals(
+                subject.getPrecompile(frame).getMinimumFeeInTinybars(timestamp, transactionBody.build(), sender),
+                result);
     }
 
     @Test
@@ -714,6 +730,13 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenCreatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
+
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1,
                 new KeyValueWrapper(
@@ -960,7 +983,6 @@ class TokenCreatePrecompileTest {
                 .when(() -> decodeFungibleCreate(eq(CREATE_FUNGIBLE_NO_FEES_INPUT), any()))
                 .thenReturn(tokenCreateWrapper);
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
-        given(frame.getRemainingGas()).willReturn(10_000_000L);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         // when:
         final var result = subject.computePrecompile(CREATE_FUNGIBLE_NO_FEES_INPUT, frame);
@@ -1077,9 +1099,6 @@ class TokenCreatePrecompileTest {
 
     private void givenMinFrameContext() {
         given(frame.getSenderAddress()).willReturn(senderAddress);
-        given(frame.getWorldUpdater()).willReturn(worldUpdater);
-        given(worldUpdater.getStore()).willReturn(store);
-        given(worldUpdater.aliases()).willReturn(mirrorEvmContractAliases);
     }
 
     private void givenIfDelegateCall() {
@@ -1098,13 +1117,13 @@ class TokenCreatePrecompileTest {
         givenValidGasCalculation();
         given(store.getAccount(senderAddress, OnMissing.THROW)).willReturn(senderAccount);
         given(senderAccount.getBalance()).willReturn(1000L);
-        given(feeCalculator.computeFee(any(), any(), any(), any(), any()))
+        given(feeCalculator.computeFee(any(), any(), any()))
                 .willReturn(new FeeObject(TEST_NODE_FEE, TEST_NETWORK_FEE, TEST_SERVICE_FEE));
         // when:
         given(frame.getRemainingGas()).willReturn(100_000L);
         given(frame.getValue()).willReturn(Wei.of(90_000_000_000L));
         subject.prepareFields(frame);
-        subject.prepareComputation(pretendArguments, a -> a);
+        subject.prepareComputation(pretendArguments, a -> a, precompileContext);
         final var result = subject.computeInternal(frame);
 
         // then:
@@ -1119,5 +1138,14 @@ class TokenCreatePrecompileTest {
 
     private void prepareStaticContext() {
         staticTokenCreatePrecompile = mockStatic(TokenCreatePrecompile.class);
+
+        given(frame.getWorldUpdater()).willReturn(worldUpdater);
+        given(worldUpdater.getStore()).willReturn(store);
+        given(frame.getMessageFrameStack()).willReturn(stack);
+        given(stack.getLast()).willReturn(lastFrame);
+        given(lastFrame.getContextVariable(PRECOMPILE_CONTEXT)).willReturn(precompileContext);
+        given(precompileContext.getPrecompile()).willReturn(tokenCreatePrecompile);
+        given(precompileContext.getSenderAddress()).willReturn(senderAddress);
+        given(precompileContext.getTransactionBody()).willReturn(transactionBody);
     }
 }
