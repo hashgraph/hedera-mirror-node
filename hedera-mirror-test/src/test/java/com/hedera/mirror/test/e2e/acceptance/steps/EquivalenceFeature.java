@@ -55,10 +55,10 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import jakarta.xml.bind.DatatypeConverter;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -425,6 +425,28 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
+    @Then("I execute internal {string} against {string} contract {string} amount")
+    public void executeInternalCallAgainstContract(String call, String payable, String amountType) {
+        var callType = getMethodName(call, amountType);
+        AccountId receiverContract;
+        if (payable.equals("payable")) {
+            receiverContract = AccountId.fromSolidityAddress(
+                    deployedEquivalenceDestruct.contractId().toSolidityAddress());
+        } else {
+            receiverContract = AccountId.fromSolidityAddress(
+                    deployedEquivalenceCall.contractId().toSolidityAddress());
+        }
+        var parameters = new ContractFunctionParameters()
+                .addAddress(receiverContract.toSolidityAddress())
+                .addBytes(new byte[0]);
+        if (amountType.equals("with")) {
+            var result = executeContractCallTransaction(
+                    deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(123L));
+        } else {
+            var result = executeContractCallTransaction(deployedEquivalenceCall, callType, parameters);
+        }
+    }
+
     @Then("I execute internal {string} against Ecrecover precompile")
     public void executeAllCallsForEcrecover(String calltype) {
         var messageSignerAddress = "0x05FbA803Be258049A27B820088bab1cAD2058871";
@@ -523,10 +545,6 @@ public class EquivalenceFeature extends AbstractFeature {
             var functionResult = executeContractCallQuery(deployedEquivalenceCall, callType, parameters);
             assertTrue(functionResult.getUint256(3).longValue() > 1);
         }
-    }
-
-    public static byte[] toByteArray(String s) {
-        return DatatypeConverter.parseHexBinary(s);
     }
 
     @Then("I make internal {string} to system account {string} {string} amount")

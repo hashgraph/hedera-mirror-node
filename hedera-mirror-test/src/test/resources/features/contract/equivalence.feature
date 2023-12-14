@@ -117,9 +117,13 @@ Feature: in-equivalence tests
 
   Scenario Outline: Validate in-equivalence tests for internal calls - precompiles
     Given I successfully create equivalence call contract
+    Given I successfully create selfdestruct contract
     Given I ensure token "FUNGIBLE" has been created
     And I associate "FUNGIBLE" to contract
     Then the mirror node REST API should return status 200 for the contracts creation
+    Then I execute internal "call" against "payable" contract "with" amount
+    Then I execute internal "call" against "non-payable" contract "with" amount
+    Then I execute internal "call" against "payable" contract "without" amount
     Then I execute internal "call" against Identity precompile
     Then I execute internal "staticcall" against Identity precompile
     Then I execute internal "delegatecall" against Identity precompile

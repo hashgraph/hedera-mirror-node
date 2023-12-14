@@ -8,4 +8,7 @@ contract EquivalenceDestruct {
         // Self-destruct the contract and send funds to the beneficiary
         selfdestruct(beneficiary);
     }
+
+    fallback() external payable {
+    }
 }
