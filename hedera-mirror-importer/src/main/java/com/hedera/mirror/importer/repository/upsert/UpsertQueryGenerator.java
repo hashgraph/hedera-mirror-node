@@ -20,14 +20,6 @@ public interface UpsertQueryGenerator {
 
     String TEMP_SUFFIX = "_temp";
 
-    String getCreateTempIndexQuery();
-
-    default String getCreateTempTableQuery() {
-        return String.format(
-                "create temporary table if not exists %s on commit drop as table %s limit 0",
-                getTemporaryTableName(), getFinalTableName());
-    }
-
     String getFinalTableName();
 
     default String getTemporaryTableName() {

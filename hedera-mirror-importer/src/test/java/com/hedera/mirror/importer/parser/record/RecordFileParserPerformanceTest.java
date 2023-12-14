@@ -32,7 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles("performance")
+@ActiveProfiles({"performance", "v2"})
 @Import(IntegrationTestConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @SpringBootTest

@@ -29,6 +29,7 @@ spring:
       partitionTimeInterval: "'10 years'"
       schema: public
       shardCount: 2
+      tempSchema: temporary
       topicRunningHashV2AddedTimestamp: 0
   test:
     database:

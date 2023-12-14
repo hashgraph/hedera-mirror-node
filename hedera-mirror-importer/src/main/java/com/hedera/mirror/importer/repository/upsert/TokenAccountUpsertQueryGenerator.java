@@ -17,16 +17,9 @@
 package com.hedera.mirror.importer.repository.upsert;
 
 import jakarta.inject.Named;
-import java.text.MessageFormat;
 
 @Named
 public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
-
-    @Override
-    public String getCreateTempIndexQuery() {
-        var pattern = "create index if not exists {0}_idx on {0} (token_id, account_id)";
-        return MessageFormat.format(pattern, getTemporaryTableName());
-    }
 
     @Override
     public String getFinalTableName() {

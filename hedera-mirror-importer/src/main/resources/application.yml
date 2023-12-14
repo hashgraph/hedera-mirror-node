@@ -109,12 +109,13 @@ spring:
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
       idPartitionSize: 1000000
-      maxEntityId: 5000000
+      maxEntityId: 50000000
       maxEntityIdRatio: 2.0
       partitionStartDate: "'2019-09-01'"
       partitionTimeInterval: "'1 month'"
       schema: ${hedera.mirror.importer.db.schema}
       shardCount: 16
+      tempSchema: temporary
     user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:
