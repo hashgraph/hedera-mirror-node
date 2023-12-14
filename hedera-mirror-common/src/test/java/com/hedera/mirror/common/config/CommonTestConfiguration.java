@@ -64,6 +64,7 @@ class CommonTestConfiguration {
                 .put("partitionTimeInterval", "'10 years'")
                 .put("schema", "public")
                 .put("shardCount", "2")
+                .put("tempSchema", "temporary")
                 .put("topicRunningHashV2AddedTimestamp", "0")
                 .build();
 

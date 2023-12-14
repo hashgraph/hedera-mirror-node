@@ -87,4 +87,5 @@ data:
       mv "${PGHBACONF}.bak" "${PGHBACONF}"
       pg_ctl reload
     fi
+    --TODO new schema
 {{- end }}
