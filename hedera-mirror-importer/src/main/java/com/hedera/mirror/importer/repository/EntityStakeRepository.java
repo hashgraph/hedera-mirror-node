@@ -99,7 +99,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
         )
         insert into entity_state_start (balance, decline_reward, id, staked_account_id, staked_node_id, stake_period_start)
         select
-          distinct on (id)
           coalesce(balance, 0) + coalesce(change, 0),
           decline_reward,
           id,
