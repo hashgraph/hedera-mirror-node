@@ -54,7 +54,7 @@ public class HederaEvmTxProcessor {
     // FEATURE WORK to be covered by #3949
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<String, Provider<MessageCallProcessor>> mcps;
-    protected final Provider<ContractCreationProcessor> contractCreationProcessorProvider;
+    protected final Map<String, Provider<ContractCreationProcessor>> ccps;
     protected final HederaEvmOperationTracer tracer;
     protected final EvmProperties dynamicProperties;
 
@@ -65,16 +65,15 @@ public class HederaEvmTxProcessor {
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Provider<ContractCreationProcessor> contractCreationProcessorProvider,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final HederaEvmOperationTracer tracer) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
         this.dynamicProperties = dynamicProperties;
         this.gasCalculator = gasCalculator;
-
         this.mcps = mcps;
-        this.contractCreationProcessorProvider = contractCreationProcessorProvider;
+        this.ccps = ccps;
         this.blockMetaSource = blockMetaSource;
         this.tracer = tracer;
     }
@@ -206,7 +205,7 @@ public class HederaEvmTxProcessor {
     private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type, String evmVersion) {
         return switch (type) {
             case MESSAGE_CALL -> mcps.get(evmVersion).get();
-            case CONTRACT_CREATION -> contractCreationProcessorProvider.get();
+            case CONTRACT_CREATION -> ccps.get(evmVersion).get();
         };
     }
 }
