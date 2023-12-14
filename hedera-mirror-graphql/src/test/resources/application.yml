@@ -1,12 +1,3 @@
-hedera:
-  mirror:
-    graphql:
-      db:
-        host: ${embedded.postgresql.host}
-        port: ${embedded.postgresql.port}
-        name: ${embedded.postgresql.schema}
-        username: ${embedded.postgresql.user}
-        password: ${embedded.postgresql.password}
 spring:
   datasource:
     name: ${hedera.mirror.graphql.db.name}

@@ -79,6 +79,7 @@ class TokenDatabaseAccessorTest {
     @Mock
     private Entity defaultEntity;
 
+    private static final Optional<Long> timestamp = Optional.of(1234L);
     private Entity entity;
 
     @BeforeEach
@@ -93,9 +94,32 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getTokenMappedValues() {
-        setupToken();
-        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
+        setupToken(Optional.empty());
+        when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty())).hasValueSatisfying(token -> assertThat(token)
+                .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
+                .returns(TokenType.valueOf(databaseToken.getType().name()), Token::getType)
+                .returns(TokenSupplyType.valueOf(databaseToken.getSupplyType().name()), Token::getSupplyType)
+                .returns(databaseToken.getTotalSupply(), Token::getTotalSupply)
+                .returns(databaseToken.getMaxSupply(), Token::getMaxSupply)
+                .returns(databaseToken.getFreezeDefault(), Token::isFrozenByDefault)
+                .returns(false, Token::isDeleted)
+                .returns(false, Token::isPaused)
+                .returns(
+                        TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
+                        Token::getExpiry)
+                .returns(entity.getMemo(), Token::getMemo)
+                .returns(databaseToken.getName(), Token::getName)
+                .returns(databaseToken.getSymbol(), Token::getSymbol)
+                .returns(databaseToken.getDecimals(), Token::getDecimals)
+                .returns(entity.getAutoRenewPeriod(), Token::getAutoRenewPeriod));
+    }
+
+    @Test
+    void getTokenMappedValuesHistorical() {
+        setupToken(timestamp);
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp)).hasValueSatisfying(token -> assertThat(token)
                 .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
                 .returns(TokenType.valueOf(databaseToken.getType().name()), Token::getType)
                 .returns(TokenSupplyType.valueOf(databaseToken.getSupplyType().name()), Token::getSupplyType)
@@ -116,44 +140,127 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getCustomFees() {
-        setupToken();
+        setupToken(Optional.empty());
         List<CustomFee> customFees = singletonList(new CustomFee());
-        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
-        when(customFeeDatabaseAccessor.get(entity.getId())).thenReturn(Optional.of(customFees));
+        when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        when(customFeeDatabaseAccessor.get(entity.getId(), Optional.empty())).thenReturn(Optional.of(customFees));
 
-        assertThat(tokenDatabaseAccessor.get(ADDRESS))
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty()))
+                .hasValueSatisfying(token -> assertThat(token.getCustomFees()).isEqualTo(customFees));
+    }
+
+    @Test
+    void getCustomFeesHistorical() {
+        setupToken(timestamp);
+        List<CustomFee> customFees = singletonList(new CustomFee());
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        when(customFeeDatabaseAccessor.get(entity.getId(), timestamp)).thenReturn(Optional.of(customFees));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(token -> assertThat(token.getCustomFees()).isEqualTo(customFees));
     }
 
     @Test
     void getPartialTreasuryAccount() {
-        setupToken();
+        setupToken(Optional.empty());
         final var treasuryId = mock(EntityId.class);
         databaseToken.setTreasuryAccountId(treasuryId);
 
         Entity treasuryEntity = mock(Entity.class);
-        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         when(treasuryEntity.getShard()).thenReturn(11L);
         when(treasuryEntity.getRealm()).thenReturn(12L);
         when(treasuryEntity.getNum()).thenReturn(13L);
         when(treasuryEntity.getBalance()).thenReturn(14L);
         when(entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId())).thenReturn(Optional.of(treasuryEntity));
 
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token.getTreasury())
-                .returns(new Id(11, 12, 13), Account::getId)
-                .returns(14L, Account::getBalance));
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty()))
+                .hasValueSatisfying(token -> assertThat(token.getTreasury())
+                        .returns(new Id(11, 12, 13), Account::getId)
+                        .returns(14L, Account::getBalance));
+    }
+
+    @Test
+    void getPartialTreasuryAccountHistorical() {
+        setupToken(timestamp);
+        final var treasuryId = mock(EntityId.class);
+        databaseToken.setTreasuryAccountId(treasuryId);
+
+        Entity treasuryEntity = mock(Entity.class);
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        when(treasuryEntity.getShard()).thenReturn(11L);
+        when(treasuryEntity.getRealm()).thenReturn(12L);
+        when(treasuryEntity.getNum()).thenReturn(13L);
+        when(treasuryEntity.getBalance()).thenReturn(14L);
+        when(entityRepository.findActiveByIdAndTimestamp(treasuryEntity.getId(), timestamp.get()))
+                .thenReturn(Optional.of(treasuryEntity));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(token -> assertThat(token.getTreasury())
+                        .returns(new Id(11, 12, 13), Account::getId)
+                        .returns(14L, Account::getBalance));
+    }
+
+    @Test
+    void getAutoRenewHistorical() {
+        setupToken(timestamp);
+        final var treasuryId = mock(EntityId.class);
+        databaseToken.setTreasuryAccountId(treasuryId);
+
+        Entity autorenewEntity = mock(Entity.class);
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        entity.setAutoRenewAccountId(10L);
+        when(autorenewEntity.getShard()).thenReturn(11L);
+        when(autorenewEntity.getRealm()).thenReturn(12L);
+        when(autorenewEntity.getNum()).thenReturn(13L);
+        when(autorenewEntity.getBalance()).thenReturn(14L);
+        when(entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), timestamp.get()))
+                .thenReturn(Optional.of(autorenewEntity));
+        when(entityRepository.findActiveByIdAndTimestamp(entity.getAutoRenewAccountId(), timestamp.get()))
+                .thenReturn(Optional.of(autorenewEntity));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(token -> assertThat(token.getAutoRenewAccount())
+                        .returns(new Id(11, 12, 13), Account::getId)
+                        .returns(14L, Account::getBalance));
     }
 
     @Test
     void getTokenDefaultValues() {
-        setupToken();
+        setupToken(Optional.empty());
         databaseToken.setTreasuryAccountId(null);
-        when(entityDatabaseAccessor.get(ADDRESS_ZERO)).thenReturn(Optional.ofNullable(defaultEntity));
+        when(entityDatabaseAccessor.get(ADDRESS_ZERO, Optional.empty())).thenReturn(Optional.ofNullable(defaultEntity));
+        when(defaultEntity.getId()).thenReturn(0L);
         when(defaultEntity.getShard()).thenReturn(0L);
         when(defaultEntity.getRealm()).thenReturn(0L);
         when(defaultEntity.getNum()).thenReturn(0L);
         when(defaultEntity.getType()).thenReturn(EntityType.TOKEN);
-        assertThat(tokenDatabaseAccessor.get(ADDRESS_ZERO)).hasValueSatisfying(token -> assertThat(token)
+        assertThat(tokenDatabaseAccessor.get(ADDRESS_ZERO, Optional.empty()))
+                .hasValueSatisfying(token -> assertThat(token)
+                        .returns(emptyList(), Token::mintedUniqueTokens)
+                        .returns(emptyList(), Token::removedUniqueTokens)
+                        .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
+                        .returns(false, Token::hasChangedSupply)
+                        .returns(null, Token::getTreasury)
+                        .returns(null, Token::getAutoRenewAccount)
+                        .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
+                        .returns(false, Token::isNew)
+                        .returns(null, Token::getTreasury)
+                        .returns(0L, Token::getLastUsedSerialNumber)
+                        .returns(emptyList(), Token::getCustomFees));
+    }
+
+    @Test
+    void getTokenDefaultValuesHistorical() {
+        setupToken(timestamp);
+        databaseToken.setTreasuryAccountId(null);
+        when(entityDatabaseAccessor.get(ADDRESS_ZERO, timestamp)).thenReturn(Optional.ofNullable(defaultEntity));
+        when(defaultEntity.getId()).thenReturn(entity.getId());
+        when(defaultEntity.getShard()).thenReturn(0L);
+        when(defaultEntity.getRealm()).thenReturn(0L);
+        when(defaultEntity.getNum()).thenReturn(0L);
+        when(defaultEntity.getType()).thenReturn(EntityType.TOKEN);
+        assertThat(tokenDatabaseAccessor.get(ADDRESS_ZERO, timestamp)).hasValueSatisfying(token -> assertThat(token)
                 .returns(emptyList(), Token::mintedUniqueTokens)
                 .returns(emptyList(), Token::removedUniqueTokens)
                 .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
@@ -169,10 +276,25 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getTokenKeysValues() {
-        setupToken();
-        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        setupToken(Optional.empty());
+        when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
 
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).hasValueSatisfying(token -> assertThat(token)
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty())).hasValueSatisfying(token -> assertThat(token)
+                .returns(parseJkey(entity.getKey()), Token::getAdminKey)
+                .returns(parseJkey(databaseToken.getKycKey()), Token::getKycKey)
+                .returns(parseJkey(databaseToken.getPauseKey()), Token::getPauseKey)
+                .returns(parseJkey(databaseToken.getFreezeKey()), Token::getFreezeKey)
+                .returns(parseJkey(databaseToken.getWipeKey()), Token::getWipeKey)
+                .returns(parseJkey(databaseToken.getSupplyKey()), Token::getSupplyKey)
+                .returns(parseJkey(databaseToken.getFeeScheduleKey()), Token::getFeeScheduleKey));
+    }
+
+    @Test
+    void getTokenKeysValuesHistorical() {
+        setupToken(timestamp);
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp)).hasValueSatisfying(token -> assertThat(token)
                 .returns(parseJkey(entity.getKey()), Token::getAdminKey)
                 .returns(parseJkey(databaseToken.getKycKey()), Token::getKycKey)
                 .returns(parseJkey(databaseToken.getPauseKey()), Token::getPauseKey)
@@ -192,26 +314,40 @@ class TokenDatabaseAccessorTest {
 
     @Test
     void getTokenEmptyWhenDatabaseTokenNotFound() {
-        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         when(tokenRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThat(tokenDatabaseAccessor.get(ADDRESS)).isEmpty();
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty())).isEmpty();
+    }
+
+    @Test
+    void getTokenEmptyWhenDatabaseTokenNotFoundHistorical() {
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        when(tokenRepository.findByTokenIdAndTimestamp(entity.getId(), timestamp.get()))
+                .thenReturn(Optional.empty());
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp)).isEmpty();
     }
 
     @Test
     void keyIsNullIfNotParsable() {
-        setupToken();
+        setupToken(Optional.empty());
 
-        when(entityDatabaseAccessor.get(ADDRESS)).thenReturn(Optional.ofNullable(entity));
+        when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         databaseToken.setKycKey("wrOng".getBytes());
 
-        assertThat(tokenDatabaseAccessor.get(ADDRESS))
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty()))
                 .hasValueSatisfying(token -> assertThat(token.getKycKey()).isNull());
     }
 
-    private void setupToken() {
+    private void setupToken(Optional<Long> timestamp) {
         databaseToken =
                 domainBuilder.token().customize(t -> t.tokenId(entity.getId())).get();
-        when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
+        if (timestamp.isPresent()) {
+            when(tokenRepository.findByTokenIdAndTimestamp(entity.getId(), timestamp.get()))
+                    .thenReturn(Optional.ofNullable(databaseToken));
+        } else {
+            when(tokenRepository.findById(any())).thenReturn(Optional.ofNullable(databaseToken));
+        }
     }
 }

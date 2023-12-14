@@ -32,7 +32,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
@@ -48,11 +48,10 @@ import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
+@RequiredArgsConstructor
+class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
 
     private final EntityRecordItemListener entityRecordItemListener;
     private final EntityStakeRepository entityStakeRepository;

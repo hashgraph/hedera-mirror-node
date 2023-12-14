@@ -39,8 +39,8 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import com.hedera.mirror.importer.config.DateRangeCalculator;
+import com.hedera.mirror.importer.config.DateRangeCalculator.DateRangeFilter;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
@@ -85,7 +85,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     private RecordStreamFileListener recordStreamFileListener;
 
     @Mock(strictness = LENIENT)
-    private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    private DateRangeCalculator dateRangeCalculator;
 
     private long count = 0;
 
@@ -118,8 +118,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     @Override
     protected RecordFileParser getParser() {
         RecordParserProperties parserProperties = new RecordParserProperties();
-        when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
-                .thenReturn(DateRangeFilter.all());
+        when(dateRangeCalculator.getFilter(parserProperties.getStreamType())).thenReturn(DateRangeFilter.all());
         return new RecordFileParser(
                 applicationEventPublisher,
                 new SimpleMeterRegistry(),
@@ -127,7 +126,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
                 recordFileRepository,
                 recordItemListener,
                 recordStreamFileListener,
-                mirrorDateRangePropertiesProcessor);
+                dateRangeCalculator);
     }
 
     @Override
@@ -150,8 +149,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     @Test
     void allFiltered() {
         RecordFile recordFile = getStreamFile();
-        when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
-                .thenReturn(DateRangeFilter.empty());
+        when(dateRangeCalculator.getFilter(parserProperties.getStreamType())).thenReturn(DateRangeFilter.empty());
         parser.parse(recordFile);
         verifyNoInteractions(recordItemListener);
         verify(recordStreamFileListener).onEnd(recordFile);
@@ -165,7 +163,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         RecordItem firstItem = recordFile.getItems().blockFirst();
         long end = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.EPOCH, Instant.ofEpochSecond(0, end));
-        doReturn(filter).when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
+        doReturn(filter).when(dateRangeCalculator).getFilter(parserProperties.getStreamType());
 
         // when
         parser.parse(recordFile);
@@ -180,8 +178,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
 
     @Test
     void totalGasUsedMustBeCorrect() {
-        when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
-                .thenReturn(DateRangeFilter.all());
+        when(dateRangeCalculator.getFilter(parserProperties.getStreamType())).thenReturn(DateRangeFilter.all());
 
         long timestamp = ++count;
         var contractFunctionResult1 = contractFunctionResult(10000000000L, new byte[] {0, 6, 4, 0, 5, 7, 2});
@@ -233,7 +230,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         RecordItem firstItem = recordFile.getItems().blockFirst();
         long start = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), null);
-        doReturn(filter).when(mirrorDateRangePropertiesProcessor).getDateRangeFilter(parserProperties.getStreamType());
+        doReturn(filter).when(dateRangeCalculator).getFilter(parserProperties.getStreamType());
 
         // when
         parser.parse(recordFile);

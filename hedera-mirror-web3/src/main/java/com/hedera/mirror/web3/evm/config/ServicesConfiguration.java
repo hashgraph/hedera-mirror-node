@@ -714,18 +714,15 @@ public class ServicesConfiguration {
 
     @Bean
     HTSPrecompiledContract htsPrecompiledContract(
-            final EvmInfrastructureFactory evmInfrastructureFactory,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final PrecompileMapper precompileMapper,
-            final EvmHTSPrecompiledContract evmHTSPrecompiledContract,
             final Store store,
             final TokenAccessorImpl tokenAccessor,
             final PrecompilePricingUtils precompilePricingUtils) {
         return new HTSPrecompiledContract(
-                evmInfrastructureFactory,
+                evmInfrastructureFactory(),
                 mirrorNodeEvmProperties,
                 precompileMapper,
-                evmHTSPrecompiledContract,
                 store,
                 tokenAccessor,
                 precompilePricingUtils);

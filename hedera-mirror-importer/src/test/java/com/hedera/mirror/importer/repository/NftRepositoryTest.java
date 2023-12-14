@@ -23,9 +23,8 @@ import com.hedera.mirror.common.domain.token.Nft;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class NftRepositoryTest extends AbstractRepositoryTest {
 
     private final NftRepository nftRepository;

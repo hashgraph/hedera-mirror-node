@@ -26,7 +26,6 @@ import org.springframework.core.ResolvableType;
  * it can figure out the generic parameters via `ResolvableType`.
  **/
 public abstract class DatabaseAccessor<K, V> {
-
     @SuppressWarnings("unchecked")
     protected DatabaseAccessor() {
 
@@ -40,7 +39,7 @@ public abstract class DatabaseAccessor<K, V> {
 
     // Given address return an account record from the DB
     @NonNull
-    public abstract Optional<V> get(@NonNull final K key);
+    public abstract Optional<V> get(@NonNull final K key, final Optional<Long> timestamp);
 
     @NonNull
     public Class<K> getKeyClass() {

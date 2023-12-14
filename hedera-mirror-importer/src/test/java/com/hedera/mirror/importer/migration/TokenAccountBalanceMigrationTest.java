@@ -28,8 +28,8 @@ import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -43,15 +43,14 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
-class TokenAccountBalanceMigrationTest extends IntegrationTest {
+class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
 
     private static final String DELETE_TOKEN_BALANCE_SQL = "delete from token_balance where consensus_timestamp <= ?";
 
@@ -62,7 +61,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenTransferRepository tokenTransferRepository;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     private TokenAccountBalanceMigration tokenAccountBalanceMigration;
     private AccountBalanceFile accountBalanceFile1;
@@ -79,7 +78,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     void beforeEach() {
         timestamp = new AtomicLong(domainBuilder.timestamp());
         tokenAccountBalanceMigration = new TokenAccountBalanceMigration(
-                jdbcOperations, mirrorProperties, accountBalanceFileRepository, recordFileRepository);
+                jdbcOperations, importerProperties, accountBalanceFileRepository, recordFileRepository);
     }
 
     @Test

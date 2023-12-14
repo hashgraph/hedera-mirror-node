@@ -28,8 +28,8 @@ repositories {
 }
 
 dependencies {
-    implementation("com.bmuschko:gradle-docker-plugin:9.3.7")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.22.0")
+    implementation("com.bmuschko:gradle-docker-plugin:9.4.0")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.23.3")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.github.node-gradle:gradle-node-plugin:7.0.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
@@ -39,7 +39,7 @@ dependencies {
     implementation("io.freefair.gradle:lombok-plugin:8.4")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.4")
     implementation("org.apache.commons:commons-compress:1.25.0")
-    implementation("org.gradle:test-retry-gradle-plugin:1.5.6")
+    implementation("org.gradle:test-retry-gradle-plugin:1.5.8")
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.1.0")
     implementation("org.owasp:dependency-check-gradle:8.4.3")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.1.3373")

@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -122,9 +122,9 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration i
     @Lazy
     public SyntheticTokenAllowanceOwnerMigration(
             @Owner JdbcTemplate jdbcTemplate,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             RecordFileRepository recordFileRepository) {
-        super(mirrorProperties.getMigration());
+        super(importerProperties.getMigration());
         this.jdbcTemplate = jdbcTemplate;
         this.recordFileRepository = recordFileRepository;
     }

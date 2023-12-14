@@ -30,6 +30,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,8 +56,11 @@ class TokenRelationshipDatabaseAccessorTest {
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
+    private static final Optional<Long> timestamp = Optional.of(1234L);
     private Account account;
     private Token token;
+    private static final Address TOKEN_ADDRESS = Address.ALTBN128_ADD;
+    private static final Address ACCOUNT_ADDRESS = Address.ALTBN128_MUL;
 
     @BeforeEach
     void setup() {
@@ -64,9 +68,6 @@ class TokenRelationshipDatabaseAccessorTest {
         when(account.getId()).thenReturn(new Id(1, 2, 3));
         token = mock(Token.class);
         when(token.getId()).thenReturn(new Id(4, 5, 6));
-
-        when(accountDatabaseAccessor.get(any())).thenReturn(Optional.of(account));
-        when(tokenDatabaseAccessor.get(any())).thenReturn(Optional.of(token));
     }
 
     @Test
@@ -79,10 +80,12 @@ class TokenRelationshipDatabaseAccessorTest {
                         .automaticAssociation(true))
                 .get();
 
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
@@ -105,9 +108,42 @@ class TokenRelationshipDatabaseAccessorTest {
                 .get();
 
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
+                .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
+                        .returns(account, TokenRelationship::getAccount)
+                        .returns(token, TokenRelationship::getToken)
+                        .returns(true, TokenRelationship::isFrozen)
+                        .returns(true, TokenRelationship::isKycGranted)
+                        .returns(false, TokenRelationship::isDestroyed)
+                        .returns(false, TokenRelationship::isNotYetPersisted)
+                        .returns(true, TokenRelationship::isAutomaticAssociation)
+                        .returns(0L, TokenRelationship::getBalanceChange));
+    }
+
+    @Test
+    void getWhenKycNotApplicableHistorical() {
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.associated(true)
+                        .tokenId(EntityIdUtils.entityIdFromId(token.getId()).getId())
+                        .accountId(EntityIdUtils.entityIdFromId(account.getId()).getId())
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                        .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                        .automaticAssociation(true))
+                .get();
+
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, timestamp)).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, timestamp)).thenReturn(Optional.of(token));
+        when(tokenAccountRepository.findByIdAndTimestamp(
+                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
+                .thenReturn(Optional.of(tokenAccount));
+
+        assertThat(tokenRelationshipDatabaseAccessor.get(
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), timestamp))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
@@ -129,10 +165,12 @@ class TokenRelationshipDatabaseAccessorTest {
                         .automaticAssociation(true))
                 .get();
 
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
@@ -154,10 +192,12 @@ class TokenRelationshipDatabaseAccessorTest {
                         .automaticAssociation(false))
                 .get();
 
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
-                        new TokenRelationshipKey(Address.ALTBN128_MUL, Address.ALTBN128_ADD)))
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
                 .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
                         .returns(false, TokenRelationship::isFrozen)
                         .returns(false, TokenRelationship::isKycGranted)

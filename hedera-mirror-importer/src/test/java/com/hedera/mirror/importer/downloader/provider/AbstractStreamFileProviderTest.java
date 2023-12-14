@@ -21,7 +21,7 @@ import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -50,7 +50,7 @@ abstract class AbstractStreamFileProviderTest {
 
     @BeforeEach
     void setup() throws Exception {
-        var mirrorProperties = new MirrorProperties();
+        var mirrorProperties = new ImporterProperties();
         mirrorProperties.setDataPath(dataPath);
         properties = new CommonDownloaderProperties(mirrorProperties);
         customizeProperties(properties);

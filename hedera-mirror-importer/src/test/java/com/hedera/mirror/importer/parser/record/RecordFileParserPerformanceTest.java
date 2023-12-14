@@ -20,24 +20,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({"performance", "v2"})
-@Import(IntegrationTestConfiguration.class)
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-@SpringBootTest
+@ActiveProfiles("performance")
+@RequiredArgsConstructor
 @Tag("performance")
-class RecordFileParserPerformanceTest {
+class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
 
     private final ParserPerformanceProperties performanceProperties;
     private final RecordFileParser recordFileParser;

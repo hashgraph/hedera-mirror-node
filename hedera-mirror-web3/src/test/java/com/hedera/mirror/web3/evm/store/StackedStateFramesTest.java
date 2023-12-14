@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ContextExtension.class)
-class StackedStateFramesTest {
+public class StackedStateFramesTest {
 
     @Test
     void constructionHappyPath() {
@@ -41,7 +41,7 @@ class StackedStateFramesTest {
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {});
 
         final var sut = new StackedStateFrames(accessors);
-        ContractCallContext.get().setStack(sut.getInitializedStackBase());
+        ContractCallContext.get().setStack(sut.getInitializedStackBase(Optional.empty()));
 
         final var softly = new SoftAssertions();
         softly.assertThat(sut.height()).as("visible height").isZero();
@@ -84,7 +84,7 @@ class StackedStateFramesTest {
     void pushAndPopDoSo() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames(accessors);
-        ContractCallContext.get().setStack(sut.getInitializedStackBase());
+        ContractCallContext.get().setStack(sut.getInitializedStackBase(Optional.empty()));
 
         final var roOnTopOfBase = sut.top();
 
@@ -104,7 +104,7 @@ class StackedStateFramesTest {
     void forcePushOfSpecificFrameWithProperUpstream() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames(accessors);
-        ContractCallContext.get().setStack(sut.getInitializedStackBase());
+        ContractCallContext.get().setStack(sut.getInitializedStackBase(Optional.empty()));
 
         final var newTos = new RWCachingStateFrame<>(Optional.of(sut.top()), Character.class);
         final var actual = sut.push(newTos);
@@ -116,16 +116,16 @@ class StackedStateFramesTest {
     void forcePushOfSpecificFrameWithBadUpstream() {
         final var accessors = List.<DatabaseAccessor<Object, ?>>of(new BareDatabaseAccessor<Object, Character>() {});
         final var sut = new StackedStateFrames(accessors);
-        ContractCallContext.get().setStack(sut.getInitializedStackBase());
+        ContractCallContext.get().setStack(sut.getInitializedStackBase(Optional.empty()));
         final var newTos = new RWCachingStateFrame<>(
                 Optional.of(new RWCachingStateFrame<>(Optional.empty(), Character.class)), Character.class);
         assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));
     }
 
-    static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
+    public static class BareDatabaseAccessor<K, V> extends DatabaseAccessor<K, V> {
         @NonNull
         @Override
-        public Optional<V> get(@NonNull final K key) {
+        public Optional<V> get(@NonNull final K key, Optional<Long> timestamp) {
             throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
         }
     }

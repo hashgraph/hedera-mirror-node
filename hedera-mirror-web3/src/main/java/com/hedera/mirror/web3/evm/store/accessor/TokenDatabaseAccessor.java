@@ -47,24 +47,22 @@ import lombok.RequiredArgsConstructor;
 public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
 
     private final TokenRepository tokenRepository;
-
     private final EntityDatabaseAccessor entityDatabaseAccessor;
-
     private final EntityRepository entityRepository;
-
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<Token> get(@NonNull Object address) {
-        return entityDatabaseAccessor.get(address).map(this::tokenFromEntity);
+    public @NonNull Optional<Token> get(@NonNull Object key, final Optional<Long> timestamp) {
+        return entityDatabaseAccessor.get(key, timestamp).map(entity -> tokenFromEntity(entity, timestamp));
     }
 
-    private Token tokenFromEntity(Entity entity) {
+    private Token tokenFromEntity(Entity entity, final Optional<Long> timestamp) {
         if (!TOKEN.equals(entity.getType())) {
             throw new WrongTypeException("Trying to map token from a different type");
         }
-
-        final var databaseToken = tokenRepository.findById(entity.getId()).orElse(null);
+        final var databaseToken = timestamp
+                .flatMap(t -> tokenRepository.findByTokenIdAndTimestamp(entity.getId(), t))
+                .orElseGet(() -> tokenRepository.findById(entity.getId()).orElse(null));
 
         if (databaseToken == null) {
             return null;
@@ -93,8 +91,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 parseJkey(databaseToken.getFeeScheduleKey()),
                 parseJkey(databaseToken.getPauseKey()),
                 Boolean.TRUE.equals(databaseToken.getFreezeDefault()),
-                getTreasury(databaseToken.getTreasuryAccountId()),
-                getAutoRenewAccount(entity),
+                getTreasury(databaseToken.getTreasuryAccountId(), timestamp),
+                getAutoRenewAccount(entity.getAutoRenewAccountId(), timestamp),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 TokenPauseStatusEnum.PAUSED.equals(databaseToken.getPauseStatus()),
                 false,
@@ -109,7 +107,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 Optional.ofNullable(databaseToken.getDecimals()).orElse(0),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(0L),
                 0L,
-                getCustomFees(entity.getId()));
+                getCustomFees(entity.getId(), timestamp));
     }
 
     private JKey parseJkey(byte[] keyBytes) {
@@ -120,9 +118,13 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         }
     }
 
-    private Account getAutoRenewAccount(Entity entity) {
-        return entityRepository
-                .findByIdAndDeletedIsFalse(entity.getAutoRenewAccountId())
+    private Account getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {
+        if (autoRenewAccountId == null) {
+            return null;
+        }
+        return timestamp
+                .map(t -> entityRepository.findActiveByIdAndTimestamp(autoRenewAccountId, t))
+                .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(autoRenewAccountId))
                 .map(autoRenewAccount -> new Account(
                         autoRenewAccount.getId(),
                         new Id(autoRenewAccount.getShard(), autoRenewAccount.getRealm(), autoRenewAccount.getNum()),
@@ -130,12 +132,13 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .orElse(null);
     }
 
-    private Account getTreasury(EntityId treasuryId) {
+    private Account getTreasury(EntityId treasuryId, final Optional<Long> timestamp) {
         if (treasuryId == null) {
             return null;
         }
-        return entityRepository
-                .findByIdAndDeletedIsFalse(treasuryId.getId())
+        return timestamp
+                .map(t -> entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), t))
+                .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId()))
                 .map(entity -> new Account(
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
@@ -143,7 +146,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .orElse(null);
     }
 
-    private List<CustomFee> getCustomFees(Long tokenId) {
-        return customFeeDatabaseAccessor.get(tokenId).orElse(Collections.emptyList());
+    private List<CustomFee> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
+        return customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList());
     }
 }

@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -57,10 +57,10 @@ public class TopicMessageLookupMigration extends RepeatableMigration {
     protected TopicMessageLookupMigration(
             EntityProperties entityProperties,
             @Owner JdbcTemplate jdbcTemplate,
-            MirrorProperties mirrorProperties,
+            ImporterProperties importerProperties,
             RecordFileRepository recordFileRepository,
             TimePartitionService timePartitionService) {
-        super(mirrorProperties.getMigration());
+        super(importerProperties.getMigration());
         this.entityProperties = entityProperties;
         this.jdbcTemplate = jdbcTemplate;
         this.recordFileRepository = recordFileRepository;

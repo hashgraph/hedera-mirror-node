@@ -1,5 +1,6 @@
 # Compiled class file
 *.class
+generated/
 
 # OS specific
 .DS_Store
@@ -152,3 +153,4 @@ snyk
 **/secret.*
 
 hedera-mirror-rest/report.*
+hedera-mirror-rest/monitoring/config/serverlist.json

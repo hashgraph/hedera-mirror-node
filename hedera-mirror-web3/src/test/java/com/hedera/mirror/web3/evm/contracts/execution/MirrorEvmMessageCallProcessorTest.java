@@ -26,74 +26,22 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
-import com.hedera.mirror.web3.evm.properties.TraceProperties;
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
-import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
-import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
-import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
-class MirrorEvmMessageCallProcessorTest {
-    @Mock
-    private AbstractAutoCreationLogic autoCreationLogic;
-
-    @Mock
-    private EntityAddressSequencer entityAddressSequencer;
-
-    @Mock
-    private MirrorEvmContractAliases mirrorEvmContractAliases;
-
-    @Mock
-    private EVM evm;
-
-    @Mock
-    private PrecompileContractRegistry precompiles;
-
-    @Mock
-    private MessageFrame messageFrame;
-
-    @Mock
-    private TraceProperties traceProperties;
-
-    @Mock
-    private HederaEvmStackedWorldStateUpdater updater;
-
-    @Mock
-    private Store store;
-
-    @Mock
-    private OperationTracer operationTracer;
-
-    @Mock
-    private GasCalculatorHederaV22 gasCalculatorHederaV22;
+class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBaseTest {
 
     @Mock
     private PrecompilesHolder precompilesHolder;
-
-    @SuppressWarnings("unchecked")
-    private final Map<String, PrecompiledContract> hederaPrecompileList = Collections.EMPTY_MAP;
 
     private MirrorEvmMessageCallProcessor subject;
 

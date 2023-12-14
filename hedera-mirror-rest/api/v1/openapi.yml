@@ -1246,7 +1246,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.94.0-SNAPSHOT
+  version: 0.95.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -1373,6 +1373,8 @@ components:
       properties:
         logs:
           $ref: "#/components/schemas/ContractLogs"
+        links:
+          $ref: "#/components/schemas/Links"
     CryptoAllowancesResponse:
       type: object
       properties:
@@ -4359,14 +4361,55 @@ components:
         type: string
         pattern: ^\d{1,10}(.\d{1,9})?$
     stateTimestampQueryParam:
+      description: The consensus timestamp of the contract state in seconds.nanoseconds format with an optional comparison operator
       name: timestamp
       in: query
-      description: The timestamp at which the contract state is
-      required: false
-      example: 1234567890.000000700
+      explode: true
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        secondsNoOperator:
+          summary: Example of seconds equals with no operator
+          value: 1234567890
+        timestampNoOperator:
+          summary: Example of timestamp equals with no operator
+          value: 1234567890.000000100
+        secondsEqOperator:
+          summary: Example of seconds equals with operator
+          value: eq:1234567890
+        timestampEqOperator:
+          summary: Example of timestamp equals with operator
+          value: eq:1234567890.000000200
+        secondsGtOperator:
+          summary: Example of seconds greater than operator
+          value: gt:1234567890
+        timestampGtOperator:
+          summary: Example of timestamp greater than operator
+          value: gt:1234567890.000000400
+        secondsGteOperator:
+          summary: Example of seconds greater than or equals operator
+          value: gte:1234567890
+        timestampGteOperator:
+          summary: Example of timestamp greater than or equals operator
+          value: gte:1234567890.000000500
+        secondsLtOperator:
+          summary: Example of seconds less than operator
+          value: lt:1234567890
+        timestampLtOperator:
+          summary: Example of timestamp less than operator
+          value: lt:1234567890.000000600
+        secondsLteOperator:
+          summary: Example of seconds less than or equals operator
+          value: lte:1234567890
+        timestampLteOperator:
+          summary: Example of timestamp less than or equals operator
+          value: lte:1234567890.000000700
       schema:
-        type: string
-        pattern: ^\d{1,10}(.\d{1,9})?$
+        type: array
+        items:
+          type: string
+          pattern: ^((eq|gt|gte|lt|lte):)?\d{1,10}(.\d{1,9})?$
     tokenInfoTimestampQueryParam:
       name: timestamp
       in: query

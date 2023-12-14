@@ -45,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
@@ -74,7 +74,7 @@ class ConsensusValidatorImplTest {
 
     @BeforeEach
     void setup() {
-        commonDownloaderProperties = new CommonDownloaderProperties(new MirrorProperties());
+        commonDownloaderProperties = new CommonDownloaderProperties(new ImporterProperties());
         commonDownloaderProperties.setConsensusRatio(
                 BigDecimal.ONE.divide(BigDecimal.valueOf(3), 19, RoundingMode.DOWN));
         consensusValidator = new ConsensusValidatorImpl(commonDownloaderProperties);

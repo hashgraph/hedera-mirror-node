@@ -143,36 +143,31 @@ describe('Utils incrementTimestampByOneDay tests', () => {
 });
 
 describe('Utils getFirstDayOfMonth tests', () => {
-  test('Verify 0', () => {
-    const val = utils.getFirstDayOfMonth(0n);
-    expect(val).toBe(0n);
-  });
+  const spec = [
+    {name: 'expect 0', timestamp: 0n, expected: 0n},
+    {name: 'given negative, expect 0', timestamp: -100n, expected: 0n},
+    // 2023-12-31T11:59:59Z
+    {name: 'end of month', timestamp: 1704067199000000000n, expected: 1701388800000000000n},
+    // 2024-01-01T00:00:00Z
+    {name: 'beginning of month', timestamp: 1643673600000000000n, expected: 1643673600000000000n},
+    {name: 'input is number', timestamp: 2345, expected: 0n},
+    // 2023-11-09T02:13:30Z
+    {name: 'next month', timestamp: 1699496010000000000n, delta: 1, expected: 1701388800000000000n},
+    // 2023-12-08T:20:13:31Z
+    {name: 'next month in next year', timestamp: 1702066411000000000n, delta: 1, expected: 1704067200000000000n},
+    // 2023-12-08T:20:13:31Z
+    {name: 'previous month', timestamp: 1702066411000000000n, delta: -1, expected: 1698796800000000000n},
+    // 2023-01-09T02:13:30Z
+    {
+      name: 'previous month in previous year',
+      timestamp: 1673230410000000000n,
+      delta: -1,
+      expected: 1669852800000000000n,
+    },
+  ];
 
-  test('Verify undefined', () => {
-    expect(utils.getFirstDayOfMonth(undefined)).toBeNull();
-  });
-
-  test('Verify negative', () => {
-    expect(utils.getFirstDayOfMonth(-100n)).toBe(0n);
-  });
-
-  test('Verify end of month', () => {
-    // December 31, 2023 11:59:59 PM
-    const val = utils.getFirstDayOfMonth(1704067199000000000n);
-    // Expected to return: December 1, 2023 12:00:00 AM
-    expect(val).toBe(1701388800000000000n);
-  });
-
-  test('Verify beginning of month', () => {
-    // February 1, 2022 12:00:00 AM
-    const timestamp = 1643673600000000000n;
-    const val = utils.getFirstDayOfMonth(timestamp);
-    expect(val).toBe(timestamp);
-  });
-
-  test('Non BigInt Input', () => {
-    const val = utils.getFirstDayOfMonth(2345);
-    expect(val).toBe(0n);
+  test.each(spec)('$name', ({timestamp, delta, expected}) => {
+    expect(utils.getFirstDayOfMonth(timestamp, delta)).toBe(expected);
   });
 });
 
@@ -1982,14 +1977,32 @@ describe('calculateExpiryTimestamp', () => {
 describe('Utils formatSlot tests', () => {
   test('Verify valid contract_state_change table format slot', () => {
     const slot = '0x0000000000000000000000000000000000000000000000000000000000000003';
-    const formatedSlot = '03';
-    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formatedSlot, 'hex'));
+    const formattedSlot = '03';
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
   });
 
-  test('Verify valid slot format if no table is provided', () => {
+  test('Verify valid contract_state_change table format odd slot', () => {
+    const slot = '3';
+    const formattedSlot = '03';
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
+  });
+
+  test('Verify valid contract_state_change table format 0 slot', () => {
+    const slot = '0';
+    const formattedSlot = '';
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
+  });
+
+  test('Verify valid contract_state_change table format empty slot', () => {
+    const slot = '';
+    const formattedSlot = '';
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formattedSlot, 'hex'));
+  });
+
+  test('Verify valid slot with left pad', () => {
     const slot = '0x0000000000000000000000000000000000000000000000000000000000000001';
-    const formatedSlot = '0000000000000000000000000000000000000000000000000000000000000001';
-    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formatedSlot, 'hex'));
+    const formattedSlot = '0000000000000000000000000000000000000000000000000000000000000001';
+    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formattedSlot, 'hex'));
   });
 });
 

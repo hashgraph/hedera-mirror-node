@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
+public class FixStakedBeforeEnabledMigration extends AbstractJavaMigration {
 
     static final Long LAST_HAPI_26_RECORD_FILE_CONSENSUS_END_MAINNET = 1658419200981687000L;
 
@@ -77,7 +77,7 @@ public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
     private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.68.3");
 
     private final NamedParameterJdbcOperations jdbcOperations;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @Override
     public MigrationVersion getVersion() {
@@ -91,8 +91,8 @@ public class FixStakedBeforeEnabledMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
-        var hederaNetwork = mirrorProperties.getNetwork();
-        if (!MirrorProperties.HederaNetwork.MAINNET.equalsIgnoreCase(hederaNetwork)) {
+        var hederaNetwork = importerProperties.getNetwork();
+        if (!ImporterProperties.HederaNetwork.MAINNET.equalsIgnoreCase(hederaNetwork)) {
             return;
         }
 

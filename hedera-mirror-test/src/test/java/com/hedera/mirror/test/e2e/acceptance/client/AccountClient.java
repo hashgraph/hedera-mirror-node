@@ -51,7 +51,6 @@ import org.springframework.retry.support.RetryTemplate;
 public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
-    private static final long SMALL_INITIAL_BALANCE = 500_000L; // 0.005 ℏ
 
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
     private final Collection<ExpandedAccountId> accountIds = new CopyOnWriteArrayList<>();
@@ -68,7 +67,6 @@ public class AccountClient extends AbstractNetworkClient {
     public void clean() {
         log.info("Deleting {} accounts", accountIds.size());
         deleteAll(accountIds, this::delete);
-        accountMap.clear();
 
         var cost = initialBalance - getBalance();
         log.warn("Tests cost {} to run", Hbar.fromTinybars(cost));
@@ -96,6 +94,8 @@ public class AccountClient extends AbstractNetworkClient {
                 .sign(accountId.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(accountDeleteTransaction);
         log.info("Deleted account {} via {}", accountId, response.getTransactionId());
+        accountIds.remove(accountId);
+        accountMap.values().remove(accountId);
         return response;
     }
 
@@ -309,6 +309,7 @@ public class AccountClient extends AbstractNetworkClient {
     public enum AccountNameEnum {
         ALICE(false, Key.KeyCase.ED25519),
         BOB(true, Key.KeyCase.ECDSA_SECP256K1),
+        // used in token.feature
         CAROL(false, Key.KeyCase.ED25519),
         DAVE(false, Key.KeyCase.ED25519),
         OPERATOR(false, Key.KeyCase.ED25519); // These may not be accurate for operator

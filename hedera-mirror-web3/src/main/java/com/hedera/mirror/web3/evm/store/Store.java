@@ -25,6 +25,7 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -92,6 +93,8 @@ public interface Store {
     Token loadUniqueTokens(Token token, List<Long> serialNumbers);
 
     boolean exists(Address accountID);
+
+    Optional<Long> getHistoricalTimestamp();
 
     enum OnMissing {
         THROW,

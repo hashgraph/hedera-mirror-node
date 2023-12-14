@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.ImporterProperties.HederaNetwork;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.util.Utility;
 import lombok.RequiredArgsConstructor;
@@ -33,16 +33,15 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 
 @EnabledIfV1
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.68.3")
 class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest {
 
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final RecalculatePendingRewardMigration migration;
 
     private long firstEpochDay;
@@ -50,7 +49,7 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
 
     @AfterEach
     void teardown() {
-        mirrorProperties.setNetwork(HederaNetwork.TESTNET);
+        importerProperties.setNetwork(HederaNetwork.TESTNET);
     }
 
     @Test
@@ -63,7 +62,7 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
     void otherNetwork() {
         // given
         setupNodeStakeForNetwork(HederaNetwork.MAINNET);
-        mirrorProperties.setNetwork(HederaNetwork.OTHER);
+        importerProperties.setNetwork(HederaNetwork.OTHER);
         var entity = domainBuilder
                 .entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(firstEpochDay))
@@ -350,7 +349,7 @@ class RecalculatePendingRewardMigrationTest extends AbstractStakingMigrationTest
     }
 
     private void setupNodeStakeForNetwork(String network) {
-        mirrorProperties.setNetwork(network);
+        importerProperties.setNetwork(network);
 
         long firstNonZeroRewardTimestamp = FIRST_NONZERO_REWARD_RATE_TIMESTAMP.get(network);
         firstNonZeroRewardEpochDay = Utility.getEpochDay(firstNonZeroRewardTimestamp);

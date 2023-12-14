@@ -40,11 +40,10 @@ import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 class PubSubRecordParserTest extends PubSubIntegrationTest {
 
     private static final int NUM_TXNS = 34; // number of transactions in test record files

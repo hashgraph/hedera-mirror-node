@@ -796,8 +796,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
         long result;
-        try (ContractCallContext ctx = init(store.getStackedStateFrames())) {
-
+        try (ContractCallContext ctx = init()) {
+            ctx.initializeStackFrames(store.getStackedStateFrames());
             result = processor
                     .execute(serviceParameters, serviceParameters.getGas())
                     .getGasUsed();

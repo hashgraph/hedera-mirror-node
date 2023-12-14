@@ -118,8 +118,7 @@ const getBalances = async (req, res) => {
       limitQuery,
       order,
       pubKeyQuery,
-      tsQueryResult.params,
-      tsQueryResult.query
+      tsQueryResult
     );
   } else {
     // use current balance from entity table when there's no timestamp query filter
@@ -196,14 +195,22 @@ const getAccountBalanceTimestampRange = async (tsQuery, tsParams) => {
   return {lower, upper};
 };
 
-const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsParams, tsQuery) => {
+const getBalancesQuery = async (accountQuery, balanceQuery, limitQuery, order, pubKeyQuery, tsQueryResult) => {
   // Only need to join entity if we're selecting on publickey
   const joinEntityClause = pubKeyQuery ? entityJoin : '';
-  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, tsQuery);
+  const tokenBalanceSubQuery = getTokenBalanceSubQuery(order, tsQueryResult.query);
   const whereClause = `
-      where ${[tsQuery, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
+      where ${[tsQueryResult.query, accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ')}`;
+  const {lower, upper} = tsQueryResult.timestampRange;
+  // The first upper is for the consensus_timestamp in the select fields, also double the lower and the upper since
+  // they are used twice, in the token balance subquery and in the where clause of the main query
+  const tsParams = [upper, lower, upper, lower, upper];
   const sqlQuery = `
-      select distinct on (account_id) ab.*, (${tokenBalanceSubQuery}) as token_balances
+      select distinct on (account_id)
+        ab.account_id,
+        ab.balance,
+        ?::bigint as consensus_timestamp,
+        (${tokenBalanceSubQuery}) as token_balances
       from account_balance ab
       ${joinEntityClause}
       ${whereClause}
@@ -256,30 +263,16 @@ const getOptimizedTimestampRange = (tsQuery, tsParams) => {
     return {};
   }
 
+  // The optimized range of [lower, upper] should overlap with at most two months, with the exception that when upper
+  // is more than 1 month in the future, the range may cover more months. Since the partition maintenance job will
+  // create at most one monthly partition ahead, it's unnecessary to adjust the upper bound.
+  // With the assumption that the data in db is in sync with the network, in other words, the balance information is
+  // update-to-date as of NOW in wall clock, the algorithm below sets lower bound to
+  //   max(lowerBound from user, first day of the month before the month min(now, upperBound) is in)
   const nowInNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
-  if (upperBound !== constants.MAX_LONG) {
-    if (lowerBound === 0n) {
-      // There is an upper bound but no lowerBound
-      const firstDayOfUpperBoundMonth = utils.getFirstDayOfMonth(upperBound);
-      const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
-      lowerBound =
-        firstDayOfUpperBoundMonth < firstDayOfCurrentMonth
-          ? // if the upper bound is in a month prior to the current month, the lower bound is the beginning of
-            // the month prior to the month the upper bound is in. For example if the upper bound month is November
-            // 2022, the lower bound timestamp is the beginning of October 2022.
-            utils.getFirstDayOfMonth(firstDayOfUpperBoundMonth - 1n)
-          : // If upper bound is in the current or later month the lower bound is the beginning of the month before
-            // current month. For example if the current month is November, the lower bound timestamp is
-            // the beginning of October.
-            utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
-    }
-  } else {
-    // There is only a lower bound, set the lower bound to the maximum of (gteParam, the first day of the month
-    // before the current month)
-    const firstDayOfCurrentMonth = utils.getFirstDayOfMonth(nowInNs);
-    const firstDayOfPreviousMonth = utils.getFirstDayOfMonth(firstDayOfCurrentMonth - 1n);
-    lowerBound = lowerBound > firstDayOfPreviousMonth ? lowerBound : firstDayOfPreviousMonth;
-  }
+  const effectiveUpperBound = upperBound > nowInNs ? nowInNs : upperBound;
+  const optimalLowerBound = utils.getFirstDayOfMonth(effectiveUpperBound, -1);
+  lowerBound = lowerBound > optimalLowerBound ? lowerBound : optimalLowerBound;
 
   return {lowerBound, upperBound, neParams};
 };
@@ -291,9 +284,13 @@ const getTsQuery = async (tsQuery, tsParams) => {
   }
 
   const query = 'ab.consensus_timestamp >= ? and ab.consensus_timestamp <= ?';
-  // Double the params to account for the query values for account_balance and token_balance together
-  const params = [lower, upper, lower, upper];
-  return {query, params};
+  return {
+    query,
+    timestampRange: {
+      lower,
+      upper,
+    },
+  };
 };
 
 const getTokenBalanceSubQuery = (order, consensusTsQuery) => {

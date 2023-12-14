@@ -123,7 +123,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -131,7 +130,7 @@ import org.springframework.transaction.support.TransactionOperations;
 
 @Component
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
 
@@ -900,6 +899,7 @@ public class DomainBuilder {
                 .accountId(id())
                 .automaticAssociation(false)
                 .associated(true)
+                .balance(number())
                 .balanceTimestamp(timestamp)
                 .createdTimestamp(timestamp)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
@@ -947,7 +947,6 @@ public class DomainBuilder {
     public DomainWrapper<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
         var builder = TokenTransfer.builder()
                 .amount(100L)
-                .deletedTokenDissociate(false)
                 .id(new TokenTransfer.Id(timestamp(), entityId(), entityId()))
                 .payerAccountId(entityId());
 
@@ -1069,6 +1068,7 @@ public class DomainBuilder {
     /**
      * Generates an encoded entity id above the max reserved id 1000. Use {@link #number()} instead for a number
      * starting from 1.
+     *
      * @return The generated encoded entity id.
      */
     public long id() {

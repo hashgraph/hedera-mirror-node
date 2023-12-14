@@ -573,6 +573,7 @@ public class TokenClient extends AbstractNetworkClient {
         var response = executeTransactionAndRetrieveReceipt(tokenDissociateTransaction, keyList);
         log.info("Deleted token {} via {}", token, response.getTransactionId());
         tokenIds.remove(token);
+        tokenMap.values().removeIf(tokenResponse -> token.equals(tokenResponse.tokenId));
         return response;
     }
 
@@ -615,6 +616,11 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenFreezeStatus.FreezeNotApplicable),
         NFT(
                 "non_fungible",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
+        NFT_ERC(
+                "non_fungible_erc",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),

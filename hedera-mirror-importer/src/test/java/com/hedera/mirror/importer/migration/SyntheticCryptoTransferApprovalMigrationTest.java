@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
+import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.MAINNET;
+import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.TESTNET;
 import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.LOWER_BOUND_TIMESTAMP;
 import static com.hedera.mirror.importer.migration.SyntheticCryptoTransferApprovalMigration.UPPER_BOUND_TIMESTAMP;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,8 +33,8 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -55,12 +55,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.testcontainers.shaded.org.apache.commons.lang3.tuple.Pair;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
-class SyntheticCryptoTransferApprovalMigrationTest extends IntegrationTest {
+class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTest {
 
     private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
@@ -79,7 +78,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final TransactionRepository transactionRepository;
     private final TokenTransferRepository tokenTransferRepository;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private Entity currentKeyUnaffectedEntity;
     private Entity currentKeyAffectedEntity;
     private Entity noKeyEntity;
@@ -88,14 +87,14 @@ class SyntheticCryptoTransferApprovalMigrationTest extends IntegrationTest {
     @BeforeEach
     @SneakyThrows
     void setup() {
-        mirrorProperties.setNetwork(MAINNET);
+        importerProperties.setNetwork(MAINNET);
         migration.setExecuted(false);
         migration.setComplete(false);
     }
 
     @AfterEach
     void teardown() {
-        mirrorProperties.setNetwork(TESTNET);
+        importerProperties.setNetwork(TESTNET);
     }
 
     @Test

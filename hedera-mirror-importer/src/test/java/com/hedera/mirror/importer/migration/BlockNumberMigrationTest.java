@@ -16,14 +16,14 @@
 
 package com.hedera.mirror.importer.migration;
 
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.PREVIEWNET;
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
+import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.PREVIEWNET;
+import static com.hedera.mirror.importer.ImporterProperties.HederaNetwork.TESTNET;
 import static com.hedera.mirror.importer.migration.BlockNumberMigration.BLOCK_NUMBER_MAPPING;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,11 +34,10 @@ import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
-class BlockNumberMigrationTest extends IntegrationTest {
+class BlockNumberMigrationTest extends ImporterIntegrationTest {
 
     private static final long CORRECT_CONSENSUS_END =
             BLOCK_NUMBER_MAPPING.get(TESTNET).getKey();
@@ -46,12 +45,12 @@ class BlockNumberMigrationTest extends IntegrationTest {
             BLOCK_NUMBER_MAPPING.get(TESTNET).getValue();
 
     private final BlockNumberMigration blockNumberMigration;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final RecordFileRepository recordFileRepository;
 
     @BeforeEach
     void setup() {
-        mirrorProperties.setNetwork(TESTNET);
+        importerProperties.setNetwork(TESTNET);
     }
 
     @Test
@@ -61,8 +60,8 @@ class BlockNumberMigrationTest extends IntegrationTest {
 
     @Test
     void unsupportedNetwork() {
-        var previousNetwork = mirrorProperties.getNetwork();
-        mirrorProperties.setNetwork(PREVIEWNET);
+        var previousNetwork = importerProperties.getNetwork();
+        importerProperties.setNetwork(PREVIEWNET);
         List<Tuple> expectedBlockNumbersAndConsensusEnd =
                 insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END)).stream()
                         .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
@@ -71,7 +70,7 @@ class BlockNumberMigrationTest extends IntegrationTest {
         blockNumberMigration.doMigrate();
 
         assertConsensusEndAndBlockNumber(expectedBlockNumbersAndConsensusEnd);
-        mirrorProperties.setNetwork(previousNetwork);
+        importerProperties.setNetwork(previousNetwork);
     }
 
     @Test

@@ -25,7 +25,7 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
@@ -43,14 +43,13 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.StreamUtils;
 
 @EnabledIfV1
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 @Tag("migration")
 class BackfillAndDeduplicateBalanceMigrationTest
         extends AbstractAsyncJavaMigrationTest<BackfillAndDeduplicateBalanceMigration> {
@@ -78,7 +77,7 @@ class BackfillAndDeduplicateBalanceMigrationTest
     private final @Getter BackfillAndDeduplicateBalanceMigration migration;
     private final @Getter Class<BackfillAndDeduplicateBalanceMigration> migrationClass =
             BackfillAndDeduplicateBalanceMigration.class;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
 
     @Value("classpath:db/migration/v1/V1.89.1__add_balance_deduplicate_functions.sql")
     private final Resource migrationSql;
@@ -609,7 +608,7 @@ class BackfillAndDeduplicateBalanceMigrationTest
     }
 
     private MigrationProperties getMigrationProperties() {
-        return mirrorProperties.getMigration().get("backfillAndDeduplicateBalanceMigration");
+        return importerProperties.getMigration().get("backfillAndDeduplicateBalanceMigration");
     }
 
     @SneakyThrows

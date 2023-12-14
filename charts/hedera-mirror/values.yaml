@@ -175,7 +175,7 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-      tag: 14.9.0-debian-11-r54
+      tag: 14.10.0-debian-11-r10
     initdbScriptsCM: "{{ .Release.Name }}-init"
     maxConnections: 200
     password: ""  # Randomly generated if left blank
@@ -253,6 +253,15 @@ rest:
     - secretRef:
         name: mirror-passwords
 
+restjava:
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_rest_java
+  enabled: false
+  envFrom:
+    - secretRef:
+        name: mirror-passwords
+
 rosetta:
   db:
     password: ""  # Randomly generated if left blank
@@ -284,10 +293,11 @@ stackgres:
       memory: 1Gi
     persistentVolume:
       size: 5Gi
+  dedicatedResourcesRequests: true  # Set to true to make the patroni/PostgreSQL container's resource requests equal to the resources section
   enabled: false
   extensions:
     - name: citus
-      version: "12.0-1"
+      version: "12.1-1"
     - name: btree_gist
       version: stable
   nameOverride: citus

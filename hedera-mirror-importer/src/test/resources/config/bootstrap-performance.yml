@@ -1,3 +1,0 @@
-embedded:
-  postgresql:
-    enabled: false

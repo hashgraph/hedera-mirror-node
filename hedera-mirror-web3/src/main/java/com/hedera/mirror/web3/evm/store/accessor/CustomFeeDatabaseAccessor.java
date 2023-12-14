@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static java.util.Objects.requireNonNullElse;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
@@ -43,27 +44,36 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Override
-    public @NonNull Optional<List<CustomFee>> get(@NonNull Object tokenId) {
-        final var customFeeOptional = customFeeRepository.findById((Long) tokenId);
-        return customFeeOptional.isEmpty() ? Optional.empty() : Optional.of(mapCustomFee(customFeeOptional.get()));
+    public @NonNull Optional<List<CustomFee>> get(@NonNull Object key, final Optional<Long> timestamp) {
+        if (key instanceof Long tokenId) {
+
+            return timestamp
+                    .map(t -> customFeeRepository.findByTokenIdAndTimestamp(tokenId, t))
+                    .orElseGet(() -> customFeeRepository.findById(tokenId))
+                    .map(customFee -> mapCustomFee(customFee, timestamp));
+        }
+        throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
+                .formatted(CustomFee.class.getTypeName(), key.getClass().getTypeName()));
     }
 
-    private List<CustomFee> mapCustomFee(com.hedera.mirror.common.domain.token.CustomFee customFee) {
+    private List<CustomFee> mapCustomFee(
+            com.hedera.mirror.common.domain.token.CustomFee customFee, final Optional<Long> timestamp) {
         var customFeesConstructed = new ArrayList<CustomFee>();
-        customFeesConstructed.addAll(mapFixedFees(customFee));
-        customFeesConstructed.addAll(mapFractionalFees(customFee));
-        customFeesConstructed.addAll(mapRoyaltyFees(customFee));
+        customFeesConstructed.addAll(mapFixedFees(customFee, timestamp));
+        customFeesConstructed.addAll(mapFractionalFees(customFee, timestamp));
+        customFeesConstructed.addAll(mapRoyaltyFees(customFee, timestamp));
         return customFeesConstructed;
     }
 
-    private List<CustomFee> mapFixedFees(com.hedera.mirror.common.domain.token.CustomFee customFee) {
+    private List<CustomFee> mapFixedFees(
+            com.hedera.mirror.common.domain.token.CustomFee customFee, final Optional<Long> timestamp) {
         if (CollectionUtils.isEmpty(customFee.getFixedFees())) {
             return Collections.emptyList();
         }
 
         var fixedFees = new ArrayList<CustomFee>();
         customFee.getFixedFees().forEach(f -> {
-            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
+            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId(), timestamp);
             final var denominatingTokenId = f.getDenominatingTokenId();
             final var denominatingTokenAddress =
                     denominatingTokenId == null ? EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
@@ -81,14 +91,15 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
         return fixedFees;
     }
 
-    private List<CustomFee> mapFractionalFees(com.hedera.mirror.common.domain.token.CustomFee customFee) {
+    private List<CustomFee> mapFractionalFees(
+            com.hedera.mirror.common.domain.token.CustomFee customFee, final Optional<Long> timestamp) {
         if (CollectionUtils.isEmpty(customFee.getFractionalFees())) {
             return Collections.emptyList();
         }
 
         var fractionalFees = new ArrayList<CustomFee>();
         customFee.getFractionalFees().forEach(f -> {
-            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
+            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId(), timestamp);
             final var fractionFee = new FractionalFee(
                     requireNonNullElse(f.getNumerator(), 0L),
                     requireNonNullElse(f.getDenominator(), 0L),
@@ -104,14 +115,15 @@ public class CustomFeeDatabaseAccessor extends DatabaseAccessor<Object, List<Cus
         return fractionalFees;
     }
 
-    private List<CustomFee> mapRoyaltyFees(com.hedera.mirror.common.domain.token.CustomFee customFee) {
+    private List<CustomFee> mapRoyaltyFees(
+            com.hedera.mirror.common.domain.token.CustomFee customFee, final Optional<Long> timestamp) {
         if (CollectionUtils.isEmpty(customFee.getRoyaltyFees())) {
             return Collections.emptyList();
         }
 
         var royaltyFees = new ArrayList<CustomFee>();
         customFee.getRoyaltyFees().forEach(f -> {
-            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId());
+            final var collector = entityDatabaseAccessor.evmAddressFromId(f.getCollectorAccountId(), timestamp);
             final var fallbackFee = f.getFallbackFee();
 
             long amount = 0;

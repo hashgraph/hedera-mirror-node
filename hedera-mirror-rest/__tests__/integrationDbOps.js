@@ -33,12 +33,10 @@ const cleanupSql = {
       getModuleDirname(import.meta),
       '..',
       '..',
-      'hedera-mirror-importer',
+      'hedera-mirror-common',
       'src',
       'test',
       'resources',
-      'db',
-      'scripts',
       'cleanup.sql'
     ),
     'utf8'

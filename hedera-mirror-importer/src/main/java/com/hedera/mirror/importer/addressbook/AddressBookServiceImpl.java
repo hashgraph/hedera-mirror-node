@@ -27,8 +27,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.MirrorProperties.ConsensusMode;
+import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.ImporterProperties.ConsensusMode;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -80,7 +80,7 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private final AddressBookRepository addressBookRepository;
     private final FileDataRepository fileDataRepository;
-    private final MirrorProperties mirrorProperties;
+    private final ImporterProperties importerProperties;
     private final NodeStakeRepository nodeStakeRepository;
     private final TransactionTemplate transactionTemplate;
 
@@ -135,7 +135,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         var totalStake = new AtomicLong(0L);
         var nodes = new TreeSet<ConsensusNode>();
         var nodeStakes = new HashMap<Long, NodeStake>();
-        var consensusMode = mirrorProperties.getConsensusMode();
+        var consensusMode = importerProperties.getConsensusMode();
         var nodesInAddressBook = addressBook.getEntries().stream()
                 .map(AddressBookEntry::getNodeId)
                 .collect(Collectors.toSet());
@@ -531,12 +531,12 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         // retrieve bootstrap address book from filesystem or classpath
         try {
-            Path initialAddressBook = mirrorProperties.getInitialAddressBook();
+            Path initialAddressBook = importerProperties.getInitialAddressBook();
             if (initialAddressBook != null) {
                 log.info("Loading bootstrap address book from {}", initialAddressBook);
                 addressBookBytes = Files.readAllBytes(initialAddressBook);
             } else {
-                var resourcePath = String.format("/addressbook/%s", mirrorProperties.getNetwork());
+                var resourcePath = String.format("/addressbook/%s", importerProperties.getNetwork());
                 log.info("Loading bootstrap address book from {}", resourcePath);
                 Resource resource = new ClassPathResource(resourcePath, getClass());
                 addressBookBytes = resource.getInputStream().readAllBytes();

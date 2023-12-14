@@ -68,6 +68,7 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.txn.token.CreateLogic;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -271,7 +272,8 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime, TransactionBody transactionBody) {
+    public long getMinimumFeeInTinybars(
+            Timestamp consensusTime, TransactionBody transactionBody, final AccountID sender) {
         return 100_000L;
     }
 
@@ -333,7 +335,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
 
         final var tinybarsRequirement = calculatedFeeInTinybars
                 + (calculatedFeeInTinybars / 5)
-                - getMinimumFeeInTinybars(timestamp, transactionBody.build()) * gasPriceInTinybars;
+                - getMinimumFeeInTinybars(timestamp, transactionBody.build(), null) * gasPriceInTinybars;
 
         validateTrue(frame.getValue().greaterOrEqualThan(Wei.of(tinybarsRequirement)), INSUFFICIENT_TX_FEE);
 
@@ -344,9 +346,9 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     }
 
     @Override
-    public long getGasRequirement(long blockTimestamp, Builder transactionBody) {
+    public long getGasRequirement(long blockTimestamp, Builder transactionBody, final AccountID sender) {
         return getMinimumFeeInTinybars(
-                Timestamp.newBuilder().setSeconds(blockTimestamp).build(), transactionBody.build());
+                Timestamp.newBuilder().setSeconds(blockTimestamp).build(), transactionBody.build(), sender);
     }
 
     /**

@@ -18,7 +18,7 @@ package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.ImporterIntegrationTest;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +29,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.RowMapper;
 
 @Import(DisablePartitionMaintenanceConfiguration.class)
-abstract class AbstractStakingMigrationTest extends IntegrationTest {
+abstract class AbstractStakingMigrationTest extends ImporterIntegrationTest {
 
     private static final RowMapper<Entity> ENTITY_ROW_MAPPER = rowMapper(Entity.class);
 

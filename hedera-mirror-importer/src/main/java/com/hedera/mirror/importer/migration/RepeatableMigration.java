@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
 
-abstract class RepeatableMigration extends MirrorBaseJavaMigration {
+abstract class RepeatableMigration extends AbstractJavaMigration {
 
     private static final MigrationProperties DEFAULT_MIGRATION_PROPERTIES = new MigrationProperties();
 

@@ -49,7 +49,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
                 .to(properties.getBucketName(), StreamType.RECORD.getPath());
 
         var nodeIdFromPath = Path.of("data", "hip679", "provider-auto", "demo");
-        var network = properties.getMirrorProperties().getNetwork();
+        var network = properties.getImporterProperties().getNetwork();
         var nodeIdFileCopier = FileCopier.create(
                         TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
                 .to(properties.getBucketName(), network);
@@ -93,7 +93,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
                         node,
                         StreamType.RECORD,
                         fileName,
-                        properties.getMirrorProperties().getNetwork());
+                        properties.getImporterProperties().getNetwork());
     }
 
     @Test
@@ -106,7 +106,7 @@ class AutoS3StreamFileProviderTest extends S3StreamFileProviderTest {
                 .to(properties.getBucketName(), StreamType.RECORD.getPath());
 
         var nodeIdFromPath = Path.of("data", "hip679", "provider-auto-transition", "demo");
-        var network = properties.getMirrorProperties().getNetwork();
+        var network = properties.getImporterProperties().getNetwork();
         var nodeIdFileCopier = FileCopier.create(
                         TestUtils.getResource(nodeIdFromPath.toString()).toPath(), dataPath)
                 .to(properties.getBucketName(), network);

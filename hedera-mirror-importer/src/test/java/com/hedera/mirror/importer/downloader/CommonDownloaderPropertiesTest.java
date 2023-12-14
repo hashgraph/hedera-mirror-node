@@ -21,8 +21,8 @@ import static com.hedera.mirror.importer.downloader.StreamSourceProperties.Sourc
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.ImporterProperties.HederaNetwork;
 import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,7 +32,7 @@ class CommonDownloaderPropertiesTest {
 
     @Test
     void getBucketName() {
-        var mirrorProperties = new MirrorProperties();
+        var mirrorProperties = new ImporterProperties();
         var properties = new CommonDownloaderProperties(mirrorProperties);
         assertThat(properties.getBucketName()).isEqualTo(HederaNetwork.getBucketName(mirrorProperties.getNetwork()));
 
@@ -43,7 +43,7 @@ class CommonDownloaderPropertiesTest {
 
     @Test
     void initNoNetworkDefaultBucketName() {
-        var mirrorProperties = new MirrorProperties();
+        var mirrorProperties = new ImporterProperties();
         var properties = new CommonDownloaderProperties(mirrorProperties);
 
         mirrorProperties.setNetwork(HederaNetwork.OTHER);
@@ -55,7 +55,7 @@ class CommonDownloaderPropertiesTest {
 
     @Test
     void isAnonymousCredentials() {
-        var mirrorProperties = new MirrorProperties();
+        var mirrorProperties = new ImporterProperties();
         var properties = new CommonDownloaderProperties(mirrorProperties);
 
         // Default network is DEMO, which is the only network allowing anonymous access
@@ -72,7 +72,7 @@ class CommonDownloaderPropertiesTest {
 
     @Test
     void initNoSources() {
-        var properties = new CommonDownloaderProperties(new MirrorProperties());
+        var properties = new CommonDownloaderProperties(new ImporterProperties());
         properties.setCloudProvider(SourceType.S3);
         properties.setEndpointOverride("http://localhost");
         properties.setGcpProjectId("project1");
@@ -95,7 +95,7 @@ class CommonDownloaderPropertiesTest {
         sourceProperties.setUri(URI.create("http://localhost"));
         sourceProperties.setType(SourceType.GCP);
         sourceProperties.setProjectId("project1");
-        var properties = new CommonDownloaderProperties(new MirrorProperties());
+        var properties = new CommonDownloaderProperties(new ImporterProperties());
         properties.getSources().add(sourceProperties);
         properties.init();
 
@@ -117,7 +117,7 @@ class CommonDownloaderPropertiesTest {
         sourceProperties.setType(SourceType.GCP);
         sourceProperties.setProjectId("project1");
 
-        var properties = new CommonDownloaderProperties(new MirrorProperties());
+        var properties = new CommonDownloaderProperties(new ImporterProperties());
         properties.setAccessKey("foo");
         properties.setCloudProvider(SourceType.S3);
         properties.setEndpointOverride("http://localhost");
