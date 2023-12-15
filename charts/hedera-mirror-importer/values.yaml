@@ -491,8 +491,6 @@ volumeMounts:
     mountPath: /usr/etc/hedera
   temp:
     mountPath: /tmp
-#  performance-stream:
-#    mountPath: /app/data-stream/
 
 # Volume mounts to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
 volumes:
@@ -504,6 +502,3 @@ volumes:
     emptyDir:
       medium: Memory
       sizeLimit: 500Mi
-#  performance-stream:
-#    persistentVolumeClaim:
-#      claimName: performance-stream
