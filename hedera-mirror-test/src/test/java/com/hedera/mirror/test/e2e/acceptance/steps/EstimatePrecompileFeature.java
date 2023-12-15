@@ -403,24 +403,12 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I associate contracts with the tokens and approve all nft serials")
     public void associateTokensWithContract() throws InvalidProtocolBufferException {
         // In order to execute Approve, approveNFT, ercApprove we need to associate the contract with the token
-        tokenClient.associate(
-                new ExpandedAccountId(AccountId.fromString(deployedErcTestContract.contractId().toString())),
-                fungibleTokenId);
-        tokenClient.associate(
-                new ExpandedAccountId(AccountId.fromString(deployedEstimatePrecompileContract.contractId().toString())),
-                fungibleTokenId);
-        tokenClient.associate(
-                new ExpandedAccountId(AccountId.fromString(deployedEstimatePrecompileContract.contractId().toString())),
-                nonFungibleKycUnfrozenTokenId);
-        tokenClient.associate(
-                new ExpandedAccountId(AccountId.fromString(deployedPrecompileContract.contractId().toString())),
-                fungibleTokenId);
-        tokenClient.associate(
-                new ExpandedAccountId(AccountId.fromString(deployedPrecompileContract.contractId().toString())),
-                nonFungibleTokenId);
-        tokenClient.associate(
-                new ExpandedAccountId(AccountId.fromString(deployedPrecompileContract.contractId().toString())),
-                nonFungibleKycUnfrozenTokenId);
+        tokenClient.associate(deployedErcTestContract.contractId(), fungibleTokenId);
+        tokenClient.associate(deployedEstimatePrecompileContract.contractId(), fungibleTokenId);
+        tokenClient.associate(deployedEstimatePrecompileContract.contractId(), nonFungibleKycUnfrozenTokenId);
+        tokenClient.associate(deployedPrecompileContract.contractId(), fungibleTokenId);
+        tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleTokenId);
+        tokenClient.associate(deployedPrecompileContract.contractId(), nonFungibleKycUnfrozenTokenId);
 
         // approve is also needed for the approveNFT function
         accountClient.approveNftAllSerials(nonFungibleKycUnfrozenTokenId, deployedPrecompileContract.contractId());

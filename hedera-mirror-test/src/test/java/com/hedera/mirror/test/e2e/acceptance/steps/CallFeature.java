@@ -200,11 +200,8 @@ public class CallFeature extends AbstractFeature {
     @And("I associate precompile contract with the tokens")
     public void associatePrecompileWithTokens() throws InvalidProtocolBufferException {
         // In order to execute Approve, approveNFT, ercApprove we need to associate the contract with the token
-        tokenClient.associate(
-                new ExpandedAccountId(AccountId.fromString(deployedPrecompileContract.contractId().toString())),
-                fungibleTokenId);
-        networkTransactionResponse = tokenClient.associate(
-                new ExpandedAccountId(AccountId.fromString(deployedPrecompileContract.contractId().toString())),
+        tokenClient.associate(deployedPrecompileContract.contractId(), fungibleTokenId);
+        networkTransactionResponse = tokenClient.associate(deployedPrecompileContract.contractId(),
                 nonFungibleTokenId);
     }
 

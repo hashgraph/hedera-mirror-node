@@ -17,6 +17,7 @@
 package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
@@ -75,7 +76,6 @@ public class TokenClient extends AbstractNetworkClient {
         var admin = sdkClient.getExpandedOperatorAccountId();
         log.info("Deleting {} tokens and dissociating {} token relationships", tokenIds.size(), associations.size());
         deleteAll(tokenIds, tokenId -> delete(admin, tokenId));
-        associations.clear();
     }
 
     @Override
@@ -272,6 +272,10 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
+    public NetworkTransactionResponse associate(ContractId contractId, TokenId token) {
+        return associate(new ExpandedAccountId(AccountId.fromString(contractId.toString())), token);
+    }
+
     public NetworkTransactionResponse associate(ExpandedAccountId accountId, TokenId token) {
         var key = new TokenAccount(token, accountId);
 
@@ -285,7 +289,7 @@ public class TokenClient extends AbstractNetworkClient {
             NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
                     keyList);
 
-            log.debug("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
+            log.info("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
 
             return response;
         });
