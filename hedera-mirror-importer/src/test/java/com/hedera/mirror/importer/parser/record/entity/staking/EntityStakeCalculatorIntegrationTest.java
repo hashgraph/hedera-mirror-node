@@ -69,6 +69,7 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
         var newPeriodInstant = TestUtils.asStartOfEpochDay(epochDay + numPeriods);
         long nodeStakeTimestamp = DomainUtils.convertToNanosMax(newPeriodInstant.plusNanos(2000L));
         long balanceTimestamp = DomainUtils.convertToNanosMax(newPeriodInstant.plusNanos(1000L));
+        long previousBalanceTimestamp = balanceTimestamp - 1000;
 
         // the lower timestamp is the consensus timestamp of the previous NodeStakeUpdateTransaction
         long entityStakeLowerTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay - 1)) + 20L;
@@ -139,11 +140,19 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
         // account balance
         domainBuilder
                 .accountBalance()
+                .customize(ab -> ab.id(new Id(balanceTimestamp, treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(previousBalanceTimestamp, treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
                 .customize(ab -> ab.id(new Id(balanceTimestamp, account800.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new Id(balanceTimestamp, treasury.toEntityId())))
+                .customize(ab -> ab.id(new Id(previousBalanceTimestamp, account800.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
@@ -151,11 +160,19 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(account2Balance).id(new Id(balanceTimestamp, account2.toEntityId())))
+                .customize(ab ->
+                        ab.balance(account1Balance - 100).id(new Id(previousBalanceTimestamp, account1.toEntityId())))
+                .persist();
+        // Deduped
+        domainBuilder
+                .accountBalance()
+                .customize(
+                        ab -> ab.balance(account2Balance).id(new Id(previousBalanceTimestamp, account2.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(account3Balance).id(new Id(balanceTimestamp, account3.toEntityId())))
+                .customize(
+                        ab -> ab.balance(account3Balance).id(new Id(previousBalanceTimestamp, account3.toEntityId())))
                 .persist();
 
         long creditAmount = 50 * TINYBARS_IN_ONE_HBAR;
@@ -243,7 +260,8 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
         // Account 800's entity stake is up to end period epochDay - 2, calculation for period epochDay - 1 is skipped
         // for some reason, when the NodeStakeUpdate transaction for end period epochDay is processed, there should be
         // entity stake calculation done for two periods, epochDay - 1 and epochDay
-        long balanceTimestamp = secondLastNodeStakeTimestamp - 2000L;
+        long balanceTimestamp = secondLastNodeStakeTimestamp - 2000;
+        long previousBalanceTimestamp = balanceTimestamp - 1000;
         domainBuilder.entity(STAKING_REWARD_ACCOUNT, balanceTimestamp - 5000).persist();
         var entityStake800 = domainBuilder
                 .entityStake()
@@ -261,11 +279,15 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
         // account balance
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new Id(balanceTimestamp, EntityId.of(STAKING_REWARD_ACCOUNT))))
+                .customize(ab -> ab.id(new Id(balanceTimestamp, EntityId.of(TREASURY))))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new Id(balanceTimestamp, EntityId.of(TREASURY))))
+                .customize(ab -> ab.id(new Id(previousBalanceTimestamp, EntityId.of(TREASURY))))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new Id(previousBalanceTimestamp, EntityId.of(STAKING_REWARD_ACCOUNT))))
                 .persist();
         domainBuilder
                 .nodeStake()
