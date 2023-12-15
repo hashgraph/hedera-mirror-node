@@ -10,6 +10,6 @@ select create_distributed_table('${tempSchema}.nft_temp', 'token_id', colocate_w
 select create_distributed_table('${tempSchema}.schedule_temp', 'schedule_id', colocate_with => 'schedule');
 select create_distributed_table('${tempSchema}.token_account_temp', 'account_id', colocate_with => 'token_account');
 select create_distributed_table('${tempSchema}.token_allowance_temp', 'owner', colocate_with => 'token_allowance');
-select create_distributed_table('${tempSchema}.dissociate_token_transfer', 'payer_account_id', colocate_with => 'token_transfer');
+select create_distributed_table('${tempSchema}.dissociate_token_transfer', 'token_id', colocate_with => 'nft');
 select create_distributed_table('${tempSchema}.token_temp', 'token_id', colocate_with => 'token');
 select create_distributed_table('${tempSchema}.topic_message_lookup_temp', 'topic_id', colocate_with => 'topic_message_lookup');
