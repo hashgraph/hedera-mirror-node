@@ -140,10 +140,10 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     @Override
     protected void doMigrate() throws IOException {
         if (isMainnet()) {
+            boolean entityHistory = entityProperties.getPersist().isEntityHistory();
             boolean trackBalance = entityProperties.getPersist().isTrackBalance();
-            boolean trackEntityHistory = entityProperties.getPersist().isTrackEntityHistory();
+            entityProperties.getPersist().setEntityHistory(false);
             entityProperties.getPersist().setTrackBalance(false);
-            entityProperties.getPersist().setTrackEntityHistory(false);
 
             try {
                 transactionOperations.executeWithoutResult(t -> {
@@ -152,8 +152,8 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
                     missingTransactions();
                 });
             } finally {
-                entityProperties.getPersist().setTrackEntityHistory(trackEntityHistory);
                 entityProperties.getPersist().setTrackBalance(trackBalance);
+                entityProperties.getPersist().setEntityHistory(entityHistory);
             }
         }
     }

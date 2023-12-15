@@ -118,8 +118,8 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         assertThat(entityRepository.count()).isZero();
         assertThat(findHistory(Entity.class)).isEmpty();
 
+        assertThat(entityProperties.getPersist().isEntityHistory()).isTrue();
         assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
-        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test
@@ -136,8 +136,8 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         assertThat(entityRepository.count()).isZero();
         assertThat(findHistory(Entity.class)).isEmpty();
 
+        assertThat(entityProperties.getPersist().isEntityHistory()).isTrue();
         assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
-        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test
@@ -176,8 +176,8 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
                 .extracting(CryptoTransfer::getConsensusTimestamp)
                 .containsOnly(1L, 2L, RECEIVER_PAYER_TIMESTAMP);
 
+        assertThat(entityProperties.getPersist().isEntityHistory()).isTrue();
         assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
-        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test
@@ -201,8 +201,8 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         assertThat(findHistory(Entity.class)).isEmpty();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
 
+        assertThat(entityProperties.getPersist().isEntityHistory()).isTrue();
         assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
-        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test
@@ -215,8 +215,8 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         errataMigration.doMigrate();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
 
+        assertThat(entityProperties.getPersist().isEntityHistory()).isTrue();
         assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
-        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test

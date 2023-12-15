@@ -213,7 +213,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (entity.hasHistory()
                 && entity.getCreatedTimestamp() == null
-                && !entityProperties.getPersist().isTrackEntityHistory()) {
+                && !entityProperties.getPersist().isEntityHistory()) {
             return;
         }
 

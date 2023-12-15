@@ -162,18 +162,18 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     void beforeEach() {
         defaultTransactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
 
+        entityProperties.getPersist().setEntityHistory(true);
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
-        entityProperties.getPersist().setTrackEntityHistory(true);
         sqlEntityListener.onStart();
     }
 
     @AfterEach
     void afterEach() {
+        entityProperties.getPersist().setEntityHistory(true);
         entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
-        entityProperties.getPersist().setTrackEntityHistory(true);
     }
 
     @Test
@@ -1151,9 +1151,9 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void onEntityWhenTrackEntityHistoryDisabled() {
+    void onEntityWhenEntityHistoryDisabled() {
         // given
-        entityProperties.getPersist().setTrackEntityHistory(false);
+        entityProperties.getPersist().setEntityHistory(false);
         var entity1 = domainBuilder.entity().persist();
         var entity1Update = entity1.toBuilder()
                 .createdTimestamp(null)

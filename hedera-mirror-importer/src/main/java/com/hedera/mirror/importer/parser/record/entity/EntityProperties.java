@@ -46,6 +46,8 @@ public class EntityProperties {
         private boolean contractTransactionHash = true;
         private boolean cryptoTransferAmounts = true;
 
+        private boolean entityHistory = true;
+
         /**
          * A set of entity ids to exclude from entity_transaction table
          */
@@ -79,8 +81,6 @@ public class EntityProperties {
         private boolean trackAllowance = true;
 
         private boolean trackBalance = true;
-
-        private boolean trackEntityHistory = true;
 
         private boolean trackNonce = true;
 
