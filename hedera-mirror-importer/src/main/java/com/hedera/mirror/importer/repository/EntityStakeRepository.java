@@ -60,11 +60,13 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
           order by epoch_day
           limit 1
         ), balance_timestamp as (
-             select ab.consensus_timestamp
-             from account_balance ab, end_period ep
-             where ab.account_id = 2 and ab.consensus_timestamp <= ep.consensus_timestamp
-             order by ab.consensus_timestamp desc
-             limit 1
+          select ab.consensus_timestamp
+          from account_balance ab, end_period ep
+          where ab.account_id = 2 and
+            ab.consensus_timestamp > (ep.consensus_timestamp - 2678400000000000) and
+            ab.consensus_timestamp <= ep.consensus_timestamp
+          order by ab.consensus_timestamp desc
+          limit 1
         ), entity_state as (
           select
             decline_reward,
@@ -89,9 +91,11 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             order by id, timestamp_range desc
           ) as latest_history
         ), balance_snapshot as (
-          select account_id, balance
-          from account_balance ab
-          join balance_timestamp bt on bt.consensus_timestamp = ab.consensus_timestamp
+          select distinct on (account_id) account_id, balance
+          from account_balance ab, balance_timestamp bt
+          where ab.consensus_timestamp > (bt.consensus_timestamp - 2678400000000000) and
+            ab.consensus_timestamp <= bt.consensus_timestamp
+          order by account_id, ab.consensus_timestamp desc
         )
         insert into entity_state_start (balance, decline_reward, id, staked_account_id, staked_node_id, stake_period_start)
         select
