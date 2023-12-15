@@ -45,6 +45,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -158,9 +159,9 @@ class MirrorEvmTxProcessorTest {
                     return new MessageCallProcessor(v38, new PrecompileContractRegistry());
                 });
         Map<String, Provider<ContractCreationProcessor>> processorsMap = Map.of(
-                EVM_VERSION_0_30, () -> new ContractCreationProcessorV30(gasCalculator, v30),
-                EVM_VERSION_0_34, () -> new ContractCreationProcessorV30(gasCalculator, v34),
-                EVM_VERSION_0_38, () -> new ContractCreationProcessorV30(gasCalculator, v38));
+                EVM_VERSION_0_30, () -> new ContractCreationProcessor(gasCalculator, v30, true, List.of(), 1),
+                EVM_VERSION_0_34, () -> new ContractCreationProcessor(gasCalculator, v34, true, List.of(), 1),
+                EVM_VERSION_0_38, () -> new ContractCreationProcessor(gasCalculator, v38, true, List.of(), 1));
 
         mirrorEvmTxProcessor = new MirrorEvmTxProcessorImpl(
                 worldState,

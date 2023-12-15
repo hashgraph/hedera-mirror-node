@@ -16,19 +16,12 @@
 
 package com.hedera.mirror.web3.evm.config;
 
-import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
-import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
-import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
-
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.hedera.mirror.web3.evm.contracts.execution.ContractCreationProcessorV30;
-import com.hedera.mirror.web3.evm.contracts.execution.ContractCreationProcessorV34;
-import com.hedera.mirror.web3.evm.contracts.execution.ContractCreationProcessorV38;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV34;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV38;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
@@ -42,8 +35,10 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOpe
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -53,12 +48,14 @@ import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.EvmSpecVersion;
+import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -94,6 +91,12 @@ public class EvmConfiguration {
 
     public static final String EVM_VERSION = EVM_VERSION_0_38;
     private final CacheProperties cacheProperties;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    private final GasCalculatorHederaV22 gasCalculator;
+    private final HederaBlockHashOperation hederaBlockHashOperation;
+    private final AbstractAutoCreationLogic autoCreationLogic;
+    private final EntityAddressSequencer entityAddressSequencer;
+    private final PrecompiledContractProvider precompilesHolder;
 
     @Bean(CACHE_MANAGER_CONTRACT_STATE)
     CacheManager cacheManagerState() {
@@ -168,25 +171,25 @@ public class EvmConfiguration {
 
     @Bean
     Map<String, Provider<ContractCreationProcessor>> contractCreationProcessorProvider(
-            final ContractCreationProcessorV30 contractCreationProcessorV30,
-            final ContractCreationProcessorV34 contractCreationProcessorV34,
-            final ContractCreationProcessorV38 contractCreationProcessorV38) {
+            final ContractCreationProcessor contractCreationProcessor30,
+            final ContractCreationProcessor contractCreationProcessor34,
+            final ContractCreationProcessor contractCreationProcessor38) {
         Map<String, Provider<ContractCreationProcessor>> processorsMap = new HashMap<>();
-        processorsMap.put(EVM_VERSION_0_30, () -> contractCreationProcessorV30);
-        processorsMap.put(EVM_VERSION_0_34, () -> contractCreationProcessorV34);
-        processorsMap.put(EVM_VERSION_0_38, () -> contractCreationProcessorV38);
+        processorsMap.put(EVM_VERSION_0_30, () -> contractCreationProcessor30);
+        processorsMap.put(EVM_VERSION_0_34, () -> contractCreationProcessor34);
+        processorsMap.put(EVM_VERSION_0_38, () -> contractCreationProcessor38);
         return processorsMap;
     }
 
     @Bean
     Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
-            MirrorEvmMessageCallProcessorV30 mirrorEvmMessageCallProcessorV30,
-            MirrorEvmMessageCallProcessorV34 mirrorEvmMessageCallProcessorV34,
-            MirrorEvmMessageCallProcessorV38 mirrorEvmMessageCallProcessorV38) {
+            MirrorEvmMessageCallProcessorV30 mirrorEvmMessageCallProcessor30,
+            MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor34,
+            MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor38) {
         Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
-        processorsMap.put(EVM_VERSION_0_30, () -> mirrorEvmMessageCallProcessorV30);
-        processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessorV34);
-        processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessorV38);
+        processorsMap.put(EVM_VERSION_0_30, () -> mirrorEvmMessageCallProcessor30);
+        processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor34);
+        processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessor38);
 
         return processorsMap;
     }
@@ -207,108 +210,36 @@ public class EvmConfiguration {
     }
 
     @Bean
-    EVM v38(
-            final GasCalculatorHederaV22 gasCalculator,
-            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final HederaPrngSeedOperation prngSeedOperation,
-            final HederaBlockHashOperation hederaBlockHashOperation) {
-        final var operationRegistry = new OperationRegistry();
-        final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
-
-        registerShanghaiOperations(
-                operationRegistry,
+    EVM evm030(final HederaPrngSeedOperation prngSeedOperation) {
+        return evm(
                 gasCalculator,
-                mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
-        Set.of(
-                        new HederaBalanceOperation(gasCalculator, validator),
-                        new HederaDelegateCallOperation(gasCalculator, validator),
-                        new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
-                        new HederaEvmCreate2Operation(
-                                gasCalculator, mirrorNodeEvmProperties, createOperationExternalizer()),
-                        new HederaEvmCreateOperation(gasCalculator, createOperationExternalizer()),
-                        new HederaEvmSLoadOperation(gasCalculator),
-                        new HederaExtCodeCopyOperation(gasCalculator, validator),
-                        new HederaExtCodeHashOperation(gasCalculator, validator),
-                        new HederaExtCodeSizeOperation(gasCalculator, validator),
-                        prngSeedOperation,
-                        hederaBlockHashOperation)
-                .forEach(operationRegistry::put);
-
-        return new EVM(
-                operationRegistry,
-                gasCalculator,
-                org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
-                EvmSpecVersion.SHANGHAI);
+                mirrorNodeEvmProperties,
+                prngSeedOperation,
+                hederaBlockHashOperation,
+                EvmSpecVersion.LONDON,
+                MainnetEVMs::registerLondonOperations);
     }
 
     @Bean
-    EVM v34(
-            final GasCalculatorHederaV22 gasCalculator,
-            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final HederaPrngSeedOperation prngSeedOperation,
-            final HederaBlockHashOperation hederaBlockHashOperation) {
-        final var operationRegistry = new OperationRegistry();
-        final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
-
-        registerParisOperations(
-                operationRegistry,
+    EVM evm034(final HederaPrngSeedOperation prngSeedOperation) {
+        return evm(
                 gasCalculator,
-                mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
-        Set.of(
-                        new HederaBalanceOperation(gasCalculator, validator),
-                        new HederaDelegateCallOperation(gasCalculator, validator),
-                        new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
-                        new HederaEvmCreate2Operation(
-                                gasCalculator, mirrorNodeEvmProperties, createOperationExternalizer()),
-                        new HederaEvmCreateOperation(gasCalculator, createOperationExternalizer()),
-                        new HederaEvmSLoadOperation(gasCalculator),
-                        new HederaExtCodeCopyOperation(gasCalculator, validator),
-                        new HederaExtCodeHashOperation(gasCalculator, validator),
-                        new HederaExtCodeSizeOperation(gasCalculator, validator),
-                        prngSeedOperation,
-                        hederaBlockHashOperation)
-                .forEach(operationRegistry::put);
-
-        return new EVM(
-                operationRegistry,
-                gasCalculator,
-                org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
-                EvmSpecVersion.PARIS);
+                mirrorNodeEvmProperties,
+                prngSeedOperation,
+                hederaBlockHashOperation,
+                EvmSpecVersion.PARIS,
+                MainnetEVMs::registerParisOperations);
     }
 
     @Bean
-    EVM v30(
-            final GasCalculatorHederaV22 gasCalculator,
-            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final HederaPrngSeedOperation prngSeedOperation,
-            final HederaBlockHashOperation hederaBlockHashOperation) {
-        final var operationRegistry = new OperationRegistry();
-        final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
-
-        registerLondonOperations(
-                operationRegistry,
+    EVM evm038(final HederaPrngSeedOperation prngSeedOperation) {
+        return evm(
                 gasCalculator,
-                mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
-        Set.of(
-                        new HederaBalanceOperation(gasCalculator, validator),
-                        new HederaDelegateCallOperation(gasCalculator, validator),
-                        new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
-                        new HederaEvmCreate2Operation(
-                                gasCalculator, mirrorNodeEvmProperties, createOperationExternalizer()),
-                        new HederaEvmCreateOperation(gasCalculator, createOperationExternalizer()),
-                        new HederaEvmSLoadOperation(gasCalculator),
-                        new HederaExtCodeCopyOperation(gasCalculator, validator),
-                        new HederaExtCodeHashOperation(gasCalculator, validator),
-                        new HederaExtCodeSizeOperation(gasCalculator, validator),
-                        prngSeedOperation,
-                        hederaBlockHashOperation)
-                .forEach(operationRegistry::put);
-
-        return new EVM(
-                operationRegistry,
-                gasCalculator,
-                org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
-                EvmSpecVersion.LONDON);
+                mirrorNodeEvmProperties,
+                prngSeedOperation,
+                hederaBlockHashOperation,
+                EvmSpecVersion.SHANGHAI,
+                MainnetEVMs::registerShanghaiOperations);
     }
 
     @Bean
@@ -319,5 +250,80 @@ public class EvmConfiguration {
     @Bean
     PrecompileContractRegistry precompileContractRegistry() {
         return new PrecompileContractRegistry();
+    }
+
+    @Bean
+    public ContractCreationProcessor contractCreationProcessor30(@Qualifier("evm030") EVM evm) {
+        return contractCreationProcessor(evm);
+    }
+
+    @Bean
+    public ContractCreationProcessor contractCreationProcessor34(@Qualifier("evm034") EVM evm) {
+        return contractCreationProcessor(evm);
+    }
+
+    @Bean
+    public ContractCreationProcessor contractCreationProcessor38(@Qualifier("evm038") EVM evm) {
+        return contractCreationProcessor(evm);
+    }
+
+    @Bean
+    public MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor34(@Qualifier("evm034") EVM evm) {
+        return mirrorEvmMessageCallProcessor(evm);
+    }
+
+    @Bean
+    public MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor38(@Qualifier("evm038") EVM evm) {
+        return mirrorEvmMessageCallProcessor(evm);
+    }
+
+    private EVM evm(
+            final GasCalculator gasCalculator,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            final HederaPrngSeedOperation prngSeedOperation,
+            final HederaBlockHashOperation hederaBlockHashOperation,
+            EvmSpecVersion specVersion,
+            OperationRegistryCallback callback) {
+        final var operationRegistry = new OperationRegistry();
+        final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
+
+        callback.register(
+                operationRegistry,
+                gasCalculator,
+                mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
+        Set.of(
+                        new HederaBalanceOperation(gasCalculator, validator),
+                        new HederaDelegateCallOperation(gasCalculator, validator),
+                        new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
+                        new HederaEvmCreate2Operation(
+                                gasCalculator, mirrorNodeEvmProperties, createOperationExternalizer()),
+                        new HederaEvmCreateOperation(gasCalculator, createOperationExternalizer()),
+                        new HederaEvmSLoadOperation(gasCalculator),
+                        new HederaExtCodeCopyOperation(gasCalculator, validator),
+                        new HederaExtCodeHashOperation(gasCalculator, validator),
+                        new HederaExtCodeSizeOperation(gasCalculator, validator),
+                        prngSeedOperation,
+                        hederaBlockHashOperation)
+                .forEach(operationRegistry::put);
+
+        return new EVM(
+                operationRegistry,
+                gasCalculator,
+                org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
+                specVersion);
+    }
+
+    private ContractCreationProcessor contractCreationProcessor(EVM evm) {
+        return new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1);
+    }
+
+    private MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor(EVM evm) {
+        return new MirrorEvmMessageCallProcessor(
+                autoCreationLogic,
+                entityAddressSequencer,
+                evm,
+                precompileContractRegistry(),
+                precompilesHolder,
+                gasCalculator);
     }
 }

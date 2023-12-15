@@ -28,7 +28,7 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 public class MirrorEvmMessageCallProcessorV30 extends HederaEvmMessageCallProcessor {
 
     public MirrorEvmMessageCallProcessorV30(
-            @Named("v30") EVM v30,
+            @Named("evm030") EVM v30,
             PrecompileContractRegistry precompiles,
             final PrecompiledContractProvider precompilesHolder,
             final GasCalculatorHederaV22 gasCalculator) {

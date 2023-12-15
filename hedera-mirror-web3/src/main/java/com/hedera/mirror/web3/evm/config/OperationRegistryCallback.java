@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.contracts.execution;
+package com.hedera.mirror.web3.evm.config;
 
-import jakarta.inject.Named;
-import java.util.List;
-import org.hyperledger.besu.evm.EVM;
+import java.math.BigInteger;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
+import org.hyperledger.besu.evm.operation.OperationRegistry;
 
-@Named
-public class ContractCreationProcessorV34 extends ContractCreationProcessor {
-
-    public ContractCreationProcessorV34(GasCalculator gasCalculator, @Named("v34") EVM v34) {
-        super(gasCalculator, v34, true, List.of(), 1);
-    }
+@FunctionalInterface
+public interface OperationRegistryCallback {
+    void register(OperationRegistry registry, GasCalculator gasCalculator, BigInteger chainId);
 }
