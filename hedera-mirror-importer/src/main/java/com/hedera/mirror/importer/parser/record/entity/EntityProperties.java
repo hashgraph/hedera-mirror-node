@@ -46,6 +46,8 @@ public class EntityProperties {
         private boolean contractTransactionHash = true;
         private boolean cryptoTransferAmounts = true;
 
+        private boolean entityHistory = true;
+
         /**
          * A set of entity ids to exclude from entity_transaction table
          */

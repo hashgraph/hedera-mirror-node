@@ -162,6 +162,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     void beforeEach() {
         defaultTransactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
 
+        entityProperties.getPersist().setEntityHistory(true);
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
         sqlEntityListener.onStart();
@@ -169,7 +170,10 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
 
     @AfterEach
     void afterEach() {
+        entityProperties.getPersist().setEntityHistory(true);
         entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
+        entityProperties.getPersist().setTransactionHash(false);
+        entityProperties.getPersist().setTrackBalance(true);
     }
 
     @Test
@@ -1144,6 +1148,32 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         assertThat(findHistory(Entity.class))
                 .extracting("createdTimestamp")
                 .containsOnly(entity1.getCreatedTimestamp());
+    }
+
+    @Test
+    void onEntityWhenEntityHistoryDisabled() {
+        // given
+        entityProperties.getPersist().setEntityHistory(false);
+        var entity1 = domainBuilder.entity().persist();
+        var entity1Update = entity1.toBuilder()
+                .createdTimestamp(null)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        var entity2Create = domainBuilder.entity().get();
+        var entity2Update = entity2Create.toBuilder()
+                .createdTimestamp(null)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+
+        // when
+        sqlEntityListener.onEntity(entity1Update);
+        sqlEntityListener.onEntity(entity2Create);
+        sqlEntityListener.onEntity(entity2Update);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2Create);
+        assertThat(findHistory(Entity.class)).isEmpty();
     }
 
     @Test

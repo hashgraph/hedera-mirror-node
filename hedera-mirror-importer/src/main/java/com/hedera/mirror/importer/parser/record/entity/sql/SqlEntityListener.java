@@ -211,7 +211,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return;
         }
 
-        context.merge(entity.getId(), entity, this::mergeEntity);
+        if (entity.hasHistory()
+                && entity.getCreatedTimestamp() == null
+                && !entityProperties.getPersist().isEntityHistory()) {
+            return;
+        }
+
+        context.merge(id, entity, this::mergeEntity);
         entityIdService.notify(entity);
     }
 
