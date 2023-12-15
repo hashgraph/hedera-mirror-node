@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -26,9 +27,11 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -70,6 +73,8 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final ContractResultRepository contractResultRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
+    private final EntityProperties entityProperties;
+    private final EntityRepository entityRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final ErrataMigration errataMigration;
     private final ImporterProperties importerProperties;
@@ -110,6 +115,11 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         assertErrataTransactions(ErrataType.INSERT, 0);
         assertErrataTransactions(ErrataType.DELETE, 0);
         assertThat(contractResultRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+        assertThat(findHistory(Entity.class)).isEmpty();
+
+        assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
+        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test
@@ -123,6 +133,11 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         assertErrataTransfers(ErrataType.INSERT, 0);
         assertErrataTransactions(ErrataType.INSERT, 0);
         assertThat(contractResultRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+        assertThat(findHistory(Entity.class)).isEmpty();
+
+        assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
+        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test
@@ -151,6 +166,8 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
 
         assertBalanceOffsets(EXPECTED_ACCOUNT_BALANCE_FILES);
         assertThat(contractResultRepository.count()).isEqualTo(13L);
+        assertThat(entityRepository.count()).isZero();
+        assertThat(findHistory(Entity.class)).isEmpty();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
         assertErrataTransactions(ErrataType.INSERT, 113);
         assertErrataTransactions(ErrataType.DELETE, 0);
@@ -158,6 +175,9 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         assertErrataTransfers(ErrataType.DELETE, 6)
                 .extracting(CryptoTransfer::getConsensusTimestamp)
                 .containsOnly(1L, 2L, RECEIVER_PAYER_TIMESTAMP);
+
+        assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
+        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test
@@ -177,7 +197,12 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         assertErrataTransfers(ErrataType.INSERT, 566);
         assertErrataTransfers(ErrataType.DELETE, 6);
         assertThat(contractResultRepository.count()).isEqualTo(13L);
+        assertThat(entityRepository.count()).isZero();
+        assertThat(findHistory(Entity.class)).isEmpty();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
+
+        assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
+        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test
@@ -189,6 +214,9 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
                 .persist();
         errataMigration.doMigrate();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
+
+        assertThat(entityProperties.getPersist().isTrackBalance()).isTrue();
+        assertThat(entityProperties.getPersist().isTrackEntityHistory()).isTrue();
     }
 
     @Test

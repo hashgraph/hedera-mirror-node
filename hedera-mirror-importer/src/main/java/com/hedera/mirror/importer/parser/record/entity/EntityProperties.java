@@ -80,6 +80,8 @@ public class EntityProperties {
 
         private boolean trackBalance = true;
 
+        private boolean trackEntityHistory = true;
+
         private boolean trackNonce = true;
 
         private boolean transactionHash = false;

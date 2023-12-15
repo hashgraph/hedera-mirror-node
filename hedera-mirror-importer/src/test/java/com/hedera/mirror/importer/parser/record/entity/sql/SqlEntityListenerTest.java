@@ -164,12 +164,16 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
 
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
+        entityProperties.getPersist().setTrackEntityHistory(true);
         sqlEntityListener.onStart();
     }
 
     @AfterEach
     void afterEach() {
         entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
+        entityProperties.getPersist().setTransactionHash(false);
+        entityProperties.getPersist().setTrackBalance(true);
+        entityProperties.getPersist().setTrackEntityHistory(true);
     }
 
     @Test
@@ -1144,6 +1148,32 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         assertThat(findHistory(Entity.class))
                 .extracting("createdTimestamp")
                 .containsOnly(entity1.getCreatedTimestamp());
+    }
+
+    @Test
+    void onEntityWhenTrackEntityHistoryDisabled() {
+        // given
+        entityProperties.getPersist().setTrackEntityHistory(false);
+        var entity1 = domainBuilder.entity().persist();
+        var entity1Update = entity1.toBuilder()
+                .createdTimestamp(null)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+        var entity2 = domainBuilder.entity().get();
+        var entity2Update = entity2.toBuilder()
+                .createdTimestamp(null)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
+
+        // when
+        sqlEntityListener.onEntity(entity1Update);
+        sqlEntityListener.onEntity(entity2);
+        sqlEntityListener.onEntity(entity2Update);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2);
+        assertThat(findHistory(Entity.class)).isEmpty();
     }
 
     @Test
