@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -51,6 +52,7 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.79.0")
+@DisableRepeatableSqlMigration
 class BackfillFailedEthereumTransactionContractResultMigrationTest extends ImporterIntegrationTest {
 
     private final ContractResultRepository contractResultRepository;

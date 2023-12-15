@@ -13,6 +13,10 @@ create user mirror_web3 with login password 'mirror_web3_pass' in role readonly;
 alter user mirror_node with createrole;
 grant readwrite to mirror_node;
 
+-- Grant temp schema admin privileges
+grant temporary_admin to mirror_node;
+grant temporary_admin to mirror_importer;
+
 -- Create schema
 create schema if not exists public authorization mirror_node;
 grant usage on schema public to public;
@@ -44,6 +48,4 @@ grant all on schema public, temporary to mirror_node;
 grant temporary on database mirror_node to mirror_node;
 alter type timestamptz owner to mirror_node;
 
--- Grant temp schema admin privileges
-grant temporary_admin to mirror_node;
-grant temporary_admin to mirror_importer;
+alter database mirror_node set search_path = public, temporary;

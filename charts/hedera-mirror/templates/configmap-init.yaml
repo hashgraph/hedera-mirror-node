@@ -51,6 +51,10 @@ data:
     create role readonly;
     create role readwrite in role readonly;
     create role :tempSchemaAdminRole in role readwrite;
+    
+    -- Grant temp schema admin privileges
+    grant :tempSchemaAdminRole to :ownerUsername;
+    grant :tempSchemaAdminRole to :importerUsername;
 
     -- Create users
     create user :graphQLUsername with login password :'graphQLPassword' in role readonly;
@@ -76,7 +80,7 @@ data:
     grant connect on database :dbName to readonly;
     grant select on all tables in schema :dbSchema, :tempSchema to readonly;
     grant select on all sequences in schema :dbSchema, :tempSchema to readonly;
-    grant usage on schema :dbSchema, tempSchema to readonly;
+    grant usage on schema :dbSchema, :tempSchema to readonly;
     alter default privileges in schema :dbSchema, :tempSchema grant select on tables to readonly;
     alter default privileges in schema :dbSchema, :tempSchema grant select on sequences to readonly;
 
@@ -99,5 +103,4 @@ data:
       mv "${PGHBACONF}.bak" "${PGHBACONF}"
       pg_ctl reload
     fi
-    --TODO new schema
 {{- end }}

@@ -21,7 +21,9 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.persistence.EntityManager;
+import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
@@ -50,8 +52,13 @@ class CommonTestConfiguration {
     @Bean
     @ConfigurationProperties("spring.flyway")
     @Primary
-    FlywayProperties flywayProperties() {
+    FlywayProperties flywayProperties(@Value("${spring.flyway.target:}") String targetVersion) {
         final var baseLocation = "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/";
+        final var locations = new ArrayList<>();
+
+        if (StringUtils.isEmpty(targetVersion)) {
+            locations.add(baseLocation + "common");
+        }
         var placeholders = ImmutableMap.<String, String>builder()
                 .put("api-password", "mirror_api_pass")
                 .put("api-user", "mirror_api")
@@ -69,17 +76,18 @@ class CommonTestConfiguration {
                 .build();
 
         var flywayProperties = new FlywayProperties();
+
         flywayProperties.setBaselineOnMigrate(true);
         flywayProperties.setBaselineVersion("0");
         flywayProperties.setConnectRetries(10);
-        flywayProperties.setIgnoreMigrationPatterns(List.of("*:missing", "*:ignored"));
-        flywayProperties.setLocations(List.of(baseLocation + "v1"));
+        flywayProperties.setIgnoreMigrationPatterns(List.of("*:missing", "*:ignored", "repeatable:*"));
+        flywayProperties.setLocations(List.of(baseLocation + "v1", baseLocation + "common"));
         flywayProperties.setPlaceholders(placeholders);
         flywayProperties.setTarget("latest");
 
         if (v2) {
             flywayProperties.setBaselineVersion("1.999.999");
-            flywayProperties.setLocations(List.of(baseLocation + "v2"));
+            flywayProperties.setLocations(List.of(baseLocation + "v2", baseLocation + "common"));
         }
 
         return flywayProperties;
