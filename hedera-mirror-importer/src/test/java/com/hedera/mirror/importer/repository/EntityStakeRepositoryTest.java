@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
     private static final String[] ENTITY_STATE_START_FIELDS =
             new String[] {"balance", "declineReward", "id", "stakedAccountId", "stakedNodeId", "stakePeriodStart"};
+    private static final long ONE_MONTH = Duration.ofDays(31).toNanos();
     private static final RowMapper<Entity> ROW_MAPPER = rowMapper(Entity.class);
 
     private final EntityRepository entityRepository;
@@ -126,46 +128,62 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .customize(e -> e.type(TOPIC).timestampRange(Range.atLeast(nodeStakeTimestamp - 5)))
                 .persist();
 
-        long balanceTimestamp = nodeStakeTimestamp - 1000L;
-        long previousBalanceTimestamp = balanceTimestamp - 1000L;
-        domainBuilder
-                .accountBalance()
-                .customize(ab -> ab.balance(50000L).id(new AccountBalance.Id(balanceTimestamp, treasury.toEntityId())))
-                .persist();
+        long latestBalanceTimestamp = nodeStakeTimestamp - 100;
+        var balanceTimestamp = new AtomicLong(latestBalanceTimestamp);
         domainBuilder
                 .accountBalance()
                 .customize(ab ->
-                        ab.balance(50000L).id(new AccountBalance.Id(previousBalanceTimestamp, treasury.toEntityId())))
+                        ab.balance(50000L).id(new AccountBalance.Id(balanceTimestamp.get(), treasury.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.balance(100L).id(new AccountBalance.Id(balanceTimestamp, account1.toEntityId())))
+                .customize(
+                        ab -> ab.balance(100L).id(new AccountBalance.Id(balanceTimestamp.get(), account1.toEntityId())))
                 .persist();
-        domainBuilder
-                .accountBalance()
-                .customize(ab ->
-                        ab.balance(80L).id(new AccountBalance.Id(previousBalanceTimestamp, account1.toEntityId())))
-                .persist();
-        // These entities' balance info is deduped, so there is only data at previousBalanceTimestamp
+        // Balance info at the beginning of the month, note balance info of account2, account4, and contract is deduped
+        balanceTimestamp.addAndGet(-ONE_MONTH + 1);
         domainBuilder
                 .accountBalance()
                 .customize(ab ->
-                        ab.balance(200L).id(new AccountBalance.Id(previousBalanceTimestamp, account2.toEntityId())))
+                        ab.balance(50000L).id(new AccountBalance.Id(balanceTimestamp.get(), treasury.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab ->
-                        ab.balance(400L).id(new AccountBalance.Id(previousBalanceTimestamp, account4.toEntityId())))
+                .customize(
+                        ab -> ab.balance(80L).id(new AccountBalance.Id(balanceTimestamp.get(), account1.toEntityId())))
                 .persist();
         domainBuilder
                 .accountBalance()
-                .customize(ab ->
-                        ab.balance(500L).id(new AccountBalance.Id(previousBalanceTimestamp, contract.toEntityId())))
+                .customize(
+                        ab -> ab.balance(200L).id(new AccountBalance.Id(balanceTimestamp.get(), account2.toEntityId())))
                 .persist();
 
-        persistCryptoTransfer(20L, balanceTimestamp, account1.getId());
-        persistCryptoTransfer(30L, balanceTimestamp + 1, account1.getId());
-        persistCryptoTransfer(-10L, balanceTimestamp + 54, account2.getId());
+        domainBuilder
+                .accountBalance()
+                .customize(
+                        ab -> ab.balance(400L).id(new AccountBalance.Id(balanceTimestamp.get(), account4.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(
+                        ab -> ab.balance(500L).id(new AccountBalance.Id(balanceTimestamp.get(), contract.toEntityId())))
+                .persist();
+        // Last balance snapshot in the previous month, note the timestamp is chosen to test one-off issue
+        balanceTimestamp.addAndGet(-1);
+        domainBuilder
+                .accountBalance()
+                .customize(ab ->
+                        ab.balance(50000L).id(new AccountBalance.Id(balanceTimestamp.get(), treasury.toEntityId())))
+                .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(
+                        ab -> ab.balance(199L).id(new AccountBalance.Id(balanceTimestamp.get(), account2.toEntityId())))
+                .persist();
+
+        persistCryptoTransfer(20L, latestBalanceTimestamp, account1.getId());
+        persistCryptoTransfer(30L, latestBalanceTimestamp + 1, account1.getId());
+        persistCryptoTransfer(-10L, latestBalanceTimestamp + 54, account2.getId());
         // account3 is created after the account balance snapshot timestamp
         persistCryptoTransfer(123L, account3History.getTimestampLower(), account3.getId());
 
