@@ -1159,20 +1159,20 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
                 .createdTimestamp(null)
                 .timestampRange(Range.atLeast(domainBuilder.timestamp()))
                 .build();
-        var entity2 = domainBuilder.entity().get();
-        var entity2Update = entity2.toBuilder()
+        var entity2Create = domainBuilder.entity().get();
+        var entity2Update = entity2Create.toBuilder()
                 .createdTimestamp(null)
                 .timestampRange(Range.atLeast(domainBuilder.timestamp()))
                 .build();
 
         // when
         sqlEntityListener.onEntity(entity1Update);
-        sqlEntityListener.onEntity(entity2);
+        sqlEntityListener.onEntity(entity2Create);
         sqlEntityListener.onEntity(entity2Update);
         completeFileAndCommit();
 
         // then
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2Create);
         assertThat(findHistory(Entity.class)).isEmpty();
     }
 
