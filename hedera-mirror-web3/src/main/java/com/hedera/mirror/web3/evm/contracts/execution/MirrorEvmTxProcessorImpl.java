@@ -58,7 +58,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
             final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Provider<ContractCreationProcessor> contractCreationProcessorProvider,
+            final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
@@ -70,7 +70,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 dynamicProperties,
                 gasCalculator,
                 mcps,
-                contractCreationProcessorProvider,
+                ccps,
                 blockMetaSource,
                 operationTracer);
 

@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -138,20 +139,29 @@ class MirrorEvmTxProcessorTest {
         MainnetEVMs.registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
         final String EVM_VERSION_0_34 = "v0.34";
-        final var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        final var v30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        final var v34 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
+        final var v38 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.SHANGHAI);
         final Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
                 EVM_VERSION_0_30,
                 () -> {
                     mcpVersion = EVM_VERSION_0_30;
-                    return new MessageCallProcessor(evm30, new PrecompileContractRegistry());
+                    return new MessageCallProcessor(v30, new PrecompileContractRegistry());
                 },
                 EVM_VERSION_0_34,
                 () -> {
                     mcpVersion = EVM_VERSION_0_34;
-                    return new MessageCallProcessor(evm30, new PrecompileContractRegistry());
+                    return new MessageCallProcessor(v34, new PrecompileContractRegistry());
+                },
+                EVM_VERSION_0_38,
+                () -> {
+                    mcpVersion = EVM_VERSION_0_38;
+                    return new MessageCallProcessor(v38, new PrecompileContractRegistry());
                 });
-        Provider<ContractCreationProcessor> contractCreationProcessorProvider =
-                () -> new ContractCreationProcessor(gasCalculator, evm30, true, List.of(), 1);
+        Map<String, Provider<ContractCreationProcessor>> processorsMap = Map.of(
+                EVM_VERSION_0_30, () -> new ContractCreationProcessor(gasCalculator, v30, true, List.of(), 1),
+                EVM_VERSION_0_34, () -> new ContractCreationProcessor(gasCalculator, v34, true, List.of(), 1),
+                EVM_VERSION_0_38, () -> new ContractCreationProcessor(gasCalculator, v38, true, List.of(), 1));
 
         mirrorEvmTxProcessor = new MirrorEvmTxProcessorImpl(
                 worldState,
@@ -159,7 +169,7 @@ class MirrorEvmTxProcessorTest {
                 evmProperties,
                 gasCalculator,
                 mcps,
-                contractCreationProcessorProvider,
+                processorsMap,
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
