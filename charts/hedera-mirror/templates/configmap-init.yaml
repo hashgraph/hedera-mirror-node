@@ -51,10 +51,6 @@ data:
     create role readonly;
     create role readwrite in role readonly;
     create role :tempSchemaAdminRole in role readwrite;
-    
-    -- Grant temp schema admin privileges
-    grant :tempSchemaAdminRole to :ownerUsername;
-    grant :tempSchemaAdminRole to :importerUsername;
 
     -- Create users
     create user :graphQLUsername with login password :'graphQLPassword' in role readonly;
@@ -64,7 +60,11 @@ data:
     create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
     create user :web3Username with login password :'web3Password' in role readonly;
     alter user :ownerUsername with createrole;
-
+    
+    -- Grant temp schema admin privileges
+    grant :tempSchemaAdminRole to :ownerUsername;
+    grant :tempSchemaAdminRole to :importerUsername;
+    
     -- Create schema
     \connect :dbName :ownerUsername
     create schema if not exists :dbSchema authorization :ownerUsername;
@@ -89,10 +89,6 @@ data:
     grant usage on all sequences in schema :dbSchema, :tempSchema to readwrite;
     alter default privileges in schema :dbSchema, :tempSchema grant insert, update, delete on tables to readwrite;
     alter default privileges in schema :dbSchema, :tempSchema grant usage on sequences to readwrite;
-    
-    -- Grant temp schema admin privileges
-    grant :tempSchemaAdminRole to :ownerUsername
-    grant :tempSchemaAdminRole to :importerUsername
 
     -- Alter search path
     \connect postgres postgres
