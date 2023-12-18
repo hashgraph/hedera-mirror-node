@@ -38,9 +38,10 @@ contract MockContract {
 }
 
 contract EstimateGasContract is Caller {
-    uint256 public counter = 1;
+    uint256 public counter2 = 1;
     uint256 public salt = 1;
     uint256 public salt2 = 2;
+    uint256 public counter = 1;
     MockContract mockContract;
 
     constructor() payable {
@@ -49,6 +50,7 @@ contract EstimateGasContract is Caller {
 
     function updateCounter(uint256 _counter) public returns (uint256) {
         counter = _counter;
+        counter2 = _counter;
         return counter;
     }
 

@@ -30,7 +30,12 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.Cont
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_APPROVED;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_APPROVED_DIRECT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_COUNTER;
+import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_COUNTER2;
+import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_SALT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_TOKEN_INFORMATION;
+import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.IS_APPROVED_FOR_ALL;
+import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.IS_FROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.OWNER_OF;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -57,6 +62,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.List;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -140,6 +146,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     public void getHistoricalContractStorage() throws InterruptedException {
         //        waitForBlocks(1);
         var data = encodeData(ESTIMATE_GAS, GET_COUNTER);
+        var data2 = encodeData(ESTIMATE_GAS, GET_SALT);
+        var data3 = encodeData(ESTIMATE_GAS, GET_COUNTER2);
         var initialResponse = callContract(data, estimateContractSolidityAddress);
         // the block number where contract storage variable is still with initial value
         var initialBlockNumber = getLastBlockNumber();
@@ -212,12 +220,14 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(deletableAccountId.getAccountId().toSolidityAddress()));
+        var initialResponse =
+                callContract(data, estimateContractSolidityAddress).getResultAsNumber();
+        var initialBlock = getLastBlockNumber();
+        waitForBlocks(2);
         networkTransactionResponse = accountClient.delete(deletableAccountId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var blockAfterDeletion = getLastBlockNumber();
-        waitForBlocks(2);
-        var response = callContract(blockAfterDeletion, data, estimateContractSolidityAddress);
-        assertEquals(response.getResultAsNumber().intValue(), 0);
+        var response = callContract(initialBlock, data, estimateContractSolidityAddress);
+        assertEquals(initialResponse.intValue(), response.getResultAsNumber().intValue());
     }
 
     @Then("I verify that historical data for {string} is returned via getTokenInfo")
@@ -237,24 +247,68 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialInfo, afterSymbol);
     }
 
+    @Then("I mint new nft for {string}")
+    public void mintNft(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
+    @Then("I associate {string}")
+    public void associateTokens(String tokenName) {
+        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        networkTransactionResponse = tokenClient.associate(receiverAccountId, tokenId);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
     @Then("I verify that historical data for {string} is returned via balanceOf")
     public void getHistoricalDataForBalanceOf(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
 
         var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
+        var data2 = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(receiverAccountId));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
-        var initialBalance = response.getResultAsNumber();
+        var response2 = callContract(data2, ercContractSolidityAddress);
+        var initialBalance = response2.getResultAsNumber(); // 0
 
         waitForBlocks(2);
         if (tokenName.toLowerCase().contains("fungible")) {
-            networkTransactionResponse = tokenClient.mint(tokenId, 10L);
+            //            tokenClient.associate(receiverAccountId, tokenId);
+            networkTransactionResponse = tokenClient.transferFungibleToken(
+                    tokenId,
+                    tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                    receiverAccountId.getAccountId(),
+                    receiverAccountId.getPrivateKey(),
+                    10);
+            waitForBlocks(2);
+            networkTransactionResponse = tokenClient.transferFungibleToken(
+                    tokenId,
+                    tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                    receiverAccountId.getAccountId(),
+                    receiverAccountId.getPrivateKey(),
+                    10);
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+            var response3 = callContract(data2, ercContractSolidityAddress); // 20
+            var initialBlockNumber3 = getLastBlockNumber();
+            waitForBlocks(2);
+            networkTransactionResponse = tokenClient.transferFungibleToken(
+                    tokenId,
+                    tokenClient.getSdkClient().getExpandedOperatorAccountId(),
+                    receiverAccountId.getAccountId(),
+                    receiverAccountId.getPrivateKey(),
+                    10);
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+            var response4 = callContract(data2, ercContractSolidityAddress); // 30
+            var initialBlockNumber4 = getLastBlockNumber();
+
+            //            networkTransactionResponse = tokenClient.mint(tokenId, 10L);
         } else {
             networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
+        var historicalResponse = callContract(initialBlockNumber, data2, ercContractSolidityAddress);
         var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertEquals(initialBalance, balanceOfHistorical);
     }
@@ -301,8 +355,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     @Then("I verify historical data for {string} is returned for getApproved")
     public void getHistoricalDataForGetApproved(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
-        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
         var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -337,8 +389,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     @Then("I verify historical data for {string} is returned for ERC getApproved")
     public void getHistoricalDataForERCGetApproved(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
-        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
         var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -373,8 +423,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     @Then("I verify historical data for {string} is returned for getApproved direct call")
     public void getHistoricalDataForGetApprovedDirectCall(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
-        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
         var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -388,6 +436,66 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
         var historicalApprovedAddress = historicalResponse.getResultAsAddress();
         assertEquals(initialApprovedAddress, historicalApprovedAddress);
+    }
+
+    @Then("I verify historical data for {string} is returned for isApprovedForAll")
+    public void getHistoricalDataForIsApprovedForAll(String tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        var initialBlockNumber = getLastBlockNumber();
+        var data = encodeData(
+                ESTIMATE_PRECOMPILE,
+                IS_APPROVED_FOR_ALL,
+                asAddress(tokenId.toSolidityAddress()),
+                asAddress(admin),
+                asAddress(receiverAccountId));
+        var response = callContract(data, estimatePrecompileContractSolidityAddress);
+        var initialResult = response.getResultAsAddress();
+        waitForBlocks(2);
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, receiverAccountId.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
+        var historicalResult = historicalResponse.getResultAsAddress();
+        assertEquals(initialResult, historicalResult);
+    }
+
+    @Then("I verify historical data for {string} is returned for ownerOf")
+    public void getHistoricalDataForOwnerOf(String tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        var initialBlockNumber = getLastBlockNumber();
+        var data = encodeData(ERC, OWNER_OF, asAddress(tokenId.toSolidityAddress()), new BigInteger("1"));
+        var response = callContract(data, ercContractSolidityAddress);
+        var initialOwner = response.getResultAsAddress();
+        waitForBlocks(2);
+        //        tokenClient.associate(receiverAccountId, tokenId);
+        networkTransactionResponse = tokenClient.transferNonFungibleToken(
+                tokenId, admin, receiverAccountId.getAccountId(), List.of(1L), receiverAccountId.getPrivateKey());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
+        var historicalOwner = historicalResponse.getResultAsAddress();
+        assertEquals(initialOwner, historicalOwner);
+    }
+
+    @Then("I verify historical data for {string} is returned for isFrozen")
+    public void getHistoricalDataForIsFrozenFungible(String tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        var data = encodeData(
+                PRECOMPILE,
+                IS_FROZEN,
+                asAddress(tokenId.toSolidityAddress()),
+                asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
+        System.out.println(data);
+        System.out.println(precompileContractSolidityAddress);
+        var response = callContract(data, precompileContractSolidityAddress);
+        var initialBlockNumber = getLastBlockNumber();
+        var initialFreezeStatus = response.getResultAsBoolean();
+        waitForBlocks(2);
+        tokenClient.associate(receiverAccountId, tokenId);
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        networkTransactionResponse = tokenClient.freeze(tokenId, receiverAccountId.getAccountId());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var historicalFreezeStatus = callContract(initialBlockNumber, data, precompileContractSolidityAddress)
+                .getResultAsBoolean();
+        assertEquals(initialFreezeStatus, historicalFreezeStatus);
     }
 
     private String getLastBlockNumber() {
@@ -444,12 +552,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         return tokenInfo;
     }
 
-    private String getTokenSymbol(ContractCallResponse response) {
-        var tokenInfo = getTokenInfo(response);
-        Tuple nestedTuple = tokenInfo.get(0);
-        return nestedTuple.get(1);
-    }
-
     protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .block(block)
@@ -475,7 +577,12 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         ERC_GET_APPROVED("getApproved"),
         GET_APPROVED("getApprovedExternal"),
         GET_APPROVED_DIRECT("getApproved(uint256)"),
+        IS_APPROVED_FOR_ALL("isApprovedForAllExternal"),
+        OWNER_OF("getOwnerOf"),
+        IS_FROZEN("isTokenFrozen"),
         GET_COUNTER("counter"),
+        GET_COUNTER2("counter2"),
+        GET_SALT("salt"),
         GET_TOKEN_INFORMATION("getInformationForToken");
 
         private final String selector;
