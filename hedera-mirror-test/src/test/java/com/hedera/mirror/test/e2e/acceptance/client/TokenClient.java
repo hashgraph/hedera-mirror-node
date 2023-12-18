@@ -76,6 +76,7 @@ public class TokenClient extends AbstractNetworkClient {
         var admin = sdkClient.getExpandedOperatorAccountId();
         log.info("Deleting {} tokens and dissociating {} token relationships", tokenIds.size(), associations.size());
         deleteAll(tokenIds, tokenId -> delete(admin, tokenId));
+        deleteAll(associations.keySet(), association -> dissociate(association.accountId, association.tokenId));
     }
 
     @Override
