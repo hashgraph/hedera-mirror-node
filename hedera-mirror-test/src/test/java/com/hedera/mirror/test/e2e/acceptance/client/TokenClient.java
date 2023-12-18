@@ -597,6 +597,11 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
+        FUNGIBLE_FOR_ETH_CALL(
+                "fungible",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
         // used in tokenAllowance.feature and not using snake_case because cucumber cannot detect the enum
         ALLOWANCEFUNGIBLE(
                 "allowance_fungible",
@@ -632,6 +637,11 @@ public class TokenClient extends AbstractNetworkClient {
                 "fungible_kyc_unfrozen", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
         FUNGIBLE_KYC_UNFROZEN_2(
                 "fungible_kyc_unfrozen_2",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.Granted,
+                TokenFreezeStatus.Unfrozen),
+        FUNGIBLE_KYC_UNFROZEN_FOR_ETH_CALL(
+                "fungible_kyc_unfrozen_for_eth_call",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.Granted,
                 TokenFreezeStatus.Unfrozen),
