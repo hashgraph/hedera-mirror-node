@@ -36,7 +36,7 @@ extra.apply {
     set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
     set("snakeyaml.version", "2.0")
-    set("vertxVersion", "4.5.0")
+    set("vertxVersion", "4.5.1")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
