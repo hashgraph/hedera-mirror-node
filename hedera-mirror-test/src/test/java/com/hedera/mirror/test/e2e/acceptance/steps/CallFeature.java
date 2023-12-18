@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_DELETABLE;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN_2;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT_FOR_ETH_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_GAS;
@@ -144,8 +144,8 @@ public class CallFeature extends AbstractFeature {
         secondReceiverAccount = accountClient.getAccount(AccountNameEnum.BOB);
         thirdReceiver = accountClient.getAccount(AccountNameEnum.DAVE);
         secondReceiverAlias = secondReceiverAccount.getPublicKey().toEvmAddress().toString();
-        fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
-        fungibleKycUnfrozenTokenId = tokenClient.getToken(FUNGIBLE_KYC_UNFROZEN).tokenId();
+        fungibleTokenId = tokenClient.getToken(FUNGIBLE_DELETABLE).tokenId();
+        fungibleKycUnfrozenTokenId = tokenClient.getToken(FUNGIBLE_KYC_UNFROZEN_2).tokenId();
         nonFungibleTokenId = tokenClient.getToken(NFT_FOR_ETH_CALL).tokenId();
     }
 
