@@ -49,7 +49,7 @@ dependencies {
         val testcontainersSpringBootVersion: String by rootProject.extra
         val vertxVersion: String by rootProject.extra
 
-        api("com.esaulpaugh:headlong:10.0.1")
+        api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("org.bouncycastle:bcprov-jdk15to18:1.77")
