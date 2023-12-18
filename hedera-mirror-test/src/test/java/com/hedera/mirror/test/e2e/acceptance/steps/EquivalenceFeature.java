@@ -58,7 +58,6 @@ import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -115,6 +114,11 @@ public class EquivalenceFeature extends AbstractFeature {
         deployedEquivalenceCall = getContract(EQUIVALENCE_CALL);
         equivalenceCallContractSolidityAddress =
                 deployedEquivalenceCall.contractId().toSolidityAddress();
+        admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        receiverAccount = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
+        receiverAccountAlias = receiverAccount.getPublicKey().toEvmAddress().toString();
+        secondReceiverAccount = accountClient.getAccount(ALICE);
+        secondReceiverAccountAlias = secondReceiverAccount.getPublicKey().toString();
     }
 
     @Given("I successfully create estimate precompile contract")
@@ -136,11 +140,12 @@ public class EquivalenceFeature extends AbstractFeature {
         networkTransactionResponse = tokenClient.mint(nonFungibleTokenId, RandomStringUtils.random(4).getBytes());
     }
 
-    @And("I update the {account} account and token key")
-    public void updateAccountAndTokensKeys(AccountNameEnum accountName)
-            throws PrecheckStatusException, ReceiptStatusException, TimeoutException {
-        var account = accountName.name().equals("OPERATOR") ? admin : receiverAccount;
-        var keyList = KeyList.of(account.getPublicKey(), deployedPrecompileContract.contractId())
+    @And("I update the {account} account and token key for contract {string}")
+    public void updateAccountAndTokensKeys(AccountNameEnum accountName, String contractName)
+            throws PrecheckStatusException, ReceiptStatusException, TimeoutException, IOException {
+        ExpandedAccountId account = accountClient.getAccount(accountName);
+        DeployedContract contract = getContract(ContractResource.valueOf(contractName));
+        var keyList = KeyList.of(account.getPublicKey(), contract.contractId())
                 .setThreshold(1);
         new AccountUpdateTransaction()
                 .setAccountId(account.getAccountId())
@@ -443,10 +448,9 @@ public class EquivalenceFeature extends AbstractFeature {
         if (amountType.equals("with")) {
             var result = executeContractCallTransaction(
                     deployedEquivalenceCall, "makeCallWithAmountRevert", parameters, Hbar.fromTinybars(123L));
-            if (payable.equals("payable")){
+            if (payable.equals("payable")) {
                 assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, result);
-            }
-            else {
+            } else {
                 var status = extractStatus(result);
                 assertEquals(CONTRACT_REVERTED, status);
             }
@@ -588,6 +592,31 @@ public class EquivalenceFeature extends AbstractFeature {
         // WAITING TO BE CLARIFIED
     }
 
+    @Then("I make internal {string} to account {account} {string} amount")
+    public void InternalCallToSystemAddress(String call, AccountNameEnum accountName, String amountType) {
+        String transactionId;
+        var accountAlias = getAccountAlias(accountName);
+        var callType = getMethodName(call, amountType);
+        ContractFunctionParameters parameters = new ContractFunctionParameters()
+                .addAddress(accountAlias)
+                .addBytes(new byte[0]);
+
+        if (amountType.equals("with")) {
+            transactionId = executeContractCallTransactionAndReturnId(
+                    deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(10));
+        } else {
+            transactionId = executeContractCallTransactionAndReturnId(
+                    deployedEquivalenceCall, callType, parameters, null);
+        }
+        var message = mirrorClient
+                .getTransactions(transactionId)
+                .getTransactions()
+                .get(0)
+                .getResult();
+        var expectedMessage = (accountName.name().equals("ALICE")) ? SUCCESS : INVALID_SIGNATURE;
+        assertEquals(expectedMessage, message);
+    }
+
     @Then("I make internal {string} to ethereum precompile {string} address with amount")
     public void internalCallToEthPrecompileWithAmount(String call, String address) {
         var callType = getMethodName(call, "with");
@@ -648,7 +677,7 @@ public class EquivalenceFeature extends AbstractFeature {
     public void transferFromFungibleTokensReceiver(TokenNameEnum tokenName, AccountNameEnum accountName)
             throws InvalidProtocolBufferException {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
-        String accountAlias = (accountName.name().equals("ALICE")) ? secondReceiverAccountAlias : receiverAccountAlias;
+        var accountAlias = getAccountAlias(accountName);
         var accountId = (accountName.name().equals("ALICE")) ? secondReceiverAccount : receiverAccount;
         var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
         var expectedMessage =
@@ -1015,6 +1044,16 @@ public class EquivalenceFeature extends AbstractFeature {
             accountClient.approveNftAllSerials(tokenId, accountId);
         } else {
             accountClient.approveToken(tokenId, accountId, 10L);
+        }
+    }
+
+    private String getAccountAlias(AccountNameEnum accountName) {
+        if (accountName.name().equals("ALICE")) {
+            return secondReceiverAccount.getAccountId().toSolidityAddress();
+        } else if (accountName.name().equals("BOB")) {
+            return receiverAccountAlias;
+        } else {
+            return "Invalid account name!";
         }
     }
 

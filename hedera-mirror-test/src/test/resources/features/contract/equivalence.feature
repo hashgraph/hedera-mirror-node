@@ -115,6 +115,17 @@ Feature: in-equivalence tests
       | "callcode"     | "0.0.800" | "without"  |
       | "callcode"     | "0.0.800" | "with"     |
 
+
+  Scenario: Validate in-equivalence tests for system accounts with internal call and state modification
+    Given I successfully create equivalence call contract
+    Given I successfully create estimate precompile contract
+    Given I successfully create tokens
+    Then the mirror node REST API should return status 200 for the contracts creation
+    Then I make internal "call" to account "BOB" "with" amount
+    Then I make internal "call" to account "ALICE" "with" amount
+    Then I make internal "call" to account "ALICE" "with" amount
+
+
   Scenario Outline: Validate in-equivalence tests for internal calls - precompiles
     Given I successfully create equivalence call contract
     Given I successfully create selfdestruct contract
@@ -223,6 +234,6 @@ Feature: in-equivalence tests
     Then I call precompile with transferFrom "NFT" token to an EVM address
     Then I call precompile with transferFrom "FUNGIBLE" token to an EVM address
     Given I mint a new nft
-    And I update the "BOB" account and token key
+    And I update the "BOB" account and token key for contract "ESTIMATE_PRECOMPILE"
     Then I call precompile with signer BOB to transferFrom "NFT" token to ALICE
     Then I call precompile with signer BOB to transferFrom "FUNGIBLE" token to ALICE
