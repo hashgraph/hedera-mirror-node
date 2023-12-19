@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
+import com.hedera.mirror.web3.repository.AccountBalanceRepository;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -68,6 +69,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final AccountBalanceRepository accountBalanceRepository;
 
     @Override
     public @NonNull Optional<Account> get(@NonNull Object key, final Optional<Long> timestamp) {
@@ -91,7 +93,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
-                Optional.ofNullable(entity.getBalance()).orElse(0L),
+                getAccountBalance(entity, timestamp),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 getOwnedNfts(entity.getId(), timestamp),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(DEFAULT_AUTO_RENEW_PERIOD),
@@ -115,6 +117,13 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return timestamp
                 .map(t -> nftRepository.countByAccountIdAndTimestampNotDeleted(accountId, t))
                 .orElseGet(() -> nftRepository.countByAccountIdNotDeleted(accountId));
+    }
+
+    private Long getAccountBalance(Entity entity, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), t))
+                .orElseGet(() -> Optional.ofNullable(entity.getBalance()))
+                .orElse(0L);
     }
 
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId, final Optional<Long> timestamp) {

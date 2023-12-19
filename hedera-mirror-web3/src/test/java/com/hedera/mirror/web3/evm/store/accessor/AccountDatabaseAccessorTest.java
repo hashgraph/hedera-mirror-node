@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.web3.repository.AccountBalanceRepository;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -111,6 +112,9 @@ class AccountDatabaseAccessorTest {
 
     @Mock
     private CryptoAllowanceRepository cryptoAllowanceRepository;
+
+    @Mock
+    private AccountBalanceRepository accountBalanceRepository;
 
     @Mock
     private TokenAccountRepository tokenAccountRepository;
@@ -204,6 +208,17 @@ class AccountDatabaseAccessorTest {
 
         assertThat(accountAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, Account::getOwnedNfts));
+    }
+
+    @Test
+    void accountBalanceMatchesValueFromRepositoryHistorical() {
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        long balance = 20;
+        when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
+                .thenReturn(Optional.of(balance));
+
+        assertThat(accountAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
     }
 
     @Test
