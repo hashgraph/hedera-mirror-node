@@ -716,7 +716,7 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addAddress(admin.getAccountId().toSolidityAddress())
                 .addAddress(secondReceiverAccount.getAccountId().toSolidityAddress())
                 .addUint256(new BigInteger("4"));
-        var transactionId = executeContractCallTransactionWithPayerAndReturnId(
+        var transactionId = executeContractCallTransactionAndReturnId(
                 deployedPrecompileContract, contractFunction, parameters, null, receiverAccount);
         var message = mirrorClient
                 .getTransactions(transactionId)
@@ -978,7 +978,7 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    private String executeContractCallTransactionWithPayerAndReturnId(
+    private String executeContractCallTransactionAndReturnId(
             DeployedContract deployedContract,
             String functionName,
             ContractFunctionParameters parameters,

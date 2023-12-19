@@ -135,6 +135,11 @@ Feature: in-equivalence tests
     Then I execute internal "call" against "payable" contract "with" amount
     Then I execute internal "call" against "non-payable" contract "with" amount
     Then I execute internal "call" against "payable" contract "without" amount
+    Then I execute internal "staticcall" against "payable" contract "without" amount
+    Then I execute internal "delegatecall" against "payable" contract "without" amount
+    Then I execute internal "callcode" against "payable" contract "with" amount
+    Then I execute internal "callcode" against "non-payable" contract "with" amount
+    Then I execute internal "callcode" against "payable" contract "without" amount
     Then I execute internal "call" against Identity precompile
     Then I execute internal "staticcall" against Identity precompile
     Then I execute internal "delegatecall" against Identity precompile
