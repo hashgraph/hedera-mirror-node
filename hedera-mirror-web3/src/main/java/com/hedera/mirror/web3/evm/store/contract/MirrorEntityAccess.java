@@ -119,7 +119,8 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         }
 
         return store.getHistoricalTimestamp()
-                .map(t -> contractStateRepository.findStorageByBlockTimestamp(entityId, key.toArrayUnsafe(), t))
+                .map(t -> contractStateRepository.findStorageByBlockTimestamp(
+                        entityId, key.trimLeadingZeros().toArrayUnsafe(), t))
                 .orElseGet(() -> contractStateRepository.findStorage(entityId, key.toArrayUnsafe()))
                 .map(Bytes::wrap)
                 .orElse(Bytes.EMPTY);
