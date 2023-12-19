@@ -45,10 +45,10 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @NotNull
     protected RetryProperties retry = new RetryProperties();
 
-    @DurationMin(seconds = 30)
+    @DurationMin(seconds = 1)
     @DurationUnit(ChronoUnit.SECONDS)
     @NotNull
-    protected Duration transactionTimeout = Duration.ofSeconds(30);
+    protected Duration transactionTimeout = Duration.ofSeconds(120);
 
     @Data
     @Validated
