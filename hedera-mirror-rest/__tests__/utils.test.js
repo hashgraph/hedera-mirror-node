@@ -1387,10 +1387,10 @@ describe('Utils test - utils.bindTimestampRange', () => {
   test('Verify already bound range exceeds max', () => {
     const inputRange = Range(1000000000n, 2000000000n);
     config.query.bindTimestampRange = false;
+    config.query.maxTimestampRangeNs = 50000n;
     expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
 
     config.query.bindTimestampRange = true;
-    config.query.maxTimestampRangeNs = 50000n;
     expect(utils.bindTimestampRange(inputRange)).toEqual(
       Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end)
     );
