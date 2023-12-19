@@ -124,6 +124,7 @@ class AccountDatabaseAccessorTest {
         final var entityNum = entityIdNumFromEvmAddress(ADDRESS);
         entity = new Entity();
         entity.setId(entityNum);
+        entity.setCreatedTimestamp(timestamp.get());
         entity.setShard(SHARD);
         entity.setRealm(REALM);
         entity.setNum(entityNum);
@@ -214,7 +215,8 @@ class AccountDatabaseAccessorTest {
     void accountBalanceMatchesValueFromRepositoryHistorical() {
         when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
         long balance = 20;
-        when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
+        when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
+                        entity.getId(), timestamp.get(), entity.getCreatedTimestamp()))
                 .thenReturn(Optional.of(balance));
 
         assertThat(accountAccessor.get(ADDRESS, timestamp))

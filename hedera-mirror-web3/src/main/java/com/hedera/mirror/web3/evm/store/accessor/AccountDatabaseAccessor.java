@@ -121,7 +121,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
 
     private Long getAccountBalance(Entity entity, final Optional<Long> timestamp) {
         return timestamp
-                .map(t -> accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), t))
+                .map(t -> accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
+                        entity.getId(), t, entity.getCreatedTimestamp()))
                 .orElseGet(() -> Optional.ofNullable(entity.getBalance()))
                 .orElse(0L);
     }
