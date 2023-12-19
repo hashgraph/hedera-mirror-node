@@ -59,6 +59,7 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
@@ -104,6 +105,9 @@ class TokenAccessorImplTest {
     private TokenAccountRepository tokenAccountRepository;
 
     @Mock
+    private TokenBalanceRepository tokenBalanceRepository;
+
+    @Mock
     private CryptoAllowanceRepository cryptoAllowanceRepository;
 
     @Mock
@@ -146,7 +150,7 @@ class TokenAccessorImplTest {
                 accountDatabaseAccessor,
                 tokenDatabaseAccessor,
                 new TokenRelationshipDatabaseAccessor(
-                        tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
+                        tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository, tokenBalanceRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);

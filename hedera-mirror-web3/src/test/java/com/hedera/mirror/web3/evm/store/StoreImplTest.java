@@ -45,6 +45,7 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -115,6 +116,9 @@ class StoreImplTest {
     private TokenAccountRepository tokenAccountRepository;
 
     @Mock
+    private TokenBalanceRepository tokenBalanceRepository;
+
+    @Mock
     private CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Mock
@@ -158,7 +162,7 @@ class StoreImplTest {
         final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
                 tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor);
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
-                tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository);
+                tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository, tokenBalanceRepository);
         final var uniqueTokenDatabaseAccessor = new UniqueTokenDatabaseAccessor(nftRepository);
         final var entityDatabaseAccessor = new EntityDatabaseAccessor(entityRepository);
         final List<DatabaseAccessor<Object, ?>> accessors = List.of(

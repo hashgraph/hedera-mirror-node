@@ -80,7 +80,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
                 .tokenBalance()
                 .customize(tb -> tb.id(new TokenBalance.Id(
                         accountBalance.getId().getConsensusTimestamp(),
-                        domainBuilder.entityId(),
+                        accountBalance.getId().getAccountId(),
                         domainBuilder.entityId())))
                 .persist();
         long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp();
@@ -90,7 +90,8 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
-                        consensusTimestamp + 10))
+                        consensusTimestamp + 10,
+                        0L))
                 .get()
                 .isEqualTo(tokenBalance1.getBalance());
     }
@@ -105,7 +106,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
                 .tokenBalance()
                 .customize(tb -> tb.id(new TokenBalance.Id(
                         accountBalance.getId().getConsensusTimestamp(),
-                        domainBuilder.entityId(),
+                        accountBalance.getId().getAccountId(),
                         domainBuilder.entityId())))
                 .persist();
 
@@ -118,7 +119,8 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
-                        consensusTimestamp + 10))
+                        consensusTimestamp + 10,
+                        0L))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }
@@ -133,21 +135,22 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
                 .tokenBalance()
                 .customize(tb -> tb.id(new TokenBalance.Id(
                         accountBalance.getId().getConsensusTimestamp(),
-                        domainBuilder.entityId(),
+                        accountBalance.getId().getAccountId(),
                         domainBuilder.entityId())))
                 .persist();
-        long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp();
-        long historicalAccountBalance = tokenBalance1.getBalance();
+        long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp(); // 1
+        long historicalAccountBalance = tokenBalance1.getBalance(); // 1
 
-        persistTokenTransfers(3, consensusTimestamp, tokenBalance1);
-        historicalAccountBalance += TRANSFER_AMOUNT * 3;
+        persistTokenTransfers(3, consensusTimestamp, tokenBalance1); // 30
+        historicalAccountBalance += TRANSFER_AMOUNT * 3; // 31
 
         persistTokenTransfers(3, consensusTimestamp + 10, tokenBalance1);
 
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
-                        consensusTimestamp + 10))
+                        consensusTimestamp + 10,
+                        0L))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }

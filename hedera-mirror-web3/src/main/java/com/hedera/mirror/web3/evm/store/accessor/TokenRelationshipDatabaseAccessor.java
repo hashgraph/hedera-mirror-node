@@ -23,6 +23,8 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenBalanceRepository;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -39,6 +41,7 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
     private final TokenDatabaseAccessor tokenDatabaseAccessor;
     private final AccountDatabaseAccessor accountDatabaseAccessor;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenBalanceRepository tokenBalanceRepository;
 
     @Override
     public @NonNull Optional<TokenRelationship> get(@NonNull Object key, final Optional<Long> timestamp) {
@@ -50,7 +53,7 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
                                     .map(tokenAccount -> new TokenRelationship(
                                             token,
                                             account,
-                                            tokenAccount.getBalance(),
+                                            getBalance(account, token, tokenAccount, timestamp),
                                             TokenFreezeStatusEnum.FROZEN == tokenAccount.getFreezeStatus(),
                                             TokenKycStatusEnum.REVOKED != tokenAccount.getKycStatus(),
                                             false,
@@ -60,6 +63,21 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
         }
         throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
                 .formatted(TokenRelationship.class.getTypeName(), key.getClass().getTypeName()));
+    }
+
+    private Long getBalance(Account account, Token token, TokenAccount tokenAccount, final Optional<Long> timestamp) {
+        // when we have normal call account.getOwnedNfts() == tokenAccount.getBalance()
+        // when we have historical call account.getOwnedNfts() != tokenAccount.getBalance()
+        // token_account table does not keep historical state about nft balances so we should get the nft balance
+        // from account.getOwnedNfts() which is set in NftDatabaseAccessor.getOwnedNfts() beforehand
+        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            return account.getOwnedNfts();
+        }
+        return timestamp
+                .map(t -> tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), t, account.getCreatedTimestamp()))
+                .orElseGet(() -> Optional.of(tokenAccount.getBalance()))
+                .orElse(0L);
     }
 
     private Optional<Account> findAccount(Address address, final Optional<Long> timestamp) {
