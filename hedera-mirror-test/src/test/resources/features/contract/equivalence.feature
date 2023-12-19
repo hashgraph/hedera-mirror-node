@@ -116,20 +116,13 @@ Feature: in-equivalence tests
       | "callcode"     | "0.0.800" | "with"     |
 
 
-  Scenario: Validate in-equivalence tests for system accounts with internal call and state modification
+  Scenario Outline: Validate in-equivalence tests for internal calls
     Given I successfully create equivalence call contract
     Given I successfully create estimate precompile contract
-    Given I successfully create tokens
-    Then the mirror node REST API should return status 200 for the contracts creation
-    Then I make internal "call" to account "BOB" "with" amount
-    Then I make internal "call" to account "ALICE" "with" amount
-    Then I make internal "call" to account "ALICE" "with" amount
-
-
-  Scenario Outline: Validate in-equivalence tests for internal calls - precompiles
-    Given I successfully create equivalence call contract
     Given I successfully create selfdestruct contract
     Given I ensure token "FUNGIBLE" has been created
+    Given I ensure token "NFT" has been created
+    Given I successfully create tokens
     And I associate "FUNGIBLE" to contract
     Then the mirror node REST API should return status 200 for the contracts creation
     Then I execute internal "call" against "payable" contract "with" amount
@@ -172,6 +165,11 @@ Feature: in-equivalence tests
     Then I execute internal "delegatecall" against HTS precompile with isToken function for "FUNGIBLE" "without" amount
 #    Then I execute internal "callcode" against HTS precompile with isToken function for "FUNGIBLE" "without" amount -> throws precompile_error needs to be invesitgated
 #    Then I execute internal "callcode" against HTS precompile with isToken function for "FUNGIBLE" "with" amount -> throws precompile_error needs to be invesitgated
+    Then I make internal "call" to account "BOB" "with" amount from "OPERATOR"
+    Then I make internal "call" to account "ALICE" "with" amount from "OPERATOR"
+    Then I make internal "call" to account "ALICE" "with" amount from "OPERATOR"
+    And I update the "BOB" account and token key for contract "EQUIVALENCE_CALL"
+    Then I make internal "call" to account "ALICE" "with" amount from "BOB"
 
 
   Scenario Outline: Validate in-equivalence tests for HTS Transfers

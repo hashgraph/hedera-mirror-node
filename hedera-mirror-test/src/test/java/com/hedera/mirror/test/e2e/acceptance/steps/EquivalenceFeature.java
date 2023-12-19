@@ -592,8 +592,9 @@ public class EquivalenceFeature extends AbstractFeature {
         // WAITING TO BE CLARIFIED
     }
 
-    @Then("I make internal {string} to account {account} {string} amount")
-    public void InternalCallToSystemAddress(String call, AccountNameEnum accountName, String amountType) {
+    @Then("I make internal {string} to account {account} {string} amount from {account}")
+    public void InternalCallToSystemAddress(String call, AccountNameEnum accountName, String amountType,
+            AccountNameEnum signer) {
         String transactionId;
         var accountAlias = getAccountAlias(accountName);
         var callType = getMethodName(call, amountType);
@@ -601,12 +602,20 @@ public class EquivalenceFeature extends AbstractFeature {
                 .addAddress(accountAlias)
                 .addBytes(new byte[0]);
 
-        if (amountType.equals("with")) {
+        // approveTokenFor(tokenName, tokenId, AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+        // approveTokenFor(tokenName, tokenId, receiverAccount.getAccountId());
+        accountClient.sendCryptoTransfer(accountClient.getAccount(signer).getAccountId(), Hbar.from(50L),
+                accountClient.getAccount(signer).getPrivateKey());
+
+        if (amountType.equals("with") && signer.name().equals("OPERATOR")) {
             transactionId = executeContractCallTransactionAndReturnId(
                     deployedEquivalenceCall, callType, parameters, Hbar.fromTinybars(10));
-        } else {
+        } else if (signer.name().equals("OPERATOR")) {
             transactionId = executeContractCallTransactionAndReturnId(
                     deployedEquivalenceCall, callType, parameters, null);
+        } else {
+            transactionId = executeContractCallTransactionAndReturnId(deployedEquivalenceCall, callType, parameters,
+                    null, accountClient.getAccount(signer));
         }
         var message = mirrorClient
                 .getTransactions(transactionId)
