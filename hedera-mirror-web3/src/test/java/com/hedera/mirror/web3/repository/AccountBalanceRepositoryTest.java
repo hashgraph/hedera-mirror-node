@@ -108,34 +108,66 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void shouldGetBalanceWhenAccountBalanceEntryIsMissing() {
+    void shouldGetBalanceWhenAccountBalanceEntryIsMissingTimestampBeforeTheAccountCreation() {
         // Test case: account_balance entry BEFORE crypto transfers is missing
-        // usually the account_balance gets persisted ~8 mins after the account creation
+        // pass timestamp that is before the initial balance transfer and account creation
         long accountId = 123L;
+        long initialBalance = 15L;
         Entity account = domainBuilder
                 .entity()
-                .customize(a -> a.id(accountId).balance(15L))
+                .customize(a -> a.id(accountId).balance(initialBalance))
                 .persist();
         long accountCreationTimestamp = account.getCreatedTimestamp();
 
         // account creation initial transfer
-        var firstTransfer = domainBuilder
+        var initialTransfer = domainBuilder
                 .cryptoTransfer()
                 .customize(
-                        b -> b.amount(TRANSFER_AMOUNT).entityId(accountId).consensusTimestamp(accountCreationTimestamp))
+                        b -> b.amount(initialBalance).entityId(accountId).consensusTimestamp(accountCreationTimestamp))
                 .persist();
         var secondTransfer = domainBuilder
                 .cryptoTransfer()
                 .customize(b -> b.amount(TRANSFER_AMOUNT)
                         .entityId(accountId)
-                        .consensusTimestamp(firstTransfer.getConsensusTimestamp() + 2L))
+                        .consensusTimestamp(initialTransfer.getConsensusTimestamp() + 2L))
                 .persist();
-        long timestampBetweenTheTransfers = firstTransfer.getConsensusTimestamp() + 1L;
+
+        assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
+                        accountId, accountCreationTimestamp - 1, accountCreationTimestamp))
+                .get()
+                .isEqualTo(0L);
+    }
+
+    @Test
+    void shouldGetBalanceWhenAccountBalanceEntryIsMissingNotMatchingTheInitialBalance() {
+        // Test case: account_balance entry BEFORE crypto transfers is missing
+        // pass timestamp that is after the initial balance transfer
+        long accountId = 123L;
+        long initialBalance = 15L;
+        Entity account = domainBuilder
+                .entity()
+                .customize(a -> a.id(accountId).balance(initialBalance))
+                .persist();
+        long accountCreationTimestamp = account.getCreatedTimestamp();
+
+        // account creation initial transfer
+        var initialTransfer = domainBuilder
+                .cryptoTransfer()
+                .customize(
+                        b -> b.amount(initialBalance).entityId(accountId).consensusTimestamp(accountCreationTimestamp))
+                .persist();
+        var secondTransfer = domainBuilder
+                .cryptoTransfer()
+                .customize(b -> b.amount(TRANSFER_AMOUNT)
+                        .entityId(accountId)
+                        .consensusTimestamp(initialTransfer.getConsensusTimestamp() + 2L))
+                .persist();
+        long timestampBetweenTheTransfers = initialTransfer.getConsensusTimestamp() + 1L;
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
                         accountId, timestampBetweenTheTransfers, accountCreationTimestamp))
                 .get()
-                .isEqualTo(TRANSFER_AMOUNT);
+                .isEqualTo(initialBalance);
 
         domainBuilder
                 .cryptoTransfer()
@@ -143,12 +175,58 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
                         .entityId(accountId)
                         .consensusTimestamp(secondTransfer.getConsensusTimestamp() + 2L))
                 .persist();
-        timestampBetweenTheTransfers = secondTransfer.getConsensusTimestamp() + 1L;
+        long timestampBetweenSecondAndThirdTheTransfers = secondTransfer.getConsensusTimestamp() + 1L;
+
+        assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
+                        accountId, timestampBetweenSecondAndThirdTheTransfers, accountCreationTimestamp + 1))
+                .get()
+                .isEqualTo(TRANSFER_AMOUNT);
+    }
+
+    @Test
+    void shouldGetBalanceWhenAccountBalanceEntryIsMissingMatchingTheInitialBalance() {
+        // Test case: account_balance entry BEFORE crypto transfers is missing
+        // usually the account_balance gets persisted ~8 mins after the account creation
+        // pass timestamp that is equal to the initial balance transfer
+        long accountId = 123L;
+        long initialBalance = 15L;
+        Entity account = domainBuilder
+                .entity()
+                .customize(a -> a.id(accountId).balance(initialBalance))
+                .persist();
+        long accountCreationTimestamp = account.getCreatedTimestamp();
+
+        // account creation initial transfer
+        var initialTransfer = domainBuilder
+                .cryptoTransfer()
+                .customize(
+                        b -> b.amount(initialBalance).entityId(accountId).consensusTimestamp(accountCreationTimestamp))
+                .persist();
+        var secondTransfer = domainBuilder
+                .cryptoTransfer()
+                .customize(b -> b.amount(TRANSFER_AMOUNT)
+                        .entityId(accountId)
+                        .consensusTimestamp(initialTransfer.getConsensusTimestamp() + 2L))
+                .persist();
+        long timestampBetweenTheTransfers = initialTransfer.getConsensusTimestamp() + 1L;
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
                         accountId, timestampBetweenTheTransfers, accountCreationTimestamp))
                 .get()
-                .isEqualTo(TRANSFER_AMOUNT * 2);
+                .isEqualTo(initialBalance);
+
+        domainBuilder
+                .cryptoTransfer()
+                .customize(b -> b.amount(TRANSFER_AMOUNT)
+                        .entityId(accountId)
+                        .consensusTimestamp(secondTransfer.getConsensusTimestamp() + 2L))
+                .persist();
+        long timestampBetweenSecondAndThirdTheTransfers = secondTransfer.getConsensusTimestamp() + 1L;
+
+        assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
+                        accountId, timestampBetweenSecondAndThirdTheTransfers, accountCreationTimestamp))
+                .get()
+                .isEqualTo(TRANSFER_AMOUNT + initialBalance);
     }
 
     private void persistCryptoTransfersBefore(int count, long baseTimestamp, AccountBalance accountBalance1) {
