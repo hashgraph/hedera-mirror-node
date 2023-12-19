@@ -74,25 +74,31 @@ public class EquivalenceFeature extends AbstractFeature {
 
     @Then("I execute selfdestruct and set beneficiary to {string} address with call to {string}")
     public void selfDestructAndSetBeneficiary(String beneficiary, String node) {
-        var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
-        var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var message = callContract(
-                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, parameters);
+        var accountAddress = new AccountId(extractAccountNumber(beneficiary));
+
+        var data = networkAdapter.encodeData(
+                EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, networkAdapter.asLongZeroHeadlongAddress(accountAddress));
+        var functionResult = callContract(
+                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, data);
+
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
-        var extractedStatus = extractStatus(message.getResultAsText());
+
+        final var message = functionResult.getResultAsText();
+        var extractedStatus = extractStatus(message);
         if (extractAccountNumber(beneficiary) < 751) {
             assertEquals(INVALID_SOLIDITY_ADDRESS_EXCEPTION, extractedStatus);
         } else {
-            assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message.getResultAsText());
+            assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
         }
     }
 
     @Then("I execute balance opcode to system account {string} address would return 0 with call to {string}")
     public void balanceOfAddress(String address, String node) {
-        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = callContract(
-                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, parameters);
+        final var accountId = new AccountId(extractAccountNumber(address));
+        var data = networkAdapter.encodeData(
+                EQUIVALENCE_CALL, GET_BALANCE, networkAdapter.asLongZeroHeadlongAddress(accountId));
+        var functionResult =
+                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data);
         if (extractAccountNumber(address) < 751) {
             assertEquals(BigInteger.ZERO, functionResult.getResultAsNumber());
         } else {
@@ -100,39 +106,46 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute balance opcode against a contract with balance")
-    public void balanceOfContract() {
-        var parameters = new ContractFunctionParameters().addAddress(equivalenceDestructContractSolidityAddress);
-        var functionResult = executeContractCallQuery(equivalenceCallContract, "getBalance", parameters);
-        assertEquals(new BigInteger("10000"), functionResult.getInt256(0));
+    @Then("I execute balance opcode against a contract with balance with call to {string}")
+    public void balanceOfContract(String node) {
+        var data = networkAdapter.encodeData(
+                EQUIVALENCE_CALL,
+                GET_BALANCE,
+                networkAdapter.asLongZeroHeadlongAddress(equivalenceDestructContract.contractId()));
+        var functionResult =
+                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data);
+        assertEquals(new BigInteger("10000"), functionResult.getResultAsNumber());
     }
 
     @Then("I verify extcodesize opcode against a system account {string} address returns 0 with call to {string}")
     public void extCodeSizeAgainstSystemAccount(String address, String node) {
-        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = callContract(
-                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, parameters);
+        final var accountId = new AccountId(extractAccountNumber(address));
+        var data = networkAdapter.encodeData(
+                EQUIVALENCE_CALL, GET_CODE_SIZE, networkAdapter.asLongZeroHeadlongAddress(accountId));
+        var functionResult =
+                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, data);
         assertEquals(BigInteger.ZERO, functionResult.getResultAsNumber());
     }
 
     @Then(
             "I verify extcodecopy opcode against a system account {string} address returns empty bytes with call to {string}")
     public void extCodeCopyAgainstSystemAccount(String address, String node) {
-        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = callContract(
-                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, parameters);
+        final var accountId = new AccountId(extractAccountNumber(address));
+        var data = networkAdapter.encodeData(
+                EQUIVALENCE_CALL, COPY_CODE, networkAdapter.asLongZeroHeadlongAddress(accountId));
+        var functionResult =
+                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data);
         assertArrayEquals(new byte[0], functionResult.getResultAsBytes().toArray());
     }
 
     @Then(
             "I verify extcodehash opcode against a system account {string} address returns empty bytes with call to {string}")
     public void extCodeHashAgainstSystemAccount(String address, String node) {
-        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
-        var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var functionResult = callContract(
-                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, parameters);
+        final var accountId = new AccountId(extractAccountNumber(address));
+        var data = networkAdapter.encodeData(
+                EQUIVALENCE_CALL, GET_CODE_HASH, networkAdapter.asLongZeroHeadlongAddress(accountId));
+        var functionResult =
+                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, data);
         assertArrayEquals(new byte[0], functionResult.getResultAsBytes().toArray());
     }
 
@@ -173,7 +186,7 @@ public class EquivalenceFeature extends AbstractFeature {
     }
 
     private ContractFunctionResult executeContractCallQuery(
-            DeployedContract deployedContract, String functionName, ContractFunctionParameters parameters) {
+            DeployedContract deployedContract, String functionName, byte[] data) {
         return contractClient.executeContractQuery(
                 deployedContract.contractId(),
                 functionName,
@@ -182,7 +195,20 @@ public class EquivalenceFeature extends AbstractFeature {
                         .getAcceptanceTestProperties()
                         .getFeatureProperties()
                         .getMaxContractFunctionGas(),
-                parameters);
+                data);
+    }
+
+    private ContractFunctionResult executeContractCallQuery(
+            DeployedContract deployedContract, String functionName, ContractFunctionParameters data) {
+        return contractClient.executeContractQuery(
+                deployedContract.contractId(),
+                functionName,
+                contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
+                        .getMaxContractFunctionGas(),
+                data);
     }
 
     public static String extractStatus(String transactionResult) {

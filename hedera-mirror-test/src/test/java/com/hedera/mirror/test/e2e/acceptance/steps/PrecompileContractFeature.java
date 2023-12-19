@@ -80,7 +80,6 @@ import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.json.JSONObject;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -634,14 +633,14 @@ public class PrecompileContractFeature extends AbstractFeature {
         var data = networkAdapter.encodeData(
                 IS_APPROVED_FOR_ALL_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-
         assertFalse(response.getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the custom fees for a fungible token")
     public void getCustomFeesForFungibleToken() throws Exception {
-        var response = callContract(
-                true, StringUtils.EMPTY, PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var data =
+                networkAdapter.encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();
@@ -660,9 +659,9 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the custom fees for a non fungible token")
     public void getCustomFeesForNonFungibleToken() throws Exception {
-        var response = callContract(
-                true, StringUtils.EMPTY, PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
-
+        var data = networkAdapter.encodeData(
+                PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var response = callContract(data, precompileTestContractSolidityAddress);
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();
         baseFixedFeeCheck(result.get(0));
@@ -676,8 +675,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And(
             "I call function with HederaTokenService getTokenCustomFees token - fractional fee and fixed fee - fungible token")
     public void getCustomFeesForFungibleTokenFractionalAndFixedFees() throws Exception {
-        var response = callContract(
-                true, StringUtils.EMPTY, PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var data =
+                networkAdapter.encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();
@@ -697,8 +697,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     // ETHCALL-033
     @And("I call function with HederaTokenService getTokenCustomFees token - royalty fee")
     public void getCustomFeesForFungibleTokenRoyaltyFee() throws Exception {
-        var response = callContract(
-                true, StringUtils.EMPTY, PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = networkAdapter.encodeData(
+                PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();
@@ -718,8 +719,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     // ETHCALL-034
     @And("I call function with HederaTokenService getTokenCustomFees token - royalty fee + fallback")
     public void getCustomFeesForFungibleTokenRoyaltyFeeAndFallback() throws Exception {
-        var response = callContract(
-                true, StringUtils.EMPTY, PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = networkAdapter.encodeData(
+                PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();

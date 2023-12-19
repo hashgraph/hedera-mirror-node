@@ -71,7 +71,6 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.StringUtils;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -177,8 +176,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I get mock contract address and getAddress selector")
     public void getMockAddress() {
-        mockAddress = callContract(true, StringUtils.EMPTY, ESTIMATE_GAS, GET_MOCK_ADDRESS)
-                .getResultAsAddress();
+        var data = networkAdapter.encodeData(ESTIMATE_GAS, GET_MOCK_ADDRESS);
+        mockAddress = callContract(data, contractSolidityAddress).getResultAsAddress();
         addressSelector = new BigInteger("0x38cc4831".substring(2), 16).toByteArray();
     }
 
@@ -310,7 +309,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
         var firstResponse = estimateContract(data, contractSolidityAddress)
                 .getResultAsNumber()
                 .intValue();
-
         // making 10 times to state update
         var secondData = networkAdapter.encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("10"));
         var secondResponse = estimateContract(secondData, contractSolidityAddress)

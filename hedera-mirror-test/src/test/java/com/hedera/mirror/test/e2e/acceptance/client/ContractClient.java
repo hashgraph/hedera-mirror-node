@@ -173,6 +173,27 @@ public class ContractClient extends AbstractNetworkClient {
 
     @SneakyThrows
     public ContractFunctionResult executeContractQuery(
+            ContractId contractId, String functionName, Long gas, byte[] data) {
+        ContractCallQuery contractCallQuery =
+                new ContractCallQuery().setContractId(contractId).setGas(gas);
+
+        contractCallQuery.setFunctionParameters(data);
+
+        long costInTinybars = contractCallQuery.getCost(client).toTinybars();
+
+        long additionalTinybars = 10000;
+        long totalPaymentInTinybars = costInTinybars + additionalTinybars;
+
+        contractCallQuery.setQueryPayment(Hbar.fromTinybars(totalPaymentInTinybars));
+
+        ContractFunctionResult functionResult = retryTemplate.execute(x -> contractCallQuery.execute(client));
+
+        log.info("Executed query on contract {} function {}, result: {}", contractId, functionName, functionResult);
+        return functionResult;
+    }
+
+    @SneakyThrows
+    public ContractFunctionResult executeContractQuery(
             ContractId contractId, String functionName, Long gas, ContractFunctionParameters parameters) {
         ContractCallQuery contractCallQuery =
                 new ContractCallQuery().setContractId(contractId).setGas(gas);

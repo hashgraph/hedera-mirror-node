@@ -18,11 +18,11 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
-import io.micrometer.common.util.StringUtils;
 import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 @Data
@@ -32,7 +32,11 @@ public class ContractCallResponse {
     private String result;
 
     public BigInteger getResultAsNumber() {
-        return getResultAsBytes().toBigInteger();
+        if (!StringUtils.startsWith(result, "0x")) {
+            return new BigInteger(result);
+        } else {
+            return getResultAsBytes().toBigInteger();
+        }
     }
 
     public String getResultAsSelector() {

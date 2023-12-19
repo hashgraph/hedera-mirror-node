@@ -175,9 +175,9 @@ public abstract class AbstractFeature {
             final String from,
             final ContractResource contractResource,
             final SelectorInterface method,
-            final Object... arguments) {
+            final String data) {
         return networkAdapter.contractsCall(
-                toMirror, false, from, contractResource, getContract(contractResource), method, arguments);
+                toMirror, false, from, contractResource, getContract(contractResource), method, data);
     }
 
     protected ContractCallResponse estimateContract(String data, String contractAddress) {

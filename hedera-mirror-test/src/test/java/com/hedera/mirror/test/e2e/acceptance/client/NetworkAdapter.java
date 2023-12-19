@@ -24,9 +24,7 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
@@ -63,10 +61,10 @@ public class NetworkAdapter {
             final ContractResource contractResource,
             final DeployedContract deployedContract,
             final SelectorInterface method,
-            final Object... arguments) {
+            final String data) {
         if (toMirror) {
             var contractCallRequestBody = ContractCallRequest.builder()
-                    .data(encodeData(contractResource, method, arguments))
+                    .data(data)
                     .to(deployedContract.contractId().toSolidityAddress())
                     .from(from.isEmpty() ? contractClient.getClientAddress() : from)
                     .estimate(isEstimate)
@@ -80,8 +78,9 @@ public class NetworkAdapter {
                     .getFeatureProperties()
                     .getMaxContractFunctionGas();
 
+            final var decodedData = Strings.decode(data);
             final var result = contractClient.executeContractQuery(
-                    deployedContract.contractId(), method.getSelector(), gas, convertParametersForSDK(arguments));
+                    deployedContract.contractId(), method.getSelector(), gas, decodedData);
             return convertResponseFromConsensusNode(contractResource, method, result.asBytes());
         }
     }
@@ -108,6 +107,14 @@ public class NetworkAdapter {
 
     public InputStream getResourceAsStream(String resourcePath) throws IOException {
         return resourceLoader.getResource(resourcePath).getInputStream();
+    }
+
+    public com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final ContractId contractID) {
+        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(contractID.num)));
+    }
+
+    public com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final AccountId accountId) {
+        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(accountId.num)));
     }
 
     public byte[] encodeDataToByteArray(ContractResource resource, SelectorInterface method, Object... args) {
@@ -154,31 +161,5 @@ public class NetworkAdapter {
 
         Function function = Function.fromJson(json);
         return function.decodeReturn(result);
-    }
-
-    private ContractFunctionParameters convertParametersForSDK(final Object... arguments) {
-        var parameters = new ContractFunctionParameters();
-
-        for (final var a : arguments) {
-            if (a instanceof Address) {
-                parameters.addAddress(((Address) a).toString());
-            } else if (a instanceof TokenId) {
-                parameters.addString(((TokenId) a).toSolidityAddress());
-            } else if (a instanceof AccountId) {
-                parameters.addString(((AccountId) a).toSolidityAddress());
-            } else if (a instanceof ContractId) {
-                parameters.addString(((ContractId) a).toSolidityAddress());
-            } else if (a instanceof String) {
-                parameters.addString((String) a);
-            } else if (a instanceof Long) {
-                parameters.addInt64((Long) a);
-            } else if (a instanceof BigInteger) {
-                parameters.addInt256((BigInteger) a);
-            } else if (a instanceof byte[]) {
-                parameters.addBytes((byte[]) a);
-            }
-        }
-
-        return parameters;
     }
 }
