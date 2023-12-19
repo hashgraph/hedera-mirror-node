@@ -62,7 +62,7 @@ hedera:
         # TODO: Set for v1 in PR: bind: false, range: 7d
         bindTimestampRange: false
         maxRepeatedQueryParameters: 100
-        maxTimestampRange: 7d
+        maxTimestampRange: 30d
         maxTransactionConsensusTimestampRange: 35m
         strictTimestampParam: true
         topicMessageLookup: false

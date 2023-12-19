@@ -15,7 +15,9 @@
  */
 
 import request from 'supertest';
+import sinon from 'sinon';
 
+import config from '../config';
 import * as constants from '../constants';
 import server from '../server';
 import * as testutils from './testutils';
@@ -34,7 +36,9 @@ const {
   isValidTransactionHash,
 } = subject;
 
-const timeNow = Math.floor(new Date().getTime() / 1000);
+// Fixed timestamp setup in sinon timer fixes Date.now() in MockPool as well.
+const timeNowMs = Date.parse('2022-10-15T08:10:15.000Z');
+const timeNow = timeNowMs / 1000;
 const timeOneHourAgo = timeNow - 60 * 60;
 
 // Validation functions
@@ -201,17 +205,42 @@ const validateOrder = function (transactions, order) {
 /**
  * This is the list of individual tests. Each test validates one query parameter
  * such as timestamp=1234 or account.id=gt:5678.
+ *
  * Definition of each test consists of the url string that is used in the query, and an
- * array of checks to be performed on the resultant SQL query.
+ * array of checks to be performed on the resultant SQL query. There are two SQL queries
+ * issued, the second dependent on the results of the first. Thus, there are checks for each
+ * query. The second query is defined based on the consensus_timestamp and payer_account_id
+ * column values returned by MockPool. Thus, the consensus_timestamp values checked between the
+ * two queries may differ.
+ *
  * These individual tests can be combined to form complex combinations as shown in the
  * definition of combinedTests below.
+ *
+ * The limit parameter is used to limit the number of fields that need to be checked since
+ * the second query uses = ANY() for each timestamp and account payer ID to be retrieved.
+ *
  * NOTE: To add more tests, just give it a unique name, specify the url query string, and
  * a set of checks you would like to perform on the resultant SQL query.
  */
+const limit = 3;
 const singleTests = {
   timestamp_lowerlimit: {
-    urlparam: `timestamp=gte:${timeOneHourAgo}`,
-    checks: [{field: 'consensus_timestamp', operator: '>=', value: `${timeOneHourAgo}000000000`}],
+    urlparam: `timestamp=gte:${timeOneHourAgo}&limit=${limit}`,
+    checks1: [
+      {field: 'consensus_timestamp', operator: '>=', value: Number(`${timeOneHourAgo}000000000`)},
+      {field: 'limit', operator: '=', value: limit},
+      {field: 'order', operator: '=', value: 'desc'},
+    ],
+    checks2: [
+      {field: 'consensus_timestamp', operator: '>=', value: `${timeNow - limit + 1}000000000`},
+      {field: 'consensus_timestamp', operator: '<=', value: `${timeNow}000000000`},
+      {field: 'payer_account_id', operator: 'in', value: [0, 1, 2]},
+      {
+        field: 'consensus_timestamp',
+        operator: 'out',
+        value: [`${timeNow}000000000`, `${timeNow - 100}000000000`, `${timeNow - 2}000000000`],
+      },
+    ],
     checkFunctions: [
       {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -219,15 +248,30 @@ const singleTests = {
   },
   timestamp_higherlimit: {
     urlparam: `timestamp=lt:${timeNow}`,
-    checks: [{field: 'consensus_timestamp', operator: '<', value: `${timeNow}000000000`}],
+    checks1: [
+      {field: 'consensus_timestamp', operator: '<=', value: `${timeNow}000000000`},
+      {field: 'limit', operator: '=', value: limit},
+      {field: 'order', operator: '=', value: 'desc'},
+    ],
+    checks2: [
+      {field: 'consensus_timestamp', operator: '>=', value: `${timeNow - limit + 1}000000000`},
+      {field: 'consensus_timestamp', operator: '<=', value: `${timeNow}000000000`},
+      {field: 'payer_account_id', operator: 'in', value: [0, 1, 2]},
+      {
+        field: 'consensus_timestamp',
+        operator: 'in',
+        value: [`${timeNow}000000000`, `${timeNow - 1}000000000`, `${timeNow - 2}000000000`],
+      },
+    ],
     checkFunctions: [
-      {func: validateTsRange, args: [0, timeNow]},
+      {func: validateTsRange, args: [0, timeNowMs]},
       {func: validateFields, args: []},
     ],
   },
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
-    checks: [{field: 'entity_id', operator: '>=', value: 1111}],
+    checks1: [{field: 'entity_id', operator: '>=', value: 1111}],
+    checks2: [{field: 'entity_id', operator: '>=', value: 1111}],
     checkFunctions: [
       {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -235,7 +279,8 @@ const singleTests = {
   },
   accountid_higherlimit: {
     urlparam: 'account.id=lt:0.0.2222',
-    checks: [{field: 'entity_id', operator: '<', value: 2222}],
+    checks1: [{field: 'entity_id', operator: '<', value: 2222}],
+    checks2: [{field: 'entity_id', operator: '<', value: 2222}],
     checkFunctions: [
       {func: validateAccNumRange, args: [0, 2222]},
       {func: validateFields, args: []},
@@ -243,12 +288,17 @@ const singleTests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'entity_id', operator: 'in', value: 3333}],
+    checks1: [{field: 'entity_id', operator: 'in', value: 3333}],
+    checks2: [{field: 'entity_id', operator: 'in', value: 3333}],
     checkFunctions: [{func: validateAccNumInArray, args: [3333]}],
   },
   accountid_multiple: {
     urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
-    checks: [
+    checks1: [
+      {field: 'entity_id', operator: 'in', value: 3333},
+      {field: 'entity_id', operator: 'in', value: 3334},
+    ],
+    checks2: [
       {field: 'entity_id', operator: 'in', value: 3333},
       {field: 'entity_id', operator: 'in', value: 3334},
     ],
@@ -256,7 +306,8 @@ const singleTests = {
   },
   limit: {
     urlparam: 'limit=99',
-    checks: [{field: 'limit', operator: '=', value: 99}],
+    checks1: [{field: 'limit', operator: '=', value: 99}],
+    checks2: [{field: 'limit', operator: '=', value: 99}],
     checkFunctions: [
       {func: validateLen, args: [99]},
       {func: validateFields, args: []},
@@ -264,21 +315,24 @@ const singleTests = {
   },
   order_asc: {
     urlparam: 'order=asc',
-    checks: [{field: 'order', operator: '=', value: 'asc'}],
+    checks1: [{field: 'order', operator: '=', value: 'asc'}],
+    checks2: [{field: 'order', operator: '=', value: 'asc'}],
     checkFunctions: [{func: validateOrder, args: ['asc']}],
   },
   order_desc: {
     urlparam: 'order=desc',
-    checks: [{field: 'order', operator: '=', value: 'desc'}],
+    checks1: [{field: 'order', operator: '=', value: 'desc'}],
+    checks2: [{field: 'order', operator: '=', value: 'desc'}],
     checkFunctions: [{func: validateOrder, args: ['desc']}],
   },
   result_fail: {
     urlparam: 'result=fail',
-    checks: [{field: 'result', operator: '!=', value: `${utils.resultSuccess}`}],
+    checks1: [{field: 'result', operator: '!=', value: `${utils.resultSuccess}`}],
+    checks2: [{field: 'result', operator: '!=', value: `${utils.resultSuccess}`}],
   },
   result_success: {
     urlparam: 'result=success',
-    checks: [{field: 'result', operator: '=', value: `${utils.resultSuccess}`}],
+    checks1: [{field: 'result', operator: '=', value: `${utils.resultSuccess}`}],
   },
 };
 
@@ -302,20 +356,38 @@ const combinedTests = [
 // Start of tests
 describe('Transaction tests', () => {
   const api = '/api/v1/transactions';
+  let clock;
+  let saveBindTimestampRange;
+  let saveMaxTimestampRangeNs;
+
+  beforeAll(() => {
+    saveBindTimestampRange = config.query.bindTimestampRange;
+    saveMaxTimestampRangeNs = config.query.maxTimestampRangeNs;
+    config.query.bindTimestampRange = false;
+    clock = sinon.useFakeTimers({now: timeNowMs});
+  });
+
+  afterAll(() => {
+    config.query.bindTimestampRange = saveBindTimestampRange;
+    config.query.maxTimestampRangeNs = saveMaxTimestampRangeNs;
+    clock.restore();
+  });
 
   // First, execute the single tests
   for (const [name, item] of Object.entries(singleTests)) {
     test(`Transactions single test: ${name} - URL: ${item.urlparam}`, async () => {
       const response = await request(server).get([api, item.urlparam].join('?'));
-
       expect(response.status).toEqual(200);
-      const {transactions} = JSON.parse(response.text);
-      const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
 
-      // Verify the sql query against each of the specified checks
-      expect(parsedParams).toEqual(expect.arrayContaining(item.checks));
+      // First query SQL parameters are compared directly
+      const parsedParams1 = JSON.parse(response.text).timestampsSqlQuery.parsedparams;
+      expect(parsedParams1).toEqual(expect.arrayContaining(item.checks1));
+      // Second query parameters are plentiful, and just ensure the check values are present
+      const parsedParams2 = JSON.parse(response.text).sqlQuery.parsedparams;
+      expect.toBeTrue(item.checks2.every((field) => parsedParams2.includes(field)));
 
       // Execute the specified functions to validate the output from the REST API
+      const {transactions} = JSON.parse(response.text);
       let check = true;
       if (item.hasOwnProperty('checkFunctions')) {
         for (const cf of item.checkFunctions) {
@@ -329,12 +401,13 @@ describe('Transaction tests', () => {
   // And now, execute the combined tests
   for (const combination of combinedTests) {
     // Combine the individual (single) checks as specified in the combinedTests array
-    const combtest = {urls: [], checks: [], checkFunctions: [], names: ''};
+    const combtest = {urls: [], checks1: [], checks2: [], checkFunctions: [], names: ''};
     for (const testname of combination) {
       if (testname in singleTests) {
         combtest.names += `${testname} `;
         combtest.urls.push(singleTests[testname].urlparam);
-        combtest.checks = combtest.checks.concat(singleTests[testname].checks);
+        combtest.checks1 = combtest.checks1.concat(singleTests[testname].checks1);
+        combtest.checks2 = combtest.checks2.concat(singleTests[testname].checks2);
         combtest.checkFunctions = combtest.checkFunctions.concat(
           singleTests[testname].hasOwnProperty('checkFunctions') ? singleTests[testname].checkFunctions : []
         );
@@ -345,13 +418,16 @@ describe('Transaction tests', () => {
     test(`Transactions combination test: ${combtest.names} - URL: ${comburl}`, async () => {
       const response = await request(server).get([api, comburl].join('?'));
       expect(response.status).toEqual(200);
-      const parsedParams = JSON.parse(response.text).sqlQuery.parsedparams;
-      const {transactions} = JSON.parse(response.text);
 
-      // Verify the sql query against each of the specified checks
-      expect(parsedParams).toEqual(expect.arrayContaining(combtest.checks));
+      // Verify the sql queries against each of the specified checks
+      const parsedParams1 = JSON.parse(response.text).timestampsSqlQuery.parsedparams;
+      expect(parsedParams1).toEqual(expect.arrayContaining(combtest.checks1));
+
+      const parsedParams2 = JSON.parse(response.text).sqlQuery.parsedparams;
+      expect(parsedParams2).toEqual(expect.arrayContaining(combtest.checks2));
 
       // Execute the specified functions to validate the output from the REST API
+      const {transactions} = JSON.parse(response.text);
       let check = true;
       if (combtest.hasOwnProperty('checkFunctions')) {
         for (const cf of combtest.checkFunctions) {

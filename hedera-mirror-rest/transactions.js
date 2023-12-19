@@ -390,7 +390,7 @@ const getTransactionTimestamps = async (
   order,
   sqlParams
 ) => {
-  const queryTsRange = utils.bindTimestampRange(tsConfig.tsRange);
+  const queryTsRange = utils.bindTimestampRange(tsConfig.tsRange, order);
   const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
     queryTsRange,
     't.consensus_timestamp',
@@ -433,7 +433,7 @@ const getTransactionTimestamps = async (
  * @param {String} order Sorting order
  * @return {String} query to retrieve relevant timestamp and payer ID information
  */
-const getTransactionTimestampsQuery = function (
+const getTransactionTimestampsQuery = (
   accountQuery,
   tsQuery,
   resultTypeQuery,
@@ -441,7 +441,7 @@ const getTransactionTimestampsQuery = function (
   creditDebitQuery,
   transactionTypeQuery,
   order
-) {
+) => {
   // convert the mysql style '?' placeholder to the named parameter format, later the same named parameter is converted
   // to the same positional index, thus the caller only has to pass the value once for the same column
   const namedAccountQuery = convertToNamedQuery(accountQuery, 'acct');
@@ -546,7 +546,7 @@ const getTransactionTimestampsQuery = function (
  */
 const getTransactionsSummary = async (timestampQueryRows, order, limit) => {
   // Nothing with which to query
-  if (_.isNil(timestampQueryRows) || timestampQueryRows.length === 0) {
+  if (_.isEmpty(timestampQueryRows)) {
     return Promise.resolve({rows: []});
   }
 
@@ -673,7 +673,7 @@ const getTransactions = async (req, res) => {
   const limitQuery = utils.convertMySqlStyleQueryToPostgres(query, sqlParams.length + 1);
   sqlParams.push(...params);
 
-  const {rows: timestampsRows} = await getTransactionTimestamps(
+  const {rows: timestampsRows, sqlQuery: timestampsSqlQuery} = await getTransactionTimestamps(
     {tsRange, tsEqValues, tsNeValues},
     accountQuery,
     resultTypeQuery,
@@ -708,6 +708,7 @@ const getTransactions = async (req, res) => {
   };
 
   if (utils.isTestEnv()) {
+    ret.timestampsSqlQuery = timestampsSqlQuery;
     ret.sqlQuery = transactionsRowsSqlQuery;
   }
 
