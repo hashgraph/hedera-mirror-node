@@ -18,10 +18,8 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static com.hedera.mirror.common.domain.entity.AbstractEntity.DEFAULT_EXPIRY_TIMESTAMP;
-import static com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess.trimLeadingZeros;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.hyperledger.besu.datatypes.Address.ZERO;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
@@ -238,7 +236,7 @@ class MirrorEntityAccessTest {
     void getStorageHistorical() {
         when(store.getHistoricalTimestamp()).thenReturn(timestamp);
         when(contractStateRepository.findStorageByBlockTimestamp(
-                        ENTITY_ID, trimLeadingZeros(BYTES.toArrayUnsafe()), timestamp.get()))
+                        ENTITY_ID, BYTES.trimLeadingZeros().toArrayUnsafe(), timestamp.get()))
                 .thenReturn(Optional.of(DATA));
         final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ADDRESS, BYTES));
         assertThat(result).isEqualTo(UInt256.fromHexString(HEX));
@@ -280,28 +278,5 @@ class MirrorEntityAccessTest {
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.empty());
         final var result = mirrorEntityAccess.fetchCodeIfPresent(ADDRESS);
         assertThat(result).isNull();
-    }
-
-    @Test
-    void testTrimLeadingZeros() {
-        // Test case 1: Array with leading zeros
-        byte[] inputArray1 = {0, 0, 0, 1, 2, 3};
-        byte[] expectedArray1 = {1, 2, 3};
-        assertArrayEquals(expectedArray1, trimLeadingZeros(inputArray1));
-
-        // Test case 2: Array with no leading zeros
-        byte[] inputArray2 = {1, 2, 3};
-        byte[] expectedArray2 = {1, 2, 3};
-        assertArrayEquals(expectedArray2, trimLeadingZeros(inputArray2));
-
-        // Test case 3: Array with all zeros
-        byte[] inputArray3 = {0, 0, 0, 0};
-        byte[] expectedArray3 = {};
-        assertArrayEquals(expectedArray3, trimLeadingZeros(inputArray3));
-
-        // Test case 4: Empty array
-        byte[] inputArray4 = {};
-        byte[] expectedArray4 = {};
-        assertArrayEquals(expectedArray4, trimLeadingZeros(inputArray4));
     }
 }

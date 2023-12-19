@@ -120,7 +120,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
         return store.getHistoricalTimestamp()
                 .map(t -> contractStateRepository.findStorageByBlockTimestamp(
-                        entityId, trimLeadingZeros(key.toArrayUnsafe()), t))
+                        entityId, key.trimLeadingZeros().toArrayUnsafe(), t))
                 .orElseGet(() -> contractStateRepository.findStorage(entityId, key.toArrayUnsafe()))
                 .map(Bytes::wrap)
                 .orElse(Bytes.EMPTY);
@@ -147,28 +147,5 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             entityId = store.getToken(address, OnMissing.DONT_THROW).getEntityId();
         }
         return entityId;
-    }
-
-    static byte[] trimLeadingZeros(byte[] inputArray) {
-        int leadingZeros = 0;
-        int length = inputArray.length;
-
-        // Count the number of leading zeros
-        for (int i = 0; i < length; i++) {
-            if (inputArray[i] == 0) {
-                leadingZeros++;
-            } else {
-                break;
-            }
-        }
-
-        // Create a new array with the trimmed length
-        int trimmedLength = length - leadingZeros;
-        byte[] trimmedArray = new byte[trimmedLength];
-
-        // Copy the non-zero elements to the new array
-        System.arraycopy(inputArray, leadingZeros, trimmedArray, 0, trimmedLength);
-
-        return trimmedArray;
     }
 }
