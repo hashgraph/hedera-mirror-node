@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
-import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -183,32 +182,6 @@ public class EquivalenceFeature extends AbstractFeature {
         } catch (Exception e) {
             return e.getMessage();
         }
-    }
-
-    private ContractFunctionResult executeContractCallQuery(
-            DeployedContract deployedContract, String functionName, byte[] data) {
-        return contractClient.executeContractQuery(
-                deployedContract.contractId(),
-                functionName,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                data);
-    }
-
-    private ContractFunctionResult executeContractCallQuery(
-            DeployedContract deployedContract, String functionName, ContractFunctionParameters data) {
-        return contractClient.executeContractQuery(
-                deployedContract.contractId(),
-                functionName,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                data);
     }
 
     public static String extractStatus(String transactionResult) {
