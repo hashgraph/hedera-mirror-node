@@ -174,18 +174,6 @@ abstract class AbstractFeature {
 
     protected ContractCallResponse callContract(String blockNumber, String data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
-                .block(blockNumber)
-                .from(contractClient.getClientAddress())
-                .to(contractAddress)
-                .estimate(false)
-                .build();
-
-        return mirrorClient.contractsCall(contractCallRequestBody);
-    }
-
-    protected ContractCallResponse callContract(String blockNumber, String data, String contractAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
                 .block(blockNumber)
                 .data(data)
                 .from(contractClient.getClientAddress())
