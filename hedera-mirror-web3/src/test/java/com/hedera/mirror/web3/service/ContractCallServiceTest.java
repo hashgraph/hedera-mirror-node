@@ -83,7 +83,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void pureCallWithCustomBlock(BlockType blockType) {
         domainBuilder
                 .recordFile()
-                .customize(recordFileBuilder -> recordFileBuilder.index(1L))
+                .customize(recordFileBuilder -> recordFileBuilder.index(blockType.number()))
                 .persist();
 
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
@@ -94,9 +94,13 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
-
-        assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        if (blockType.number() < EVM_V_34_BLOCK) { // EVM v0.30 is used and it does not support the call
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class);
+        } else {
+            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
+            assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+        }
     }
 
     @ParameterizedTest
@@ -114,10 +118,15 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedResponse);
+        if (blockType.number() < EVM_V_34_BLOCK) { // EVM v0.30 is used and it does not support the call
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class);
+        } else {
+            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedResponse);
 
-        if (checkGas) {
-            assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+            if (checkGas) {
+                assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
+            }
         }
     }
 
