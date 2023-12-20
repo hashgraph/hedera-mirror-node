@@ -16,13 +16,17 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.EncoderDecoderFacade;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter;
@@ -46,7 +50,7 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
-public abstract class AbstractFeature {
+public abstract class AbstractFeature extends EncoderDecoderFacade {
     protected NetworkTransactionResponse networkTransactionResponse;
     protected ContractId contractId;
     private static final Map<ContractResource, DeployedContract> contractIdMap = new ConcurrentHashMap<>();
@@ -112,7 +116,7 @@ public abstract class AbstractFeature {
             return contractIdMap.computeIfAbsent(contractResource, x -> {
                 var resource = resourceLoader.getResource(contractResource.path);
                 try (var in = resource.getInputStream()) {
-                    CompiledSolidityArtifact compiledSolidityArtifact = networkAdapter.readCompiledArtifact(in);
+                    CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
                     var fileId = persistContractBytes(
                             compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
                     networkTransactionResponse = contractClient.createContract(
@@ -189,6 +193,22 @@ public abstract class AbstractFeature {
                 .build();
 
         return mirrorClient.contractsCall(contractCallRequestBody);
+    }
+
+    protected String encodeData(ContractResource resource, SelectorInterface method, Object... args) {
+        String json;
+        try (var in = getResourceAsStream(resource.getPath())) {
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        Function function = Function.fromJson(json);
+        return Strings.encode(function.encodeCallWithArgs(args));
+    }
+
+    protected String encodeData(SelectorInterface method, Object... args) {
+        return Strings.encode(new Function(method.getSelector()).encodeCallWithArgs(args));
     }
 
     public interface SelectorInterface {

@@ -22,10 +22,8 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource;
@@ -33,26 +31,17 @@ import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.DeployedContr
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.SelectorInterface;
 import jakarta.inject.Named;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ResourceLoader;
 
 @Named
-public class NetworkAdapter {
+public class NetworkAdapter extends EncoderDecoderFacade {
 
     @Autowired
     private ContractClient contractClient;
 
     @Autowired
     private MirrorNodeClient mirrorClient;
-
-    @Autowired
-    private ResourceLoader resourceLoader;
-
-    @Autowired
-    protected ObjectMapper mapper;
 
     public ContractCallResponse contractsCall(
             boolean toMirror,
@@ -85,49 +74,12 @@ public class NetworkAdapter {
         }
     }
 
-    public String encodeData(ContractResource resource, SelectorInterface method, Object... args) {
-        String json;
-        try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Function function = Function.fromJson(json);
-        return Strings.encode(function.encodeCallWithArgs(args));
-    }
-
-    public String encodeData(SelectorInterface method, Object... args) {
-        return Strings.encode(new Function(method.getSelector()).encodeCallWithArgs(args));
-    }
-
-    public CompiledSolidityArtifact readCompiledArtifact(InputStream in) throws IOException {
-        return mapper.readValue(in, CompiledSolidityArtifact.class);
-    }
-
-    public InputStream getResourceAsStream(String resourcePath) throws IOException {
-        return resourceLoader.getResource(resourcePath).getInputStream();
-    }
-
     public com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final ContractId contractID) {
         return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(contractID.num)));
     }
 
     public com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final AccountId accountId) {
         return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(accountId.num)));
-    }
-
-    public byte[] encodeDataToByteArray(ContractResource resource, SelectorInterface method, Object... args) {
-        String json;
-        try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Function function = Function.fromJson(json);
-        ByteBuffer byteBuffer = function.encodeCallWithArgs(args);
-        return byteBuffer.array();
     }
 
     private ContractCallResponse convertResponseFromConsensusNode(
@@ -142,7 +94,7 @@ public class NetworkAdapter {
             } else if (decodedResult.get(0) instanceof Boolean) {
                 contractCallResponse.setResult(decodedResult.get(0).toString());
             } else if (decodedResult.get(0) instanceof byte[]) {
-                contractCallResponse.setResult(Strings.encode((byte[]) decodedResult.get(0)));
+                contractCallResponse.setResult(decodedResult.get(0));
             } else if (decodedResult.get(0) instanceof Address) {
                 contractCallResponse.setResult(((Address) decodedResult.get(0)).toString());
             }

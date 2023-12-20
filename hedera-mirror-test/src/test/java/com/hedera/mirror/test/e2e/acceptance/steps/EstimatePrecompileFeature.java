@@ -244,14 +244,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with associate function for fungible token")
     public void associateFunctionEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, ASSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
         validateGasEstimation(data, ASSOCIATE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with associate function for NFT")
     public void associateFunctionNFTEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, ASSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
         validateGasEstimation(data, ASSOCIATE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
@@ -260,7 +260,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void dissociateFunctionEstimateGasNegative() {
         // attempt to call dissociate function without having association
         // expecting status 400/revert
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
         assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
@@ -270,7 +270,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void dissociateFunctionNFTEstimateGasNegative() {
         // attempt to call dissociate function without having association
         // expecting status 400/revert
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
         assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
@@ -280,7 +280,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void nestedAssociateFunctionEstimateGas() {
         // attempt to call associate function twice
         // expecting a revert
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, NESTED_ASSOCIATE, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
         assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
@@ -290,7 +290,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void nestedAssociateFunctionNFTEstimateGas() {
         // attempt to call associate function twice
         // expecting a revert
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, NESTED_ASSOCIATE, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
         assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
@@ -304,7 +304,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with dissociate token function for fungible token")
     public void dissociateFunctionEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
         validateGasEstimation(data, DISSOCIATE_TOKEN, estimatePrecompileContractSolidityAddress);
@@ -318,7 +318,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with dissociate token function for NFT")
     public void dissociateFunctionNFTEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
         validateGasEstimation(data, DISSOCIATE_TOKEN, estimatePrecompileContractSolidityAddress);
@@ -328,7 +328,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void dissociateAndAssociatedEstimateGas() {
         // token is already associated
         // attempting to execute nested dissociate and associate function
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 DISSOCIATE_AND_ASSOCIATE,
                 asAddress(receiverAccountAlias),
@@ -341,7 +341,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void dissociateAndAssociatedNFTEstimateGas() {
         // token is already associated
         // attempting to execute nested dissociate and associate function
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 DISSOCIATE_AND_ASSOCIATE,
                 asAddress(receiverAccountAlias),
@@ -352,7 +352,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with approve function without association")
     public void approveWithoutAssociationEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 APPROVE,
                 asAddress(fungibleTokenId),
@@ -364,7 +364,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with setApprovalForAll function without association")
     public void setApprovalForAllWithoutAssociationEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 SET_APPROVAL_FOR_ALL,
                 asAddress(nonFungibleTokenId),
@@ -376,7 +376,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with approveNFT function without association")
     public void approveNonFungibleWithoutAssociationEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 APPROVE_NFT,
                 asAddress(nonFungibleTokenId),
@@ -402,7 +402,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with ERC approve function")
     public void ercApproveEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ERC, APPROVE_ERC, asAddress(fungibleTokenId), asAddress(receiverAccountAlias), new BigInteger("10"));
 
         validateGasEstimation(data, APPROVE_ERC, ercTestContractSolidityAddress);
@@ -410,7 +410,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with setApprovalForAll function")
     public void setApprovalForAllEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 SET_APPROVAL_FOR_ALL,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -422,7 +422,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferFrom function without approval")
     public void transferFromEstimateGasWithoutApproval() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_FROM,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -435,7 +435,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with ERC transferFrom function without approval")
     public void ercTransferFromEstimateGasWithoutApproval() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ERC,
                 TRANSFER_FROM_ERC,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -456,7 +456,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with ERC transferFrom function")
     public void ercTransferFromEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ERC,
                 TRANSFER_FROM_ERC,
                 asAddress(fungibleTokenId),
@@ -469,7 +469,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferFrom function with more than the approved allowance")
     public void transferFromExceedAllowanceEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_FROM,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -482,7 +482,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with ERC transferFrom function with more than the approved allowance")
     public void ercTransferFromExceedsAllowanceEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ERC,
                 TRANSFER_FROM_ERC,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -501,7 +501,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferFromNFT with invalid serial number")
     public void transferFromNFTInvalidSerialEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_FROM_NFT,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -514,7 +514,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferNFT function")
     public void transferNFTEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_NFT,
                 asAddress(nonFungibleTokenId),
@@ -538,7 +538,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with ERC transfer function")
     public void ercTransferEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ERC, TRANSFER_ERC, asAddress(fungibleTokenId), asAddress(receiverAccountAlias), new BigInteger("5"));
 
         validateGasEstimation(data, TRANSFER_ERC, ercTestContractSolidityAddress);
@@ -546,7 +546,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with associateTokens function for fungible tokens")
     public void associateTokensEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 ASSOCIATE_TOKENS,
                 asAddress(secondReceiverAccount),
@@ -558,7 +558,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with associateTokens function for NFTs")
     public void associateNFTEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 ASSOCIATE_TOKENS,
                 asAddress(secondReceiverAccount),
@@ -575,7 +575,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with dissociateTokens function for fungible tokens")
     public void dissociateTokensEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 DISSOCIATE_TOKENS,
                 asAddress(receiverAccountAlias),
@@ -592,7 +592,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with dissociateTokens function for NFTs")
     public void dissociateNFTEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 DISSOCIATE_TOKENS,
                 asAddress(receiverAccountAlias),
@@ -611,7 +611,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferTokens function")
     public void transferTokensEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_TOKENS,
                 asAddress(fungibleTokenId),
@@ -634,7 +634,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferNFTs function")
     public void transferNFTsEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_NFTS,
                 asAddress(nonFungibleTokenId),
@@ -652,7 +652,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var senderTransfer = accountAmount(admin.getAccountId().toSolidityAddress(), -10L, false);
         var receiverTransfer = accountAmount(receiverAccountAlias, 10L, false);
         var args = Tuple.of((Object) new Tuple[] {senderTransfer, receiverTransfer});
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER_HBARS, args, EMPTY_TUPLE_ARRAY);
+        var data = encodeData(ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER_HBARS, args, EMPTY_TUPLE_ARRAY);
         validateGasEstimation(data, CRYPTO_TRANSFER_HBARS, estimatePrecompileContractSolidityAddress);
     }
 
@@ -669,7 +669,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                             nftAmount(admin.getAccountId().toSolidityAddress(), receiverAccountAlias, 1L, false))
                     .build()
         };
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER_NFT, Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
         validateGasEstimation(data, CRYPTO_TRANSFER_NFT, estimatePrecompileContractSolidityAddress);
     }
@@ -684,14 +684,14 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                             accountAmount(secondReceiverAccount.getAccountId().toSolidityAddress(), 3L, false))
                     .build()
         };
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, CRYPTO_TRANSFER, Tuple.of((Object) EMPTY_TUPLE_ARRAY), tokenTransferList);
         validateGasEstimation(data, CRYPTO_TRANSFER, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with burnToken function for fungible token")
     public void burnFungibleTokenEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 BURN_TOKEN,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -703,7 +703,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with burnToken function for NFT")
     public void burnNFTEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 BURN_TOKEN,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -715,7 +715,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with CreateFungibleToken function")
     public void createFungibleTokenEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, CREATE_FUNGIBLE_TOKEN, asAddress(admin));
+        var data = encodeData(ESTIMATE_PRECOMPILE, CREATE_FUNGIBLE_TOKEN, asAddress(admin));
 
         Consumer<Boolean> estimateFunction = current -> validateGasEstimationForCreateToken(
                 data, CREATE_FUNGIBLE_TOKEN.getActualGas(), calculateCreateTokenFee(1, current));
@@ -724,7 +724,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with CreateNFT function")
     public void createNFTEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, CREATE_NFT, asAddress(admin));
+        var data = encodeData(ESTIMATE_PRECOMPILE, CREATE_NFT, asAddress(admin));
 
         Consumer<Boolean> estimateFunction = current -> validateGasEstimationForCreateToken(
                 data, CREATE_FUNGIBLE_TOKEN.getActualGas(), calculateCreateTokenFee(1, current));
@@ -733,7 +733,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with CreateFungibleToken function with custom fees")
     public void createFungibleTokenWithCustomFeesEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
                 asAddress(admin),
@@ -746,7 +746,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with CreateNFT function with custom fees")
     public void createNFTWithCustomFeesEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 CREATE_NFT_WITH_CUSTOM_FEES,
                 asAddress(admin),
@@ -766,7 +766,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with WipeTokenAccount function")
     public void wipeTokenAccountEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 WIPE_TOKEN_ACCOUNT,
                 asAddress(fungibleTokenId),
@@ -778,7 +778,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with WipeTokenAccount function with invalid amount")
     public void wipeTokenAccountInvalidAmountEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 WIPE_TOKEN_ACCOUNT,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -800,7 +800,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with WipeNFTAccount function")
     public void wipeNFTAccountEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 WIPE_NFT_ACCOUNT,
                 asAddress(nonFungibleTokenId),
@@ -812,7 +812,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with WipeNFTAccount function with invalid serial number")
     public void wipeNFTAccountInvalidSerialNumberEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 WIPE_NFT_ACCOUNT,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -824,7 +824,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with GrantKYC function for fungible token")
     public void grantKYCFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GRANT_KYC, asAddress(fungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
         validateGasEstimation(data, GRANT_KYC, estimatePrecompileContractSolidityAddress);
@@ -832,7 +832,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with GrantKYC function for NFT")
     public void grantKYCNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 GRANT_KYC,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -843,7 +843,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with RevokeTokenKYC function for fungible token")
     public void revokeTokenKYCEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 REVOKE_KYC,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -854,7 +854,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with RevokeTokenKYC function for NFT")
     public void revokeTokenKYCNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 REVOKE_KYC,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -865,7 +865,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with Grant and Revoke KYC nested function")
     public void nestedGrantRevokeKYCEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 NESTED_GRANT_REVOKE_KYC,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -876,7 +876,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with Freeze function for fungible token")
     public void freezeFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 FREEZE_TOKEN,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -887,7 +887,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with Freeze function for NFT")
     public void freezeNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 FREEZE_TOKEN,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -898,7 +898,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with Unfreeze function for fungible token")
     public void unfreezeFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 UNFREEZE_TOKEN,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -909,7 +909,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with Unfreeze function for NFT")
     public void unfreezeNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 UNFREEZE_TOKEN,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -920,7 +920,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with nested Freeze and Unfreeze function for fungible token")
     public void nestedFreezeAndUnfreezeEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 NESTED_FREEZE_UNFREEZE,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -931,7 +931,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with nested Freeze and Unfreeze function for NFT")
     public void nestedFreezeAndUnfreezeNFTEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 NESTED_FREEZE_UNFREEZE,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -942,75 +942,71 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with delete function for Fungible token")
     public void deleteFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, DELETE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with delete function for NFT")
     public void deleteNFTEstimateGas() {
-        var data =
-                networkAdapter.encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, DELETE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with delete function for invalid token address")
     public void deleteTokenRandomAddressEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(RANDOM_ADDRESS));
+        var data = encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(RANDOM_ADDRESS));
 
         assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with pause function for fungible token")
     public void pauseFungibleTokenPositiveEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, PAUSE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, PAUSE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, PAUSE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with pause function for NFT")
     public void pauseNFTPositiveEstimateGas() {
-        var data =
-                networkAdapter.encodeData(ESTIMATE_PRECOMPILE, PAUSE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, PAUSE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, PAUSE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with unpause function for fungible token")
     public void unpauseFungibleTokenPositiveEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, UNPAUSE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, UNPAUSE_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, UNPAUSE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with unpause function for NFT")
     public void unpauseNFTPositiveEstimateGas() {
-        var data =
-                networkAdapter.encodeData(ESTIMATE_PRECOMPILE, UNPAUSE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, UNPAUSE_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, UNPAUSE_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas for nested pause and unpause function")
     public void pauseUnpauseFungibleTokenNestedCallEstimateGas() {
-        var data = networkAdapter.encodeData(
-                ESTIMATE_PRECOMPILE, PAUSE_UNPAUSE_NESTED_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, PAUSE_UNPAUSE_NESTED_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, PAUSE_UNPAUSE_NESTED_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas for nested pause, unpause NFT function")
     public void pauseUnpauseNFTNestedCallEstimateGas() {
-        var data = networkAdapter.encodeData(
-                ESTIMATE_PRECOMPILE, PAUSE_UNPAUSE_NESTED_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data =
+                encodeData(ESTIMATE_PRECOMPILE, PAUSE_UNPAUSE_NESTED_TOKEN, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, PAUSE_UNPAUSE_NESTED_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with updateTokenExpiryInfo function")
     public void updateTokenExpiryInfoEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, UPDATE_TOKEN_EXPIRY, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
 
         validateGasEstimation(data, UPDATE_TOKEN_EXPIRY, estimatePrecompileContractSolidityAddress);
@@ -1018,7 +1014,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with updateTokenInfo function")
     public void updateTokenInfoEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, UPDATE_TOKEN_INFO, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
 
         validateGasEstimation(data, UPDATE_TOKEN_INFO, estimatePrecompileContractSolidityAddress);
@@ -1026,30 +1022,28 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with updateTokenKeys function")
     public void updateTokenKeysEstimateGas() {
-        var data = networkAdapter.encodeData(
-                ESTIMATE_PRECOMPILE, UPDATE_TOKEN_KEYS, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, UPDATE_TOKEN_KEYS, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, UPDATE_TOKEN_KEYS, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenExpiryInfo function")
     public void getTokenExpiryInfoEstimateGas() {
-        var data = networkAdapter.encodeData(
-                ESTIMATE_PRECOMPILE, GET_TOKEN_EXPIRY_INFO, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, GET_TOKEN_EXPIRY_INFO, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_EXPIRY_INFO, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isToken function")
     public void isTokenEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, IS_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ESTIMATE_PRECOMPILE, IS_TOKEN, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, IS_TOKEN, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenKey function for supply")
     public void getTokenKeySupplyEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("16"));
 
         validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
@@ -1057,7 +1051,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with getTokenKey function for KYC")
     public void getTokenKeyKYCEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("2"));
 
         validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
@@ -1065,7 +1059,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with getTokenKey function for freeze")
     public void getTokenKeyFreezeEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("4"));
 
         validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
@@ -1073,7 +1067,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with getTokenKey function for admin")
     public void getTokenKeyAdminEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("1"));
 
         validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
@@ -1081,7 +1075,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with getTokenKey function for wipe")
     public void getTokenKeyWipeEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("8"));
 
         validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
@@ -1089,7 +1083,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with getTokenKey function for fee")
     public void getTokenKeyFeeEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("32"));
 
         validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
@@ -1097,7 +1091,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with getTokenKey function for pause")
     public void getTokenKeyPauseEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(fungibleKycUnfrozenTokenId), new BigInteger("64"));
 
         validateGasEstimation(data, GET_TOKEN_KEY, estimatePrecompileContractSolidityAddress);
@@ -1105,7 +1099,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with ERC allowance function for fungible token")
     public void ercAllowanceFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ERC,
                 ALLOWANCE_ERC,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -1117,7 +1111,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with getApproved function for NFT")
     public void getApprovedNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE, GET_APPROVED, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
 
         validateGasEstimation(data, GET_APPROVED, estimatePrecompileContractSolidityAddress);
@@ -1125,8 +1119,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with ERC getApproved function for NFT")
     public void ercGetApprovedNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
-                ERC, GET_APPROVED_ERC, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
+        var data = encodeData(ERC, GET_APPROVED_ERC, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
 
         validateGasEstimation(data, GET_APPROVED_ERC, ercTestContractSolidityAddress);
     }
@@ -1134,7 +1127,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with isApprovedForAll function")
     public void isApprovedForAllEstimateGas() {
         // reminder: check with setApprovalForAll test-> there we have the contract associated so the test can work
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_PRECOMPILE,
                 IS_APPROVED_FOR_ALL,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -1147,7 +1140,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with ERC isApprovedForAll function")
     public void ercIsApprovedForAllEstimateGas() {
         // reminder: check with setApprovalForAll test-> there we have the contract associated so the test can work
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ERC,
                 IS_APPROVED_FOR_ALL_ERC,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -1159,142 +1152,134 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with name function for fungible token")
     public void nameEstimateGas() {
-        var data = networkAdapter.encodeData(ERC, NAME, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ERC, NAME, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, NAME, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with name function for NFT")
     public void nameNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(ERC, NAME_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(ERC, NAME_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, NAME_NFT, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with symbol function for fungible token")
     public void symbolEstimateGas() {
-        var data = networkAdapter.encodeData(ERC, SYMBOL, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ERC, SYMBOL, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, SYMBOL, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with symbol function for NFT")
     public void symbolNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(ERC, SYMBOL_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(ERC, SYMBOL_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, SYMBOL_NFT, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with decimals function for fungible token")
     public void decimalsEstimateGas() {
-        var data = networkAdapter.encodeData(ERC, DECIMALS, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ERC, DECIMALS, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, DECIMALS, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with totalSupply function for fungible token")
     public void totalSupplyEstimateGas() {
-        var data = networkAdapter.encodeData(ERC, TOTAL_SUPPLY, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(ERC, TOTAL_SUPPLY, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, TOTAL_SUPPLY, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with totalSupply function for NFT")
     public void totalSupplyNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(ERC, TOTAL_SUPPLY_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(ERC, TOTAL_SUPPLY_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, TOTAL_SUPPLY_NFT, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ownerOf function for NFT")
     public void ownerOfEstimateGas() {
-        var data =
-                networkAdapter.encodeData(ERC, OWNER_OF, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
+        var data = encodeData(ERC, OWNER_OF, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
 
         validateGasEstimation(data, OWNER_OF, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with tokenURI function for NFT")
     public void tokenURIEstimateGas() {
-        var data = networkAdapter.encodeData(
-                ERC, TOKEN_URI, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
+        var data = encodeData(ERC, TOKEN_URI, asAddress(nonFungibleKycUnfrozenTokenId), new BigInteger("1"));
 
         validateGasEstimation(data, TOKEN_URI, ercTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getFungibleTokenInfo function")
     public void getFungibleTokenInfoEstimateGas() {
-        var data =
-                networkAdapter.encodeData(PRECOMPILE, GET_FUNGIBLE_TOKEN_INFO, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_FUNGIBLE_TOKEN_INFO, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_FUNGIBLE_TOKEN_INFO, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getNonFungibleTokenInfo function")
     public void getNonFungibleTokenInfoEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_NON_FUNGIBLE_TOKEN_INFO, asAddress(nonFungibleKycUnfrozenTokenId), 1L);
+        var data = encodeData(PRECOMPILE, GET_NON_FUNGIBLE_TOKEN_INFO, asAddress(nonFungibleKycUnfrozenTokenId), 1L);
 
         validateGasEstimation(data, GET_NON_FUNGIBLE_TOKEN_INFO, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenInfo function for fungible")
     public void getTokenInfoEstimateGas() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TOKEN_INFO, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_INFO, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_INFO, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenInfo function for NFT")
     public void getTokenInfoNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TOKEN_INFO_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_INFO_NFT, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_INFO_NFT, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenDefaultFreezeStatus function for fungible token")
     public void getTokenDefaultFreezeStatusFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_STATUS, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_STATUS, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_DEFAULT_FREEZE_STATUS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenDefaultFreezeStatus function for NFT")
     public void getTokenDefaultFreezeStatusNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_STATUS, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_STATUS, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_DEFAULT_FREEZE_STATUS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenDefaultKycStatus function for fungible token")
     public void getTokenDefaultKycStatusFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_TOKEN_DEFAULT_KYC_STATUS, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_KYC_STATUS, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_DEFAULT_KYC_STATUS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenDefaultKycStatus function for NFT")
     public void getTokenDefaultKycStatusNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_TOKEN_DEFAULT_KYC_STATUS, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_KYC_STATUS, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_DEFAULT_KYC_STATUS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isKyc function for fungible token")
     public void isKycFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, IS_KYC, asAddress(fungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
+        var data =
+                encodeData(PRECOMPILE, IS_KYC, asAddress(fungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
         validateGasEstimation(data, IS_KYC, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with isKyc function for NFT")
     public void isKycNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, IS_KYC, asAddress(nonFungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
         validateGasEstimation(data, IS_KYC, precompileTestContractSolidityAddress);
@@ -1302,7 +1287,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with isFrozen function for fungible token")
     public void isFrozenFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, IS_FROZEN, asAddress(fungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
         validateGasEstimation(data, IS_FROZEN, precompileTestContractSolidityAddress);
@@ -1310,7 +1295,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with isFrozen function for NFT")
     public void isFrozenNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, IS_FROZEN, asAddress(nonFungibleKycUnfrozenTokenId), asAddress(receiverAccountAlias));
 
         validateGasEstimation(data, IS_FROZEN, precompileTestContractSolidityAddress);
@@ -1318,21 +1303,21 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with getTokenType function for fungible token")
     public void getTokenTypeFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TOKEN_TYPE, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_TYPE, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_TYPE, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with getTokenType function for NFT")
     public void getTokenTypeNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TOKEN_TYPE, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_TYPE, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, GET_TOKEN_TYPE, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect balanceOf function")
     public void redirectBalanceOfEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, REDIRECT_FOR_TOKEN_BALANCE_OF, asAddress(fungibleKycUnfrozenTokenId), asAddress(admin));
 
         validateGasEstimation(data, REDIRECT_FOR_TOKEN_BALANCE_OF, precompileTestContractSolidityAddress);
@@ -1340,47 +1325,42 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect name function")
     public void redirectNameEstimateGas() {
-        var data =
-                networkAdapter.encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_NAME, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_NAME, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, REDIRECT_FOR_TOKEN_NAME, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect symbol function")
     public void redirectSymbolEstimateGas() {
-        var data =
-                networkAdapter.encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_SYMBOL, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_SYMBOL, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, REDIRECT_FOR_TOKEN_SYMBOL, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect name function for NFT")
     public void redirectNameNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, REDIRECT_FOR_TOKEN_NAME, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_NAME, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, REDIRECT_FOR_TOKEN_NAME, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect symbol function for NFT")
     public void redirectSymbolNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, REDIRECT_FOR_TOKEN_SYMBOL, asAddress(nonFungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_SYMBOL, asAddress(nonFungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, REDIRECT_FOR_TOKEN_SYMBOL, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect decimals function")
     public void redirectDecimalsEstimateGas() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, REDIRECT_FOR_TOKEN_DECIMALS, asAddress(fungibleKycUnfrozenTokenId));
+        var data = encodeData(PRECOMPILE, REDIRECT_FOR_TOKEN_DECIMALS, asAddress(fungibleKycUnfrozenTokenId));
 
         validateGasEstimation(data, REDIRECT_FOR_TOKEN_DECIMALS, precompileTestContractSolidityAddress);
     }
 
     @Then("I call estimateGas with redirect allowance function")
     public void redirectAllowanceEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_ALLOWANCE,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -1392,7 +1372,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect getOwnerOf function")
     public void redirectGetOwnerOfEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_GET_OWNER_OF,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -1403,7 +1383,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect tokenURI function")
     public void redirectTokenURIEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_TOKEN_URI,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -1414,7 +1394,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect isApprovedForAll function")
     public void redirectIsApprovedForAllEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -1436,7 +1416,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect transfer function")
     public void redirectTransferEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_TRANSFER,
                 asAddress(fungibleTokenId),
@@ -1448,7 +1428,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect transferFrom function")
     public void redirectTransferFromEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_TRANSFER_FROM,
                 asAddress(fungibleTokenId),
@@ -1461,7 +1441,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect approve function")
     public void redirectApproveEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_APPROVE,
                 asAddress(fungibleTokenId),
@@ -1473,7 +1453,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect transferFrom NFT function")
     public void redirectTransferFromNonFungibleEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT,
                 asAddress(nonFungibleTokenId),
@@ -1486,7 +1466,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with redirect setApprovalForAll function")
     public void redirectSetApprovalForAllEstimateGas() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -1498,30 +1478,28 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with pseudo random seed")
     public void pseudoRandomSeedEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, PSEUDO_RANDOM_SEED);
+        var data = encodeData(ESTIMATE_PRECOMPILE, PSEUDO_RANDOM_SEED);
 
         validateGasEstimation(data, PSEUDO_RANDOM_SEED, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with pseudo random number")
     public void pseudoRandomNumberEstimateGas() {
-        var data = networkAdapter.encodeData(ESTIMATE_PRECOMPILE, PSEUDO_RANDOM_NUMBER, 500L, 1000L);
+        var data = encodeData(ESTIMATE_PRECOMPILE, PSEUDO_RANDOM_NUMBER, 500L, 1000L);
 
         validateGasEstimation(data, PSEUDO_RANDOM_NUMBER, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with exchange rate tinycents to tinybars")
     public void exchangeRateTinyCentsToTinyBarsEstimateGas() {
-        var data = networkAdapter.encodeData(
-                ESTIMATE_PRECOMPILE, EXCHANGE_RATE_TINYCENTS_TO_TINYBARS, new BigInteger("100"));
+        var data = encodeData(ESTIMATE_PRECOMPILE, EXCHANGE_RATE_TINYCENTS_TO_TINYBARS, new BigInteger("100"));
 
         validateGasEstimation(data, EXCHANGE_RATE_TINYCENTS_TO_TINYBARS, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with exchange rate tinybars to tinycents")
     public void exchangeRateTinyBarsToTinyCentsEstimateGas() {
-        var data = networkAdapter.encodeData(
-                ESTIMATE_PRECOMPILE, EXCHANGE_RATE_TINYBARS_TO_TINYCENTS, new BigInteger("100"));
+        var data = encodeData(ESTIMATE_PRECOMPILE, EXCHANGE_RATE_TINYBARS_TO_TINYCENTS, new BigInteger("100"));
 
         validateGasEstimation(data, EXCHANGE_RATE_TINYBARS_TO_TINYCENTS, estimatePrecompileContractSolidityAddress);
     }
@@ -1547,7 +1525,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with balanceOf function for {token} and verify the estimated gas against HAPI")
     public void executeBalanceOfFunctionWithLimitedGas(TokenNameEnum tokenName) {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
-        var data = networkAdapter.encodeDataToByteArray(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
+        var data = encodeDataToByteArray(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var estimateGasValue = validateAndReturnGas(data, BALANCE_OF, ercTestContractSolidityAddress);
         executeContractTransaction(deployedErcTestContract, estimateGasValue, BALANCE_OF, data);
     }
@@ -1582,7 +1560,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferToken function and verify the estimated gas against HAPI")
     public void executeTransferForFungibleWithGasLimit() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_TOKEN,
                 asAddress(fungibleTokenId),
@@ -1600,7 +1578,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferNFT function and verify the estimated gas against HAPI")
     public void executeTransferTokenNonFungibleWithGasLimit() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_NFT,
                 asAddress(nonFungibleTokenId),
@@ -1622,7 +1600,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with allowance function for fungible token and verify the estimated gas against HAPI")
     public void executeAllowanceFungibleWithLimitedGas() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE,
                 ALLOWANCE,
                 asAddress(fungibleKycUnfrozenTokenId),
@@ -1634,7 +1612,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with allowance function for NFT and verify the estimated gas against HAPI")
     public void executeAllowanceNonFungibleWithLimitedGas() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE,
                 ALLOWANCE,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -1646,7 +1624,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with approve function and verify the estimated gas against HAPI")
     public void executeApproveWithLimitedGas() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE,
                 APPROVE,
                 asAddress(fungibleTokenId),
@@ -1658,7 +1636,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with approveNFT function and verify the estimated gas against HAPI")
     public void executeApproveNftWithLimitedGas() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE,
                 APPROVE_NFT,
                 asAddress(nonFungibleKycUnfrozenTokenId),
@@ -1670,7 +1648,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferFrom function with fungible and verify the estimated gas against HAPI")
     public void executeTransferFromWithGasLimit() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_FROM,
                 asAddress(fungibleTokenId),
@@ -1683,7 +1661,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with transferFromNFT function and verify the estimated gas against HAPI")
     public void executeTransferFromNFTWithGasLimit() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE,
                 TRANSFER_FROM_NFT,
                 asAddress(nonFungibleTokenId),
@@ -1696,7 +1674,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with mintToken function for fungible token and verify the estimated gas against HAPI")
     public void executeMintFungibleTokenWithLimitedGas() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE, MINT_TOKEN, asAddress(fungibleTokenId), 1L, asByteArray(new ArrayList<>()));
         var estimateGasValue = validateAndReturnGas(data, MINT_TOKEN, estimatePrecompileContractSolidityAddress);
         executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, MINT_TOKEN, data);
@@ -1704,7 +1682,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with mintToken function for NFT and verify the estimated gas against HAPI")
     public void executeMintNonFungibleWithLimitedGas() {
-        var data = networkAdapter.encodeDataToByteArray(
+        var data = encodeDataToByteArray(
                 ESTIMATE_PRECOMPILE, MINT_NFT, asAddress(nonFungibleTokenId), 0L, asByteArray(List.of("0x02")));
         var estimateGasValue = validateAndReturnGas(data, MINT_NFT, estimatePrecompileContractSolidityAddress);
         executeContractTransaction(deployedEstimatePrecompileContract, estimateGasValue, MINT_NFT, data);

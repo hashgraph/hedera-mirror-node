@@ -190,14 +190,14 @@ public class PrecompileContractFeature extends AbstractFeature {
     @RetryAsserts
     @Then("check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
-        var data = networkAdapter.encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
         assertTrue(response.getResultAsBoolean());
     }
 
     @And("check if non fungible token is token")
     public void checkIfNonFungibleTokenIsToken() {
-        var data = networkAdapter.encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
@@ -206,7 +206,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Then("the contract call REST API to is token with invalid account id should return an error")
     public void checkIfInvalidAccountIsToken() {
-        var data = networkAdapter.encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(ZERO_ADDRESS));
+        var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(ZERO_ADDRESS));
         assertThatThrownBy(() -> callContract(data, precompileTestContractSolidityAddress))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
@@ -214,7 +214,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API to is token with valid account id should return an error")
     public void checkIfValidAccountIsToken() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 IS_TOKEN_SELECTOR,
                 asAddress(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress()));
@@ -225,8 +225,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("verify fungible token isn't frozen")
     public void verifyFungibleTokenIsNotFrozen() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, IS_TOKEN_FROZEN_SELECTOR, asAddress(fungibleTokenId), asAddress(contractClient));
+        var data =
+                encodeData(PRECOMPILE, IS_TOKEN_FROZEN_SELECTOR, asAddress(fungibleTokenId), asAddress(contractClient));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
@@ -235,7 +235,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("verify non fungible token isn't frozen")
     public void verifyNonFungibleTokenIsNotFrozen() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, IS_TOKEN_FROZEN_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
@@ -256,7 +256,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if non fungible token is frozen")
     public void checkIfTokenIsFrozen() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, IS_TOKEN_FROZEN_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
@@ -277,7 +277,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if non fungible token is unfrozen")
     public void checkIfTokenIsUnfrozen() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, IS_TOKEN_FROZEN_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
@@ -298,7 +298,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("check if fungible token is frozen for evm address")
     public void checkIfTokenIsFrozenForEvmAddress() {
         MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 IS_TOKEN_FROZEN_SELECTOR,
                 asAddress(fungibleTokenId),
@@ -322,7 +322,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And("check if fungible token is unfrozen for evm address")
     public void checkIfTokenIsUnfrozenForEvmAddress() {
         MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 IS_TOKEN_FROZEN_SELECTOR,
                 asAddress(fungibleTokenId),
@@ -344,8 +344,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("check if fungible token is kyc granted")
     public void checkIfFungibleTokenIsKycGranted() {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, IS_KYC_GRANTED_SELECTOR, asAddress(fungibleTokenId), asAddress(contractClient));
+        var data =
+                encodeData(PRECOMPILE, IS_KYC_GRANTED_SELECTOR, asAddress(fungibleTokenId), asAddress(contractClient));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
@@ -354,7 +354,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("check if non fungible token is kyc granted")
     public void checkIfNonFungibleTokenIsKycGranted() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, IS_KYC_GRANTED_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
@@ -364,7 +364,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the default freeze for a fungible token")
     public void getDefaultFreezeOfFungibleToken() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_SELECTOR, asAddress(fungibleTokenId));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
@@ -373,8 +373,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the default freeze for a non fungible token")
     public void getDefaultFreezeOfNonFungibleToken() {
-        var data =
-                networkAdapter.encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_FREEZE_SELECTOR, asAddress(nonFungibleTokenId));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
@@ -383,7 +382,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the default kyc for a fungible token")
     public void getDefaultKycOfFungibleToken() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_KYC_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_KYC_SELECTOR, asAddress(fungibleTokenId));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
@@ -392,7 +391,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the default kyc for a non fungible token")
     public void getDefaultKycOfNonFungibleToken() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_KYC_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_TOKEN_DEFAULT_KYC_SELECTOR, asAddress(nonFungibleTokenId));
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
@@ -401,8 +400,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the information for token for a fungible token")
     public void getInformationForTokenOfFungibleToken() throws Exception {
-        var data =
-                networkAdapter.encodeData(PRECOMPILE, GET_INFORMATION_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_INFORMATION_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple tokenInfo = baseGetInformationForTokenChecks(response);
@@ -416,8 +414,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("the contract call REST API should return the information for token for a non fungible token")
     public void getInformationForTokenOfNonFungibleToken() throws Exception {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_INFORMATION_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_INFORMATION_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple tokenInfo = baseGetInformationForTokenChecks(response);
@@ -427,8 +424,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the information for a fungible token")
     public void getInformationForFungibleToken() throws Exception {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getInformationForFungibleToken", response);
@@ -444,7 +440,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the information for a non fungible token")
     public void getInformationForNonFungibleToken() throws Exception {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE,
                 GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR,
                 asAddress(nonFungibleTokenId),
@@ -472,7 +468,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the type for a fungible token")
     public void getTypeForFungibleToken() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TYPE_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_TYPE_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         assertThat(response.getResultAsNumber()).isZero();
@@ -480,7 +476,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the type for a non fungible token")
     public void getTypeForNonFungibleToken() {
-        var data = networkAdapter.encodeData(PRECOMPILE, GET_TYPE_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_TYPE_SELECTOR, asAddress(nonFungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         assertThat(response.getResultAsNumber()).isEqualTo(1);
@@ -488,8 +484,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the expiry token info for a fungible token")
     public void getExpiryTokenInfoForFungibleToken() throws Exception {
-        var data =
-                networkAdapter.encodeData(PRECOMPILE, GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         baseExpiryInfoChecks(response);
@@ -497,8 +492,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the expiry token info for a non fungible token")
     public void getExpiryTokenInfoForNonFungibleToken() throws Exception {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         baseExpiryInfoChecks(response);
@@ -506,8 +500,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the token key for a fungible token")
     public void getTokenKeyForFungibleToken() throws Exception {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_TOKEN_KEY_PUBLIC_SELECTOR, asAddress(fungibleTokenId), new BigInteger("1"));
+        var data =
+                encodeData(PRECOMPILE, GET_TOKEN_KEY_PUBLIC_SELECTOR, asAddress(fungibleTokenId), new BigInteger("1"));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getTokenKeyPublic", response);
@@ -518,7 +512,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the token key for a non fungible token")
     public void getTokenKeyForNonFungibleToken() throws Exception {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 PRECOMPILE, GET_TOKEN_KEY_PUBLIC_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
@@ -553,93 +547,91 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the name by direct call for a fungible token")
     public void getFungibleTokenNameByDirectCall() {
-        var data = networkAdapter.encodeData(NAME_SELECTOR);
+        var data = encodeData(NAME_SELECTOR);
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsAsciiString()).contains("_name");
     }
 
     @And("the contract call REST API should return the symbol by direct call for a fungible token")
     public void getFungibleTokenSymbolByDirectCall() {
-        var data = networkAdapter.encodeData(SYMBOL_SELECTOR);
+        var data = encodeData(SYMBOL_SELECTOR);
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsAsciiString()).isNotEmpty();
     }
 
     @And("the contract call REST API should return the decimals by direct call for a  fungible token")
     public void getFungibleTokenDecimalsByDirectCall() {
-        var data = networkAdapter.encodeData(DECIMALS_SELECTOR);
+        var data = encodeData(DECIMALS_SELECTOR);
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsNumber()).isEqualTo(10);
     }
 
     @And("the contract call REST API should return the total supply by direct call for a  fungible token")
     public void getFungibleTokenTotalSupplyByDirectCall() {
-        var data = networkAdapter.encodeData(TOTAL_SUPPLY_SELECTOR);
+        var data = encodeData(TOTAL_SUPPLY_SELECTOR);
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsNumber()).isEqualTo(1000000);
     }
 
     @And("the contract call REST API should return the balanceOf by direct call for a fungible token")
     public void getFungibleTokenBalanceOfByDirectCall() {
-        var data = networkAdapter.encodeData(BALANCE_OF_SELECTOR, asAddress(contractClient));
+        var data = encodeData(BALANCE_OF_SELECTOR, asAddress(contractClient));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsNumber()).isEqualTo(1000000);
     }
 
     @And("the contract call REST API should return the allowance by direct call for a fungible token")
     public void getFungibleTokenAllowanceByDirectCall() {
-        var data = networkAdapter.encodeData(ALLOWANCE_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
+        var data = encodeData(ALLOWANCE_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsNumber()).isZero();
     }
 
     @And("the contract call REST API should return the name by direct call for a non fungible token")
     public void getNonFungibleTokenNameByDirectCall() {
-        var data = networkAdapter.encodeData(NAME_SELECTOR);
+        var data = encodeData(NAME_SELECTOR);
         var response = callContract(data, nonFungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsAsciiString()).contains("_name");
     }
 
     @And("the contract call REST API should return the symbol by direct call for a non fungible token")
     public void getNonFungibleTokenSymbolByDirectCall() {
-        var data = networkAdapter.encodeData(SYMBOL_SELECTOR);
+        var data = encodeData(SYMBOL_SELECTOR);
         var response = callContract(data, nonFungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsAsciiString()).isNotEmpty();
     }
 
     @And("the contract call REST API should return the total supply by direct call for a non fungible token")
     public void getNonFungibleTokenTotalSupplyByDirectCall() {
-        var data = networkAdapter.encodeData(TOTAL_SUPPLY_SELECTOR);
+        var data = encodeData(TOTAL_SUPPLY_SELECTOR);
         var response = callContract(data, nonFungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsNumber()).isEqualTo(1);
     }
 
     @And("the contract call REST API should return the ownerOf by direct call for a non fungible token")
     public void getNonFungibleTokenOwnerOfByDirectCall() {
-        var data = networkAdapter.encodeData(OWNER_OF_SELECTOR, new BigInteger("1"));
+        var data = encodeData(OWNER_OF_SELECTOR, new BigInteger("1"));
         var response = callContract(data, nonFungibleTokenId.toSolidityAddress());
         tokenClient.validateAddress(response.getResultAsAddress());
     }
 
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
     public void getNonFungibleTokenGetApprovedByDirectCall() {
-        var data = networkAdapter.encodeData(GET_APPROVED_SELECTOR, new BigInteger("1"));
+        var data = encodeData(GET_APPROVED_SELECTOR, new BigInteger("1"));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertFalse(response.getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the isApprovedForAll by direct call for a non fungible token")
     public void getNonFungibleTokenIsApprovedForAllByDirectCallOwner() {
-        var data = networkAdapter.encodeData(
-                IS_APPROVED_FOR_ALL_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
+        var data = encodeData(IS_APPROVED_FOR_ALL_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertFalse(response.getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the custom fees for a fungible token")
     public void getCustomFeesForFungibleToken() throws Exception {
-        var data =
-                networkAdapter.encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
@@ -659,8 +651,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the custom fees for a non fungible token")
     public void getCustomFeesForNonFungibleToken() throws Exception {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
         assertThat(result).isNotEmpty();
@@ -675,8 +666,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @And(
             "I call function with HederaTokenService getTokenCustomFees token - fractional fee and fixed fee - fungible token")
     public void getCustomFeesForFungibleTokenFractionalAndFixedFees() throws Exception {
-        var data =
-                networkAdapter.encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
@@ -697,8 +687,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     // ETHCALL-033
     @And("I call function with HederaTokenService getTokenCustomFees token - royalty fee")
     public void getCustomFeesForFungibleTokenRoyaltyFee() throws Exception {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
@@ -719,8 +708,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     // ETHCALL-034
     @And("I call function with HederaTokenService getTokenCustomFees token - royalty fee + fallback")
     public void getCustomFeesForFungibleTokenRoyaltyFeeAndFallback() throws Exception {
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
+        var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
@@ -805,8 +793,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     private Tuple decodeFunctionResult(String functionName, ContractCallResponse response) throws Exception {
         Optional<Object> function;
-        try (var in = networkAdapter.getResourceAsStream(PRECOMPILE.getPath())) {
-            function = Arrays.stream(networkAdapter.readCompiledArtifact(in).getAbi())
+        try (var in = getResourceAsStream(PRECOMPILE.getPath())) {
+            function = Arrays.stream(readCompiledArtifact(in).getAbi())
                     .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
                     .findFirst();
         } catch (IOException e) {

@@ -110,7 +110,7 @@ public class CallFeature extends AbstractFeature {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
         var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
 
-        var data = networkAdapter.encodeData(ERC, IERC721_TOKEN_NAME_SELECTOR, asAddress(tokenId));
+        var data = encodeData(ERC, IERC721_TOKEN_NAME_SELECTOR, asAddress(tokenId));
         var response = callContract(data, ercContractAddress);
 
         assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol() + "_name");
@@ -123,7 +123,7 @@ public class CallFeature extends AbstractFeature {
         var tokenNameEnum = TokenClient.TokenNameEnum.valueOf(tokenName);
         var tokenId = tokenClient.getToken(tokenNameEnum).tokenId();
 
-        var data = networkAdapter.encodeData(ERC, IERC721_TOKEN_SYMBOL_SELECTOR, asAddress(tokenId));
+        var data = encodeData(ERC, IERC721_TOKEN_SYMBOL_SELECTOR, asAddress(tokenId));
         var response = callContract(data, ercContractAddress);
 
         assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol());
@@ -138,7 +138,7 @@ public class CallFeature extends AbstractFeature {
                 .tokenId();
         var totalSupplyOfNft = mirrorClient.getTokenInfo(tokenId.toString()).getTotalSupply();
 
-        var data = networkAdapter.encodeData(ERC, IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR, asAddress(tokenId));
+        var data = encodeData(ERC, IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR, asAddress(tokenId));
         var response = callContract(data, ercContractAddress);
 
         assertThat(response.getResultAsNumber()).isEqualTo(totalSupplyOfNft);
@@ -160,8 +160,7 @@ public class CallFeature extends AbstractFeature {
                 .mapToLong(MirrorAccountBalance.Token::getBalance)
                 .findFirst();
 
-        var data = networkAdapter.encodeData(
-                ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(tokenId), asAddress(contractClient));
+        var data = encodeData(ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(tokenId), asAddress(contractClient));
         var response = callContract(data, ercContractAddress);
 
         assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft.getAsLong());
@@ -183,7 +182,7 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = networkAdapter.encodeData(PRECOMPILE, HTS_IS_TOKEN_SELECTOR, asAddress(tokenId));
+        var data = encodeData(PRECOMPILE, HTS_IS_TOKEN_SELECTOR, asAddress(tokenId));
         var response = callContract(data, precompileContractAddress);
 
         assertThat(response.getResultAsBoolean()).isTrue();
@@ -197,8 +196,7 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, HTS_IS_FROZEN_SELECTOR, asAddress(tokenId), asAddress(contractClient));
+        var data = encodeData(PRECOMPILE, HTS_IS_FROZEN_SELECTOR, asAddress(tokenId), asAddress(contractClient));
         var response = callContract(data, precompileContractAddress);
 
         assertThat(response.getResultAsBoolean()).isFalse();
@@ -212,8 +210,7 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = networkAdapter.encodeData(
-                PRECOMPILE, HTS_IS_KYC_GRANTED_SELECTOR, asAddress(tokenId), asAddress(contractClient));
+        var data = encodeData(PRECOMPILE, HTS_IS_KYC_GRANTED_SELECTOR, asAddress(tokenId), asAddress(contractClient));
         var response = callContract(data, precompileContractAddress);
 
         assertThat(response.getResultAsBoolean()).isTrue();
@@ -227,7 +224,7 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = networkAdapter.encodeData(PRECOMPILE, HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR, asAddress(tokenId));
+        var data = encodeData(PRECOMPILE, HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR, asAddress(tokenId));
         var response = callContract(data, precompileContractAddress);
 
         assertThat(response.getResultAsBoolean()).isFalse();
@@ -241,7 +238,7 @@ public class CallFeature extends AbstractFeature {
                 .getToken(TokenClient.TokenNameEnum.valueOf(tokenName))
                 .tokenId();
 
-        var data = networkAdapter.encodeData(PRECOMPILE, HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR, asAddress(tokenId));
+        var data = encodeData(PRECOMPILE, HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR, asAddress(tokenId));
         var response = callContract(data, precompileContractAddress);
 
         assertThat(response.getResultAsBoolean()).isFalse();
@@ -250,7 +247,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I call function with update and I expect return of the updated value")
     public void ethCallUpdateFunction() {
         var updateValue = new BigInteger("5");
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, UPDATE_COUNTER_SELECTOR, updateValue);
+        var data = encodeData(ESTIMATE_GAS, UPDATE_COUNTER_SELECTOR, updateValue);
         var response = callContract(data, estimateContractAddress);
 
         assertEquals(response.getResultAsNumber(), updateValue);
@@ -258,7 +255,7 @@ public class CallFeature extends AbstractFeature {
 
     @Then("I call function that makes N times state update")
     public void ethCallStateUpdateNTimesFunction() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, STATE_UPDATE_N_TIMES_SELECTOR, new BigInteger("15"));
+        var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_N_TIMES_SELECTOR, new BigInteger("15"));
         var response = callContract(data, estimateContractAddress);
 
         assertEquals(String.valueOf(response.getResultAsNumber()), "14");
@@ -266,7 +263,7 @@ public class CallFeature extends AbstractFeature {
 
     @Then("I call function with nested deploy using create function")
     public void ethCallNestedDeployViaCreateFunction() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR);
+        var data = encodeData(ESTIMATE_GAS, DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE_SELECTOR);
         var response = callContract(data, estimateContractAddress);
         String[] addresses = splitAddresses(response.getResult());
 
@@ -275,7 +272,7 @@ public class CallFeature extends AbstractFeature {
 
     @Then("I call function with nested deploy using create2 function")
     public void ethCallNestedDeployViaCreate2Function() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR);
+        var data = encodeData(ESTIMATE_GAS, DEPLOY_NESTED_CONTRACT_CONTRACT_VIA_CREATE2_SELECTOR);
         var response = callContract(data, estimateContractAddress);
 
         String[] addresses = splitAddresses(response.getResult());
@@ -288,7 +285,7 @@ public class CallFeature extends AbstractFeature {
     @Then("I successfully update the balance of an account and get the updated balance after 2 seconds")
     public void getBalance() throws InterruptedException {
         final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
+        var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
         var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         networkTransactionResponse = accountClient.sendCryptoTransfer(
                 receiverAccountId.getAccountId(),
@@ -304,7 +301,7 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with transfer that returns the balance")
     public void ethCallReentrancyCallFunction() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_GAS, REENTRANCY_CALL_WITH_GAS, asAddress(receiverAccountId), new BigInteger("10000"));
         var response = callContract(data, estimateContractAddress);
         String[] balances = splitAddresses(response.getResult());

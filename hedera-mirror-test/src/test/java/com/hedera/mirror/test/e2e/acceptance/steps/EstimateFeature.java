@@ -121,100 +121,93 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas without arguments that multiplies two numbers")
     public void multiplyEstimateCall() {
-        validateGasEstimation(
-                networkAdapter.encodeData(ESTIMATE_GAS, MULTIPLY_NUMBERS), MULTIPLY_NUMBERS, contractSolidityAddress);
+        validateGasEstimation(encodeData(ESTIMATE_GAS, MULTIPLY_NUMBERS), MULTIPLY_NUMBERS, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function msgSender")
     public void msgSenderEstimateCall() {
-        validateGasEstimation(
-                networkAdapter.encodeData(ESTIMATE_GAS, MESSAGE_SENDER), MESSAGE_SENDER, contractSolidityAddress);
+        validateGasEstimation(encodeData(ESTIMATE_GAS, MESSAGE_SENDER), MESSAGE_SENDER, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function tx origin")
     public void txOriginEstimateCall() {
-        validateGasEstimation(networkAdapter.encodeData(ESTIMATE_GAS, TX_ORIGIN), TX_ORIGIN, contractSolidityAddress);
+        validateGasEstimation(encodeData(ESTIMATE_GAS, TX_ORIGIN), TX_ORIGIN, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function messageValue")
     public void msgValueEstimateCall() {
-        validateGasEstimation(
-                networkAdapter.encodeData(ESTIMATE_GAS, MESSAGE_VALUE), MESSAGE_VALUE, contractSolidityAddress);
+        validateGasEstimation(encodeData(ESTIMATE_GAS, MESSAGE_VALUE), MESSAGE_VALUE, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function messageSigner")
     public void msgSignerEstimateCall() {
-        validateGasEstimation(
-                networkAdapter.encodeData(ESTIMATE_GAS, MESSAGE_SIGNER), MESSAGE_SIGNER, contractSolidityAddress);
+        validateGasEstimation(encodeData(ESTIMATE_GAS, MESSAGE_SIGNER), MESSAGE_SIGNER, contractSolidityAddress);
     }
 
     @RetryAsserts
     @Then("I call estimateGas with function balance of address")
     public void addressBalanceEstimateCall() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, asAddress(RANDOM_ADDRESS));
+        var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, asAddress(RANDOM_ADDRESS));
         validateGasEstimation(data, ADDRESS_BALANCE, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that changes contract slot information"
             + " by updating global contract field with the passed argument")
     public void updateCounterEstimateCall() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, UPDATE_COUNTER, new BigInteger("5"));
+        var data = encodeData(ESTIMATE_GAS, UPDATE_COUNTER, new BigInteger("5"));
         validateGasEstimation(data, UPDATE_COUNTER, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE op code")
     public void deployContractViaCreateOpcodeEstimateCall() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_OPCODE);
+        var data = encodeData(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_OPCODE);
         validateGasEstimation(data, DEPLOY_CONTRACT_VIA_CREATE_OPCODE, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE2 op code")
     public void deployContractViaCreateTwoOpcodeEstimateCall() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE);
+        var data = encodeData(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE);
         validateGasEstimation(data, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE, contractSolidityAddress);
     }
 
     @Then("I get mock contract address and getAddress selector")
     public void getMockAddress() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, GET_MOCK_ADDRESS);
+        var data = encodeData(ESTIMATE_GAS, GET_MOCK_ADDRESS);
         mockAddress = callContract(data, contractSolidityAddress).getResultAsAddress();
         addressSelector = new BigInteger("0x38cc4831".substring(2), 16).toByteArray();
     }
 
     @Then("I call estimateGas with function that makes a static call to a method from a different contract")
     public void staticCallToContractEstimateCall() {
-        var data = networkAdapter.encodeData(
-                ESTIMATE_GAS, STATIC_CALL_TO_CONTRACT, asAddress(mockAddress), addressSelector);
+        var data = encodeData(ESTIMATE_GAS, STATIC_CALL_TO_CONTRACT, asAddress(mockAddress), addressSelector);
         validateGasEstimation(data, STATIC_CALL_TO_CONTRACT, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a delegate call to a method from a different contract")
     public void delegateCallToContractEstimateCall() {
-        var data = networkAdapter.encodeData(
-                ESTIMATE_GAS, DELEGATE_CALL_TO_CONTRACT, asAddress(mockAddress), addressSelector);
+        var data = encodeData(ESTIMATE_GAS, DELEGATE_CALL_TO_CONTRACT, asAddress(mockAddress), addressSelector);
         validateGasEstimation(data, DELEGATE_CALL_TO_CONTRACT, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a call code to a method from a different contract")
     public void callCodeToContractEstimateCall() {
-        var data =
-                networkAdapter.encodeData(ESTIMATE_GAS, CALL_CODE_TO_CONTRACT, asAddress(mockAddress), addressSelector);
+        var data = encodeData(ESTIMATE_GAS, CALL_CODE_TO_CONTRACT, asAddress(mockAddress), addressSelector);
         validateGasEstimation(data, CALL_CODE_TO_CONTRACT, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations")
     public void logsEstimateCall() {
-        validateGasEstimation(networkAdapter.encodeData(ESTIMATE_GAS, LOGS), LOGS, contractSolidityAddress);
+        validateGasEstimation(encodeData(ESTIMATE_GAS, LOGS), LOGS, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that performs self destruct")
     public void destroyEstimateCall() {
-        validateGasEstimation(networkAdapter.encodeData(ESTIMATE_GAS, DESTROY), DESTROY, contractSolidityAddress);
+        validateGasEstimation(encodeData(ESTIMATE_GAS, DESTROY), DESTROY, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with request body that contains wrong method signature")
     public void wrongMethodSignatureEstimateCall() {
-        assertContractCallReturnsBadRequest(networkAdapter.encodeData(WRONG_METHOD_SIGNATURE), contractSolidityAddress);
+        assertContractCallReturnsBadRequest(encodeData(WRONG_METHOD_SIGNATURE), contractSolidityAddress);
     }
 
     @Then("I call estimateGas with wrong encoded parameter")
@@ -228,7 +221,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with non-existing from address in the request body")
     public void wrongFromParameterEstimateCall() {
         var contractCallRequestBody = ContractCallRequest.builder()
-                .data(networkAdapter.encodeData(ESTIMATE_GAS, MESSAGE_SIGNER))
+                .data(encodeData(ESTIMATE_GAS, MESSAGE_SIGNER))
                 .to(contractSolidityAddress)
                 .from(newAccountEvmAddress)
                 .estimate(true)
@@ -241,32 +234,31 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with function that makes a call to invalid smart contract")
     public void callToInvalidSmartContractEstimateCall() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, CALL_TO_INVALID_CONTRACT, asAddress(RANDOM_ADDRESS));
+        var data = encodeData(ESTIMATE_GAS, CALL_TO_INVALID_CONTRACT, asAddress(RANDOM_ADDRESS));
         validateGasEstimation(data, CALL_TO_INVALID_CONTRACT, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a delegate call to invalid smart contract")
     public void delegateCallToInvalidSmartContractEstimateCall() {
-        var data =
-                networkAdapter.encodeData(ESTIMATE_GAS, DELEGATE_CALL_TO_INVALID_CONTRACT, asAddress(RANDOM_ADDRESS));
+        var data = encodeData(ESTIMATE_GAS, DELEGATE_CALL_TO_INVALID_CONTRACT, asAddress(RANDOM_ADDRESS));
         validateGasEstimation(data, DELEGATE_CALL_TO_INVALID_CONTRACT, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a static call to invalid smart contract")
     public void staticCallToInvalidSmartContractEstimateCall() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, STATIC_CALL_TO_INVALID_CONTRACT, asAddress(RANDOM_ADDRESS));
+        var data = encodeData(ESTIMATE_GAS, STATIC_CALL_TO_INVALID_CONTRACT, asAddress(RANDOM_ADDRESS));
         validateGasEstimation(data, STATIC_CALL_TO_INVALID_CONTRACT, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes a call code to invalid smart contract")
     public void callCodeToInvalidSmartContractEstimateCall() {
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, CALL_CODE_TO_INVALID_CONTRACT, asAddress(RANDOM_ADDRESS));
+        var data = encodeData(ESTIMATE_GAS, CALL_CODE_TO_INVALID_CONTRACT, asAddress(RANDOM_ADDRESS));
         validateGasEstimation(data, CALL_CODE_TO_INVALID_CONTRACT, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that makes call to an external contract function")
     public void callCodeToExternalContractFunction() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_GAS,
                 CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
                 new BigInteger("1"),
@@ -276,7 +268,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with function that makes delegate call to an external contract function")
     public void delegateCallCodeToExternalContractFunction() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_GAS,
                 DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
                 new BigInteger("1"),
@@ -286,7 +278,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with function that makes call to an external contract view function")
     public void callCodeToExternalContractViewFunction() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_GAS,
                 CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW,
                 new BigInteger("1"),
@@ -297,7 +289,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that makes a state update to a contract")
     public void stateUpdateContractFunction() {
         // making 5 times to state update
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("5"));
+        var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("5"));
         validateGasEstimation(data, STATE_UPDATE_OF_CONTRACT, contractSolidityAddress);
     }
 
@@ -305,12 +297,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
             "I call estimateGas with function that makes a state update to a contract several times and estimateGas is higher")
     public void progressiveStateUpdateContractFunction() {
         // making 5 times to state update
-        var data = networkAdapter.encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("5"));
+        var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("5"));
         var firstResponse = estimateContract(data, contractSolidityAddress)
                 .getResultAsNumber()
                 .intValue();
         // making 10 times to state update
-        var secondData = networkAdapter.encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("10"));
+        var secondData = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("10"));
         var secondResponse = estimateContract(secondData, contractSolidityAddress)
                 .getResultAsNumber()
                 .intValue();
@@ -320,20 +312,19 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with function that executes reentrancy attack with call")
     public void reentrancyCallAttackFunction() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_GAS, REENTRANCY_CALL_ATTACK, asAddress(RANDOM_ADDRESS), new BigInteger("10000000000"));
         validateGasEstimation(data, REENTRANCY_CALL_ATTACK, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that executes gasLeft")
     public void getGasLeftContractFunction() {
-        validateGasEstimation(
-                networkAdapter.encodeData(ESTIMATE_GAS, GET_GAS_LEFT), GET_GAS_LEFT, contractSolidityAddress);
+        validateGasEstimation(encodeData(ESTIMATE_GAS, GET_GAS_LEFT), GET_GAS_LEFT, contractSolidityAddress);
     }
 
     @Then("I call estimateGas with function that executes positive nested calls")
     public void positiveNestedCallsFunction() {
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_GAS,
                 NESTED_CALLS_POSITIVE,
                 new BigInteger("1"),
@@ -346,21 +337,21 @@ public class EstimateFeature extends AbstractEstimateFeature {
     public void limitedNestedCallsFunction() {
         // verify that after exceeding a number of nested calls that the estimated gas would return the same
         // we will execute with 500, 1024 and 1025, and it should return the same estimatedGas
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 ESTIMATE_GAS,
                 NESTED_CALLS_LIMITED,
                 new BigInteger("1"),
                 new BigInteger("500"),
                 asAddress(contractSolidityAddress));
         validateGasEstimation(data, NESTED_CALLS_LIMITED, contractSolidityAddress);
-        var secondData = networkAdapter.encodeData(
+        var secondData = encodeData(
                 ESTIMATE_GAS,
                 NESTED_CALLS_LIMITED,
                 new BigInteger("1"),
                 new BigInteger("1024"),
                 asAddress(contractSolidityAddress));
         validateGasEstimation(secondData, NESTED_CALLS_LIMITED, contractSolidityAddress);
-        var thirdData = networkAdapter.encodeData(
+        var thirdData = encodeData(
                 ESTIMATE_GAS,
                 NESTED_CALLS_LIMITED,
                 new BigInteger("1"),
@@ -371,14 +362,14 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with IERC20 token transfer using long zero address as receiver")
     public void ierc20TransferWithLongZeroAddressForReceiver() {
-        var data = networkAdapter.encodeData(IERC20_TOKEN_TRANSFER, asAddress(receiverAccountId), new BigInteger("1"));
+        var data = encodeData(IERC20_TOKEN_TRANSFER, asAddress(receiverAccountId), new BigInteger("1"));
         validateGasEstimation(data, IERC20_TOKEN_TRANSFER, fungibleTokenId.toSolidityAddress());
     }
 
     @Then("I call estimateGas with IERC20 token transfer using evm address as receiver")
     public void ierc20TransferWithEvmAddressForReceiver() {
         var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 IERC20_TOKEN_TRANSFER, asAddress(accountInfo.getEvmAddress().replace("0x", "")), new BigInteger("1"));
         validateGasEstimation(data, IERC20_TOKEN_TRANSFER, fungibleTokenId.toSolidityAddress());
     }
@@ -386,7 +377,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with IERC20 token approve using evm address as receiver")
     public void ierc20ApproveWithEvmAddressForReceiver() {
         var accountInfo = mirrorClient.getAccountDetailsByAccountId(receiverAccountId.getAccountId());
-        var data = networkAdapter.encodeData(
+        var data = encodeData(
                 IERC20_TOKEN_APPROVE, asAddress(accountInfo.getEvmAddress().replace("0x", "")), new BigInteger("1"));
         validateGasEstimation(data, IERC20_TOKEN_APPROVE, fungibleTokenId.toSolidityAddress());
     }
@@ -394,17 +385,13 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with IERC20 token associate using evm address as receiver")
     public void ierc20AssociateWithEvmAddressForReceiver() {
         validateGasEstimation(
-                networkAdapter.encodeData(IERC20_TOKEN_ASSOCIATE),
-                IERC20_TOKEN_ASSOCIATE,
-                fungibleTokenId.toSolidityAddress());
+                encodeData(IERC20_TOKEN_ASSOCIATE), IERC20_TOKEN_ASSOCIATE, fungibleTokenId.toSolidityAddress());
     }
 
     @Then("I call estimateGas with IERC20 token dissociate using evm address as receiver")
     public void ierc20DissociateWithEvmAddressForReceiver() {
         validateGasEstimation(
-                networkAdapter.encodeData(IERC20_TOKEN_DISSOCIATE),
-                IERC20_TOKEN_DISSOCIATE,
-                fungibleTokenId.toSolidityAddress());
+                encodeData(IERC20_TOKEN_DISSOCIATE), IERC20_TOKEN_DISSOCIATE, fungibleTokenId.toSolidityAddress());
     }
 
     @Then("I call estimateGas with contract deploy with bytecode as data")
