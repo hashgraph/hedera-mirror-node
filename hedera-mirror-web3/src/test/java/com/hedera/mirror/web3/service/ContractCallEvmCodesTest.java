@@ -43,7 +43,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters))
-                .isEqualTo(properties.chainIdBytes32().toHexString());
+                .isEqualTo(mirrorNodeEvmProperties.chainIdBytes32().toHexString());
     }
 
     @Test
