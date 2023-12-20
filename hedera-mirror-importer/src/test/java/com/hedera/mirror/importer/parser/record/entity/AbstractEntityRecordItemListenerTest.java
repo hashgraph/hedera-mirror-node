@@ -219,6 +219,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
             entityRecordItemListener.onItem(recordItem);
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);
+            parserContext.clear();
         });
     }
 
@@ -239,6 +240,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
 
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);
+            parserContext.clear();
         });
     }
 
