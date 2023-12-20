@@ -88,7 +88,8 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
             nativeQuery = true)
     Optional<Long> findHistoricalTokenBalanceUpToTimestamp(
             long tokenId, long accountId, long blockTimestamp, long accountCreatedTimestamp);
-    // version 1
+    // version 1 - removed account_balance part
+
     //                    with base as (
     //                        select balance, consensus_timestamp
     //                        from token_balance as tb
@@ -109,7 +110,8 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
     //                    )
     //                    select coalesce((select balance from base), 0) + coalesce((select amount from change), 0)
 
-    // version 2
+    // version 2 - with account_balance (not optimal IMO)
+
     //                    with balance_snapshot as (
     //                        select consensus_timestamp
     //                        from account_balance

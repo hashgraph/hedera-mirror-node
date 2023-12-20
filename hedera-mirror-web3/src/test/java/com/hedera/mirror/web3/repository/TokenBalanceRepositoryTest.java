@@ -143,7 +143,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         long historicalAccountBalance = tokenBalance1.getBalance(); // 1
 
         persistTokenTransfers(3, consensusTimestamp, tokenBalance1);
-        historicalAccountBalance += TRANSFER_AMOUNT * 3; // 30
+        historicalAccountBalance += TRANSFER_AMOUNT * 3; // 31
 
         persistTokenTransfers(3, consensusTimestamp + 10, tokenBalance1);
 
@@ -158,6 +158,9 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findHistoricalBalanceIfTokenBalanceIsMissing() {
+        // Test case: account_balance and token_balance entry BEFORE token transfers is missing
+        // usually the account_balance/token_balance gets persisted ~8 mins after the account creation
+
         var accountId = new AccountBalance.Id(domainBuilder.timestamp(), TREASURY_ENTITY_ID);
         Entity account = domainBuilder
                 .entity()
