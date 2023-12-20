@@ -45,7 +45,8 @@ public class NetworkAdapter extends EncoderDecoderFacade {
     @Autowired
     private MirrorNodeClient mirrorClient;
 
-    private static final byte[] EMPTY_RESULT = new byte[32];
+    private static final byte[] EMPTY_RESULT = new byte[0];
+    private static final byte[] EMPTY_RESULT_32 = new byte[32];
 
     public ContractCallResponse contractsCall(
             boolean toMirror,
@@ -98,7 +99,8 @@ public class NetworkAdapter extends EncoderDecoderFacade {
             } else if (decodedResult.get(0) instanceof Boolean) {
                 contractCallResponse.setResult(decodedResult.get(0));
             } else if (decodedResult.get(0) instanceof byte[]) {
-                if (Arrays.equals(EMPTY_RESULT, decodedResult.get(0))) {
+                if (Arrays.equals(EMPTY_RESULT, decodedResult.get(0))
+                        || (Arrays.equals(EMPTY_RESULT_32, decodedResult.get(0)))) {
                     contractCallResponse.setResult(StringUtils.EMPTY);
                 } else {
                     contractCallResponse.setResult(decodedResult.get(0));

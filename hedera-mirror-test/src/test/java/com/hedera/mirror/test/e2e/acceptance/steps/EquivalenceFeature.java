@@ -19,7 +19,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.COPY_CODE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.DESTROY_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_HASH;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_SIZE;
@@ -71,18 +70,14 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute selfdestruct and set beneficiary to {string} address with call to {string}")
-    public void selfDestructAndSetBeneficiary(String beneficiary, String node) {
-        var accountAddress = new AccountId(extractAccountNumber(beneficiary));
-
-        var data = encodeData(
-                EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, networkAdapter.asLongZeroHeadlongAddress(accountAddress));
-        var functionResult = callContract(
-                MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, data);
+    @Then("I execute selfdestruct and set beneficiary to {string} address")
+    public void selfDestructAndSetBeneficiary(String beneficiary) {
+        var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
+        var parameters = new ContractFunctionParameters().addAddress(accountId);
+        var message = executeContractCallTransaction(equivalenceDestructContract, "destroyContract", parameters);
 
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
 
-        final var message = functionResult.getResultAsText();
         var extractedStatus = extractStatus(message);
         if (extractAccountNumber(beneficiary) < 751) {
             assertEquals(INVALID_SOLIDITY_ADDRESS_EXCEPTION, extractedStatus);
