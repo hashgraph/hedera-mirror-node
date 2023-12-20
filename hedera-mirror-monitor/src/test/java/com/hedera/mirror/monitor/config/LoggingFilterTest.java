@@ -100,6 +100,19 @@ class LoggingFilterTest {
     }
 
     @Test
+    void filterOnCancelActuator(CapturedOutput output) {
+        var exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/actuator/prometheus").build());
+
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(
+                        exchange, serverWebExchange -> exchange.getResponse().setComplete()))
+                .thenCancel()
+                .verify(WAIT);
+
+        assertThat(output).asString().isEmpty();
+    }
+
+    @Test
     void filterOnError(CapturedOutput output) {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
         exchange.getResponse().setRawStatusCode(500);
