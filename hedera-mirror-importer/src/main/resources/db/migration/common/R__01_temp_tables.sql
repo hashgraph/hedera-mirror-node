@@ -5,7 +5,6 @@ drop table if exists ${tempSchema}.crypto_allowance_temp;
 drop table if exists ${tempSchema}.custom_fee_temp;
 drop table if exists ${tempSchema}.dissociate_token_transfer;
 drop table if exists ${tempSchema}.entity_temp;
-drop table if exists ${tempSchema}.entity_stake_temp;
 drop table if exists ${tempSchema}.nft_allowance_temp;
 drop table if exists ${tempSchema}.nft_temp;
 drop table if exists ${tempSchema}.schedule_temp;
@@ -18,7 +17,6 @@ create unlogged table if not exists ${tempSchema}.contract_state_temp as table c
 create unlogged table if not exists ${tempSchema}.crypto_allowance_temp as table crypto_allowance limit 0;
 create unlogged table if not exists ${tempSchema}.custom_fee_temp as table custom_fee limit 0;
 create unlogged table if not exists ${tempSchema}.dissociate_token_transfer as table token_transfer limit 0;
-create unlogged table if not exists ${tempSchema}.entity_stake_temp as table entity_stake limit 0;
 create unlogged table if not exists ${tempSchema}.entity_temp as table entity limit 0;
 create unlogged table if not exists ${tempSchema}.nft_allowance_temp as table nft_allowance limit 0;
 create unlogged table if not exists ${tempSchema}.nft_temp as table nft limit 0;
@@ -33,7 +31,6 @@ alter table if exists ${tempSchema}.crypto_allowance_temp owner to ${tempSchema}
 alter table if exists ${tempSchema}.custom_fee_temp owner to ${tempSchema}_admin;
 alter table if exists ${tempSchema}.dissociate_token_transfer owner to ${tempSchema}_admin;
 alter table if exists ${tempSchema}.entity_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.entity_stake_temp owner to ${tempSchema}_admin;
 alter table if exists ${tempSchema}.nft_allowance_temp owner to ${tempSchema}_admin;
 alter table if exists ${tempSchema}.nft_temp owner to ${tempSchema}_admin;
 alter table if exists ${tempSchema}.schedule_temp owner to ${tempSchema}_admin;
@@ -46,7 +43,6 @@ create index if not exists contract_state_temp_idx on ${tempSchema}.contract_sta
 create index if not exists crypto_allowance_temp_idx on ${tempSchema}.crypto_allowance_temp (owner, spender);
 create index if not exists custom_fee_temp_idx on ${tempSchema}.custom_fee_temp (token_id);
 create index if not exists dissociate_token_transfer_idx on ${tempSchema}.dissociate_token_transfer (token_id, account_id);
-create index if not exists entity_stake_temp_idx on ${tempSchema}.entity_stake_temp (id);
 create index if not exists entity_temp_idx on ${tempSchema}.entity_temp (id);
 create index if not exists nft_allowance_temp_idx on ${tempSchema}.nft_allowance_temp (owner, spender, token_id);
 create index if not exists nft_temp_idx on ${tempSchema}.nft_temp (token_id, serial_number);
@@ -69,10 +65,6 @@ alter table if exists ${tempSchema}.custom_fee_temp set (
     );
 
 alter table if exists ${tempSchema}.dissociate_token_transfer set (
-    autovacuum_enabled = false
-    );
-
-alter table if exists ${tempSchema}.entity_stake_temp set (
     autovacuum_enabled = false
     );
 

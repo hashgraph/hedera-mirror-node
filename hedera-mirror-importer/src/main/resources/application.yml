@@ -13,6 +13,7 @@ hedera:
         restPassword: mirror_api_pass
         restUsername: mirror_api
         schema: public
+        tempSchema: temporary
         username: mirror_importer
       migration:
         blockNumberMigration:
@@ -115,7 +116,7 @@ spring:
       partitionTimeInterval: "'1 month'"
       schema: ${hedera.mirror.importer.db.schema}
       shardCount: 16
-      tempSchema: temporary
+      tempSchema: ${hedera.mirror.importer.db.tempSchema}
     user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:
