@@ -72,10 +72,9 @@ const parseResultQueryParam = (req) => {
 
 app.get(`${apiPrefix}/status`, (req, res) => {
   const status = common.getStatus(parseResultQueryParam(req));
-  const passed = status.results.map((r) => r.results.numPassedTests).reduce((r, i) => r + i);
-  const total = status.results
-    .map(({results}) => results.numFailedTests + results.numPassedTests)
-    .reduce((r, i) => r + i);
+  const passed = status.results.map((r) => r.results.numPassedTests).reduce((r, i) => r + i, 0) || 0;
+  const total =
+    status.results.map(({results}) => results.numFailedTests + results.numPassedTests).reduce((r, i) => r + i, 0) || 0;
   logger.info(
     `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
   );

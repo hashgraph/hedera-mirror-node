@@ -73,7 +73,7 @@ const filterTestDetails = (result, resultType = TEST_RESULT_TYPES.FAILED) => {
     ...result,
     results: {
       ...result.results,
-      testResults: result.results.testResults.filter((r) => r.result === resultType),
+      testResults: result?.results?.testResults?.filter((r) => r.result === resultType),
     },
   };
 };

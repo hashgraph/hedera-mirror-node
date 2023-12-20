@@ -15,7 +15,6 @@
  */
 
 import AbortController from 'abort-controller';
-import httpErrors from 'http-errors';
 import _ from 'lodash';
 import log4js from 'log4js';
 import * as math from 'mathjs';
@@ -80,31 +79,36 @@ const getBackoff = (retryAfter, xRetryIn) => {
  * @returns {Promise<Response>}
  */
 const fetchWithRetry = async (url, opts = {}, retryPredicate) => {
-  let statusCode = 200;
+  let message;
 
   for (let attempt = 1; attempt <= config.retry.maxAttempts + 1; attempt++) {
-    const response = await fetch(url, opts);
-    statusCode = response.status;
+    let headers;
+    let statusCode = 500;
+    message = '';
 
-    // Most 404s are due to race conditions with requests that span multiple clusters.
-    if (statusCode !== 404 && statusCode !== 429 && statusCode < 500) {
-      if (!response.ok) {
-        const message = `GET ${url} failed with ${response.statusText} (${response.status})`;
-        throw httpErrors(message);
+    try {
+      const response = await fetch(url, opts);
+      statusCode = response.status;
+      headers = response.headers;
+
+      if (response.ok) {
+        const json = await response.json();
+        if (!retryPredicate(json)) {
+          return json;
+        }
       }
 
-      const json = await response.json();
-      if (!retryPredicate(json)) {
-        return json;
-      }
+      message = `${response.statusText} ${statusCode}`;
+    } catch (error) {
+      message = error.message;
     }
 
-    const backoffMillis = getBackoff(response.headers.get('retry-after'), response.headers.get('x-retry-in'));
-    logger.warn(`Attempt #${attempt} failed with ${statusCode}, retry in ${backoffMillis} ms: ${url}`);
+    const backoffMillis = getBackoff(headers?.get('retry-after'), headers?.get('x-retry-in'));
+    logger.warn(`Attempt #${attempt} failed with ${message}, retry in ${backoffMillis} ms: ${url}`);
     await new Promise((resolve) => setTimeout(resolve, backoffMillis));
   }
 
-  throw new Error(`Retries exhausted with ${statusCode} status code`);
+  throw new Error(`Retries exhausted with ${message}`);
 };
 
 const noRetry = () => false;

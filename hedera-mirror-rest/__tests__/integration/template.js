@@ -258,7 +258,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
         new PutObjectCommand({
           Bucket: bucketName,
           Key: s3ObjectKey,
-          Body: Readable.from(fileStream),
+          Body: fileStream,
           ACL: 'public-read',
         })
       );

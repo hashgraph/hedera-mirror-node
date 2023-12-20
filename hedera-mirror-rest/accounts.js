@@ -119,7 +119,6 @@ const entityFields = [
  * @param pubKeyQuery
  * @param tokenBalanceQuery
  * @param accountBalanceQuery
- * @param entityStakeQuery
  * @return {{query: string, params: *[]}}
  */
 const getEntityBalanceQuery = (
@@ -128,13 +127,11 @@ const getEntityBalanceQuery = (
   limitAndOrderQuery,
   pubKeyQuery,
   tokenBalanceQuery,
-  accountBalanceQuery,
-  entityStakeQuery
+  accountBalanceQuery
 ) => {
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
 
-  const whereCondition = [entityStakeQuery.query].filter((x) => !!x).join(' and ');
-  const entityWhereCondition = [
+  const whereCondition = [
     `e.type in ('ACCOUNT', 'CONTRACT')`,
     entityBalanceQuery.query,
     entityAccountQuery.query,
@@ -148,8 +145,7 @@ const getEntityBalanceQuery = (
     entityAccountQuery.params,
     tokenBalanceQuery.params,
     pubKeyQuery.params,
-    accountBalanceQuery.params,
-    entityStakeQuery.params
+    accountBalanceQuery.params
   );
 
   // Need historical balance info if the generated query for account balance is not empty or forced to use balance info
@@ -204,16 +200,16 @@ const getEntityBalanceQuery = (
     entityTable = `(
         select *
         from ${Entity.tableName} as e
-        where ${entityWhereCondition}
+        where ${whereCondition}
         union all
         select *
         from ${Entity.historyTableName} as e
-        where ${entityWhereCondition}
+        where ${whereCondition}
         order by ${Entity.TIMESTAMP_RANGE} desc limit 1
       )`;
   } else {
     entityTable = 'entity';
-    whereClause = `where ${[entityWhereCondition, whereCondition].filter((x) => !!x).join(' and ')}`;
+    whereClause = `where ${whereCondition}`;
     orderClause = `order by e.id ${order}`;
     utils.mergeParams(params, limitParams);
   }
@@ -234,7 +230,6 @@ const getEntityBalanceQuery = (
  * @param entityAccountQuery entity id query
  * @param tokenBalanceQuery token balance query
  * @param accountBalanceQuery optional query for relevant balance file
- * @param entityStakeQuery optional entity stake query
  * @param entityBalanceQuery optional account balance query
  * @param limitAndOrderQuery optional limit and order query
  * @param pubKeyQuery optional entity public key query
@@ -245,7 +240,6 @@ const getAccountQuery = (
   entityAccountQuery,
   tokenBalanceQuery = {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts},
   accountBalanceQuery = {query: '', params: []},
-  entityStakeQuery = {query: '', params: []},
   entityBalanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
   pubKeyQuery = {query: '', params: []},
@@ -274,8 +268,7 @@ const getAccountQuery = (
     limitAndOrderQuery,
     pubKeyQuery,
     tokenBalanceQuery,
-    accountBalanceQuery,
-    entityStakeQuery
+    accountBalanceQuery
   );
 };
 
@@ -317,7 +310,6 @@ const getAccounts = async (req, res) => {
 
   const {query, params} = getAccountQuery(
     entityAccountQuery,
-    undefined,
     undefined,
     undefined,
     balanceQuery,
@@ -398,7 +390,6 @@ const getOneAccount = async (req, res) => {
     limit: tokenBalanceResponseLimit.singleAccount,
   };
   const entityAccountQuery = {query: `e.id = $${accountIdParamIndex}`, params: [encodedId]};
-  const entityStakeQuery = {query: `(es.id = $${accountIdParamIndex} OR es.id IS NULL)`, params: []};
 
   const accountBalanceQuery = {query: '', params: []};
   if (transactionTsQuery) {
@@ -455,8 +446,7 @@ const getOneAccount = async (req, res) => {
   const {query: entityQuery, params: entityParams} = getAccountQuery(
     entityAccountQuery,
     tokenBalanceQuery,
-    accountBalanceQuery,
-    entityStakeQuery
+    accountBalanceQuery
   );
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);

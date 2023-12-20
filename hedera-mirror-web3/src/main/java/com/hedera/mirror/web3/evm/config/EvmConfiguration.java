@@ -16,12 +16,12 @@
 
 package com.hedera.mirror.web3.evm.config;
 
-import static org.hyperledger.besu.evm.MainnetEVMs.registerShanghaiOperations;
-
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
@@ -35,6 +35,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOpe
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
+import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
 import java.util.HashMap;
 import java.util.List;
@@ -46,12 +47,15 @@ import javax.inject.Provider;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
+import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -84,10 +88,15 @@ public class EvmConfiguration {
     public static final String EVM_VERSION_0_30 = "v0.30";
     public static final String EVM_VERSION_0_34 = "v0.34";
     public static final String EVM_VERSION_0_38 = "v0.38";
-    public static final String EVM_VERSION_0_45 = "v0.45";
 
-    public static final String EVM_VERSION = EVM_VERSION_0_34;
+    public static final String EVM_VERSION = EVM_VERSION_0_38;
     private final CacheProperties cacheProperties;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    private final GasCalculatorHederaV22 gasCalculator;
+    private final HederaBlockHashOperation hederaBlockHashOperation;
+    private final AbstractAutoCreationLogic autoCreationLogic;
+    private final EntityAddressSequencer entityAddressSequencer;
+    private final PrecompiledContractProvider precompilesHolder;
 
     @Bean(CACHE_MANAGER_CONTRACT_STATE)
     CacheManager cacheManagerState() {
@@ -161,20 +170,26 @@ public class EvmConfiguration {
     }
 
     @Bean
-    Provider<ContractCreationProcessor> contractCreationProcessorProvider(
-            final ContractCreationProcessor contractCreationProcessor) {
-        return () -> contractCreationProcessor;
+    Map<String, Provider<ContractCreationProcessor>> contractCreationProcessorProvider(
+            final ContractCreationProcessor contractCreationProcessor30,
+            final ContractCreationProcessor contractCreationProcessor34,
+            final ContractCreationProcessor contractCreationProcessor38) {
+        Map<String, Provider<ContractCreationProcessor>> processorsMap = new HashMap<>();
+        processorsMap.put(EVM_VERSION_0_30, () -> contractCreationProcessor30);
+        processorsMap.put(EVM_VERSION_0_34, () -> contractCreationProcessor34);
+        processorsMap.put(EVM_VERSION_0_38, () -> contractCreationProcessor38);
+        return processorsMap;
     }
 
     @Bean
     Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
-            EVM evm, final MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor) {
-        var messageCallProcessor = new MessageCallProcessor(evm, precompileContractRegistry());
+            MirrorEvmMessageCallProcessorV30 mirrorEvmMessageCallProcessor30,
+            MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor34,
+            MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor38) {
         Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
-        processorsMap.put(EVM_VERSION_0_30, () -> messageCallProcessor);
-        processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor);
-        processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessor);
-        processorsMap.put(EVM_VERSION_0_45, () -> mirrorEvmMessageCallProcessor);
+        processorsMap.put(EVM_VERSION_0_30, () -> mirrorEvmMessageCallProcessor30);
+        processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor34);
+        processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessor38);
 
         return processorsMap;
     }
@@ -195,15 +210,84 @@ public class EvmConfiguration {
     }
 
     @Bean
-    EVM evm(
-            final GasCalculatorHederaV22 gasCalculator,
+    EVM evm030(final HederaPrngSeedOperation prngSeedOperation) {
+        return evm(
+                gasCalculator,
+                mirrorNodeEvmProperties,
+                prngSeedOperation,
+                hederaBlockHashOperation,
+                EvmSpecVersion.LONDON,
+                MainnetEVMs::registerLondonOperations);
+    }
+
+    @Bean
+    EVM evm034(final HederaPrngSeedOperation prngSeedOperation) {
+        return evm(
+                gasCalculator,
+                mirrorNodeEvmProperties,
+                prngSeedOperation,
+                hederaBlockHashOperation,
+                EvmSpecVersion.PARIS,
+                MainnetEVMs::registerParisOperations);
+    }
+
+    @Bean
+    EVM evm038(final HederaPrngSeedOperation prngSeedOperation) {
+        return evm(
+                gasCalculator,
+                mirrorNodeEvmProperties,
+                prngSeedOperation,
+                hederaBlockHashOperation,
+                EvmSpecVersion.SHANGHAI,
+                MainnetEVMs::registerShanghaiOperations);
+    }
+
+    @Bean
+    HederaPrngSeedOperation hederaPrngSeedOperation(final GasCalculator gasCalculator, final PrngLogic prngLogic) {
+        return new HederaPrngSeedOperation(gasCalculator, prngLogic);
+    }
+
+    @Bean
+    PrecompileContractRegistry precompileContractRegistry() {
+        return new PrecompileContractRegistry();
+    }
+
+    @Bean
+    public ContractCreationProcessor contractCreationProcessor30(@Qualifier("evm030") EVM evm) {
+        return contractCreationProcessor(evm);
+    }
+
+    @Bean
+    public ContractCreationProcessor contractCreationProcessor34(@Qualifier("evm034") EVM evm) {
+        return contractCreationProcessor(evm);
+    }
+
+    @Bean
+    public ContractCreationProcessor contractCreationProcessor38(@Qualifier("evm038") EVM evm) {
+        return contractCreationProcessor(evm);
+    }
+
+    @Bean
+    public MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor34(@Qualifier("evm034") EVM evm) {
+        return mirrorEvmMessageCallProcessor(evm);
+    }
+
+    @Bean
+    public MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor38(@Qualifier("evm038") EVM evm) {
+        return mirrorEvmMessageCallProcessor(evm);
+    }
+
+    private EVM evm(
+            final GasCalculator gasCalculator,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final HederaPrngSeedOperation prngSeedOperation,
-            final HederaBlockHashOperation hederaBlockHashOperation) {
+            final HederaBlockHashOperation hederaBlockHashOperation,
+            EvmSpecVersion specVersion,
+            OperationRegistryCallback callback) {
         final var operationRegistry = new OperationRegistry();
         final BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
-        registerShanghaiOperations(
+        callback.register(
                 operationRegistry,
                 gasCalculator,
                 mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
@@ -226,21 +310,20 @@ public class EvmConfiguration {
                 operationRegistry,
                 gasCalculator,
                 org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
-                mirrorNodeEvmProperties.getEvmSpecVersion());
+                specVersion);
     }
 
-    @Bean
-    HederaPrngSeedOperation hederaPrngSeedOperation(final GasCalculator gasCalculator, final PrngLogic prngLogic) {
-        return new HederaPrngSeedOperation(gasCalculator, prngLogic);
-    }
-
-    @Bean
-    ContractCreationProcessor contractCreationProcessor(final GasCalculatorHederaV22 gasCalculator, EVM evm) {
+    private ContractCreationProcessor contractCreationProcessor(EVM evm) {
         return new ContractCreationProcessor(gasCalculator, evm, true, List.of(), 1);
     }
 
-    @Bean
-    PrecompileContractRegistry precompileContractRegistry() {
-        return new PrecompileContractRegistry();
+    private MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor(EVM evm) {
+        return new MirrorEvmMessageCallProcessor(
+                autoCreationLogic,
+                entityAddressSequencer,
+                evm,
+                precompileContractRegistry(),
+                precompilesHolder,
+                gasCalculator);
     }
 }

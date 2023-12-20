@@ -84,7 +84,7 @@ tasks.shadowJar {
         listOf(
             project.configurations.runtimeClasspath.get(),
             project.configurations.testRuntimeClasspath.get())
-    manifest { attributes["Main-Class"] = "com.hedera.mirror.test.MirrorTestApplication" }
+    manifest { attributes["Main-Class"] = "com.hedera.mirror.test.TestApplication" }
     mergeServiceFiles()
     append("META-INF/spring.handlers")
     append("META-INF/spring.schemas")
