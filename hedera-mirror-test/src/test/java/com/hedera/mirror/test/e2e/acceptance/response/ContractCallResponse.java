@@ -30,6 +30,7 @@ import org.apache.tuweni.bytes.Bytes;
 public class ContractCallResponse {
 
     private String result;
+    private static final String EMPTY_RESULT = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
     public BigInteger getResultAsNumber() {
         if (!StringUtils.startsWith(result, "0x")) {
@@ -52,11 +53,15 @@ public class ContractCallResponse {
     }
 
     public Bytes getResultAsBytes() {
-        if (StringUtils.isEmpty(result)) {
+        if (StringUtils.isEmpty(result) || EMPTY_RESULT.equals(result)) {
             return Bytes.EMPTY;
         }
 
-        return Bytes.fromHexString(result);
+        if (result.startsWith("0x")) {
+            return Bytes.fromHexString(result);
+        } else {
+            return Bytes.wrap(result.getBytes());
+        }
     }
 
     public String getResultAsText() {

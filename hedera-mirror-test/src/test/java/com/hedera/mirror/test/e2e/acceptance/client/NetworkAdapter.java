@@ -32,6 +32,8 @@ import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.SelectorInter
 import jakarta.inject.Named;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Arrays;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
@@ -42,6 +44,8 @@ public class NetworkAdapter extends EncoderDecoderFacade {
 
     @Autowired
     private MirrorNodeClient mirrorClient;
+
+    private static final byte[] EMPTY_RESULT = new byte[32];
 
     public ContractCallResponse contractsCall(
             boolean toMirror,
@@ -90,11 +94,15 @@ public class NetworkAdapter extends EncoderDecoderFacade {
             if (decodedResult.get(0) instanceof String) {
                 contractCallResponse.setResult(decodedResult.get(0));
             } else if (decodedResult.get(0) instanceof BigInteger) {
-                contractCallResponse.setResult(decodedResult.get(0).toString());
+                contractCallResponse.setResult((decodedResult.get(0)).toString());
             } else if (decodedResult.get(0) instanceof Boolean) {
-                contractCallResponse.setResult(decodedResult.get(0).toString());
-            } else if (decodedResult.get(0) instanceof byte[]) {
                 contractCallResponse.setResult(decodedResult.get(0));
+            } else if (decodedResult.get(0) instanceof byte[]) {
+                if (Arrays.equals(EMPTY_RESULT, decodedResult.get(0))) {
+                    contractCallResponse.setResult(StringUtils.EMPTY);
+                } else {
+                    contractCallResponse.setResult(decodedResult.get(0));
+                }
             } else if (decodedResult.get(0) instanceof Address) {
                 contractCallResponse.setResult(((Address) decodedResult.get(0)).toString());
             }
