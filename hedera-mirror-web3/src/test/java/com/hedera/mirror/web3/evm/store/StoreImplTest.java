@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
@@ -239,6 +240,7 @@ class StoreImplTest {
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenAccount.getAssociated()).thenReturn(Boolean.TRUE);
+        when(token.getType()).thenReturn(TokenTypeEnum.FUNGIBLE_COMMON);
         final var tokenRelationship = subject.getTokenRelationship(
                 new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), OnMissing.DONT_THROW);
         assertThat(tokenRelationship.getAccount().getId()).isEqualTo(new Id(0, 0, 12));
@@ -384,6 +386,7 @@ class StoreImplTest {
     }
 
     private void setupTokenAndAccount() {
+        when(token.getType()).thenReturn(TokenTypeEnum.FUNGIBLE_COMMON);
         when(entityDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(tokenModel));
         when(tokenModel.getId()).thenReturn(6L);
         when(tokenModel.getNum()).thenReturn(6L);

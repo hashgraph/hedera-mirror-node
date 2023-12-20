@@ -26,6 +26,8 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenBalanceRepository;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
@@ -53,6 +55,9 @@ class TokenRelationshipDatabaseAccessorTest {
 
     @Mock
     private TokenAccountRepository tokenAccountRepository;
+
+    @Mock
+    private TokenBalanceRepository tokenBalanceRepository;
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
@@ -83,6 +88,7 @@ class TokenRelationshipDatabaseAccessorTest {
         when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
         when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+        when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
                         new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
@@ -110,6 +116,7 @@ class TokenRelationshipDatabaseAccessorTest {
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
         when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
+        when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
                         new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
@@ -141,6 +148,7 @@ class TokenRelationshipDatabaseAccessorTest {
         when(tokenAccountRepository.findByIdAndTimestamp(
                         tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
                 .thenReturn(Optional.of(tokenAccount));
+        when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
                         new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), timestamp))
@@ -168,6 +176,7 @@ class TokenRelationshipDatabaseAccessorTest {
         when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
         when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+        when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
                         new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))
@@ -183,6 +192,63 @@ class TokenRelationshipDatabaseAccessorTest {
     }
 
     @Test
+    void getFungibleBalanceHistorical() {
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.associated(true)
+                        .tokenId(EntityIdUtils.entityIdFromId(token.getId()).getId())
+                        .accountId(EntityIdUtils.entityIdFromId(account.getId()).getId())
+                        .automaticAssociation(true))
+                .get();
+        final long balance = 15L;
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, timestamp)).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, timestamp)).thenReturn(Optional.of(token));
+        when(tokenAccountRepository.findByIdAndTimestamp(
+                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
+                .thenReturn(Optional.of(tokenAccount));
+        when(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenAccount.getTokenId(),
+                        tokenAccount.getAccountId(),
+                        timestamp.get(),
+                        account.getCreatedTimestamp()))
+                .thenReturn(Optional.of(balance));
+        when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
+
+        assertThat(tokenRelationshipDatabaseAccessor.get(
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), timestamp))
+                .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
+                        .returns(account, TokenRelationship::getAccount)
+                        .returns(token, TokenRelationship::getToken)
+                        .returns(balance, TokenRelationship::getBalance));
+    }
+
+    @Test
+    void getNftBalanceHistorical() {
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.associated(true)
+                        .tokenId(EntityIdUtils.entityIdFromId(token.getId()).getId())
+                        .accountId(EntityIdUtils.entityIdFromId(account.getId()).getId())
+                        .automaticAssociation(true))
+                .get();
+        final long balance = 15L;
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, timestamp)).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, timestamp)).thenReturn(Optional.of(token));
+        when(tokenAccountRepository.findByIdAndTimestamp(
+                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
+                .thenReturn(Optional.of(tokenAccount));
+        when(account.getOwnedNfts()).thenReturn(balance);
+        when(token.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+
+        assertThat(tokenRelationshipDatabaseAccessor.get(
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), timestamp))
+                .hasValueSatisfying(tokenRelationship -> assertThat(tokenRelationship)
+                        .returns(account, TokenRelationship::getAccount)
+                        .returns(token, TokenRelationship::getToken)
+                        .returns(balance, TokenRelationship::getBalance));
+    }
+
+    @Test
     void getBooleansFalse() {
         final var tokenAccount = domainBuilder
                 .tokenAccount()
@@ -195,6 +261,7 @@ class TokenRelationshipDatabaseAccessorTest {
         when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, Optional.empty())).thenReturn(Optional.of(account));
         when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, Optional.empty())).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
+        when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
                         new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), Optional.empty()))

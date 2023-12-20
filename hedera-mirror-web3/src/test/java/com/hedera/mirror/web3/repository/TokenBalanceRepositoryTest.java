@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -138,11 +139,11 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
                         accountBalance.getId().getAccountId(),
                         domainBuilder.entityId())))
                 .persist();
-        long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp(); // 1
+        long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp();
         long historicalAccountBalance = tokenBalance1.getBalance(); // 1
 
-        persistTokenTransfers(3, consensusTimestamp, tokenBalance1); // 30
-        historicalAccountBalance += TRANSFER_AMOUNT * 3; // 31
+        persistTokenTransfers(3, consensusTimestamp, tokenBalance1);
+        historicalAccountBalance += TRANSFER_AMOUNT * 3; // 30
 
         persistTokenTransfers(3, consensusTimestamp + 10, tokenBalance1);
 
@@ -151,6 +152,36 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
                         tokenBalance1.getId().getAccountId().getId(),
                         consensusTimestamp + 10,
                         0L))
+                .get()
+                .isEqualTo(historicalAccountBalance);
+    }
+
+    @Test
+    void findHistoricalBalanceIfTokenBalanceIsMissing() {
+        var accountId = new AccountBalance.Id(domainBuilder.timestamp(), TREASURY_ENTITY_ID);
+        Entity account = domainBuilder
+                .entity()
+                .customize(a -> a.id(accountId.getAccountId().getId()))
+                .persist();
+        long accountCreationTimestamp = account.getCreatedTimestamp();
+        // not persisted
+        var tokenBalance1 = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(
+                        domainBuilder.timestamp(), accountId.getAccountId(), domainBuilder.entityId())))
+                .get();
+
+        long consensusTimestamp = tokenBalance1.getId().getConsensusTimestamp();
+        long historicalAccountBalance = 0L; // 0 - we just created this account and there are no transfers
+
+        persistTokenTransfers(3, consensusTimestamp, tokenBalance1);
+        historicalAccountBalance += TRANSFER_AMOUNT * 3; // 30
+
+        assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                        tokenBalance1.getId().getTokenId().getId(),
+                        tokenBalance1.getId().getAccountId().getId(),
+                        consensusTimestamp + 10,
+                        accountCreationTimestamp))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }

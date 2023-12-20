@@ -217,8 +217,8 @@ class TokenAccessorImplTest {
         tokenAccount.setAssociated(true);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        when(token.getType()).thenReturn(null);
-        when(token.getSupplyType()).thenReturn(null);
+        when(token.getType()).thenReturn(TokenTypeEnum.FUNGIBLE_COMMON);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.ACCOUNT, EntityType.TOKEN);
         assertTrue(tokenAccessor.isFrozen(ACCOUNT, TOKEN));
@@ -231,8 +231,8 @@ class TokenAccessorImplTest {
         tokenAccount.setAssociated(true);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        when(token.getType()).thenReturn(null);
-        when(token.getSupplyType()).thenReturn(null);
+        when(token.getType()).thenReturn(TokenTypeEnum.FUNGIBLE_COMMON);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.ACCOUNT, EntityType.TOKEN);
         assertTrue(tokenAccessor.isKyc(ACCOUNT, TOKEN));
@@ -246,8 +246,8 @@ class TokenAccessorImplTest {
         customFee.addFixedFee(FixedFee.builder().collectorAccountId(collectorId).build());
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        when(token.getType()).thenReturn(null);
-        when(token.getSupplyType()).thenReturn(null);
+        when(token.getType()).thenReturn(TokenTypeEnum.FUNGIBLE_COMMON);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(customFeeRepository.findById(any())).thenReturn(Optional.of(customFee));

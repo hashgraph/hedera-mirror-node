@@ -65,11 +65,30 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
                 .formatted(TokenRelationship.class.getTypeName(), key.getClass().getTypeName()));
     }
 
+    /**
+     * Determines fungible or NFT balance based on block context.
+     *
+     * NFT Balance Explanation:
+     *
+     * Non-historical Call:
+     * When querying the latest block, the NFT balance from `account.getOwnedNfts()`
+     * matches the balance from `tokenAccount.getBalance()`.
+     * Therefore, the NFT balance is obtained from `account.getOwnedNfts()`.
+     *
+     * Historical Call:
+     * In historical block queries, as the `token_account` and `token_balance` tables lack historical state for NFT balances,
+     * the NFT balance is retrieved from `account.getOwnedNfts()`, previously set in `AccountDatabaseAccessor.getOwnedNfts()`.
+     *
+     * Fungible Token Balance Explanation:
+     *
+     * Non-historical Call:
+     * The same principle as NFT applies here, and the balance is obtained from `account.getOwnedNfts()`.
+     *
+     * Historical Call:
+     * In historical block queries, since the `token_account` table lacks historical state for fungible balances,
+     * the balance is determined from the `token_balance` table using the `findHistoricalTokenBalanceUpToTimestamp` query.
+     */
     private Long getBalance(Account account, Token token, TokenAccount tokenAccount, final Optional<Long> timestamp) {
-        // when we have normal call account.getOwnedNfts() == tokenAccount.getBalance()
-        // when we have historical call account.getOwnedNfts() != tokenAccount.getBalance()
-        // token_account table does not keep historical state about nft balances so we should get the nft balance
-        // from account.getOwnedNfts() which is set in NftDatabaseAccessor.getOwnedNfts() beforehand
         if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
             return account.getOwnedNfts();
         }
