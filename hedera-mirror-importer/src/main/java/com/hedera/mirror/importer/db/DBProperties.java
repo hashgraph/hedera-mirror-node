@@ -58,5 +58,8 @@ public class DBProperties {
     private String schema = "";
 
     @NotBlank
+    private String tempSchema = "";
+
+    @NotBlank
     private String username = "";
 }

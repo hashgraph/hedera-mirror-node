@@ -207,8 +207,14 @@ transactions in the balance and record streams. These issues should only appear 
 * Solution: Fixed in Hedera Services [v0.34.2](https://github.com/hashgraph/hedera-services/releases/tag/v0.34.2) on
   February 17, 2023. Fixed in Mirror Node in v0.74.3 by a migration that adds the missing transactions.
 
-## Manual Steps Required For 0.96.0 Upgrade
-* For existing operators, upgrading to 0.96.0 requires manual upgrades to be applied to the database. You must execute the script located [here](/hedera-mirror-importer/src/main/resources/db/scripts/init-temp-schema.sh)
+## Breaking Schema Changes Introduced in 0.96.0
+
+In version 0.96.0 a new schema was introduced to handle processing of upsertable entities. This change doesn't require any
+manual steps for new operators that use one of our init scripts or helm charts to configure the database. However, existing operators 
+upgrading to versions greater than 0.96.0 are required to configure this new schema
+for use by the importer. 
+
+You may configure this schema by configuring and executing the script located [here](/hedera-mirror-importer/src/main/resources/db/scripts/init-temp-schema.sh)
 
 ## Database migration from V1 to V2
 
