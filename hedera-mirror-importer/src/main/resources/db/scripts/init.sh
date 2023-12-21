@@ -47,8 +47,7 @@ psql -d "user=postgres connect_timeout=3" \
   --set "rosettaUsername=${ROSETTA_USERNAME:-mirror_rosetta}" \
   --set "web3Password=${WEB3_PASSWORD:-mirror_web3_pass}" \
   --set "web3Username=${WEB3_USERNAME:-mirror_web3}" \
-  --set "tempSchema=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}" \
-  --set "tempSchemaAdminRole=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}_admin"  <<__SQL__
+  --set "tempSchema=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}" <<__SQL__
 
 -- Create database & owner
 create user :ownerUsername with login password :'ownerPassword';
@@ -60,7 +59,7 @@ create extension if not exists pg_stat_statements;
 -- Create roles
 create role readonly;
 create role readwrite in role readonly;
-create role :tempSchemaAdminRole in role readwrite;
+create role temporary_admin in role readwrite;
 
 -- Create users
 create user :graphqlUsername with login password :'graphqlPassword' in role readonly;
@@ -71,8 +70,8 @@ create user :rosettaUsername with login password :'rosettaPassword' in role read
 create user :web3Username with login password :'web3Password' in role readonly;
 
 -- Grant temp schema admin privileges
-grant :tempSchemaAdminRole to :ownerUsername;
-grant :tempSchemaAdminRole to :importerUsername;
+grant temporary_admin to :ownerUsername;
+grant temporary_admin to :importerUsername;
 
 ${DB_SPECIFIC_SQL}
 
@@ -86,7 +85,7 @@ grant usage on schema :dbSchema to public;
 revoke create on schema :dbSchema from public;
 
 -- Create temp table schema
-create schema if not exists :tempSchema authorization :tempSchemaAdminRole;
+create schema if not exists :tempSchema authorization temporary_admin;
 grant usage on schema :tempSchema to public;
 revoke create on schema :tempSchema from public;
 

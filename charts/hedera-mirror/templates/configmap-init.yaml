@@ -37,8 +37,7 @@ data:
       --set "rosettaUsername=${HEDERA_MIRROR_ROSETTA_DB_USERNAME}" \
       --set "web3Password=${HEDERA_MIRROR_WEB3_DB_PASSWORD}" \
       --set "web3Username=${HEDERA_MIRROR_WEB3_DB_USERNAME}" \
-      --set "tempSchema=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA}" \
-      --set "tempSchemaAdminRole=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA}_admin" <<__SQL__
+      --set "tempSchema=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA}" <<__SQL__
 
     -- Create database & owner
     create user :ownerUsername with login password :'ownerPassword';
@@ -50,7 +49,7 @@ data:
     -- Create roles
     create role readonly;
     create role readwrite in role readonly;
-    create role :tempSchemaAdminRole in role readwrite;
+    create role temporary_admin in role readwrite;
 
     -- Create users
     create user :graphQLUsername with login password :'graphQLPassword' in role readonly;
@@ -62,8 +61,8 @@ data:
     alter user :ownerUsername with createrole;
     
     -- Grant temp schema admin privileges
-    grant :tempSchemaAdminRole to :ownerUsername;
-    grant :tempSchemaAdminRole to :importerUsername;
+    grant temporary_admin to :ownerUsername;
+    grant temporary_admin to :importerUsername;
     
     -- Create schema
     \connect :dbName :ownerUsername
@@ -72,7 +71,7 @@ data:
     revoke create on schema :dbSchema from public;
     
     -- Create temp table schema
-    create schema if not exists :tempSchema authorization :tempSchemaAdminRole;
+    create schema if not exists :tempSchema authorization temporary_admin;
     grant usage on schema :tempSchema to public;
     revoke create on schema :tempSchema from public;
 

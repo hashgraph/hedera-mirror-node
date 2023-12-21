@@ -16,19 +16,22 @@ declare
   schema_exists boolean := false;
 begin
   select exists (select schema_name from information_schema.schemata where schema_name = tempSchema) into schema_exists;
+
   if schema_exists then
     raise notice 'The schema % already exists. Skipping creation.', tempSchema;
     return;
   end if;
+
   raise notice 'Creating schema %', tempSchema;
-  execute format('create role %I_admin in role readwrite', tempSchema);
+
+  create role temporary_admin in role readwrite;
 
   -- Grant temp schema privileges
-  execute format('grant %I_admin to %I', tempSchema, ownerUsername);
-  execute format('grant %I_admin to %I', tempSchema, importerUsername);
+  execute format('grant temporary_admin to %I', ownerUsername);
+  execute format('grant temporary_admin to %I', importerUsername);
 
   -- Create temp table schema
-  execute format('create schema if not exists %I authorization %I_admin', tempSchema, tempSchema);
+  execute format('create schema if not exists %I authorization temporary_admin', tempSchema);
   execute format('grant usage on schema %I to public', tempSchema);
   execute format('revoke create on schema %I from public', tempSchema);
 
