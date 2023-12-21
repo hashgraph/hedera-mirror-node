@@ -57,6 +57,10 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     @AfterEach
     void cleanup() {
         properties.setNetwork(HederaNetwork.TESTNET);
+        // Restore the default test values so that the changes here
+        // would not affect other tests since MirrorNodeEvmProperties
+        // is a singleton bean
+        properties.setEvmVersions(createEvmVersionsMapCustom());
     }
 
     @Test
@@ -99,8 +103,8 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static NavigableMap<Long, String> createEvmVersionsMapCustom() {
         NavigableMap<Long, String> evmVersions = new TreeMap<>();
         evmVersions.put(0L, EVM_VERSION_30);
-        evmVersions.put(1000L, EVM_VERSION_34);
-        evmVersions.put(2000L, EVM_VERSION_38);
+        evmVersions.put(50L, EVM_VERSION_34);
+        evmVersions.put(100L, EVM_VERSION_38);
         return Collections.unmodifiableNavigableMap(evmVersions);
     }
 

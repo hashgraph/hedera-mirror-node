@@ -21,13 +21,14 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -84,11 +85,11 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
-        final var emptyResponse = Bytes.EMPTY.toHexString();
 
         // Before the block the data did not exist yet
         if (blockNumber.number() < PERSISTENCE_HISTORICAL_BLOCK) {
-            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(emptyResponse);
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
         }
@@ -106,7 +107,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.of(String.valueOf(blockNumber)));
         final var latestBlockNumber = recordFileRepository.findLatestIndex().orElse(Long.MAX_VALUE);
-        final var emptyResponse = Bytes.EMPTY.toHexString();
 
         // Block number (Long.MAX_VALUE - 1) does not exist in the DB and is after the
         // latest block available in the DB => returning error
@@ -114,9 +114,10 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberOutOfRangeException.class);
         } else if (blockNumber == 51) {
-            // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but is before the latest
-            // block available in the DB => returning empty response
-            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(emptyResponse);
+            // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but it is before the latest
+            // block available in the DB => throw an exception
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(BlockNumberNotFoundException.class);
         }
     }
 

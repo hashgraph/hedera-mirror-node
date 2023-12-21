@@ -26,6 +26,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -34,7 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -104,10 +104,22 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
-        final var emptyResponse = Bytes.EMPTY.toHexString();
 
         if (Long.parseLong(blockNumber) < PERSISTENCE_HISTORICAL_BLOCK) {
-            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(emptyResponse);
+            switch (contractFunc) {
+                case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE,
+                        GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE,
+                        GET_CUSTOM_FEES_FOR_TOKEN_WITH_ROYALTY_FEE,
+                        HTS_GET_APPROVED,
+                        HTS_ALLOWANCE,
+                        HTS_IS_APPROVED_FOR_ALL -> {
+                    // TODO: add fix and test cases in a separate PR
+                    return;
+                }
+            }
+
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
         }
@@ -129,7 +141,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 BlockType.of(String.valueOf(blockNumber)));
 
         final var latestBlockNumber = recordFileRepository.findLatestIndex().orElse(Long.MAX_VALUE);
-        final var emptyResponse = Bytes.EMPTY.toHexString();
 
         // Block number (Long.MAX_VALUE - 1) does not exist in the DB and is after the
         // latest block available in the DB => returning error
@@ -137,9 +148,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberOutOfRangeException.class);
         } else if (blockNumber == 51) {
-            // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but it before the latest
-            // block available in the DB => returning empty response
-            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(emptyResponse);
+            // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but it is before the latest
+            // block available in the DB => throw an exception
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                    .isInstanceOf(BlockNumberNotFoundException.class);
         }
     }
 

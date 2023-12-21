@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
@@ -79,8 +80,8 @@ public class ContractCallService {
                     if (recordFileOptional.isPresent()) {
                         ctx.setRecordFile(recordFileOptional.get());
                     } else {
-                        // return default empty result when the block passed is valid but not found in DB
-                        return Bytes.EMPTY.toHexString();
+                        // the block passed is valid but not found in DB
+                        throw new BlockNumberNotFoundException(UNKNOWN_BLOCK_NUMBER);
                     }
                 }
                 // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
