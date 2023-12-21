@@ -19,7 +19,7 @@ psql -d "user=postgres connect_timeout=3" \
   --set "dbSchema=${DB_SCHEMA:-public}" \
   --set "importerUsername=${IMPORTER_USERNAME:-mirror_importer}" \
   --set "ownerUsername=${OWNER_USERNAME:-mirror_node}" \
-  --set "tempSchema=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}"  <<__SQL__
+  --set "tempSchema=$TEMP_SCHEMA"  <<__SQL__
 \connect :dbName
 
 create role temporary_admin in role readwrite;
