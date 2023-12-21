@@ -64,8 +64,7 @@ public class TokenClient extends AbstractNetworkClient {
     private final Collection<TokenId> tokenIds = new CopyOnWriteArrayList<>();
 
     private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<TokenAccount, NetworkTransactionResponse> associations =
-            new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<TokenAccount, NetworkTransactionResponse> associations = new ConcurrentHashMap<>();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -222,15 +221,15 @@ public class TokenClient extends AbstractNetworkClient {
             long maxSupply,
             List<CustomFee> customFees) {
         TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(
-                expandedAccountId,
-                symbol,
-                freezeStatus,
-                kycStatus,
-                treasuryAccount,
-                TokenType.FUNGIBLE_COMMON,
-                tokenSupplyType,
-                maxSupply,
-                customFees)
+                        expandedAccountId,
+                        symbol,
+                        freezeStatus,
+                        kycStatus,
+                        treasuryAccount,
+                        TokenType.FUNGIBLE_COMMON,
+                        tokenSupplyType,
+                        maxSupply,
+                        customFees)
                 .setDecimals(10)
                 .setInitialSupply(initialSupply);
 
@@ -274,7 +273,11 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse associate(ContractId contractId, TokenId token) {
-        return associate(new ExpandedAccountId(AccountId.fromString(contractId.toString())), token);
+        return associate(
+                new ExpandedAccountId(
+                        AccountId.fromString(contractId.toString()),
+                        sdkClient.getExpandedOperatorAccountId().getPrivateKey()),
+                token);
     }
 
     public NetworkTransactionResponse associate(ExpandedAccountId accountId, TokenId token) {
@@ -287,8 +290,8 @@ public class TokenClient extends AbstractNetworkClient {
                     .setTransactionMemo(getMemo("Associate w token"));
 
             KeyList keyList = (accountId.getPrivateKey() != null) ? KeyList.of(accountId.getPrivateKey()) : null;
-            NetworkTransactionResponse response = executeTransactionAndRetrieveReceipt(tokenAssociateTransaction,
-                    keyList);
+            NetworkTransactionResponse response =
+                    executeTransactionAndRetrieveReceipt(tokenAssociateTransaction, keyList);
 
             log.info("Associated account {} with token {} via {}", accountId, token, response.getTransactionId());
 
@@ -669,9 +672,7 @@ public class TokenClient extends AbstractNetworkClient {
         }
     }
 
-    public record TokenResponse(TokenId tokenId, NetworkTransactionResponse response) {
-    }
+    public record TokenResponse(TokenId tokenId, NetworkTransactionResponse response) {}
 
-    private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {
-    }
+    private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {}
 }
