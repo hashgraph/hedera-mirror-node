@@ -119,10 +119,20 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 .orElseGet(() -> nftRepository.countByAccountIdNotDeleted(accountId));
     }
 
+    /**
+     * Determines account balance based on block context.
+     *
+     * Non-historical Call:
+     * Get the balance from entity.getBalance()
+     * Historical Call:
+     * If the entity creation is after the passed timestamp - return 0L (the entity was not created)
+     * Else get the balance from the historical query `findHistoricalAccountBalanceUpToTimestamp`
+     */
     private Long getAccountBalance(Entity entity, final Optional<Long> timestamp) {
         return timestamp
-                .map(t -> accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        entity.getId(), t, entity.getCreatedTimestamp()))
+                .map(t -> t >= entity.getCreatedTimestamp()
+                        ? accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), t)
+                        : Optional.of(0L))
                 .orElseGet(() -> Optional.ofNullable(entity.getBalance()))
                 .orElse(0L);
     }

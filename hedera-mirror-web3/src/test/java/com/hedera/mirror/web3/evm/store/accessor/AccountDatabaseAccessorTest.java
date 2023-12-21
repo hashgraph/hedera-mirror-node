@@ -215,10 +215,18 @@ class AccountDatabaseAccessorTest {
     void accountBalanceMatchesValueFromRepositoryHistorical() {
         when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
         long balance = 20;
-        when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        entity.getId(), timestamp.get(), entity.getCreatedTimestamp()))
+        when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
                 .thenReturn(Optional.of(balance));
 
+        assertThat(accountAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
+    }
+
+    @Test
+    void accountBalanceIsZeroHistorical() {
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        long balance = 0;
+        entity.setCreatedTimestamp(timestamp.get() + 1);
         assertThat(accountAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
     }

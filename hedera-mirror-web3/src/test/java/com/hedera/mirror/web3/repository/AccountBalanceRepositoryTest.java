@@ -69,7 +69,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         persistCryptoTransfersBefore(3, consensusTimestamp, accountBalance1);
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10L, 0L))
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10L))
                 .get()
                 .isEqualTo(accountBalance1.getBalance());
     }
@@ -85,7 +85,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         historicalAccountBalance += TRANSFER_AMOUNT * 3;
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10L, 0L))
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10L))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }
@@ -102,7 +102,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         persistCryptoTransfers(3, consensusTimestamp + 10, accountBalance1);
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10l, 0L))
+                        accountBalance1.getId().getAccountId().getId(), consensusTimestamp + 10l))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }
@@ -133,7 +133,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        accountId, accountCreationTimestamp - 1, accountCreationTimestamp))
+                        accountId, accountCreationTimestamp - 1))
                 .get()
                 .isEqualTo(0L);
     }
@@ -165,7 +165,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         long timestampBetweenTheTransfers = initialTransfer.getConsensusTimestamp() + 1L;
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        accountId, timestampBetweenTheTransfers, accountCreationTimestamp))
+                        accountId, timestampBetweenTheTransfers))
                 .get()
                 .isEqualTo(initialBalance);
 
@@ -178,7 +178,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         long timestampBetweenSecondAndThirdTheTransfers = secondTransfer.getConsensusTimestamp() + 1L;
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        accountId, timestampBetweenSecondAndThirdTheTransfers, accountCreationTimestamp + 1))
+                        accountId, timestampBetweenSecondAndThirdTheTransfers))
                 .get()
                 .isEqualTo(TRANSFER_AMOUNT);
     }
@@ -211,7 +211,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         long timestampBetweenTheTransfers = initialTransfer.getConsensusTimestamp() + 1L;
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        accountId, timestampBetweenTheTransfers, accountCreationTimestamp))
+                        accountId, timestampBetweenTheTransfers))
                 .get()
                 .isEqualTo(initialBalance);
 
@@ -224,7 +224,7 @@ class AccountBalanceRepositoryTest extends Web3IntegrationTest {
         long timestampBetweenSecondAndThirdTheTransfers = secondTransfer.getConsensusTimestamp() + 1L;
 
         assertThat(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(
-                        accountId, timestampBetweenSecondAndThirdTheTransfers, accountCreationTimestamp))
+                        accountId, timestampBetweenSecondAndThirdTheTransfers))
                 .get()
                 .isEqualTo(TRANSFER_AMOUNT + initialBalance);
     }

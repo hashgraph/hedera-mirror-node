@@ -54,7 +54,6 @@ public interface AccountBalanceRepository extends CrudRepository<AccountBalance,
      *
      * @param accountId       the ID of the account.
      * @param blockTimestamp  the block timestamp used to filter the results.
-     * @param accountCreatedTimestamp the block timestamp when the account is created
      * @return an Optional containing the historical balance at the specified timestamp.
      *         If there are no crypto transfers between the consensus_timestamp of account_balance and the block timestamp,
      *         the method will return the balance present at consensus_timestamp.
@@ -62,27 +61,32 @@ public interface AccountBalanceRepository extends CrudRepository<AccountBalance,
     @Query(
             value =
                     """
-                    with balance_snapshot as (
-                        select balance, consensus_timestamp
-                        from account_balance
-                            where
-                            account_id = ?1 and
-                            consensus_timestamp <= ?2
-                            order by consensus_timestamp desc
-                        limit 1
-                    ),
-                    change as (
-                        select sum(amount) as amount
-                        from crypto_transfer as ct
-                            where
-                            ct.entity_id = ?1 and
-                            ct.consensus_timestamp >= coalesce((select consensus_timestamp from balance_snapshot), ?3) and
-                            ct.consensus_timestamp <= ?2 and
-                            (ct.errata is null or ct.errata <> 'DELETE')
-                    )
-                    select coalesce((select balance from balance_snapshot), 0) + coalesce((select amount from change), 0)
-                    """,
+                with balance_timestamp as (
+                    select consensus_timestamp
+                    from account_balance
+                    where account_id = 2 and
+                        consensus_timestamp > ?2 - 2678400000000000 and
+                        consensus_timestamp <= ?2
+                    order by consensus_timestamp desc
+                    limit 1
+                ), balance_snapshot as (
+                    select balance
+                    from account_balance as ab, balance_timestamp as bt
+                    where account_id = ?1 and
+                        ab.consensus_timestamp > bt.consensus_timestamp - 2678400000000000 and
+                        ab.consensus_timestamp <= bt.consensus_timestamp
+                    order by ab.consensus_timestamp desc
+                    limit 1
+                ), change as (
+                    select sum(amount) as amount
+                    from crypto_transfer as ct, balance_timestamp as bt
+                    where ct.entity_id = ?1 and
+                        ct.consensus_timestamp > bt.consensus_timestamp and
+                        ct.consensus_timestamp <= ?2 and
+                        (ct.errata is null or ct.errata <> 'DELETE')
+                )
+                select coalesce((select balance from balance_snapshot), 0) + coalesce((select amount from change), 0)
+                """,
             nativeQuery = true)
-    Optional<Long> findHistoricalAccountBalanceUpToTimestamp(
-            long accountId, long blockTimestamp, long accountCreatedTimestamp);
+    Optional<Long> findHistoricalAccountBalanceUpToTimestamp(long accountId, long blockTimestamp);
 }
