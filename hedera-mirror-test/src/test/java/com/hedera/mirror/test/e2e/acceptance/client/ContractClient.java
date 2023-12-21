@@ -32,7 +32,9 @@ import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -173,6 +175,27 @@ public class ContractClient extends AbstractNetworkClient {
 
     @SneakyThrows
     public ContractFunctionResult executeContractQuery(
+            ContractId contractId, String functionName, Long gas, byte[] data) {
+        ContractCallQuery contractCallQuery =
+                new ContractCallQuery().setContractId(contractId).setGas(gas);
+
+        contractCallQuery.setFunctionParameters(data);
+
+        long costInTinybars = contractCallQuery.getCost(client).toTinybars();
+
+        long additionalTinybars = 10000;
+        long totalPaymentInTinybars = costInTinybars + additionalTinybars;
+
+        contractCallQuery.setQueryPayment(Hbar.fromTinybars(totalPaymentInTinybars));
+
+        ContractFunctionResult functionResult = retryTemplate.execute(x -> contractCallQuery.execute(client));
+
+        log.info("Executed query on contract {} function {}, result: {}", contractId, functionName, functionResult);
+        return functionResult;
+    }
+
+    @SneakyThrows
+    public ContractFunctionResult executeContractQuery(
             ContractId contractId, String functionName, Long gas, ContractFunctionParameters parameters) {
         ContractCallQuery contractCallQuery =
                 new ContractCallQuery().setContractId(contractId).setGas(gas);
@@ -206,6 +229,22 @@ public class ContractClient extends AbstractNetworkClient {
                 contractFunctionResult.contractId,
                 contractFunctionResult.gasUsed,
                 contractFunctionResult.logs.size());
+    }
+
+    @RequiredArgsConstructor
+    public enum NodeNameEnum {
+        CONSENSUS("consensus"),
+        MIRROR("mirror");
+
+        private final String name;
+
+        static Optional<NodeNameEnum> of(String name) {
+            try {
+                return Optional.ofNullable(name).map(NodeNameEnum::valueOf);
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        }
     }
 
     public String getClientAddress() {
