@@ -62,13 +62,11 @@ const protoToName = {
   49: 'CRYPTODELETEALLOWANCE',
   50: 'ETHEREUMTRANSACTION',
   51: 'NODESTAKEUPDATE',
-  52: 'PRNG',
+  52: 'UTILPRNG',
 };
 
 // Temporary extra mappings until we can update the hashgraph proto dependency with the latest types
-const custom = {
-  UTILPRNG: 52,
-};
+const custom = {};
 
 const UNKNOWN = 'UNKNOWN';
 
