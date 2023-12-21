@@ -5,7 +5,7 @@
 FROM ubuntu:22.04 as builder
 ENV LANG=C.UTF-8
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -y --no-install-recommends && apt-get install -y gcc git openjdk-17-jdk-headless wget
+RUN apt-get update -y --no-install-recommends && apt-get install -y gcc git openjdk-21-jdk-headless wget
 # GIT_REF can be a branch, a tag, or a 40-charater git commit hash
 ARG GIT_REF=main
 ARG REPO_URL=https://github.com/hashgraph/hedera-mirror-node
@@ -18,7 +18,8 @@ RUN ./gradlew :importer:build :rosetta:build -x test
 WORKDIR /app
 RUN mkdir importer rosetta scripts \
     && cp -r /hedera-mirror-node/hedera-mirror-rosetta/container/* . \
-    && cp /hedera-mirror-node/hedera-mirror-importer/build/libs/hedera-mirror-importer-*.jar ./importer/hedera-mirror-importer.jar \
+    && rm /hedera-mirror-node/hedera-mirror-importer/build/libs/importer-*-plain.jar \
+    && cp /hedera-mirror-node/hedera-mirror-importer/build/libs/importer-*.jar ./importer/hedera-mirror-importer.jar \
     && cp /hedera-mirror-node/hedera-mirror-rosetta/build/hedera-mirror-rosetta ./rosetta \
     && cp /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh ./scripts
 
@@ -39,7 +40,7 @@ RUN apt-get update \
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 \
     && echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update -y --no-install-recommends \
-    && apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} supervisor openjdk-17-jre-headless \
+    && apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} supervisor openjdk-21-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 # Create users for importer and rosetta
