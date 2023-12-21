@@ -45,7 +45,7 @@ grant insert, update, delete on all tables in schema :tempSchema to readwrite;
 grant usage on all sequences in schema :tempSchema to readwrite;
 alter default privileges in schema :tempSchema grant insert, update, delete on tables to readwrite;
 alter default privileges in schema :tempSchema grant usage on sequences to readwrite;
-alter database dbName set search_path = :dbSchema, public, :tempSchema;
+alter database :dbName set search_path = :dbSchema, public, :tempSchema;
 __SQL__
 
 echo "Finished creating temp schema $TEMP_SCHEMA"
