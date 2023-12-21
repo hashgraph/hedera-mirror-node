@@ -1,5 +1,15 @@
 #!/bin/bash
 set -e
+TEMP_SCHEMA="${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}"
+SCHEMA_EXISTS="$(psql -h 0.0.0.0 -d "user=postgres connect_timeout=3" \
+                  -XAt \
+                  -c "select exists (select schema_name from information_schema.schemata where schema_name = '$TEMP_SCHEMA')")"
+
+if [[ $SCHEMA_EXISTS == 't' ]]
+then
+  echo "Temp schema $TEMP_SCHEMA already exists";
+  exit 0;
+fi
 
 psql -d "user=postgres connect_timeout=3" \
   --set ON_ERROR_STOP=1 \
@@ -9,50 +19,29 @@ psql -d "user=postgres connect_timeout=3" \
   --set "ownerUsername=${OWNER_USERNAME:-mirror_node}" \
   --set "tempSchema=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}"  <<__SQL__
 \connect :dbName
-create or replace function create_temp_schema(tempSchema varchar, dbSchema varchar, dbName varchar,
-importerUsername varchar, ownerUsername varchar)
-returns void as \$\$
-declare
-  schema_exists boolean := false;
-begin
-  select exists (select schema_name from information_schema.schemata where schema_name = tempSchema) into schema_exists;
 
-  if schema_exists then
-    raise notice 'The schema % already exists. Skipping creation.', tempSchema;
-    return;
-  end if;
+create role temporary_admin in role readwrite;
 
-  raise notice 'Creating schema %', tempSchema;
+-- Grant temp schema privileges
+grant temporary_admin to :ownerUsername;
+grant temporary_admin to :importerUsername;
 
-  create role temporary_admin in role readwrite;
+-- Create temp table schema
+create schema if not exists :tempSchema authorization temporary_admin;
+grant usage on schema :tempSchema to public;
+revoke create on schema :tempSchema from public;
 
-  -- Grant temp schema privileges
-  execute format('grant temporary_admin to %I', ownerUsername);
-  execute format('grant temporary_admin to %I', importerUsername);
+-- Grant readonly privileges
+grant select on all tables in schema :tempSchema to readonly;
+grant select on all sequences in schema :tempSchema to readonly;
+grant usage on schema :tempSchema to readonly;
+alter default privileges in schema :tempSchema grant select on tables to readonly;
+alter default privileges in schema :tempSchema grant select on sequences to readonly;
 
-  -- Create temp table schema
-  execute format('create schema if not exists %I authorization temporary_admin', tempSchema);
-  execute format('grant usage on schema %I to public', tempSchema);
-  execute format('revoke create on schema %I from public', tempSchema);
-
-  -- Grant readonly privileges
-  execute format('grant select on all tables in schema %I to readonly', tempSchema);
-  execute format('grant select on all sequences in schema %I to readonly', tempSchema);
-  execute format('grant usage on schema %I to readonly', tempSchema);
-  execute format('alter default privileges in schema %I grant select on tables to readonly', tempSchema);
-  execute format('alter default privileges in schema %I grant select on sequences to readonly', tempSchema);
-
-  -- Grant readwrite privileges
-  execute format('grant insert, update, delete on all tables in schema %I to readwrite', tempSchema);
-  execute format('grant usage on all sequences in schema %I to readwrite', tempSchema);
-  execute format('alter default privileges in schema %I grant insert, update, delete on tables to readwrite', tempSchema);
-  execute format('alter default privileges in schema %I grant usage on sequences to readwrite', tempSchema);
-  execute format('alter database %I set search_path = %I, public, %I', dbName, dbSchema, tempSchema);
-
-  raise notice 'finished Creating schema %', tempSchema;
-end;
-\$\$ language plpgsql;
-
-select create_temp_schema(:'tempSchema', :'dbSchema', :'dbName', :'importerUsername', :'ownerUsername');
-drop function create_temp_schema;
+-- Grant readwrite privileges
+grant insert, update, delete on all tables in schema :tempSchema to readwrite;
+grant usage on all sequences in schema :tempSchema to readwrite;
+alter default privileges in schema :tempSchema grant insert, update, delete on tables to readwrite;
+alter default privileges in schema :tempSchema grant usage on sequences to readwrite;
+alter database dbName set search_path = :dbSchema, public, :tempSchema;
 __SQL__
