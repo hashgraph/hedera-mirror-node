@@ -61,11 +61,6 @@ public class ClientConfiguration {
                 ReceiptStatusException.class));
     }
 
-    @Bean(name = REST_RETRY_TEMPLATE)
-    RetryTemplate restRetryTemplate() {
-        return retryTemplate(List.of(AssertionError.class));
-    }
-
     @Bean
     WebClient webClient() {
         HttpClient httpClient = HttpClient.create()

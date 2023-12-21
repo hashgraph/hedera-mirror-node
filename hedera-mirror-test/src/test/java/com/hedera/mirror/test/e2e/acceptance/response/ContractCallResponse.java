@@ -18,9 +18,12 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
+import com.google.common.base.Splitter;
+import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -60,5 +63,20 @@ public class ContractCallResponse {
         // 2nd 32 bytes - data length in the last 32 bytes
         // 3rd 32 bytes - actual string suffixed with zeroes
         return hexToAscii(result.replace("0x", "").substring(128).trim());
+    }
+
+    public List<BigInteger> getResultAsListDecimal() {
+        result = result.replace("0x", "");
+
+        return Splitter.fixedLength(64)
+                .splitToStream(result)
+                .map(TestUtil::hexToDecimal)
+                .toList();
+    }
+
+    public List<String> getResultAsListAddress() {
+        result = result.replace("0x", "");
+
+        return Splitter.fixedLength(64).splitToStream(result).toList();
     }
 }
