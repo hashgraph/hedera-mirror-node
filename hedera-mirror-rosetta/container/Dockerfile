@@ -18,7 +18,7 @@ RUN ./gradlew :importer:build :rosetta:build -x test
 WORKDIR /app
 RUN mkdir importer rosetta scripts \
     && cp -r /hedera-mirror-node/hedera-mirror-rosetta/container/* . \
-    && rm /hedera-mirror-node/hedera-mirror-importer/build/libs/importer-*plain.jar \
+    && rm /hedera-mirror-node/hedera-mirror-importer/build/libs/importer-*-plain.jar \
     && cp /hedera-mirror-node/hedera-mirror-importer/build/libs/importer-*.jar ./importer/hedera-mirror-importer.jar \
     && cp /hedera-mirror-node/hedera-mirror-rosetta/build/hedera-mirror-rosetta ./rosetta \
     && cp /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh ./scripts \
