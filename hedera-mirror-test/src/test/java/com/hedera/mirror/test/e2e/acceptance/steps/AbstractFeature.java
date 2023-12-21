@@ -26,6 +26,7 @@ import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.EncoderDecoderFacade;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -175,13 +176,13 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
     }
 
     protected ContractCallResponse callContract(
-            boolean toMirror,
+            final NodeNameEnum node,
             final String from,
             final ContractResource contractResource,
             final SelectorInterface method,
             final String data) {
         return networkAdapter.contractsCall(
-                toMirror, false, from, contractResource, getContract(contractResource), method, data);
+                node, false, from, contractResource, getContract(contractResource), method, data);
     }
 
     protected ContractCallResponse estimateContract(String data, String contractAddress) {

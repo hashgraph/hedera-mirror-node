@@ -29,6 +29,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.math.BigInteger;
@@ -49,7 +51,6 @@ public class EquivalenceFeature extends AbstractFeature {
     private DeployedContract equivalenceCallContract;
 
     private String equivalenceDestructContractSolidityAddress;
-    private static final String MIRROR_NODE_CHOICE = "mirror";
 
     @Given("I successfully create selfdestruct contract")
     public void createNewSelfDestructContract() {
@@ -89,9 +90,9 @@ public class EquivalenceFeature extends AbstractFeature {
     @Then("I execute balance opcode to system account {string} address would return 0 with call to {string}")
     public void balanceOfAddress(String address, String node) {
         final var accountId = new AccountId(extractAccountNumber(address));
-        var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, networkAdapter.asLongZeroHeadlongAddress(accountId));
+        var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, TestUtil.asAddress(accountId));
         var functionResult =
-                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data);
+                callContract(NodeNameEnum.valueOf(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data);
         if (extractAccountNumber(address) < 751) {
             assertEquals(BigInteger.ZERO, functionResult.getResultAsNumber());
         } else {
@@ -101,21 +102,19 @@ public class EquivalenceFeature extends AbstractFeature {
 
     @Then("I execute balance opcode against a contract with balance with call to {string}")
     public void balanceOfContract(String node) {
-        var data = encodeData(
-                EQUIVALENCE_CALL,
-                GET_BALANCE,
-                networkAdapter.asLongZeroHeadlongAddress(equivalenceDestructContract.contractId()));
+        var data =
+                encodeData(EQUIVALENCE_CALL, GET_BALANCE, TestUtil.asAddress(equivalenceDestructContract.contractId()));
         var functionResult =
-                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data);
+                callContract(NodeNameEnum.valueOf(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data);
         assertEquals(new BigInteger("10000"), functionResult.getResultAsNumber());
     }
 
     @Then("I verify extcodesize opcode against a system account {string} address returns 0 with call to {string}")
     public void extCodeSizeAgainstSystemAccount(String address, String node) {
         final var accountId = new AccountId(extractAccountNumber(address));
-        var data = encodeData(EQUIVALENCE_CALL, GET_CODE_SIZE, networkAdapter.asLongZeroHeadlongAddress(accountId));
+        var data = encodeData(EQUIVALENCE_CALL, GET_CODE_SIZE, TestUtil.asAddress(accountId));
         var functionResult =
-                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, data);
+                callContract(NodeNameEnum.valueOf(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, data);
         assertEquals(BigInteger.ZERO, functionResult.getResultAsNumber());
     }
 
@@ -123,9 +122,9 @@ public class EquivalenceFeature extends AbstractFeature {
             "I verify extcodecopy opcode against a system account {string} address returns empty bytes with call to {string}")
     public void extCodeCopyAgainstSystemAccount(String address, String node) {
         final var accountId = new AccountId(extractAccountNumber(address));
-        var data = encodeData(EQUIVALENCE_CALL, COPY_CODE, networkAdapter.asLongZeroHeadlongAddress(accountId));
+        var data = encodeData(EQUIVALENCE_CALL, COPY_CODE, TestUtil.asAddress(accountId));
         var functionResult =
-                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data);
+                callContract(NodeNameEnum.valueOf(node), StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data);
         assertArrayEquals(new byte[0], functionResult.getResultAsBytes().toArray());
     }
 
@@ -133,9 +132,9 @@ public class EquivalenceFeature extends AbstractFeature {
             "I verify extcodehash opcode against a system account {string} address returns empty bytes with call to {string}")
     public void extCodeHashAgainstSystemAccount(String address, String node) {
         final var accountId = new AccountId(extractAccountNumber(address));
-        var data = encodeData(EQUIVALENCE_CALL, GET_CODE_HASH, networkAdapter.asLongZeroHeadlongAddress(accountId));
+        var data = encodeData(EQUIVALENCE_CALL, GET_CODE_HASH, TestUtil.asAddress(accountId));
         var functionResult =
-                callContract(MIRROR_NODE_CHOICE.equals(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, data);
+                callContract(NodeNameEnum.valueOf(node), StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, data);
         assertArrayEquals(new byte[0], functionResult.getResultAsBytes().toArray());
     }
 

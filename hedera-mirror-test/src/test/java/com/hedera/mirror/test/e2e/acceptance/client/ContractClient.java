@@ -32,7 +32,9 @@ import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -227,6 +229,22 @@ public class ContractClient extends AbstractNetworkClient {
                 contractFunctionResult.contractId,
                 contractFunctionResult.gasUsed,
                 contractFunctionResult.logs.size());
+    }
+
+    @RequiredArgsConstructor
+    public enum NodeNameEnum {
+        CONSENSUS("consensus"),
+        MIRROR("mirror");
+
+        private final String name;
+
+        static Optional<NodeNameEnum> of(String name) {
+            try {
+                return Optional.ofNullable(name).map(NodeNameEnum::valueOf);
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        }
     }
 
     public String getClientAddress() {

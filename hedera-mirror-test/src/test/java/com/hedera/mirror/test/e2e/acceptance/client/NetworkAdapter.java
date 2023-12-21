@@ -22,8 +22,7 @@ import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource;
@@ -49,14 +48,14 @@ public class NetworkAdapter extends EncoderDecoderFacade {
     private static final byte[] EMPTY_RESULT_32 = new byte[32];
 
     public ContractCallResponse contractsCall(
-            boolean toMirror,
+            final NodeNameEnum node,
             boolean isEstimate,
             final String from,
             final ContractResource contractResource,
             final DeployedContract deployedContract,
             final SelectorInterface method,
             final String data) {
-        if (toMirror) {
+        if (NodeNameEnum.MIRROR.equals(node)) {
             var contractCallRequestBody = ContractCallRequest.builder()
                     .data(data)
                     .to(deployedContract.contractId().toSolidityAddress())
@@ -79,14 +78,10 @@ public class NetworkAdapter extends EncoderDecoderFacade {
         }
     }
 
-    public com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final ContractId contractID) {
-        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(contractID.num)));
-    }
-
-    public com.esaulpaugh.headlong.abi.Address asLongZeroHeadlongAddress(final AccountId accountId) {
-        return Address.wrap(Address.toChecksumAddress(BigInteger.valueOf(accountId.num)));
-    }
-
+    /**
+     * We need to decode the resulting bytes from consensus node queries, back to the return type defined in
+     * the method definition. For this, we use headlong decoding mechanism to receive a Tuple object, which wraps the decoded type
+     * */
     private ContractCallResponse convertResponseFromConsensusNode(
             final ContractResource contractResource, final SelectorInterface method, final byte[] result) {
         final var decodedResult = decodeResult(contractResource, method, result);
