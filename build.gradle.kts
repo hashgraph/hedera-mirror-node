@@ -31,6 +31,7 @@ plugins {
 extra.apply {
     set("grpcVersion", "1.60.0")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
+    set("logback.version", "1.4.14") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
@@ -70,7 +71,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.15.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.1")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.0")
         api("io.projectreactor:reactor-core-micrometer:1.1.1")
         api("io.swagger:swagger-annotations:1.6.12")
         api("io.vertx:vertx-pg-client:$vertxVersion")
