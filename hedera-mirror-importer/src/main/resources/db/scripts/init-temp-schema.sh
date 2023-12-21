@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 TEMP_SCHEMA="${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}"
-SCHEMA_EXISTS="$(psql -h 0.0.0.0 -d "user=postgres connect_timeout=3" \
+SCHEMA_EXISTS="$(psql -d "user=postgres connect_timeout=3" \
                   -XAt \
                   -c "select exists (select schema_name from information_schema.schemata where schema_name = '$TEMP_SCHEMA')")"
 
@@ -10,6 +10,8 @@ then
   echo "Temp schema $TEMP_SCHEMA already exists";
   exit 0;
 fi
+
+echo "Creating temp schema $TEMP_SCHEMA"
 
 psql -d "user=postgres connect_timeout=3" \
   --set ON_ERROR_STOP=1 \
@@ -45,3 +47,5 @@ alter default privileges in schema :tempSchema grant insert, update, delete on t
 alter default privileges in schema :tempSchema grant usage on sequences to readwrite;
 alter database dbName set search_path = :dbSchema, public, :tempSchema;
 __SQL__
+
+echo "Finished creating temp schema $TEMP_SCHEMA"
