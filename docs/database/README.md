@@ -211,10 +211,9 @@ transactions in the balance and record streams. These issues should only appear 
 
 In version 0.96.0 a new schema was introduced to handle processing of upsertable entities. This change doesn't require any
 manual steps for new operators that use one of our init scripts or helm charts to configure the database. However, existing operators 
-upgrading to versions greater than 0.96.0 are required to configure this new schema
-for use by the importer. 
+upgrading to 0.96.0 or a later version from an earlier version are required to configure the schema by configuring and executing the script 
+[here](/hedera-mirror-importer/src/main/resources/db/scripts/init-temp-schema.sh) a single time before the upgrade.
 
-You may configure this schema by configuring and executing the script located [here](/hedera-mirror-importer/src/main/resources/db/scripts/init-temp-schema.sh)
 
 ## Database migration from V1 to V2
 

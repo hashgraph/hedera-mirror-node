@@ -47,7 +47,7 @@ psql -d "user=postgres connect_timeout=3" \
   --set "rosettaUsername=${ROSETTA_USERNAME:-mirror_rosetta}" \
   --set "web3Password=${WEB3_PASSWORD:-mirror_web3_pass}" \
   --set "web3Username=${WEB3_USERNAME:-mirror_web3}" \
-  --set "tempSchema=${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}" <<__SQL__
+  --set "tempSchema=${DB_TEMPSCHEMA:-temporary}" <<__SQL__
 
 -- Create database & owner
 create user :ownerUsername with login password :'ownerPassword';
