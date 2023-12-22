@@ -59,7 +59,7 @@ create extension if not exists pg_stat_statements;
 -- Create roles
 create role readonly;
 create role readwrite in role readonly;
-grant readwrite to :ownerUsername;
+create role temporary_admin in role readwrite;
 
 -- Create users
 create user :graphqlUsername with login password :'graphqlPassword' in role readonly;
@@ -68,6 +68,10 @@ create user :importerUsername with login password :'importerPassword' in role re
 create user :restJavaUsername with login password :'restJavaPassword' in role readonly;
 create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
 create user :web3Username with login password :'web3Password' in role readonly;
+
+-- Grant temp schema admin privileges
+grant temporary_admin to :ownerUsername;
+grant temporary_admin to :importerUsername;
 
 ${DB_SPECIFIC_SQL}
 
@@ -81,7 +85,7 @@ grant usage on schema :dbSchema to public;
 revoke create on schema :dbSchema from public;
 
 -- Create temp table schema
-create schema if not exists :tempSchema authorization readwrite;
+create schema if not exists :tempSchema authorization temporary_admin;
 grant usage on schema :tempSchema to public;
 revoke create on schema :tempSchema from public;
 

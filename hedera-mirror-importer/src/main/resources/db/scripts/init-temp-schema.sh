@@ -26,10 +26,14 @@ psql -d "user=postgres connect_timeout=3" \
 
 \connect :dbName
 
-grant readwrite to :ownerUsername;
+create role temporary_admin in role readwrite;
+
+-- Grant temp schema privileges
+grant temporary_admin to :ownerUsername;
+grant temporary_admin to :importerUsername;
 
 -- Create temp table schema
-create schema if not exists :tempSchema authorization readwrite;
+create schema if not exists :tempSchema authorization temporary_admin;
 grant usage on schema :tempSchema to public;
 revoke create on schema :tempSchema from public;
 
