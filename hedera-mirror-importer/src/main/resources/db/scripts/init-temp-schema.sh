@@ -1,21 +1,22 @@
 #!/bin/bash
 set -e
-TEMP_SCHEMA="${HEDERA_MIRROR_IMPORTER_DB_TEMPSCHEMA:-temporary}"
-SCHEMA_EXISTS="$(psql -d "user=postgres connect_timeout=3" \
+TEMP_SCHEMA="${DB_TEMP_SCHEMA:-temporary}"
+DB_NAME="${DB_NAME:-mirror_node}"
+SCHEMA_EXISTS="$(psql -d "user=postgres connect_timeout=3 dbname=${DB_NAME}" \
                   -XAt \
-                  -c "select exists (select schema_name from information_schema.schemata where schema_name = '$TEMP_SCHEMA')")"
+                  -c "select exists (select schema_name from information_schema.schemata where schema_name = '${TEMP_SCHEMA}')")"
 
 if [[ $SCHEMA_EXISTS == 't' ]]
 then
-  echo "Temp schema $TEMP_SCHEMA already exists";
+  echo "Temp schema ${TEMP_SCHEMA} already exists";
   exit 0;
 fi
 
-echo "Creating temp schema $TEMP_SCHEMA"
+echo "Creating temp schema ${TEMP_SCHEMA}"
 
 psql -d "user=postgres connect_timeout=3" \
   --set ON_ERROR_STOP=1 \
-  --set "dbName=${DB_NAME:-mirror_node}" \
+  --set "dbName=$DB_NAME" \
   --set "dbSchema=${DB_SCHEMA:-public}" \
   --set "importerUsername=${IMPORTER_USERNAME:-mirror_importer}" \
   --set "ownerUsername=${OWNER_USERNAME:-mirror_node}" \
