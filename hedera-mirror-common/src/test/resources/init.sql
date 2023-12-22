@@ -1,7 +1,6 @@
 -- Create roles
 create role readonly;
 create role readwrite in role readonly;
-create role temporary_admin in role readwrite;
 
 -- Create users
 create user mirror_graphql with login password 'mirror_graphql_pass' in role readonly;
@@ -14,8 +13,7 @@ alter user mirror_node with createrole;
 grant readwrite to mirror_node;
 
 -- Grant temp schema admin privileges
-grant temporary_admin to mirror_node;
-grant temporary_admin to mirror_importer;
+grant readwrite to mirror_node;
 
 -- Create schema
 create schema if not exists public authorization mirror_node;
@@ -23,7 +21,7 @@ grant usage on schema public to public;
 revoke create on schema public from public;
 
 -- Create temp table schema
-create schema if not exists temporary authorization temporary_admin;
+create schema if not exists temporary authorization readwrite;
 grant usage on schema temporary to public;
 revoke create on schema temporary from public;
 
@@ -38,8 +36,8 @@ grant usage on schema public, temporary to readonly;
 alter default privileges in schema public, temporary grant select on tables to readonly;
 
 -- Grant readwrite privileges
-grant insert, update, delete on all tables in schema public, temporary to readwrite;
-alter default privileges in schema public, temporary grant insert, update, delete on tables to readwrite;
+grant insert, update, delete on all tables in schema public to readwrite;
+alter default privileges in schema public grant insert, update, delete on tables to readwrite;
 
 -- Grant owner privileges
 grant all privileges on database mirror_node to mirror_node;

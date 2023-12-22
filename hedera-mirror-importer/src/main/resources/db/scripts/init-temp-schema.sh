@@ -26,14 +26,10 @@ psql -d "user=postgres connect_timeout=3" \
 
 \connect :dbName
 
-create role temporary_admin in role readwrite;
-
--- Grant temp schema privileges
-grant temporary_admin to :ownerUsername;
-grant temporary_admin to :importerUsername;
+grant readwrite to :ownerUsername;
 
 -- Create temp table schema
-create schema if not exists :tempSchema authorization temporary_admin;
+create schema if not exists :tempSchema authorization readwrite;
 grant usage on schema :tempSchema to public;
 revoke create on schema :tempSchema from public;
 
@@ -44,11 +40,7 @@ grant usage on schema :tempSchema to readonly;
 alter default privileges in schema :tempSchema grant select on tables to readonly;
 alter default privileges in schema :tempSchema grant select on sequences to readonly;
 
--- Grant readwrite privileges
-grant insert, update, delete on all tables in schema :tempSchema to readwrite;
-grant usage on all sequences in schema :tempSchema to readwrite;
-alter default privileges in schema :tempSchema grant insert, update, delete on tables to readwrite;
-alter default privileges in schema :tempSchema grant usage on sequences to readwrite;
+-- Alter search path
 alter database :dbName set search_path = :dbSchema, public, :tempSchema;
 __SQL__
 

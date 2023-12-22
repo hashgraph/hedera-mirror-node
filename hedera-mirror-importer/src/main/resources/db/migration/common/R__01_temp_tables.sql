@@ -26,18 +26,18 @@ create unlogged table if not exists ${tempSchema}.token_allowance_temp as table 
 create unlogged table if not exists ${tempSchema}.token_temp as table token limit 0;
 create unlogged table if not exists ${tempSchema}.topic_message_lookup_temp as table topic_message_lookup limit 0;
 
-alter table if exists ${tempSchema}.contract_state_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.crypto_allowance_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.custom_fee_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.dissociate_token_transfer owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.entity_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.nft_allowance_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.nft_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.schedule_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.token_account_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.token_allowance_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.token_temp owner to ${tempSchema}_admin;
-alter table if exists ${tempSchema}.topic_message_lookup_temp owner to ${tempSchema}_admin;
+alter table if exists ${tempSchema}.contract_state_temp owner to readwrite;
+alter table if exists ${tempSchema}.crypto_allowance_temp owner to readwrite;
+alter table if exists ${tempSchema}.custom_fee_temp owner to readwrite;
+alter table if exists ${tempSchema}.dissociate_token_transfer owner to readwrite;
+alter table if exists ${tempSchema}.entity_temp owner to readwrite;
+alter table if exists ${tempSchema}.nft_allowance_temp owner to readwrite;
+alter table if exists ${tempSchema}.nft_temp owner to readwrite;
+alter table if exists ${tempSchema}.schedule_temp owner to readwrite;
+alter table if exists ${tempSchema}.token_account_temp owner to readwrite;
+alter table if exists ${tempSchema}.token_allowance_temp owner to readwrite;
+alter table if exists ${tempSchema}.token_temp owner to readwrite;
+alter table if exists ${tempSchema}.topic_message_lookup_temp owner to readwrite;
 
 create index if not exists contract_state_temp_idx on ${tempSchema}.contract_state_temp (contract_id,slot);
 create index if not exists crypto_allowance_temp_idx on ${tempSchema}.crypto_allowance_temp (owner, spender);
