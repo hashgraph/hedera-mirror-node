@@ -21,6 +21,7 @@ import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BYTES_
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.COPY_CODE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.DESTROY_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_HASH;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_SIZE;
@@ -28,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
@@ -73,17 +75,19 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute selfdestruct and set beneficiary to {string} address")
-    public void selfDestructAndSetBeneficiary(String beneficiary) {
-        var accountId = new AccountId(extractAccountNumber(beneficiary)).toSolidityAddress();
-        var parameters = new ContractFunctionParameters().addAddress(accountId);
-        var message = executeContractCallTransaction(equivalenceDestructContract, "destroyContract", parameters);
+    @Then("I execute selfdestruct and set beneficiary to {string} address with call to {node}")
+    public void selfDestructAndSetBeneficiary(String beneficiary, NodeNameEnum node) {
+        var accountId = new AccountId(extractAccountNumber(beneficiary));
+
+        var data = encodeData(EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, TestUtil.asAddress(accountId));
+        var functionResult =
+                callContract(node, StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, data, TupleType.EMPTY);
 
         removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
 
-        var extractedStatus = extractStatus(message);
+        final var message = functionResult.getResultAsText();
         if (extractAccountNumber(beneficiary) < 751) {
-            assertEquals(INVALID_SOLIDITY_ADDRESS_EXCEPTION, extractedStatus);
+            assertEquals(INVALID_SOLIDITY_ADDRESS_EXCEPTION, message);
         } else {
             assertEquals(TRANSACTION_SUCCESSFUL_MESSAGE, message);
         }

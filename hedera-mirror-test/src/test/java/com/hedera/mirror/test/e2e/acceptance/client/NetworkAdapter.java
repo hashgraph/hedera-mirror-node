@@ -19,6 +19,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
@@ -70,10 +71,23 @@ public class NetworkAdapter extends EncoderDecoderFacade {
                     .getMaxContractFunctionGas();
 
             final var decodedData = Strings.decode(data);
-            final var result = contractClient.executeContractQuery(
-                    deployedContract.contractId(), method.getSelector(), gas, decodedData);
+            ContractCallResponse contractCallResponse;
+            try {
+                final var result = contractClient.executeContractQuery(
+                        deployedContract.contractId(), method.getSelector(), gas, decodedData);
+                contractCallResponse = convertConsensusResponse(result, returnTupleType);
+            } catch (final Exception e) {
+                contractCallResponse = new ContractCallResponse();
+                if (e instanceof PrecheckStatusException) {
+                    final var exceptionReason = ((PrecheckStatusException) e).status.toString();
+                    contractCallResponse.setResult(exceptionReason);
+                    return contractCallResponse;
+                }
 
-            return convertConsensusResponse(result, returnTupleType);
+                contractCallResponse.setResult(e.getMessage());
+            }
+
+            return contractCallResponse;
         }
     }
 
