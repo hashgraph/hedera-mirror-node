@@ -55,7 +55,7 @@ dependencies {
         api("org.bouncycastle:bcprov-jdk15to18:1.77")
         api("com.bucket4j:bucket4j-core:8.7.0")
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.0.0")
-        api("com.google.guava:guava:32.1.3-jre")
+        api("com.google.guava:guava:33.0.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.3.2")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
