@@ -26,7 +26,7 @@ dependencies {
     api("com.google.guava:guava")
     api("com.google.protobuf:protobuf-java")
     api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
-    api("io.hypersistence:hypersistence-utils-hibernate-62")
+    api("io.hypersistence:hypersistence-utils-hibernate-63")
     api("commons-codec:commons-codec")
     api("io.projectreactor:reactor-core")
     api("org.apache.commons:commons-lang3")
