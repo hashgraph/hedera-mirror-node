@@ -18,7 +18,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS_BIGINT;
 import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
+import static com.hedera.mirror.importer.util.Utility.HALT_ON_ERROR_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -38,6 +40,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
@@ -284,7 +287,9 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Test
-    void updateTransactionInvalid() {
+    void updateTransactionInvalidWithHaltOnError() {
+        var haltOnError = System.getProperty(HALT_ON_ERROR_PROPERTY, "false");
+        System.setProperty(HALT_ON_ERROR_PROPERTY, "true");
         var recordItem = recordItemBuilder.ethereumTransaction(true).build();
         var transaction = domainBuilder
                 .transaction()
@@ -295,10 +300,27 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         doThrow(InvalidDatasetException.class).when(ethereumTransactionParser).decode(any());
 
         assertThatThrownBy(() -> transactionHandler.updateTransaction(transaction, recordItem))
-                .isInstanceOf(InvalidDatasetException.class);
+                .isInstanceOf(ParserException.class);
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
+        System.setProperty(HALT_ON_ERROR_PROPERTY, haltOnError);
+    }
+
+    @Test
+    void updateTransactionInvalidWithoutHaltOnError() {
+        var recordItem = recordItemBuilder.ethereumTransaction(true).build();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp()))
+                .get();
+        var expectedEntityTransactions = super.getExpectedEntityTransactions(recordItem, transaction);
+
+        doThrow(InvalidDatasetException.class).when(ethereumTransactionParser).decode(any());
+
+        assertThatNoException();
+        verify(entityListener, never()).onEntity(any());
+        verify(entityListener, never()).onEthereumTransaction(any());
     }
 
     @Test

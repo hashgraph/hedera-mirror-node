@@ -24,9 +24,11 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
+import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -69,29 +71,34 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
 
         var body = recordItem.getTransactionBody().getEthereumTransaction();
         var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
-        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
+        try {
+            var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
 
-        // update ethereumTransaction with body values
-        if (body.hasCallData()) {
-            ethereumTransaction.setCallDataId(EntityId.of(body.getCallData()));
+            // update ethereumTransaction with body values
+            if (body.hasCallData()) {
+                ethereumTransaction.setCallDataId(EntityId.of(body.getCallData()));
+            }
+
+            // EVM logic uses weibar for gas values, convert transaction body gas values to tinybars
+            convertGasWeiToTinyBars(ethereumTransaction);
+
+            // update ethereumTransaction with record values
+            var transactionRecord = recordItem.getTransactionRecord();
+            ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
+            ethereumTransaction.setData(ethereumDataBytes);
+            ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
+            ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
+            ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
+
+            entityListener.onEthereumTransaction(ethereumTransaction);
+            updateAccountNonce(recordItem, ethereumTransaction);
+            recordItem.setEthereumTransaction(ethereumTransaction);
+
+            recordItem.addEntityId(ethereumTransaction.getCallDataId());
+        } catch (InvalidDatasetException e) {
+            Utility.handleRecoverableError(
+                    "Unable to decode ethereum data for transaction at {}", recordItem.getConsensusTimestamp());
         }
-
-        // EVM logic uses weibar for gas values, convert transaction body gas values to tinybars
-        convertGasWeiToTinyBars(ethereumTransaction);
-
-        // update ethereumTransaction with record values
-        var transactionRecord = recordItem.getTransactionRecord();
-        ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-        ethereumTransaction.setData(ethereumDataBytes);
-        ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
-        ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
-        ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
-
-        entityListener.onEthereumTransaction(ethereumTransaction);
-        updateAccountNonce(recordItem, ethereumTransaction);
-        recordItem.setEthereumTransaction(ethereumTransaction);
-
-        recordItem.addEntityId(ethereumTransaction.getCallDataId());
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
