@@ -21,7 +21,8 @@ RUN mkdir importer rosetta scripts \
     && rm /hedera-mirror-node/hedera-mirror-importer/build/libs/importer-*-plain.jar \
     && cp /hedera-mirror-node/hedera-mirror-importer/build/libs/importer-*.jar ./importer/hedera-mirror-importer.jar \
     && cp /hedera-mirror-node/hedera-mirror-rosetta/build/hedera-mirror-rosetta ./rosetta \
-    && cp /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh ./scripts
+    && cp /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh ./scripts \
+    && cp /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init-temp-schema.sh ./scripts
 
 # ######################################################################## #
 # --------------------------- Runner Container --------------------------- #
