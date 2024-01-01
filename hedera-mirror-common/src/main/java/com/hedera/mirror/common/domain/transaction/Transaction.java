@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -36,7 +35,6 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.Type;
 import org.hibernate.type.SqlTypes;
 import org.springframework.data.domain.Persistable;
 
@@ -63,7 +61,7 @@ public class Transaction implements Persistable<Long> {
     private Long initialBalance;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    @Type(JsonBinaryType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     private List<ItemizedTransfer> itemizedTransfer;
 
     @ToString.Exclude
@@ -72,7 +70,7 @@ public class Transaction implements Persistable<Long> {
     private Long maxFee;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    @Type(JsonBinaryType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     private List<NftTransfer> nftTransfer;
 
     private EntityId nodeAccountId;
