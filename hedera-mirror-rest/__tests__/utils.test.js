@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1375,62 +1375,135 @@ describe('Utils test - utils.bindTimestampRange', () => {
     clock.restore();
   });
 
-  test('Verify already bound range within max', () => {
-    const inputRange = Range(1000000000n, 2000000000n);
-    config.query.bindTimestampRange = false;
-    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
-
-    config.query.bindTimestampRange = true;
+  test('Verify provided Range returned when disabled', () => {
     config.query.maxTimestampRangeNs = 1000000000n;
-    expect(utils.bindTimestampRange(inputRange)).toEqual(inputRange);
-  });
-  test('Verify already bound range exceeds max', () => {
-    const inputRange = Range(1000000000n, 2000000000n);
     config.query.bindTimestampRange = false;
-    config.query.maxTimestampRangeNs = 50000n;
-    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
+    const inputRange = Range(1000000n, 2000000n, '()');
 
-    config.query.bindTimestampRange = true;
-    expect(utils.bindTimestampRange(inputRange)).toEqual(
-      Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end)
-    );
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
-      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs)
-    );
-  });
-  test('Verify end only range', () => {
-    const inputRange = Range(null, 2000000000n);
-    config.query.bindTimestampRange = false;
-    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
-
-    config.query.bindTimestampRange = true;
-    config.query.maxTimestampRangeNs = 1000000000n;
-    const outputRange = Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end);
-    expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
-  });
-  test('Verify begin only range', () => {
-    const inputRange = Range(1000000000n, null);
-    config.query.bindTimestampRange = false;
-    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
-
-    config.query.bindTimestampRange = true;
-    config.query.maxTimestampRangeNs = 1000000000n;
-    const outputRange = Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs);
-    expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
-  });
-  test('Verify undefined, null and empty range', () => {
-    config.query.bindTimestampRange = false;
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toBe(inputRange);
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toBe(inputRange);
     expect(utils.bindTimestampRange(undefined)).toBe(undefined);
     expect(utils.bindTimestampRange(null)).toBe(null);
-    const inputRange = Range();
-    expect(utils.bindTimestampRange(inputRange)).toBe(inputRange);
-
-    config.query.bindTimestampRange = true;
+  });
+  test('Verify already bound range under max - exclusive', () => {
     config.query.maxTimestampRangeNs = 1000000000n;
-    const outputRange = Range(nowNs - config.query.maxTimestampRangeNs, nowNs);
-    expect(utils.bindTimestampRange(inputRange)).toEqual(outputRange);
-    expect(utils.bindTimestampRange(undefined)).toEqual(outputRange);
-    expect(utils.bindTimestampRange(null)).toEqual(outputRange);
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(1000000n, 2000000n, '()');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(inputRange);
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(inputRange);
+  });
+  test('Verify already bound range under max - inclusive', () => {
+    config.query.maxTimestampRangeNs = 1000000000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(1000000n, 2000000n, '[]');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(inputRange);
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(inputRange);
+  });
+  test('Verify already bound range at max - exclusive', () => {
+    config.query.maxTimestampRangeNs = 1000000000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(1000000000n, 2000000000n, '(]');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(inputRange);
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(inputRange);
+  });
+  test('Verify already bound range at max - inclusive', () => {
+    config.query.maxTimestampRangeNs = 1000000000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(1000000000n, 2000000000n, '[]');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
+      Range(inputRange.end - config.query.maxTimestampRangeNs + 1n, inputRange.end, inputRange.bound)
+    );
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
+      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs - 1n, inputRange.bound)
+    );
+  });
+  test('Verify already bound range exceeds max - exclusive', () => {
+    config.query.maxTimestampRangeNs = 50000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(1000000000n, 2000000000n, '[)');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
+      Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end, inputRange.bounds)
+    );
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
+      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs, inputRange.bounds)
+    );
+  });
+  test('Verify already bound range exceeds max - inclusive', () => {
+    config.query.maxTimestampRangeNs = 50000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(1000000000n, 2000000000n, '[]');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
+      Range(inputRange.end - config.query.maxTimestampRangeNs + 1n, inputRange.end, inputRange.bounds)
+    );
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
+      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs - 1n, inputRange.bounds)
+    );
+  });
+  test('Verify end only range - exclusive', () => {
+    config.query.maxTimestampRangeNs = 1000000000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(null, 2000000000n, '[)');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
+      Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end, inputRange.bounds)
+    );
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
+      Range(0n, config.query.maxTimestampRangeNs, inputRange.bounds)
+    );
+  });
+  test('Verify end only range - inclusive', () => {
+    config.query.maxTimestampRangeNs = 1000000000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(null, 2000000000n, '[]');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
+      Range(inputRange.end - config.query.maxTimestampRangeNs + 1n, inputRange.end, inputRange.bounds)
+    );
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
+      Range(0n, config.query.maxTimestampRangeNs - 1n, inputRange.bounds)
+    );
+  });
+  test('Verify begin only range - inclusive', () => {
+    config.query.maxTimestampRangeNs = 1000000000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(1000000000n, null, '[]');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
+      Range(nowNs - config.query.maxTimestampRangeNs + 1n, nowNs, inputRange.bounds)
+    );
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
+      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs - 1n, inputRange.bounds)
+    );
+  });
+  test('Verify begin only range - exclusive', () => {
+    config.query.maxTimestampRangeNs = 1000000000n;
+    config.query.bindTimestampRange = true;
+    const inputRange = Range(1000000000n, null, '(]');
+
+    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
+      Range(nowNs - config.query.maxTimestampRangeNs, nowNs, inputRange.bounds)
+    );
+    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
+      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs, inputRange.bounds)
+    );
+  });
+  test('Verify undefined, null and empty range', () => {
+    config.query.maxTimestampRangeNs = 1000000000n;
+    config.query.bindTimestampRange = true;
+    const emptyRange = Range();
+    const outputRangeDesc = Range(nowNs - config.query.maxTimestampRangeNs + 1n, nowNs);
+    const outputRangeAsc = Range(0n, config.query.maxTimestampRangeNs - 1n);
+
+    expect(utils.bindTimestampRange(emptyRange, 'desc')).toEqual(outputRangeDesc);
+    expect(utils.bindTimestampRange(emptyRange, 'asc')).toEqual(outputRangeAsc);
+    expect(utils.bindTimestampRange(undefined)).toEqual(outputRangeDesc);
+    expect(utils.bindTimestampRange(null)).toEqual(outputRangeDesc);
   });
 });
 
