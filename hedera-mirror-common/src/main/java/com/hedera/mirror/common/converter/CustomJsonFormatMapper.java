@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,8 @@ import org.hibernate.type.format.FormatMapper;
 import org.hibernate.type.format.jackson.JacksonJsonFormatMapper;
 
 /*
- * Used by Hibernate to handle JSON/JSONB columns. Set via the `hibernate.type.json_format_mapper` property.
+ * Used by Hibernate to handle JSON/JSONB columns. We need this class since Hibernate doesn't provide a way to customize
+ * its default ObjectMapper. Set via the `hibernate.type.json_format_mapper` property.
  */
 @SuppressWarnings("unused")
 public class CustomJsonFormatMapper implements FormatMapper {
