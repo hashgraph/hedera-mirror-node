@@ -53,7 +53,7 @@ jobs:
 
       - name: Import GPG Key
         id: gpg_importer
-        uses: crazy-max/ghaction-import-gpg@v6.0.0
+        uses: crazy-max/ghaction-import-gpg@v6.1.0
         with:
           git_commit_gpgsign: true
           git_tag_gpgsign: true
@@ -141,7 +141,7 @@ jobs:
 
       - name: Import GPG Key
         id: gpg_importer
-        uses: crazy-max/ghaction-import-gpg@v6.0.0
+        uses: crazy-max/ghaction-import-gpg@v6.1.0
         with:
           git_commit_gpgsign: true
           git_tag_gpgsign: true
