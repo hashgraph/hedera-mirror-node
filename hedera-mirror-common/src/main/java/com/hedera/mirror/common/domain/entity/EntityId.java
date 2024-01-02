@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.common.domain.entity;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.base.Splitter;
@@ -65,6 +66,7 @@ public final class EntityId implements Serializable, Comparable<EntityId> {
     @Serial
     private static final long serialVersionUID = 1427649605832330197L;
 
+    @JsonValue
     private final long id;
 
     private EntityId(long id) {

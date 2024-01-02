@@ -23,7 +23,6 @@ import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
-import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import java.util.ArrayList;
@@ -32,7 +31,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.util.CollectionUtils;
 
 @Data
@@ -43,17 +43,17 @@ import org.springframework.util.CollectionUtils;
 public abstract class AbstractCustomFee implements History {
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    @Type(JsonBinaryType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @UpsertColumn(shouldCoalesce = false)
     private List<FixedFee> fixedFees;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    @Type(JsonBinaryType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @UpsertColumn(shouldCoalesce = false)
     private List<FractionalFee> fractionalFees;
 
     @JsonSerialize(using = ObjectToStringSerializer.class)
-    @Type(JsonBinaryType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @UpsertColumn(shouldCoalesce = false)
     private List<RoyaltyFee> royaltyFees;
 
