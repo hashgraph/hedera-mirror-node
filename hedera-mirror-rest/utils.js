@@ -25,7 +25,7 @@ import pgRange, {Range} from 'pg-range';
 import util from 'util';
 
 import * as constants from './constants';
-import {filterKeys} from './constants';
+import {filterKeys, MAX_LONG} from './constants';
 import EntityId from './entityId';
 import config from './config';
 import ed25519 from './ed25519';
@@ -691,29 +691,23 @@ const bindTimestampRange = (tsRange, order = 'desc') => {
     return tsRange;
   }
 
-  const queryTsRange = tsRange ? Range(tsRange.begin ?? null, tsRange.end ?? null, tsRange.bounds ?? '[]') : Range();
+  const queryTsRange = tsRange
+    ? Range(tsRange.begin ?? 0n, tsRange.end ?? MAX_LONG, tsRange.bounds ?? '[]')
+    : Range(0n, MAX_LONG, '[]');
 
-  if (_.isNil(queryTsRange.end)) {
-    if (_.isNil(queryTsRange.begin)) {
-      queryTsRange.end = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
-      queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
-    } else {
-      queryTsRange.end = queryTsRange.begin + maxTimestampRangeNs;
-    }
+  if (queryTsRange.end === MAX_LONG) {
+    queryTsRange.end = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
+  }
+
+  const maxTimestampRangeNsInclusive = queryTsRange.bounds === '[]' ? maxTimestampRangeNs - 1n : maxTimestampRangeNs;
+  if (queryTsRange.end - queryTsRange.begin <= maxTimestampRangeNsInclusive) {
+    return queryTsRange;
+  }
+
+  if (order === 'desc') {
+    queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
   } else {
-    if (_.isNil(queryTsRange.begin)) {
-      queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
-    }
-    // Fully bound by client. Trim if not within max timestamp range.
-    else {
-      if (queryTsRange.end - queryTsRange.begin > maxTimestampRangeNs) {
-        if (order === 'desc') {
-          queryTsRange.begin = queryTsRange.end - maxTimestampRangeNs;
-        } else {
-          queryTsRange.end = queryTsRange.begin + maxTimestampRangeNs;
-        }
-      }
-    }
+    queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
   }
 
   return queryTsRange;

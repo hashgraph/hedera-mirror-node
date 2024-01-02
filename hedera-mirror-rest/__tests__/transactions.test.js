@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -237,7 +237,7 @@ const singleTests = {
       {field: 'payer_account_id', operator: 'in', value: [0, 1, 2]},
       {
         field: 'consensus_timestamp',
-        operator: 'out',
+        operator: 'in',
         value: [`${timeNow}000000000`, `${timeNow - 100}000000000`, `${timeNow - 2}000000000`],
       },
     ],
