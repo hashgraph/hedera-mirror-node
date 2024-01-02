@@ -137,7 +137,7 @@ loki:
           name: mirror-log-alerts
     persistence:
       enableStatefulSetAutoDeletePVC: true
-      size: 100Gi
+      size: 250Gi
     replicas: 1
     resources:
       limits:
