@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 
 import _ from 'lodash';
-import memoize from 'memoize';
 import quickLru from 'quick-lru';
 
 import config from './config';
@@ -291,40 +290,40 @@ const computeContractIdPartsFromContractIdValue = (contractId) => {
   return contractIdParts;
 };
 
-const entityIdCacheOptions = {
-  cache: new quickLru({
-    maxSize: entityIdCacheConfig.maxSize,
-  }),
-  cacheKey: (args) => `${args[0]}_${args[1]}_${args[2]}`,
+const cache = new quickLru({
   maxAge: entityIdCacheConfig.maxAge * 1000, // in millis
+  maxSize: entityIdCacheConfig.maxSize,
+});
+
+/**
+ * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or an evm address.
+ * @param {string} id
+ * @param {boolean} allowEvmAddress
+ * @param {number} evmAddressType
+ * @param {Function} error
+ * @return {EntityId}
+ */
+const parseCached = (id, allowEvmAddress, evmAddressType, error) => {
+  const key = `${id}_${allowEvmAddress}_${evmAddressType}`;
+  const value = cache.get(key);
+  if (value) {
+    return value;
+  }
+
+  if (!isValidEntityId(id, allowEvmAddress, evmAddressType)) {
+    throw error();
+  }
+
+  const [shard, realm, num, evmAddress] =
+    id.includes('.') || isValidEvmAddressLength(id.length) ? parseFromString(id, error) : parseFromEncodedId(id, error);
+  if (evmAddress === null && (num > maxNum || realm > maxRealm || shard > maxShard)) {
+    throw error();
+  }
+
+  const entityId = of(shard, realm, num, evmAddress);
+  cache.set(key, entityId);
+  return entityId;
 };
-
-const parseMemoized = memoize(
-  /**
-   * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or an evm address.
-   * @param {string} id
-   * @param {boolean} allowEvmAddress
-   * @param {number} evmAddressType
-   * @param {Function} error
-   * @return {EntityId}
-   */
-  (id, allowEvmAddress, evmAddressType, error) => {
-    if (!isValidEntityId(id, allowEvmAddress, evmAddressType)) {
-      throw error();
-    }
-
-    const [shard, realm, num, evmAddress] =
-      id.includes('.') || isValidEvmAddressLength(id.length)
-        ? parseFromString(id, error)
-        : parseFromEncodedId(id, error);
-    if (evmAddress === null && (num > maxNum || realm > maxRealm || shard > maxShard)) {
-      throw error();
-    }
-
-    return of(shard, realm, num, evmAddress);
-  },
-  entityIdCacheOptions
-);
 
 /**
  * Parses entity ID string. The entity ID string can be shard.realm.num, realm.num, shard.realm.evm_address, evm_address,
@@ -344,7 +343,7 @@ const parse = (id, {allowEvmAddress, evmAddressType, isNullable, paramName} = {}
   // lazily create error object
   const error = () =>
     paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(`Invalid entity ID "${id}"`);
-  return checkNullId(id, isNullable) || parseMemoized(`${id}`, allowEvmAddress, evmAddressType, error);
+  return checkNullId(id, isNullable) || parseCached(`${id}`, allowEvmAddress, evmAddressType, error);
 };
 
 export default {
