@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,15 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
+@CustomLog
 @Named
 @RequiredArgsConstructor
 class EthereumTransactionHandler extends AbstractTransactionHandler {
@@ -95,7 +96,8 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
             recordItem.setEthereumTransaction(ethereumTransaction);
 
             recordItem.addEntityId(ethereumTransaction.getCallDataId());
-        } catch (InvalidDatasetException e) {
+        } catch (RuntimeException e) {
+            log.error("Unable to decode ethereum transaction data", e);
             Utility.handleRecoverableError(
                     "Unable to decode ethereum data for transaction at {}", recordItem.getConsensusTimestamp());
         }

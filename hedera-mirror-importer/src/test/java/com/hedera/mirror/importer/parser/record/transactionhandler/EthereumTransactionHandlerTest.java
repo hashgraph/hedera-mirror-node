@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_
 import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 import static com.hedera.mirror.importer.util.Utility.HALT_ON_ERROR_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mock.Strictness.LENIENT;
@@ -318,9 +318,10 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         doThrow(InvalidDatasetException.class).when(ethereumTransactionParser).decode(any());
 
-        assertThatNoException();
+        assertDoesNotThrow(() -> transactionHandler.updateTransaction(transaction, recordItem));
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
     @Test
