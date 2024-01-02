@@ -48,11 +48,11 @@ class ContractStateRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(contractStateRepository.findStorageByBlockTimestamp(
-                        olderContractState.getContractId(),
-                        olderContractState.getSlot(),
-                        olderContractState.getConsensusTimestamp()))
+                        contractStateChange.getContractId(),
+                        contractStateChange.getSlot(),
+                        contractStateChange.getConsensusTimestamp()))
                 .get()
-                .isEqualTo(olderContractState.getValueWritten());
+                .isEqualTo(contractStateChange.getValueWritten());
     }
 
     @Test

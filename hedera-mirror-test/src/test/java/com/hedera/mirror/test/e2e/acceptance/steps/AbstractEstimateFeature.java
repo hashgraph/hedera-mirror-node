@@ -105,6 +105,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
+
     protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
                 .block(block)
