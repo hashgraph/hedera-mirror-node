@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,21 @@ public interface AccountBalanceRepository extends CrudRepository<AccountBalance,
      * This method calculates the historical balance by summing the crypto transfers and adding the sum to the initial balance
      * found at a timestamp less than the given block timestamp. If no account_balance is found for the given account_id
      * and consensus timestamp, a balance of 0 will be returned.
+     *
+     * FYI:
+     * The database insertion operates on a periodic cycle where, every X minutes, Y number of account_balance entries are dumped for
+     * accounts involved in crypto_transfers. This cycle includes entries for those accounts, and it always includes an
+     * entry for treasury account 0.0.2. The timestamp of 0.0.2 marks the beginning of a new cycle and the end of the
+     * previous one.
+     *
+     * The algorithm used in this method involves the following steps:
+     * 1. Find the latest balance snapshot timestamp of treasury account 0.0.2 at or before blockTimestamp. This works because
+     *    the design ensures that treasury account's balance info is never deduplicated, and there will be a row for the
+     *    account in every snapshot. Let's call this timestamp balanceSnapshotTimestamp.
+     * 2. Find the latest balance of the specified accountId in the range (balanceSnapshotTimestamp - 31 days, balanceSnapshotTimestamp].
+     * 3. Sum the crypto transfers that occurred between the balance snapshot timestamp and the given block timestamp for the
+     *    specified accountId. Exclude transfers with errata 'DELETE'.
+     * 4. Calculate the historical balance by adding the balance found at step 2 to the sum calculated at step 3.
      *
      * @param accountId       the ID of the account.
      * @param blockTimestamp  the block timestamp used to filter the results.

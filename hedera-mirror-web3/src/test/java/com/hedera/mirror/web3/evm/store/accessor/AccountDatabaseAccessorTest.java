@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,6 +217,16 @@ class AccountDatabaseAccessorTest {
         long balance = 20;
         when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
                 .thenReturn(Optional.of(balance));
+
+        assertThat(accountAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
+    }
+
+    @Test
+    void accountBalanceBeforeAccountCreation() {
+        entity.setCreatedTimestamp(timestamp.get() + 1);
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        long balance = 0;
 
         assertThat(accountAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
