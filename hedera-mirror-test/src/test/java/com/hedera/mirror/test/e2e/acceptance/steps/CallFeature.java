@@ -68,6 +68,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnu
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorAccountBalance;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -266,12 +267,20 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with IERC721 token NFT balanceOf owner")
     public void ierc721MetadatagetBalanceOfTokenTokenBalanceOf() {
-        var balanceOfNft = getBalanceOfToken(nonFungibleTokenId, admin.getAccountId());
+        //var balanceOfNft = getBalanceOfToken(nonFungibleTokenId, receiverAccountId.getAccountId());
+        var allTokens = mirrorClient
+                .getAccountDetailsByAccountId(admin.getAccountId())
+                .getBalanceInfo()
+                .getTokens();
+        var balanceOfNft = allTokens.stream()
+                .filter(token -> nonFungibleTokenId.toString().equals(token.getTokenId()))
+                .mapToLong(MirrorAccountBalance.Token::getBalance)
+                .findFirst();
         var data = encodeData(
-                ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
+                ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(nonFungibleTokenId), asAddress(admin));
         var response = callContract(data, ercContractAddress);
 
-        assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft);
+        assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft.getAsLong());
     }
 
     @RetryAsserts
