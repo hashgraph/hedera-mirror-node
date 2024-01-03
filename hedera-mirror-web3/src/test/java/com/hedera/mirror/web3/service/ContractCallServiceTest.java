@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
 
-        if (blockType.number() < EVM_V_34_BLOCK) { // EVM v0.30 is used and it does not support the call
+        if (blockType.number() < PERSISTENCE_HISTORICAL_BLOCK) { // EVM v0.30 is used and it does not support the call
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
@@ -118,7 +118,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
 
-        if (blockType.number() < EVM_V_34_BLOCK) { // EVM v0.30 is used and it does not support the call
+        if (blockType.number() < PERSISTENCE_HISTORICAL_BLOCK) { // EVM v0.30 is used and it does not support the call
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {

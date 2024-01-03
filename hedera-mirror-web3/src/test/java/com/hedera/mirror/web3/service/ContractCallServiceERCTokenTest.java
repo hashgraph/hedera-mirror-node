@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     private static Stream<Arguments> ercContractFunctionArgumentsProviderHistoricalReadOnly() {
-        List<BlockType> blockNumbers = List.of(BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
+        List<BlockType> blockNumbers = List.of(BlockType.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK)));
 
         return Arrays.stream(ErcContractReadOnlyFunctionsHistorical.values())
                 .flatMap(ercFunction -> Stream.concat(
@@ -87,7 +87,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var emptyResponse = Bytes.EMPTY.toHexString();
 
         // Before EVM_V_34_BLOCK the data did not exist.
-        if (blockNumber.number() < EVM_V_34_BLOCK) {
+        if (blockNumber.number() < PERSISTENCE_HISTORICAL_BLOCK) {
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(emptyResponse);
         } else {
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
@@ -114,7 +114,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberOutOfRangeException.class);
         } else if (blockNumber == 51) {
-            // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but it before the latest
+            // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but is before the latest
             // block available in the DB => returning empty response
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(emptyResponse);
         }
