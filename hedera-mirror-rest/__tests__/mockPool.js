@@ -43,6 +43,10 @@ class MockPool {
     this.NUM_NODES = 39;
     this.TRANSACTIONS_SECOND_QUERY_SIGNAL = 'transfer_list as';
 
+    this.TRANSACTIONS_ACCOUNT_NUMBER = {
+      low: 1n,
+      high: this.TEST_DATA_MAX_ACCOUNTS,
+    };
     this.on = jest.fn();
   }
 
@@ -171,6 +175,10 @@ class MockPool {
    * @return {Array} rows array filled with mock data
    */
   createMockTransactionTimestampsRows(parsedparams) {
+    let accountNum = {
+      low: 1n,
+      high: this.TEST_DATA_MAX_ACCOUNTS,
+    };
     let limit = {
       low: defaultLimit,
       high: defaultLimit,
@@ -180,6 +188,11 @@ class MockPool {
     // Adjust the low/high values based on the SQL query parameters
     for (const param of parsedparams) {
       switch (param.field) {
+        case 'payer_account_id':
+          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum, BigInt);
+          // the account number to be used in the second transaction query response
+          this.TRANSACTIONS_ACCOUNT_NUMBER = accountNum;
+          break;
         case 'limit':
           limit = this.adjustRangeBasedOnConstraints(param, limit);
           break;
@@ -195,15 +208,12 @@ class MockPool {
     let rows = [];
     const timeNowSec = Date.now() / 1000;
     for (let i = 0; i < limit.high; i++) {
+      const accountNumValue = this.getAccountId(accountNum, i);
       const row = {
-        payer_account_id: EntityId.of(0n, 0n, BigInt(i)).getEncodedId(),
+        payer_account_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
         consensus_timestamp: this.toNs(timeNowSec - i),
       };
       rows.push(row);
-    }
-
-    if (['asc', 'ASC'].includes(order)) {
-      rows = rows.reverse();
     }
 
     return rows;
@@ -262,6 +272,7 @@ class MockPool {
     const numRows = Math.min(limit.high, payerAccountIds.length, transactionTimestamps.length);
     let rows = [];
     for (let i = 0; i < numRows; i++) {
+      const accountNumValue = this.getAccountId(this.TRANSACTIONS_ACCOUNT_NUMBER, i);
       const consensusTimestamp = BigInt(transactionTimestamps[i]);
       const row = {
         payer_account_id: EntityId.of(0n, 0n, BigInt(payerAccountIds[i])).getEncodedId(),
@@ -276,7 +287,7 @@ class MockPool {
         crypto_transfer_list: [
           {
             amount: i * 1000,
-            entity_id: EntityId.of(0n, 0n, BigInt(i)).getEncodedId(),
+            entity_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
           },
         ],
         charged_tx_fee: 100 + i,
