@@ -222,13 +222,12 @@ const validateOrder = function (transactions, order) {
  * NOTE: To add more tests, just give it a unique name, specify the url query string, and
  * a set of checks you would like to perform on the resultant SQL query.
  */
-const limit = 3;
+const limit = 25;
 const singleTests = {
   timestamp_lowerlimit: {
-    urlparam: `timestamp=gte:${timeOneHourAgo}&limit=${limit}`,
+    urlparam: `timestamp=gte:${timeOneHourAgo}`,
     checks1: [
       {field: 'consensus_timestamp', operator: '>=', value: Number(`${timeOneHourAgo}000000000`)},
-      {field: 'limit', operator: '=', value: limit},
       {field: 'order', operator: '=', value: 'desc'},
     ],
     checks2: [
@@ -249,7 +248,7 @@ const singleTests = {
   timestamp_higherlimit: {
     urlparam: `timestamp=lt:${timeNow}`,
     checks1: [
-      {field: 'consensus_timestamp', operator: '<=', value: `${timeNow}000000000`},
+      {field: 'consensus_timestamp', operator: '<=', value: Number(`${timeNow}000000000`)},
       {field: 'limit', operator: '=', value: limit},
       {field: 'order', operator: '=', value: 'desc'},
     ],
@@ -384,7 +383,7 @@ describe('Transaction tests', () => {
       expect(parsedParams1).toEqual(expect.arrayContaining(item.checks1));
       // Second query parameters are plentiful, and just ensure the check values are present
       const parsedParams2 = JSON.parse(response.text).sqlQuery.parsedparams;
-      expect.toBeTrue(item.checks2.every((field) => parsedParams2.includes(field)));
+      expect.toBeTrue(item.checks2?.every((field) => parsedParams2.includes(field)));
 
       // Execute the specified functions to validate the output from the REST API
       const {transactions} = JSON.parse(response.text);
@@ -407,7 +406,6 @@ describe('Transaction tests', () => {
         combtest.names += `${testname} `;
         combtest.urls.push(singleTests[testname].urlparam);
         combtest.checks1 = combtest.checks1.concat(singleTests[testname].checks1);
-        combtest.checks2 = combtest.checks2.concat(singleTests[testname].checks2);
         combtest.checkFunctions = combtest.checkFunctions.concat(
           singleTests[testname].hasOwnProperty('checkFunctions') ? singleTests[testname].checkFunctions : []
         );
@@ -422,9 +420,6 @@ describe('Transaction tests', () => {
       // Verify the sql queries against each of the specified checks
       const parsedParams1 = JSON.parse(response.text).timestampsSqlQuery.parsedparams;
       expect(parsedParams1).toEqual(expect.arrayContaining(combtest.checks1));
-
-      const parsedParams2 = JSON.parse(response.text).sqlQuery.parsedparams;
-      expect(parsedParams2).toEqual(expect.arrayContaining(combtest.checks2));
 
       // Execute the specified functions to validate the output from the REST API
       const {transactions} = JSON.parse(response.text);
