@@ -39,6 +39,16 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
             BlockType.of(String.valueOf(EVM_V_34_BLOCK)),
             BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
 
+    private static Stream<Arguments> exchangeRateFunctionsProviderHistorical() {
+        return Arrays.stream(SystemContractFunctions.values())
+                .flatMap(exchangeRateFunction -> BLOCK_NUMBERS_FOR_EVM_VERSION.stream()
+                        .map(blockNumber -> Arguments.of(exchangeRateFunction, blockNumber)));
+    }
+
+    private static Stream<Arguments> blockNumberForDifferentEvmVersionsProviderHistorical() {
+        return BLOCK_NUMBERS_FOR_EVM_VERSION.stream().map(Arguments::of);
+    }
+
     @ParameterizedTest
     @EnumSource(SystemContractFunctions.class)
     void systemPrecompileFunctionsTestEthCall(final SystemContractFunctions contractFunc) {
@@ -130,15 +140,5 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
-    }
-
-    private static Stream<Arguments> exchangeRateFunctionsProviderHistorical() {
-        return Arrays.stream(SystemContractFunctions.values())
-                .flatMap(exchangeRateFunction -> BLOCK_NUMBERS_FOR_EVM_VERSION.stream()
-                        .map(blockNumber -> Arguments.of(exchangeRateFunction, blockNumber)));
-    }
-
-    private static Stream<Arguments> blockNumberForDifferentEvmVersionsProviderHistorical() {
-        return BLOCK_NUMBERS_FOR_EVM_VERSION.stream().map(Arguments::of);
     }
 }
