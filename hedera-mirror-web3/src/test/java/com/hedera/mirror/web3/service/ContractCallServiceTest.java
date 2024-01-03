@@ -94,7 +94,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
 
-        if (blockType.number() < PERSISTENCE_HISTORICAL_BLOCK) { // EVM v0.30 is used and it does not support the call
+        if (blockType.number() < PERSISTENCE_HISTORICAL_BLOCK) { // Before the block the data did not exist yet
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
@@ -118,7 +118,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
 
-        if (blockType.number() < PERSISTENCE_HISTORICAL_BLOCK) { // EVM v0.30 is used and it does not support the call
+        if (blockType.number() < PERSISTENCE_HISTORICAL_BLOCK) { // Before the block the data did not exist yet
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {

@@ -86,7 +86,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
         final var emptyResponse = Bytes.EMPTY.toHexString();
 
-        // Before EVM_V_34_BLOCK the data did not exist.
+        // Before the block the data did not exist yet
         if (blockNumber.number() < PERSISTENCE_HISTORICAL_BLOCK) {
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(emptyResponse);
         } else {
