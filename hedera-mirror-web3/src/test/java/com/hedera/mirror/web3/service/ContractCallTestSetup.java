@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,6 +97,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     // The block numbers lower than EVM v0.34 are considered part of EVM v0.30 which includes all precompiles
     protected static final long EVM_V_34_BLOCK = 50L;
+    protected static final long EVM_V_38_BLOCK = 100L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 
     // Exchange rates from local node.
@@ -474,6 +475,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static RecordFile genesisRecordFileForBlockHash;
     protected static RecordFile recordFileBeforeEvm34;
     protected static RecordFile recordFileAfterEvm34;
+    protected static RecordFile recordFileEvm38;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -1126,6 +1128,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         recordFileAfterEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK))
+                .persist();
+        recordFileEvm38 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_38_BLOCK))
                 .persist();
     }
 
