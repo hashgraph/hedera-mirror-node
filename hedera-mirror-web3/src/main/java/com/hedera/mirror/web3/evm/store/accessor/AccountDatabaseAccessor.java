@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
         throw new IllegalStateException(String.format("Duplicate key for values %s and %s", v1, v2));
     };
+    private static final Optional<Long> ZERO_BALANCE = Optional.of(0L);
+
     private final EntityDatabaseAccessor entityDatabaseAccessor;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftRepository nftRepository;
@@ -130,9 +132,14 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
      */
     private Long getAccountBalance(Entity entity, final Optional<Long> timestamp) {
         return timestamp
-                .map(t -> t >= entity.getCreatedTimestamp()
-                        ? accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), t)
-                        : Optional.of(0L))
+                .map(t -> {
+                    Long createdTimestamp = entity.getCreatedTimestamp();
+                    if (createdTimestamp == null || t >= createdTimestamp) {
+                        return accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), t);
+                    } else {
+                        return ZERO_BALANCE;
+                    }
+                })
                 .orElseGet(() -> Optional.ofNullable(entity.getBalance()))
                 .orElse(0L);
     }
