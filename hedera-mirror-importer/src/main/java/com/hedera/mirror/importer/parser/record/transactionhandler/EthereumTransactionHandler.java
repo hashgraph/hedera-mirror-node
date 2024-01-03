@@ -96,9 +96,7 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
             recordItem.addEntityId(ethereumTransaction.getCallDataId());
         } catch (RuntimeException e) {
             Utility.handleRecoverableError(
-                    "Error decoding Ethereum transaction data at {}: {}",
-                    recordItem.getConsensusTimestamp(),
-                    e.getMessage());
+                    "Error decoding Ethereum transaction data at {}", recordItem.getConsensusTimestamp(), e);
         }
     }
 
