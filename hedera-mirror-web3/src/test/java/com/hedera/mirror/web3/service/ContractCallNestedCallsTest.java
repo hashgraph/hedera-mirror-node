@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
@@ -108,6 +109,22 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 "nestedHtsGetApprovedAndHardcodedResult", NESTED_CALLS_ABI_PATH, "hardcodedResult");
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockArgumentsProvider")
+    void failedCallMintTokenWithHardcodedResult(final Address inputAddress, final BlockType blockNumber) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "nestedMintTokenAndHardcodedResult", NESTED_CALLS_ABI_PATH, inputAddress, 0L, new byte[][] {
+                    ByteString.copyFromUtf8("firstMeta").toByteArray()
+                });
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
+
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                "nestedMintTokenAndHardcodedResult", NESTED_CALLS_ABI_PATH, "hardcodedResult");
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }

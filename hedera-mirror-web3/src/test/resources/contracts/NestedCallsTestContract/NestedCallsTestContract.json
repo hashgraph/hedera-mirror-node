@@ -362,6 +362,35 @@
         "type": "address"
       },
       {
+        "internalType": "int64",
+        "name": "amount",
+        "type": "int64"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "metadata",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "nestedMintTokenAndHardcodedResult",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
         "internalType": "bytes",
         "name": "data",
         "type": "bytes"
