@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
+import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
@@ -78,6 +82,42 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 .as("result must be within 5-20% bigger than the gas used from the first call")
                 .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
                 .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockArgumentsProvider")
+    void failedCallGetTokenInfoWithHardcodedResult(final Address inputAddress, final BlockType blockNumber) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "nestedGetTokenInfoAndHardcodedResult", NESTED_CALLS_ABI_PATH, inputAddress);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
+
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                "nestedGetTokenInfoAndHardcodedResult", NESTED_CALLS_ABI_PATH, "hardcodedResult");
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockArgumentsProvider")
+    void failedCallHtsGetApprovedWithHardcodedResult(final Address inputAddress, final BlockType blockNumber) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "nestedHtsGetApprovedAndHardcodedResult", NESTED_CALLS_ABI_PATH, inputAddress, 1L);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
+
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                "nestedHtsGetApprovedAndHardcodedResult", NESTED_CALLS_ABI_PATH, "hardcodedResult");
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+    }
+
+    private static Stream<Arguments> blockArgumentsProvider() {
+        List<BlockType> blockNumbers = List.of(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)), BlockType.LATEST);
+        List<Address> inputAddresses = List.of(NFT_ADDRESS_HISTORICAL, Address.ZERO);
+
+        return inputAddresses.stream()
+                .map(address -> Arguments.of(address, blockNumbers.get(inputAddresses.indexOf(address))));
     }
 
     @RequiredArgsConstructor
