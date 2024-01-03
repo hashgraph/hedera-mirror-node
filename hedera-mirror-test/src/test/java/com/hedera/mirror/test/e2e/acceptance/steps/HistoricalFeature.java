@@ -30,14 +30,12 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.Cont
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_APPROVED;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_APPROVED_DIRECT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_COUNTER;
-import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_COUNTER2;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_CUSTOM_FEES;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_DEFAULT_FREEZE_STATUS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_DEFAULT_KYC_STATUS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_EXPIRY_INFO;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_FUNGIBLE_INFO;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_NFT_INFO;
-import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_SALT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_TOKEN_INFORMATION;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_TOKEN_KEY_INFO;
 import static com.hedera.mirror.test.e2e.acceptance.steps.HistoricalFeature.ContractMethods.GET_TYPE;
@@ -53,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
-import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
@@ -63,13 +60,14 @@ import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -87,6 +85,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class HistoricalFeature extends AbstractEstimateFeature {
+    private final int BLOCK_TIMEOUT = 2;
     private DeployedContract deployedEstimateContract;
     private DeployedContract deployedEstimatePrecompileContract;
     private DeployedContract deployedPrecompileContract;
@@ -169,16 +168,20 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     public void getHistoricalContractStorage() throws InterruptedException {
         //        waitForBlocks(1);
         var data = encodeData(ESTIMATE_GAS, GET_COUNTER);
-        var data2 = encodeData(ESTIMATE_GAS, GET_SALT);
-        var data3 = encodeData(ESTIMATE_GAS, GET_COUNTER2);
         var initialResponse = callContract(data, estimateContractSolidityAddress);
         // the block number where contract storage variable is still with initial value
         var initialBlockNumber = getLastBlockNumber();
 
         // executing the contract storage update after 2 blocks
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         ContractFunctionParameters parameters = new ContractFunctionParameters().addUint256(BigInteger.valueOf(5));
-        executeContractCallTransaction(deployedEstimateContract.contractId(), "updateCounter", parameters, null);
+        var maxGas = contractClient
+                .getSdkClient()
+                .getAcceptanceTestProperties()
+                .getFeatureProperties()
+                .getMaxContractFunctionGas();
+        contractClient.executeContract(
+                deployedEstimateContract.contractId(), maxGas, "updateCounter", parameters, null);
 
         var response = callContract(initialBlockNumber, data, estimateContractSolidityAddress);
         assertEquals(initialResponse.getResultAsNumber(), response.getResultAsNumber());
@@ -195,7 +198,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialResponse =
                 callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         var initialBlockNumber = getLastBlockNumber();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse =
                 accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -238,7 +241,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
     @Then("I verify the response from non existing account")
     public void getHistoricalDataForNonExistingAccount() throws InterruptedException {
-        deletableAccountId = accountClient.getAccount(AccountNameEnum.ALICE);
+        deletableAccountId = accountClient.getAccount(AccountNameEnum.DELETABLE);
         var data = encodeData(
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
@@ -246,7 +249,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialResponse =
                 callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         var initialBlock = getLastBlockNumber();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = accountClient.delete(deletableAccountId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var response = callContract(initialBlock, data, estimateContractSolidityAddress);
@@ -261,7 +264,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, precompileContractSolidityAddress);
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
 
         networkTransactionResponse = tokenClient.updateToken(tokenId, admin);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -294,50 +297,25 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     public void getHistoricalDataForBalanceOf(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
 
-        var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
-        var data2 = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(receiverAccountId));
+        var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(receiverAccountId));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
-        var response2 = callContract(data2, ercContractSolidityAddress);
-        var initialBalance = response2.getResultAsNumber(); // 0
+        var initialBalance = response.getResultAsNumber(); // 0
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         if (tokenName.toLowerCase().contains("fungible")) {
-            //            tokenClient.associate(receiverAccountId, tokenId);
             networkTransactionResponse = tokenClient.transferFungibleToken(
                     tokenId,
                     tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                     receiverAccountId.getAccountId(),
                     receiverAccountId.getPrivateKey(),
                     10);
-            waitForBlocks(2);
-            networkTransactionResponse = tokenClient.transferFungibleToken(
-                    tokenId,
-                    tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                    receiverAccountId.getAccountId(),
-                    receiverAccountId.getPrivateKey(),
-                    10);
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-            var response3 = callContract(data2, ercContractSolidityAddress); // 20
-            var initialBlockNumber3 = getLastBlockNumber();
-            waitForBlocks(2);
-            networkTransactionResponse = tokenClient.transferFungibleToken(
-                    tokenId,
-                    tokenClient.getSdkClient().getExpandedOperatorAccountId(),
-                    receiverAccountId.getAccountId(),
-                    receiverAccountId.getPrivateKey(),
-                    10);
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-            var response4 = callContract(data2, ercContractSolidityAddress); // 30
-            var initialBlockNumber4 = getLastBlockNumber();
-
-            //            networkTransactionResponse = tokenClient.mint(tokenId, 10L);
         } else {
             networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        var historicalResponse = callContract(initialBlockNumber, data2, ercContractSolidityAddress);
+        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
         var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertEquals(initialBalance, balanceOfHistorical);
     }
@@ -351,7 +329,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var response = callContract(data, tokenId.toSolidityAddress());
         var initialBalance = response.getResultAsNumber();
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         if (tokenName.toLowerCase().contains("fungible")) {
             networkTransactionResponse = tokenClient.mint(tokenId, 10L);
         } else {
@@ -372,7 +350,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_PRECOMPILE, ALLOWANCE, asAddress(tokenId), asAddress(admin), asAddress(receiverAccountId));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
         var initialAllowance = response.getResultAsNumber();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = accountClient.approveToken(tokenId, receiverAccountId.getAccountId(), 100L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
@@ -391,7 +369,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ESTIMATE_PRECOMPILE, GET_APPROVED, asAddress(tokenId), new BigInteger("1"));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
         var initialApprovedAddress = response.getResultAsAddress();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
@@ -406,7 +384,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ERC, ERC_ALLOWANCE, asAddress(tokenId), asAddress(admin), asAddress(receiverAccountId));
         var response = callContract(data, ercContractSolidityAddress);
         var initialAllowance = response.getResultAsNumber();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = accountClient.approveToken(tokenId, receiverAccountId.getAccountId(), 150L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
@@ -425,7 +403,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ERC, ERC_GET_APPROVED, asAddress(tokenId), new BigInteger("1"));
         var response = callContract(data, ercContractSolidityAddress);
         var initialApprovedAddress = response.getResultAsAddress();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
@@ -441,7 +419,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var response = callContract(data, tokenId.toSolidityAddress());
         var initialAllowance = response.getResultAsNumber();
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = accountClient.approveToken(tokenId, receiverAccountId.getAccountId(), 200L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
@@ -459,7 +437,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(GET_APPROVED_DIRECT, new BigInteger("1"));
         var response = callContract(data, tokenId.toSolidityAddress());
         var initialApprovedAddress = response.getResultAsAddress();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
@@ -479,7 +457,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountId));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
         var initialResult = response.getResultAsAddress();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
@@ -494,7 +472,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ERC, OWNER_OF, asAddress(tokenId.toSolidityAddress()), new BigInteger("1"));
         var response = callContract(data, ercContractSolidityAddress);
         var initialOwner = response.getResultAsAddress();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         //        tokenClient.associate(receiverAccountId, tokenId);
         networkTransactionResponse = tokenClient.transferNonFungibleToken(
                 tokenId, admin, receiverAccountId.getAccountId(), List.of(1L), receiverAccountId.getPrivateKey());
@@ -515,7 +493,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var response = callContract(data, precompileContractSolidityAddress);
         var initialBlockNumber = getLastBlockNumber();
         var initialFreezeStatus = response.getResultAsBoolean();
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = tokenClient.freeze(tokenId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalFreezeStatus = callContract(initialBlockNumber, data, precompileContractSolidityAddress)
@@ -533,7 +511,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_FUNGIBLE_INFO, asAddress(tokenId.toSolidityAddress()));
         var response = callContract(data, precompileContractSolidityAddress);
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = tokenClient.updateToken(tokenId, admin);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
@@ -546,7 +524,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 2L);
         var response = callContract(data, precompileContractSolidityAddress);
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         tokenClient.burnNonFungible(tokenId, 2);
         networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -594,7 +572,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             currentResponses.put(keyValue, callContract(data, estimatePrecompileContractSolidityAddress));
         }
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
 
         // Perform update
         var updateData = encodeDataToByteArray(ESTIMATE_PRECOMPILE, UPDATE_TOKEN_KEY_INFO, asAddress(tokenId));
@@ -618,7 +596,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, IS_KYC_GRANTED, asAddress(tokenId), asAddress(receiverAccountId));
         var response = callContract(data, precompileContractSolidityAddress);
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = tokenClient.revokeKyc(tokenId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
@@ -635,7 +613,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(ESTIMATE_PRECOMPILE, IS_TOKEN, asAddress(tokenId));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
         networkTransactionResponse = tokenClient.delete(admin, tokenId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
@@ -648,7 +626,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
     }
-
+    @RetryAsserts
     @Then("I verify historical data for {string} is returned for getCustomFees")
     public void getHistoricalDataForCustomFees(String tokenName) throws InterruptedException {
         CustomFixedFee customFixedFee = new CustomFixedFee();
@@ -686,7 +664,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES, asAddress(tokenId));
         var response = callContract(data, precompileContractSolidityAddress);
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
 
         // deleting the token with the custom fees and creating it again without custom fees
         networkTransactionResponse = tokenClient.delete(admin, tokenId);
@@ -708,12 +686,11 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(PRECOMPILE, GET_DEFAULT_FREEZE_STATUS, asAddress(tokenId));
         var response = callContract(data, precompileContractSolidityAddress);
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
 
         // deleting the token and getting historical data
-        networkTransactionResponse = tokenClient.delete(admin, tokenId);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
+        var historicalResponse = deleteTokenAndGetHistoricalResponse(
+                tokenId, initialBlockNumber, data, precompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
 
         // creating the deleted token within the test
@@ -731,12 +708,11 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(PRECOMPILE, GET_DEFAULT_KYC_STATUS, asAddress(tokenId));
         var response = callContract(data, precompileContractSolidityAddress);
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
 
         // deleting the token and getting historical data
-        networkTransactionResponse = tokenClient.delete(admin, tokenId);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
+        var historicalResponse = deleteTokenAndGetHistoricalResponse(
+                tokenId, initialBlockNumber, data, precompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
 
         // creating the deleted token within the test
@@ -754,12 +730,11 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(PRECOMPILE, GET_TYPE, asAddress(tokenId));
         var response = callContract(data, precompileContractSolidityAddress);
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
 
         // deleting the token and getting historical data
-        networkTransactionResponse = tokenClient.delete(admin, tokenId);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
+        var historicalResponse = deleteTokenAndGetHistoricalResponse(
+                tokenId, initialBlockNumber, data, precompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
 
         // creating the deleted token within the test
@@ -777,12 +752,11 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ESTIMATE_PRECOMPILE, GET_EXPIRY_INFO, asAddress(tokenId));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
 
-        waitForBlocks(2);
+        waitForBlocks(BLOCK_TIMEOUT);
 
         // deleting the token and getting historical data
-        networkTransactionResponse = tokenClient.delete(admin, tokenId);
-        verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
+        var historicalResponse = deleteTokenAndGetHistoricalResponse(
+                tokenId, initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
 
         // creating the deleted token within the test
@@ -821,22 +795,11 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         Thread.sleep(2000L * numberOfBlocks); // Sleep for 2s which should be equal to 1 block
     }
 
-    private void executeContractCallTransaction(
-            ContractId contractId, String functionName, ContractFunctionParameters parameters, Hbar payableAmount) {
-
-        ExecuteContractResult executeContractResult = contractClient.executeContract(
-                contractId,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                functionName,
-                parameters,
-                payableAmount);
-
-        networkTransactionResponse = executeContractResult.networkTransactionResponse();
+    private ContractCallResponse deleteTokenAndGetHistoricalResponse(
+            TokenId tokenId, String blockNumber, String data, String solidityAddress) {
+        networkTransactionResponse = tokenClient.delete(admin, tokenId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
+        return callContract(blockNumber, data, solidityAddress);
     }
 
     @Getter

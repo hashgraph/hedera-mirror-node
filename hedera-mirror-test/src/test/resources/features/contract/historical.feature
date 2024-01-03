@@ -12,9 +12,7 @@ Feature: Historical Feature
     Given I create non-fungible token
 
     Then I successfully update the contract storage and get the initial value via historical data
-
     Then I successfully update the balance of an account and get the initial balance via historical data
-
     Then I verify that historical data for negative block returns bad request
     Then I verify that historical data for unknown block returns bad request
     Then I verify that historical data for "safe" block is treated as latest
@@ -35,6 +33,7 @@ Feature: Historical Feature
     Then I verify historical data for "NFT_HISTORICAL" in invalid block returns bad request
     Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via getTokenInfo
     Then I verify that historical data for "NFT_HISTORICAL" is returned via getTokenInfo
+
     Then I mint new nft for "NFT_HISTORICAL"
     Then I associate "NFT_HISTORICAL"
     Then I associate "FUNGIBLE_HISTORICAL"
@@ -45,7 +44,6 @@ Feature: Historical Feature
     Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf
     Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via balanceOf by direct call
     Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf by direct call
-
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for allowance
     Then I verify historical data for "NFT_HISTORICAL" is returned for getApproved
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for ERC allowance
@@ -57,13 +55,14 @@ Feature: Historical Feature
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isFrozen
     Then I verify historical data for "NFT_HISTORICAL" is returned for isFrozen
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getFungibleTokenInfo
+
     Then I mint new nft for "NFT_HISTORICAL"
+
     Then I verify historical data for "NFT_HISTORICAL" is returned for getNonFungibleInfo
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isKyc
     Then I verify historical data for "NFT_HISTORICAL" is returned for isKyc
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isToken
     Then I verify historical data for "NFT_HISTORICAL" is returned for isToken
-
     Then I update the token and account keys for "FUNGIBLE_HISTORICAL"
     Then I update the token and account keys for "NFT_HISTORICAL"
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getTokenKey
