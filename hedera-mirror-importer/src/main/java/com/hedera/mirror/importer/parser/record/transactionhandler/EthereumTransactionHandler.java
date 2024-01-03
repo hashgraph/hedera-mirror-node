@@ -29,10 +29,8 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
-import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-@CustomLog
 @Named
 @RequiredArgsConstructor
 class EthereumTransactionHandler extends AbstractTransactionHandler {
