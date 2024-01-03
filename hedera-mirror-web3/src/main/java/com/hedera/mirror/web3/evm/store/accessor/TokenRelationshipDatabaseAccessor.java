@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
     private final AccountDatabaseAccessor accountDatabaseAccessor;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
+    static final Optional<Long> ZERO_BALANCE = Optional.of(0L);
 
     @Override
     public @NonNull Optional<TokenRelationship> get(@NonNull Object key, final Optional<Long> timestamp) {
@@ -67,34 +68,49 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
 
     /**
      * Determines fungible or NFT balance based on block context.
-     *
+     */
+    private Long getBalance(
+            final Account account, final Token token, final TokenAccount tokenAccount, final Optional<Long> timestamp) {
+        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            return getNftBalance(account);
+        }
+        return getFungibleBalance(tokenAccount, timestamp, account.getCreatedTimestamp());
+    }
+
+    /**
      * NFT Balance Explanation:
-     *
      * Non-historical Call:
      * When querying the latest block, the NFT balance from `account.getOwnedNfts()`
      * matches the balance from `tokenAccount.getBalance()`.
      * Therefore, the NFT balance is obtained from `account.getOwnedNfts()`.
-     *
      * Historical Call:
      * In historical block queries, as the `token_account` and `token_balance` tables lack historical state for NFT balances,
      * the NFT balance is retrieved from `account.getOwnedNfts()`, previously set in `AccountDatabaseAccessor.getOwnedNfts()`.
-     *
+     */
+    private Long getNftBalance(final Account account) {
+        return account.getOwnedNfts();
+    }
+
+    /**
      * Fungible Token Balance Explanation:
-     *
      * Non-historical Call:
-     * The same principle as NFT applies here, and the balance is obtained from `account.getOwnedNfts()`.
-     *
+     * The balance is obtained from `tokenAccount.getBalance()`.
      * Historical Call:
      * In historical block queries, since the `token_account` table lacks historical state for fungible balances,
-     * the balance is determined from the `token_balance` table using the `findHistoricalTokenBalanceUpToTimestamp` query.
+     * the fungible balance is determined from the `token_balance` table using the `findHistoricalTokenBalanceUpToTimestamp` query.
+     * If the entity creation is after the passed timestamp - return 0L (the entity was not created)
      */
-    private Long getBalance(Account account, Token token, TokenAccount tokenAccount, final Optional<Long> timestamp) {
-        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-            return account.getOwnedNfts();
-        }
+    private Long getFungibleBalance(
+            final TokenAccount tokenAccount, final Optional<Long> timestamp, long accountCreatedTimestamp) {
         return timestamp
-                .map(t -> tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
-                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), t, account.getCreatedTimestamp()))
+                .map(t -> {
+                    if (t >= accountCreatedTimestamp) {
+                        return tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                                tokenAccount.getTokenId(), tokenAccount.getAccountId(), t);
+                    } else {
+                        return ZERO_BALANCE;
+                    }
+                })
                 .orElseGet(() -> Optional.of(tokenAccount.getBalance()))
                 .orElse(0L);
     }

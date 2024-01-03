@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,8 +91,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
-                        consensusTimestamp + 10,
-                        0L))
+                        consensusTimestamp + 10))
                 .get()
                 .isEqualTo(tokenBalance1.getBalance());
     }
@@ -120,8 +119,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
-                        consensusTimestamp + 10,
-                        0L))
+                        consensusTimestamp + 10))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }
@@ -150,8 +148,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
-                        consensusTimestamp + 10,
-                        0L))
+                        consensusTimestamp + 10))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }
@@ -183,8 +180,7 @@ class TokenBalanceRepositoryTest extends Web3IntegrationTest {
         assertThat(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
                         tokenBalance1.getId().getTokenId().getId(),
                         tokenBalance1.getId().getAccountId().getId(),
-                        consensusTimestamp + 10,
-                        accountCreationTimestamp))
+                        consensusTimestamp + 10))
                 .get()
                 .isEqualTo(historicalAccountBalance);
     }

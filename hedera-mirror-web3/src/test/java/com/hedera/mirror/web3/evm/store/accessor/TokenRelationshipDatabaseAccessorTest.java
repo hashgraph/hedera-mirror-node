@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -207,10 +207,7 @@ class TokenRelationshipDatabaseAccessorTest {
                         tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
                 .thenReturn(Optional.of(tokenAccount));
         when(tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
-                        tokenAccount.getTokenId(),
-                        tokenAccount.getAccountId(),
-                        timestamp.get(),
-                        account.getCreatedTimestamp()))
+                        tokenAccount.getTokenId(), tokenAccount.getAccountId(), timestamp.get()))
                 .thenReturn(Optional.of(balance));
         when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
 
@@ -220,6 +217,30 @@ class TokenRelationshipDatabaseAccessorTest {
                         .returns(account, TokenRelationship::getAccount)
                         .returns(token, TokenRelationship::getToken)
                         .returns(balance, TokenRelationship::getBalance));
+    }
+
+    @Test
+    void getFungibleBalanceBeforeAccountCreationHistorical() {
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(t -> t.associated(true)
+                        .tokenId(EntityIdUtils.entityIdFromId(token.getId()).getId())
+                        .accountId(EntityIdUtils.entityIdFromId(account.getId()).getId())
+                        .automaticAssociation(true))
+                .get();
+        final long balance = 0L;
+        when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, timestamp)).thenReturn(Optional.of(account));
+        when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, timestamp)).thenReturn(Optional.of(token));
+        when(tokenAccountRepository.findByIdAndTimestamp(
+                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
+                .thenReturn(Optional.of(tokenAccount));
+        when(token.getType()).thenReturn(TokenType.FUNGIBLE_COMMON);
+        when(account.getCreatedTimestamp()).thenReturn(timestamp.get() + 1);
+
+        assertThat(tokenRelationshipDatabaseAccessor.get(
+                        new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), timestamp))
+                .hasValueSatisfying(tokenRelationship ->
+                        assertThat(tokenRelationship).returns(balance, TokenRelationship::getBalance));
     }
 
     @Test
