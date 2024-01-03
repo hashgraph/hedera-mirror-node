@@ -109,7 +109,7 @@ class HederaEvmWorldStateTest {
     @BeforeEach
     void setUp() {
         final var accountDatabaseAccessor =
-                new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null);
+                new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null);
         final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
                 tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor);
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(

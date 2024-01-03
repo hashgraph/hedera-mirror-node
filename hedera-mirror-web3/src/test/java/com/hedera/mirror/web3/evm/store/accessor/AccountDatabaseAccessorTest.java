@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.web3.repository.AccountBalanceRepository;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -113,6 +114,9 @@ class AccountDatabaseAccessorTest {
     private CryptoAllowanceRepository cryptoAllowanceRepository;
 
     @Mock
+    private AccountBalanceRepository accountBalanceRepository;
+
+    @Mock
     private TokenAccountRepository tokenAccountRepository;
 
     @BeforeEach
@@ -120,6 +124,7 @@ class AccountDatabaseAccessorTest {
         final var entityNum = entityIdNumFromEvmAddress(ADDRESS);
         entity = new Entity();
         entity.setId(entityNum);
+        entity.setCreatedTimestamp(timestamp.get());
         entity.setShard(SHARD);
         entity.setRealm(REALM);
         entity.setNum(entityNum);
@@ -204,6 +209,49 @@ class AccountDatabaseAccessorTest {
 
         assertThat(accountAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, Account::getOwnedNfts));
+    }
+
+    @Test
+    void accountBalanceMatchesValueFromRepositoryHistorical() {
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        long balance = 20;
+        when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
+                .thenReturn(Optional.of(balance));
+
+        assertThat(accountAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
+    }
+
+    @Test
+    void accountBalanceBeforeAccountCreation() {
+        entity.setCreatedTimestamp(timestamp.get() + 1);
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        long balance = 0;
+
+        assertThat(accountAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
+    }
+
+    @Test
+    void accountBalanceIsZeroHistorical() {
+        entity.setCreatedTimestamp(timestamp.get() - 1);
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        long balance = 0;
+        when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
+                .thenReturn(Optional.of(balance));
+        assertThat(accountAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
+    }
+
+    @Test
+    void accountBalanceWhenCreatedTimestampIsNull() {
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        long balance = 20;
+        entity.setCreatedTimestamp(null);
+        when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
+                .thenReturn(Optional.of(balance));
+        assertThat(accountAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
     }
 
     @Test
