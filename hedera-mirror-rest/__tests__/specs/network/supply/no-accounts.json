@@ -1,27 +1,17 @@
 {
   "description": "Network supply API with no accounts",
   "setup": {
-    "accounts": [],
-    "recordFiles": [
-      {
-        "consensus_start": "1000000000",
-        "consensus_end": "1000000001",
-        "count": 1,
-        "hapi_version_major": 0,
-        "hapi_version_minor": 22,
-        "hapi_version_patch": 3,
-        "hash": "123",
-        "index": 16,
-        "name": "2022-04-27T12_09_24.499938763Z.rcd",
-        "prev_hash": "abc"
-      }
-    ]
+    "accounts": []
   },
   "url": "/api/v1/network/supply",
-  "responseStatus": 200,
+  "responseStatus": 404,
   "responseJson": {
-    "released_supply": "5000000000000000000",
-    "timestamp": "1.000000001",
-    "total_supply": "5000000000000000000"
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
   }
 }
