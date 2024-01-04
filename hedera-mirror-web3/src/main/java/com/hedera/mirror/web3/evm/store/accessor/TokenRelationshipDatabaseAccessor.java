@@ -22,6 +22,7 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -42,6 +43,7 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
     private final AccountDatabaseAccessor accountDatabaseAccessor;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
+    private final NftRepository nftRepository;
     static final Optional<Long> ZERO_BALANCE = Optional.of(0L);
 
     @Override
@@ -72,7 +74,7 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
     private Long getBalance(
             final Account account, final Token token, final TokenAccount tokenAccount, final Optional<Long> timestamp) {
         if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-            return getNftBalance(account);
+            return getNftBalance(tokenAccount, timestamp, account.getCreatedTimestamp());
         }
         return getFungibleBalance(tokenAccount, timestamp, account.getCreatedTimestamp());
     }
@@ -80,15 +82,24 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
     /**
      * NFT Balance Explanation:
      * Non-historical Call:
-     * When querying the latest block, the NFT balance from `account.getOwnedNfts()`
-     * matches the balance from `tokenAccount.getBalance()`.
-     * Therefore, the NFT balance is obtained from `account.getOwnedNfts()`.
+     * The balance is obtained from `tokenAccount.getBalance()`.
      * Historical Call:
      * In historical block queries, as the `token_account` and `token_balance` tables lack historical state for NFT balances,
-     * the NFT balance is retrieved from `account.getOwnedNfts()`, previously set in `AccountDatabaseAccessor.getOwnedNfts()`.
+     * the NFT balance is retrieved from `NftRepository.nftBalanceByAccountIdTokenIdAndTimestamp`
      */
-    private Long getNftBalance(final Account account) {
-        return account.getOwnedNfts();
+    private Long getNftBalance(
+            final TokenAccount tokenAccount, final Optional<Long> timestamp, long accountCreatedTimestamp) {
+        return timestamp
+                .map(t -> {
+                    if (t >= accountCreatedTimestamp) {
+                        return nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(
+                                tokenAccount.getAccountId(), tokenAccount.getTokenId(), t);
+                    } else {
+                        return ZERO_BALANCE;
+                    }
+                })
+                .orElseGet(() -> Optional.of(tokenAccount.getBalance()))
+                .orElse(0L);
     }
 
     /**

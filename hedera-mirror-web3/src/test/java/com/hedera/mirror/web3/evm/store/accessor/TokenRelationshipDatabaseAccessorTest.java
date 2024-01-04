@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -58,6 +59,9 @@ class TokenRelationshipDatabaseAccessorTest {
 
     @Mock
     private TokenBalanceRepository tokenBalanceRepository;
+
+    @Mock
+    private NftRepository nftRepository;
 
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
@@ -252,14 +256,16 @@ class TokenRelationshipDatabaseAccessorTest {
                         .accountId(EntityIdUtils.entityIdFromId(account.getId()).getId())
                         .automaticAssociation(true))
                 .get();
-        final long balance = 15L;
+        final long balance = 2L;
         when(accountDatabaseAccessor.get(ACCOUNT_ADDRESS, timestamp)).thenReturn(Optional.of(account));
         when(tokenDatabaseAccessor.get(TOKEN_ADDRESS, timestamp)).thenReturn(Optional.of(token));
         when(tokenAccountRepository.findByIdAndTimestamp(
                         tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
                 .thenReturn(Optional.of(tokenAccount));
-        when(account.getOwnedNfts()).thenReturn(balance);
         when(token.getType()).thenReturn(TokenType.NON_FUNGIBLE_UNIQUE);
+        when(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(
+                        tokenAccount.getAccountId(), tokenAccount.getTokenId(), timestamp.get()))
+                .thenReturn(Optional.of(balance));
 
         assertThat(tokenRelationshipDatabaseAccessor.get(
                         new TokenRelationshipKey(TOKEN_ADDRESS, ACCOUNT_ADDRESS), timestamp))

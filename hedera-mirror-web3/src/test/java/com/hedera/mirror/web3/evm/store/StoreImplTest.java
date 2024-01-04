@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,7 +163,11 @@ class StoreImplTest {
         final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
                 tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor);
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
-                tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository, tokenBalanceRepository);
+                tokenDatabaseAccessor,
+                accountDatabaseAccessor,
+                tokenAccountRepository,
+                tokenBalanceRepository,
+                nftRepository);
         final var uniqueTokenDatabaseAccessor = new UniqueTokenDatabaseAccessor(nftRepository);
         final var entityDatabaseAccessor = new EntityDatabaseAccessor(entityRepository);
         final List<DatabaseAccessor<Object, ?>> accessors = List.of(
