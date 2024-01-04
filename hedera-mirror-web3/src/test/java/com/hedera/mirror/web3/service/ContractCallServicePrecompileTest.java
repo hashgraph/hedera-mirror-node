@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,51 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.AUTO_RENEW_ACCOUNT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.ECDSA_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.ED25519_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FIXED_FEE_WRAPPER;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FRACTIONAL_FEE_WRAPPER;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FROZEN_FUNGIBLE_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_HBAR_TOKEN_AND_KEYS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN2;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.MODIFICATION_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NEW_ECDSA_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NEW_ED25519_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_HBAR_TOKEN_AND_KEYS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_TRANSFER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NON_FUNGIBLE_TOKEN;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.OWNER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.PRECOMPILE_TEST_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.RECEIVER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.ROYALTY_FEE_WRAPPER;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SENDER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SENDER_ALIAS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SPENDER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SPENDER_ALIAS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SUCCESS_RESULT;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.TOKEN_EXPIRY_WRAPPER;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.TRANSFRER_FROM_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.TREASURY_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.TREASURY_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.UNPAUSED_FUNGIBLE_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.longValueOf;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.АLL_CASES_KEY_TYPE;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;

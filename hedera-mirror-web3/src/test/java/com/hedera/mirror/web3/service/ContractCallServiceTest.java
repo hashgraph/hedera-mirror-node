@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,13 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.ETH_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.ETH_CALL_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.RECEIVER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.REVERTER_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SENDER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SENDER_ALIAS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.longValueOf;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;

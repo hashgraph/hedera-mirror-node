@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,21 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.DYNAMIC_ETH_CALLS_CONTRACT_ALIAS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_TRANSFER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NOT_ASSOCIATED_SPENDER_ALIAS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.OWNER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.RECEIVER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SENDER_ALIAS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SPENDER_ALIAS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.TREASURY_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.TREASURY_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.longValueOf;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;

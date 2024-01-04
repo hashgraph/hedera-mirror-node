@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,22 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.AUTO_RENEW_ACCOUNT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_INHERIT_KEYS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.FUNGIBLE_TOKEN_WITH_KEYS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NESTED_ETH_CALLS_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NEW_ECDSA_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NEW_ED25519_KEY;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NFT_TRANSFER_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NON_FUNGIBLE_TOKEN;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NON_FUNGIBLE_TOKEN_INHERIT_KEYS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.NON_FUNGIBLE_TOKEN_WITH_KEYS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.PRECOMPILE_TEST_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.UNPAUSED_FUNGIBLE_TOKEN_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.longValueOf;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;

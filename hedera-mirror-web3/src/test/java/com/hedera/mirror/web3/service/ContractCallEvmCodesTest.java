@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.EVM_CODES_CONTRACT_ADDRESS;
+import static com.hedera.mirror.web3.service.ContractCallTestConstants.SENDER_ADDRESS;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
