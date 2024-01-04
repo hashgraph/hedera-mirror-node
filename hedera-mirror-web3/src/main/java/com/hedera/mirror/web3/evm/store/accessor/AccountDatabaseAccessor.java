@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.web3.evm.store.accessor.TokenRelationshipDatabaseAccessor.ZERO_BALANCE;
 import static com.hedera.services.utils.EntityIdUtils.idFromEntityId;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
@@ -63,7 +64,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
         throw new IllegalStateException(String.format("Duplicate key for values %s and %s", v1, v2));
     };
-    private static final Optional<Long> ZERO_BALANCE = Optional.of(0L);
 
     private final EntityDatabaseAccessor entityDatabaseAccessor;
     private final NftAllowanceRepository nftAllowanceRepository;
