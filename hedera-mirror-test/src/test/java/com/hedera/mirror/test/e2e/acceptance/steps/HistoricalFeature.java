@@ -85,7 +85,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class HistoricalFeature extends AbstractEstimateFeature {
-    private final int BLOCK_TIMEOUT = 2;
+    private final int BLOCK_TIMEOUT = 1;
     private DeployedContract deployedEstimateContract;
     private DeployedContract deployedEstimatePrecompileContract;
     private DeployedContract deployedPrecompileContract;
@@ -296,11 +296,10 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     @Then("I verify that historical data for {string} is returned via balanceOf")
     public void getHistoricalDataForBalanceOf(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
-
-        var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(receiverAccountId));
+        var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
-        var initialBalance = response.getResultAsNumber(); // 0
+        var initialBalance = response.getResultAsNumber();
 
         waitForBlocks(BLOCK_TIMEOUT);
         if (tokenName.toLowerCase().contains("fungible")) {
@@ -309,9 +308,11 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                     tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                     receiverAccountId.getAccountId(),
                     receiverAccountId.getPrivateKey(),
-                    10);
+                    10L);
         } else {
-            networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+            tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+            networkTransactionResponse = tokenClient.transferNonFungibleToken(
+                    tokenId, admin, receiverAccountId.getAccountId(), List.of(2L), receiverAccountId.getPrivateKey());
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
@@ -338,6 +339,26 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
+        var balanceOfHistorical = historicalResponse.getResultAsNumber();
+        assertEquals(initialBalance, balanceOfHistorical);
+    }
+
+    @Then("I verify that historical data for {string} is returned via balanceOf when doing burn")
+    public void getHistoricalDataForBalanceOfWhenBurning(String tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
+        var initialBlockNumber = getLastBlockNumber();
+        var response = callContract(data, ercContractSolidityAddress);
+        var initialBalance = response.getResultAsNumber();
+
+        waitForBlocks(BLOCK_TIMEOUT);
+        if (tokenName.toLowerCase().contains("fungible")) {
+            tokenClient.burnFungible(tokenId, 5L);
+        } else {
+            tokenClient.burnNonFungible(tokenId, 3L);
+        }
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
         var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertEquals(initialBalance, balanceOfHistorical);
     }
@@ -525,7 +546,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 2L);
         var response = callContract(data, precompileContractSolidityAddress);
         waitForBlocks(BLOCK_TIMEOUT);
-        tokenClient.burnNonFungible(tokenId, 2);
+        tokenClient.burnNonFungible(tokenId, 4);
         networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
@@ -626,6 +647,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
     }
+
     @RetryAsserts
     @Then("I verify historical data for {string} is returned for getCustomFees")
     public void getHistoricalDataForCustomFees(String tokenName) throws InterruptedException {

@@ -44,6 +44,9 @@ Feature: Historical Feature
     Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf
     Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via balanceOf by direct call
     Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf by direct call
+    Then I mint new nft for "NFT_HISTORICAL"
+    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via balanceOf when doing burn
+    Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf when doing burn
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for allowance
     Then I verify historical data for "NFT_HISTORICAL" is returned for getApproved
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for ERC allowance

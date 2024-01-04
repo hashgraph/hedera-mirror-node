@@ -267,20 +267,12 @@ public class CallFeature extends AbstractFeature {
     @RetryAsserts
     @Then("I call function with IERC721 token NFT balanceOf owner")
     public void ierc721MetadatagetBalanceOfTokenTokenBalanceOf() {
-        //var balanceOfNft = getBalanceOfToken(nonFungibleTokenId, receiverAccountId.getAccountId());
-        var allTokens = mirrorClient
-                .getAccountDetailsByAccountId(admin.getAccountId())
-                .getBalanceInfo()
-                .getTokens();
-        var balanceOfNft = allTokens.stream()
-                .filter(token -> nonFungibleTokenId.toString().equals(token.getTokenId()))
-                .mapToLong(MirrorAccountBalance.Token::getBalance)
-                .findFirst();
+        var balanceOfNft = getBalanceOfToken(nonFungibleTokenId, admin.getAccountId());
         var data = encodeData(
-                ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(nonFungibleTokenId), asAddress(admin));
+                ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
         var response = callContract(data, ercContractAddress);
 
-        assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft.getAsLong());
+        assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft);
     }
 
     @RetryAsserts
