@@ -36,8 +36,8 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
     private static final List<BlockType> BLOCK_NUMBERS_FOR_EVM_VERSION = List.of(
             BlockType.of(String.valueOf(EVM_V_38_BLOCK)),
-            BlockType.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK)),
-            BlockType.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK - 1)));
+            BlockType.of(String.valueOf(EVM_V_34_BLOCK)),
+            BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));
 
     private static Stream<Arguments> exchangeRateFunctionsProviderHistorical() {
         return Arrays.stream(SystemContractFunctions.values())
