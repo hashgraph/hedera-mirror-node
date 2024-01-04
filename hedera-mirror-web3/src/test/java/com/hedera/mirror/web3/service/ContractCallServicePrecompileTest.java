@@ -47,8 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
-        List<String> blockNumbers =
-                List.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK - 1), String.valueOf(PERSISTENCE_HISTORICAL_BLOCK));
+        List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
 
         return Arrays.stream(ContractReadFunctionsHistorical.values()).flatMap(htsFunction -> blockNumbers.stream()
                 .map(blockNumber -> Arguments.of(htsFunction, blockNumber)));
@@ -105,7 +104,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
 
-        if (Long.parseLong(blockNumber) < PERSISTENCE_HISTORICAL_BLOCK) {
+        if (Long.parseLong(blockNumber) < EVM_V_34_BLOCK) {
             switch (contractFunc) {
                 case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE,
                         GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE,

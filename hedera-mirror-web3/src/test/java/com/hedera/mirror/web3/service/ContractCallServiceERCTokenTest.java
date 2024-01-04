@@ -45,9 +45,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     private static Stream<Arguments> ercContractFunctionArgumentsProviderHistoricalReadOnly() {
-        List<BlockType> blockNumbers = List.of(
-                BlockType.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK - 1)),
-                BlockType.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK)));
+        List<BlockType> blockNumbers =
+                List.of(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)), BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
 
         return Arrays.stream(ErcContractReadOnlyFunctionsHistorical.values())
                 .flatMap(ercFunction -> Stream.concat(
@@ -89,7 +88,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
 
         // Before the block the data did not exist yet
-        if (blockNumber.number() < PERSISTENCE_HISTORICAL_BLOCK) {
+        if (blockNumber.number() < EVM_V_34_BLOCK) {
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
