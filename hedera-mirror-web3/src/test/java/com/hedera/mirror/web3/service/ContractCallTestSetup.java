@@ -122,8 +122,6 @@ import org.springframework.beans.factory.annotation.Value;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
-    //    protected static final long expiry = 1_234_567_890L;
-
     protected static RecordFile recordFileForBlockHash;
     protected static RecordFile genesisRecordFileForBlockHash;
 
