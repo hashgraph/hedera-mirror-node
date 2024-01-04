@@ -70,7 +70,7 @@ public class IsApprovedForAllPrecompile extends AbstractReadOnlyPrecompile {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var inputData = frame.getInputData();
         final var wrapper = decodeIsApprovedForAll(inputData);
-        final var store = ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater()).getStore();
+        final var store = updater.getStore();
         final var account = store.getAccount(addressFromBytes(wrapper.owner()), OnMissing.THROW);
         validateFalseOrRevert(account.isEmptyAccount(), INVALID_ACCOUNT_ID);
 
