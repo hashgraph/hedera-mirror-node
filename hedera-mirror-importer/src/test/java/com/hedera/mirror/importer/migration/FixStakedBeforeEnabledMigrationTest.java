@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.ImporterProperties.HederaNetwork;
@@ -37,6 +38,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.68.2.1")
+@DisableRepeatableSqlMigration
 class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
 
     private static final String[] ENTITY_FIELDS =

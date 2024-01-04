@@ -48,7 +48,7 @@ describe('getProtoId', () => {
     expect(TransactionType.getProtoId('CRYPTOCREATEACCOUNT')).toEqual(`${cryptoCreateAccountProtoId}`);
   });
   test('Return valid custom proto id', () => {
-    expect(TransactionType.getProtoId('UTILPRNG')).toEqual(52);
+    expect(TransactionType.getProtoId('UTILPRNG')).toEqual('52');
   });
   test('Return valid proto id for camel case', () => {
     expect(TransactionType.getProtoId('cryptoCreateAccount')).toEqual(`${cryptoCreateAccountProtoId}`);
@@ -103,7 +103,6 @@ describe('transactionType constants are up to date', () => {
   // There isn't a dedicated enum for TransactionBody values, so just check that no new HederaFunctionality exists. If
   // this test fails, ensure that new transaction types are added and update this test with the new HederaFunctionality.
   test('transactionType have new values been added', () => {
-    // Last entry is TokenUnpause: 80
     expect(Object.keys(proto.HederaFunctionality).length).toEqual(hederaFunctionalityLength);
   });
 });

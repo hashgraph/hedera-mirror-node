@@ -28,6 +28,13 @@ function cleanup() {
   echo "Cleanup complete"
 }
 
+function init_temp_schema() {
+  echo "Checking temp schema";
+  /etc/init.d/postgresql start
+  su postgres -c 'PATH=/usr/lib/postgresql/${PG_VERSION}/bin:${PATH} /app/scripts/init-temp-schema.sh'
+  /etc/init.d/postgresql stop
+}
+
 function init_db() {
   echo "Initializing database"
 
@@ -36,6 +43,7 @@ function init_db() {
     # relink the config dir just in case it's a newly created container with existing mapped /data dir
     ln -sTf ${PGDATA} ${PG_CLUSTER_CONF}
     echo "Database is already initialized"
+    init_temp_schema
     return
   fi
 
@@ -51,7 +59,6 @@ function init_db() {
   /etc/init.d/postgresql start
   su postgres -c 'PATH=/usr/lib/postgresql/${PG_VERSION}/bin:${PATH} /app/scripts/init.sh'
   /etc/init.d/postgresql stop
-
   echo "Initialized database"
 }
 

@@ -48,7 +48,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
-        List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK));
+        List<String> blockNumbers = List.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK));
 
         return Arrays.stream(ContractReadFunctionsHistorical.values()).flatMap(htsFunction -> blockNumbers.stream()
                 .map(blockNumber -> Arguments.of(htsFunction, blockNumber)));
@@ -106,7 +106,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
         final var emptyResponse = Bytes.EMPTY.toHexString();
 
-        if (Long.parseLong(blockNumber) < EVM_V_34_BLOCK) {
+        if (Long.parseLong(blockNumber) < PERSISTENCE_HISTORICAL_BLOCK) {
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(emptyResponse);
         } else {
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);

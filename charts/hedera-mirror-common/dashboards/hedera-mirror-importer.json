@@ -5665,7 +5665,7 @@
           "type": "prometheus",
           "uid": "${prometheus}"
         },
-        "definition": "label_values(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}, type)",
+        "definition": "label_values(hedera_mirror_parse_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}, type)",
         "hide": 2,
         "includeAll": true,
         "label": "Stream",
@@ -5673,7 +5673,7 @@
         "name": "stream",
         "options": [],
         "query": {
-          "query": "label_values(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}, type)",
+          "query": "label_values(hedera_mirror_parse_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}, type)",
           "refId": "Prometheus-stream-Variable-Query"
         },
         "refresh": 2,

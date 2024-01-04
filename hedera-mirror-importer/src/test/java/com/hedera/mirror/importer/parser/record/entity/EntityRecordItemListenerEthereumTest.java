@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.record.ethereum.LegacyEthereumTransactionParserTest;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -120,7 +119,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .transactionBody(x -> x.setEthereumData(ByteString.copyFrom(transactionBytes)))
                 .build();
 
-        assertThrows(InvalidDatasetException.class, () -> parseRecordItemAndCommit(recordItem));
+        assertDoesNotThrow(() -> parseRecordItemAndCommit(recordItem));
     }
 
     @SneakyThrows

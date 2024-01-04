@@ -29,13 +29,11 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.60.0")
+    set("grpcVersion", "1.60.1")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("logback.version", "1.4.14") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.1")
     set("reactorGrpcVersion", "1.2.4")
-    set("snakeyaml.version", "2.0")
     set("vertxVersion", "4.5.1")
 }
 
@@ -55,12 +53,12 @@ dependencies {
         api("org.bouncycastle:bcprov-jdk15to18:1.77")
         api("com.bucket4j:bucket4j-core:8.7.0")
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.0.0")
-        api("com.google.guava:guava:32.1.3-jre")
+        api("com.google.guava:guava:33.0.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api("com.graphql-java-generator:graphql-java-client-runtime:2.3.2")
+        api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
-        api("com.hedera.evm:hedera-evm:0.44.3")
+        api("com.hedera.evm:hedera-evm:0.45.1")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.45.3")
         api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
@@ -72,7 +70,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.15.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-62:3.6.1")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.0")
         api("io.projectreactor:reactor-core-micrometer:1.1.1")
         api("io.swagger:swagger-annotations:1.6.12")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -96,7 +94,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
         api("org.testcontainers:junit-jupiter:1.19.3")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.22.0")
+        api("software.amazon.awssdk:bom:2.22.9")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.5")
     }
 }

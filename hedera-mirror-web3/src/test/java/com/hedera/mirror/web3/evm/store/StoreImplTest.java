@@ -39,6 +39,7 @@ import com.hedera.mirror.web3.evm.store.accessor.TokenDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.TokenRelationshipDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.UniqueTokenDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.mirror.web3.repository.AccountBalanceRepository;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
@@ -130,6 +131,9 @@ class StoreImplTest {
     private CryptoAllowanceRepository cryptoAllowanceRepository;
 
     @Mock
+    private AccountBalanceRepository accountBalanceRepository;
+
+    @Mock
     private Entity tokenModel;
 
     @Mock
@@ -154,7 +158,8 @@ class StoreImplTest {
                 nftRepository,
                 tokenAllowanceRepository,
                 cryptoAllowanceRepository,
-                tokenAccountRepository);
+                tokenAccountRepository,
+                accountBalanceRepository);
         final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
                 tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor);
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(

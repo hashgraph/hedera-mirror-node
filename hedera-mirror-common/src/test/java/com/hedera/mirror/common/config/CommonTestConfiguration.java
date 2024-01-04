@@ -64,21 +64,23 @@ class CommonTestConfiguration {
                 .put("partitionTimeInterval", "'10 years'")
                 .put("schema", "public")
                 .put("shardCount", "2")
+                .put("tempSchema", "temporary")
                 .put("topicRunningHashV2AddedTimestamp", "0")
                 .build();
 
         var flywayProperties = new FlywayProperties();
+
         flywayProperties.setBaselineOnMigrate(true);
         flywayProperties.setBaselineVersion("0");
         flywayProperties.setConnectRetries(10);
         flywayProperties.setIgnoreMigrationPatterns(List.of("*:missing", "*:ignored"));
-        flywayProperties.setLocations(List.of(baseLocation + "v1"));
+        flywayProperties.setLocations(List.of(baseLocation + "v1", baseLocation + "common"));
         flywayProperties.setPlaceholders(placeholders);
         flywayProperties.setTarget("latest");
 
         if (v2) {
             flywayProperties.setBaselineVersion("1.999.999");
-            flywayProperties.setLocations(List.of(baseLocation + "v2"));
+            flywayProperties.setLocations(List.of(baseLocation + "v2", baseLocation + "common"));
         }
 
         return flywayProperties;
