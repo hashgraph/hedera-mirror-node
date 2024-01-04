@@ -130,7 +130,8 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
     }
 
     private static Stream<Arguments> blockArgumentsProvider() {
-        List<BlockType> blockNumbers = List.of(BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)), BlockType.LATEST);
+        List<BlockType> blockNumbers =
+                List.of(BlockType.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK - 1)), BlockType.LATEST);
         List<Address> inputAddresses = List.of(NFT_ADDRESS_HISTORICAL, Address.ZERO);
 
         return inputAddresses.stream()
