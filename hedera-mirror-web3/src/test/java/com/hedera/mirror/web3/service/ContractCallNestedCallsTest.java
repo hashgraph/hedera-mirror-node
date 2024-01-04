@@ -24,15 +24,11 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
-import java.util.List;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
@@ -86,56 +82,17 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @MethodSource("blockArgumentsProvider")
-    void failedCallGetTokenInfoWithHardcodedResult(final Address inputAddress, final BlockType blockNumber) {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                "nestedGetTokenInfoAndHardcodedResult", NESTED_CALLS_ABI_PATH, inputAddress);
+    @EnumSource(NestedEthCallContractFunctionsNegativeCases.class)
+    void failedNestedCallWithHardcodedResult(final NestedEthCallContractFunctionsNegativeCases func) {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor(func.name, NESTED_CALLS_ABI_PATH, func.functionParameters);
         final var serviceParameters = serviceParametersForExecution(
-                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
+                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, func.block);
 
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                "nestedGetTokenInfoAndHardcodedResult", NESTED_CALLS_ABI_PATH, "hardcodedResult");
+        final var successfulResponse =
+                functionEncodeDecoder.encodedResultFor(func.name, NESTED_CALLS_ABI_PATH, func.expectedResultFields);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
-    }
-
-    @ParameterizedTest
-    @MethodSource("blockArgumentsProvider")
-    void failedCallHtsGetApprovedWithHardcodedResult(final Address inputAddress, final BlockType blockNumber) {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                "nestedHtsGetApprovedAndHardcodedResult", NESTED_CALLS_ABI_PATH, inputAddress, 1L);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
-
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                "nestedHtsGetApprovedAndHardcodedResult", NESTED_CALLS_ABI_PATH, "hardcodedResult");
-
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
-    }
-
-    @ParameterizedTest
-    @MethodSource("blockArgumentsProvider")
-    void failedCallMintTokenWithHardcodedResult(final Address inputAddress, final BlockType blockNumber) {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                "nestedMintTokenAndHardcodedResult", NESTED_CALLS_ABI_PATH, inputAddress, 0L, new byte[][] {
-                    ByteString.copyFromUtf8("firstMeta").toByteArray()
-                });
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
-
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                "nestedMintTokenAndHardcodedResult", NESTED_CALLS_ABI_PATH, "hardcodedResult");
-
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
-    }
-
-    private static Stream<Arguments> blockArgumentsProvider() {
-        List<BlockType> blockNumbers =
-                List.of(BlockType.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK - 1)), BlockType.LATEST);
-        List<Address> inputAddresses = List.of(NFT_ADDRESS_HISTORICAL, Address.ZERO);
-
-        return inputAddresses.stream()
-                .map(address -> Arguments.of(address, blockNumbers.get(inputAddresses.indexOf(address))));
     }
 
     @RequiredArgsConstructor
@@ -934,5 +891,52 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
+    }
+
+    @RequiredArgsConstructor
+    enum NestedEthCallContractFunctionsNegativeCases {
+        GET_TOKEN_INFO_HISTORICAL(
+                "nestedGetTokenInfoAndHardcodedResult",
+                new Object[] {NFT_ADDRESS_HISTORICAL},
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        GET_TOKEN_INFO(
+                "nestedGetTokenInfoAndHardcodedResult",
+                new Object[] {Address.ZERO},
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST),
+        HTS_GET_APPROVED_HISTORICAL(
+                "nestedHtsGetApprovedAndHardcodedResult",
+                new Object[] {NFT_ADDRESS_HISTORICAL, 1L},
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        HTS_GET_APPROVED(
+                "nestedHtsGetApprovedAndHardcodedResult",
+                new Object[] {Address.ZERO, 1L},
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST),
+        MINT_TOKEN_HISTORICAL(
+                "nestedMintTokenAndHardcodedResult",
+                new Object[] {
+                    NFT_ADDRESS_HISTORICAL,
+                    0L,
+                    new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+                },
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        MINT_TOKEN(
+                "nestedMintTokenAndHardcodedResult",
+                new Object[] {
+                    Address.ZERO,
+                    0L,
+                    new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+                },
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST);
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final Object[] expectedResultFields;
+        private final BlockType block;
     }
 }
