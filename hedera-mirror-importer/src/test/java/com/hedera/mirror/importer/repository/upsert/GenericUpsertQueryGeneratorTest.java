@@ -35,20 +35,6 @@ class GenericUpsertQueryGeneratorTest extends ImporterIntegrationTest {
     private final UpsertQueryGeneratorFactory factory;
 
     @Test
-    void getCreateTempTableQuery() {
-        UpsertQueryGenerator generator = factory.get(Entity.class);
-        assertThat(generator.getCreateTempTableQuery())
-                .isEqualTo("create temporary table if not exists entity_temp on commit drop as table entity limit 0");
-    }
-
-    @Test
-    void getCreateTempIndexQuery() {
-        UpsertQueryGenerator generator = factory.get(Entity.class);
-        assertThat(generator.getCreateTempIndexQuery())
-                .isEqualTo("create index if not exists entity_temp_idx on entity_temp (id)");
-    }
-
-    @Test
     void getFinalTableName() {
         UpsertQueryGenerator generator = factory.get(Entity.class);
         assertThat(generator.getFinalTableName()).isEqualTo("entity");

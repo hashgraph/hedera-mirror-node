@@ -70,10 +70,10 @@ class LoggingFilter implements WebFilter {
                 cause != null ? cause.getMessage() : exchange.getResponse().getStatusCode();
         var params = new Object[] {getClient(request), request.getMethod(), uri, elapsed, message};
 
-        if (cause != null) {
-            log.warn(LOG_FORMAT, params);
-        } else if (StringUtils.startsWith(uri.getPath(), ACTUATOR_PATH)) {
+        if (StringUtils.startsWith(uri.getPath(), ACTUATOR_PATH)) {
             log.debug(LOG_FORMAT, params);
+        } else if (cause != null) {
+            log.warn(LOG_FORMAT, params);
         } else {
             log.info(LOG_FORMAT, params);
         }

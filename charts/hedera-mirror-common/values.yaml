@@ -137,7 +137,7 @@ loki:
           name: mirror-log-alerts
     persistence:
       enableStatefulSetAutoDeletePVC: true
-      size: 100Gi
+      size: 250Gi
     replicas: 1
     resources:
       limits:
@@ -209,18 +209,13 @@ prometheus:
     templateFiles:
       slack.tmpl: |-
         {{- define "slack.title" -}}
-        {{- .Status | title }} {{ .CommonLabels.alertname }}{{ if .CommonLabels.namespace }} in {{ .CommonLabels.namespace }}{{ end }}
+        {{- .Status | title }} {{ .CommonLabels.alertname }}{{ if .CommonLabels.namespace }} in {{ with .CommonLabels.cluster }}{{ . }}/{{ end }}{{ .CommonLabels.namespace }}{{ end }}
         {{- end -}}
 
         {{- define "slack.text" -}}
         {{ range .Alerts -}}
-        *Summary:* {{ if .Annotations.summary }}{{ .Annotations.summary }}{{ else }}{{ .Annotations.message }}{{ end }}{{"\n"}}
-        {{- if .Annotations.description }} *Description:* {{ .Annotations.description }}{{"\n"}}{{ end }}
-        *Prometheus:* *<{{ .GeneratorURL }}|:fire:>* {{- if .Annotations.dashboard_url }}     *Grafana:* *<{{ .Annotations.dashboard_url }}|:chart_with_upwards_trend:>*{{ end }}{{- if .Annotations.runbook_url }}      *Runbook:* *<{{ .Annotations.runbook_url }}|:notebook:>*{{ end }}
-
-        *Labels:*
-          {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
-          {{ end }}
+        *Summary:* {{ with .Annotations.summary }}{{ . }}{{ else }}{{ .Annotations.message }}{{ end }} <{{ .GeneratorURL }}|:fire:> {{- with .Annotations.dashboard_url }}<{{ . }}|:chart_with_upwards_trend:>{{ end }} {{- with .Annotations.runbook_url }}<{{ . }}|:notebook:>{{ end }}{{"\n"}}
+        {{- with .Annotations.description -}} *Description:* {{ . }}{{"\n"}}{{ end }}
         {{ end }}
         {{- end -}}
   coreDns:

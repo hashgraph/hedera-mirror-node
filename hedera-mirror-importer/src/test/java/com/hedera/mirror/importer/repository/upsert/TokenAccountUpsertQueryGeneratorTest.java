@@ -30,14 +30,6 @@ class TokenAccountUpsertQueryGeneratorTest extends ImporterIntegrationTest {
     private final TokenAccountUpsertQueryGenerator upsertQueryGenerator;
 
     @Test
-    void createTempIndexQuery() {
-        var expected =
-                "create index if not exists token_account_temp_idx on token_account_temp " + "(token_id, account_id)";
-        var createTempIndexQuery = upsertQueryGenerator.getCreateTempIndexQuery();
-        assertThat(createTempIndexQuery).isEqualTo(expected);
-    }
-
-    @Test
     void finalTableName() {
         var finalTableName = upsertQueryGenerator.getFinalTableName();
         assertThat(finalTableName).isEqualTo("token_account");

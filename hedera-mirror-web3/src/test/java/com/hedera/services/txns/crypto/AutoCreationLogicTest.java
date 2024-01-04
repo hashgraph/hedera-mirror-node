@@ -107,7 +107,7 @@ class AutoCreationLogicTest {
     @BeforeEach
     void setUp() {
         final List<DatabaseAccessor<Object, ?>> accessors =
-                List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null));
+                List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory, aliasManager);

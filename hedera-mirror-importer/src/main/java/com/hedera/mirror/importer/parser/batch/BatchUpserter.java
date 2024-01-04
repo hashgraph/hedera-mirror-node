@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -38,7 +37,7 @@ import org.springframework.util.CollectionUtils;
 public class BatchUpserter extends BatchInserter {
 
     private final String finalTableName;
-    private final String tempTableSql;
+    private final String tempTableCleanupSql;
     private final String upsertSql;
     private final Timer upsertMetric;
 
@@ -49,10 +48,7 @@ public class BatchUpserter extends BatchInserter {
             CommonParserProperties properties,
             UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
-        var createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
-        var createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
-        var truncateSql = String.format("truncate table %s restart identity cascade", tableName);
-        tempTableSql = StringUtils.joinWith(";\n", createTempTableSql, createTempIndexSql, truncateSql);
+        tempTableCleanupSql = String.format("truncate table %s restart identity cascade", tableName);
         finalTableName = upsertQueryGenerator.getFinalTableName();
         upsertSql = upsertQueryGenerator.getUpsertQuery();
         log.trace("Table: {}, Entity: {}, upsertSql:\n{}", finalTableName, entityClass, upsertSql);
@@ -71,7 +67,7 @@ public class BatchUpserter extends BatchInserter {
 
         try {
             // create temp table to copy into
-            createTempTable(connection);
+            cleanupTempTable(connection);
 
             // copy items to temp table
             super.persistItems(items, connection);
@@ -84,12 +80,12 @@ public class BatchUpserter extends BatchInserter {
         }
     }
 
-    private void createTempTable(Connection connection) throws SQLException {
-        try (var preparedStatement = connection.prepareStatement(tempTableSql)) {
+    private void cleanupTempTable(Connection connection) throws SQLException {
+        try (var preparedStatement = connection.prepareStatement(tempTableCleanupSql)) {
             preparedStatement.execute();
         }
 
-        log.trace("Created temp table {}", tableName);
+        log.trace("Cleaned temp table {}", tableName);
     }
 
     private void upsert(Connection connection) throws SQLException {

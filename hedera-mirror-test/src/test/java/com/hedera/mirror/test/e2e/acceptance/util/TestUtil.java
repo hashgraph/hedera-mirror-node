@@ -27,6 +27,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -37,6 +38,7 @@ import lombok.NonNull;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.json.JSONObject;
 
 @UtilityClass
@@ -154,6 +156,10 @@ public class TestUtil {
         }
     }
 
+    public static BigInteger hexToDecimal(String hex) {
+        return Bytes32.fromHexString(hex).toBigInteger();
+    }
+    
     public static byte[] nextBytes(int length) {
         var bytes = new byte[length];
         RANDOM.nextBytes(bytes);

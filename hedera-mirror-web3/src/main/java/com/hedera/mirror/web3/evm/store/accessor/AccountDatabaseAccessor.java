@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
+import com.hedera.mirror.web3.repository.AccountBalanceRepository;
 import com.hedera.mirror.web3.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -62,12 +63,15 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     private static final BinaryOperator<Long> NO_DUPLICATE_MERGE_FUNCTION = (v1, v2) -> {
         throw new IllegalStateException(String.format("Duplicate key for values %s and %s", v1, v2));
     };
+    private static final Optional<Long> ZERO_BALANCE = Optional.of(0L);
+
     private final EntityDatabaseAccessor entityDatabaseAccessor;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftRepository nftRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final AccountBalanceRepository accountBalanceRepository;
 
     @Override
     public @NonNull Optional<Account> get(@NonNull Object key, final Optional<Long> timestamp) {
@@ -91,7 +95,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                 TimeUnit.SECONDS.convert(entity.getEffectiveExpiration(), TimeUnit.NANOSECONDS),
-                Optional.ofNullable(entity.getBalance()).orElse(0L),
+                getAccountBalance(entity, timestamp),
                 Optional.ofNullable(entity.getDeleted()).orElse(false),
                 getOwnedNfts(entity.getId(), timestamp),
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(DEFAULT_AUTO_RENEW_PERIOD),
@@ -115,6 +119,29 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return timestamp
                 .map(t -> nftRepository.countByAccountIdAndTimestampNotDeleted(accountId, t))
                 .orElseGet(() -> nftRepository.countByAccountIdNotDeleted(accountId));
+    }
+
+    /**
+     * Determines account balance based on block context.
+     *
+     * Non-historical Call:
+     * Get the balance from entity.getBalance()
+     * Historical Call:
+     * If the entity creation is after the passed timestamp - return 0L (the entity was not created)
+     * Else get the balance from the historical query `findHistoricalAccountBalanceUpToTimestamp`
+     */
+    private Long getAccountBalance(Entity entity, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> {
+                    Long createdTimestamp = entity.getCreatedTimestamp();
+                    if (createdTimestamp == null || t >= createdTimestamp) {
+                        return accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), t);
+                    } else {
+                        return ZERO_BALANCE;
+                    }
+                })
+                .orElseGet(() -> Optional.ofNullable(entity.getBalance()))
+                .orElse(0L);
     }
 
     private SortedMap<EntityNum, Long> getCryptoAllowances(Long ownerId, final Optional<Long> timestamp) {

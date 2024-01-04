@@ -64,6 +64,7 @@ db:
   host: ""  # Auto-generated from the database sub-charts
   name: mirror_node
   schema: public
+  tempSchema: temporary
   owner:
     password: ""  # Randomly generated if left blank
     username: mirror_node
