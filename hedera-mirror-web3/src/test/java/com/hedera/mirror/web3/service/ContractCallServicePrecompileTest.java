@@ -45,10 +45,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
-    private static final String ERROR_MESSAGE = "Precompile not supported for non-static frames";
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
-        List<String> blockNumbers = List.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK));
+        List<String> blockNumbers =
+                List.of(String.valueOf(PERSISTENCE_HISTORICAL_BLOCK - 1), String.valueOf(PERSISTENCE_HISTORICAL_BLOCK));
 
         return Arrays.stream(ContractReadFunctionsHistorical.values()).flatMap(htsFunction -> blockNumbers.stream()
                 .map(blockNumber -> Arguments.of(htsFunction, blockNumber)));
