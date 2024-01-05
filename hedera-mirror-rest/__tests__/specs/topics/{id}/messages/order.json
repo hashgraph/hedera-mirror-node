@@ -1,5 +1,6 @@
 {
   "description": "Get messages by with order param",
+  "matrix": "topicMessageLookupMatrix.js",
   "setup": {
     "accounts": [
       {
@@ -7,9 +8,6 @@
         "type": "TOPIC"
       }
     ],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
@@ -32,24 +30,24 @@
         "topic_id": 7
       },
       {
-        "consensus_timestamp": "1234567890000000005",
+        "consensus_timestamp": "1236567890000000005",
         "sequence_number": 5,
         "topic_id": 7
       },
       {
-        "consensus_timestamp": "1234567890000000006",
+        "consensus_timestamp": "1236567890000000006",
         "sequence_number": 6,
         "topic_id": 7
       }
     ]
   },
-  "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1234567890.000000006&limit=3&order=desc",
+  "url": "/api/v1/topics/7/messages?sequencenumber=gt:2&timestamp=lte:1236567890.000000006&limit=3&order=desc",
   "responseStatus": 200,
   "responseJson": {
     "messages": [
       {
         "chunk_info": null,
-        "consensus_timestamp": "1234567890.000000006",
+        "consensus_timestamp": "1236567890.000000006",
         "message": "bWVzc2FnZQ==",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
@@ -59,7 +57,7 @@
       },
       {
         "chunk_info": null,
-        "consensus_timestamp": "1234567890.000000005",
+        "consensus_timestamp": "1236567890.000000005",
         "message": "bWVzc2FnZQ==",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",

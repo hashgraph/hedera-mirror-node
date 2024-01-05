@@ -1,10 +1,7 @@
 {
   "description": "Get messages with non existing topic id but valid messages (partial mirror node)",
+  "matrix": "topicMessageLookupMatrix.js",
   "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
