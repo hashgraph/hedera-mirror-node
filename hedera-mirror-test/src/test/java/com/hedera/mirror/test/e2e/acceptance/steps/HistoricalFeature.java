@@ -363,6 +363,26 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialBalance, balanceOfHistorical);
     }
 
+    @Then("I verify that historical data for {string} is returned via balanceOf when doing wipe")
+    public void getHistoricalDataForBalanceOfWhenWiping(String tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(receiverAccountId));
+        var initialBlockNumber = getLastBlockNumber();
+        var response = callContract(data, ercContractSolidityAddress);
+        var initialBalance = response.getResultAsNumber();
+
+        waitForBlocks(BLOCK_TIMEOUT);
+        if (tokenName.toLowerCase().contains("fungible")) {
+            tokenClient.wipeFungible(tokenId, 1L, receiverAccountId);
+        } else {
+            tokenClient.wipeNonFungible(tokenId, 2L, receiverAccountId);
+        }
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
+        var balanceOfHistorical = historicalResponse.getResultAsNumber();
+        assertEquals(initialBalance, balanceOfHistorical);
+    }
+
     @Then("I verify historical data for {string} is returned for allowance")
     public void getHistoricalDataForAllowance(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
@@ -543,11 +563,10 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     public void getHistoricalDataForNonFungibleTokenInfo(String tokenName) throws InterruptedException {
         var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
         var initialBlockNumber = getLastBlockNumber();
-        var data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 2L);
+        var data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 5L);
         var response = callContract(data, precompileContractSolidityAddress);
         waitForBlocks(BLOCK_TIMEOUT);
-        tokenClient.burnNonFungible(tokenId, 4);
-        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+        networkTransactionResponse = tokenClient.burnNonFungible(tokenId, 5);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
