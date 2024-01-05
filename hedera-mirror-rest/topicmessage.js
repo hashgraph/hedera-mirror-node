@@ -282,7 +282,6 @@ const getTopicMessageTimestampRanges = async (topicId, sequenceNumberFilters, ti
   } else {
     // Depending on the order, first query the table to find the bound of the sequence number range and build the actual
     // range from the bound and the limit, then query the table with the actual range
-    // params.push(isOrderAsc ? sequenceNumberRange.upper : sequenceNumberRange.lower);
     params.push(limit);
     // Since the information in the table can't tell the first sequence number satisfying the sequence number range and
     // the timestamp range, for instance, with sequencenumber=lt:500, timestamp=lt:1000, limit=25, and order=desc, the
