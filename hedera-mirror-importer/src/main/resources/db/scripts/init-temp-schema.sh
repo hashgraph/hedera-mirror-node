@@ -2,7 +2,7 @@
 set -e
 
 export PGCONNECT_TIMEOUT="${PGCONNECT_TIMEOUT:-3}"
-export PGDATABASE="${PGDATABSE:-mirror_node}"
+export PGDATABASE="${PGDATABASE:-mirror_node}"
 export PGHOST="${PGHOST}"
 export PGUSER="${PGUSER:-mirror_node}"
 
