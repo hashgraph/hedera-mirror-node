@@ -26,13 +26,7 @@ alertmanager:
 
 annotations: {}
 
-config:
-  hedera:
-    mirror:
-      rest:
-        metrics:
-          config:
-            authentication: false
+config: {}
 
 # Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
 env:
