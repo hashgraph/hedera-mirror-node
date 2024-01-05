@@ -573,7 +573,7 @@ const extractSqlFromTokenBalancesRequest = async (tokenId, filters) => {
     query = `select 
         ti.account_id,
         ti.balance,
-        (select max(consensus_end) from record_file) as consensus_timestamp
+        (select max(balance_timestamp) from token_account) as consensus_timestamp
        from token_account as ti
        ${joinEntityClause}
        where ${conditions.join(' and ')}
