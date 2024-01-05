@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -578,13 +578,13 @@ const getTransactionsSummary = async (timestampQueryRows, order, limit) => {
   const uniqueTimestampsParam =
     uniqueTimestamps.size > 1 ? Array.from(uniqueTimestamps) : uniqueTimestamps.values().next().value;
   const payerIdsCondition = uniquePayerIds.size > 1 ? '= ANY($1)' : '= $1';
-  const timeStampsCondition = uniqueTimestamps.size > 1 ? '= ANY($2)' : '= $2';
+  const timestampsCondition = uniqueTimestamps.size > 1 ? '= ANY($2)' : '= $2';
 
   // populate pre-clause queries where a timestamp filter is applied
   const transactionTimeStampCteWhereClause = `WHERE ${Transaction.getFullName(
     Transaction.PAYER_ACCOUNT_ID
   )} ${payerIdsCondition}
-      AND ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${timeStampsCondition}`;
+      AND ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${timestampsCondition}`;
   const cryptoTransferListCteWhereClause = `WHERE ${CryptoTransfer.getFullName(
     CryptoTransfer.PAYER_ACCOUNT_ID
   )} ${payerIdsCondition}
