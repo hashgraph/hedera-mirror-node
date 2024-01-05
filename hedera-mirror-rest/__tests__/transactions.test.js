@@ -379,14 +379,15 @@ describe('Transaction tests', () => {
       expect(response.status).toEqual(200);
 
       // First query SQL parameters are compared directly
-      const parsedParams1 = JSON.parse(response.text).timestampsSqlQuery.parsedparams;
+      const parsedResponse = JSON.parse(response.text);
+      const parsedParams1 = parsedResponse.timestampsSqlQuery.parsedparams;
       expect(parsedParams1).toEqual(expect.arrayContaining(item.checks1));
       // Second query parameters are plentiful, and just ensure the check values are present
-      const parsedParams2 = JSON.parse(response.text).sqlQuery.parsedparams;
+      const parsedParams2 = parsedResponse.sqlQuery.parsedparams;
       expect.toBeTrue(item.checks2?.every((field) => parsedParams2.includes(field)));
 
       // Execute the specified functions to validate the output from the REST API
-      const {transactions} = JSON.parse(response.text);
+      const {transactions} = parsedResponse;
       let check = true;
       if (item.hasOwnProperty('checkFunctions')) {
         for (const cf of item.checkFunctions) {
@@ -417,12 +418,20 @@ describe('Transaction tests', () => {
       const response = await request(server).get([api, comburl].join('?'));
       expect(response.status).toEqual(200);
 
-      // Verify the sql queries against each of the specified checks
-      const parsedParams1 = JSON.parse(response.text).timestampsSqlQuery.parsedparams;
+      // Verify the two sql queries against each of the specified checks
+      const parsedResponse = JSON.parse(response.text);
+      const parsedParams1 = parsedResponse.timestampsSqlQuery.parsedparams;
       expect(parsedParams1).toEqual(expect.arrayContaining(combtest.checks1));
 
+      // Second query parameters are plentiful, and just ensure the check values are present
+      const parsedParams2 = parsedResponse.sqlQuery.parsedparams;
+      expect.toBeTrue(combtest.checks2?.every((field) => parsedParams2.includes(field)));
+
+      // const parsedParams2 = parsedResponse.sqlQuery.parsedparams;
+      // expect(parsedParams2).toEqual(expect.arrayContaining(combtest.checks2));
+
       // Execute the specified functions to validate the output from the REST API
-      const {transactions} = JSON.parse(response.text);
+      const {transactions} = parsedResponse;
       let check = true;
       if (combtest.hasOwnProperty('checkFunctions')) {
         for (const cf of combtest.checkFunctions) {

@@ -202,7 +202,10 @@ class MockPool {
       }
     }
 
-    this.sanityCheck(limit);
+    // Sanity check on the numbers
+    [accountNum, limit].forEach((pVar) => {
+      this.sanityCheck(pVar);
+    });
 
     // Create a mock response based on the sql query parameters
     let rows = [];
