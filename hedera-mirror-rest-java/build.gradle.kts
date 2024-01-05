@@ -52,11 +52,6 @@ val configureOpenApi: (OpenApiGeneratorGenerateExtension) -> Void by extra
 
 configureOpenApi(openApiGenerate)
 
-openApiGenerate {
-    // spring-boot-restclient is not yet a supported library so using rest template for now
-    configOptions = mapOf("library" to "resttemplate", "useJakartaEe" to "true")
-}
-
 tasks.withType<JavaCompile> { dependsOn("openApiGenerate") }
 
 java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }
