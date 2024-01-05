@@ -392,7 +392,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         query: `
           select ti.account_id,
                  ti.balance,
-                 (select max(consensus_end) from record_file) as consensus_timestamp
+                 (select max(balance_timestamp) from token_account) as consensus_timestamp
           from token_account as ti
           where ti.token_id = $1 and ti.associated = true
           order by ti.account_id desc
@@ -416,7 +416,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         query: `
             select ti.account_id,
                    ti.balance,
-                   (select max(consensus_end) from record_file) as consensus_timestamp
+                   (select max(balance_timestamp) from token_account) as consensus_timestamp
             from token_account as ti
             where ti.token_id = $1 and ti.associated = true
             order by ti.account_id desc
@@ -441,7 +441,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           query: `
             select ti.account_id,
                    ti.balance,
-                   (select max(consensus_end) from record_file) as consensus_timestamp
+                   (select max(balance_timestamp) from token_account) as consensus_timestamp
             from token_account as ti
             where ti.token_id = $1
               and ti.account_id ${op} $2
@@ -469,7 +469,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           query: `
             select ti.account_id,
                    ti.balance,
-                   (select max(consensus_end) from record_file) as consensus_timestamp
+                   (select max(balance_timestamp) from token_account) as consensus_timestamp
             from token_account as ti
             where ti.token_id = $1
               and ti.associated = true
@@ -497,7 +497,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           query: `
             select ti.account_id,
                    ti.balance,
-                   (select max(consensus_end) from record_file) as consensus_timestamp
+                   (select max(balance_timestamp) from token_account) as consensus_timestamp
             from token_account as ti
             where ti.token_id = $1 and ti.associated = true
             order by ti.account_id ${order}
@@ -522,7 +522,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         query: `
           select ti.account_id,
                  ti.balance,
-                 (select max(consensus_end) from record_file) as consensus_timestamp
+                 (select max(balance_timestamp) from token_account) as consensus_timestamp
           from token_account as ti
                  join entity as e
                       on e.type = '${constants.entityTypes.ACCOUNT}'
@@ -570,7 +570,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         query: `
           select ti.account_id,
                  ti.balance,
-                 (select max(consensus_end) from record_file) as consensus_timestamp
+                 (select max(balance_timestamp) from token_account) as consensus_timestamp
           from token_account as ti
                  join entity as e
                       on e.type = '${constants.entityTypes.ACCOUNT}'
