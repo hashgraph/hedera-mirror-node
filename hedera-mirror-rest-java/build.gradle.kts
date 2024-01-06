@@ -29,7 +29,7 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("jakarta.inject:jakarta.inject-api")
-    implementation("org.openapitools:jackson-databind-nullable:0.2.6")
+    implementation("org.openapitools:jackson-databind-nullable")
     implementation("org.springframework:spring-context-support")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")

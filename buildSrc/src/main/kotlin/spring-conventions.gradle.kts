@@ -73,6 +73,5 @@ val configureOpenApi by extra(
         extension.library = "resttemplate"
         extension.modelPackage = "${openApiPackage}.model"
         extension.typeMappings = mapOf("Timestamp" to "String")
-        extension.configOptions = mapOf("useJakartaEe" to "true")
     }
 )

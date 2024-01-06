@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,13 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 @RestController
 class DummyController {
-    @Autowired
-    @Qualifier("applicationTaskExecutor")
-    private AsyncTaskExecutor asyncTaskExecutor;
 
     @GetMapping(value = "/dummy")
-    String dummy() throws Exception {
-        //        Thread.sleep(10_000_000);
+    String dummy() {
         return "Hello world";
     }
 }

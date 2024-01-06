@@ -31,24 +31,23 @@ class LoggingFilter extends OncePerRequestFilter {
     @SuppressWarnings("java:S1075")
     private static final String ACTUATOR_PATH = "/actuator/";
 
-    private static final String LOCALHOST = "127.0.0.1";
     private static final String LOG_FORMAT = "{} {} {} in {} ms: {}";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
         long start = System.currentTimeMillis();
-        Throwable cause = null;
+        Exception cause = null;
 
         try {
             filterChain.doFilter(request, response);
-        } catch (Throwable t) {
+        } catch (Exception t) {
             cause = t;
         } finally {
             logRequest(request, response, start, cause);
         }
     }
 
-    private void logRequest(HttpServletRequest request, HttpServletResponse response, long startTime, Throwable cause) {
+    private void logRequest(HttpServletRequest request, HttpServletResponse response, long startTime, Exception cause) {
         long elapsed = System.currentTimeMillis() - startTime;
         String uri = request.getRequestURI();
         var message = cause != null ? cause.getMessage() : response.getStatus();
