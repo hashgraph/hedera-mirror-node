@@ -59,6 +59,8 @@ hedera:
         swaggerUIPath: "docs"
       port: 5551
       query:
+        # TODO: Set for v1 in PR: bind: false, range: 7d
+        bindTimestampRange: false
         maxRepeatedQueryParameters: 100
         maxTimestampRange: 7d
         maxTransactionConsensusTimestampRange: 35m

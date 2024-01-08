@@ -30,7 +30,7 @@ import config from './config';
 import ed25519 from './ed25519';
 import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
 import {Entity, FeeSchedule, TransactionResult, TransactionType} from './model';
-import {filterKeys} from './constants';
+import {filterKeys, MAX_LONG} from './constants';
 
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
@@ -676,6 +676,41 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
     (op, value) => [`${columnName}${op}?`, [value]],
     false
   );
+};
+
+/**
+ * If enabled in config, ensure the returned timestamp range is fully bound; contains both a begin
+ * and end timestamp value. The provided Range is not modified. If changes are made a copy is returned.
+ *
+ * @param {Range} tsRange timestamp range, typically based on query parameters
+ * @return {Range} fully bound timestamp range
+ */
+const bindTimestampRange = (tsRange, order = 'desc') => {
+  const {bindTimestampRange, maxTimestampRangeNs} = config.query;
+  if (!bindTimestampRange) {
+    return tsRange;
+  }
+
+  const queryTsRange = tsRange
+    ? Range(tsRange.begin ?? 0n, tsRange.end ?? MAX_LONG, tsRange.bounds ?? '[]')
+    : Range(0n, MAX_LONG, '[]');
+
+  if (queryTsRange.end === MAX_LONG) {
+    queryTsRange.end = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
+  }
+
+  const maxTimestampRangeNsInclusive = queryTsRange.bounds === '[]' ? maxTimestampRangeNs - 1n : maxTimestampRangeNs;
+  if (queryTsRange.end - queryTsRange.begin <= maxTimestampRangeNsInclusive) {
+    return queryTsRange;
+  }
+
+  if (order === 'desc') {
+    queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
+  } else {
+    queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
+  }
+
+  return queryTsRange;
 };
 
 /**
@@ -1625,6 +1660,7 @@ const boundToOp = {
   ')': opsMap.lt,
   ']': opsMap.lte,
 };
+
 const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildAsIn = true) => {
   const conditions = [];
   const params = [];
@@ -1697,6 +1733,7 @@ export {
   asNullIfDefault,
   bigIntMax,
   bigIntMin,
+  bindTimestampRange,
   buildAndValidateFilters,
   buildComparatorFilter,
   buildFilters,

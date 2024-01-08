@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,15 @@ import _ from 'lodash';
 import base32 from './base32';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
+import {filterKeys} from './constants';
 import EntityId from './entityId';
 import * as utils from './utils';
+import {opsMap} from './utils';
 import {EntityService} from './service';
 import transactions from './transactions';
 import {NotFoundError} from './errors';
 import {Entity} from './model';
 import balances from './balances';
-import {opsMap} from './utils';
-import {filterKeys} from './constants';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
@@ -359,7 +359,7 @@ const getAccounts = async (req, res) => {
 };
 
 /**
- * Handler function for /account/:idOrAliasOrEvmAddress API.
+ * Handler function for /accounts/:idOrAliasOrEvmAddress API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @return {Promise}
@@ -372,16 +372,16 @@ const getOneAccount = async (req, res) => {
   const transactionsFilter = _.findLast(filters, {key: filterKeys.TRANSACTIONS});
   const parsedQueryParams = req.query;
   const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
-  const [tsRange, eqValues, neValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
+  const [tsRange, tsEqValues, tsNeValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
   const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
     tsRange,
     't.consensus_timestamp',
-    neValues,
-    eqValues
+    tsNeValues,
+    tsEqValues
   );
 
   const resultTypeQuery = utils.parseResultParams(req);
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
+  const {query: limitQuery, params: limitParams, order, limit} = utils.parseLimitAndOrderParams(req);
   const accountIdParamIndex = 1;
   let paramCount = accountIdParamIndex;
   const tokenBalanceQuery = {
@@ -396,8 +396,8 @@ const getOneAccount = async (req, res) => {
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       tsRange,
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
-      neValues,
-      eqValues
+      tsNeValues,
+      tsEqValues
     );
     entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
@@ -405,8 +405,8 @@ const getOneAccount = async (req, res) => {
     const [balanceSnapshotTsQuery, balanceSnapshotTsParams] = utils.buildTimestampQuery(
       tsRange,
       'consensus_timestamp',
-      neValues,
-      eqValues,
+      tsNeValues,
+      tsEqValues,
       false
     );
 
@@ -458,44 +458,38 @@ const getOneAccount = async (req, res) => {
   // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
-  const creditDebitQuery = ''; // type=credit|debit is not supported
-  const accountQuery = 'ctl.entity_id = ?';
-  const accountParams = [encodedId];
-
-  let transactionsPromise;
-
   // when not specified or set as true
   const includeTransactions = !transactionsFilter || transactionsFilter.value;
+  let transactionTimestampsPromise;
   if (includeTransactions) {
+    const creditDebitQuery = ''; // type=credit|debit is not supported
+    const accountQuery = 'ctl.entity_id = $1';
+    const accountParams = [encodedId];
+    const pgLimitQuery = utils.convertMySqlStyleQueryToPostgres(limitQuery, 2);
     const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
+    const transactionsParams = utils.mergeParams(accountParams, limitParams);
 
-    const innerQuery = transactions.getTransactionsInnerQuery(
+    transactionTimestampsPromise = transactions.getTransactionTimestamps(
+      {tsRange, tsEqValues, tsNeValues},
       accountQuery,
-      transactionTsQuery,
       resultTypeQuery,
-      query,
+      pgLimitQuery,
       creditDebitQuery,
       transactionTypeQuery,
-      order
+      limit,
+      order,
+      transactionsParams
     );
-
-    const innerParams = utils.mergeParams(accountParams, transactionTsParams, params);
-    const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
-    const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
-
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${utils.JSONStringify(innerParams)}`);
-    }
-
-    // Execute query & get a promise
-    transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
   } else {
     // Promise that returns empty result
-    transactionsPromise = Promise.resolve({rows: []});
+    transactionTimestampsPromise = Promise.resolve({rows: []});
   }
 
   // After all promises (for all of the above queries) have been resolved...
-  const [entityResults, transactionsResults] = await Promise.all([entityPromise, transactionsPromise]);
+  const [entityResults, transactionTimestampsResults] = await Promise.all([
+    entityPromise,
+    transactionTimestampsPromise,
+  ]);
   // Process the results of entities query
   if (entityResults.rows.length === 0) {
     throw new NotFoundError();
@@ -506,19 +500,19 @@ const getOneAccount = async (req, res) => {
   }
 
   const ret = processRow(entityResults.rows[0]);
-
   if (utils.isTestEnv()) {
     ret.entitySqlQuery = entityResults.sqlQuery;
   }
 
-  // Process the results of transaction query
-  const transferList = await transactions.createTransferLists(transactionsResults.rows);
+  const {rows: transactionsRows} = await transactions.getTransactionsSummary(
+    transactionTimestampsResults.rows,
+    order,
+    limit
+  );
+  const transferList = await transactions.createTransferLists(transactionsRows);
+
   ret.transactions = transferList.transactions;
   const {anchorSecNs} = transferList;
-
-  if (utils.isTestEnv()) {
-    ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-  }
 
   // Pagination links
   ret.links = {

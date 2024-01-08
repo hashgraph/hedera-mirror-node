@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,11 +126,11 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
       }
     });
 
-    let eqParams = sql.match(/(\w+?)\s*?IN\s*?\(\s*?((?:\$\d+,?\s*?)+)\)/g);
+    let eqParams = sql.match(/(\w+?)\s*?(IN|=\s*?ANY)\s*?\(\s*?((?:\$\d+,?\s*?)+)\)/gi);
     eqParams = eqParams === null ? [] : eqParams;
 
     eqParams.forEach((e) => {
-      const matches = e.match(/(\w+?)\s*?(IN)\s*?\(\s*?((?:\$\d+,?\s*?)+)\)/);
+      const matches = e.match(/(\w+?)\s*?(IN|=\s*?ANY)\s*?\(\s*?((?:\$\d+,?\s*?)+)\)/i);
       if (matches.length >= 4) {
         const eqParamSplit = matches[3].split(',');
         eqParamSplit.forEach((es) => {
