@@ -26,9 +26,8 @@ import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.Callable;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -60,15 +59,25 @@ public class TimePartitionServiceImpl implements TimePartitionService {
 
     @Override
     public List<TimePartition> getOverlappingTimePartitions(String tableName, long fromTimestamp, long toTimestamp) {
-        var overlappingTimePartitions = cacheTimePartitionOverlapLookup(
-                tableName, () -> Optional.of(queryForOverlappingTimePartitions(tableName, fromTimestamp, toTimestamp)));
-        return overlappingTimePartitions.orElse(Collections.emptyList());
+        String cacheKey = StringUtils.joinWith("-", tableName, fromTimestamp, toTimestamp);
+        try {
+            return cacheTimePartitionOverlap.get(
+                    cacheKey, () -> queryForOverlappingTimePartitions(tableName, fromTimestamp, toTimestamp));
+        } catch (Cache.ValueRetrievalException e) {
+            Utility.handleRecoverableError(
+                    "Error looking up timePartition {} from cacheTimePartitionOverlap", cacheKey, e);
+            return Collections.emptyList();
+        }
     }
 
     @Override
     public List<TimePartition> getTimePartitions(String tableName) {
-        var cachedValue = cacheTimePartitionLookup(tableName, () -> Optional.of(queryForTimePartitions(tableName)));
-        return cachedValue.orElse(Collections.emptyList());
+        try {
+            return cacheTimePartition.get(tableName, () -> queryForTimePartitions(tableName));
+        } catch (Cache.ValueRetrievalException e) {
+            Utility.handleRecoverableError("Error looking up timePartition {} from cacheTimePartition", tableName, e);
+            return Collections.emptyList();
+        }
     }
 
     private List<TimePartition> queryForOverlappingTimePartitions(
@@ -128,27 +137,6 @@ public class TimePartitionServiceImpl implements TimePartitionService {
         } catch (Exception e) {
             log.warn("Unable to query time partitions for table {}", tableName, e);
             return Collections.emptyList();
-        }
-    }
-
-    private Optional<List<TimePartition>> cacheTimePartitionOverlapLookup(
-            String tableName, Callable<Optional<List<TimePartition>>> loader) {
-        try {
-            return cacheTimePartitionOverlap.get(tableName, loader);
-        } catch (Cache.ValueRetrievalException e) {
-            Utility.handleRecoverableError(
-                    "Error looking up timePartition {} from cacheTimePartitionOverlap", tableName, e);
-            return Optional.empty();
-        }
-    }
-
-    private Optional<List<TimePartition>> cacheTimePartitionLookup(
-            String tableName, Callable<Optional<List<TimePartition>>> loader) {
-        try {
-            return cacheTimePartition.get(tableName, loader);
-        } catch (Cache.ValueRetrievalException e) {
-            Utility.handleRecoverableError("Error looking up timePartition {} from cacheTimePartition", tableName, e);
-            return Optional.empty();
         }
     }
 }
