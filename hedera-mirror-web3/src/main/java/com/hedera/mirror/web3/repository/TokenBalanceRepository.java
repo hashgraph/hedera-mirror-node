@@ -93,7 +93,7 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
                             tt.consensus_timestamp <= ?3
                     )
                     select coalesce((select balance from base), 0) + coalesce((select amount from change), 0)
-""",
+                    """,
             nativeQuery = true)
     Optional<Long> findHistoricalTokenBalanceUpToTimestamp(long tokenId, long accountId, long blockTimestamp);
 }
