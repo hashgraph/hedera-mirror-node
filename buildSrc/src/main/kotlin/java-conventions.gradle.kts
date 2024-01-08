@@ -59,7 +59,7 @@ dependencies {
 
 tasks.compileJava {
     dependsOn("generateEffectiveLombokConfig")
-    // Disable removal, serial, and this-escape warnings due to errors in generated code
+    // Disable deprecation, serial, and this-escape warnings due to errors in generated code
     options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-deprecation,-serial,-this-escape"))
     options.encoding = "UTF-8"
     sourceCompatibility = "21"
