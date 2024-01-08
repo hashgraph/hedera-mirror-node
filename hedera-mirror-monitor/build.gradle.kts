@@ -53,7 +53,6 @@ dependencies {
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("org.apache.commons:commons-lang3")
     implementation("org.apache.commons:commons-math3")
-    implementation("org.openapitools:jackson-databind-nullable")
     implementation("org.springdoc:springdoc-openapi-webflux-ui")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")

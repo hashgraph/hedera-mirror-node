@@ -57,8 +57,10 @@ val configureOpenApi by extra(
                 "licenseUrl" to "https://www.apache.org/licenses/LICENSE-2.0.txt",
                 "openApiNullable" to "false",
                 "performBeanValidation" to "true",
+                "sourceFolder" to "",
+                "supportUrlQuery" to "false",
                 "useBeanValidation" to "true",
-                "useJakartaEe" to "true",
+                "useJakartaEe" to "true"
             )
         extension.generateApiTests = false
         extension.generateModelTests = false
@@ -70,7 +72,7 @@ val configureOpenApi by extra(
             .resolve("openapi.yml")
             .absolutePath
         extension.invokerPackage = "${openApiPackage}.handler"
-        extension.library = "resttemplate"
+        extension.library = "native"
         extension.modelPackage = "${openApiPackage}.model"
         extension.typeMappings = mapOf("Timestamp" to "String")
     }

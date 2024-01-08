@@ -38,6 +38,7 @@ management:
 server:
   compression:
     enabled: true
+  forward-headers-strategy: framework #Enable spring ForwardedHeaderFilter
   http2:
     enabled: true
   max-http-header-size: 1KB
@@ -45,7 +46,6 @@ server:
   shutdown: graceful
   tomcat:
     connection-timeout: 3s
-  forward-headers-strategy: framework #Enable spring ForwardedHeaderFilter
 spring:
   application:
     name: hedera-mirror-rest-java

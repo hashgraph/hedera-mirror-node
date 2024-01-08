@@ -29,7 +29,6 @@ dependencies {
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("jakarta.inject:jakarta.inject-api")
-    implementation("org.openapitools:jackson-databind-nullable")
     implementation("org.springframework:spring-context-support")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
@@ -37,9 +36,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
-
     runtimeOnly("org.postgresql:postgresql")
-
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("org.mockito:mockito-inline")
     testImplementation("org.flywaydb:flyway-core")
