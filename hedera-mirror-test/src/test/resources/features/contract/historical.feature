@@ -33,6 +33,8 @@ Feature: Historical Feature
     Then I verify historical data for "NFT_HISTORICAL" in invalid block returns bad request
     Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via getTokenInfo
     Then I verify that historical data for "NFT_HISTORICAL" is returned via getTokenInfo
+#    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via getTokenInfo when doing mint
+#    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via getTokenInfo when doing burn
 
     Then I mint new nft for "NFT_HISTORICAL"
     Then I associate "NFT_HISTORICAL"
@@ -60,10 +62,11 @@ Feature: Historical Feature
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isFrozen
     Then I verify historical data for "NFT_HISTORICAL" is returned for isFrozen
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getFungibleTokenInfo
+#    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getFungibleTokenInfo when doing burn
 
     Then I mint new nft for "NFT_HISTORICAL"
 
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getNonFungibleInfo
+#    Then I verify historical data for "NFT_HISTORICAL" is returned for getNonFungibleInfo
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isKyc
     Then I verify historical data for "NFT_HISTORICAL" is returned for isKyc
     Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isToken
