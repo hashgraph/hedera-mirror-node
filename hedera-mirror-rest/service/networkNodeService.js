@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,27 +102,29 @@ class NetworkNodeService extends BaseService {
       .map((range) => {
         const from = entityId.parse(range.from).getEncodedId();
         const to = entityId.parse(range.to).getEncodedId();
-        return `(${column} >= ${from} and ${column} <= ${to})`;
+
+        if (from === to) {
+          return `${column} = ${from}`;
+        } else {
+          return `(${column} >= ${from} and ${column} <= ${to})`;
+        }
       })
       .join(' or ');
 
   static networkSupplyQuery = `
-    with unreleased as (
-      select coalesce(sum(balance), 0) as unreleased_supply
+      select coalesce(sum(balance), 0) as unreleased_supply, coalesce(max(balance_timestamp), 0) as consensus_timestamp
       from entity
-      where (${NetworkNodeService.unreleasedSupplyAccounts('id')})
-    )
-    select unreleased_supply, (select max(consensus_end) from record_file) as consensus_timestamp
-    from unreleased`;
+      where ${NetworkNodeService.unreleasedSupplyAccounts('id')}`;
 
-  static networkSupplyByTimestampQuery = `
-    select coalesce(sum(balance), 0) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
-    from account_balance
-    where (${NetworkNodeService.unreleasedSupplyAccounts('account_id')})
-      and consensus_timestamp = (
-      select max(consensus_timestamp)
-      from account_balance ab
-      where `;
+  getNetworkSupplyByTimestampQuery = (conditions) => `
+      with account_balances as (
+          select distinct on (account_id) balance, consensus_timestamp
+          from account_balance ab
+          where ${conditions} and (${NetworkNodeService.unreleasedSupplyAccounts('account_id')})
+          order by account_id asc, consensus_timestamp desc
+      )
+      select coalesce(sum(balance), 0) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
+      from account_balances`;
 
   getNetworkNodes = async (whereConditions, whereParams, order, limit) => {
     const [query, params] = this.getNetworkNodesWithFiltersQuery(whereConditions, whereParams, order, limit);
@@ -153,7 +155,7 @@ class NetworkNodeService extends BaseService {
     let query = NetworkNodeService.networkSupplyQuery;
 
     if (conditions.length > 0) {
-      query = `${NetworkNodeService.networkSupplyByTimestampQuery} ${conditions.join(' and ')})`;
+      query = this.getNetworkSupplyByTimestampQuery(conditions.join(' and '));
     }
 
     return await super.getSingleRow(query, params, 'getSupply');

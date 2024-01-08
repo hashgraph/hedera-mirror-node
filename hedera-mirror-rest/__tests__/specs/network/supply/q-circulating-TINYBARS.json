@@ -9,33 +9,23 @@
     "accounts": [
       {
         "balance": 10,
+        "balance_timestamp": "1000000001",
         "num": 1
       },
       {
         "balance": 4000000000000000000,
+        "balance_timestamp": "1000000001",
         "num": 2
       },
       {
         "balance": 50,
+        "balance_timestamp": "1000000001",
         "num": 42
       },
       {
         "balance": 1,
+        "balance_timestamp": "1000000001",
         "num": 100
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": "1000000000",
-        "consensus_end": "1000000001",
-        "count": 1,
-        "hapi_version_major": 0,
-        "hapi_version_minor": 22,
-        "hapi_version_patch": 3,
-        "hash": "123",
-        "index": 16,
-        "name": "2022-04-27T12_09_24.499938763Z.rcd",
-        "prev_hash": "abc"
       }
     ]
   },

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,7 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
@@ -93,6 +94,10 @@ import org.springframework.beans.factory.annotation.Value;
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
     protected static final long expiry = 1_234_567_890L;
+
+    // The block numbers lower than EVM v0.34 are considered part of EVM v0.30 which includes all precompiles
+    protected static final long EVM_V_34_BLOCK = 50L;
+    protected static final long EVM_V_38_BLOCK = 100L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 
     // Exchange rates from local node.
@@ -132,16 +137,27 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     // Account addresses
     protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
+    protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1078));
     protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 741));
+    protected static final Address SPENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1016));
     protected static final ByteString SPENDER_PUBLIC_KEY =
             ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
+    protected static final ByteString SPENDER_PUBLIC_KEY_HISTORICAL =
+            ByteString.fromHex("3a210398e17bcbd2926c4d8a31e32616b4754ac0a2fc71d7fb768e657db46202625f34");
     protected static final Address SPENDER_ALIAS = Address.wrap(
             Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
+    protected static final Address SPENDER_ALIAS_HISTORICAL = Address.wrap(Bytes.wrap(
+            recoverAddressFromPubKey(SPENDER_PUBLIC_KEY_HISTORICAL.substring(2).toByteArray())));
     protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742));
+    protected static final Address SENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1014));
     protected static final ByteString SENDER_PUBLIC_KEY =
             ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
+    protected static final ByteString SENDER_PUBLIC_KEY_HISTORICAL =
+            ByteString.copyFrom(Hex.decode("3a2102930a39a381a68d90afc8e8c82935bd93f89800e88ec29a18e8cc13d51947c6c8"));
     protected static final Address SENDER_ALIAS = Address.wrap(
             Bytes.wrap(recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
+    protected static final Address SENDER_ALIAS_HISTORICAL = Address.wrap(Bytes.wrap(
+            recoverAddressFromPubKey(SENDER_PUBLIC_KEY_HISTORICAL.substring(2).toByteArray())));
     protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743));
     protected static final Address NOT_ASSOCIATED_SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 744));
     protected static final ByteString NOT_ASSOCIATED_SPENDER_PUBLIC_KEY =
@@ -149,29 +165,48 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NOT_ASSOCIATED_SPENDER_ALIAS = Address.wrap(Bytes.wrap(recoverAddressFromPubKey(
             NOT_ASSOCIATED_SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address OWNER_ADDRESS = toAddress(EntityId.of(0, 0, 750));
+    protected static final Address OWNER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 751));
 
     // Token addresses
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY = toAddress(EntityId.of(0, 0, 1042));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY_HISTORICAL = toAddress(EntityId.of(0, 0, 1077));
     protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1062));
     protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047));
+    protected static final Address NFT_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1063));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049));
     protected static final Address TRANSFRER_FROM_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1111));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050));
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051));
+    protected static final Address NFT_TRANSFER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1064));
     protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1052));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1053));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL =
+            toAddress(EntityId.of(0, 0, 1073));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(0, 0, 1054));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL =
+            toAddress(EntityId.of(0, 0, 1069));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(0, 0, 1055));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL =
+            toAddress(EntityId.of(0, 0, 1070));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID =
             toAddress(EntityId.of(0, 0, 1056));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID_HISTORICAL =
+            toAddress(EntityId.of(0, 0, 1072));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(0, 0, 1057));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL = toAddress(EntityId.of(0, 0, 1074));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(0, 0, 1058));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL = toAddress(EntityId.of(0, 0, 1075));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID =
             toAddress(EntityId.of(0, 0, 1059));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID_HISTORICAL =
+            toAddress(EntityId.of(0, 0, 1076));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS =
             toAddress(EntityId.of(0, 0, 1060));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL =
+            toAddress(EntityId.of(0, 0, 1068));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED = toAddress(EntityId.of(0, 0, 1061));
     protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(EntityId.of(0, 0, 1067));
     protected static final Address NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY = toAddress(EntityId.of(0, 0, 1071));
@@ -207,18 +242,27 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     };
 
     // Token Wrappers
-    protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken();
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken(OWNER_ADDRESS);
+    protected static final TokenCreateWrapper FUNGIBLE_TOKEN_HISTORICAL = getFungibleToken(OWNER_ADDRESS_HISTORICAL);
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_WITH_KEYS = getFungibleTokenWithKeys();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
             getFungibleTokenExpiryInUint32Range();
-    protected static final TokenCreateWrapper FUNGIBLE_HBAR_TOKEN_AND_KEYS = getFungibleHbarsTokenWrapper();
+    protected static final TokenCreateWrapper FUNGIBLE_HBAR_TOKEN_AND_KEYS =
+            getFungibleHbarsTokenWrapper(OWNER_ADDRESS, AUTO_RENEW_ACCOUNT_ADDRESS);
+    protected static final TokenCreateWrapper FUNGIBLE_HBAR_TOKEN_AND_KEYS_HISTORICAL =
+            getFungibleHbarsTokenWrapper(OWNER_ADDRESS_HISTORICAL, AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL);
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_INHERIT_KEYS = getFungibleTokenInheritKeys();
-    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken();
+    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken(OWNER_ADDRESS);
+    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_HISTORICAL =
+            getNonFungibleToken(OWNER_ADDRESS_HISTORICAL);
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_WITH_KEYS = getNonFungibleTokenWithKeys();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
             getNonFungibleTokenExpiryInUint32Range();
-    protected static final TokenCreateWrapper NFT_HBAR_TOKEN_AND_KEYS = getNftHbarTokenAndKeysHbarsTokenWrapper();
+    protected static final TokenCreateWrapper NFT_HBAR_TOKEN_AND_KEYS =
+            getNftHbarTokenAndKeysHbarsTokenWrapper(OWNER_ADDRESS, AUTO_RENEW_ACCOUNT_ADDRESS);
+    protected static final TokenCreateWrapper NFT_HBAR_TOKEN_AND_KEYS_HISTORICAL =
+            getNftHbarTokenAndKeysHbarsTokenWrapper(OWNER_ADDRESS_HISTORICAL, AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL);
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_INHERIT_KEYS = getNonFungibleTokenInheritKeys();
 
     // Custom Fee wrappers
@@ -429,6 +473,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     protected static RecordFile recordFileForBlockHash;
     protected static RecordFile genesisRecordFileForBlockHash;
+    protected static RecordFile recordFileBeforeEvm34;
+    protected static RecordFile recordFileAfterEvm34;
+    protected static RecordFile recordFileEvm38;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -440,7 +487,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected ContractCallService contractCallService;
 
     @Autowired
-    protected MirrorNodeEvmProperties properties;
+    protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
+    @Autowired
+    protected RecordFileRepository recordFileRepository;
+
     // The contract source `PrecompileTestContract.sol` is in test resources
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
     protected Path CONTRACT_BYTES_PATH;
@@ -602,12 +653,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
     }
 
-    private static TokenCreateWrapper getFungibleToken() {
+    private static TokenCreateWrapper getFungibleToken(Address ownerAddress) {
         return new TokenCreateWrapper(
                 true,
                 "Test",
                 "TST",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
                 "test",
                 true,
                 BigInteger.valueOf(10L),
@@ -615,7 +666,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 10_000_000L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
     }
 
     private static TokenCreateWrapper getFungibleToken2() {
@@ -634,12 +685,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
     }
 
-    private static TokenCreateWrapper getNonFungibleToken() {
+    private static TokenCreateWrapper getNonFungibleToken(Address ownerAddress) {
         return new TokenCreateWrapper(
                 false,
                 "TestNFT",
                 "TFT",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
                 "test",
                 true,
                 BigInteger.valueOf(0L),
@@ -647,17 +698,18 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
     }
 
-    private static TokenCreateWrapper getFungibleHbarsTokenWrapper() {
+    private static TokenCreateWrapper getFungibleHbarsTokenWrapper(
+            final Address ownerAddress, final Address autoRenewAccountAddress) {
         final var keyValue =
                 new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
         return new TokenCreateWrapper(
                 true,
                 "Hbars",
                 "HBAR",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
                 "TestMemo",
                 false,
                 BigInteger.valueOf(10_000_000L),
@@ -672,8 +724,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         new TokenKeyWrapper(0b0010000, keyValue),
                         new TokenKeyWrapper(0b0100000, keyValue),
                         new TokenKeyWrapper(0b1000000, keyValue)),
-                new TokenExpiryWrapper(
-                        9_999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
+                new TokenExpiryWrapper(9_999L, EntityIdUtils.accountIdFromEvmAddress(autoRenewAccountAddress), 1800L));
     }
 
     private static TokenCreateWrapper getFungibleTokenInheritKeys() {
@@ -693,14 +744,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
     }
 
-    private static TokenCreateWrapper getNftHbarTokenAndKeysHbarsTokenWrapper() {
+    private static TokenCreateWrapper getNftHbarTokenAndKeysHbarsTokenWrapper(
+            final Address ownerAddress, final Address autoRenewAccountAddress) {
         final var keyValue =
                 new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
         return new TokenCreateWrapper(
                 false,
                 "Hbars",
                 "HBAR",
-                EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
                 "TestMemo",
                 true,
                 BigInteger.valueOf(0L),
@@ -715,8 +767,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         new TokenKeyWrapper(0b0010000, keyValue),
                         new TokenKeyWrapper(0b0100000, keyValue),
                         new TokenKeyWrapper(0b1000000, keyValue)),
-                new TokenExpiryWrapper(
-                        9999L, EntityIdUtils.accountIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS), 1800L));
+                new TokenExpiryWrapper(9999L, EntityIdUtils.accountIdFromEvmAddress(autoRenewAccountAddress), 1800L));
     }
 
     private static TokenCreateWrapper getNonFungibleTokenInheritKeys() {
@@ -758,8 +809,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final Address contractAddress,
             final CallType callType,
             final long value,
-            BlockType block) {
-        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
+            final BlockType block) {
+        HederaEvmAccount sender;
+        if (block != BlockType.LATEST) {
+            sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
+        } else {
+            sender = new HederaEvmAccount(SENDER_ADDRESS);
+        }
         persistEntities();
 
         return CallServiceParameters.builder()
@@ -810,6 +866,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     protected void persistEntities() {
         genesisBlockPersist();
+        historicalBlocksPersist();
         evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
@@ -1055,11 +1112,189 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
+        historicalDataPersist();
     }
 
     private void genesisBlockPersist() {
         genesisRecordFileForBlockHash =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+    }
+
+    private void historicalBlocksPersist() {
+        recordFileBeforeEvm34 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_34_BLOCK - 1))
+                .persist();
+        recordFileAfterEvm34 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_34_BLOCK))
+                .persist();
+        recordFileEvm38 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_38_BLOCK))
+                .persist();
+    }
+
+    private void historicalDataPersist() {
+        // Accounts
+        final var ownerEntityId = ownerEntityPersistHistorical();
+        final var senderEntityId = senderEntityPersistHistorical();
+        final var spenderEntityId = spenderEntityPersistHistorical();
+        final var autoRenewEntityId = autoRenewAccountPersistHistorical();
+
+        // Fungible token
+        final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS_HISTORICAL.toArrayUnsafe());
+        final var tokenEvmAddress = toEvmAddress(tokenEntityId);
+
+        fungibleTokenPersistHistorical(
+                ownerEntityId,
+                KEY_PROTO,
+                FUNGIBLE_TOKEN_ADDRESS_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED,
+                true,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        // NFT
+        final var nftEntityId = fromEvmAddress(NFT_ADDRESS_HISTORICAL.toArrayUnsafe());
+        final var nftEvmAddress = toEvmAddress(nftEntityId);
+        nftPersistHistorical(
+                NFT_ADDRESS_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                KEY_PROTO,
+                TokenPauseStatusEnum.PAUSED,
+                true,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        // Token relationships
+        tokenAccountPersistHistorical(ownerEntityId, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersistHistorical(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersistHistorical(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersistHistorical(senderEntityId, nftEntityId, TokenFreezeStatusEnum.FROZEN);
+
+        // Contracts
+        final var contractEntityId = fromEvmAddress(ERC_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var precompileTestContractId = fromEvmAddress(PRECOMPILE_TEST_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var precompileContractEvmAddress = toEvmAddress(precompileTestContractId);
+
+        // Token allowances
+        tokenAllowancePersistHistorical(tokenEntityId, senderEntityId, senderEntityId, spenderEntityId, 13L);
+        tokenAllowancePersistHistorical(tokenEntityId, senderEntityId, senderEntityId, contractEntityId, 20L);
+        tokenAllowancePersistHistorical(tokenEntityId, senderEntityId, senderEntityId, precompileTestContractId, 20L);
+
+        nftAllowancePersistHistorical(nftEntityId, senderEntityId, senderEntityId, spenderEntityId);
+        nftAllowancePersistHistorical(nftEntityId, senderEntityId, senderEntityId, contractEntityId);
+        nftAllowancePersistHistorical(nftEntityId, senderEntityId, senderEntityId, precompileTestContractId);
+
+        fungibleTokenPersistHistorical(
+                senderEntityId,
+                keyWithContractId.toByteArray(),
+                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED,
+                false,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        fungibleTokenPersistHistorical(
+                senderEntityId,
+                keyWithEd25519.toByteArray(),
+                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED,
+                false,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        fungibleTokenPersistHistorical(
+                senderEntityId,
+                keyWithECDSASecp256K1.toByteArray(),
+                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED,
+                false,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        fungibleTokenPersistHistorical(
+                senderEntityId,
+                keyWithDelegatableContractId.toByteArray(),
+                FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                9999999999999L,
+                TokenPauseStatusEnum.PAUSED,
+                false,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        nftPersistHistorical(
+                NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                keyWithContractId.toByteArray(),
+                TokenPauseStatusEnum.PAUSED,
+                true,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        nftPersistHistorical(
+                NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                keyWithEd25519.toByteArray(),
+                TokenPauseStatusEnum.PAUSED,
+                true,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        nftPersistHistorical(
+                NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                keyWithECDSASecp256K1.toByteArray(),
+                TokenPauseStatusEnum.PAUSED,
+                true,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        nftPersistHistorical(
+                NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                ownerEntityId,
+                spenderEntityId,
+                ownerEntityId,
+                keyWithDelegatableContractId.toByteArray(),
+                TokenPauseStatusEnum.PAUSED,
+                true,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        fungibleTokenPersistHistorical(
+                ownerEntityId,
+                KEY_PROTO,
+                FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY_HISTORICAL,
+                AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
+                1000000000000L,
+                TokenPauseStatusEnum.PAUSED,
+                false,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
+        domainBuilder
+                .customFeeHistory()
+                .customize(f -> f.tokenId(nftEntityId.getId())
+                        .fractionalFees(List.of(FractionalFee.builder()
+                                .collectorAccountId(senderEntityId)
+                                .build()))
+                        .royaltyFees(List.of())
+                        .fixedFees(List.of())
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
     }
 
     // Custom fees and rates persist
@@ -1119,6 +1354,69 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             default -> domainBuilder
                     .customFee()
                     .customize(f -> f.tokenId(tokenEntityId.getId()))
+                    .persist();
+        }
+    }
+
+    protected void customFeePersistHistorical(final FeeCase feeCase, final Range<Long> historicalBlock) {
+        final var collectorAccountId = fromEvmAddress(SENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
+        final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS_HISTORICAL.toArrayUnsafe());
+        switch (feeCase) {
+            case ROYALTY_FEE -> {
+                final var royaltyFee = RoyaltyFee.builder()
+                        .collectorAccountId(collectorAccountId)
+                        .denominator(10L)
+                        .fallbackFee(FallbackFee.builder()
+                                .amount(100L)
+                                .denominatingTokenId(tokenEntityId)
+                                .build())
+                        .numerator(20L)
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.royaltyFees(List.of(royaltyFee))
+                                .fixedFees(List.of())
+                                .fractionalFees(List.of())
+                                .tokenId(tokenEntityId.getId())
+                                .timestampRange(historicalBlock))
+                        .persist();
+            }
+            case FRACTIONAL_FEE -> {
+                final var fractionalFee = FractionalFee.builder()
+                        .collectorAccountId(collectorAccountId)
+                        .denominator(10L)
+                        .minimumAmount(1L)
+                        .maximumAmount(1000L)
+                        .netOfTransfers(true)
+                        .numerator(100L)
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.fractionalFees(List.of(fractionalFee))
+                                .fixedFees(List.of())
+                                .royaltyFees(List.of())
+                                .tokenId(tokenEntityId.getId())
+                                .timestampRange(historicalBlock))
+                        .persist();
+            }
+            case FIXED_FEE -> {
+                final var fixedFee = FixedFee.builder()
+                        .amount(100L)
+                        .collectorAccountId(collectorAccountId)
+                        .denominatingTokenId(tokenEntityId)
+                        .build();
+                domainBuilder
+                        .customFee()
+                        .customize(f -> f.fixedFees(List.of(fixedFee))
+                                .fractionalFees(List.of())
+                                .royaltyFees(List.of())
+                                .tokenId(tokenEntityId.getId())
+                                .timestampRange(historicalBlock))
+                        .persist();
+            }
+            default -> domainBuilder
+                    .customFee()
+                    .customize(f -> f.tokenId(tokenEntityId.getId()).timestampRange(historicalBlock))
                     .persist();
         }
     }
@@ -1203,6 +1501,21 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
+    private void tokenAccountPersistHistorical(
+            final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(e -> e.freezeStatus(freezeStatus)
+                        .accountId(senderEntityId.getId())
+                        .tokenId(tokenEntityId.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .associated(true)
+                        .balance(12L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+    }
+
     private void ercContractTokenPersist(
             final Address contractAddress, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatusEnum) {
         final var contractEntityId = fromEvmAddress(contractAddress.toArrayUnsafe());
@@ -1245,6 +1558,24 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
+    @Nullable
+    private EntityId spenderEntityPersistHistorical() {
+        final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(spenderEntityId.getId())
+                        .num(spenderEntityId.getNum())
+                        .evmAddress(SPENDER_ALIAS_HISTORICAL.toArray())
+                        .alias(SPENDER_PUBLIC_KEY_HISTORICAL.toByteArray())
+                        .deleted(false)
+                        .createdTimestamp(recordFileAfterEvm34.getConsensusStart())
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+        return spenderEntityId;
+    }
+
     private long ethAccountPersist(final long ethAccount, final Address evmAddress) {
 
         domainBuilder
@@ -1275,6 +1606,26 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     @Nullable
+    private EntityId senderEntityPersistHistorical() {
+        final var senderEntityId = fromEvmAddress(SENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(senderEntityId.getId())
+                        .num(senderEntityId.getNum())
+                        .evmAddress(SENDER_ALIAS_HISTORICAL.toArray())
+                        .deleted(false)
+                        .alias(SENDER_PUBLIC_KEY_HISTORICAL.toByteArray())
+                        .balance(10000 * 100_000_000L)
+                        .createdTimestamp(recordFileAfterEvm34.getConsensusStart())
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+
+        return senderEntityId;
+    }
+
+    @Nullable
     private EntityId ownerEntityPersist() {
         final var ownerEntityId = fromEvmAddress(OWNER_ADDRESS.toArrayUnsafe());
 
@@ -1290,6 +1641,24 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     @Nullable
+    private EntityId ownerEntityPersistHistorical() {
+        final var ownerEntityId = fromEvmAddress(OWNER_ADDRESS_HISTORICAL.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(ownerEntityId.getId())
+                        .num(ownerEntityId.getNum())
+                        .evmAddress(null)
+                        .alias(toEvmAddress(ownerEntityId))
+                        .balance(20000L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+
+        return ownerEntityId;
+    }
+
+    @Nullable
     private EntityId autoRenewAccountPersist() {
         final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS.toArrayUnsafe());
 
@@ -1300,6 +1669,23 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .evmAddress(null)
                         .alias(toEvmAddress(autoRenewEntityId)))
                 .persist();
+        return autoRenewEntityId;
+    }
+
+    @Nullable
+    private EntityId autoRenewAccountPersistHistorical() {
+        final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(autoRenewEntityId.getId())
+                        .num(autoRenewEntityId.getNum())
+                        .evmAddress(null)
+                        .alias(toEvmAddress(autoRenewEntityId))
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+
         return autoRenewEntityId;
     }
 
@@ -1381,6 +1767,60 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return tokenEntityId;
     }
 
+    private EntityId fungibleTokenPersistHistorical(
+            final EntityId treasuryId,
+            final byte[] key,
+            final Address tokenAddress,
+            final Address autoRenewAddress,
+            final long tokenExpiration,
+            final TokenPauseStatusEnum pauseStatus,
+            final boolean freezeDefault,
+            final Range<Long> historicalBlock) {
+        final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
+        final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
+        final var tokenEvmAddress = toEvmAddress(tokenEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(tokenEntityId.getId())
+                        .autoRenewAccountId(autoRenewEntityId.getId())
+                        .num(tokenEntityId.getNum())
+                        .evmAddress(tokenEvmAddress)
+                        .type(TOKEN)
+                        .balance(1500L)
+                        .key(key)
+                        .expirationTimestamp(tokenExpiration)
+                        .memo("TestMemo")
+                        .timestampRange(historicalBlock)
+                        .deleted(false))
+                .persist();
+
+        domainBuilder
+                .tokenHistory()
+                .customize(t -> t.tokenId(tokenEntityId.getId())
+                        .treasuryAccountId(EntityId.of(0, 0, treasuryId.getId()))
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .kycKey(key)
+                        .freezeDefault(freezeDefault)
+                        .feeScheduleKey(key)
+                        .supplyType(TokenSupplyTypeEnum.INFINITE)
+                        .maxSupply(2525L)
+                        .initialSupply(10_000_000L)
+                        .name("Hbars")
+                        .totalSupply(12345L)
+                        .decimals(12)
+                        .wipeKey(key)
+                        .freezeKey(key)
+                        .pauseStatus(pauseStatus)
+                        .pauseKey(key)
+                        .supplyKey(key)
+                        .symbol("HBAR")
+                        .timestampRange(historicalBlock))
+                .persist();
+
+        return tokenEntityId;
+    }
+
     @Nullable
     private EntityId nftPersist(
             final Address nftAddress,
@@ -1441,6 +1881,75 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .accountId(ownerEntity)
                         .timestampRange(Range.atLeast(1475067194949034022L))
                         .tokenId(nftEntityId.getId()))
+                .persist();
+        return nftEntityId;
+    }
+
+    @Nullable
+    private EntityId nftPersistHistorical(
+            final Address nftAddress,
+            final Address autoRenewAddress,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId,
+            final EntityId treasuryId,
+            final byte[] key,
+            final TokenPauseStatusEnum pauseStatus,
+            final boolean freezeDefault,
+            final Range<Long> historicalBlock) {
+        final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
+        final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
+        final var nftEvmAddress = toEvmAddress(nftEntityId);
+        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nftEntityId.getId())
+                        .autoRenewAccountId(autoRenewEntityId.getId())
+                        .num(nftEntityId.getNum())
+                        .evmAddress(nftEvmAddress)
+                        .type(TOKEN)
+                        .balance(1500L)
+                        .key(key)
+                        .expirationTimestamp(9999999999999L)
+                        .memo("TestMemo")
+                        .deleted(false)
+                        .timestampRange(historicalBlock))
+                .persist();
+
+        domainBuilder
+                .tokenHistory()
+                .customize(t -> t.tokenId(nftEntityId.getId())
+                        .treasuryAccountId(treasuryId)
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(key)
+                        .freezeDefault(freezeDefault)
+                        .feeScheduleKey(key)
+                        .totalSupply(1_000_000_000L)
+                        .maxSupply(2_000_000_000L)
+                        .name("Hbars")
+                        .supplyType(TokenSupplyTypeEnum.FINITE)
+                        .freezeKey(key)
+                        .pauseKey(key)
+                        .pauseStatus(pauseStatus)
+                        .wipeKey(key)
+                        .supplyKey(key)
+                        .symbol("HBAR")
+                        .wipeKey(key)
+                        .decimals(0)
+                        .timestampRange(historicalBlock))
+                .persist();
+
+        domainBuilder
+                .nftHistory()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .createdTimestamp(1475067194949034022L)
+                        .serialNumber(1L)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .deleted(false)
+                        .timestampRange(historicalBlock))
                 .persist();
         return nftEntityId;
     }
@@ -1529,6 +2038,42 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .owner(senderEntityId.getNum())
                         .approvedForAll(true)
                         .payerAccountId(senderEntityId))
+                .persist();
+    }
+
+    private void tokenAllowancePersistHistorical(
+            final EntityId tokenEntityId,
+            final EntityId payerAccountId,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId,
+            final long amount) {
+        domainBuilder
+                .tokenAllowanceHistory()
+                .customize(a -> a.tokenId(tokenEntityId.getId())
+                        .payerAccountId(payerAccountId)
+                        .owner(ownerEntityId.getNum())
+                        .spender(spenderEntityId.getNum())
+                        .amount(amount)
+                        .amountGranted(amount)
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+    }
+
+    private void nftAllowancePersistHistorical(
+            final EntityId tokenEntityId,
+            final EntityId payerAccountId,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId) {
+        domainBuilder
+                .nftAllowanceHistory()
+                .customize(a -> a.tokenId(tokenEntityId.getId())
+                        .payerAccountId(payerAccountId)
+                        .owner(ownerEntityId.getNum())
+                        .spender(spenderEntityId.getNum())
+                        .approvedForAll(true)
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
                 .persist();
     }
 
