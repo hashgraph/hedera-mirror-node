@@ -43,7 +43,7 @@ class LoggingFilterTest {
 
         response.setStatus(HttpStatus.OK.value());
 
-        loggingFilter.doFilter(request, response, new MockFilterChain());
+        loggingFilter.doFilter(request, response, chain);
 
         assertLog(output, "INFO", "\\w+ GET / in \\d+ ms: 200");
     }
@@ -65,7 +65,6 @@ class LoggingFilterTest {
     void filterXForwardedFor(CapturedOutput output) {
         String clientIp = "10.0.0.100";
         var request = new MockHttpServletRequest("GET", "/");
-        ;
         request.addHeader(X_FORWARDED_FOR, clientIp);
         response.setStatus(HttpStatus.OK.value());
 
