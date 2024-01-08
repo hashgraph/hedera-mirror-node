@@ -25,19 +25,22 @@
         "token_id": "0.0.100001",
         "account_id": "0.0.7",
         "balance": 7,
-        "created_timestamp": "2200"
+        "created_timestamp": "2200",
+        "balance_timestamp": 2343
       },
       {
         "token_id": "0.0.100002",
         "account_id": "0.0.7",
         "balance": 77,
-        "created_timestamp": "2200"
+        "created_timestamp": "2200",
+        "balance_timestamp": 2344
       },
       {
         "token_id": "0.0.200001",
         "account_id": "0.0.8",
         "balance": 8,
-        "created_timestamp": "2200"
+        "created_timestamp": "2200",
+        "balance_timestamp": 2345
       }
     ]
   },
