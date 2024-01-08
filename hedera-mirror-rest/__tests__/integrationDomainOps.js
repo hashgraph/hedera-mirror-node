@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 import _ from 'lodash';
 import pgformat from 'pg-format';
+import {Range} from 'pg-range';
 
 import base32 from '../base32';
 import config from '../config';
@@ -73,6 +74,57 @@ const setup = async (testDataJson) => {
   await loadTransactions(testDataJson.transactions);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
   await loadContractStates(testDataJson.contractStates);
+
+  await generateTopicMessageLookups();
+};
+
+const generateTopicMessageLookups = async () => {
+  if (!config.query.topicMessageLookup) {
+    return;
+  }
+
+  const {rows} = await pool.query('select exists(select * from topic_message_lookup)');
+  if (rows[0].exists) {
+    // Don't generate if the test case has already created topic message lookup entries
+    return;
+  }
+
+  const {rows: topicMessages} = await pool.query(`select consensus_timestamp, sequence_number, topic_id
+    from topic_message
+    order by topic_id, sequence_number`);
+
+  let topicMessageLookup = null;
+  const topicMessageLookups = [];
+  for (const topicMessage of topicMessages) {
+    const {topic_id: topicId, sequence_number: sequenceNumber, consensus_timestamp: consensusTimestamp} = topicMessage;
+    const date = new Date(Number(BigInt(consensusTimestamp) / constants.NANOSECONDS_PER_MILLISECOND));
+    const partition = `topic_message_p${date.getUTCFullYear()}_${(date.getUTCMonth() + 1).toString().padStart(2, '0')}`;
+
+    if (topicMessageLookup?.topic_id !== topicId || topicMessageLookup?.partition !== partition) {
+      // Add it regardless if it's null, later we will filter out nulls
+      topicMessageLookups.push(topicMessageLookup);
+      topicMessageLookup = {
+        partition,
+        sequence_number_range: Range(sequenceNumber, sequenceNumber), // default is inclusive bounds '[]'
+        timestamp_range: Range(consensusTimestamp, consensusTimestamp),
+        topic_id: topicId,
+      };
+    } else {
+      // extend the ranges
+      topicMessageLookup.sequence_number_range.end = sequenceNumber;
+      topicMessageLookup.timestamp_range.end = consensusTimestamp;
+    }
+  }
+
+  topicMessageLookups.push(topicMessageLookup);
+
+  for (const topicMessageLookup of topicMessageLookups) {
+    if (topicMessageLookup === null) {
+      continue;
+    }
+
+    await addTopicMessageLookup(topicMessageLookup);
+  }
 };
 
 const loadAccounts = async (accounts) => {
@@ -1211,6 +1263,7 @@ const addTopicMessageLookup = async (topicMessageLookups) => {
 
   await insertDomainObject(table, insertFields, topicMessageLookups);
 };
+
 const addSchedule = async (schedule) => {
   schedule = {
     creator_account_id: '0.0.1024',
@@ -1606,6 +1659,7 @@ export default {
   loadRecordFiles,
   loadStakingRewardTransfers,
   loadTokenAccounts,
+  loadTopicMessageLookups,
   loadTransactions,
   setAccountBalance,
   setup,

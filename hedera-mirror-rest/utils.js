@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,24 @@ const emptySet = new Set();
 const asNullIfDefault = (value, defaultValue) => {
   return value === defaultValue ? null : value;
 };
+
+/**
+ * Returns the larger of the two bigint values.
+ *
+ * @param {BigInt} a
+ * @param {BigInt} b
+ * @returns {BigInt}
+ */
+const bigIntMax = (a, b) => (a > b ? a : b);
+
+/**
+ * Returns the smaller of the two bigint values.
+ *
+ * @param {BigInt} a
+ * @param {BigInt} b
+ * @returns {BigInt}
+ */
+const bigIntMin = (a, b) => (a < b ? a : b);
 
 /**
  * Check if the given number is numeric
@@ -1677,6 +1695,8 @@ export {
   JSONStringify,
   addHexPrefix,
   asNullIfDefault,
+  bigIntMax,
+  bigIntMin,
   buildAndValidateFilters,
   buildComparatorFilter,
   buildFilters,

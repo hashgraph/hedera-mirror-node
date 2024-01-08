@@ -80,30 +80,34 @@ const getResponseHeaders = (spec, specPath) => {
 const getSpecs = async () => {
   const modulePath = getModuleDirname(import.meta);
   const specPath = path.join(modulePath, '..', 'specs', groupSpecPath);
-  const specMap = {};
 
-  await Promise.all(
-    walk(specPath)
-      .filter((f) => f.endsWith('.json') && !f.endsWith(responseHeadersFilename))
-      .map(async (f) => {
-        const specText = fs.readFileSync(f, 'utf8');
-        const spec = JSONParse(specText);
-        spec.name = path.basename(f);
-        getResponseHeaders(spec, f);
+  return (
+    await Promise.all(
+      walk(specPath)
+        .filter((f) => f.endsWith('.json') && !f.endsWith(responseHeadersFilename))
+        .map(async (f) => {
+          const specText = fs.readFileSync(f, 'utf8');
+          const spec = JSONParse(specText);
+          spec.name = path.basename(f);
+          getResponseHeaders(spec, f);
 
-        const key = path.dirname(f).replace(specPath, '');
-        const specs = specMap[key] || [];
-        if (spec.matrix) {
-          const apply = (await import(path.join(modulePath, spec.matrix))).default;
-          specs.push(...apply(spec));
-        } else {
-          specs.push(spec);
-        }
-        specMap[key] = specs;
-      })
-  );
+          const key = path.dirname(f).replace(specPath, '');
+          const specs = [];
+          if (spec.matrix) {
+            const apply = (await import(path.join(modulePath, spec.matrix))).default;
+            specs.push(...apply(spec));
+          } else {
+            specs.push(spec);
+          }
 
-  return specMap;
+          return {key, specs};
+        })
+    )
+  ).reduce((specMap, {key, specs}) => {
+    specMap[key] = specMap[key] ?? [];
+    specMap[key].push(...specs);
+    return specMap;
+  }, {});
 };
 
 setupIntegrationTest();
@@ -209,12 +213,12 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
   };
 
   const specSetupSteps = async (spec) => {
+    overrideConfig(spec.config);
     await integrationDomainOps.setup(spec);
     if (spec.sql) {
       await loadSqlScripts(spec.sql.pathprefix, spec.sql.scripts);
       await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
     }
-    overrideConfig(spec.config);
     setupFeatureSupport(spec.features);
   };
 

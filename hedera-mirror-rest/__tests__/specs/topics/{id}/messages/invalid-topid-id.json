@@ -1,10 +1,7 @@
 {
   "description": "Get messages with invalid topic num",
+  "matrix": "topicMessageLookupMatrix.js",
   "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",

@@ -1,5 +1,6 @@
 {
   "description": "Get messages with limit param",
+  "matrix": "topicMessageLookupMatrix.js",
   "setup": {
     "config": {
       "response": {
@@ -15,9 +16,6 @@
         "type": "TOPIC"
       }
     ],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
