@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.hedera.mirror.test.e2e.acceptance.client;
+
+import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Strings;
@@ -78,8 +80,8 @@ public class NetworkAdapter extends EncoderDecoderFacade {
                 contractCallResponse = convertConsensusResponse(result, returnTupleType);
             } catch (final Exception e) {
                 contractCallResponse = new ContractCallResponse();
-                if (e instanceof PrecheckStatusException) {
-                    final var exceptionReason = ((PrecheckStatusException) e).status.toString();
+                if (e instanceof PrecheckStatusException pse) {
+                    final var exceptionReason = pse.status.toString();
                     contractCallResponse.setResult(exceptionReason);
                     return contractCallResponse;
                 }
@@ -97,8 +99,8 @@ public class NetworkAdapter extends EncoderDecoderFacade {
 
         final var contractCallResponse = new ContractCallResponse();
 
-        if (tupleResult.get(0) instanceof byte[]) {
-            if (((byte[]) tupleResult.get(0)).length == 0) {
+        if (isNotEmpty(tupleResult) && tupleResult.get(0) instanceof byte[] bytes) {
+            if (bytes.length == 0) {
                 contractCallResponse.setResult(StringUtils.EMPTY);
             }
         } else {
