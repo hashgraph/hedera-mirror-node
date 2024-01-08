@@ -47,6 +47,11 @@ import {CreateBucketCommand, PutObjectCommand, S3} from '@aws-sdk/client-s3';
 import sinon from 'sinon';
 const groupSpecPath = $$GROUP_SPEC_PATH$$;
 
+const defaultResponseHeaders = {
+  'cache-control': 'public, max-age=1',
+};
+const responseHeadersFilename = 'responseHeaders.json';
+
 const walk = (dir, files = []) => {
   for (const f of fs.readdirSync(dir)) {
     const p = path.join(dir, f);
@@ -62,6 +67,16 @@ const walk = (dir, files = []) => {
   return files;
 };
 
+const getResponseHeaders = (spec, specPath) => {
+  const responseHeadersPath = path.join(path.dirname(specPath), responseHeadersFilename);
+  spec.responseHeaders = {
+    ...(spec.responseHeaders ?? {}),
+    ...(fs.existsSync(responseHeadersPath)
+      ? JSONParse(fs.readFileSync(responseHeadersPath, 'utf8'))
+      : defaultResponseHeaders),
+  };
+};
+
 const getSpecs = async () => {
   const modulePath = getModuleDirname(import.meta);
   const specPath = path.join(modulePath, '..', 'specs', groupSpecPath);
@@ -69,11 +84,13 @@ const getSpecs = async () => {
   return (
     await Promise.all(
       walk(specPath)
-        .filter((f) => f.endsWith('.json'))
+        .filter((f) => f.endsWith('.json') && !f.endsWith(responseHeadersFilename))
         .map(async (f) => {
           const specText = fs.readFileSync(f, 'utf8');
           const spec = JSONParse(specText);
           spec.name = path.basename(f);
+          getResponseHeaders(spec, f);
+
           const key = path.dirname(f).replace(specPath, '');
           const specs = [];
           if (spec.matrix) {
@@ -320,6 +337,10 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
               } else {
                 expect(contentType).toEqual(tt.responseContentType);
                 expect(response.text).toEqual(tt.responseJson);
+              }
+
+              if (response.status >= 200 && response.status < 300) {
+                expect(response.headers).toMatchObject(spec.responseHeaders);
               }
             });
           });

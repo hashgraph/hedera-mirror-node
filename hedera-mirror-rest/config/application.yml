@@ -27,7 +27,7 @@ hedera:
       metrics:
         enabled: true
         config:
-          authentication: true
+          authentication: false
           durationBuckets: [25, 100, 250, 500]
           password: password
           requestSizeBuckets: []
@@ -67,15 +67,14 @@ hedera:
       response:
         compression: true
         headers:
-          default: { "Cache-Control": "public, max-age=1" }
+          default: { "cache-control": "public, max-age=1" }
           path:
-            /api/v1/network/fees: { "Cache-Control": "public, max-age=60" }
-            /api/v1/network/exchangerate:
-              { "Cache-Control": "public, max-age=60" }
-            /api/v1/transactions/:transactionId:
-              { "Cache-Control": "public, max-age=300" }
+            /api/v1/transactions/:transactionIdOrHash:
+              { "cache-control": "public, max-age=300" }
             /api/v1/transactions/:transactionId/stateproof:
-              { "Cache-Control": "public, max-age=600" }
+              { "cache-control": "public, max-age=600" }
+            /exchangerate: { "cache-control": "public, max-age=60" }
+            /fees: { "cache-control": "public, max-age=60" }
         includeHostInLink: false
         limit:
           default: 25
