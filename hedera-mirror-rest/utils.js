@@ -25,12 +25,12 @@ import pgRange, {Range} from 'pg-range';
 import util from 'util';
 
 import * as constants from './constants';
-import {filterKeys, MAX_LONG} from './constants';
 import EntityId from './entityId';
 import config from './config';
 import ed25519 from './ed25519';
 import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
 import {Entity, FeeSchedule, TransactionResult, TransactionType} from './model';
+import {filterKeys, MAX_LONG} from './constants';
 
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
