@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,27 @@ import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PA
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PARTITION_OVERLAP;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 @CustomLog
 @Named
-@RequiredArgsConstructor
 public class TimePartitionServiceImpl implements TimePartitionService {
 
+    private final Cache cacheTimePartitionOverlap;
+    private final Cache cacheTimePartition;
+    private final JdbcTemplate jdbcTemplate;
     private static final String GET_TIME_PARTITIONS_SQL = "select * from mirror_node_time_partitions where parent = ?";
     private static final RowMapper<TimePartition> ROW_MAPPER = (rs, rowNum) -> TimePartition.builder()
             .name(rs.getString("name"))
@@ -43,11 +49,30 @@ public class TimePartitionServiceImpl implements TimePartitionService {
             .timestampRange(Range.closedOpen(rs.getLong("from_timestamp"), rs.getLong("to_timestamp")))
             .build();
 
-    private final JdbcTemplate jdbcTemplate;
+    TimePartitionServiceImpl(
+            @Qualifier(CACHE_TIME_PARTITION_OVERLAP) CacheManager cacheManagerOverlapTimePartition,
+            @Qualifier(CACHE_TIME_PARTITION) CacheManager cacheManagerTimePartition,
+            JdbcTemplate jdbcTemplate) {
+        this.cacheTimePartitionOverlap = cacheManagerOverlapTimePartition.getCache(CACHE_NAME);
+        this.cacheTimePartition = cacheManagerTimePartition.getCache(CACHE_NAME);
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
-    @Cacheable(cacheManager = CACHE_TIME_PARTITION_OVERLAP, cacheNames = CACHE_NAME)
     @Override
     public List<TimePartition> getOverlappingTimePartitions(String tableName, long fromTimestamp, long toTimestamp) {
+        var overlappingTimePartitions = cacheTimePartitionOverlapLookup(
+                tableName, () -> Optional.of(queryForOverlappingTimePartitions(tableName, fromTimestamp, toTimestamp)));
+        return overlappingTimePartitions.orElse(Collections.emptyList());
+    }
+
+    @Override
+    public List<TimePartition> getTimePartitions(String tableName) {
+        var cachedValue = cacheTimePartitionLookup(tableName, () -> Optional.of(queryForTimePartitions(tableName)));
+        return cachedValue.orElse(Collections.emptyList());
+    }
+
+    private List<TimePartition> queryForOverlappingTimePartitions(
+            String tableName, long fromTimestamp, long toTimestamp) {
         if (toTimestamp < fromTimestamp) {
             return Collections.emptyList();
         }
@@ -92,9 +117,7 @@ public class TimePartitionServiceImpl implements TimePartitionService {
         return Collections.unmodifiableList(overlappingPartitions);
     }
 
-    @Cacheable(cacheManager = CACHE_TIME_PARTITION, cacheNames = CACHE_NAME)
-    @Override
-    public List<TimePartition> getTimePartitions(String tableName) {
+    private List<TimePartition> queryForTimePartitions(String tableName) {
         try {
             var partitions = jdbcTemplate.query(GET_TIME_PARTITIONS_SQL, ROW_MAPPER, tableName);
             if (partitions.isEmpty()) {
@@ -105,6 +128,27 @@ public class TimePartitionServiceImpl implements TimePartitionService {
         } catch (Exception e) {
             log.warn("Unable to query time partitions for table {}", tableName, e);
             return Collections.emptyList();
+        }
+    }
+
+    private Optional<List<TimePartition>> cacheTimePartitionOverlapLookup(
+            String tableName, Callable<Optional<List<TimePartition>>> loader) {
+        try {
+            return cacheTimePartitionOverlap.get(tableName, loader);
+        } catch (Cache.ValueRetrievalException e) {
+            Utility.handleRecoverableError(
+                    "Error looking up timePartition {} from cacheTimePartitionOverlap", tableName, e);
+            return Optional.empty();
+        }
+    }
+
+    private Optional<List<TimePartition>> cacheTimePartitionLookup(
+            String tableName, Callable<Optional<List<TimePartition>>> loader) {
+        try {
+            return cacheTimePartition.get(tableName, loader);
+        } catch (Cache.ValueRetrievalException e) {
+            Utility.handleRecoverableError("Error looking up timePartition {} from cacheTimePartition", tableName, e);
+            return Optional.empty();
         }
     }
 }
