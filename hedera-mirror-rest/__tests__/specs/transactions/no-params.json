@@ -1,6 +1,10 @@
 {
   "description": "Transaction api calls with no arguments",
+  "matrix": "timestampBindingMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2009-02-13Z 23:40:00"
+    },
     "accounts": [
       {
         "num": 3

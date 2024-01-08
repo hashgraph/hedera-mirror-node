@@ -1,5 +1,6 @@
 {
   "description": "Transaction api calls for invalid query params",
+  "matrix": "timestampBindingMatrix.js",
   "setup": {
     "accounts": [],
     "balances": [],

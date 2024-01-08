@@ -1,6 +1,10 @@
 {
   "description": "Transaction api calls with transactiontype query filter",
+  "matrix": "timestampBindingMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2019-08-14Z 10:50:00"
+    },
     "accounts": [
       {
         "num": 3
