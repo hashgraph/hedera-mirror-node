@@ -19,59 +19,59 @@ Feature: Historical Feature
     Then I verify that historical data for "pending" block is treated as latest
     Then I verify that historical data for "finalized" block is treated as latest
     Then I verify the response from non existing account
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getCustomFees
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getCustomFees
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getTokenDefaultFreezeStatus
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getTokenDefaultFreezeStatus
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getTokenDefaultKYCStatus
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getTokenDefaultKYCStatus
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getTokenType
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getTokenType
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getTokenExpiryInfo
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getTokenExpiryInfo
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" in invalid block returns bad request
-    Then I verify historical data for "NFT_HISTORICAL" in invalid block returns bad request
-    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via getTokenInfo
-    Then I verify that historical data for "NFT_HISTORICAL" is returned via getTokenInfo
-#    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via getTokenInfo when doing mint
-#    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via getTokenInfo when doing burn
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getCustomFees
+    Then I verify historical data for "NFTHISTORICAL" is returned for getCustomFees
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenDefaultFreezeStatus
+    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenDefaultFreezeStatus
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenDefaultKYCStatus
+    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenDefaultKYCStatus
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenType
+    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenType
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenExpiryInfo
+    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenExpiryInfo
+    Then I verify historical data for "FUNGIBLEHISTORICAL" in invalid block returns bad request
+    Then I verify historical data for "NFTHISTORICAL" in invalid block returns bad request
+    Then I verify that historical data for "FUNGIBLEHISTORICAL" is returned via getTokenInfo
+    Then I verify that historical data for "NFTHISTORICAL" is returned via getTokenInfo
+#    Then I verify that historical data for "FUNGIBLEHISTORICAL" is returned via getTokenInfo when doing mint - disabled due to bug #7497
+#    Then I verify that historical data for "FUNGIBLEHISTORICAL" is returned via getTokenInfo when doing burn - disabled due to bug #7497
 
-    Then I mint new nft for "NFT_HISTORICAL"
-    Then I associate "NFT_HISTORICAL"
-    Then I associate "FUNGIBLE_HISTORICAL"
-    Then I grant KYC to "FUNGIBLE_HISTORICAL" to receiver account
-    Then I grant KYC to "NFT_HISTORICAL" to receiver account
+    Then I mint new nft for "NFTHISTORICAL"
+    Then I associate "NFTHISTORICAL"
+    Then I associate "FUNGIBLEHISTORICAL"
+    Then I grant KYC to "FUNGIBLEHISTORICAL" to receiver account
+    Then I grant KYC to "NFTHISTORICAL" to receiver account
 
-    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via balanceOf
-    Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf
-    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via balanceOf by direct call
-    Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf by direct call
-    Then I mint new nft for "NFT_HISTORICAL"
-    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via balanceOf when doing burn
-    Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf when doing burn
-    Then I verify that historical data for "FUNGIBLE_HISTORICAL" is returned via balanceOf when doing wipe
-    Then I verify that historical data for "NFT_HISTORICAL" is returned via balanceOf when doing wipe
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for allowance
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getApproved
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for ERC allowance
-    Then I verify historical data for "NFT_HISTORICAL" is returned for ERC getApproved
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for allowance by direct call
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getApproved direct call
-    Then I verify historical data for "NFT_HISTORICAL" is returned for isApprovedForAll
-    Then I verify historical data for "NFT_HISTORICAL" is returned for ownerOf
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isFrozen
-    Then I verify historical data for "NFT_HISTORICAL" is returned for isFrozen
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getFungibleTokenInfo
-#    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getFungibleTokenInfo when doing burn
+    Then I verify that historical data for "FUNGIBLEHISTORICAL" is returned via balanceOf
+    Then I verify that historical data for "NFTHISTORICAL" is returned via balanceOf
+    Then I verify that historical data for "FUNGIBLEHISTORICAL" is returned via balanceOf by direct call
+    Then I verify that historical data for "NFTHISTORICAL" is returned via balanceOf by direct call
+    Then I mint new nft for "NFTHISTORICAL"
+    Then I verify that historical data for "FUNGIBLEHISTORICAL" is returned via balanceOf when doing burn
+    Then I verify that historical data for "NFTHISTORICAL" is returned via balanceOf when doing burn
+    Then I verify that historical data for "FUNGIBLEHISTORICAL" is returned via balanceOf when doing wipe
+    Then I verify that historical data for "NFTHISTORICAL" is returned via balanceOf when doing wipe
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for allowance
+    Then I verify historical data for "NFTHISTORICAL" is returned for getApproved
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for ERC allowance
+    Then I verify historical data for "NFTHISTORICAL" is returned for ERC getApproved
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for allowance by direct call
+    Then I verify historical data for "NFTHISTORICAL" is returned for getApproved direct call
+    Then I verify historical data for "NFTHISTORICAL" is returned for isApprovedForAll
+    Then I verify historical data for "NFTHISTORICAL" is returned for ownerOf
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for isFrozen
+    Then I verify historical data for "NFTHISTORICAL" is returned for isFrozen
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getFungibleTokenInfo
+#    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getFungibleTokenInfo when doing burn - disabled due to bug #7497
 
-    Then I mint new nft for "NFT_HISTORICAL"
+    Then I mint new nft for "NFTHISTORICAL"
 
-#    Then I verify historical data for "NFT_HISTORICAL" is returned for getNonFungibleInfo
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isKyc
-    Then I verify historical data for "NFT_HISTORICAL" is returned for isKyc
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for isToken
-    Then I verify historical data for "NFT_HISTORICAL" is returned for isToken
-    Then I update the token and account keys for "FUNGIBLE_HISTORICAL"
-    Then I update the token and account keys for "NFT_HISTORICAL"
-    Then I verify historical data for "FUNGIBLE_HISTORICAL" is returned for getTokenKey
-    Then I verify historical data for "NFT_HISTORICAL" is returned for getTokenKey
+#    Then I verify historical data for "NFTHISTORICAL" is returned for getNonFungibleInfo - disabled due to bug #7497
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for isKyc
+    Then I verify historical data for "NFTHISTORICAL" is returned for isKyc
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for isToken
+    Then I verify historical data for "NFTHISTORICAL" is returned for isToken
+    Then I update the token and account keys for "FUNGIBLEHISTORICAL"
+    Then I update the token and account keys for "NFTHISTORICAL"
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenKey
+    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenKey

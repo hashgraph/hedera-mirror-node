@@ -147,7 +147,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
     @Given("I create fungible token")
     public void createFungibleToken() {
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLE_HISTORICAL);
+        var tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLEHISTORICAL);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -156,7 +156,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
     @Given("I create non-fungible token")
     public void createNonFungibleToken() {
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.NFT_HISTORICAL);
+        var tokenResponse = tokenClient.getToken(TokenNameEnum.NFTHISTORICAL);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -254,9 +254,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialResponse.intValue(), response.getResultAsNumber().intValue());
     }
 
-    @Then("I verify that historical data for {string} is returned via getTokenInfo")
-    public void getHistoricalDataForTokenSymbol(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify that historical data for {token} is returned via getTokenInfo")
+    public void getHistoricalDataForTokenSymbol(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
 
         var data = encodeData(PRECOMPILE, GET_TOKEN_INFORMATION, asAddress(tokenId));
         var initialBlockNumber = getLastBlockNumber();
@@ -270,9 +270,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
     }
 
-    @Then("I verify that historical data for {string} is returned via getTokenInfo when doing burn")
-    public void getHistoricalDataForTokenInfoWhenDoingBurn(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify that historical data for {token} is returned via getTokenInfo when doing burn")
+    public void getHistoricalDataForTokenInfoWhenDoingBurn(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
 
         var data = encodeData(PRECOMPILE, GET_TOKEN_INFORMATION, asAddress(tokenId));
         var initialBlockNumber = getLastBlockNumber();
@@ -286,9 +286,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
     }
 
-    @Then("I verify that historical data for {string} is returned via getTokenInfo when doing mint")
-    public void getHistoricalDataForTokenInfoWhenDoingMint(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify that historical data for {token} is returned via getTokenInfo when doing mint")
+    public void getHistoricalDataForTokenInfoWhenDoingMint(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
 
         var data = encodeData(PRECOMPILE, GET_TOKEN_INFORMATION, asAddress(tokenId));
         var initialBlockNumber = getLastBlockNumber();
@@ -302,37 +302,37 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
     }
 
-    @Then("I mint new nft for {string}")
-    public void mintNft(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I mint new nft for {token}")
+    public void mintNft(TokenNameEnum tokenName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
-    @Then("I associate {string}")
-    public void associateTokens(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I associate {token}")
+    public void associateTokens(TokenNameEnum tokenName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         networkTransactionResponse = tokenClient.associate(receiverAccountId, tokenId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
-    @Then("I grant KYC to {string} to receiver account")
-    public void grantKyc(String tokenName) {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I grant KYC to {token} to receiver account")
+    public void grantKyc(TokenNameEnum tokenName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         networkTransactionResponse = tokenClient.grantKyc(tokenId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
-    @Then("I verify that historical data for {string} is returned via balanceOf")
-    public void getHistoricalDataForBalanceOf(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify that historical data for {token} is returned via balanceOf")
+    public void getHistoricalDataForBalanceOf(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
         var initialBalance = response.getResultAsNumber();
 
         waitForNextBlock();
-        if (tokenName.toLowerCase().contains("fungible")) {
+        if (tokenName.name().toLowerCase().contains("fungible")) {
             networkTransactionResponse = tokenClient.transferFungibleToken(
                     tokenId,
                     tokenClient.getSdkClient().getExpandedOperatorAccountId(),
@@ -351,9 +351,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialBalance, balanceOfHistorical);
     }
 
-    @Then("I verify that historical data for {string} is returned via balanceOf by direct call")
-    public void getHistoricalDataForBalanceOfDirectCall(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify that historical data for {token} is returned via balanceOf by direct call")
+    public void getHistoricalDataForBalanceOfDirectCall(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
 
         var data = encodeData(BALANCE_OF_DIRECT, asAddress(admin));
         var initialBlockNumber = getLastBlockNumber();
@@ -361,7 +361,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBalance = response.getResultAsNumber();
 
         waitForNextBlock();
-        if (tokenName.toLowerCase().contains("fungible")) {
+        if (tokenName.name().toLowerCase().contains("fungible")) {
             networkTransactionResponse = tokenClient.mint(tokenId, 10L);
         } else {
             networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
@@ -373,16 +373,16 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialBalance, balanceOfHistorical);
     }
 
-    @Then("I verify that historical data for {string} is returned via balanceOf when doing burn")
-    public void getHistoricalDataForBalanceOfWhenBurning(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify that historical data for {token} is returned via balanceOf when doing burn")
+    public void getHistoricalDataForBalanceOfWhenBurning(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
         var initialBalance = response.getResultAsNumber();
 
         waitForNextBlock();
-        if (tokenName.toLowerCase().contains("fungible")) {
+        if (tokenName.name().toLowerCase().contains("fungible")) {
             tokenClient.burnFungible(tokenId, 5L);
         } else {
             tokenClient.burnNonFungible(tokenId, 3L);
@@ -393,16 +393,16 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialBalance, balanceOfHistorical);
     }
 
-    @Then("I verify that historical data for {string} is returned via balanceOf when doing wipe")
-    public void getHistoricalDataForBalanceOfWhenWiping(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify that historical data for {token} is returned via balanceOf when doing wipe")
+    public void getHistoricalDataForBalanceOfWhenWiping(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(receiverAccountId));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
         var initialBalance = response.getResultAsNumber();
 
         waitForNextBlock();
-        if (tokenName.toLowerCase().contains("fungible")) {
+        if (tokenName.name().toLowerCase().contains("fungible")) {
             tokenClient.wipeFungible(tokenId, 1L, receiverAccountId);
         } else {
             tokenClient.wipeNonFungible(tokenId, 2L, receiverAccountId);
@@ -413,9 +413,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialBalance, balanceOfHistorical);
     }
 
-    @Then("I verify historical data for {string} is returned for allowance")
-    public void getHistoricalDataForAllowance(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for allowance")
+    public void getHistoricalDataForAllowance(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, ALLOWANCE, asAddress(tokenId), asAddress(admin), asAddress(receiverAccountId));
@@ -430,9 +430,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialAllowance, historicalAllowance);
     }
 
-    @Then("I verify historical data for {string} is returned for getApproved")
-    public void getHistoricalDataForGetApproved(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getApproved")
+    public void getHistoricalDataForGetApproved(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -448,9 +448,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialApprovedAddress, historicalApprovedAddress);
     }
 
-    @Then("I verify historical data for {string} is returned for ERC allowance")
-    public void getHistoricalDataForERCAllowance(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for ERC allowance")
+    public void getHistoricalDataForERCAllowance(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(ERC, ERC_ALLOWANCE, asAddress(tokenId), asAddress(admin), asAddress(receiverAccountId));
         var response = callContract(data, ercContractSolidityAddress);
@@ -464,9 +464,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialAllowance, historicalAllowance);
     }
 
-    @Then("I verify historical data for {string} is returned for ERC getApproved")
-    public void getHistoricalDataForERCGetApproved(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for ERC getApproved")
+    public void getHistoricalDataForERCGetApproved(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -482,9 +482,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialApprovedAddress, historicalApprovedAddress);
     }
 
-    @Then("I verify historical data for {string} is returned for allowance by direct call")
-    public void getHistoricalDataForAllowanceDirectCall(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for allowance by direct call")
+    public void getHistoricalDataForAllowanceDirectCall(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var data = encodeData(ALLOWANCE_DIRECT, asAddress(admin), asAddress(receiverAccountId));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, tokenId.toSolidityAddress());
@@ -498,9 +498,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialAllowance, historicalAllowance);
     }
 
-    @Then("I verify historical data for {string} is returned for getApproved direct call")
-    public void getHistoricalDataForGetApprovedDirectCall(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getApproved direct call")
+    public void getHistoricalDataForGetApprovedDirectCall(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var nftId = new NftId(tokenId, 1L);
         networkTransactionResponse = accountClient.approveNft(nftId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -516,9 +516,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialApprovedAddress, historicalApprovedAddress);
     }
 
-    @Then("I verify historical data for {string} is returned for isApprovedForAll")
-    public void getHistoricalDataForIsApprovedForAll(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for isApprovedForAll")
+    public void getHistoricalDataForIsApprovedForAll(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(
                 ESTIMATE_PRECOMPILE,
@@ -536,9 +536,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialResult, historicalResult);
     }
 
-    @Then("I verify historical data for {string} is returned for ownerOf")
-    public void getHistoricalDataForOwnerOf(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for ownerOf")
+    public void getHistoricalDataForOwnerOf(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(ERC, OWNER_OF, asAddress(tokenId.toSolidityAddress()), new BigInteger("1"));
         var response = callContract(data, ercContractSolidityAddress);
@@ -552,9 +552,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(initialOwner, historicalOwner);
     }
 
-    @Then("I verify historical data for {string} is returned for isFrozen")
-    public void getHistoricalDataForIsFrozenFungible(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for isFrozen")
+    public void getHistoricalDataForIsFrozenFungible(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var data = encodeData(
                 PRECOMPILE,
                 IS_FROZEN,
@@ -575,9 +575,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
-    @Then("I verify historical data for {string} is returned for getFungibleTokenInfo")
-    public void getHistoricalDataForFungibleTokenInfo(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getFungibleTokenInfo")
+    public void getHistoricalDataForFungibleTokenInfo(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_FUNGIBLE_INFO, asAddress(tokenId.toSolidityAddress()));
         var response = callContract(data, precompileContractSolidityAddress);
@@ -588,9 +588,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
     }
 
-    @Then("I verify historical data for {string} is returned for getFungibleTokenInfo when doing burn")
-    public void getHistoricalDataForFungibleTokenInfoWhenMinting(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getFungibleTokenInfo when doing burn")
+    public void getHistoricalDataForFungibleTokenInfoWhenMinting(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_FUNGIBLE_INFO, asAddress(tokenId.toSolidityAddress()));
         var response = callContract(data, precompileContractSolidityAddress);
@@ -601,9 +601,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
     }
 
-    @Then("I verify historical data for {string} is returned for getNonFungibleInfo")
-    public void getHistoricalDataForNonFungibleTokenInfo(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getNonFungibleInfo")
+    public void getHistoricalDataForNonFungibleTokenInfo(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 5L);
         var response = callContract(data, precompileContractSolidityAddress);
@@ -614,10 +614,10 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
     }
 
-    @And("I update the token and account keys for {string}")
-    public void updateAccountAndTokenKeys(String tokenName)
+    @And("I update the token and account keys for {token}")
+    public void updateAccountAndTokenKeys(TokenNameEnum tokenName)
             throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var keyList = KeyList.of(admin.getPublicKey(), deployedEstimatePrecompileContract.contractId())
                 .setThreshold(1);
         new AccountUpdateTransaction()
@@ -638,9 +638,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
-    @Then("I verify historical data for {string} is returned for getTokenKey")
-    public void getHistoricalDataForGetTokenKey(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getTokenKey")
+    public void getHistoricalDataForGetTokenKey(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         BigInteger[] tokenKeyValues = {
             new BigInteger("1"), new BigInteger("2"), new BigInteger("4"), new BigInteger("8"), new BigInteger("16")
@@ -672,9 +672,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         }
     }
 
-    @Then("I verify historical data for {string} is returned for isKyc")
-    public void getHistoricalDataForIsKyc(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for isKyc")
+    public void getHistoricalDataForIsKyc(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, IS_KYC_GRANTED, asAddress(tokenId), asAddress(receiverAccountId));
         var response = callContract(data, precompileContractSolidityAddress);
@@ -689,9 +689,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
-    @Then("I verify historical data for {string} is returned for isToken")
-    public void getHistoricalDataForIsToken(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for isToken")
+    public void getHistoricalDataForIsToken(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(ESTIMATE_PRECOMPILE, IS_TOKEN, asAddress(tokenId));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
@@ -702,7 +702,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
 
         // recreate the deleted token
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.valueOf(tokenName));
+        var tokenResponse = tokenClient.getToken(tokenName);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -710,8 +710,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     }
 
     @RetryAsserts
-    @Then("I verify historical data for {string} is returned for getCustomFees")
-    public void getHistoricalDataForCustomFees(String tokenName) throws InterruptedException {
+    @Then("I verify historical data for {token} is returned for getCustomFees")
+    public void getHistoricalDataForCustomFees(TokenNameEnum tokenName) throws InterruptedException {
         CustomFixedFee customFixedFee = new CustomFixedFee();
         customFixedFee.setAmount(10);
         customFixedFee.setFeeCollectorAccountId(admin.getAccountId());
@@ -728,21 +728,19 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         customRoyaltyFee.setFeeCollectorAccountId(admin.getAccountId());
 
         List<CustomFee> listOfFees;
-        if (tokenName.contains("FUNGIBLE")) {
+        if (tokenName.name().contains("FUNGIBLE")) {
             listOfFees = List.of(customFixedFee, customFractionalFee);
         } else {
             listOfFees = List.of(customFixedFee, customRoyaltyFee);
         }
 
         // deleting the created token without custom fees
-        var oldTokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+        var oldTokenId = tokenClient.getToken(tokenName).tokenId();
         networkTransactionResponse = tokenClient.delete(admin, oldTokenId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         // creating new token with custom fees and getting response from eth_call
-        var tokenId = tokenClient
-                .getToken(TokenNameEnum.valueOf(tokenName), listOfFees)
-                .tokenId();
+        var tokenId = tokenClient.getToken((tokenName), listOfFees).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES, asAddress(tokenId));
         var response = callContract(data, precompileContractSolidityAddress);
@@ -752,7 +750,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         // deleting the token with the custom fees and creating it again without custom fees
         networkTransactionResponse = tokenClient.delete(admin, tokenId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.valueOf(tokenName));
+        var tokenResponse = tokenClient.getToken(tokenName);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
@@ -762,9 +760,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
     }
 
-    @Then("I verify historical data for {string} is returned for getTokenDefaultFreezeStatus")
-    public void getHistoricalDataForDefaultFreezeStatus(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getTokenDefaultFreezeStatus")
+    public void getHistoricalDataForDefaultFreezeStatus(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_DEFAULT_FREEZE_STATUS, asAddress(tokenId));
         var response = callContract(data, precompileContractSolidityAddress);
@@ -777,16 +775,16 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
 
         // creating the deleted token within the test
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.valueOf(tokenName));
+        var tokenResponse = tokenClient.getToken(tokenName);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
     }
 
-    @Then("I verify historical data for {string} is returned for getTokenDefaultKYCStatus")
-    public void getHistoricalDataForDefaultKYCStatus(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getTokenDefaultKYCStatus")
+    public void getHistoricalDataForDefaultKYCStatus(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_DEFAULT_KYC_STATUS, asAddress(tokenId));
         var response = callContract(data, precompileContractSolidityAddress);
@@ -799,16 +797,16 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
 
         // creating the deleted token within the test
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.valueOf(tokenName));
+        var tokenResponse = tokenClient.getToken(tokenName);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
     }
 
-    @Then("I verify historical data for {string} is returned for getTokenType")
-    public void getHistoricalDataForGetTokenType(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getTokenType")
+    public void getHistoricalDataForGetTokenType(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_TYPE, asAddress(tokenId));
         var response = callContract(data, precompileContractSolidityAddress);
@@ -821,16 +819,16 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
 
         // creating the deleted token within the test
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.valueOf(tokenName));
+        var tokenResponse = tokenClient.getToken(tokenName);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
     }
 
-    @Then("I verify historical data for {string} is returned for getTokenExpiryInfo")
-    public void getHistoricalDataForGetTokenExpiryInfo(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} is returned for getTokenExpiryInfo")
+    public void getHistoricalDataForGetTokenExpiryInfo(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(ESTIMATE_PRECOMPILE, GET_EXPIRY_INFO, asAddress(tokenId));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
@@ -843,23 +841,23 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         assertEquals(response, historicalResponse);
 
         // creating the deleted token within the test
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.valueOf(tokenName));
+        var tokenResponse = tokenClient.getToken(tokenName);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
     }
 
-    @Then("I verify historical data for {string} in invalid block returns bad request")
-    public void getHistoricalDataNonExistingToken(String tokenName) throws InterruptedException {
-        var tokenId = tokenClient.getToken(TokenNameEnum.valueOf(tokenName)).tokenId();
+    @Then("I verify historical data for {token} in invalid block returns bad request")
+    public void getHistoricalDataNonExistingToken(TokenNameEnum tokenName) throws InterruptedException {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
         networkTransactionResponse = tokenClient.delete(admin, tokenId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         // creating the new token and getting the creation block
         var initialBlockNumber = getLastBlockNumber();
         var previousBlock = String.valueOf(Long.parseLong(initialBlockNumber) - 5);
-        var tokenResponse = tokenClient.getToken(TokenNameEnum.valueOf(tokenName));
+        var tokenResponse = tokenClient.getToken(tokenName);
         if (tokenResponse.response() != null) {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
