@@ -31,10 +31,10 @@ class RateLimitConfiguration {
 
     @Bean
     Bucket buildBucket() {
-        final var rateLimitPerSecond = mirrorNodeEvmProperties.getRateLimit().getSeconds();
+        long rateLimit = mirrorNodeEvmProperties.getRateLimit();
         final var limit = Bandwidth.builder()
-                .capacity(rateLimitPerSecond)
-                .refillGreedy(rateLimitPerSecond, Duration.ofSeconds(1))
+                .capacity(rateLimit)
+                .refillGreedy(rateLimit, Duration.ofSeconds(1))
                 .build();
         return Bucket.builder().addLimit(limit).build();
     }
