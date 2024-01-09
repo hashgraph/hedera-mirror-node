@@ -66,6 +66,16 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
             nativeQuery = true)
     Optional<Token> findByTokenIdAndTimestamp(long tokenId, long blockTimestamp);
 
+    /**
+     * Finds the historical token total supply for a given token ID based on a specific block timestamp.
+     * This method calculates the historical supply by summing the token transfers for burn, mint and wipe operations
+     * and subtracts this amount from the historical total supply from 'token' and 'token_history' tables
+     *
+     * @param tokenId         the ID of the token to be retrieved.
+     * @param treasuryId      the ID of the treasury
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return the token's total supply at the specified timestamp.
+     * */
     @Query(
             value =
                     """

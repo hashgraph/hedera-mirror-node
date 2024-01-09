@@ -660,7 +660,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_NFT_INFO("getInformationForNonFungibleToken", new Object[] {NFT_ADDRESS_HISTORICAL, 1L}, new Object[] {
             new Object[] {
                 NFT_HBAR_TOKEN_AND_KEYS_HISTORICAL,
-                1_000_000_000L,
+                2L,
                 false,
                 false,
                 true,
@@ -685,7 +685,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 }),
         GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS_HISTORICAL}, new Object[] {
             NFT_HBAR_TOKEN_AND_KEYS_HISTORICAL,
-            1_000_000_000L,
+            2L,
             false,
             false,
             true,

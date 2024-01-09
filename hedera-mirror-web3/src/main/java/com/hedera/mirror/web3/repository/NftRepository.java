@@ -128,6 +128,15 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
             nativeQuery = true)
     long countByAccountIdAndTimestampNotDeleted(long accountId, long blockTimestamp);
 
+    /**
+     * Finds the historical token total supply for a given token ID based on a specific block timestamp.
+     * This method calculates the historical supply by getting the sum of all not deleted nft serials for
+     * this specific timestamp range
+     *
+     * @param tokenId the ID of the token
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return the token's total supply at the specified timestamp.
+     */
     @Query(
             value =
                     """
