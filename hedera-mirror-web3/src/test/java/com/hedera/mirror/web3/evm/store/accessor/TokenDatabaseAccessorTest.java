@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,9 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -64,6 +66,9 @@ class TokenDatabaseAccessorTest {
 
     @Mock
     private TokenRepository tokenRepository;
+
+    @Mock
+    private NftRepository nftRepository;
 
     @Mock
     private EntityDatabaseAccessor entityDatabaseAccessor;
@@ -123,7 +128,7 @@ class TokenDatabaseAccessorTest {
                 .returns(new Id(entity.getShard(), entity.getRealm(), entity.getNum()), Token::getId)
                 .returns(TokenType.valueOf(databaseToken.getType().name()), Token::getType)
                 .returns(TokenSupplyType.valueOf(databaseToken.getSupplyType().name()), Token::getSupplyType)
-                .returns(databaseToken.getTotalSupply(), Token::getTotalSupply)
+                .returns(0L, Token::getTotalSupply)
                 .returns(databaseToken.getMaxSupply(), Token::getMaxSupply)
                 .returns(databaseToken.getFreezeDefault(), Token::isFrozenByDefault)
                 .returns(false, Token::isDeleted)
@@ -163,8 +168,6 @@ class TokenDatabaseAccessorTest {
     @Test
     void getPartialTreasuryAccount() {
         setupToken(Optional.empty());
-        final var treasuryId = mock(EntityId.class);
-        databaseToken.setTreasuryAccountId(treasuryId);
 
         Entity treasuryEntity = mock(Entity.class);
         when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
@@ -172,7 +175,9 @@ class TokenDatabaseAccessorTest {
         when(treasuryEntity.getRealm()).thenReturn(12L);
         when(treasuryEntity.getNum()).thenReturn(13L);
         when(treasuryEntity.getBalance()).thenReturn(14L);
-        when(entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId())).thenReturn(Optional.of(treasuryEntity));
+        when(entityRepository.findByIdAndDeletedIsFalse(
+                        databaseToken.getTreasuryAccountId().getId()))
+                .thenReturn(Optional.of(treasuryEntity));
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty()))
                 .hasValueSatisfying(token -> assertThat(token.getTreasury())
@@ -183,8 +188,6 @@ class TokenDatabaseAccessorTest {
     @Test
     void getPartialTreasuryAccountHistorical() {
         setupToken(timestamp);
-        final var treasuryId = mock(EntityId.class);
-        databaseToken.setTreasuryAccountId(treasuryId);
 
         Entity treasuryEntity = mock(Entity.class);
         when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
@@ -204,8 +207,6 @@ class TokenDatabaseAccessorTest {
     @Test
     void getAutoRenewHistorical() {
         setupToken(timestamp);
-        final var treasuryId = mock(EntityId.class);
-        databaseToken.setTreasuryAccountId(treasuryId);
 
         Entity autorenewEntity = mock(Entity.class);
         when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
@@ -214,7 +215,8 @@ class TokenDatabaseAccessorTest {
         when(autorenewEntity.getRealm()).thenReturn(12L);
         when(autorenewEntity.getNum()).thenReturn(13L);
         when(autorenewEntity.getBalance()).thenReturn(14L);
-        when(entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), timestamp.get()))
+        when(entityRepository.findActiveByIdAndTimestamp(
+                        databaseToken.getTreasuryAccountId().getId(), timestamp.get()))
                 .thenReturn(Optional.of(autorenewEntity));
         when(entityRepository.findActiveByIdAndTimestamp(entity.getAutoRenewAccountId(), timestamp.get()))
                 .thenReturn(Optional.of(autorenewEntity));
@@ -223,6 +225,41 @@ class TokenDatabaseAccessorTest {
                 .hasValueSatisfying(token -> assertThat(token.getAutoRenewAccount())
                         .returns(new Id(11, 12, 13), Account::getId)
                         .returns(14L, Account::getBalance));
+    }
+
+    @Test
+    void getTotalSupplyHistoricalFungible() {
+        setupToken(timestamp);
+        final var treasuryId = EntityId.of(123L);
+        final var totalSupply = 10L;
+        final var historicalSupply = 9L;
+        databaseToken.setType(TokenTypeEnum.FUNGIBLE_COMMON);
+        databaseToken.setTotalSupply(totalSupply);
+        databaseToken.setTreasuryAccountId(treasuryId);
+
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        when(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
+                        databaseToken.getTokenId(), treasuryId.getId(), timestamp.get()))
+                .thenReturn(historicalSupply);
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(token -> assertThat(token.getTotalSupply()).isEqualTo(historicalSupply));
+    }
+
+    @Test
+    void getTotalSupplyHistoricalNft() {
+        setupToken(timestamp);
+        final var totalSupply = 10L;
+        final var historicalSupply = 5L;
+        databaseToken.setType(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+        databaseToken.setTotalSupply(totalSupply);
+
+        when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
+        when(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get()))
+                .thenReturn(historicalSupply);
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
+                .hasValueSatisfying(token -> assertThat(token.getTotalSupply()).isEqualTo(historicalSupply));
     }
 
     @Test
@@ -253,7 +290,6 @@ class TokenDatabaseAccessorTest {
     @Test
     void getTokenDefaultValuesHistorical() {
         setupToken(timestamp);
-        databaseToken.setTreasuryAccountId(null);
         when(entityDatabaseAccessor.get(ADDRESS_ZERO, timestamp)).thenReturn(Optional.ofNullable(defaultEntity));
         when(defaultEntity.getId()).thenReturn(entity.getId());
         when(defaultEntity.getShard()).thenReturn(0L);
@@ -343,6 +379,8 @@ class TokenDatabaseAccessorTest {
     private void setupToken(Optional<Long> timestamp) {
         databaseToken =
                 domainBuilder.token().customize(t -> t.tokenId(entity.getId())).get();
+        final var treasuryId = mock(EntityId.class);
+        databaseToken.setTreasuryAccountId(treasuryId);
         if (timestamp.isPresent()) {
             when(tokenRepository.findByTokenIdAndTimestamp(entity.getId(), timestamp.get()))
                     .thenReturn(Optional.ofNullable(databaseToken));
