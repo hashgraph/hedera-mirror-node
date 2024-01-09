@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,4 +127,31 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                     """,
             nativeQuery = true)
     long countByAccountIdAndTimestampNotDeleted(long accountId, long blockTimestamp);
+
+    @Query(
+            value =
+                    """
+                    select count(*)
+                    from (
+                        (
+                            select token_id
+                            from nft
+                            where token_id = :tokenId
+                                and timestamp_range @> :blockTimestamp
+                                and deleted is not true
+                        )
+                        union all
+                        (
+                            select token_id
+                            from nft_history
+                            where token_id = tokenId
+                                and timestamp_range @> :blockTimestamp
+                                and deleted is not true
+                        )
+                    ) as n
+                    join entity e on e.id = n.token_id
+                    where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
+                    """,
+            nativeQuery = true)
+    long findNftTotalSupplyByTokenIdAndTimestamp(long tokenId, long blockTimestamp);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,4 +65,26 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
                     """,
             nativeQuery = true)
     Optional<Token> findByTokenIdAndTimestamp(long tokenId, long blockTimestamp);
+
+    @Query(
+            value =
+                    """
+                    (
+                        select *
+                        from token
+                        where token_id = ?1 and lower(timestamp_range) <= ?2
+                    )
+                    union all
+                    (
+                        select *
+                        from token_history
+                        where token_id = ?1 and lower(timestamp_range) <= ?2
+                        order by lower(timestamp_range) desc
+                        limit 1
+                    )
+                    order by timestamp_range desc
+                    limit 1
+                    """,
+            nativeQuery = true)
+    long findFungibleTotalSupplyByTokenIdAndTimestamp(long tokenId, long blockTimestamp);
 }
