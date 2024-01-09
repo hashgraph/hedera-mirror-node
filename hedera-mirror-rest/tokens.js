@@ -573,17 +573,18 @@ const extractSqlFromTokenBalancesRequest = async (tokenId, filters) => {
 
     query = `
       with filtered_token_accounts as (
-        select * from token_account as ti
+        select ti.account_id, ti.balance, ti.balance_timestamp
+          from token_account as ti
           ${joinEntityClause}
           where ${conditions.join(' and ')}
           order by ti.account_id ${order}
           limit $${params.push(limit)}
       )
       select 
-        ti.account_id,
-        ti.balance,
+        tif.account_id,
+        tif.balance,
         (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
-      from filtered_token_accounts as ti`;
+      from filtered_token_accounts as tif`;
   }
 
   return utils.buildPgSqlObject(query, params, order, limit);

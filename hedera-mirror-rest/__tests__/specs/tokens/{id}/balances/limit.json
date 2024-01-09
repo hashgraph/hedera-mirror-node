@@ -110,7 +110,7 @@
       "url": "/api/v1/tokens/0.20.1/balances?account.balance=gte:300&limit=2&order=asc",
       "responseStatus": 200,
       "responseJson": {
-        "timestamp": "0.000005424",
+        "timestamp": "0.000005427",
         "balances": [
           {
             "account": "0.0.17",

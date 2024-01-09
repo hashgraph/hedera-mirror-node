@@ -32,29 +32,25 @@
         "token_id": "0.0.99999",
         "account_id": "0.0.18",
         "balance": 20,
-        "created_timestamp": "2300",
-        "balance_timestamp": 2344
+        "created_timestamp": "2300"
       },
       {
         "token_id": "0.0.99998",
         "account_id": "0.0.18",
         "balance": 2020,
-        "created_timestamp": "2300",
-        "balance_timestamp": 2344
+        "created_timestamp": "2300"
       },
       {
         "token_id": "0.0.99998",
         "account_id": "0.0.19",
         "balance": 19,
-        "created_timestamp": "2300",
-        "balance_timestamp": 2344
+        "created_timestamp": "2300"
       },
       {
         "token_id": "0.0.99999",
         "account_id": "0.0.19",
         "balance": 1919,
-        "created_timestamp": "2300",
-        "balance_timestamp": 2344
+        "created_timestamp": "2300"
       }
     ],
     "transactions": [],

@@ -391,16 +391,17 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       expected: {
         query: `
           with filtered_token_accounts as (
-            select * from token_account as ti
+            select ti.account_id, ti.balance, ti.balance_timestamp
+              from token_account as ti
               where ti.token_id = $1 and ti.associated = true
               order by ti.account_id desc
               limit $2
           )
           select 
-            ti.account_id,
-            ti.balance,
+            tif.account_id,
+            tif.balance,
             (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
-          from filtered_token_accounts as ti
+          from filtered_token_accounts as tif
         `,
         params: [tokenId, defaultLimit],
         order: constants.orderFilterValues.DESC,
@@ -420,16 +421,17 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       expected: {
         query: `
           with filtered_token_accounts as (
-            select * from token_account as ti
+            select ti.account_id, ti.balance, ti.balance_timestamp
+              from token_account as ti
               where ti.token_id = $1 and ti.associated = true
               order by ti.account_id desc
               limit $2
           )
           select 
-            ti.account_id,
-            ti.balance,
+            tif.account_id,
+            tif.balance,
             (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
-          from filtered_token_accounts as ti
+          from filtered_token_accounts as tif
         `,
         params: [tokenId, 30],
         order: constants.orderFilterValues.DESC,
@@ -450,7 +452,8 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         expected: {
           query: `
             with filtered_token_accounts as (
-              select * from token_account as ti
+              select ti.account_id, ti.balance, ti.balance_timestamp
+              from token_account as ti
                 where ti.token_id = $1
                   and ti.account_id ${op} $2
                   and ti.associated = true
@@ -458,10 +461,10 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
                 limit $3
             )
             select 
-              ti.account_id,
-              ti.balance,
+              tif.account_id,
+              tif.balance,
               (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
-            from filtered_token_accounts as ti
+            from filtered_token_accounts as tif
           `,
           params: [tokenId, accountId, defaultLimit],
           order: constants.orderFilterValues.DESC,
@@ -483,7 +486,8 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         expected: {
           query: `
             with filtered_token_accounts as (
-              select * from token_account as ti
+              select ti.account_id, ti.balance, ti.balance_timestamp
+                from token_account as ti
                 where ti.token_id = $1
                   and ti.associated = true
                   and ti.balance ${op} $2
@@ -491,10 +495,10 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
                 limit $3
             )
             select 
-              ti.account_id,
-              ti.balance,
+              tif.account_id,
+              tif.balance,
               (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
-            from filtered_token_accounts as ti
+            from filtered_token_accounts as tif
           `,
           params: [tokenId, balance, defaultLimit],
           order: constants.orderFilterValues.DESC,
@@ -516,16 +520,17 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         expected: {
           query: `
           with filtered_token_accounts as (
-            select * from token_account as ti
+            select ti.account_id, ti.balance, ti.balance_timestamp
+              from token_account as ti
               where ti.token_id = $1 and ti.associated = true
               order by ti.account_id ${order}
               limit $2
           )
           select 
-            ti.account_id,
-            ti.balance,
+            tif.account_id,
+            tif.balance,
             (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
-          from filtered_token_accounts as ti
+          from filtered_token_accounts as tif
           `,
           params: [tokenId, defaultLimit],
           order,
@@ -546,7 +551,8 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       expected: {
         query: `
           with filtered_token_accounts as (
-            select * from token_account as ti
+            select ti.account_id, ti.balance, ti.balance_timestamp
+              from token_account as ti
               join entity as e
                 on e.type = '${constants.entityTypes.ACCOUNT}'
                 and e.id = ti.account_id
@@ -556,10 +562,10 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
               limit $3
           )
           select 
-            ti.account_id,
-            ti.balance,
+            tif.account_id,
+            tif.balance,
             (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
-          from filtered_token_accounts as ti
+          from filtered_token_accounts as tif
         `,
         params: [tokenId, publicKey, defaultLimit],
         order: constants.orderFilterValues.DESC,
@@ -599,7 +605,8 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       expected: {
         query: `
           with filtered_token_accounts as (
-            select * from token_account as ti
+            select ti.account_id, ti.balance, ti.balance_timestamp
+            from token_account as ti
             join entity as e
               on e.type = '${constants.entityTypes.ACCOUNT}'
                 and e.id = ti.account_id
@@ -612,10 +619,10 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             limit $5
           )
           select 
-            ti.account_id,
-            ti.balance,
+            tif.account_id,
+            tif.balance,
             (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
-          from filtered_token_accounts as ti
+          from filtered_token_accounts as tif
         `,
         params: [tokenId, accountId, balance, publicKey, 1],
         order: constants.orderFilterValues.ASC,
