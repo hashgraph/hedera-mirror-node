@@ -51,6 +51,8 @@ import org.apache.tuweni.bytes.Bytes;
 @RequiredArgsConstructor
 public class ContractCallService {
 
+    private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
+
     private final Counter.Builder gasCounter =
             Counter.builder("hedera.mirror.web3.call.gas").description("The amount of gas consumed by the EVM");
     private final MeterRegistry meterRegistry;
