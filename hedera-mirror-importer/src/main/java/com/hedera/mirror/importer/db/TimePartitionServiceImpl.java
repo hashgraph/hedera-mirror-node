@@ -21,7 +21,6 @@ import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PA
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_TIME_PARTITION_OVERLAP;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -60,24 +59,13 @@ public class TimePartitionServiceImpl implements TimePartitionService {
     @Override
     public List<TimePartition> getOverlappingTimePartitions(String tableName, long fromTimestamp, long toTimestamp) {
         String cacheKey = tableName + "-" + fromTimestamp + "-" + toTimestamp;
-        try {
-            return cacheTimePartitionOverlap.get(
-                    cacheKey, () -> queryForOverlappingTimePartitions(tableName, fromTimestamp, toTimestamp));
-        } catch (Cache.ValueRetrievalException e) {
-            Utility.handleRecoverableError(
-                    "Error looking up timePartition {} from cacheTimePartitionOverlap", cacheKey, e);
-            return Collections.emptyList();
-        }
+        return cacheTimePartitionOverlap.get(
+                cacheKey, () -> queryForOverlappingTimePartitions(tableName, fromTimestamp, toTimestamp));
     }
 
     @Override
     public List<TimePartition> getTimePartitions(String tableName) {
-        try {
-            return cacheTimePartition.get(tableName, () -> queryForTimePartitions(tableName));
-        } catch (Cache.ValueRetrievalException e) {
-            Utility.handleRecoverableError("Error looking up timePartition {} from cacheTimePartition", tableName, e);
-            return Collections.emptyList();
-        }
+        return cacheTimePartition.get(tableName, () -> queryForTimePartitions(tableName));
     }
 
     private List<TimePartition> queryForOverlappingTimePartitions(
