@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
@@ -75,13 +76,9 @@ public class ContractCallService {
                 BlockType block = params.getBlock();
                 // if we have historical call then set corresponding file record
                 if (block != BlockType.LATEST) {
-                    Optional<RecordFile> recordFileOptional = findRecordFileByBlock(block);
-                    if (recordFileOptional.isPresent()) {
-                        ctx.setRecordFile(recordFileOptional.get());
-                    } else {
-                        // return default empty result when the block passed is valid but not found in DB
-                        return Bytes.EMPTY.toHexString();
-                    }
+                    var recordFileOptional =
+                            findRecordFileByBlock(block).orElseThrow(BlockNumberNotFoundException::new);
+                    ctx.setRecordFile(recordFileOptional);
                 }
                 // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
                 // if the call is historical
