@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import lombok.CustomLog;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -38,15 +37,16 @@ import org.springframework.jdbc.core.RowMapper;
 @Named
 public class TimePartitionServiceImpl implements TimePartitionService {
 
-    private final Cache cacheTimePartitionOverlap;
-    private final Cache cacheTimePartition;
-    private final JdbcTemplate jdbcTemplate;
     private static final String GET_TIME_PARTITIONS_SQL = "select * from mirror_node_time_partitions where parent = ?";
     private static final RowMapper<TimePartition> ROW_MAPPER = (rs, rowNum) -> TimePartition.builder()
             .name(rs.getString("name"))
             .parent(rs.getString("parent"))
             .timestampRange(Range.closedOpen(rs.getLong("from_timestamp"), rs.getLong("to_timestamp")))
             .build();
+
+    private final Cache cacheTimePartitionOverlap;
+    private final Cache cacheTimePartition;
+    private final JdbcTemplate jdbcTemplate;
 
     TimePartitionServiceImpl(
             @Qualifier(CACHE_TIME_PARTITION_OVERLAP) CacheManager cacheManagerOverlapTimePartition,
@@ -59,7 +59,7 @@ public class TimePartitionServiceImpl implements TimePartitionService {
 
     @Override
     public List<TimePartition> getOverlappingTimePartitions(String tableName, long fromTimestamp, long toTimestamp) {
-        String cacheKey = StringUtils.joinWith("-", tableName, fromTimestamp, toTimestamp);
+        String cacheKey = tableName + "-" + fromTimestamp + "-" + toTimestamp;
         try {
             return cacheTimePartitionOverlap.get(
                     cacheKey, () -> queryForOverlappingTimePartitions(tableName, fromTimestamp, toTimestamp));
