@@ -79,7 +79,7 @@ spotless {
     if (!System.getenv().containsKey("CI")) {
         ratchetFrom("origin/main")
     }
-    format("javascript", {
+    format("javascript") {
         indentWithSpaces(2)
         licenseHeader(licenseHeader, "$").updateYearWithLatest(true)
         prettier()
@@ -94,7 +94,7 @@ spotless {
             )
         target("**/*.js")
         targetExclude("**/node_modules/**", "**/__tests__/integration/*.test.js")
-    })
+    }
     java {
         addStep(StripOldLicenseFormatterStep.create())
         palantirJavaFormat("2.39.0")
@@ -103,18 +103,18 @@ spotless {
         targetExclude("build/**")
         toggleOffOn()
     }
-    kotlinGradle({
+    kotlinGradle {
         ktfmt().dropboxStyle()
         licenseHeader(licenseHeader, "(description|import|plugins)").updateYearWithLatest(true)
-    })
-    format("miscellaneous", {
+    }
+    format("miscellaneous") {
         endWithNewline()
         indentWithSpaces(2)
         prettier().npmExecutable(npmExecutable)
         target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
         targetExclude("**/node_modules/**", "**/package-lock.json")
         trimTrailingWhitespace()
-    })
+    }
     sql {
         endWithNewline()
         indentWithSpaces()
@@ -122,13 +122,13 @@ spotless {
         targetExclude("**/db/migration/v1/*.sql") // Modifying executed SQL will change its checksum
         trimTrailingWhitespace()
     }
-    format("xml", {
+    format("xml") {
         endWithNewline()
         indentWithSpaces()
         target("**/*.xml")
         targetExclude("**/node_modules/**", "**/package-lock.json")
         trimTrailingWhitespace()
-    })
+    }
 }
 
 tasks.nodeSetup {
