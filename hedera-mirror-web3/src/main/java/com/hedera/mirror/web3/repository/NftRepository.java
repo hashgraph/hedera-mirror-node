@@ -150,7 +150,7 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                         )
                     ) as n
                     join entity e on e.id = n.token_id
-                    where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
+                    where (e.deleted is not true or timestamp_range @> :blockTimestamp)
                     """,
             nativeQuery = true)
     long findNftTotalSupplyByTokenIdAndTimestamp(long tokenId, long blockTimestamp);

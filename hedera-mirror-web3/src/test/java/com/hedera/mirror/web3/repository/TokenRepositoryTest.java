@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ package com.hedera.mirror.web3.repository;
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -129,5 +131,109 @@ class TokenRepositoryTest extends Web3IntegrationTest {
         assertThat(tokenRepository.findByTokenIdAndTimestamp(
                         tokenHistory.getTokenId(), tokenHistory.getTimestampLower() - 1))
                 .isEmpty();
+    }
+
+    @Test
+    void findFungibleTotalSupplyByTokenIdAndTimestampBurn() {
+        final var totalSupply = 9L;
+        final var change = -1L;
+        final var totalSupplyHistorical = totalSupply - change;
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true).totalSupply(totalSupply))
+                .persist();
+
+        final var tokenBurn = domainBuilder
+                .tokenTransfer()
+                .customize(tr -> tr.id(new TokenTransfer.Id(
+                                tokenHistory.getTimestampLower() + 2,
+                                EntityId.of(tokenHistory.getTokenId()),
+                                tokenHistory.getTreasuryAccountId()))
+                        .amount(change))
+                .persist();
+
+        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
+                        tokenHistory.getTokenId(),
+                        tokenHistory.getTreasuryAccountId().getId(),
+                        tokenBurn.getId().getConsensusTimestamp() - 1))
+                .isEqualTo(totalSupplyHistorical);
+    }
+
+    @Test
+    void findFungibleTotalSupplyByTokenIdAndTimestampMint() {
+        final var totalSupply = 9L;
+        final var change = 1L;
+        final var totalSupplyHistorical = totalSupply - change;
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true).totalSupply(totalSupply))
+                .persist();
+
+        final var tokenMint = domainBuilder
+                .tokenTransfer()
+                .customize(tr -> tr.id(new TokenTransfer.Id(
+                                tokenHistory.getTimestampLower() + 2,
+                                EntityId.of(tokenHistory.getTokenId()),
+                                tokenHistory.getTreasuryAccountId()))
+                        .amount(change))
+                .persist();
+
+        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
+                        tokenHistory.getTokenId(),
+                        tokenHistory.getTreasuryAccountId().getId(),
+                        tokenMint.getId().getConsensusTimestamp() - 1))
+                .isEqualTo(totalSupplyHistorical);
+    }
+
+    @Test
+    void findFungibleTotalSupplyByTokenIdAndTimestampDoNotIncludeTransfer() {
+        final var totalSupply = 9L;
+        final var change = -1L;
+        final var totalSupplyHistorical = totalSupply;
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true).totalSupply(totalSupply))
+                .persist();
+
+        final var tokenBurn = domainBuilder
+                .tokenTransfer()
+                .customize(tr -> tr.id(new TokenTransfer.Id(
+                                tokenHistory.getTimestampLower(),
+                                EntityId.of(tokenHistory.getTokenId()),
+                                tokenHistory.getTreasuryAccountId()))
+                        .amount(change))
+                .persist();
+
+        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
+                        tokenHistory.getTokenId(),
+                        tokenHistory.getTreasuryAccountId().getId(),
+                        tokenHistory.getTimestampLower()))
+                .isEqualTo(totalSupplyHistorical);
+    }
+
+    @Test
+    void findFungibleTotalSupplyByTokenIdAndTimestampDoNotMatchTokenHistory() {
+        final var totalSupply = 9L;
+        final var change = -1L;
+        final var totalSupplyHistorical = 0L;
+        final var tokenHistory = domainBuilder
+                .tokenHistory()
+                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true).totalSupply(totalSupply))
+                .persist();
+
+        final var tokenBurn = domainBuilder
+                .tokenTransfer()
+                .customize(tr -> tr.id(new TokenTransfer.Id(
+                                tokenHistory.getTimestampLower() - 2,
+                                EntityId.of(tokenHistory.getTokenId()),
+                                tokenHistory.getTreasuryAccountId()))
+                        .amount(change))
+                .persist();
+
+        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
+                        tokenHistory.getTokenId(),
+                        tokenHistory.getTreasuryAccountId().getId(),
+                        tokenHistory.getTimestampLower() - 1))
+                .isEqualTo(totalSupplyHistorical);
     }
 }

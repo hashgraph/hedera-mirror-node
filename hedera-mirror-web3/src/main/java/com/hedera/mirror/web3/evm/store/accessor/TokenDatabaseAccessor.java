@@ -116,14 +116,17 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
             final com.hedera.mirror.common.domain.token.Token token, final Optional<Long> timestamp) {
         return timestamp
                 .map(t -> Optional.of(getTotalSupplyHistorical(
-                        token.getType().equals(TokenTypeEnum.FUNGIBLE_COMMON), token.getTokenId(), t)))
+                        token.getType().equals(TokenTypeEnum.FUNGIBLE_COMMON),
+                        token.getTokenId(),
+                        token.getTreasuryAccountId().getId(),
+                        t)))
                 .orElseGet(() -> Optional.ofNullable(token.getTotalSupply()))
                 .orElse(0L);
     }
 
-    private Long getTotalSupplyHistorical(boolean isFungible, long tokenId, long timestamp) {
+    private Long getTotalSupplyHistorical(boolean isFungible, long tokenId, long treasuryId, long timestamp) {
         if (isFungible) {
-            return tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId, timestamp);
+            return tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId, treasuryId, timestamp);
         } else {
             return nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(tokenId, timestamp);
         }
