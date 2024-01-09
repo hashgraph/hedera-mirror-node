@@ -564,23 +564,28 @@ const extractSqlFromTokenBalancesRequest = async (tokenId, filters) => {
         where ${balanceConditions.join(' and ')}
         order by account_id ${order}`;
     }
+    query += `\nlimit $${params.push(limit)}`;
   } else {
     conditions.push('ti.associated = true');
     if (balanceConditions.length) {
       conditions.push(...balanceConditions);
     }
 
-    query = `select 
+    query = `
+      with filtered_token_accounts as (
+        select * from token_account as ti
+          ${joinEntityClause}
+          where ${conditions.join(' and ')}
+          order by ti.account_id ${order}
+          limit $${params.push(limit)}
+      )
+      select 
         ti.account_id,
         ti.balance,
-        (select max(balance_timestamp) from token_account) as consensus_timestamp
-       from token_account as ti
-       ${joinEntityClause}
-       where ${conditions.join(' and ')}
-       order by ti.account_id ${order}`;
+        (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
+      from filtered_token_accounts as ti`;
   }
 
-  query += `\nlimit $${params.push(limit)}`;
   return utils.buildPgSqlObject(query, params, order, limit);
 };
 

@@ -124,16 +124,6 @@
         "balance_timestamp": 5432
       }
     ],
-    "recordFiles": [
-      {
-        "consensus_start": 2000,
-        "consensus_end": 5432
-      },
-      {
-        "consensus_start": 50,
-        "consensus_end": 100
-      }
-    ],
     "transactions": [],
     "cryptotransfers": []
   },
