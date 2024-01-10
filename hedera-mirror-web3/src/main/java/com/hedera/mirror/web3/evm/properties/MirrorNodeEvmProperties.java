@@ -149,9 +149,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @Getter
-    @NotNull
-    @DurationMin(seconds = 100)
-    private Duration rateLimit = Duration.ofSeconds(100L);
+    @Min(100)
+    private long rateLimit = 500;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
