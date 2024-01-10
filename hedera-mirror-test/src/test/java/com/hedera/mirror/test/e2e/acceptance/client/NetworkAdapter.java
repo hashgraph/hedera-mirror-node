@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,20 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
+import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 
-import com.esaulpaugh.headlong.abi.Address;
-import com.esaulpaugh.headlong.abi.Function;
-import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Strings;
+import com.hedera.hashgraph.sdk.ContractFunctionResult;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.DeployedContract;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.SelectorInterface;
 import jakarta.inject.Named;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Named
@@ -44,17 +41,21 @@ public class NetworkAdapter extends EncoderDecoderFacade {
     @Autowired
     private MirrorNodeClient mirrorClient;
 
-    private static final byte[] EMPTY_RESULT = new byte[0];
-    private static final byte[] EMPTY_RESULT_32 = new byte[32];
+    public static final String UINT256 = "(uint256)";
+
+    public static final String BYTES = "(bytes)";
+
+    public static final TupleType BIG_INTEGER_TUPLE = TupleType.parse(UINT256);
+    public static final TupleType BYTES_TUPLE = TupleType.parse(BYTES);
 
     public ContractCallResponse contractsCall(
             final NodeNameEnum node,
             boolean isEstimate,
             final String from,
-            final ContractResource contractResource,
             final DeployedContract deployedContract,
             final SelectorInterface method,
-            final String data) {
+            final String data,
+            final TupleType returnTupleType) {
         if (NodeNameEnum.MIRROR.equals(node)) {
             var contractCallRequestBody = ContractCallRequest.builder()
                     .data(data)
@@ -72,51 +73,41 @@ public class NetworkAdapter extends EncoderDecoderFacade {
                     .getMaxContractFunctionGas();
 
             final var decodedData = Strings.decode(data);
-            final var result = contractClient.executeContractQuery(
-                    deployedContract.contractId(), method.getSelector(), gas, decodedData);
-            return convertResponseFromConsensusNode(contractResource, method, result.asBytes());
-        }
-    }
-
-    /**
-     * We need to decode the resulting bytes from consensus node queries, back to the return type defined in
-     * the method definition. For this, we use headlong decoding mechanism to receive a Tuple object, which wraps the decoded type
-     * */
-    private ContractCallResponse convertResponseFromConsensusNode(
-            final ContractResource contractResource, final SelectorInterface method, final byte[] result) {
-        final var decodedResult = decodeResult(contractResource, method, result);
-        final var contractCallResponse = new ContractCallResponse();
-        if (decodedResult.size() == 1) {
-            if (decodedResult.get(0) instanceof String) {
-                contractCallResponse.setResult(decodedResult.get(0));
-            } else if (decodedResult.get(0) instanceof BigInteger) {
-                contractCallResponse.setResult((decodedResult.get(0)).toString());
-            } else if (decodedResult.get(0) instanceof Boolean) {
-                contractCallResponse.setResult(decodedResult.get(0));
-            } else if (decodedResult.get(0) instanceof byte[]) {
-                if (Arrays.equals(EMPTY_RESULT, decodedResult.get(0))
-                        || (Arrays.equals(EMPTY_RESULT_32, decodedResult.get(0)))) {
-                    contractCallResponse.setResult(StringUtils.EMPTY);
-                } else {
-                    contractCallResponse.setResult(decodedResult.get(0));
+            ContractCallResponse contractCallResponse;
+            try {
+                final var result = contractClient.executeContractQuery(
+                        deployedContract.contractId(), method.getSelector(), gas, decodedData);
+                contractCallResponse = convertConsensusResponse(result, returnTupleType);
+            } catch (final Exception e) {
+                contractCallResponse = new ContractCallResponse();
+                if (e instanceof PrecheckStatusException pse) {
+                    final var exceptionReason = pse.status.toString();
+                    contractCallResponse.setResult(exceptionReason);
+                    return contractCallResponse;
                 }
-            } else if (decodedResult.get(0) instanceof Address) {
-                contractCallResponse.setResult(((Address) decodedResult.get(0)).toString());
-            }
-        }
 
-        return contractCallResponse;
+                contractCallResponse.setResult(e.getMessage());
+            }
+
+            return contractCallResponse;
+        }
     }
 
-    private Tuple decodeResult(ContractResource resource, SelectorInterface method, final byte[] result) {
-        String json;
-        try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    private ContractCallResponse convertConsensusResponse(
+            final ContractFunctionResult result, final TupleType returnTupleType) {
+        final var tupleResult = result.getResult(returnTupleType.getCanonicalType());
 
-        Function function = Function.fromJson(json);
-        return function.decodeReturn(result);
+        final var contractCallResponse = new ContractCallResponse();
+
+        if (isNotEmpty(tupleResult) && tupleResult.get(0) instanceof byte[] bytes) {
+            if (bytes.length == 0) {
+                contractCallResponse.setResult(StringUtils.EMPTY);
+            }
+        } else {
+            final var encodedResult =
+                    Bytes.wrap(returnTupleType.encode(tupleResult).array());
+            contractCallResponse.setResult(encodedResult.toString());
+        }
+        return contractCallResponse;
     }
 }

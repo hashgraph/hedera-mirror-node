@@ -28,14 +28,15 @@ import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.ContractUpdateTransaction;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
@@ -173,9 +174,9 @@ public class ContractClient extends AbstractNetworkClient {
         return new ExecuteContractResult(transactionRecord.contractFunctionResult, response);
     }
 
-    @SneakyThrows
     public ContractFunctionResult executeContractQuery(
-            ContractId contractId, String functionName, Long gas, byte[] data) {
+            ContractId contractId, String functionName, Long gas, byte[] data)
+            throws PrecheckStatusException, TimeoutException {
         ContractCallQuery contractCallQuery =
                 new ContractCallQuery().setContractId(contractId).setGas(gas);
 
@@ -188,33 +189,10 @@ public class ContractClient extends AbstractNetworkClient {
 
         contractCallQuery.setQueryPayment(Hbar.fromTinybars(totalPaymentInTinybars));
 
-        ContractFunctionResult functionResult = retryTemplate.execute(x -> contractCallQuery.execute(client));
+        ContractFunctionResult functionResult = contractCallQuery.execute(client);
 
         log.info("Executed query on contract {} function {}, result: {}", contractId, functionName, functionResult);
-        return functionResult;
-    }
 
-    @SneakyThrows
-    public ContractFunctionResult executeContractQuery(
-            ContractId contractId, String functionName, Long gas, ContractFunctionParameters parameters) {
-        ContractCallQuery contractCallQuery =
-                new ContractCallQuery().setContractId(contractId).setGas(gas);
-        if (parameters == null) {
-            contractCallQuery.setFunction(functionName);
-        } else {
-            contractCallQuery.setFunction(functionName, parameters);
-        }
-
-        long costInTinybars = contractCallQuery.getCost(client).toTinybars();
-
-        long additionalTinybars = 10000;
-        long totalPaymentInTinybars = costInTinybars + additionalTinybars;
-
-        contractCallQuery.setQueryPayment(Hbar.fromTinybars(totalPaymentInTinybars));
-
-        ContractFunctionResult functionResult = retryTemplate.execute(x -> contractCallQuery.execute(client));
-
-        log.info("Executed query on contract {} function {}, result: {}", contractId, functionName, functionResult);
         return functionResult;
     }
 
