@@ -2,9 +2,6 @@
   "description": "Transaction api calls for transactions without crypto transfer list at specified timestamp",
   "matrix": "timestampBindingMatrix.js",
   "setup": {
-    "features": {
-      "fakeTime": "2019-08-14Z 10:50:00"
-    },
     "accounts": [
       {
         "num": 3
@@ -82,6 +79,17 @@
     ],
     "links": {
       "next": null
+    }
+  },
+  "todo": "timestamp eq again",
+  "matrixResponse": {
+    "true": {
+      "responseJson": {
+        "transactions": [],
+        "links": {
+          "next": null
+        }
+      }
     }
   }
 }

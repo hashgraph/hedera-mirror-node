@@ -1,5 +1,6 @@
 {
   "description": "Account api calls for specific account with token balance limit",
+  "matrix": "timestampBindingMatrix.js",
   "setup": {
     "config": {
       "response": {

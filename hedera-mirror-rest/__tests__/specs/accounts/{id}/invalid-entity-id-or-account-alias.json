@@ -1,5 +1,6 @@
 {
   "description": "Account api calls for invalid account id using path url",
+  "matrix": "timestampBindingMatrix.js",
   "setup": {
     "accounts": [
       {

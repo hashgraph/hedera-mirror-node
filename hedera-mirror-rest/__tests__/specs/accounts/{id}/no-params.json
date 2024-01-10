@@ -4,6 +4,7 @@
     "account 8 and account 9 have the same alias, however, account 9 is deleted, so when querying by the alias, ",
     "the rest API should return the information for account 8"
   ],
+  "matrix": "timestampBindingMatrix.js",
   "setup": {
     "accounts": [
       {
@@ -365,6 +366,47 @@
     "stake_period_start": "69120000.000000000",
     "links": {
       "next": null
+    }
+  },
+  "matrixResponse": {
+    "true": {
+      "responseJson": {
+        "transactions": [],
+        "balance": {
+          "balance": 80,
+          "timestamp": "0.000002344",
+          "tokens": [
+            {
+              "token_id": "0.0.99998",
+              "balance": 8
+            },
+            {
+              "token_id": "0.0.99999",
+              "balance": 88
+            }
+          ]
+        },
+        "account": "0.0.8",
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "created_timestamp": "9999.123456789",
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0xac384c53f03855fa1b3616052f8ba32c6c2a2fec",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "pending_reward": 123,
+        "receiver_sig_required": false,
+        "staked_account_id": null,
+        "staked_node_id": 8,
+        "stake_period_start": "69120000.000000000",
+        "links": {
+          "next": null
+        }
+      }
     }
   }
 }

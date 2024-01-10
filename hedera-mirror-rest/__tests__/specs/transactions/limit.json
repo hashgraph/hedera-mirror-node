@@ -2,9 +2,6 @@
   "description": "Transaction api calls for transactions with limit",
   "matrix": "timestampBindingMatrix.js",
   "setup": {
-    "features": {
-      "fakeTime": "2019-08-14Z 10:50:00"
-    },
     "config": {
       "response": {
         "limit": {
@@ -184,6 +181,16 @@
         ],
         "links": {
           "next": "/api/v1/transactions?limit=2&timestamp=lt:1565779600.711927001"
+        }
+      },
+      "matrixResponse": {
+        "true": {
+          "responseJson": {
+            "transactions": [],
+            "links": {
+              "next": null
+            }
+          }
         }
       }
     },
@@ -366,6 +373,16 @@
         ],
         "links": {
           "next": "/api/v1/transactions?limit=5&timestamp=lt:1565779333.711927001"
+        }
+      },
+      "matrixResponse": {
+        "true": {
+          "responseJson": {
+            "transactions": [],
+            "links": {
+              "next": null
+            }
+          }
         }
       }
     }

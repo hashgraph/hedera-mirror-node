@@ -4,6 +4,14 @@
     "account 8 has transactions associated to it. When `transactions` is not specified or is `true`",
     "the transactions are included in the response. When the flag `transactions` is `false` they are not included."
   ],
+  "matrix": "timestampBindingMatrix.js",
+  "matrixSetup": {
+    "true": {
+      "features": {
+        "fakeTime": "2009-02-13Z 23:40:00"
+      }
+    }
+  },
   "setup": {
     "accounts": [
       {

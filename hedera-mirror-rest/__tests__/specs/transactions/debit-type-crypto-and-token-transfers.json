@@ -2,9 +2,6 @@
   "description": "Transaction api calls for transactions via debit type query filter where account receives crypto and token transfers",
   "matrix": "timestampBindingMatrix.js",
   "setup": {
-    "features": {
-      "fakeTime": "2009-02-13Z 23:40:00"
-    },
     "accounts": [
       {
         "num": 3
@@ -281,6 +278,16 @@
     ],
     "links": {
       "next": null
+    }
+  },
+  "matrixResponse": {
+    "true": {
+      "responseJson": {
+        "transactions": [],
+        "links": {
+          "next": null
+        }
+      }
     }
   }
 }
