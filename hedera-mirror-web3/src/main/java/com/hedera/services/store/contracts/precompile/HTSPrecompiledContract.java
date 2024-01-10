@@ -152,7 +152,6 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         try {
             result = computePrecompile(input, frame).getOutput();
         } catch (final InvalidTransactionException e) {
-            final var status = e.getResponseCode();
             if (e.isReverting()) {
                 frame.setState(MessageFrame.State.REVERT);
                 frame.setRevertReason(e.getRevertReason());
