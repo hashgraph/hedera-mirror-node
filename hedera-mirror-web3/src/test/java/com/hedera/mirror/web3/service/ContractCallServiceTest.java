@@ -35,7 +35,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -79,7 +78,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
-    @Disabled
     @ParameterizedTest
     @MethodSource("provideBlockTypes")
     void pureCallWithCustomBlock(BlockType blockType) {
@@ -105,7 +103,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @MethodSource("provideCustomBlockTypes")
     void pureCallWithCustomBlock(BlockType blockType, String expectedResponse, boolean checkGas) {
