@@ -1,5 +1,6 @@
 {
   "description": "Topic messages for single message with matching message",
+  "matrix": "topicMessageLookupMatrix.js",
   "setup": {
     "accounts": [
       {

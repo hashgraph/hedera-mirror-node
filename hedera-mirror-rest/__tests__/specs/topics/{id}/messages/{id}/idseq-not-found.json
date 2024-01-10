@@ -1,5 +1,6 @@
 {
   "description": "Topic messages for single message with non matching response",
+  "matrix": "topicMessageLookupMatrix.js",
   "setup": {
     "accounts": [
       {

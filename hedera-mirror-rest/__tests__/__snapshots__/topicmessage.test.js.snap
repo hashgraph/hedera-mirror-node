@@ -1,5 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`getRangeFromFilters expect exception given ne operator 1`] = `"Not equal (ne) operator is not supported for sequencenumber"`;
+
 exports[`topicmessage validateConsensusTimestampParam tests Verify validateConsensusTimestampParam throws error for -1234567890.000000001 1`] = `
 [
   "Invalid parameter: consensus_timestamp",

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,13 @@ import {getModuleDirname} from '../testutils';
 import {JSONParse} from '../../utils';
 import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from '../integrationUtils';
 import {CreateBucketCommand, PutObjectCommand, S3} from '@aws-sdk/client-s3';
-import {Readable} from 'stream';
 import sinon from 'sinon';
 const groupSpecPath = $$GROUP_SPEC_PATH$$;
+
+const defaultResponseHeaders = {
+  'cache-control': 'public, max-age=1',
+};
+const responseHeadersFilename = 'responseHeaders.json';
 
 const walk = (dir, files = []) => {
   for (const f of fs.readdirSync(dir)) {
@@ -63,31 +67,47 @@ const walk = (dir, files = []) => {
   return files;
 };
 
+const getResponseHeaders = (spec, specPath) => {
+  const responseHeadersPath = path.join(path.dirname(specPath), responseHeadersFilename);
+  spec.responseHeaders = {
+    ...(spec.responseHeaders ?? {}),
+    ...(fs.existsSync(responseHeadersPath)
+      ? JSONParse(fs.readFileSync(responseHeadersPath, 'utf8'))
+      : defaultResponseHeaders),
+  };
+};
+
 const getSpecs = async () => {
   const modulePath = getModuleDirname(import.meta);
   const specPath = path.join(modulePath, '..', 'specs', groupSpecPath);
-  const specMap = {};
 
-  await Promise.all(
-    walk(specPath)
-      .filter((f) => f.endsWith('.json'))
-      .map(async (f) => {
-        const specText = fs.readFileSync(f, 'utf8');
-        const spec = JSONParse(specText);
-        spec.name = path.basename(f);
-        const key = path.dirname(f).replace(specPath, '');
-        const specs = specMap[key] || [];
-        if (spec.matrix) {
-          const apply = (await import(path.join(modulePath, spec.matrix))).default;
-          specs.push(...apply(spec));
-        } else {
-          specs.push(spec);
-        }
-        specMap[key] = specs;
-      })
-  );
+  return (
+    await Promise.all(
+      walk(specPath)
+        .filter((f) => f.endsWith('.json') && !f.endsWith(responseHeadersFilename))
+        .map(async (f) => {
+          const specText = fs.readFileSync(f, 'utf8');
+          const spec = JSONParse(specText);
+          spec.name = path.basename(f);
+          getResponseHeaders(spec, f);
 
-  return specMap;
+          const key = path.dirname(f).replace(specPath, '');
+          const specs = [];
+          if (spec.matrix) {
+            const apply = (await import(path.join(modulePath, spec.matrix))).default;
+            specs.push(...apply(spec));
+          } else {
+            specs.push(spec);
+          }
+
+          return {key, specs};
+        })
+    )
+  ).reduce((specMap, {key, specs}) => {
+    specMap[key] = specMap[key] ?? [];
+    specMap[key].push(...specs);
+    return specMap;
+  }, {});
 };
 
 setupIntegrationTest();
@@ -193,12 +213,12 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
   };
 
   const specSetupSteps = async (spec) => {
+    overrideConfig(spec.config);
     await integrationDomainOps.setup(spec);
     if (spec.sql) {
       await loadSqlScripts(spec.sql.pathprefix, spec.sql.scripts);
       await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
     }
-    overrideConfig(spec.config);
     setupFeatureSupport(spec.features);
   };
 
@@ -317,6 +337,10 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
               } else {
                 expect(contentType).toEqual(tt.responseContentType);
                 expect(response.text).toEqual(tt.responseJson);
+              }
+
+              if (response.status >= 200 && response.status < 300) {
+                expect(response.headers).toMatchObject(spec.responseHeaders);
               }
             });
           });

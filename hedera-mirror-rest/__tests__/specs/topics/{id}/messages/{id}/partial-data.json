@@ -1,5 +1,6 @@
 {
   "description": "Get messages with non existing topic id but sequence number found (partial mirror node)",
+  "matrix": "topicMessageLookupMatrix.js",
   "setup": {
     "topicmessages": [
       {

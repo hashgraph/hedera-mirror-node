@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.exception;
+import _ from 'lodash';
 
-public class BlockNumberNotFoundException extends InvalidInputException {
+const applyMatrix = (spec) => {
+  return [false, true].map((value) => {
+    const clone = _.cloneDeep(spec);
+    clone.name = `${spec.name} with topicMessageLookup=${value}`;
+    clone.setup.config = _.merge(clone.setup.config, {
+      query: {
+        topicMessageLookup: value,
+      },
+    });
+    return clone;
+  });
+};
 
-    private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
-
-    public BlockNumberNotFoundException() {
-        super(UNKNOWN_BLOCK_NUMBER);
-    }
-}
+export default applyMatrix;

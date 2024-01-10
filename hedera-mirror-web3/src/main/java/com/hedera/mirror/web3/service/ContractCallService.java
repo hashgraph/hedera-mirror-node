@@ -76,13 +76,9 @@ public class ContractCallService {
                 BlockType block = params.getBlock();
                 // if we have historical call then set corresponding file record
                 if (block != BlockType.LATEST) {
-                    Optional<RecordFile> recordFileOptional = findRecordFileByBlock(block);
-                    if (recordFileOptional.isPresent()) {
-                        ctx.setRecordFile(recordFileOptional.get());
-                    } else {
-                        // the block passed is valid but not found in DB
-                        throw new BlockNumberNotFoundException(UNKNOWN_BLOCK_NUMBER);
-                    }
+                    var recordFileOptional =
+                            findRecordFileByBlock(block).orElseThrow(BlockNumberNotFoundException::new);
+                    ctx.setRecordFile(recordFileOptional);
                 }
                 // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
                 // if the call is historical

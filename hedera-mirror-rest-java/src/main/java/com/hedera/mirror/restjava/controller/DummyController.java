@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,13 @@ package com.hedera.mirror.restjava.controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Mono;
 
 @RequestMapping("/api/v1")
 @RestController
 class DummyController {
 
     @GetMapping(value = "/dummy")
-    Mono<String> dummy() {
-        return Mono.just("Hello world");
+    String dummy() {
+        return "Hello world";
     }
 }

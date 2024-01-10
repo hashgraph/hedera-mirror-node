@@ -417,7 +417,7 @@ class ContractControllerTest {
     @Test
     void callWithBlockNumberNotFoundExceptionTest() {
         final var request = request();
-        given(service.processCall(any())).willThrow(new BlockNumberNotFoundException("Unknown block number"));
+        given(service.processCall(any())).willThrow(new BlockNumberNotFoundException());
 
         webClient
                 .post()
