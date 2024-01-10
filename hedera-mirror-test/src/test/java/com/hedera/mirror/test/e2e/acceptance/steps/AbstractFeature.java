@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
@@ -180,9 +181,10 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
             final String from,
             final ContractResource contractResource,
             final SelectorInterface method,
-            final String data) {
+            final String data,
+            final TupleType returnTupleType) {
         return networkAdapter.contractsCall(
-                node, false, from, contractResource, getContract(contractResource), method, data);
+                node, false, from, getContract(contractResource), method, data, returnTupleType);
     }
 
     protected ContractCallResponse estimateContract(String data, String contractAddress) {
