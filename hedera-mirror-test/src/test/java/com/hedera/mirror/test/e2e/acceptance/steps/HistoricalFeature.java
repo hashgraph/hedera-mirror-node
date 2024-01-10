@@ -575,40 +575,84 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
-    @Then("I verify historical data for {token} is returned for getFungibleTokenInfo")
-    public void getHistoricalDataForFungibleTokenInfo(TokenNameEnum tokenName) throws InterruptedException {
+    @Then("I verify historical data for {token} is returned for getFungibleTokenInfo when doing {string}")
+    public void getHistoricalDataForFungibleTokenInfo(TokenNameEnum tokenName, String action)
+            throws InterruptedException {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_FUNGIBLE_INFO, asAddress(tokenId.toSolidityAddress()));
         var response = callContract(data, precompileContractSolidityAddress);
         waitForNextBlock();
-        networkTransactionResponse = tokenClient.updateToken(tokenId, admin);
+        switch (action) {
+            case "update" -> networkTransactionResponse = tokenClient.updateToken(tokenId, admin);
+            case "burn" -> networkTransactionResponse = tokenClient.burnFungible(tokenId, 10L);
+            case "mint" -> networkTransactionResponse = tokenClient.mint(tokenId, 10L);
+            case "wipe" -> {
+                tokenClient.transferFungibleToken(
+                        tokenId, admin, receiverAccountId.getAccountId(), receiverAccountId.getPrivateKey(), 10L);
+                networkTransactionResponse = tokenClient.wipeFungible(tokenId, 1L, receiverAccountId);
+            }
+        }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
     }
 
-    @Then("I verify historical data for {token} is returned for getFungibleTokenInfo when doing burn")
-    public void getHistoricalDataForFungibleTokenInfoWhenMinting(TokenNameEnum tokenName) throws InterruptedException {
+    @Then(
+            "I verify historical data for {token} is returned for getFungibleTokenInfo when doing {string} and transfer to {string}")
+    public void getHistoricalDataForFungibleTokenInfoWhenTransferringToTreasury(
+            TokenNameEnum tokenName, String action, String account) throws InterruptedException {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(PRECOMPILE, GET_FUNGIBLE_INFO, asAddress(tokenId.toSolidityAddress()));
         var response = callContract(data, precompileContractSolidityAddress);
         waitForNextBlock();
-        networkTransactionResponse = tokenClient.burnFungible(tokenId, 10L);
+        tokenClient.transferFungibleToken(tokenId, admin, receiverAccountId.getAccountId(), null, 10L);
+        switch (action) {
+            case "burn" -> networkTransactionResponse = tokenClient.burnFungible(tokenId, 10L);
+
+            case "mint" -> networkTransactionResponse = tokenClient.mint(tokenId, 10L);
+        }
+        if (account.equals("treasury")) {
+            networkTransactionResponse =
+                    tokenClient.transferFungibleToken(tokenId, receiverAccountId, admin.getAccountId(), null, 10L);
+        }
+        if (account.equals("secondReceiver")) {
+            networkTransactionResponse = tokenClient.transferFungibleToken(
+                    tokenId,
+                    receiverAccountId,
+                    secondReceiverAccountId.getAccountId(),
+                    secondReceiverAccountId.getPrivateKey(),
+                    10L);
+        }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
     }
 
-    @Then("I verify historical data for {token} is returned for getNonFungibleInfo")
-    public void getHistoricalDataForNonFungibleTokenInfo(TokenNameEnum tokenName) throws InterruptedException {
+    @Then("I verify historical data for {token} is returned for getNonFungibleInfo when doing {string}")
+    public void getHistoricalDataForNonFungibleTokenInfo(TokenNameEnum tokenName, String action)
+            throws InterruptedException {
+        String data;
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
-        var data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 5L);
+        if (action.equals("wipe")) {
+            data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 3L);
+        } else {
+            data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 2L);
+        }
         var response = callContract(data, precompileContractSolidityAddress);
+
         waitForNextBlock();
-        networkTransactionResponse = tokenClient.burnNonFungible(tokenId, 5);
+        switch (action) {
+            case "mint" -> networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
+            case "burn" -> networkTransactionResponse = tokenClient.burnNonFungible(tokenId, 2L);
+            case "wipe" -> {
+                tokenClient.transferNonFungibleToken(
+                        tokenId, admin, receiverAccountId.getAccountId(), List.of(3L), null);
+                networkTransactionResponse = tokenClient.wipeNonFungible(tokenId, 3L, receiverAccountId);
+            }
+        }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
