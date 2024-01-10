@@ -1,13 +1,6 @@
-import com.github.gradle.node.npm.task.NpmSetupTask
-import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
-import java.nio.file.Paths
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,8 +12,11 @@ import java.nio.file.Paths
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+import com.github.gradle.node.npm.task.NpmSetupTask
+import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
+import java.nio.file.Paths
 
 plugins {
     id("com.diffplug.spotless")
@@ -95,8 +91,15 @@ spotless {
         target("**/*.js")
         targetExclude("**/node_modules/**", "**/__tests__/integration/*.test.js")
     }
+    format("go") {
+        endWithNewline()
+        indentWithTabs()
+        licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
+        target("**/*.go")
+        targetExclude("build/**")
+        trimTrailingWhitespace()
+    }
     java {
-        addStep(StripOldLicenseFormatterStep.create())
         palantirJavaFormat("2.39.0")
         licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
         target("**/*.java")
@@ -111,7 +114,7 @@ spotless {
         endWithNewline()
         indentWithSpaces(2)
         prettier().npmExecutable(npmExecutable)
-        target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
+        target("**/*.json", "**/*.md", "**/*.proto", "**/*.yml", "**/*.yaml")
         targetExclude("**/node_modules/**", "**/package-lock.json")
         trimTrailingWhitespace()
     }
