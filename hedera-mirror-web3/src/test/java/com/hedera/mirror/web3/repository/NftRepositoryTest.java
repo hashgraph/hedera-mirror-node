@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -387,7 +387,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .persist();
         final var nft2 = domainBuilder
                 .nft()
-                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .customize(n -> n.accountId(EntityId.of(0, 0, 1234)))
                 .persist();
         domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
         domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
@@ -405,7 +405,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .persist();
         final var nft2 = domainBuilder
                 .nft()
-                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .customize(n -> n.accountId(EntityId.of(0, 0, 1234)))
                 .persist();
         domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
         domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
@@ -594,6 +594,87 @@ class NftRepositoryTest extends Web3IntegrationTest {
         assertThat(nftRepository.countByAccountIdAndTimestampNotDeleted(
                         nftHistory.getAccountId().getId(), nftHistory.getTimestampLower()))
                 .usingRecursiveComparison()
+                .isEqualTo(1L);
+    }
+
+    @Test
+    void balanceByAccountIdAndTokenIdAndTimestampNotDeletedLessThanBlock() {
+        final var nft = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .persist();
+        final var nft2 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .persist();
+        domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
+        domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
+
+        assertThat(nftRepository
+                        .nftBalanceByAccountIdTokenIdAndTimestamp(
+                                nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower() + 1)
+                        .get())
+                .isEqualTo(1L);
+    }
+
+    @Test
+    void balanceByAccountIdAndTokenAndTimestampNotDeletedEqualToBlock() {
+        final var nft = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .persist();
+        final var nft2 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .persist();
+        domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
+        domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
+
+        assertThat(nftRepository
+                        .nftBalanceByAccountIdTokenIdAndTimestamp(
+                                nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower())
+                        .get())
+                .isEqualTo(1L);
+    }
+
+    @Test
+    void balanceByAccountIdAndTokenIdAndTimestampGreaterThanBlock() {
+        final var nft = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .persist();
+        final var nft2 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .persist();
+        domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
+        domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
+
+        assertThat(nftRepository
+                        .nftBalanceByAccountIdTokenIdAndTimestamp(
+                                nft.getAccountId().getId(), nft.getTokenId(), nft.getTimestampLower() - 1)
+                        .get())
+                .isZero();
+    }
+
+    @Test
+    void balanceByAccountIdAndTokenIdAndTimestampNftDeleted() {
+        final var nft = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(EntityId.of(0, 0, 123)).deleted(true))
+                .persist();
+        final var nft2 = domainBuilder
+                .nft()
+                .customize(n -> n.accountId(EntityId.of(0, 0, 123)))
+                .persist();
+        domainBuilder.nft().customize(n -> n.accountId(EntityId.of(0, 0, 123))).persist();
+        domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
+        domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
+
+        assertThat(nftRepository
+                        .nftBalanceByAccountIdTokenIdAndTimestamp(
+                                nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower())
+                        .get())
                 .isEqualTo(1L);
     }
 }
