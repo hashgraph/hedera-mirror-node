@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,13 @@ class JKeyTest {
                 InvalidKeyException.class,
                 () -> JKey.convertJKey(jKeyTooDeep, 1),
                 "Exceeding max expansion depth of " + JKey.MAX_KEY_DEPTH);
+    }
+
+    @Test
+    void convertNullJKeyTest() {
+        // expect:
+        var result = assertDoesNotThrow(() -> JKey.convertJKey(null, 1));
+        assertEquals(JKey.createEmptyKey(), result);
     }
 
     @Test

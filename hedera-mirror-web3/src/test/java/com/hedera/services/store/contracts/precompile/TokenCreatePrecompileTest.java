@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -987,6 +987,21 @@ class TokenCreatePrecompileTest {
                         validator,
                         store,
                         transactionBody.getTokenCreation());
+    }
+
+    @Test
+    void createFungibleTokenSuccessPathWithEmptySenderKeyWithInheritedKeyValueType() {
+        prepareStaticContext();
+        given(worldUpdater.permissivelyUnaliased(any()))
+                .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
+        given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
+        given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(
+                List.of(new TokenKeyWrapper(2, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
+        staticTokenCreatePrecompile
+                .when(() -> decodeFungibleCreate(any(), any()))
+                .thenReturn(tokenCreateWrapper);
+        prepareAndAssertCreateHappyPathSucceeds(CREATE_FUNGIBLE_NO_FEES_INPUT);
     }
 
     @Test
