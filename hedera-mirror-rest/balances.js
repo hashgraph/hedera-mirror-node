@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,18 +242,18 @@ const getOptimizedTimestampRange = (tsQuery, tsParams) => {
       // eq operator has already been converted to the lte operator
       if (query.includes(utils.opsMap.lte)) {
         // lte operator includes the lt operator, so this clause must before the lt clause
-        upperBound = upperBound < value ? upperBound : value;
+        upperBound = utils.bigIntMin(upperBound, value);
       } else if (query.includes(utils.opsMap.lt)) {
         // Convert lt to lte to simplify query
         const ltValue = value - 1n;
-        upperBound = upperBound < ltValue ? upperBound : ltValue;
+        upperBound = utils.bigIntMin(upperBound, ltValue);
       } else if (query.includes(utils.opsMap.gte)) {
         // gte operator includes the gt operator, so this clause must come before the gt clause
-        lowerBound = lowerBound > value ? lowerBound : value;
+        lowerBound = utils.bigIntMax(lowerBound, value);
       } else if (query.includes(utils.opsMap.gt)) {
         // Convert gt to gte to simplify query
         const gtValue = value + 1n;
-        lowerBound = lowerBound > gtValue ? lowerBound : gtValue;
+        lowerBound = utils.bigIntMax(lowerBound, gtValue);
       } else if (query.includes(utils.opsMap.ne)) {
         neParams.push(value);
       }
@@ -270,9 +270,9 @@ const getOptimizedTimestampRange = (tsQuery, tsParams) => {
   // update-to-date as of NOW in wall clock, the algorithm below sets lower bound to
   //   max(lowerBound from user, first day of the month before the month min(now, upperBound) is in)
   const nowInNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
-  const effectiveUpperBound = upperBound > nowInNs ? nowInNs : upperBound;
+  const effectiveUpperBound = utils.bigIntMin(upperBound, nowInNs);
   const optimalLowerBound = utils.getFirstDayOfMonth(effectiveUpperBound, -1);
-  lowerBound = lowerBound > optimalLowerBound ? lowerBound : optimalLowerBound;
+  lowerBound = utils.bigIntMax(lowerBound, optimalLowerBound);
 
   return {lowerBound, upperBound, neParams};
 };

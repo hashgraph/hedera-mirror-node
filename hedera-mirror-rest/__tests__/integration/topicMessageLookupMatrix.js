@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.controller;
+import _ from 'lodash';
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+const applyMatrix = (spec) => {
+  return [false, true].map((value) => {
+    const clone = _.cloneDeep(spec);
+    clone.name = `${spec.name} with topicMessageLookup=${value}`;
+    clone.setup.config = _.merge(clone.setup.config, {
+      query: {
+        topicMessageLookup: value,
+      },
+    });
+    return clone;
+  });
+};
 
-@RequestMapping("/api/v1")
-@RestController
-class DummyController {
-
-    @GetMapping(value = "/dummy")
-    String dummy() {
-        return "Hello world";
-    }
-}
+export default applyMatrix;

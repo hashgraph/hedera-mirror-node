@@ -111,7 +111,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     void pureCallWithCustomBlock(BlockType blockType, String expectedResponse, boolean checkGas) {
         domainBuilder
                 .recordFile()
-                .customize(recordFileBuilder -> recordFileBuilder.index(1L))
+                .customize(recordFileBuilder -> recordFileBuilder.index(blockType.number()))
                 .persist();
 
         final var pureFuncHash = "8070450f";
@@ -574,10 +574,10 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     static Stream<Arguments> provideCustomBlockTypes() {
         return Stream.of(
+                Arguments.of(BlockType.of("0x1"), "0x", false),
                 Arguments.of(
-                        BlockType.of("0x1"),
+                        BlockType.of("0x100"),
                         "0x0000000000000000000000000000000000000000000000000000000000000004",
-                        true),
-                Arguments.of(BlockType.of("0x100"), "0x", false));
+                        true));
     }
 }

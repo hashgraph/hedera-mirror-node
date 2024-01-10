@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,9 +56,6 @@ dependencies {
 // Disable the default test task and only run acceptance tests during the standalone "acceptance"
 // task
 tasks.named("test") { enabled = false }
-
-// Resolve warning about using the deprecated '-debug' fallback
-tasks.compileTestJava { options.compilerArgs.addAll(listOf("-parameters")) }
 
 tasks.register<Test>("acceptance") {
     val maxParallelism = project.property("maxParallelism") as String

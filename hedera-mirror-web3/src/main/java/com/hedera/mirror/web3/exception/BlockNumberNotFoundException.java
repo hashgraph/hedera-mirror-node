@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.controller;
+package com.hedera.mirror.web3.exception;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+public class BlockNumberNotFoundException extends InvalidInputException {
 
-@RequestMapping("/api/v1")
-@RestController
-class DummyController {
+    private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
 
-    @GetMapping(value = "/dummy")
-    String dummy() {
-        return "Hello world";
+    public BlockNumberNotFoundException() {
+        super(UNKNOWN_BLOCK_NUMBER);
     }
 }

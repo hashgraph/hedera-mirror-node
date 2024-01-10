@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -564,23 +564,29 @@ const extractSqlFromTokenBalancesRequest = async (tokenId, filters) => {
         where ${balanceConditions.join(' and ')}
         order by account_id ${order}`;
     }
+    query += `\nlimit $${params.push(limit)}`;
   } else {
     conditions.push('ti.associated = true');
     if (balanceConditions.length) {
       conditions.push(...balanceConditions);
     }
 
-    query = `select 
-        ti.account_id,
-        ti.balance,
-        (select max(consensus_end) from record_file) as consensus_timestamp
-       from token_account as ti
-       ${joinEntityClause}
-       where ${conditions.join(' and ')}
-       order by ti.account_id ${order}`;
+    query = `
+      with filtered_token_accounts as (
+        select ti.account_id, ti.balance, ti.balance_timestamp
+          from token_account as ti
+          ${joinEntityClause}
+          where ${conditions.join(' and ')}
+          order by ti.account_id ${order}
+          limit $${params.push(limit)}
+      )
+      select 
+        tif.account_id,
+        tif.balance,
+        (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
+      from filtered_token_accounts as tif`;
   }
 
-  query += `\nlimit $${params.push(limit)}`;
   return utils.buildPgSqlObject(query, params, order, limit);
 };
 
