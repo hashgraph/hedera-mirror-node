@@ -16,9 +16,9 @@
 
 import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
 
-plugins {
-    id("org.owasp.dependencycheck")
-}
+plugins { id("org.owasp.dependencycheck") }
+
+repositories { mavenCentral() }
 
 val resources = rootDir.resolve("buildSrc").resolve("src").resolve("main").resolve("resources")
 
