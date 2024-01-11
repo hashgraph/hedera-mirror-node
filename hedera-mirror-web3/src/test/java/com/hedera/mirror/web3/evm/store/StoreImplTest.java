@@ -166,7 +166,7 @@ class StoreImplTest {
                 tokenAccountRepository,
                 accountBalanceRepository);
         final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
-                tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor);
+                tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor, nftRepository);
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
                 tokenDatabaseAccessor,
                 accountDatabaseAccessor,

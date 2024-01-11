@@ -115,7 +115,7 @@ class HederaEvmWorldStateTest {
         final var accountDatabaseAccessor =
                 new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null);
         final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
-                tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor);
+                tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor, nftRepository);
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
                 tokenDatabaseAccessor,
                 accountDatabaseAccessor,

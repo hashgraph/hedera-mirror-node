@@ -1843,7 +1843,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .pauseKey(key)
                         .supplyKey(key)
                         .symbol("HBAR")
-                        .timestampRange(historicalBlock))
+                        .timestampRange(
+                                Range.openClosed(historicalBlock.lowerEndpoint(), historicalBlock.upperEndpoint() + 1)))
                 .persist();
 
         return tokenEntityId;
@@ -1952,7 +1953,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .kycKey(key)
                         .freezeDefault(freezeDefault)
                         .feeScheduleKey(key)
-                        .totalSupply(1_000_000_000L)
+                        .totalSupply(2L)
                         .maxSupply(2_000_000_000L)
                         .name("Hbars")
                         .supplyType(TokenSupplyTypeEnum.FINITE)
@@ -1977,7 +1978,22 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .accountId(ownerEntity)
                         .tokenId(nftEntityId.getId())
                         .deleted(false)
-                        .timestampRange(historicalBlock))
+                        .timestampRange(
+                                Range.openClosed(historicalBlock.lowerEndpoint(), historicalBlock.upperEndpoint() + 1)))
+                .persist();
+
+        domainBuilder
+                .nftHistory()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .createdTimestamp(1475067194949034022L)
+                        .serialNumber(3L)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .deleted(false)
+                        .timestampRange(Range.openClosed(
+                                historicalBlock.lowerEndpoint() - 1, historicalBlock.upperEndpoint() + 1)))
                 .persist();
         return nftEntityId;
     }

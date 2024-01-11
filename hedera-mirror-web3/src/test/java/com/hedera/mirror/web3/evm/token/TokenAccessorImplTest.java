@@ -139,8 +139,8 @@ class TokenAccessorImplTest {
     void setUp() {
         final var entityAccessor = new EntityDatabaseAccessor(entityRepository);
         final var customFeeAccessor = new CustomFeeDatabaseAccessor(customFeeRepository, entityAccessor);
-        final var tokenDatabaseAccessor =
-                new TokenDatabaseAccessor(tokenRepository, entityAccessor, entityRepository, customFeeAccessor);
+        final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
+                tokenRepository, entityAccessor, entityRepository, customFeeAccessor, nftRepository);
         final var accountDatabaseAccessor = new AccountDatabaseAccessor(
                 entityAccessor,
                 nftAllowanceRepository,

@@ -677,4 +677,64 @@ class NftRepositoryTest extends Web3IntegrationTest {
                         .get())
                 .isEqualTo(1L);
     }
+
+    @Test
+    void findNftTotalSupplyByTokenIdAndTimestampLessThanBlock() {
+        final var nft = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        final var nft2 = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
+
+        assertThat(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(
+                        nft2.getTokenId(), nft2.getTimestampLower() + 1))
+                .isEqualTo(2L);
+    }
+
+    @Test
+    void findNftTotalSupplyByTokenIdAndTimestampEqualToBlock() {
+        final var nft = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        final var nft2 = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
+
+        assertThat(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(nft2.getTokenId(), nft2.getTimestampLower()))
+                .isEqualTo(2L);
+    }
+
+    @Test
+    void findNftTotalSupplyByTokenIdAndTimestampGreaterThanBlock() {
+        final var nft = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        final var nft2 = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
+
+        assertThat(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(nft.getTokenId(), nft.getTimestampLower() - 1))
+                .isZero();
+    }
+
+    @Test
+    void findNftTotalSupplyByTokenIdAndTimestampNftDeleted() {
+        final var nft =
+                domainBuilder.nft().customize(n -> n.tokenId(1L).deleted(true)).persist();
+        final var nft2 = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
+
+        assertThat(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(nft2.getTokenId(), nft2.getTimestampLower()))
+                .isEqualTo(1L);
+    }
+
+    @Test
+    void findNftTotalSupplyByTokenIdAndTimestampEntityDeletedAndNftStillValid() {
+        final var nft = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        long blockTimestamp = nft.getTimestampLower();
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nft.getTokenId())
+                        .timestampRange(Range.closedOpen(blockTimestamp + 10, blockTimestamp + 20))
+                        .deleted(true))
+                .persist();
+
+        // Tests that NFT records remain valid if their linked entity is marked as deleted after the blockTimestamp.
+        // Verifies NFTs are considered active at blockTimestamp, even if the associated entity is currently deleted.
+
+        assertThat(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(nft.getTokenId(), nft.getTimestampLower()))
+                .isEqualTo(1L);
+    }
 }
