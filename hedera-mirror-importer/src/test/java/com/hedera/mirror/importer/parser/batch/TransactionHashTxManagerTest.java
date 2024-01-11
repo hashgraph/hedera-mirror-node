@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,13 +63,13 @@ class TransactionHashTxManagerTest extends ImporterIntegrationTest {
             var threadState = transactionHashTxManager.updateAndGetThreadState(hash1.calculateV1Shard());
             assertThat(threadState.getStatus()).isEqualTo(-1);
             assertThat(threadState.getProcessedShards()).containsExactly(1);
-            TestUtils.insertIntoTransactionHashSharded(jdbcTemplate, hash1);
+            TestUtils.insertIntoTransactionHash(jdbcTemplate, hash1);
 
             var threadState2 = transactionHashTxManager.updateAndGetThreadState(2);
             assertThat(threadState2).isEqualTo(threadState);
             assertThat(threadState.getProcessedShards()).containsExactly(1, 2);
             assertThat(threadState2.getStatus()).isEqualTo(-1);
-            TestUtils.insertIntoTransactionHashSharded(jdbcTemplate, hash2);
+            TestUtils.insertIntoTransactionHash(jdbcTemplate, hash2);
         });
 
         var hash3 = domainBuilder.transactionHash().get();
@@ -81,25 +81,25 @@ class TransactionHashTxManagerTest extends ImporterIntegrationTest {
             var threadState = transactionHashTxManager.updateAndGetThreadState(3);
             assertThat(threadState.getStatus()).isEqualTo(-1);
             assertThat(threadState.getProcessedShards()).containsExactly(3);
-            TestUtils.insertIntoTransactionHashSharded(jdbcTemplate, hash3);
+            TestUtils.insertIntoTransactionHash(jdbcTemplate, hash3);
 
             var threadState2 = transactionHashTxManager.updateAndGetThreadState(4);
             assertThat(threadState2).isEqualTo(threadState);
             assertThat(threadState.getProcessedShards()).containsExactly(3, 4);
             assertThat(threadState.getStatus()).isEqualTo(-1);
-            TestUtils.insertIntoTransactionHashSharded(jdbcTemplate, hash4);
+            TestUtils.insertIntoTransactionHash(jdbcTemplate, hash4);
         });
 
         transactionTemplate.executeWithoutResult((status) -> {
             try {
-                transactionHashTxManager.initialize(Collections.singleton(hash1), "transaction_hash_sharded");
+                transactionHashTxManager.initialize(Collections.singleton(hash1), "transaction_hash");
                 assertThat(transactionHashTxManager.getItemCount()).isEqualTo(1);
                 thread1.start();
                 thread1.join();
 
                 assertThat(transactionHashTxManager.getThreadConnections()).hasSize(1);
 
-                transactionHashTxManager.initialize(Collections.singleton(hash2), "transaction_hash_sharded");
+                transactionHashTxManager.initialize(Collections.singleton(hash2), "transaction_hash");
                 assertThat(transactionHashTxManager.getItemCount()).isEqualTo(2);
                 thread2.start();
                 thread2.join();
