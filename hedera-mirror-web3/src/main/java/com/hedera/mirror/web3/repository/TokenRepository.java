@@ -83,13 +83,13 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
                         (
                             select total_supply, timestamp_range
                             from token
-                            where token_id = ?1 and timestamp_range @> ?3
+                            where token_id = ?1 and timestamp_range @> ?2
                         )
                         union all
                         (
                             select total_supply, timestamp_range
                             from token_history
-                            where token_id = ?1 and timestamp_range @> ?3
+                            where token_id = ?1 and timestamp_range @> ?2
                             order by lower(timestamp_range) desc
                             limit 1
                         )
@@ -100,12 +100,11 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
                         from token_transfer as tt, total_supply_snapshot as s
                         where
                             token_id = ?1 and
-                            account_id = ?2 and
                             s.timestamp_range @> tt.consensus_timestamp and
-                            tt.consensus_timestamp > ?3
+                            tt.consensus_timestamp > ?2
                     )
                     select coalesce((select total_supply from total_supply_snapshot), 0) + coalesce((select -amount from change), 0)
                     """,
             nativeQuery = true)
-    long findFungibleTotalSupplyByTokenIdAndTimestamp(long tokenId, long treasuryId, long blockTimestamp);
+    long findFungibleTotalSupplyByTokenIdAndTimestamp(long tokenId, long blockTimestamp);
 }

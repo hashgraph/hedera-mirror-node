@@ -239,7 +239,7 @@ class TokenDatabaseAccessorTest {
 
         when(entityDatabaseAccessor.get(ADDRESS, timestamp)).thenReturn(Optional.ofNullable(entity));
         when(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        databaseToken.getTokenId(), treasuryId.getId(), timestamp.get()))
+                        databaseToken.getTokenId(), timestamp.get()))
                 .thenReturn(historicalSupply);
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
