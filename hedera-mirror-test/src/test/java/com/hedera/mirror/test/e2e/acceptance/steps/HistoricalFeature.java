@@ -617,7 +617,13 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             networkTransactionResponse =
                     tokenClient.transferFungibleToken(tokenId, receiverAccountId, admin.getAccountId(), null, 10L);
         }
+        if (account.equals("receiver")) {
+            networkTransactionResponse = tokenClient.transferFungibleToken(
+                    tokenId, admin, receiverAccountId.getAccountId(), receiverAccountId.getPrivateKey(), 10L);
+        }
         if (account.equals("secondReceiver")) {
+            tokenClient.associate(secondReceiverAccountId, tokenId);
+            tokenClient.grantKyc(tokenId, secondReceiverAccountId.getAccountId());
             networkTransactionResponse = tokenClient.transferFungibleToken(
                     tokenId,
                     receiverAccountId,
@@ -637,20 +643,20 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var initialBlockNumber = getLastBlockNumber();
         if (action.equals("wipe")) {
-            data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 3L);
+            data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 5L);
         } else {
-            data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 2L);
+            data = encodeData(PRECOMPILE, GET_NFT_INFO, asAddress(tokenId.toSolidityAddress()), 4L);
         }
         var response = callContract(data, precompileContractSolidityAddress);
 
         waitForNextBlock();
         switch (action) {
             case "mint" -> networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
-            case "burn" -> networkTransactionResponse = tokenClient.burnNonFungible(tokenId, 2L);
+            case "burn" -> networkTransactionResponse = tokenClient.burnNonFungible(tokenId, 4L);
             case "wipe" -> {
                 tokenClient.transferNonFungibleToken(
-                        tokenId, admin, receiverAccountId.getAccountId(), List.of(3L), null);
-                networkTransactionResponse = tokenClient.wipeNonFungible(tokenId, 3L, receiverAccountId);
+                        tokenId, admin, receiverAccountId.getAccountId(), List.of(5L), null);
+                networkTransactionResponse = tokenClient.wipeNonFungible(tokenId, 5L, receiverAccountId);
             }
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
