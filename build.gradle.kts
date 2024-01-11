@@ -17,7 +17,7 @@
 import com.github.gradle.node.npm.task.NpmSetupTask
 import java.nio.file.Paths
 
-description = "Hedera Mirror Node imports data from consensus2 nodes and serves it via an API"
+description = "Hedera Mirror Node imports data from consensus nodes and serves it via an API"
 
 plugins {
     id("com.diffplug.spotless")
@@ -244,7 +244,7 @@ spotless {
         endWithNewline()
         indentWithSpaces()
         target("hedera-mirror-(common|importer|rest)/**/*.sql")
-        targetExclude("**/node_modules/**")
+        targetExclude("**/build/**", "**/node_modules/**")
         trimTrailingWhitespace()
     }
 }
