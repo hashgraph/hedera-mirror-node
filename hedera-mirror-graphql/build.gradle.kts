@@ -43,7 +43,10 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
     runtimeOnly(
-        group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+        group = "io.netty",
+        name = "netty-resolver-dns-native-macos",
+        classifier = "osx-aarch_64"
+    )
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("io.projectreactor:reactor-test")
@@ -68,7 +71,8 @@ generatePojoConf {
                 "java.time.Duration",
                 "",
                 "com.hedera.mirror.graphql.config.GraphQlDuration.INSTANCE",
-                ""),
+                ""
+            ),
             CustomScalarDefinition("Long", "java.lang.Long", "", "graphql.scalars.GraphQLLong", ""),
             CustomScalarDefinition("Object", "java.lang.Object", "", "graphql.scalars.Object", ""),
             CustomScalarDefinition(
@@ -76,8 +80,10 @@ generatePojoConf {
                 "java.time.Instant",
                 "",
                 "com.hedera.mirror.graphql.config.GraphQlTimestamp.INSTANCE",
-                ""),
-        ))
+                ""
+            ),
+        )
+    )
 }
 
 tasks.withType<JavaCompile> {
@@ -90,7 +96,8 @@ tasks.withType<JavaCompile> {
                 "-Amapstruct.disableBuilders=true",
                 "-Amapstruct.unmappedTargetPolicy=IGNORE", // Remove once all Account fields have
                 // been mapped
-            ))
+            )
+        )
     }
 }
 

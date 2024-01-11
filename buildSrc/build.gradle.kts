@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    `kotlin-dsl`
-}
+plugins { `kotlin-dsl` }
 
 repositories {
     gradlePluginPortal()
@@ -42,10 +40,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.1")
 }
 
-val gitHook = tasks.register<Exec>("gitHook") {
-    commandLine("git", "config", "core.hookspath", "buildSrc/src/main/resources/hooks")
-}
+val gitHook =
+    tasks.register<Exec>("gitHook") {
+        commandLine("git", "config", "core.hookspath", "buildSrc/src/main/resources/hooks")
+    }
 
-project.tasks.build {
-    dependsOn(gitHook)
-}
+project.tasks.build { dependsOn(gitHook) }

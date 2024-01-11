@@ -8,8 +8,7 @@ until [full state proof](https://www.hedera.com/blog/state-proofs-on-hedera) is 
 ## Goals
 
 - Provide a State Proof REST API for clients to retrieve the record file containing the transaction, the corresponding
-signature files, and the address book at the time of the transaction to prove its validity
-
+  signature files, and the address book at the time of the transaction to prove its validity
 
 ## REST API
 
@@ -22,7 +21,7 @@ nanoseconds of the valid start timestamp of the transaction.
 
 ### Optional Filters
 
-* `/transactions/:transactionId/stateproof?scheduled=true` Get stateproof for the scheduled transaction. The default is
+- `/transactions/:transactionId/stateproof?scheduled=true` Get stateproof for the scheduled transaction. The default is
   false.
 
 The [version 5 record file and signature file](https://docs.hedera.com/guides/docs/record-and-event-stream-file-formats)
@@ -34,16 +33,14 @@ The full format response in JSON:
 
 ```json
 {
-    "address_books": [
-      "address book content"
-    ],
-    "record_file": "record file content",
-    "signature_files": {
-      "0.0.3": "signature file content of node 0.0.3",
-      "0.0.4": "signature file content of node 0.0.4",
-      "0.0.n": "signature file content of node 0.0.n"
-    },
-    "version": 2
+  "address_books": ["address book content"],
+  "record_file": "record file content",
+  "signature_files": {
+    "0.0.3": "signature file content of node 0.0.3",
+    "0.0.4": "signature file content of node 0.0.4",
+    "0.0.n": "signature file content of node 0.0.n"
+  },
+  "version": 2
 }
 ```
 
@@ -51,31 +48,29 @@ The compact format response in JSON:
 
 ```json
 {
-    "address_books": [
-      "address book content"
+  "address_books": ["address book content"],
+  "record_file": {
+    "head": "content of the head",
+    "start_running_hash_object": "content of the start running hash object",
+    "hashes_before": [
+      "hash of the 1st record stream object",
+      "hash of the 2nd record stream object",
+      "hash of the (m-1)th record stream object"
     ],
-    "record_file": {
-      "head": "content of the head",
-      "start_running_hash_object": "content of the start running hash object",
-      "hashes_before": [
-        "hash of the 1st record stream object",
-        "hash of the 2nd record stream object",
-        "hash of the (m-1)th record stream object"
-      ],
-      "record_stream_object": "content of the mth record stream object",
-      "hashes_after": [
-        "hash of the (m+1)th record stream object",
-        "hash of the (m+2)th record stream object",
-        "hash of the nth record stream object"
-      ],
-      "end_running_hash_object": "content of the end running hash object",
-    },
-    "signature_files": {
-      "0.0.3": "signature file content of node 0.0.3",
-      "0.0.4": "signature file content of node 0.0.4",
-      "0.0.n": "signature file content of node 0.0.n"
-    },
-    "version": 5
+    "record_stream_object": "content of the mth record stream object",
+    "hashes_after": [
+      "hash of the (m+1)th record stream object",
+      "hash of the (m+2)th record stream object",
+      "hash of the nth record stream object"
+    ],
+    "end_running_hash_object": "content of the end running hash object"
+  },
+  "signature_files": {
+    "0.0.3": "signature file content of node 0.0.3",
+    "0.0.4": "signature file content of node 0.0.4",
+    "0.0.n": "signature file content of node 0.0.n"
+  },
+  "version": 5
 }
 ```
 
@@ -96,13 +91,15 @@ Upon receiving the JSON response, a client proves the transaction is valid as fo
 4. Parse the record file and check for the transaction in the parsed records
 
 ## Architecture
+
 ![Architecture](images/state-proof-alpha-architecture.png)
 
 1. Client requests state proof data for a transaction from state proof alpha REST API
 2. State proof alpha REST API queries data for the transaction from PostgreSQL: the name of the record file containing
-the transaction, and the address book at the consensus timestamp of the transaction
+   the transaction, and the address book at the consensus timestamp of the transaction
 3. State proof alpha REST API downloads the record file and the corresponding signature files from S3
 4. State proof alpha REST API sends the record file, signature files, and address book to Client
 
 ### Sequence Diagram
+
 ![Sequence Diagram](images/state-proof-alpha-sequence.svg)

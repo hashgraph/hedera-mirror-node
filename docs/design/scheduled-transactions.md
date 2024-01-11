@@ -256,7 +256,6 @@ GET `/api/v1/schedules`
 GET `/api/v1/schedules/{scheduleId}`
 
 ```json
-
 {
   "admin_key": {
     "_type": "ProtobufEncoded",

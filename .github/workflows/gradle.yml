@@ -2,18 +2,32 @@ name: "Gradle"
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project: [ common, graphql, grpc, importer, monitor, rest, rest-java, 'rest:check-state-proof', 'rest:monitoring', rosetta, test, web3 ]
-        schema: [ v1, v2 ]
+        project:
+          [
+            common,
+            graphql,
+            grpc,
+            importer,
+            monitor,
+            rest,
+            rest-java,
+            "rest:check-state-proof",
+            "rest:monitoring",
+            rosetta,
+            test,
+            web3,
+          ]
+        schema: [v1, v2]
         exclude:
           - project: common
             schema: v2

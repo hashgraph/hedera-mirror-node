@@ -45,7 +45,10 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     runtimeOnly(
-        group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+        group = "io.netty",
+        name = "netty-resolver-dns-native-macos",
+        classifier = "osx-aarch_64"
+    )
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.redis.testcontainers:testcontainers-redis-junit-jupiter")

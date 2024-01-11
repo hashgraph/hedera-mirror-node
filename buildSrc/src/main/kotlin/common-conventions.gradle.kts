@@ -30,5 +30,6 @@ dependencyCheck {
             experimentalEnabled = true
             golangModEnabled =
                 false // Too many vulnerabilities in transitive dependencies currently
-        })
+        }
+    )
 }
