@@ -153,8 +153,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        tokenHistory.getTokenId(),
-                        tokenBurn.getId().getConsensusTimestamp() - 1))
+                        tokenHistory.getTokenId(), tokenBurn.getId().getConsensusTimestamp() - 1))
                 .isEqualTo(totalSupplyHistorical);
     }
 
@@ -178,8 +177,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        tokenHistory.getTokenId(),
-                        tokenMint.getId().getConsensusTimestamp() - 1))
+                        tokenHistory.getTokenId(), tokenMint.getId().getConsensusTimestamp() - 1))
                 .isEqualTo(totalSupplyHistorical);
     }
 
@@ -203,8 +201,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        tokenHistory.getTokenId(),
-                        tokenHistory.getTimestampLower() + 1))
+                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower() + 1))
                 .isEqualTo(totalSupplyHistorical);
     }
 
@@ -228,8 +225,7 @@ class TokenRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        tokenHistory.getTokenId(),
-                        tokenHistory.getTimestampLower() - 1))
+                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower() - 1))
                 .isEqualTo(totalSupplyHistorical);
     }
 }

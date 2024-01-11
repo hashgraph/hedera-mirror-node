@@ -116,9 +116,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
             final com.hedera.mirror.common.domain.token.Token token, final Optional<Long> timestamp) {
         return timestamp
                 .map(t -> Optional.of(getTotalSupplyHistorical(
-                        token.getType().equals(TokenTypeEnum.FUNGIBLE_COMMON),
-                        token.getTokenId(),
-                        t)))
+                        token.getType().equals(TokenTypeEnum.FUNGIBLE_COMMON), token.getTokenId(), t)))
                 .orElseGet(() -> Optional.ofNullable(token.getTotalSupply()))
                 .orElse(0L);
     }
