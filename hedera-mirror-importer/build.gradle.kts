@@ -52,7 +52,10 @@ dependencies {
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sts")
     runtimeOnly(
-        group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+        group = "io.netty",
+        name = "netty-resolver-dns-native-macos",
+        classifier = "osx-aarch_64"
+    )
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.github.vertical-blank:sql-formatter")
     testImplementation("com.playtika.testcontainers:embedded-google-pubsub")

@@ -31,12 +31,8 @@ configurations.all {
 }
 
 repositories {
-    maven {
-        url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/")
-    }
-    maven {
-        url = uri("https://artifacts.consensys.net/public/maven/maven/")
-    }
+    maven { url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/") }
+    maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
 }
 
 dependencyManagement {
@@ -56,7 +52,9 @@ dependencies {
 tasks.compileJava {
     dependsOn("generateEffectiveLombokConfig")
     // Disable deprecation, serial, and this-escape warnings due to errors in generated code
-    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-deprecation,-serial,-this-escape"))
+    options.compilerArgs.addAll(
+        listOf("-Werror", "-Xlint:all", "-Xlint:-deprecation,-serial,-this-escape")
+    )
     options.encoding = "UTF-8"
     sourceCompatibility = "21"
     targetCompatibility = "21"
@@ -70,9 +68,7 @@ tasks.compileTestJava {
     targetCompatibility = "21"
 }
 
-tasks.javadoc {
-    options.encoding = "UTF-8"
-}
+tasks.javadoc { options.encoding = "UTF-8" }
 
 tasks.test {
     finalizedBy(tasks.jacocoTestReport)
@@ -81,21 +77,15 @@ tasks.test {
     systemProperty("user.timezone", "UTC")
     systemProperty("spring.test.constructor.autowire.mode", "ALL")
     if (System.getenv().containsKey("CI")) {
-        retry {
-            maxRetries = 3
-        }
+        retry { maxRetries = 3 }
     }
-    useJUnitPlatform {
-        excludeTags("largedbperf", "performance")
-    }
+    useJUnitPlatform { excludeTags("largedbperf", "performance") }
 }
 
 tasks.register<Test>("performanceTest") {
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
-    useJUnitPlatform {
-        includeTags("performance")
-    }
+    useJUnitPlatform { includeTags("performance") }
 }
 
 tasks.jacocoTestReport {
@@ -106,6 +96,4 @@ tasks.jacocoTestReport {
     }
 }
 
-rootProject.tasks.named("sonarqube") {
-    dependsOn(tasks.jacocoTestReport)
-}
+rootProject.tasks.named("sonarqube") { dependsOn(tasks.jacocoTestReport) }

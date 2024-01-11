@@ -8,15 +8,15 @@ tokens to another account of the spender's choice.
 
 ## Goals
 
-* Enhance the database schema to store an account's allowances
-* Store the historical state of allowances
-* Enhance the REST API to show an account's crypto and token allowances
+- Enhance the database schema to store an account's allowances
+- Store the historical state of allowances
+- Enhance the REST API to show an account's crypto and token allowances
 
 ## Non-Goals
 
-* Store the live state of allowances adjusted for each crypto transfer
-* Enhance gRPC APIs with allowance information
-* Enhance Web3 APIs with allowance information
+- Store the live state of allowances adjusted for each crypto transfer
+- Enhance gRPC APIs with allowance information
+- Enhance Web3 APIs with allowance information
 
 ## Architecture
 
@@ -158,9 +158,9 @@ Update `EntityListener`
 
 Optional Filters
 
-* `limit`: The maximum amount of items to return.
-* `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `desc`.
-* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+- `limit`: The maximum amount of items to return.
+- `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `desc`.
+- `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
 
 #### NFT Allowances
 
@@ -211,11 +211,11 @@ Update `/api/v1/accounts/{accountId}/nfts` to show nft allowance
 
 Optional Filters
 
-* Add `spender.id`: Filter by the spender account ID. `ne` operator is not supported. Note if no `spender.id` filter
+- Add `spender.id`: Filter by the spender account ID. `ne` operator is not supported. Note if no `spender.id` filter
   is specified, the REST api will show all nfts owned by the account, regardless of nft allowance; if `spender.id`
   filter is specified, the REST api will only show nfts owned by the account with allowance spender matching
   `spender.id`.
-* `order`: Order by `token_id` and `serial_number`. Accepts `asc` or `desc` with a default of `desc`.
+- `order`: Order by `token_id` and `serial_number`. Accepts `asc` or `desc` with a default of `desc`.
 
 ##### Approved For All NFT Allowances
 
@@ -261,10 +261,10 @@ Optional Filters
 
 Optional Filters
 
-* `limit`: The maximum amount of items to return.
-* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `desc`.
-* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
-* `token.id`: Filter by the token ID. `ne` operator is not supported.
+- `limit`: The maximum amount of items to return.
+- `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `desc`.
+- `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+- `token.id`: Filter by the token ID. `ne` operator is not supported.
 
 Note this API is optional.
 
@@ -302,10 +302,10 @@ Note this API is optional.
 
 Optional Filters
 
-* `limit`: The maximum amount of items to return.
-* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
-* `token.id`: Filter by the token ID. `ne` operator is not supported.
+- `limit`: The maximum amount of items to return.
+- `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
+- `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+- `token.id`: Filter by the token ID. `ne` operator is not supported.
 
 #### Transactions APIs
 
@@ -408,17 +408,13 @@ Update `/api/v1/accounts/{accountId}` to return `is_approval` for all transfers.
         {
           "amount": 150,
           "collector_account_id": "0.0.87501",
-          "effective_payer_account_ids": [
-            "0.0.87501"
-          ],
+          "effective_payer_account_ids": ["0.0.87501"],
           "token_id": null
         },
         {
           "amount": 10,
           "collector_account_id": "0.0.87502",
-          "effective_payer_account_ids": [
-            "0.0.10"
-          ],
+          "effective_payer_account_ids": ["0.0.10"],
           "token_id": "0.0.90000"
         }
       ]
@@ -500,17 +496,13 @@ Update `/api/v1/transactions/{id}` to include `is_approval` for all transfers.
         {
           "amount": 150,
           "collector_account_id": "0.0.87501",
-          "effective_payer_account_ids": [
-            "0.0.87501"
-          ],
+          "effective_payer_account_ids": ["0.0.87501"],
           "token_id": null
         },
         {
           "amount": 10,
           "collector_account_id": "0.0.87502",
-          "effective_payer_account_ids": [
-            "0.0.10"
-          ],
+          "effective_payer_account_ids": ["0.0.10"],
           "token_id": "0.0.90000"
         }
       ]
@@ -550,20 +542,20 @@ Update `/api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions` to include `i
 
 ## Non-Functional Requirements
 
-* Ingest new transaction types at the same rate as consensus nodes
+- Ingest new transaction types at the same rate as consensus nodes
 
 ## Open Questions
 
-1) How will we do REST API pagination using multiple columns?
+1. How will we do REST API pagination using multiple columns?
 
 ## Answered Questions
 
-1) How will we handle adjust allowance for serial numbers?
+1. How will we handle adjust allowance for serial numbers?
 
    Crypto approve allowance transactions can grant nft allowances by serial numbers and crypto delete allowance
    transactions revoke them.
 
-2) What happens if client populates both `approvedForAll` and `serialNumbers`?
+2. What happens if client populates both `approvedForAll` and `serialNumbers`?
 
    `approvedForAll` nft allowance and `serialNumbers` nft allowance are orthogonal. The two types of nft allowances can
    appear in the same `NftAllowance` protobuf message, mirrornode should parse them separately.

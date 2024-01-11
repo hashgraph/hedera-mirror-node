@@ -17,16 +17,15 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerPushImage
 
-plugins {
-    id("com.bmuschko.docker-remote-api")
-}
+plugins { id("com.bmuschko.docker-remote-api") }
 
 val latest = "latest"
 
 // Get the Docker images to tag by splitting dockerTag property and adding the project version
 fun dockerImages(): Collection<String> {
     val dockerImageName =
-        if (project.extra.has("dockerImageName")) project.extra.get("dockerImageName") else projectDir.name
+        if (project.extra.has("dockerImageName")) project.extra.get("dockerImageName")
+        else projectDir.name
     val dockerRegistry: String by project
     val dockerTag: String by project
     val dockerImage = "${dockerRegistry}/${dockerImageName}:"
@@ -42,26 +41,23 @@ fun dockerImages(): Collection<String> {
     return tags.toList()
 }
 
-val dockerBuild = tasks.register<DockerBuildImage>("dockerBuild") {
-    onlyIf {
-        projectDir.resolve("Dockerfile").exists()
-    }
-    buildArgs.put("VERSION", project.version.toString())
-    images.addAll(dockerImages())
-    inputDir = file(projectDir)
-    pull = true
+val dockerBuild =
+    tasks.register<DockerBuildImage>("dockerBuild") {
+        onlyIf { projectDir.resolve("Dockerfile").exists() }
+        buildArgs.put("VERSION", project.version.toString())
+        images.addAll(dockerImages())
+        inputDir = file(projectDir)
+        pull = true
 
-    val dockerPlatform: String by project
-    if (dockerPlatform.isNotBlank()) {
-        buildArgs.put("TARGETPLATFORM", dockerPlatform)
-        platform = dockerPlatform
+        val dockerPlatform: String by project
+        if (dockerPlatform.isNotBlank()) {
+            buildArgs.put("TARGETPLATFORM", dockerPlatform)
+            platform = dockerPlatform
+        }
     }
-}
 
 tasks.register<DockerPushImage>("dockerPush") {
-    onlyIf {
-        projectDir.resolve("Dockerfile").exists()
-    }
+    onlyIf { projectDir.resolve("Dockerfile").exists() }
     dependsOn(dockerBuild)
     images.addAll(dockerImages())
 }

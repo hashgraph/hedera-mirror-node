@@ -6,7 +6,8 @@ Stream files need to be verified for correctness or to identify a particular err
 environment.
 
 ## Setup
-* All commands are assumed to be run from the git repository root.
+
+- All commands are assumed to be run from the git repository root.
 
 ### DB
 
@@ -95,4 +96,3 @@ select * from transaction where type = ?;
 ### Other
 
 1. Verify no errors in the application logs
-

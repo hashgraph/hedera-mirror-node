@@ -7,18 +7,18 @@ Besides bug fixes, some features may have changed with this release which need y
 `valid_duration_seconds` represents the seconds for which a submitted transaction is to be deemed valid beyond the start time. The transaction is invalid if consensusTimestamp > transactionValidStart + `valid_duration_seconds`
 `max_fee`represents the maximum transaction fee the client is willing to pay, which is split between the network and the node
 Both values are set to null if a valid value is not received.
-Both `valid_duration_seconds` and `max_fee` are exposed in the REST-API transactions response. 
+Both `valid_duration_seconds` and `max_fee` are exposed in the REST-API transactions response.
 
 ### New account_balances schema
 
-  Added tables `account_balances` and `account_balance_sets`
+Added tables `account_balances` and `account_balance_sets`
 
 ### Updates to config.json
 
-  Added `accountBalancesInsertBatchSize`
-  Added `accountBalancesFileBufferSize`
-  Added `accountBalancesUseTransaction`
-  Added `systemShardNum`
+Added `accountBalancesInsertBatchSize`
+Added `accountBalancesFileBufferSize`
+Added `accountBalancesUseTransaction`
+Added `systemShardNum`
 
 ### Removal of records.json, balance.json, events.json and loggerStatus.json
 
@@ -34,7 +34,7 @@ Database upgrades are now performed automatically when the mirror node component
   "apiPassword":"mysecretpassword" // if environment variable DB_PASS is set, it will take precedence
 ```
 
-### Set "stopLoggingIfRecordHashMismatch" to "X" 
+### Set "stopLoggingIfRecordHashMismatch" to "X"
 
 This is to ease onboarding on the integration test network, there are a few gaps in the file hash history as a result of testing which result in the parser stopping, setting this value to "X" in the `config.json` file will ensure parsing continues regardless of the hash history. This should not be set to "X" in production of course.
 
@@ -44,9 +44,9 @@ Event files from the network may now be parsed with the mirror node.
 
 ### Updates to config.json
 
-  Renamed `stopLoggingIfHashMismatch` to `stopLoggingIfRecordHashMismatch`.
-  Added `stopLoggingIfRecordHashMismatch`. Behaves in the same manner as `stopLoggingIfRecordHashMismatch` for events.
-  Added `balanceVerifySigs=false`. This is temporary while we have networks which don't generate signatures for balance files. If the network you are using does generate signatures for balance files, you should change this to `true`.
+Renamed `stopLoggingIfHashMismatch` to `stopLoggingIfRecordHashMismatch`.
+Added `stopLoggingIfRecordHashMismatch`. Behaves in the same manner as `stopLoggingIfRecordHashMismatch` for events.
+Added `balanceVerifySigs=false`. This is temporary while we have networks which don't generate signatures for balance files. If the network you are using does generate signatures for balance files, you should change this to `true`.
 
 ### Deletion of the database version table
 
@@ -54,7 +54,7 @@ This table is no longer necessary due to the change to flyway for database schem
 
 ### Switched to Flyway for database schema management
 
-Now using https://flywaydb.org/getstarted/ for schema management. This is fully integrated in docker images. 
+Now using https://flywaydb.org/getstarted/ for schema management. This is fully integrated in docker images.
 Starting the `mirror-node-flyway` container will automatically patch the database
 
 ### t_transactions relation to t_record_files
@@ -104,6 +104,7 @@ Each class outputs its category in the common log for ease of debugging.
 Download and processing (logging) activities now run in a continuous loop, restarting as soon as they finished to lower the latency for data availability in the database as much as possible.
 To gracefully stop a running process, create a file called `stop` in the folder where the application was launched from.
 For example in Unix systems
+
 ```
 touch stop
 ```

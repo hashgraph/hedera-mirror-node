@@ -28,25 +28,21 @@ tasks.register<NpmTask>("run") {
     args = listOf("start")
 }
 
-val test = tasks.register<NpmTask>("test") {
-    dependsOn(tasks.npmInstall)
-    args = listOf("test")
-    execOverrides {
-        // Gradle is logging all NPM output to stdout, so this change makes it behave like other tasks and not log
-        if (gradle.startParameter.logLevel >= LogLevel.LIFECYCLE) {
-            standardOutput = NullOutputStream.INSTANCE
+val test =
+    tasks.register<NpmTask>("test") {
+        dependsOn(tasks.npmInstall)
+        args = listOf("test")
+        execOverrides {
+            // Gradle is logging all NPM output to stdout, so this change makes it behave like other
+            // tasks and not log
+            if (gradle.startParameter.logLevel >= LogLevel.LIFECYCLE) {
+                standardOutput = NullOutputStream.INSTANCE
+            }
         }
     }
-}
 
-tasks.register("build") {
-    dependsOn(test)
-}
+tasks.register("build") { dependsOn(test) }
 
-tasks.dependencyCheckAggregate {
-    dependsOn(tasks.npmInstall)
-}
+tasks.dependencyCheckAggregate { dependsOn(tasks.npmInstall) }
 
-tasks.dependencyCheckAnalyze {
-    dependsOn(tasks.npmInstall)
-}
+tasks.dependencyCheckAnalyze { dependsOn(tasks.npmInstall) }

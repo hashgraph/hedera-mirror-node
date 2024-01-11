@@ -14,23 +14,34 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.gradle.enterprise") version ("3.14.1")
-}
+plugins { id("com.gradle.enterprise") version ("3.14.1") }
 
 rootProject.name = "hedera-mirror-node"
+
 include(":hedera-mirror-common")
+
 include(":hedera-mirror-graphql")
+
 include(":hedera-mirror-grpc")
+
 include(":hedera-mirror-importer")
+
 include(":hedera-mirror-monitor")
+
 include(":hedera-mirror-protobuf")
+
 include(":hedera-mirror-rest")
+
 include(":hedera-mirror-rest-java")
+
 include(":hedera-mirror-rest:check-state-proof")
+
 include(":hedera-mirror-rest:monitoring")
+
 include(":hedera-mirror-rosetta")
+
 include(":hedera-mirror-test")
+
 include(":hedera-mirror-web3")
 
 shortenProjectName(rootProject)

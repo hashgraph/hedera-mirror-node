@@ -9,14 +9,26 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: [ graphql, grpc, importer, monitor, rest, rest-java, rest-monitor, rosetta, test, web3 ]
+        module:
+          [
+            graphql,
+            grpc,
+            importer,
+            monitor,
+            rest,
+            rest-java,
+            rest-monitor,
+            rosetta,
+            test,
+            web3,
+          ]
     steps:
       - uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCR_KEY }}'
+          credentials_json: "${{ secrets.GCR_KEY }}"
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -27,22 +39,22 @@ jobs:
       - name: Delete old untagged images
         run: |
           set -ex
-          
+
           DELETE_BEFORE_MS="$(date -d "-7 days" '+%s')000"
           IMAGE_REPO=mirrornode/hedera-mirror-${{ matrix.module }}
           IMAGE_PATH="gcr.io/$IMAGE_REPO"
           BASE_REGISTRY_API_URL="https://gcr.io/v2/$IMAGE_REPO"
           IMAGES_JSON_FILE="/tmp/images.json"
-          
+
           curl "$BASE_REGISTRY_API_URL/tags/list" | \
             # select manifests older than DELETE_BEFORE_MS, then select manifests with tag matching "main-.+"
             jq --arg delete_before_ms "$DELETE_BEFORE_MS" '.manifest | to_entries |
               map(select(.value.timeUploadedMs < $delete_before_ms)) |
               map(select(.value.tag | map(test("main-.+")) | any))' | \
             tee "$IMAGES_JSON_FILE"
-          
+
           ALL_DIGESTS=($(cat "$IMAGES_JSON_FILE" | jq -r '[.[].key] | join(" ")'))
-          
+
           CHILD_DIGESTS=()
           MULTI_PLATFORM_DIGESTS=($(cat "$IMAGES_JSON_FILE" | \
             jq -r 'map(select(.value.mediaType == "application/vnd.docker.distribution.manifest.list.v2+json")) |
@@ -52,11 +64,11 @@ jobs:
             CHILD_DIGESTS+=($(curl "$BASE_REGISTRY_API_URL/manifests/$digest" | \
               jq -r '[.manifests[].digest] | join(" ")'))
           done
-          
+
           # dedup the child digests since some may be shared by list type images
           CHILD_DIGESTS=($(printf '%s\n' "${CHILD_DIGESTS[@]}" | sort -u))
           ALL_DIGESTS+=(${CHILD_DIGESTS[@]})
-          
+
           for digest in ${ALL_DIGESTS[@]}; do
             gcloud container images delete --force-delete-tags -q "${IMAGE_PATH}@${digest}"
           done

@@ -23,8 +23,7 @@ import org.gradle.kotlin.dsl.getByName
 // Template task to execute the go CLI
 abstract class Go : Exec() {
 
-    @Internal
-    val go = project.extensions.getByName<GoExtension>("go")
+    @Internal val go = project.extensions.getByName<GoExtension>("go")
 
     init {
         dependsOn("setup")

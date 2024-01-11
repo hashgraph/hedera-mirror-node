@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-plugins {
-    id("io.snyk.gradle.plugin.snykplugin")
-}
+plugins { id("io.snyk.gradle.plugin.snykplugin") }
 
 abstract class SnykCodeTask : io.snyk.gradle.plugin.SnykTask() {
 
@@ -40,13 +38,7 @@ tasks.register<SnykCodeTask>("snyk-code") {
     }
 }
 
-tasks.`snyk-monitor` {
-    doFirst {
-        snyk {
-            setArguments("--all-sub-projects")
-        }
-    }
-}
+tasks.`snyk-monitor` { doFirst { snyk { setArguments("--all-sub-projects") } } }
 
 tasks.`snyk-test` {
     snyk {

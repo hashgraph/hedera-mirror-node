@@ -159,7 +159,7 @@ public class TestUtil {
     public static BigInteger hexToDecimal(String hex) {
         return Bytes32.fromHexString(hex).toBigInteger();
     }
-    
+
     public static byte[] nextBytes(int length) {
         var bytes = new byte[length];
         RANDOM.nextBytes(bytes);

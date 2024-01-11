@@ -71,6 +71,7 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 ### Domain
 
 - Add `AssessedCustomFee` class with the following fields
+
   - `amount`
   - `collectorAccountId`
   - `consensusTimestamp`
@@ -94,12 +95,14 @@ Both new domain objects are insert-only.
 #### EntityListener
 
 - Add a `onAssessedCustomFee()` to handle inserts on the `assessed_custom_fee` table
+
 ```java
     default void onAssessedCustomFee(AssessedCustomFee assessedCustomFee) throws ImporterException {
     }
 ```
 
 - Add a `onCustomFee()` to handle inserts on the `custom_fee` table
+
 ```java
     default void onCustomFee(CustomFee CustomFee) throws ImporterException {
     }
@@ -133,81 +136,77 @@ Both new domain objects are insert-only.
     be an empty array for those transactions with assessed custom fees
 
 ```json
-  {
-    "transactions": [
-      {
-        "consensus_timestamp": "1234567890.000000001",
-        "valid_start_timestamp": "1234567890.000000000",
-        "charged_tx_fee": 7,
-        "memo_base64": null,
-        "result": "SUCCESS",
-        "transaction_hash": "aGFzaA==",
-        "name": "CRYPTOTRANSFER",
-        "node": "0.0.3",
-        "transaction_id": "0.0.10-1234567890-000000000",
-        "valid_duration_seconds": "11",
-        "max_fee": "33",
-        "transfers": [
-          {
-            "account": "0.0.9",
-            "amount": 10
-          },
-          {
-            "account": "0.0.10",
-            "amount": -161
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1
-          },
-          {
-            "account": "0.0.87501",
-            "amount": 150
-          }
-        ],
-        "token_transfers": [
-          {
-            "account": "0.0.200",
-            "amount": 200,
-            "token_id": "0.0.90000"
-          },
-          {
-            "account": "0.0.10",
-            "amount": -1210,
-            "token_id": "0.0.90000"
-          },
-          {
-            "account": "0.0.400",
-            "amount": 1000,
-            "token_id": "0.0.90000"
-          },
-          {
-            "account": "0.0.87502",
-            "amount": 10,
-            "token_id": "0.0.90000"
-          }
-        ],
-        "assessed_custom_fees": [
-          {
-            "amount": 150,
-            "collector_account_id": "0.0.87501",
-            "effective_payer_account_ids": [
-              "0.0.87501"
-            ],
-            "token_id": null
-          },
-          {
-            "amount": 10,
-            "collector_account_id": "0.0.87502",
-            "effective_payer_account_ids": [
-              "0.0.10"
-            ],
-            "token_id": "0.0.90000"
-          }
-        ]
-      }
-    ]
-  }
+{
+  "transactions": [
+    {
+      "consensus_timestamp": "1234567890.000000001",
+      "valid_start_timestamp": "1234567890.000000000",
+      "charged_tx_fee": 7,
+      "memo_base64": null,
+      "result": "SUCCESS",
+      "transaction_hash": "aGFzaA==",
+      "name": "CRYPTOTRANSFER",
+      "node": "0.0.3",
+      "transaction_id": "0.0.10-1234567890-000000000",
+      "valid_duration_seconds": "11",
+      "max_fee": "33",
+      "transfers": [
+        {
+          "account": "0.0.9",
+          "amount": 10
+        },
+        {
+          "account": "0.0.10",
+          "amount": -161
+        },
+        {
+          "account": "0.0.98",
+          "amount": 1
+        },
+        {
+          "account": "0.0.87501",
+          "amount": 150
+        }
+      ],
+      "token_transfers": [
+        {
+          "account": "0.0.200",
+          "amount": 200,
+          "token_id": "0.0.90000"
+        },
+        {
+          "account": "0.0.10",
+          "amount": -1210,
+          "token_id": "0.0.90000"
+        },
+        {
+          "account": "0.0.400",
+          "amount": 1000,
+          "token_id": "0.0.90000"
+        },
+        {
+          "account": "0.0.87502",
+          "amount": 10,
+          "token_id": "0.0.90000"
+        }
+      ],
+      "assessed_custom_fees": [
+        {
+          "amount": 150,
+          "collector_account_id": "0.0.87501",
+          "effective_payer_account_ids": ["0.0.87501"],
+          "token_id": null
+        },
+        {
+          "amount": 10,
+          "collector_account_id": "0.0.87502",
+          "effective_payer_account_ids": ["0.0.10"],
+          "token_id": "0.0.90000"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 ### Token Info
@@ -217,7 +216,7 @@ Add `fee_schedule_key` and `custom_fees` to the response json object of `/api/v1
 For fungible tokens, the `custom_fees` object includes `fixed_fees` and `fractional_fees`.
 
 ```json
-  {
+{
   "token_id": "0.0.1135",
   "symbol": "ORIGINALRDKSE",
   "admin_key": null,
@@ -287,7 +286,7 @@ For fungible tokens, the `custom_fees` object includes `fixed_fees` and `fractio
 For non-fungible tokens, the `custom_fees` object includes `fixed_fees` and `royalty_fees`.
 
 ```json
-  {
+{
   "token_id": "0.0.1135",
   "symbol": "ORIGINALRDKSE",
   "admin_key": null,
@@ -344,7 +343,7 @@ For non-fungible tokens, the `custom_fees` object includes `fixed_fees` and `roy
         "fallback_fee": {
           "amount": 10,
           "denominating_token_id": "0.0.10020"
-        },
+        }
       },
       {
         "amount": {

@@ -42,7 +42,7 @@ const (
                                   ) current
                                   join address_book_entry abe on abe.consensus_timestamp = current.max
                                   left join address_book_service_endpoint abse
-                                    on abse.consensus_timestamp = current.max and abse.node_id = abe.node_id 
+                                    on abse.consensus_timestamp = current.max and abse.node_id = abe.node_id
                                   group by abe.node_id, abe.node_account_id`
 )
 

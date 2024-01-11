@@ -16,11 +16,6 @@
 
 package plugin.go
 
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
-import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.TaskAction
-import org.gradle.kotlin.dsl.getByName
 import java.io.File
 import java.io.FileInputStream
 import java.net.URI
@@ -28,17 +23,25 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.util.zip.GZIPInputStream
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.TaskAction
+import org.gradle.kotlin.dsl.getByName
 
 // Downloads and decompresses the Go artifacts
 open class GoSetup : DefaultTask() {
 
-    @Internal
-    val go = project.extensions.getByName<GoExtension>("go")
+    @Internal val go = project.extensions.getByName<GoExtension>("go")
 
     @TaskAction
     fun prepare() {
         go.goRoot.mkdirs()
-        val url = URI.create("https://storage.googleapis.com/golang/go${go.version}.${go.os}-${go.arch}.tar.gz").toURL()
+        val url =
+            URI.create(
+                    "https://storage.googleapis.com/golang/go${go.version}.${go.os}-${go.arch}.tar.gz"
+                )
+                .toURL()
         val filename = Paths.get(url.path).fileName
         val targetFile = go.cacheDir.toPath().resolve(filename)
 
@@ -68,7 +71,6 @@ open class GoSetup : DefaultTask() {
                     if (!file.setExecutable(true, true)) {
                         throw IllegalStateException("Unable to set execute bit on file " + file)
                     }
-
                 }
                 entry = it.nextEntry
             }

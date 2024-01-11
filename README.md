@@ -115,14 +115,14 @@ associated with the downloading of stream files are paid for by the requester an
 ## Documentation
 
 - Components
-    - [GraphQL API](docs/graphql/README.md)
-    - [gRPC API](docs/grpc/README.md)
-    - [Importer](docs/importer/README.md)
-    - [Monitor](docs/monitor/README.md)
-    - [REST API](docs/rest/README.md)
-    - [REST Java API](docs/rest-java/README.md)
-    - [Rosetta API](docs/rosetta/README.md)
-    - [Web3 API](docs/web3/README.md)
+  - [GraphQL API](docs/graphql/README.md)
+  - [gRPC API](docs/grpc/README.md)
+  - [Importer](docs/importer/README.md)
+  - [Monitor](docs/monitor/README.md)
+  - [REST API](docs/rest/README.md)
+  - [REST Java API](docs/rest-java/README.md)
+  - [Rosetta API](docs/rosetta/README.md)
+  - [Web3 API](docs/web3/README.md)
 - [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md)
 - [Troubleshooting](docs/troubleshooting.md)

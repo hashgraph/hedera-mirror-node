@@ -147,7 +147,8 @@ repositories {
 }
 
 spotless {
-    val licenseHeader = """
+    val licenseHeader =
+        """
 /*
  * Copyright (C) ${'$'}YEAR Hedera Hashgraph, LLC
  *
@@ -163,7 +164,8 @@ spotless {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */${"\n\n"}
-""".trimIndent()
+"""
+            .trimIndent()
 
     val npmExec =
         when (System.getProperty("os.name").lowercase().contains("windows")) {
@@ -198,7 +200,8 @@ spotless {
                     "bracketSpacing" to false,
                     "printWidth" to 120,
                     "singleQuote" to true,
-                ))
+                )
+            )
         target("hedera-mirror-rest/**/*.js")
         targetExclude("**/build/**", "**/node_modules/**", "**/__tests__/integration/*.test.js")
     }
@@ -212,14 +215,14 @@ spotless {
     }
     kotlin {
         endWithNewline()
-        ktfmt().dropboxStyle()
+        ktfmt().kotlinlangStyle()
         licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
         target("buildSrc/**/*.kt")
         targetExclude("**/build/**")
     }
     kotlinGradle {
         endWithNewline()
-        ktfmt().dropboxStyle()
+        ktfmt().kotlinlangStyle()
         licenseHeader(licenseHeader, "(description|import|plugins)").updateYearWithLatest(true)
         target("*.kts", "*/*.kts", "buildSrc/**/*.kts")
         targetExclude("**/build/**")
@@ -255,7 +258,8 @@ fun replaceVersion(files: String, match: String) {
             "fileset"(
                 "dir" to rootProject.projectDir,
                 "includes" to files,
-                "excludes" to "**/node_modules/")
+                "excludes" to "**/node_modules/"
+            )
         }
     }
 }
@@ -270,7 +274,8 @@ tasks.register("release") {
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
             "hedera-mirror-rest/**/package*.json",
-            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+")
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+        )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }
 }
