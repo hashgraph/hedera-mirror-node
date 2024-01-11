@@ -130,7 +130,7 @@ public class EquivalenceFeature extends AbstractFeature {
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, COPY_CODE, TestUtil.asAddress(accountId));
         var functionResult = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data, BYTES_TUPLE);
-        assertArrayEquals(new byte[0], functionResult.getResultAsBytes().toArray());
+        assertEquals("", functionResult.getResultAsText());
     }
 
     @Then(
