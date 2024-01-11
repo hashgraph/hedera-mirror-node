@@ -79,7 +79,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
-    @Disabled
     @ParameterizedTest
     @MethodSource("provideBlockTypes")
     void pureCallWithCustomBlock(BlockType blockType) {
@@ -105,7 +104,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         }
     }
 
-    @Disabled
     @ParameterizedTest
     @MethodSource("provideCustomBlockTypes")
     void pureCallWithCustomBlock(BlockType blockType, String expectedResponse, boolean checkGas) {
