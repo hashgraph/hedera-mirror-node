@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.hedera.mirror.test.e2e.acceptance.util;
 
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.PublicKey;
@@ -30,20 +31,20 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.json.JSONObject;
 
 @UtilityClass
 public class TestUtil {
     private static final BaseEncoding BASE32_ENCODER = BaseEncoding.base32().omitPadding();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final SecureRandom RANDOM = new SecureRandom();
     public static String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -140,20 +141,22 @@ public class TestUtil {
         return longList.stream().mapToLong(Long::longValue).toArray();
     }
 
-    public static String getAbiFunctionAsJsonString(
-            CompiledSolidityArtifact compiledSolidityArtifact, String functionName) {
-        Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
+    public static String getAbiFunctionAsJsonString(CompiledSolidityArtifact artifact, String functionName) {
+        return Arrays.stream(artifact.getAbi())
                 .filter(item -> {
-                    Object name = ((LinkedHashMap) item).get("name");
-                    return name != null && name.equals(functionName);
+                    if (item instanceof Map<?, ?> map) {
+                        return Objects.equals(functionName, map.get("name"));
+                    }
+                    return false;
                 })
-                .findFirst();
+                .map(TestUtil::toJson)
+                .findFirst()
+                .orElseThrow();
+    }
 
-        if (function.isPresent()) {
-            return (new JSONObject((Map) function.get())).toString();
-        } else {
-            throw new IllegalStateException("Function " + functionName + " is not present in the ABI.");
-        }
+    @SneakyThrows
+    private static String toJson(Object object) {
+        return OBJECT_MAPPER.writeValueAsString(object);
     }
 
     public static BigInteger hexToDecimal(String hex) {
