@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,9 @@ public abstract class JKey {
             throw new InvalidKeyException("Exceeding max expansion depth of " + MAX_KEY_DEPTH);
         }
 
-        if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
+        if (jkey == null) {
+            return createEmptyKey();
+        } else if (!(jkey.hasThresholdKey() || jkey.hasKeyList())) {
             return convertJKeyBasic(jkey);
         } else {
             List<JKey> jKeys = jkey.getKeyList().getKeysList();
@@ -107,6 +109,14 @@ public abstract class JKey {
             Key result = Key.newBuilder().setKeyList(keys).build();
             return (result);
         }
+    }
+
+    /**
+     * Creates an empty key
+     * @return An empty Key.
+     */
+    static Key createEmptyKey() {
+        return Key.newBuilder().build();
     }
 
     /**

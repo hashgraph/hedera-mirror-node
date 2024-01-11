@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
+import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenBalanceRepository;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
@@ -39,6 +42,9 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
     private final TokenDatabaseAccessor tokenDatabaseAccessor;
     private final AccountDatabaseAccessor accountDatabaseAccessor;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenBalanceRepository tokenBalanceRepository;
+    private final NftRepository nftRepository;
+    static final Optional<Long> ZERO_BALANCE = Optional.of(0L);
 
     @Override
     public @NonNull Optional<TokenRelationship> get(@NonNull Object key, final Optional<Long> timestamp) {
@@ -50,7 +56,7 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
                                     .map(tokenAccount -> new TokenRelationship(
                                             token,
                                             account,
-                                            tokenAccount.getBalance(),
+                                            getBalance(account, token, tokenAccount, timestamp),
                                             TokenFreezeStatusEnum.FROZEN == tokenAccount.getFreezeStatus(),
                                             TokenKycStatusEnum.REVOKED != tokenAccount.getKycStatus(),
                                             false,
@@ -60,6 +66,64 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
         }
         throw new DatabaseAccessIncorrectKeyTypeException("Accessor for class %s failed to fetch by key of type %s"
                 .formatted(TokenRelationship.class.getTypeName(), key.getClass().getTypeName()));
+    }
+
+    /**
+     * Determines fungible or NFT balance based on block context.
+     */
+    private Long getBalance(
+            final Account account, final Token token, final TokenAccount tokenAccount, final Optional<Long> timestamp) {
+        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
+            return getNftBalance(tokenAccount, timestamp, account.getCreatedTimestamp());
+        }
+        return getFungibleBalance(tokenAccount, timestamp, account.getCreatedTimestamp());
+    }
+
+    /**
+     * NFT Balance Explanation:
+     * Non-historical Call:
+     * The balance is obtained from `tokenAccount.getBalance()`.
+     * Historical Call:
+     * In historical block queries, as the `token_account` and `token_balance` tables lack historical state for NFT balances,
+     * the NFT balance is retrieved from `NftRepository.nftBalanceByAccountIdTokenIdAndTimestamp`
+     */
+    private Long getNftBalance(
+            final TokenAccount tokenAccount, final Optional<Long> timestamp, long accountCreatedTimestamp) {
+        return timestamp
+                .map(t -> {
+                    if (t >= accountCreatedTimestamp) {
+                        return nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(
+                                tokenAccount.getAccountId(), tokenAccount.getTokenId(), t);
+                    } else {
+                        return ZERO_BALANCE;
+                    }
+                })
+                .orElseGet(() -> Optional.of(tokenAccount.getBalance()))
+                .orElse(0L);
+    }
+
+    /**
+     * Fungible Token Balance Explanation:
+     * Non-historical Call:
+     * The balance is obtained from `tokenAccount.getBalance()`.
+     * Historical Call:
+     * In historical block queries, since the `token_account` table lacks historical state for fungible balances,
+     * the fungible balance is determined from the `token_balance` table using the `findHistoricalTokenBalanceUpToTimestamp` query.
+     * If the entity creation is after the passed timestamp - return 0L (the entity was not created)
+     */
+    private Long getFungibleBalance(
+            final TokenAccount tokenAccount, final Optional<Long> timestamp, long accountCreatedTimestamp) {
+        return timestamp
+                .map(t -> {
+                    if (t >= accountCreatedTimestamp) {
+                        return tokenBalanceRepository.findHistoricalTokenBalanceUpToTimestamp(
+                                tokenAccount.getTokenId(), tokenAccount.getAccountId(), t);
+                    } else {
+                        return ZERO_BALANCE;
+                    }
+                })
+                .orElseGet(() -> Optional.of(tokenAccount.getBalance()))
+                .orElse(0L);
     }
 
     private Optional<Account> findAccount(Address address, final Optional<Long> timestamp) {

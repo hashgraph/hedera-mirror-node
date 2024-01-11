@@ -42,82 +42,86 @@
       {
         "token_id": "0.20.7",
         "account_id": "0.0.17",
-        "balance": 300
+        "balance": 300,
+        "balance_timestamp": 5430
       },
       {
         "token_id": "0.20.7",
         "account_id": "0.0.18",
-        "balance": 500
+        "balance": 500,
+        "balance_timestamp": 5431
       },
       {
         "token_id": "0.20.7",
         "account_id": "0.0.19",
-        "balance": 700
+        "balance": 700,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.7",
         "account_id": "0.0.20",
-        "balance": 900
+        "balance": 900,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.7",
         "account_id": "0.0.21",
-        "balance": 1000
+        "balance": 1000,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.8",
         "account_id": "0.0.17",
-        "balance": 1717
+        "balance": 1717,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.8",
         "account_id": "0.0.18",
-        "balance": 1818
+        "balance": 1818,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.8",
         "account_id": "0.0.19",
-        "balance": 1919
+        "balance": 1919,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.8",
         "account_id": "0.0.20",
-        "balance": 2020
+        "balance": 2020,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.8",
         "account_id": "0.0.21",
-        "balance": 2121
+        "balance": 2121,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.9",
         "account_id": "0.0.18",
-        "balance": 181818
+        "balance": 181818,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.9",
         "account_id": "0.0.19",
-        "balance": 191919
+        "balance": 191919,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.9",
         "account_id": "0.0.20",
-        "balance": 202020
+        "balance": 202020,
+        "balance_timestamp": 5432
       },
       {
         "token_id": "0.20.9",
         "account_id": "0.0.21",
-        "balance": 212121
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 2000,
-        "consensus_end": 5432
-      },
-      {
-        "consensus_start": 50,
-        "consensus_end": 100
+        "balance": 212121,
+        "balance_timestamp": 5432
       }
     ],
     "transactions": [],
