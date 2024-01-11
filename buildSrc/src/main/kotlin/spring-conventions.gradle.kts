@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import com.github.gradle.node.npm.task.NpmTask
 import org.openapitools.generator.gradle.plugin.extensions.OpenApiGeneratorGenerateExtension
 
 plugins {
@@ -33,7 +32,7 @@ tasks.named("dockerBuild") {
     dependsOn(tasks.bootJar)
 }
 
-tasks.register<NpmTask>("run") {
+tasks.register("run") {
     dependsOn(tasks.bootRun)
 }
 

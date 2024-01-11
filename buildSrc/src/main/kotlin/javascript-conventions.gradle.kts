@@ -39,7 +39,7 @@ val test = tasks.register<NpmTask>("test") {
     }
 }
 
-tasks.build {
+tasks.register("build") {
     dependsOn(test)
 }
 

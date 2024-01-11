@@ -14,9 +14,14 @@
  * limitations under the License.
  */
 
-description = "Hedera Mirror Node imports data from consensus nodes and serves it via an API"
+import com.github.gradle.node.npm.task.NpmSetupTask
+import java.nio.file.Paths
+
+description = "Hedera Mirror Node imports data from consensus2 nodes and serves it via an API"
 
 plugins {
+    id("com.diffplug.spotless")
+    id("com.github.node-gradle.node")
     id("idea")
     id("java-platform")
     id("org.sonarqube")
@@ -33,7 +38,8 @@ extra.apply {
     set("vertxVersion", "4.5.1")
 }
 
-// Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
+// Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
+// using a dependency
 dependencies {
     constraints {
         val grpcVersion: String by rootProject.extra
@@ -128,36 +134,149 @@ idea {
     }
 }
 
+// Spotless uses Prettier and it requires Node.js
+node {
+    download = true
+    version = "18.18.0"
+    workDir = rootDir.resolve(".gradle").resolve("nodejs")
+}
+
+repositories {
+    gradlePluginPortal()
+    mavenCentral()
+}
+
+spotless {
+    val licenseHeader = """
+/*
+ * Copyright (C) ${'$'}YEAR Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */${"\n\n"}
+""".trimIndent()
+
+    val npmExec =
+        when (System.getProperty("os.name").lowercase().contains("windows")) {
+            true -> Paths.get("npm.cmd")
+            else -> Paths.get("bin", "npm")
+        }
+    val npmSetup = tasks.named("npmSetup").get() as NpmSetupTask
+    val npmExecutable = npmSetup.npmDir.get().asFile.toPath().resolve(npmExec)
+
+    isEnforceCheck = false
+
+    if (!System.getenv().containsKey("CI")) {
+        ratchetFrom("origin/main")
+    }
+
+    format("go") {
+        endWithNewline()
+        licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
+        target("hedera-mirror-rosetta/**/*.go")
+        targetExclude("build/**")
+        trimTrailingWhitespace()
+    }
+    format("javascript") {
+        endWithNewline()
+        indentWithSpaces(2)
+        licenseHeader(licenseHeader, "$").updateYearWithLatest(true)
+        prettier()
+            .npmExecutable(npmExecutable)
+            .npmInstallCache(Paths.get("${rootProject.rootDir}", ".gradle", "spotless"))
+            .config(
+                mapOf(
+                    "bracketSpacing" to false,
+                    "printWidth" to 120,
+                    "singleQuote" to true,
+                ))
+        target("hedera-mirror-rest/**/*.js")
+        targetExclude("**/build/**", "**/node_modules/**", "**/__tests__/integration/*.test.js")
+    }
+    java {
+        endWithNewline()
+        palantirJavaFormat("2.39.0")
+        licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
+        target("**/*.java")
+        targetExclude("**/build/**", "hedera-mirror-rest/**", "hedera-mirror-rosetta/**")
+        toggleOffOn()
+    }
+    kotlin {
+        endWithNewline()
+        ktfmt().dropboxStyle()
+        licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
+        target("buildSrc/**/*.kt")
+        targetExclude("**/build/**")
+    }
+    kotlinGradle {
+        endWithNewline()
+        ktfmt().dropboxStyle()
+        licenseHeader(licenseHeader, "(description|import|plugins)").updateYearWithLatest(true)
+        target("*.kts", "*/*.kts", "buildSrc/**/*.kts")
+        targetExclude("**/build/**")
+    }
+    format("miscellaneous") {
+        endWithNewline()
+        indentWithSpaces(2)
+        prettier().npmExecutable(npmExecutable)
+        target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
+        targetExclude("**/build/**", "**/charts/**", "**/node_modules/**", "**/package-lock.json")
+        trimTrailingWhitespace()
+    }
+    format("proto") {
+        endWithNewline()
+        indentWithSpaces(4)
+        licenseHeader(licenseHeader, "(package|syntax)").updateYearWithLatest(true)
+        target("hedera-mirror-protobuf/**/*.proto")
+        targetExclude("build/**")
+        trimTrailingWhitespace()
+    }
+    sql {
+        endWithNewline()
+        indentWithSpaces()
+        target("hedera-mirror-(common|importer|rest)/**/*.sql")
+        targetExclude("**/node_modules/**")
+        trimTrailingWhitespace()
+    }
+}
+
 fun replaceVersion(files: String, match: String) {
     ant.withGroovyBuilder {
-        "replaceregexp"(
-            "match" to match,
-            "replace" to project.version,
-            "flags" to "gm"
-        ) {
+        "replaceregexp"("match" to match, "replace" to project.version, "flags" to "gm") {
             "fileset"(
                 "dir" to rootProject.projectDir,
                 "includes" to files,
-                "excludes" to "**/node_modules/"
-            )
+                "excludes" to "**/node_modules/")
         }
     }
 }
 
+tasks.nodeSetup { onlyIf { !this.nodeDir.get().asFile.exists() } }
+
 // Replace release version in files
-project.tasks.register("release") {
+tasks.register("release") {
     doLast {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
         replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
             "hedera-mirror-rest/**/package*.json",
-            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
-        )
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+")
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }
 }
 
-tasks.sonar {
-    dependsOn(tasks.build)
-}
+tasks.sonar { dependsOn(tasks.build) }
+
+tasks.spotlessApply { dependsOn(tasks.nodeSetup) }
+
+tasks.spotlessCheck { dependsOn(tasks.nodeSetup) }

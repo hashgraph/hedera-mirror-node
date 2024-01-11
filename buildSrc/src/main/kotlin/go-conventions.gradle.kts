@@ -71,11 +71,11 @@ tasks.register<Go>("test") {
     }
 }
 
-tasks.build {
+tasks.register("build") {
     dependsOn(goBuild)
 }
 
-tasks.clean {
+tasks.register("clean") {
     dependsOn(goClean)
 }
 
