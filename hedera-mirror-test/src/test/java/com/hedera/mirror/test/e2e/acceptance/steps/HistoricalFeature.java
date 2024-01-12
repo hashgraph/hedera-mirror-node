@@ -148,19 +148,15 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     @Given("I create fungible token")
     public void createFungibleToken() {
         var tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLEHISTORICAL);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
     @Given("I create non-fungible token")
     public void createNonFungibleToken() {
         var tokenResponse = tokenClient.getToken(TokenNameEnum.NFTHISTORICAL);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
     @Then("I successfully update the contract storage and get the initial value via historical data")
@@ -753,10 +749,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         // recreate the deleted token
         var tokenResponse = tokenClient.getToken(tokenName);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
     @RetryAsserts
@@ -790,22 +784,21 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         // creating new token with custom fees and getting response from eth_call
-        var tokenId = tokenClient.getToken((tokenName), listOfFees).tokenId();
+        var newTokenResponse = tokenClient.getToken((tokenName), listOfFees);
+        networkTransactionResponse = newTokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
         var initialBlockNumber = getLastBlockNumber();
-        var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES, asAddress(tokenId));
+        var data = encodeData(PRECOMPILE, GET_CUSTOM_FEES, asAddress(newTokenResponse.tokenId()));
         var response = callContract(data, precompileContractSolidityAddress);
 
         waitForNextBlock();
 
         // deleting the token with the custom fees and creating it again without custom fees
-        networkTransactionResponse = tokenClient.delete(admin, tokenId);
+        networkTransactionResponse = tokenClient.delete(admin, newTokenResponse.tokenId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var tokenResponse = tokenClient.getToken(tokenName);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
-
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress);
         assertEquals(response, historicalResponse);
     }
@@ -826,10 +819,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         // creating the deleted token within the test
         var tokenResponse = tokenClient.getToken(tokenName);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
     @Then("I verify historical data for {token} is returned for getTokenDefaultKYCStatus")
@@ -848,10 +839,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         // creating the deleted token within the test
         var tokenResponse = tokenClient.getToken(tokenName);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
     @Then("I verify historical data for {token} is returned for getTokenType")
@@ -870,10 +859,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         // creating the deleted token within the test
         var tokenResponse = tokenClient.getToken(tokenName);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
     @Then("I verify historical data for {token} is returned for getTokenExpiryInfo")
@@ -892,10 +879,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         // creating the deleted token within the test
         var tokenResponse = tokenClient.getToken(tokenName);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
     @Then("I verify historical data for {token} in invalid block returns bad request")
@@ -908,10 +893,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var previousBlock = String.valueOf(Long.parseLong(initialBlockNumber) - 5);
         var tokenResponse = tokenClient.getToken(tokenName);
-        if (tokenResponse.response() != null) {
-            networkTransactionResponse = tokenResponse.response();
-            verifyMirrorTransactionsResponse(mirrorClient, 200);
-        }
+        networkTransactionResponse = tokenResponse.response();
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var data = encodeData(PRECOMPILE, GET_TOKEN_INFORMATION, asAddress(tokenResponse.tokenId()));
         assertEthCallReturnsBadRequest(previousBlock, data, estimatePrecompileContractSolidityAddress);
