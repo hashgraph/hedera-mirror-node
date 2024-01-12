@@ -303,9 +303,10 @@ paths:
   /api/v1/contracts/call:
     post:
       summary: Invoke a smart contract
-      description: |
-
-        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed. Currently we support only `latest` block.
+      description:
+        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+        The endpoint supports `latest` block. Additionally, it can process calls against the `earliest` block and specific historical blocks when a hexadecimal block number is provided in the `block` field for `eth_call` operations.
+        For gas estimation indicated by `estimate` set to true, only the `latest` block can be used.
         [Link to Supported/Unsupported Operations Table](https://github.com/hashgraph/hedera-mirror-node/blob/main/docs/web3/README.md#supported/unsupported-operations)
 
         The operations types which are not currently supported should return 501 error status.
