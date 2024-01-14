@@ -1437,6 +1437,19 @@ const getPoolClass = async (mock = false) => {
     const clientErrorCallback = (error) => {
       logger.error(`error event emitted on pg pool. ${error.stack}`);
     };
+
+    if (logger.isTraceEnabled()) {
+      const callerInfo = new Error().stack
+        .split('at ', 3)
+        .map((entry) => {
+          const result = entry.match(/\/hedera-mirror-rest\/(.*)\.js:(\d+):.*/);
+          return result && result.length === 3 && {name: result[1], line: result[2]};
+        })
+        .filter((r) => !!r)
+        .filter((r) => r.name !== 'utils')[0];
+      logger.trace(`${callerInfo.name}:${callerInfo.line} query: ${query} ${utils.JSONStringify(params)}`);
+    }
+
     try {
       if (!preQueryHint) {
         result = await this.query(query, params);

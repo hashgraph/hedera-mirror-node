@@ -65,10 +65,9 @@ class BaseService {
     };
   }
 
+  // TODO depending on feedback on issue 7435 perhaps functionName may be provided to queryQuietly() or go away completely.
+  // TODO perhaps still useful for row count logging done here explicitly?
   async getRows(query, params, functionName = '') {
-    if (logger.isTraceEnabled()) {
-      logger.trace(`${functionName} query: ${query}, params: ${params}`);
-    }
     const {rows} = await pool.queryQuietly(query, params);
     if (logger.isTraceEnabled()) {
       logger.trace(`${functionName} ${rows.length} entries`);
