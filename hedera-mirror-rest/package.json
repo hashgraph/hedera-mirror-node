@@ -67,7 +67,7 @@
     "pg-format": "^1.0.4",
     "rewire": "^7.0.0",
     "sinon": "^17.0.1",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.4"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",
