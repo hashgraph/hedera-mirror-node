@@ -16,11 +16,11 @@
 
 package com.hedera.mirror.test.e2e.acceptance.response;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorBlocks;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorBlock;
 import java.util.List;
 import lombok.Data;
 
 @Data
 public class MirrorBlockResponse {
-    private List<MirrorBlocks> blocks;
+    private List<MirrorBlock> blocks;
 }

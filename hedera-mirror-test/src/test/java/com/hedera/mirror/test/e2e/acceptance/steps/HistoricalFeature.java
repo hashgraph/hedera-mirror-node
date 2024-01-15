@@ -137,7 +137,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         }
     }
 
-    @RetryAsserts
     @Given("I verify the estimate precompile contract bytecode is deployed")
     public void contractDeployed() {
         var response = mirrorClient.getContractInfo(estimatePrecompileContractSolidityAddress);
@@ -753,7 +752,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
     }
 
-    @RetryAsserts
     @Then("I verify historical data for {token} is returned for getCustomFees")
     public void getHistoricalDataForCustomFees(TokenNameEnum tokenName) throws InterruptedException {
         CustomFixedFee customFixedFee = new CustomFixedFee();
@@ -907,13 +905,17 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     private void waitForNextBlock() throws InterruptedException {
         int currentBlockNumber = Integer.parseInt(getLastBlockNumber());
         int waitTime = 250;
-        int maxCycles = 8;
-        int totalTimeWaited = 0;
+        int maxCycles = 8; // 8 cycles * 250 ms = 2 seconds per block
+        int totalTimeWaited = 0; // keep track of the total time waited
 
+        // The cycle below serves to check for a new block via the block API.
+        // If a new block is found, we break the loop early; otherwise, we complete the cycle,
+        // which amounts to a 2-second wait, aligning with the expected time for a new block.
         for (int i = 0; i < maxCycles; i++) {
             Thread.sleep(waitTime);
             totalTimeWaited += waitTime;
 
+            // Retrieve the latest block number after the wait and check if new block is found
             int newBlockNumber = Integer.parseInt(getLastBlockNumber());
             if (newBlockNumber > currentBlockNumber) {
                 break;

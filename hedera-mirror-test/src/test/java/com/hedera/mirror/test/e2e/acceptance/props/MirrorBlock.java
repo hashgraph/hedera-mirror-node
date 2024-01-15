@@ -19,7 +19,7 @@ package com.hedera.mirror.test.e2e.acceptance.props;
 import lombok.Data;
 
 @Data
-public class MirrorBlocks {
+public class MirrorBlock {
     private Integer count;
     private String hapiVersion;
     private String hash;
