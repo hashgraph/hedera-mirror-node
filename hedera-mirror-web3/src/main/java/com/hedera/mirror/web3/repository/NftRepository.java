@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,7 +110,7 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                             select token_id
                             from nft
                             where account_id = :accountId
-                                and lower(timestamp_range) <= :blockTimestamp
+                                and timestamp_range @> :blockTimestamp
                                 and deleted is not true
                         )
                         union all
@@ -127,4 +127,80 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                     """,
             nativeQuery = true)
     long countByAccountIdAndTimestampNotDeleted(long accountId, long blockTimestamp);
+
+    /**
+     * Retrieves the most recent state of nft balance
+     * by accountId and tokenId up to a given block timestamp.
+     * The method considers both the current state of the token account and its historical states
+     * and returns the one that was valid just before or equal to the provided block timestamp.
+     *
+     * @param accountId the ID of the account
+     * @param tokenId the ID of the nft
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return the number of nft serial numbers the accountId owns at the specified timestamp for specific tokenId.
+     */
+    @Query(
+            value =
+                    """
+            select count(*)
+            from (
+                (
+                    select token_id
+                    from nft
+                    where account_id = :accountId
+                        and token_id = :tokenId
+                        and timestamp_range @> :blockTimestamp
+                        and deleted is not true
+                )
+                union all
+                (
+                    select token_id
+                    from nft_history
+                    where account_id = :accountId
+                        and token_id = :tokenId
+                        and timestamp_range @> :blockTimestamp
+                        and deleted is not true
+                )
+                ) as n
+            join entity e on e.id = n.token_id
+            where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
+            """,
+            nativeQuery = true)
+    Optional<Long> nftBalanceByAccountIdTokenIdAndTimestamp(long accountId, long tokenId, long blockTimestamp);
+
+    /**
+     * Finds the historical token total supply for a given token ID based on a specific block timestamp.
+     * This method calculates the historical supply by getting the sum of all not deleted nft serials for
+     * this specific timestamp range
+     *
+     * @param tokenId the ID of the token
+     * @param blockTimestamp  the block timestamp used to filter the results.
+     * @return the token's total supply at the specified timestamp.
+     */
+    @Query(
+            value =
+                    """
+                    select count(*)
+                    from (
+                        (
+                            select token_id
+                            from nft
+                            where token_id = :tokenId
+                                and timestamp_range @> :blockTimestamp
+                                and deleted is not true
+                        )
+                        union all
+                        (
+                            select token_id
+                            from nft_history
+                            where token_id = :tokenId
+                                and timestamp_range @> :blockTimestamp
+                                and deleted is not true
+                        )
+                    ) as n
+                    join entity e on e.id = n.token_id
+                    where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
+                    """,
+            nativeQuery = true)
+    long findNftTotalSupplyByTokenIdAndTimestamp(long tokenId, long blockTimestamp);
 }

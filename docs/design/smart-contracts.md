@@ -264,9 +264,7 @@ Optional filters
       "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
       "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
       "contract_id": "0.0.1002",
-      "created_contract_ids": [
-        "0.0.1003"
-      ],
+      "created_contract_ids": ["0.0.1003"],
       "error_message": "",
       "from": "0x0000000000000000000000000000000000001001",
       "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
@@ -283,7 +281,7 @@ Optional filters
 ```
 
 > _Note:_ Each contract run result object maps closely to the EVM
-[transaction receipt object](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#transaction-receipt-object)
+> [transaction receipt object](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#transaction-receipt-object)
 
 Optional filters
 
@@ -318,9 +316,7 @@ Optional filters
   "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
   "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
   "contract_id": "0.0.1002",
-  "created_contract_ids": [
-    "0.0.1003"
-  ],
+  "created_contract_ids": ["0.0.1003"],
   "error_message": "",
   "from": "0x0000000000000000000000000000000000001001",
   "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
@@ -494,13 +490,14 @@ class JsonRpcRequest<T> {
   private String method;
   private T params;
 }
-  ```
+```
 
 #### Response
 
 Responses are typically of the standard [JSON-RPC format](https://www.jsonrpc.org/specification#response_object).
 
 - Successful response
+
   ```json
   {
     "id": 1,
@@ -527,6 +524,7 @@ Responses are typically of the standard [JSON-RPC format](https://www.jsonrpc.or
 An appropriate set of models would be:
 
 - `JsonRpcResponse`
+
   ```java
   @Data
   class JsonRpcSuccessResponse<T> {
@@ -537,6 +535,7 @@ An appropriate set of models would be:
   ```
 
 - `JsonRpcErrorResponse`
+
   ```java
   class JsonRpcErrorResponse {
     private Long id;
@@ -567,47 +566,47 @@ provided through the record stream and therefore some `eth_` related methods may
 iteration. Below is a table of compatibility. All methods are referenced from the Ethereum
 Wikis [JSON-RPC API](https://eth.wiki/json-rpc/API)
 
-| Method                                                                                                          | Description                                                                                           | Mirror Node Support Priority  | Justification                   |
-| --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------- | -------------------------------- |
-| [eth_accounts](https://eth.wiki/json-rpc/API#eth_accounts)                                                      | Returns a list of addresses owned by client.                                                          | N/A                           | Mirror node is not an Ethereum client                          |
-| [eth_blockNumber](https://eth.wiki/json-rpc/API#eth_blocknumber)                                                | Returns the index corresponding to the block number of the current chain head.                        | P1*                           | Mirror node is able to return the current record file count. However, this may be inaccurate depending on network load.
-| [eth_call](https://eth.wiki/json-rpc/API#eth_call)                                                              | Invokes a contract function locally and does not change the state of the blockchain.                  | N/A                           | Mirror node is not an Ethereum client                          |
-| [eth_coinbase](https://eth.wiki/json-rpc/API#eth_coinbase)                                                      | Returns the client coinbase address. The coinbase address is the account to pay mining rewards to.    | N/A                           | Mirror node is not an Ethereum client                          |
-| [eth_estimateGas](https://eth.wiki/json-rpc/API#eth_estimategas)                                                | Returns an estimate of the gas required for a transaction to complete.                                | N/A                           | Mirror node is not an EVM bearing client                          |
-| [eth_gasPrice](https://eth.wiki/json-rpc/API#eth_gasprice)                                                      | Returns a percentile gas unit price for the most recent blocks, in Wei.                               | N/A                           | Mirror node is not an EVM bearing client                          |
-| [eth_getBalance](https://eth.wiki/json-rpc/API#eth_getbalance)                                                  | Returns the account balance of the specified address.                                                 | P1*                           | Mirror node can return an accounts balance. However, as of receipt it may be stale for up to 15 mins due to balance file parse rate.
-| [eth_getBlockByHash](https://eth.wiki/json-rpc/API#eth_getblockbyhash)                                          | Returns information about the block by hash.                                                          | P2                            | Mirror node is able to return record file information. Block info will be secondary to transactions.
-| [eth_getBlockByNumber](https://eth.wiki/json-rpc/API#eth_getblockbynumber)                                      | Returns information about a block by block number.                                                    | P2                            | Mirror node is able to return record file information. Block info will be secondary to transactions.
-| [eth_getBlockTransactionCountByHash](https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbyhash)          | Returns the number of transactions in the block matching the given block hash.                        | P2                            | Mirror node is able to return record file information. Block info will be secondary to transactions.
-| [eth_getBlockTransactionCountByNumber](https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbynumber)      | Returns the number of transactions in a block matching the specified block number.                    | P2                            | Mirror node is able to return record file information. Block info will be secondary to transactions.
-| [eth_getCode](https://eth.wiki/json-rpc/API#eth_getcode)                                                        | Returns the code of the smart contract at the specified address.                                      | P0                            | Mirror node is able to return contract bytes from file_data table.
-| [eth_getFilterChanges](https://eth.wiki/json-rpc/API#eth_getfilterchanges)                                      | Polls the specified filter and returns an array of changes that have occurred since the last poll.    | N/A                           | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs
-| [eth_getFilterLogs](https://eth.wiki/json-rpc/API#eth_getfilterlogs)                                            | Returns an array of logs for the specified filter.                                                    | N/A                           | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs
-| [eth_getLogs](https://eth.wiki/json-rpc/API#eth_getlogs)                                                        | Returns an array of logs matching a specified filter object.                                          | P1                            | Mirror node is able to return contract log rows based on filter parameters.
-| [eth_getStorageAt](https://eth.wiki/json-rpc/API#eth_getstorageat)                                              | Returns the value of a storage position at a specified address.                                       | P2                            | Mirror node is able to return the contract_state row based on the filter parameters.
-| [eth_getTransactionByBlockHashAndIndex](https://eth.wiki/json-rpc/API#eth_gettransactionbyblockhashandindex)    | Returns transaction information for the specified block hash and transaction index position.          | P2                            | Mirror node can return contract transaction details mapped by record hash and transaction count.
-| [eth_getTransactionByBlockNumberAndIndex](https://eth.wiki/json-rpc/API#eth_gettransactionbyblocknumberandindex)| Returns transaction information for the specified block number and transaction index position.        | P2                            | Mirror node can return contract transaction details mapped by record number and transaction count.
-| [eth_getTransactionByHash](https://eth.wiki/json-rpc/API#eth_gettransactionbyhash)                              | Returns transaction information for the specified transaction hash.                                   | P1                            | Mirror node can return contract transaction metadata details mapped by transaction hash.
-| [eth_getTransactionCount](https://eth.wiki/json-rpc/API#eth_gettransactioncount)                                | Returns the number of transactions sent from a specified address.                                     | P2                            | Mirror node can return contract transaction count from the specified contract address.
-| [eth_getTransactionReceipt](https://eth.wiki/json-rpc/API#eth_gettransactionreceipt)                            | Returns the receipt of a transaction by transaction hash.                                             | P0                            | Mirror node can return contract transaction details mapped by transaction hash.
-| [eth_getUncleByBlockHashAndIndex](https://eth.wiki/json-rpc/API#eth_getunclebyblockhashandindex)                | Returns uncle specified by block hash and index.                                                      | N/A                           | Hedera has no concept of uncles. Gossip protocol avoids this pitfall.
-| [eth_getUncleByBlockNumberAndIndex](https://eth.wiki/json-rpc/API#eth_getunclebyblocknumberandindex)            | Returns uncle specified by block number and index.                                                    | N/A                           | Hedera has no concept of uncles. Gossip protocol avoids this pitfall.
-| [eth_getUncleCountByBlockHash](https://eth.wiki/json-rpc/API#eth_getunclecountbyblockhash)                      | Returns the number of uncles in a block from a block matching the given block hash.                   | N/A                           | Hedera has no concept of uncles. Gossip protocol avoids this pitfall.
-| [eth_getUncleCountByBlockNumber](https://eth.wiki/json-rpc/API#eth_getunclecountbyblocknumber)                  | Returns the number of uncles in a block matching the specified block number.                          | N/A                           | Hedera has no concept of uncles. Gossip protocol avoids this pitfall.
-| [eth_getWork](https://eth.wiki/json-rpc/API#eth_getwork)                                                        | Returns the hash of the current block, the seed hash, and the required target boundary condition.     | N/A                           | Hedera uses the Gossip about Gossip protocol which is not proof of work based.
-| [eth_hashrate](https://eth.wiki/json-rpc/API#eth_hashrate)                                                      | Returns the number of hashes per second with which the node is mining.                                | N/A                           | Mirror node is not an EVM bearing client
-| [eth_mining](https://eth.wiki/json-rpc/API#eth_mining)                                                          | Whether the client is actively mining new blocks.                                                     | N/A                           | Mirror node is not an EVM bearing client
-| [eth_newBlockFilter](https://eth.wiki/json-rpc/API#eth_newblockfilter)                                          | Creates a filter to retrieve new block hashes.                                                        | N/A                           | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs
-| [eth_newFilter](https://eth.wiki/json-rpc/API#eth_newfilter)                                                    | Creates a log filter.                                                                                 | N/A                           | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs
-| [eth_newPendingTransactionFilter](https://eth.wiki/json-rpc/API#eth_newpendingtransactionfilter)                | Creates a filter to retrieve new pending transactions hashes.                                         | N/A                           | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs
-| [eth_protocolVersion](https://eth.wiki/json-rpc/API#eth_protocolversion)                                        | Returns current Ethereum protocol version.                                                            | N/A                           | Mirror node is not an EVM bearing client
-| [eth_sendRawTransaction](https://eth.wiki/json-rpc/API#eth_sendrawtransaction)                                  | Sends a signed transaction.                                                                           | N/A                           | Mirror node is not an EVM bearing client
-| [eth_sign](https://eth.wiki/json-rpc/API#eth_sign)                                                              | Returns an EIP-191 signature over the provided data                                                   | N/A                           | Mirror node is not an EVM bearing client
-| [eth_signTransaction](https://eth.wiki/json-rpc/API#eth_signtransaction)                                        | Returns and RLP encoded transaction signed by the specified account                                   | N/A                           | Mirror node is not an EVM bearing client
-| [eth_submitHashrate](https://eth.wiki/json-rpc/API#eth_submithashrate)                                          | Submits the mining hashrate.                                                                          | N/A                           | Mirror node is not an EVM bearing client
-| [eth_submitWork](https://eth.wiki/json-rpc/API#eth_submitwork)                                                  | Submits a Proof of Work (Ethash) solution.                                                            | N/A                           | Mirror node is not an EVM bearing client
-| [eth_syncing](https://eth.wiki/json-rpc/API#eth_syncing)                                                        | Returns an object with data about the synchronization status, or false if not synchronizing.          | N/A                           | Mirror node is not an EVM bearing client
-| [eth_uninstallFilter](https://eth.wiki/json-rpc/API#eth_uninstallfilter)                                        | Uninstalls a filter with the specified ID.                                                            | N/A                           | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs
+| Method                                                                                                           | Description                                                                                        | Mirror Node Support Priority | Justification                                                                                                                           |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| [eth_accounts](https://eth.wiki/json-rpc/API#eth_accounts)                                                       | Returns a list of addresses owned by client.                                                       | N/A                          | Mirror node is not an Ethereum client                                                                                                   |
+| [eth_blockNumber](https://eth.wiki/json-rpc/API#eth_blocknumber)                                                 | Returns the index corresponding to the block number of the current chain head.                     | P1\*                         | Mirror node is able to return the current record file count. However, this may be inaccurate depending on network load.                 |
+| [eth_call](https://eth.wiki/json-rpc/API#eth_call)                                                               | Invokes a contract function locally and does not change the state of the blockchain.               | N/A                          | Mirror node is not an Ethereum client                                                                                                   |
+| [eth_coinbase](https://eth.wiki/json-rpc/API#eth_coinbase)                                                       | Returns the client coinbase address. The coinbase address is the account to pay mining rewards to. | N/A                          | Mirror node is not an Ethereum client                                                                                                   |
+| [eth_estimateGas](https://eth.wiki/json-rpc/API#eth_estimategas)                                                 | Returns an estimate of the gas required for a transaction to complete.                             | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_gasPrice](https://eth.wiki/json-rpc/API#eth_gasprice)                                                       | Returns a percentile gas unit price for the most recent blocks, in Wei.                            | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_getBalance](https://eth.wiki/json-rpc/API#eth_getbalance)                                                   | Returns the account balance of the specified address.                                              | P1\*                         | Mirror node can return an accounts balance. However, as of receipt it may be stale for up to 15 mins due to balance file parse rate.    |
+| [eth_getBlockByHash](https://eth.wiki/json-rpc/API#eth_getblockbyhash)                                           | Returns information about the block by hash.                                                       | P2                           | Mirror node is able to return record file information. Block info will be secondary to transactions.                                    |
+| [eth_getBlockByNumber](https://eth.wiki/json-rpc/API#eth_getblockbynumber)                                       | Returns information about a block by block number.                                                 | P2                           | Mirror node is able to return record file information. Block info will be secondary to transactions.                                    |
+| [eth_getBlockTransactionCountByHash](https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbyhash)           | Returns the number of transactions in the block matching the given block hash.                     | P2                           | Mirror node is able to return record file information. Block info will be secondary to transactions.                                    |
+| [eth_getBlockTransactionCountByNumber](https://eth.wiki/json-rpc/API#eth_getblocktransactioncountbynumber)       | Returns the number of transactions in a block matching the specified block number.                 | P2                           | Mirror node is able to return record file information. Block info will be secondary to transactions.                                    |
+| [eth_getCode](https://eth.wiki/json-rpc/API#eth_getcode)                                                         | Returns the code of the smart contract at the specified address.                                   | P0                           | Mirror node is able to return contract bytes from file_data table.                                                                      |
+| [eth_getFilterChanges](https://eth.wiki/json-rpc/API#eth_getfilterchanges)                                       | Polls the specified filter and returns an array of changes that have occurred since the last poll. | N/A                          | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs |
+| [eth_getFilterLogs](https://eth.wiki/json-rpc/API#eth_getfilterlogs)                                             | Returns an array of logs for the specified filter.                                                 | N/A                          | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs |
+| [eth_getLogs](https://eth.wiki/json-rpc/API#eth_getlogs)                                                         | Returns an array of logs matching a specified filter object.                                       | P1                           | Mirror node is able to return contract log rows based on filter parameters.                                                             |
+| [eth_getStorageAt](https://eth.wiki/json-rpc/API#eth_getstorageat)                                               | Returns the value of a storage position at a specified address.                                    | P2                           | Mirror node is able to return the contract_state row based on the filter parameters.                                                    |
+| [eth_getTransactionByBlockHashAndIndex](https://eth.wiki/json-rpc/API#eth_gettransactionbyblockhashandindex)     | Returns transaction information for the specified block hash and transaction index position.       | P2                           | Mirror node can return contract transaction details mapped by record hash and transaction count.                                        |
+| [eth_getTransactionByBlockNumberAndIndex](https://eth.wiki/json-rpc/API#eth_gettransactionbyblocknumberandindex) | Returns transaction information for the specified block number and transaction index position.     | P2                           | Mirror node can return contract transaction details mapped by record number and transaction count.                                      |
+| [eth_getTransactionByHash](https://eth.wiki/json-rpc/API#eth_gettransactionbyhash)                               | Returns transaction information for the specified transaction hash.                                | P1                           | Mirror node can return contract transaction metadata details mapped by transaction hash.                                                |
+| [eth_getTransactionCount](https://eth.wiki/json-rpc/API#eth_gettransactioncount)                                 | Returns the number of transactions sent from a specified address.                                  | P2                           | Mirror node can return contract transaction count from the specified contract address.                                                  |
+| [eth_getTransactionReceipt](https://eth.wiki/json-rpc/API#eth_gettransactionreceipt)                             | Returns the receipt of a transaction by transaction hash.                                          | P0                           | Mirror node can return contract transaction details mapped by transaction hash.                                                         |
+| [eth_getUncleByBlockHashAndIndex](https://eth.wiki/json-rpc/API#eth_getunclebyblockhashandindex)                 | Returns uncle specified by block hash and index.                                                   | N/A                          | Hedera has no concept of uncles. Gossip protocol avoids this pitfall.                                                                   |
+| [eth_getUncleByBlockNumberAndIndex](https://eth.wiki/json-rpc/API#eth_getunclebyblocknumberandindex)             | Returns uncle specified by block number and index.                                                 | N/A                          | Hedera has no concept of uncles. Gossip protocol avoids this pitfall.                                                                   |
+| [eth_getUncleCountByBlockHash](https://eth.wiki/json-rpc/API#eth_getunclecountbyblockhash)                       | Returns the number of uncles in a block from a block matching the given block hash.                | N/A                          | Hedera has no concept of uncles. Gossip protocol avoids this pitfall.                                                                   |
+| [eth_getUncleCountByBlockNumber](https://eth.wiki/json-rpc/API#eth_getunclecountbyblocknumber)                   | Returns the number of uncles in a block matching the specified block number.                       | N/A                          | Hedera has no concept of uncles. Gossip protocol avoids this pitfall.                                                                   |
+| [eth_getWork](https://eth.wiki/json-rpc/API#eth_getwork)                                                         | Returns the hash of the current block, the seed hash, and the required target boundary condition.  | N/A                          | Hedera uses the Gossip about Gossip protocol which is not proof of work based.                                                          |
+| [eth_hashrate](https://eth.wiki/json-rpc/API#eth_hashrate)                                                       | Returns the number of hashes per second with which the node is mining.                             | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_mining](https://eth.wiki/json-rpc/API#eth_mining)                                                           | Whether the client is actively mining new blocks.                                                  | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_newBlockFilter](https://eth.wiki/json-rpc/API#eth_newblockfilter)                                           | Creates a filter to retrieve new block hashes.                                                     | N/A                          | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs |
+| [eth_newFilter](https://eth.wiki/json-rpc/API#eth_newfilter)                                                     | Creates a log filter.                                                                              | N/A                          | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs |
+| [eth_newPendingTransactionFilter](https://eth.wiki/json-rpc/API#eth_newpendingtransactionfilter)                 | Creates a filter to retrieve new pending transactions hashes.                                      | N/A                          | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs |
+| [eth_protocolVersion](https://eth.wiki/json-rpc/API#eth_protocolversion)                                         | Returns current Ethereum protocol version.                                                         | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_sendRawTransaction](https://eth.wiki/json-rpc/API#eth_sendrawtransaction)                                   | Sends a signed transaction.                                                                        | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_sign](https://eth.wiki/json-rpc/API#eth_sign)                                                               | Returns an EIP-191 signature over the provided data                                                | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_signTransaction](https://eth.wiki/json-rpc/API#eth_signtransaction)                                         | Returns and RLP encoded transaction signed by the specified account                                | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_submitHashrate](https://eth.wiki/json-rpc/API#eth_submithashrate)                                           | Submits the mining hashrate.                                                                       | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_submitWork](https://eth.wiki/json-rpc/API#eth_submitwork)                                                   | Submits a Proof of Work (Ethash) solution.                                                         | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_syncing](https://eth.wiki/json-rpc/API#eth_syncing)                                                         | Returns an object with data about the synchronization status, or false if not synchronizing.       | N/A                          | Mirror node is not an EVM bearing client                                                                                                |
+| [eth_uninstallFilter](https://eth.wiki/json-rpc/API#eth_uninstallfilter)                                         | Uninstalls a filter with the specified ID.                                                         | N/A                          | Mirror node REST APIs should be stateless and will not support persisting filters. Instead, desired filter should be applied to getLogs |
 
 > _Note:_ Methods may become applicable over time should the Mirror Node become connected to a gossip based network or
 > should the REST APIs move from a stateless to stateful design for items such as search
@@ -619,10 +618,13 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
 - `blockNumber`
 
   Request
+
   ```shell
   curl -X POST --data '{"jsonrpc":"2.0","method":"blockNumber","params":[],"id":83}'
   ```
+
   Response
+
   ```json
   {
     "id": 83,
@@ -634,10 +636,13 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
 - `getBalance`
 
   Request
+
   ```shell
   curl -X POST --data '{"jsonrpc":"2.0","method":"getBalance","params":["0x407d73d8a49eeb85d32cf465507dd71d507100c1", "latest"],"id":1}'
   ```
+
   Response
+
   ```json
   {
     "id": 1,
@@ -649,13 +654,16 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
 - `getCode`
 
   Request
+
   ```shell
   curl -X POST --data '{"jsonrpc":"2.0","method":"getCode","params":["0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b", "0x2"],"id":1}'
   ```
+
   Response
+
   ```json
   {
-    "id":1,
+    "id": 1,
     "jsonrpc": "2.0",
     "result": "0x600160008035811a818181146012578301005b601b6001356025565b8060005260206000f25b600060078202905091905056"
   }
@@ -664,23 +672,29 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
 - `getLogs`
 
   Request
+
   ```shell
   curl -X POST --data '{"jsonrpc":"2.0","method":"getLogs","params":[{ "topics": ["0x000000000000000000000000a94f5374fce5edbc8e2a8697c15331677e6ebf0b"]}],"id":74}'
   ```
+
   Response
+
   ```json
   {
-    "id":1,
-    "jsonrpc":"2.0",
-    "result": [{
-      "logIndex": "0x1",
-      "blockNumber":"0x1b4",
-      "blockHash": "0x8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcfdf829c5a142f1fccd7d",
-      "transactionHash":  "0xdf829c5a142f1fccd7d8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcf",
-      "transactionIndex": "0x0",
-      "address": "0x16c5785ac562ff41e2dcfdf829c5a142f1fccd7d",
-      "data":"0x0000000000000000000000000000000000000000000000000000000000000000",
-      "topics": ["0x59ebeb90bc63057b6515673c3ecf9438e5058bca0f92585014eced636878c9a5"]
+    "id": 1,
+    "jsonrpc": "2.0",
+    "result": [
+      {
+        "logIndex": "0x1",
+        "blockNumber": "0x1b4",
+        "blockHash": "0x8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcfdf829c5a142f1fccd7d",
+        "transactionHash": "0xdf829c5a142f1fccd7d8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcf",
+        "transactionIndex": "0x0",
+        "address": "0x16c5785ac562ff41e2dcfdf829c5a142f1fccd7d",
+        "data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "topics": [
+          "0x59ebeb90bc63057b6515673c3ecf9438e5058bca0f92585014eced636878c9a5"
+        ]
       }
     ]
   }
@@ -689,29 +703,32 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
 - `getTransactionByHash`
 
   Request
+
   ```shell
   curl -X POST --data '{"jsonrpc":"2.0","method":"getTransactionByHash","params":["0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b"],"id":1}'
   ```
+
   Response
+
   ```json
   {
-    "jsonrpc":"2.0",
-    "id":1,
-    "result":{
-      "blockHash":"0x1d59ff54b1eb26b013ce3cb5fc9dab3705b415a67127a003c3e61eb445bb8df2",
-      "blockNumber":"0x5daf3b",
-      "from":"0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
-      "gas":"0xc350",
-      "gasPrice":"0x4a817c800",
-      "hash":"0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
-      "input":"0x68656c6c6f21",
-      "nonce":"0x15",
-      "to":"0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb",
-      "transactionIndex":"0x41",
-      "value":"0xf3dbb76162000",
-      "v":"0x25",
-      "r":"0x1b5e176d927f8e9ab405058b2d2457392da3e20f328b16ddabcebc33eaac5fea",
-      "s":"0x4ba69724e8f69de52f0125ad8b3c5c2cef33019bac3249e2c0a2192766d1721c"
+    "jsonrpc": "2.0",
+    "id": 1,
+    "result": {
+      "blockHash": "0x1d59ff54b1eb26b013ce3cb5fc9dab3705b415a67127a003c3e61eb445bb8df2",
+      "blockNumber": "0x5daf3b",
+      "from": "0xa7d9ddbe1f17865597fbd27ec712455208b6b76d",
+      "gas": "0xc350",
+      "gasPrice": "0x4a817c800",
+      "hash": "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b",
+      "input": "0x68656c6c6f21",
+      "nonce": "0x15",
+      "to": "0xf02c1c8e6114b1dbe8937a39260b5b0a374432bb",
+      "transactionIndex": "0x41",
+      "value": "0xf3dbb76162000",
+      "v": "0x25",
+      "r": "0x1b5e176d927f8e9ab405058b2d2457392da3e20f328b16ddabcebc33eaac5fea",
+      "s": "0x4ba69724e8f69de52f0125ad8b3c5c2cef33019bac3249e2c0a2192766d1721c"
     }
   }
   ```
@@ -719,31 +736,37 @@ Methods marked with P0 or P1 support serve as a starting subset of Ethereum JSON
 - `getTransactionReceipt`
 
   Request
+
   ```shell
   curl -X POST --data '{"jsonrpc":"2.0","method":"getTransactionReceipt","params":["0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238"],"id":1}'
   ```
+
   Response
+
   ```json
   {
-    "id":1,
-    "jsonrpc":"2.0",
+    "id": 1,
+    "jsonrpc": "2.0",
     "result": {
       "transactionHash": "0xb903239f8543d04b5dc1ba6579132b143087c68db1b2168786408fcbce568238",
-      "transactionIndex":  "0x",
+      "transactionIndex": "0x",
       "blockNumber": "0xb",
       "blockHash": "0xc6ef2fc5426d6ad6fd9e2a26abeab0aa2411b7ab17f30a99d3cb96aed1d1055b",
       "cumulativeGasUsed": "0x33bc",
       "gasUsed": "0x4dc",
       "contractAddress": "0xb60e8dd61c5d32be8058bb8eb970870f07233155",
-      "logs": [{
+      "logs": [
+        {
           "logIndex": "0x1",
-          "blockNumber":"0x1b4",
+          "blockNumber": "0x1b4",
           "blockHash": "0x8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcfdf829c5a142f1fccd7d",
-          "transactionHash":  "0xdf829c5a142f1fccd7d8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcf",
+          "transactionHash": "0xdf829c5a142f1fccd7d8216c5785ac562ff41e2dcfdf5785ac562ff41e2dcf",
           "transactionIndex": "0x0",
           "address": "0x16c5785ac562ff41e2dcfdf829c5a142f1fccd7d",
-          "data":"0x0000000000000000000000000000000000000000000000000000000000000000",
-          "topics": ["0x59ebeb90bc63057b6515673c3ecf9438e5058bca0f92585014eced636878c9a5"]
+          "data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+          "topics": [
+            "0x59ebeb90bc63057b6515673c3ecf9438e5058bca0f92585014eced636878c9a5"
+          ]
         }
       ],
       "logsBloom": "0x00...0",
@@ -762,45 +785,54 @@ The Mirror Node should additional provide support for this.
 - subscribe
 
   Request
+
   ```shell
   curl -X POST --data '{"jsonrpc":"2.0","method":"subscribe","params":["newHeads", {}]},"id":1}'
   ```
+
   Response
+
   ```json
   {
-    "jsonrpc":"2.0",
-    "id":2,
-    "result":"0x1"
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": "0x1"
   }
   ```
+
   Notification
+
   ```json
   {
     "jsonrpc": "2.0",
     "method": "subscription",
-    "params":{
-      "subscription":"0x1",
+    "params": {
+      "subscription": "0x1",
       "result": {
-        "number":"0x40c22",
-        "hash":"0x16af2ee1672203c7ac13ff280822008be0f38e1e5bdc675760015ae3192c0e3a",
-        "parentHash":"0x1fcf5dadfaf2ab4d985eb05d40eaa23605b0db25d736610c4b87173bfe438f91",
-        "nonce":"0x0000000000000000",
-        "sha3Uncles":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
-        "logsBloom":"0x00008000000000080000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000040000000000000000000000000000000000000000001000000000000000000000040000000000000000000000000000000000000400000000010000000000000000100000000000020000000000000000000000000000000000010000000000000000000000000000000000000000000",
-        "transactionsRoot":"0x5b2e3c1a49352f1ca9fb5dfe74b7ffbbb6d70e23a12693444e26058d8a8e6296",
-        "stateRoot":"0xbe8d3bc58bd982421a3ea8b66753404502df0f464ae78a17661d157c406dd38b",
-        "receiptsRoot":"0x81b175ec1f4d44fbbd6ba08f1bd3950663b307b7cb35751c067b535cc0b58f12",
-        "miner":"0x0000000000000000000000000000000000000000",
-        "difficulty":"0x1",
-        "totalDifficulty":"0x7c16e",
-        "extraData":"0xd783010600846765746887676f312e372e33856c696e757800000000000000002160f780bb1f61eda045c67cdb1297ba37d8349df8035533cb0cf82a7e45f23f3d72bbec125a9f499b3eb110b7d1918d466cb2ede90b38296cfe2aaf452c513f00",
-        "size":"0x3a1",
-        "gasLimit":"0x47e7c4",
-        "gasUsed":"0x11ac3a",
-        "timestamp":"0x592afc24",
-        "uncles":[],
-        "transactions":["0x419c69d21b14e2e8f911def22bb6d0156c876c0e1c61067de836713043364d6c","0x70a5b2cb2cee6e0b199232a1757fc2a9d6053a4691a7afef8508fd88aeeec703","0x4b3035f1d32339fe1a4f88147dc197a0fe5bbd63d3b9dec2dad96a3b46e4fddd"]
-        }
+        "number": "0x40c22",
+        "hash": "0x16af2ee1672203c7ac13ff280822008be0f38e1e5bdc675760015ae3192c0e3a",
+        "parentHash": "0x1fcf5dadfaf2ab4d985eb05d40eaa23605b0db25d736610c4b87173bfe438f91",
+        "nonce": "0x0000000000000000",
+        "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+        "logsBloom": "0x00008000000000080000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000040000000000000000000000000000000000000000001000000000000000000000040000000000000000000000000000000000000400000000010000000000000000100000000000020000000000000000000000000000000000010000000000000000000000000000000000000000000",
+        "transactionsRoot": "0x5b2e3c1a49352f1ca9fb5dfe74b7ffbbb6d70e23a12693444e26058d8a8e6296",
+        "stateRoot": "0xbe8d3bc58bd982421a3ea8b66753404502df0f464ae78a17661d157c406dd38b",
+        "receiptsRoot": "0x81b175ec1f4d44fbbd6ba08f1bd3950663b307b7cb35751c067b535cc0b58f12",
+        "miner": "0x0000000000000000000000000000000000000000",
+        "difficulty": "0x1",
+        "totalDifficulty": "0x7c16e",
+        "extraData": "0xd783010600846765746887676f312e372e33856c696e757800000000000000002160f780bb1f61eda045c67cdb1297ba37d8349df8035533cb0cf82a7e45f23f3d72bbec125a9f499b3eb110b7d1918d466cb2ede90b38296cfe2aaf452c513f00",
+        "size": "0x3a1",
+        "gasLimit": "0x47e7c4",
+        "gasUsed": "0x11ac3a",
+        "timestamp": "0x592afc24",
+        "uncles": [],
+        "transactions": [
+          "0x419c69d21b14e2e8f911def22bb6d0156c876c0e1c61067de836713043364d6c",
+          "0x70a5b2cb2cee6e0b199232a1757fc2a9d6053a4691a7afef8508fd88aeeec703",
+          "0x4b3035f1d32339fe1a4f88147dc197a0fe5bbd63d3b9dec2dad96a3b46e4fddd"
+        ]
+      }
     }
   }
   ```
@@ -808,16 +840,20 @@ The Mirror Node should additional provide support for this.
 - unsubscribe
 
   Request
+
   ```shell
   curl -X POST --data '{"jsonrpc":"2.0","method":"unsubscribe","params":["0x1"]},"id":1}'
   ```
+
   Response
+
   ```json
   {
-    "jsonrpc":"2.0",
-    "id":2,
-    "result":true
+    "jsonrpc": "2.0",
+    "id": 2,
+    "result": true
   }
+  ```
 
 ## Non-Functional Requirements
 
@@ -834,16 +870,16 @@ The Mirror Node should additional provide support for this.
    they follow a hierarchy that highlights transfer succession or will it be flattened? Still being designed.
 3. How should we expose EVM internal transactions under `/api/v1/contracts/{id}/results/{timestamp}`
    & `/api/v1/contracts/results/{transactionId}`? Still being designed. One suggestion under is
-    ```json
-      "evm_internal_transactions": [
-        {
-          "from": "0x0000000000000000000000000000000000001002",
-          "to": "0x0000000000000000000000000000000000001003",
-          "type": "call_0",
-          "value": "20"
-        }
-      ]
-    ```
+   ```json
+     "evm_internal_transactions": [
+       {
+         "from": "0x0000000000000000000000000000000000001002",
+         "to": "0x0000000000000000000000000000000000001003",
+         "type": "call_0",
+         "value": "20"
+       }
+     ]
+   ```
 
 ## Answered Questions
 

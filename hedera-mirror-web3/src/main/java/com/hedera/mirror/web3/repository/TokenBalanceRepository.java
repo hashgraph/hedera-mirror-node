@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,8 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
      * found at a timestamp less than the given block timestamp. If no token_balance is found for the given token_id,
      * account_id, and consensus timestamp, a balance of 0 will be returned.
      *
+     * For more information please refer to `AccountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp`
+     *
      * @param tokenId         the ID of the token.
      * @param accountId       the ID of the account.
      * @param blockTimestamp  the block timestamp used to filter the results.
@@ -64,27 +66,31 @@ public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Tok
     @Query(
             value =
                     """
-                    with balance_snapshot as (
-                      select consensus_timestamp
-                      from account_balance
-                      where account_id = 2 and consensus_timestamp <= ?3
-                      order by consensus_timestamp desc
-                      limit 1
+                    with balance_timestamp as (
+                    select consensus_timestamp
+                    from account_balance
+                    where account_id = 2 and
+                        consensus_timestamp > ?3 - 2678400000000000 and consensus_timestamp <= ?3
+                    order by consensus_timestamp desc
+                    limit 1
                     ), base as (
-                        select balance
-                        from token_balance as tb, balance_snapshot as s
+                        select tb.balance
+                        from token_balance as tb, balance_timestamp as bt
                         where
-                          tb.consensus_timestamp = s.consensus_timestamp and
-                          token_id = ?1 and
-                          account_id = ?2
+                            token_id = ?1 and
+                            account_id = ?2 and
+                            tb.consensus_timestamp > bt.consensus_timestamp - 2678400000000000 and
+                            tb.consensus_timestamp <= bt.consensus_timestamp
+                        order by tb.consensus_timestamp desc
+                        limit 1
                     ), change as (
                         select sum(amount) as amount
-                        from token_transfer as tt, balance_snapshot as s
+                        from token_transfer as tt
                         where
-                          token_id = ?1 and
-                          account_id = ?2 and
-                          tt.consensus_timestamp > s.consensus_timestamp and
-                          tt.consensus_timestamp <= ?3
+                            token_id = ?1 and
+                            account_id = ?2 and
+                            tt.consensus_timestamp > coalesce((select consensus_timestamp from balance_timestamp), 0) and
+                            tt.consensus_timestamp <= ?3
                     )
                     select coalesce((select balance from base), 0) + coalesce((select amount from change), 0)
                     """,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -225,9 +225,11 @@ function satisfyParameters(available, required) {
 
 function markdownReport(data, includeUrlColumn, funcs, scenarios, getUrlFuncs = {}) {
   const header = `| Scenario ${
-    includeUrlColumn && '| URL'
+    includeUrlColumn ? '| URL' : ''
   } | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Skipped? | Comment |
-|----------${includeUrlColumn && '|----------'}|-----|-------|-----|----------|-------------------|--------|---------|`;
+|----------${
+    includeUrlColumn ? '|----------' : ''
+  }|-----|-------|-----|----------|-------------------|--------|---------|`;
 
   // collect the metrics
   const {setup_data: availableParams} = data;
@@ -274,7 +276,7 @@ function markdownReport(data, includeUrlColumn, funcs, scenarios, getUrlFuncs = 
       const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
       const skipped = satisfyParameters(availableParams, funcs[scenario].requiredParameters || []) ? 'No' : 'Yes';
 
-      markdown += `| ${scenario} ${includeUrlColumn && '| ' + scenarioUrls[scenario]} | ${
+      markdown += `| ${scenario} ${includeUrlColumn ? '| ' + scenarioUrls[scenario] : ''} | ${
         __ENV.DEFAULT_VUS
       } | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | ${skipped} | |\n`;
     } catch (err) {

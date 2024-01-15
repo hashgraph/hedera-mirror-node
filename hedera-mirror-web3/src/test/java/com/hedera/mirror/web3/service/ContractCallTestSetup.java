@@ -37,6 +37,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.FallbackFee;
 import com.hedera.mirror.common.domain.token.FixedFee;
@@ -66,6 +68,7 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.Royalty
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
@@ -1146,6 +1149,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS_HISTORICAL.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
+        balancePersistHistorical(
+                FUNGIBLE_TOKEN_ADDRESS_HISTORICAL,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+
         fungibleTokenPersistHistorical(
                 ownerEntityId,
                 KEY_PROTO,
@@ -1767,6 +1774,27 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return tokenEntityId;
     }
 
+    private EntityId balancePersistHistorical(final Address tokenAddress, final Range<Long> historicalBlock) {
+        final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
+        final var accountId = EntityIdUtils.entityIdFromId(
+                Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS_HISTORICAL)));
+        final var tokenId =
+                EntityIdUtils.entityIdFromId(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(tokenAddress)));
+        // hardcoded entity id 2 is mandatory
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(historicalBlock.lowerEndpoint() + 1, EntityId.of(2)))
+                        .balance(12L))
+                .persist();
+        domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(historicalBlock.lowerEndpoint() + 1, accountId, tokenId))
+                        .balance(12L))
+                .persist();
+
+        return tokenEntityId;
+    }
+
     private EntityId fungibleTokenPersistHistorical(
             final EntityId treasuryId,
             final byte[] key,
@@ -1815,7 +1843,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .pauseKey(key)
                         .supplyKey(key)
                         .symbol("HBAR")
-                        .timestampRange(historicalBlock))
+                        .timestampRange(
+                                Range.openClosed(historicalBlock.lowerEndpoint(), historicalBlock.upperEndpoint() + 1)))
                 .persist();
 
         return tokenEntityId;
@@ -1924,7 +1953,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .kycKey(key)
                         .freezeDefault(freezeDefault)
                         .feeScheduleKey(key)
-                        .totalSupply(1_000_000_000L)
+                        .totalSupply(2L)
                         .maxSupply(2_000_000_000L)
                         .name("Hbars")
                         .supplyType(TokenSupplyTypeEnum.FINITE)
@@ -1949,7 +1978,22 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .accountId(ownerEntity)
                         .tokenId(nftEntityId.getId())
                         .deleted(false)
-                        .timestampRange(historicalBlock))
+                        .timestampRange(
+                                Range.openClosed(historicalBlock.lowerEndpoint(), historicalBlock.upperEndpoint() + 1)))
+                .persist();
+
+        domainBuilder
+                .nftHistory()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .createdTimestamp(1475067194949034022L)
+                        .serialNumber(3L)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .deleted(false)
+                        .timestampRange(Range.openClosed(
+                                historicalBlock.lowerEndpoint() - 1, historicalBlock.upperEndpoint() + 1)))
                 .persist();
         return nftEntityId;
     }

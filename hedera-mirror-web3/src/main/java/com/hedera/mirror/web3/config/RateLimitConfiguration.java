@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@ class RateLimitConfiguration {
 
     @Bean
     Bucket buildBucket() {
-        final var rateLimitPerSecond = mirrorNodeEvmProperties.getRateLimit().getSeconds();
+        long rateLimit = mirrorNodeEvmProperties.getRateLimit();
         final var limit = Bandwidth.builder()
-                .capacity(rateLimitPerSecond)
-                .refillGreedy(rateLimitPerSecond, Duration.ofSeconds(1))
+                .capacity(rateLimit)
+                .refillGreedy(rateLimit, Duration.ofSeconds(1))
                 .build();
         return Bucket.builder().addLimit(limit).build();
     }

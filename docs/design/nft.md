@@ -25,6 +25,7 @@ the mirror node can be updated to add support for NFTs.
 
 - Add to `token` table fields `type` (enum, values `FUNGIBLE_COMMON` and `NON_FUNGIBLE_UNIQUE`), `supply_type` (
   enum, values `INFINITE` and `FINITE`), and `max_supply` (bigint).
+
   - Default values will be `FUNGIBLE_COMMON`, `INFINITE`, and max long, respectively.
 
 - Add a new `nft` table
@@ -322,6 +323,7 @@ Optional Filters
 ### Monitor
 
 - Make changes to the `ExpressionConverter`
+
   - Add a new `nft` expression
     - Creating an NFT requires the `tokenType` field to be set to `NON_FUNGIBLE_UNIQUE`, as well as not
       setting `decimals` and `initialSupply`.
@@ -331,6 +333,7 @@ Optional Filters
   e.g., `transferTypes.0`, `transferTypes.1`.
 
 - Update the `TransactionSuppliers`
+
   - `TokenCreateTransactionSupplier` will need an enum `type` attribute (with values `FUNGIBLE_COMMON` and
     `NON_FUNGIBLE_UNIQUE`), an enum `supplyType` (with values `INFINITE` and `FINITE`), and a long `maxSupply`
     attribute.

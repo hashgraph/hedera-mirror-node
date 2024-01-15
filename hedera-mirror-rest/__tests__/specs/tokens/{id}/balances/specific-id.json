@@ -36,32 +36,26 @@
       {
         "token_id": "0.0.2007",
         "account_id": "0.0.7",
-        "balance": 700
+        "balance": 700,
+        "balance_timestamp": 5429
       },
       {
         "token_id": "0.20.8",
         "account_id": "0.0.7",
-        "balance": 777
+        "balance": 777,
+        "balance_timestamp": 5430
       },
       {
         "token_id": "0.0.2007",
         "account_id": "0.0.8",
-        "balance": 1000
+        "balance": 1000,
+        "balance_timestamp": 5431
       },
       {
         "token_id": "0.20.8",
         "account_id": "0.0.8",
-        "balance": 500
-      }
-    ],
-    "recordFiles": [
-      {
-        "consensus_start": 2000,
-        "consensus_end": 5432
-      },
-      {
-        "consensus_start": 50,
-        "consensus_end": 100
+        "balance": 500,
+        "balance_timestamp": 5432
       }
     ],
     "transactions": [],
@@ -74,7 +68,7 @@
   ],
   "responseStatus": 200,
   "responseJson": {
-    "timestamp": "0.000005432",
+    "timestamp": "0.000005431",
     "balances": [
       {
         "account": "0.0.8",

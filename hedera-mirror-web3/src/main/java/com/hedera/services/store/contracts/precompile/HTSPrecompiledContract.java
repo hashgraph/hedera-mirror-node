@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,9 +148,18 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
             return handleReadsFromDynamicContext(input, frame);
         }
 
-        final var result = computePrecompile(input, frame);
+        Bytes result = null;
+        try {
+            result = computePrecompile(input, frame).getOutput();
+        } catch (final InvalidTransactionException e) {
+            if (e.isReverting()) {
+                frame.setState(MessageFrame.State.REVERT);
+                frame.setRevertReason(e.getRevertReason());
+            }
+        }
+
         final var precompileContext = precompileContext(frame);
-        return Pair.of(precompileContext.getGasRequirement(), result.getOutput());
+        return Pair.of(precompileContext.getGasRequirement(), result);
     }
 
     @Override

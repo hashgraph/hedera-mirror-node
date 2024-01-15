@@ -45,22 +45,22 @@ should be able to ingest one month's worth of mainnet data in less than 1.5 days
 
 - Configuration:
 
-   ```yaml
-     hedera:
-       mirror:
-         importer:
-           downloader:
-             record:
-               batchSize: 600
-               frequency: 1
-           parser:
-             record:
-               entity:
-                 redis:
-                   enabled: false
-               frequency: 10
-               queueCapacity: 40
-   ```
+  ```yaml
+  hedera:
+    mirror:
+      importer:
+        downloader:
+          record:
+            batchSize: 600
+            frequency: 1
+        parser:
+          record:
+            entity:
+              redis:
+                enabled: false
+            frequency: 10
+            queueCapacity: 40
+  ```
 
   Note once the importer has caught up all data, please change the configuration to the default where applicable.
 
@@ -74,8 +74,8 @@ should be able to ingest one month's worth of mainnet data in less than 1.5 days
 
   Set the following parameters. Note the unit is kilobytes.
 
-    - max_wal_size = 8388608
-    - work_mem = 262144
+  - max_wal_size = 8388608
+  - work_mem = 262144
 
 ## Performance Tests
 

@@ -172,4 +172,19 @@ contract NestedCalls is HederaTokenService {
             revert("isToken(tokenAddress) returned an error.");
         }
     }
+
+    function nestedGetTokenInfoAndHardcodedResult(address token) external returns (string memory) {
+        (int responseCode, IHederaTokenService.TokenInfo memory retrievedTokenInfo) = HederaTokenService.getTokenInfo(token);
+        return "hardcodedResult";
+    }
+
+    function nestedHtsGetApprovedAndHardcodedResult(address token, uint256 serialNumber) public returns (string memory) {
+        (int _responseCode, address approved) = HederaTokenService.getApproved(token, serialNumber);
+        return "hardcodedResult";
+    }
+
+    function nestedMintTokenAndHardcodedResult(address token, int64 amount, bytes[] memory metadata) public returns (string memory) {
+        (int responseCode, int64 newTotalSupply, int64[] memory serialNumbers) = HederaTokenService.mintToken(token, amount, metadata);
+        return "hardcodedResult";
+    }
 }

@@ -62,7 +62,10 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-kubernetes-fabric8-autoconfig")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     runtimeOnly(
-        group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+        group = "io.netty",
+        name = "netty-resolver-dns-native-macos",
+        classifier = "osx-aarch_64"
+    )
     testImplementation("com.github.meanbeanlib:meanbean")
     testImplementation("io.fabric8:kubernetes-server-mock")
     testImplementation("io.projectreactor:reactor-test")

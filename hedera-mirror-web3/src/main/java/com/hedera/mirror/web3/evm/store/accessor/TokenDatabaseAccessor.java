@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,10 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -50,6 +52,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
     private final EntityDatabaseAccessor entityDatabaseAccessor;
     private final EntityRepository entityRepository;
     private final CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
+    private final NftRepository nftRepository;
 
     @Override
     public @NonNull Optional<Token> get(@NonNull Object key, final Optional<Long> timestamp) {
@@ -67,7 +70,6 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         if (databaseToken == null) {
             return null;
         }
-
         return new Token(
                 entity.getId(),
                 new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
@@ -81,7 +83,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 Optional.ofNullable(databaseToken.getSupplyType())
                         .map(st -> TokenSupplyType.valueOf(st.name()))
                         .orElse(null),
-                Optional.ofNullable(databaseToken.getTotalSupply()).orElse(0L),
+                getTotalSupply(databaseToken, timestamp),
                 databaseToken.getMaxSupply(),
                 parseJkey(databaseToken.getKycKey()),
                 parseJkey(databaseToken.getFreezeKey()),
@@ -108,6 +110,23 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 Optional.ofNullable(entity.getAutoRenewPeriod()).orElse(0L),
                 0L,
                 getCustomFees(entity.getId(), timestamp));
+    }
+
+    private Long getTotalSupply(
+            final com.hedera.mirror.common.domain.token.Token token, final Optional<Long> timestamp) {
+        return timestamp
+                .map(t -> Optional.of(getTotalSupplyHistorical(
+                        token.getType().equals(TokenTypeEnum.FUNGIBLE_COMMON), token.getTokenId(), t)))
+                .orElseGet(() -> Optional.ofNullable(token.getTotalSupply()))
+                .orElse(0L);
+    }
+
+    private Long getTotalSupplyHistorical(boolean isFungible, long tokenId, long timestamp) {
+        if (isFungible) {
+            return tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId, timestamp);
+        } else {
+            return nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(tokenId, timestamp);
+        }
     }
 
     private JKey parseJkey(byte[] keyBytes) {

@@ -2,10 +2,10 @@ name: Security
 
 on:
   pull_request:
-    branches: [ main, release/** ]
+    branches: [main, release/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
   dependencies:
@@ -18,7 +18,7 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: "temurin"
           java-version: 21
 
       - name: Vulnerability check
@@ -62,12 +62,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+          fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Install JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: "temurin"
           java-version: 21
 
       - name: Cache SonarCloud dependencies
