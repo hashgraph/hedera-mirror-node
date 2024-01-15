@@ -61,12 +61,17 @@ const transactionFields = [
   Transaction.INDEX,
 ];
 
-// TODO See if Citus figures out to only access first partition as consensus_timestamp is the partition column.
-// TODO transaction is distributed on payer_account_id, so this will involve all shards. A big deal for this hopefully one time query?
+/*
+ * TODO is there a more appropriate query? Citus hits all 16 shards given the transaction table is distributed
+ *  on the payer_account_id column. It looks like it's also scanning the indexes of all of the partitions. I guess
+ *  ascending order with a limit of 1 does not hint Citus to only look at the first partition. Despite that, a
+ *  random sample shows query execution time running from 25-140 ms. Is this good enough?
+ */
 const FIRST_TRANSACTION_TIMESTAMP_QUERY = `
   SELECT DISTINCT ON (consensus_timestamp) consensus_timestamp 
   FROM transaction 
   ORDER BY consensus_timestamp LIMIT 1`;
+
 const MAINNET_FIRST_TRANSACTION_TIMESTAMP = 1568411631396440000n; // September 13, 2019 21:53:51 (pm) UTC
 
 /**
@@ -82,7 +87,7 @@ const firstTransactionTimestamp = (function (query, defaultTimestamp) {
 
   return function () {
     if (timestamp === undefined) {
-      const queryPromise = pool.query(query);
+      const queryPromise = pool.queryQuietly(query);
       queryPromise
         .then((results) => {
           if (results.rowCount === 1) {
