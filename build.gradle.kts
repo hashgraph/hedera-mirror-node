@@ -205,12 +205,12 @@ spotless {
                     "singleQuote" to true,
                 )
             )
-        target("hedera-mirror-rest/**/*.js")
+        target("hedera-mirror-rest/**/*.js", "hedera-mirror-test/**/*.js")
         targetExclude("**/build/**", "**/node_modules/**", "**/__tests__/integration/*.test.js")
     }
     java {
         endWithNewline()
-        palantirJavaFormat("2.39.0")
+        palantirJavaFormat()
         licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
         target("**/*.java")
         targetExclude("**/build/**", "hedera-mirror-rest/**", "hedera-mirror-rosetta/**")
@@ -227,7 +227,7 @@ spotless {
         endWithNewline()
         ktfmt().kotlinlangStyle()
         licenseHeader(licenseHeader, "(description|import|plugins)").updateYearWithLatest(true)
-        target("*.kts", "*/*.kts", "buildSrc/**/*.kts")
+        target("*.kts", "*/*.kts", "buildSrc/**/*.kts", "hedera-mirror-rest/*/*.kts")
         targetExclude("**/build/**")
     }
     format("miscellaneous") {
