@@ -1,6 +1,13 @@
 {
   "description": "Transaction api calls using repeated valid queries. One result per provided timestamp.",
   "matrix": "timestampBindingMatrix.js",
+  "matrixSetup": {
+    "true": {
+      "features": {
+        "fakeTime": "2019-08-14Z 10:50:00"
+      }
+    }
+  },
   "setup": {
     "accounts": [
       {
@@ -151,17 +158,6 @@
     ],
     "links": {
       "next": null
-    }
-  },
-  "todo": "single timestamp eq issue again",
-  "matrixResponse": {
-    "true": {
-      "responseJson": {
-        "transactions": [],
-        "links": {
-          "next": null
-        }
-      }
     }
   }
 }

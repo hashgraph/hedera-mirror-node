@@ -1,6 +1,13 @@
 {
   "description": "Account api calls for specific account using path for account with no balance",
   "matrix": "timestampBindingMatrix.js",
+  "matrixSetup": {
+    "true": {
+      "features": {
+        "fakeTime": "2009-02-13Z 23:40:00"
+      }
+    }
+  },
   "setup": {
     "accounts": [
       {
@@ -252,38 +259,6 @@
     "stake_period_start": null,
     "links": {
       "next": null
-    }
-  },
-  "matrixResponse": {
-    "true": {
-      "responseJson": {
-        "transactions": [],
-        "balance": {
-          "timestamp": null,
-          "balance": null,
-          "tokens": []
-        },
-        "account": "0.0.8",
-        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-        "created_timestamp": null,
-        "decline_reward": false,
-        "deleted": false,
-        "ethereum_nonce": null,
-        "evm_address": "0x0000000000000000000000000000000000000008",
-        "expiry_timestamp": null,
-        "auto_renew_period": null,
-        "key": null,
-        "max_automatic_token_associations": 0,
-        "memo": "entity memo",
-        "pending_reward": 0,
-        "receiver_sig_required": false,
-        "staked_account_id": null,
-        "staked_node_id": null,
-        "stake_period_start": null,
-        "links": {
-          "next": null
-        }
-      }
     }
   }
 }

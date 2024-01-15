@@ -1,6 +1,13 @@
 {
   "description": "Transaction api calls for transactions via debit type query filter where account only receives token transfer",
   "matrix": "timestampBindingMatrix.js",
+  "matrixSetup": {
+    "true": {
+      "features": {
+        "fakeTime": "2009-02-13Z 23:40:00"
+      }
+    }
+  },
   "setup": {
     "accounts": [
       {
@@ -143,16 +150,6 @@
     ],
     "links": {
       "next": null
-    }
-  },
-  "matrixResponse": {
-    "true": {
-      "responseJson": {
-        "transactions": [],
-        "links": {
-          "next": null
-        }
-      }
     }
   }
 }

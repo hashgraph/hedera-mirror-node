@@ -4,6 +4,13 @@
     "The test spec is used to reproduce https://github.com/hashgraph/hedera-mirror-node/issues/2066"
   ],
   "matrix": "timestampBindingMatrix.js",
+  "matrixSetup": {
+    "true": {
+      "features": {
+        "fakeTime": "2009-02-13Z 23:40:00"
+      }
+    }
+  },
   "setup": {
     "accounts": [
       {
@@ -156,17 +163,6 @@
     ],
     "links": {
       "next": null
-    }
-  },
-  "todo": "there is timestamp eq, so why empty",
-  "matrixResponse": {
-    "true": {
-      "responseJson": {
-        "transactions": [],
-        "links": {
-          "next": null
-        }
-      }
     }
   }
 }

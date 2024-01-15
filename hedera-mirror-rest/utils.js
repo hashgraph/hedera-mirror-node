@@ -683,31 +683,47 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
  * and end timestamp value. The provided Range is not modified. If changes are made a copy is returned.
  *
  * @param {Range} tsRange timestamp range, typically based on query parameters
+ * @param {string} order the order of the SQL query for which the timestamp range is being bound
+ * @param {BigInt} unboundLowerTs when provided range is completely unbounded, this value is used as the begin value when an ascending order query
  * @return {Range} fully bound timestamp range
  */
-const bindTimestampRange = (tsRange, order = 'desc') => {
+const bindTimestampRange = (tsRange, order = 'desc', unboundLowerTs = 0n) => {
   const {bindTimestampRange, maxTimestampRangeNs} = config.query;
   if (!bindTimestampRange) {
     return tsRange;
   }
 
-  const queryTsRange = tsRange
-    ? Range(tsRange.begin ?? 0n, tsRange.end ?? MAX_LONG, tsRange.bounds ?? '[]')
-    : Range(0n, MAX_LONG, '[]');
-
-  if (queryTsRange.end === MAX_LONG) {
-    queryTsRange.end = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
-  }
-
+  const queryTsRange = tsRange ? Range(tsRange.begin ?? null, tsRange.end ?? null, tsRange.bounds ?? '[]') : Range();
   const maxTimestampRangeNsInclusive = queryTsRange.bounds === '[]' ? maxTimestampRangeNs - 1n : maxTimestampRangeNs;
-  if (queryTsRange.end - queryTsRange.begin <= maxTimestampRangeNsInclusive) {
-    return queryTsRange;
-  }
 
-  if (order === 'desc') {
-    queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
+  if (_.isNil(queryTsRange.end)) {
+    if (_.isNil(queryTsRange.begin)) {
+      // Completely unbounded
+      if (order === 'desc') {
+        queryTsRange.end = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
+        queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
+      } else {
+        queryTsRange.begin = unboundLowerTs;
+        queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
+      }
+    } else {
+      // Lower bound is set but not upper
+      queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
+    }
   } else {
-    queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
+    if (_.isNil(queryTsRange.begin)) {
+      // Upper bound set but not lower
+      queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
+    } else {
+      // Fully bound by client. Trim if not within max timestamp range.
+      if (queryTsRange.end - queryTsRange.begin > maxTimestampRangeNsInclusive) {
+        if (order === 'desc') {
+          queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
+        } else {
+          queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
+        }
+      }
+    }
   }
 
   return queryTsRange;

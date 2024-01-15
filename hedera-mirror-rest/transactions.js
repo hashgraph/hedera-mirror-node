@@ -60,6 +60,50 @@ const transactionFields = [
   Transaction.VALID_START_NS,
   Transaction.INDEX,
 ];
+
+// TODO See if Citus figures out to only access first partition as consensus_timestamp is the partition column.
+// TODO transaction is distributed on payer_account_id, so this will involve all shards. A big deal for this hopefully one time query?
+const FIRST_TRANSACTION_TIMESTAMP_QUERY = `
+  SELECT DISTINCT ON (consensus_timestamp) consensus_timestamp 
+  FROM transaction 
+  ORDER BY consensus_timestamp LIMIT 1`;
+const MAINNET_FIRST_TRANSACTION_TIMESTAMP = 1568411631396440000n; // September 13, 2019 21:53:51 (pm) UTC
+
+/**
+ * Function to return the first consensus_timestamp from the transaction table. Once that has been determined,
+ * the value is cached and the DB is not queried again. The IIFE sets the query to issue and the default
+ * timestamp value, and then simply invoking firstTransactionTimestamp() returns the first timestamp.
+ *
+ * The returned function is synchronous since the great majority of the time it's invoked it will simply
+ * return the cached timestamp.
+ */
+const firstTransactionTimestamp = (function (query, defaultTimestamp) {
+  let timestamp;
+
+  return function () {
+    if (timestamp === undefined) {
+      const queryPromise = pool.query(query);
+      queryPromise
+        .then((results) => {
+          if (results.rowCount === 1) {
+            timestamp = BigInt(results.rows[0].consensus_timestamp);
+            logger.info(`firstTransactionTimestamp: First transaction timestamp is: ${timestamp}`);
+          } else {
+            timestamp = defaultTimestamp;
+            logger.info(
+              `firstTransactionTimestamp: No first transaction timestamp present. Using default: ${defaultTimestamp}`
+            );
+          }
+        })
+        .catch((err) => {
+          // Could be DB is not up currently, will try again when called again.
+          logger.info(`firstTransactionTimestamp: First transaction timestamp query failed: ${err.message}`);
+        });
+    }
+    return timestamp === undefined ? defaultTimestamp : timestamp;
+  };
+})(FIRST_TRANSACTION_TIMESTAMP_QUERY, MAINNET_FIRST_TRANSACTION_TIMESTAMP);
+
 const transactionFullFields = transactionFields.map((f) => Transaction.getFullName(f));
 // consensus_timestamp in transfer_list is a coalesce of multiple consensus timestamp columns
 const transferListFullFields = transactionFields
@@ -390,7 +434,7 @@ const getTransactionTimestamps = async (
   order,
   sqlParams
 ) => {
-  const queryTsRange = utils.bindTimestampRange(tsConfig.tsRange, order);
+  const queryTsRange = utils.bindTimestampRange(tsConfig.tsRange, order, firstTransactionTimestamp());
   const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
     queryTsRange,
     't.consensus_timestamp',

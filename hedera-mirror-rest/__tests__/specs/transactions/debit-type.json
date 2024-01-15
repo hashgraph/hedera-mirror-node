@@ -1,6 +1,13 @@
 {
   "description": "Transaction api calls for transactions with the debit result type",
   "matrix": "timestampBindingMatrix.js",
+  "matrixSetup": {
+    "true": {
+      "features": {
+        "fakeTime": "2019-08-14Z 10:50:00"
+      }
+    }
+  },
   "setup": {
     "accounts": [
       {
@@ -141,16 +148,6 @@
     ],
     "links": {
       "next": null
-    }
-  },
-  "matrixResponse": {
-    "true": {
-      "responseJson": {
-        "transactions": [],
-        "links": {
-          "next": null
-        }
-      }
     }
   }
 }
