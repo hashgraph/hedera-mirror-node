@@ -125,6 +125,10 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         deployedPrecompileContract = getContract(PRECOMPILE);
         precompileContractSolidityAddress =
                 deployedPrecompileContract.contractId().toSolidityAddress();
+    }
+
+    @Given("I create admin and receiver accounts")
+    public void createAccounts() {
         receiverAccountId = accountClient.getAccount(AccountNameEnum.DAVE);
         secondReceiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
         admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
@@ -239,14 +243,13 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(deletableAccountId.getAccountId().toSolidityAddress()));
-        var initialResponse =
-                callContract(data, estimateContractSolidityAddress).getResultAsNumber();
+        var initialResponse = callContract(data, estimateContractSolidityAddress);
         var initialBlock = getLastBlockNumber();
         waitForNextBlock();
         networkTransactionResponse = accountClient.delete(deletableAccountId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var response = callContract(initialBlock, data, estimateContractSolidityAddress);
-        assertEquals(initialResponse.intValue(), response.getResultAsNumber().intValue());
+        var historicalResponse = callContract(initialBlock, data, estimateContractSolidityAddress);
+        assertEquals(initialResponse, historicalResponse);
     }
 
     @Then("I verify that historical data for {token} is returned via getTokenInfo")

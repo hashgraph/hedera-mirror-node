@@ -5,6 +5,7 @@ Feature: Historical Feature
     Given I successfully create estimateGas contract
     Given I successfully create erc contract
     Given I successfully create precompile contract
+    Given I create admin and receiver accounts
     Given I successfully create estimate precompile contract
     Then the mirror node REST API should return status 200 for the contracts creation
     Then I verify the estimate precompile contract bytecode is deployed
