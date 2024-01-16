@@ -219,6 +219,8 @@ Optional Filters
 
 ##### Approved For All NFT Allowances
 
+This API accepts a path parameter that represents either the owner or spender, depending on a boolean flag provided as a query parameter called `owner`. When the `owner` value is true, the `accountId` path parameter should specify the ID of the owner, and the API will retrieve the allowances that the owner has granted to different spenders. Conversely, when the `owner` value is false, the `accountId` path parameter should indicate the ID of the spender who has an allowance, and the API will instead provide the allowances granted to the spender by different owners of those tokens.
+
 `/api/v1/accounts/{accountId}/allowances/nfts`
 
 ```json
@@ -235,36 +237,42 @@ Optional Filters
       }
     },
     {
-      "approved_for_all": false,
+      "approved_for_all": true,
       "owner": "0.0.1000",
       "spender": "0.0.8488",
       "token_id": "0.0.1034",
       "timestamp": {
-        "from": "1633466229.96874612",
+        "from": "1633466229.96874618",
         "to": null
       }
     },
     {
-      "approved_for_all": true,
-      "owner": "0.0.1000",
-      "spender": "0.0.9857",
-      "token_id": "0.0.1032",
+      "approved_for_all": false,
+      "owner": "0.0.1001",
+      "spender": "0.0.8488",
+      "token_id": "0.0.1099",
       "timestamp": {
-        "from": "1633466229.96874612",
+        "from": "1633466229.96875612",
         "to": null
       }
     }
   ],
-  "links": {}
+  "links": {
+    "next": "/api/v1/accounts/0.0.8488/allowances/nfts?limit=3&order=asc&account.id=gte:1001&token.id=gt:0.0.1099"
+  }
 }
 ```
 
 Optional Filters
 
-* `limit`: The maximum amount of items to return.
-* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `desc`.
-* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
-* `token.id`: Filter by the token ID. `ne` operator is not supported.
+- `account.id`: Filter by the spender account ID or owner account ID, depending on the owner flag. `ne` operator is not supported.
+- `limit`: The maximum number of items to return.
+- `order`: Order by `token.id` and `account.id`. Accepts `asc` or `desc` with a default of `asc`.
+- `owner`: Indicates whether the path parameter `accountId` is the owner or the spender ID. Accepts a boolean value of `true` or `false` with a default value set to `true`.
+- `token.id`: Filter by the token ID. `ne` operator is not supported.
+
+The order is governed by a combination of the account ID and the token ID values, with the account ID being the parent column. The token ID value governs its order within the given account ID.
+The default order for this API is currently ascending.
 
 Note this API is optional.
 
