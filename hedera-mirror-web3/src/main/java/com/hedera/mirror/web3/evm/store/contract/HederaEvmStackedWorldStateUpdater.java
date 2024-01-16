@@ -33,12 +33,14 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
 import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.fluent.SimpleAccount;
 
 @SuppressWarnings("java:S107")
 public class HederaEvmStackedWorldStateUpdater
@@ -48,9 +50,7 @@ public class HederaEvmStackedWorldStateUpdater
     private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
-
     private final EntityAddressSequencer entityAddressSequencer;
-
     private final TokenAccessor tokenAccessor;
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
 
@@ -83,6 +83,16 @@ public class HederaEvmStackedWorldStateUpdater
 
     @Override
     public Account get(final Address address) {
+        final var entityId = EntityIdUtils.numFromEvmAddress(Bytes.wrap(address.toArrayUnsafe()).toArrayUnsafe());
+        // entities from 1-1000 are system accounts/contract
+        // some of them are missing in the database
+        // we create dummy empty account if we have to interact with them
+        // since some of the system accounts/contracts are not present in the db
+        // and most operations with them are forbidden
+        if (0 < entityId && entityId <= 1000) {
+            // return empty account, see AccountState.isEmpty()
+            return new SimpleAccount(address, 0, Wei.ZERO);
+        }
         if (isTokenRedirect(address)) {
             return new HederaEvmWorldStateTokenAccount(address);
         }
