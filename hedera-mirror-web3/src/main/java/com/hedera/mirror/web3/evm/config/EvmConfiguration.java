@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.config;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
+import com.hedera.mirror.web3.evm.contracts.operations.CustomExtCodeHashOperation;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -31,7 +32,6 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Oper
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
@@ -94,6 +94,7 @@ public class EvmConfiguration {
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final GasCalculatorHederaV22 gasCalculator;
     private final HederaBlockHashOperation hederaBlockHashOperation;
+    private final CustomExtCodeHashOperation customExtCodeHashOperation;
     private final AbstractAutoCreationLogic autoCreationLogic;
     private final EntityAddressSequencer entityAddressSequencer;
     private final PrecompiledContractProvider precompilesHolder;
@@ -216,6 +217,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                customExtCodeHashOperation,
                 EvmSpecVersion.LONDON,
                 MainnetEVMs::registerLondonOperations);
     }
@@ -227,6 +229,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                customExtCodeHashOperation,
                 EvmSpecVersion.PARIS,
                 MainnetEVMs::registerParisOperations);
     }
@@ -238,6 +241,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                customExtCodeHashOperation,
                 EvmSpecVersion.SHANGHAI,
                 MainnetEVMs::registerShanghaiOperations);
     }
@@ -282,6 +286,7 @@ public class EvmConfiguration {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final HederaPrngSeedOperation prngSeedOperation,
             final HederaBlockHashOperation hederaBlockHashOperation,
+            final CustomExtCodeHashOperation customExtCodeHashOperation,
             EvmSpecVersion specVersion,
             OperationRegistryCallback callback) {
         final var operationRegistry = new OperationRegistry();
@@ -300,10 +305,10 @@ public class EvmConfiguration {
                         new HederaEvmCreateOperation(gasCalculator, createOperationExternalizer()),
                         new HederaEvmSLoadOperation(gasCalculator),
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
-                        new HederaExtCodeHashOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
                         prngSeedOperation,
-                        hederaBlockHashOperation)
+                        hederaBlockHashOperation,
+                        customExtCodeHashOperation)
                 .forEach(operationRegistry::put);
 
         return new EVM(
