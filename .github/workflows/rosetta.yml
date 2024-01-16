@@ -21,6 +21,9 @@ jobs:
     env:
       ROSETTA_CLI_VERSION: v0.10.3
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set Importer StartDate
         run: |
           # Set start date to 60 seconds before the first block timestamp in previewnet
@@ -36,9 +39,6 @@ jobs:
           startDate="${startDate}Z"
           echo "STARTDATE=$startdate" >> $GITHUB_ENV
           echo "Set importer startDate to $startdate"
-
-      - name: Checkout
-        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
