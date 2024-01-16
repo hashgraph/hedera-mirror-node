@@ -73,4 +73,8 @@ public abstract class AbstractEvmStackedLedgerUpdater<W extends WorldView, A ext
         }
         store.commit();
     }
+
+    public static boolean isSystemAccount(Address address) {
+        return address.numberOfLeadingZeroBytes() >= 18 && address.getInt(16) < 1001;
+    }
 }

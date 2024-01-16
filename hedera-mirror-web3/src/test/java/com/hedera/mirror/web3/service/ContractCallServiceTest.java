@@ -154,7 +154,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @CsvSource({
-        // function getCodeHash with parameter hedera system accounts - return 0 bytes
+        // function getCodeHash with parameter hedera system accounts, expected 0 bytes
         "0x81ea44080000000000000000000000000000000000000000000000000000000000000167, 0x0000000000000000000000000000000000000000000000000000000000000000",
         "0x81ea44080000000000000000000000000000000000000000000000000000000000000168, 0x0000000000000000000000000000000000000000000000000000000000000000",
         "0x81ea440800000000000000000000000000000000000000000000000000000000000002ee, 0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -169,9 +169,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @CsvSource({
-        // function getCodeHash with parameter contract - keccak256 of the contract bytecode
+        // function getCodeHash with parameter contract, expected keccak256 of the contract bytecode
         "0x81ea440800000000000000000000000000000000000000000000000000000000000004ec, 0x1e37fefeabe141e682e9a4c777d2126f497b9321eee4a0ea33446582d148b574",
-        // function getCodeHash with parameter account - keccak256 of empty string
+        // function getCodeHash with parameter account, expected  keccak256 of empty string
         "0x81ea44080000000000000000000000000000000000000000000000000000000000000436, 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
     })
     void testNonSystemContractCodeHash(String input, String expectedOutput) {
