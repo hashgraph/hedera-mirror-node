@@ -4,7 +4,6 @@ on:
   schedule:
     - cron: "0 1 * * *" # Daily at 1:00 AM
   push:
-    branches: [ 7509-add-rosetta-ci-workflow ]
     tags: [ v* ]
 
 defaults:
@@ -37,8 +36,8 @@ jobs:
           startSecs=$((${firstTimestamp%.*}-60))
           startDate=$(date --date="@${startSecs}" -Iseconds -u | grep -o -e '^[0-9T:-]\+')
           startDate="${startDate}Z"
-          echo "STARTDATE=$startdate" >> $GITHUB_ENV
-          echo "Set importer startDate to $startdate"
+          echo "STARTDATE=$startDate" >> $GITHUB_ENV
+          echo "Set importer startDate to $startDate"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -46,12 +45,14 @@ jobs:
       - name: Build Image
         uses: docker/build-push-action@v5
         with:
-          build-args: GIT_REF={{ github.sha }}
+          build-args: GIT_REF=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          context: ./hedera-mirror-rosetta/container
+          load: true
           provenance: false
           push: false
-          tags: ${{ env.MODULE }}:{{ github.sha }}
+          tags: ${{ env.MODULE }}:${{ github.sha }}
 
       - name: Importer Configuration
         run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application_importer.yml
@@ -66,41 +67,23 @@ jobs:
             -e HEDERA_MIRROR_ROSETTA_RESPONSE_MAXTRANSACTIONSINBLOCK=4 \
             -v /tmp/application_importer.yml:/app/importer/application.yml \
             -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
-            -p 5700:5700 "${MODULE}:{{ github.sha }}")
+            -p 5700:5700 "${MODULE}:${{ github.sha }}")
           echo "ONLINE_CONTAINER_ID=$ONLINE_CONTAINER_ID" >> $GITHUB_ENV
 
-#      - name: Run Mirror Node in Offline Mode
-#        if: matrix.online-only != 'true'
-#        run: |
-#          # create an isolated network for offline mode and insert an iptables rule to drop any packets from the
-#          # isolated network
-#          docker network create --gateway 192.168.10.1 --subnet 192.168.10.0/24 isolated
-#          sudo iptables -I DOCKER-USER --destination 0.0.0.0/0 --source 192.168.10.0/24 -j DROP
-#          OFFLINE_CONTAINER_ID=$(docker run -d -e MODE=offline -e NETWORK=testnet --network isolated \
-#            -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
-#            -p 5701:5700 "${MODULE}:latest")
-#          echo "OFFLINE_CONTAINER_ID=$OFFLINE_CONTAINER_ID" >> $GITHUB_ENV
-#          echo "OFFLINE_URL=http://localhost:5701" >> $GITHUB_ENV
-
-      - name: Wait for Mirror Node to start syncing
+      - name: Wait for Mirror Node to Start Syncing
         run: ./scripts/wait-for-mirror-node.sh
         env:
-          MAX_WAIT_SECONDS: 240
+          MAX_WAIT_SECONDS: 900
 
-#      - name: Rosetta CLI Configuration
-#        run: |
-#          # add prefunded accounts for construction validation, override construction offline_url
-#          echo "${{ secrets.ROSETTA_PREFUNDED_ACCOUNTS }}" | base64 -d > /tmp/accounts.json
-#          cd ./scripts/validation/testnet/
-#          jq --slurpfile accounts /tmp/accounts.json \
-#            '.construction.prefunded_accounts=$accounts[0] | .construction.offline_url="${{ env.OFFLINE_URL }}"' \
-#            validation.json > /tmp/validation.json
-#
-#          # set start index to genesis index + 1
-#          body="{\"network_identifier\": $(cat validation.json  | jq -c -M '.network')}"
-#          startIndex=$(curl -sL -d "${body}" http://localhost:5700/network/status | jq '.genesis_block_identifier.index+1')
-#          echo "Setting data start_index to $startIndex"
-#          jq --argjson startIndex $startIndex '.data.start_index=$startIndex' /tmp/validation.json > validation.json
+      - name: Rosetta CLI Configuration
+        working-directory: ./hedera-mirror-rosetta/scripts/validation/previewnet
+        run: |
+          # set start index to genesis index + 1
+          body='{"network_identifier": {"blockchain": "Hedera", "network": "previewnet"}}'
+          startIndex=$(curl -sL -d "${body}" http://localhost:5700/network/status | jq '.genesis_block_identifier.index+1')
+          echo "Setting data start_index to $startIndex"
+          jq --argjson startIndex $startIndex '.data.start_index=$startIndex' validation.json > tmp.json && \
+            mv tmp.json validation.json
 
       - name: Run Rosetta CLI Validation
         working-directory: ./hedera-mirror-rosetta/scripts/validation
