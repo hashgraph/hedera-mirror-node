@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -803,8 +803,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 TestUtils.plus(nodeStakeTimestamp, Duration.ofDays(1).negated());
         var existingEntityStake = domainBuilder
                 .entityStake()
-                .customize(es -> es.declineRewardStart(declineRewardStart)
-                        .endStakePeriod(nodeStakeEpochDay - 1)
+                .customize(es -> es.endStakePeriod(nodeStakeEpochDay - 1)
                         .id(entity.getId())
                         .pendingReward(currentPendingReward)
                         .stakedNodeIdStart(stakedNodeIdStart)
@@ -986,7 +985,6 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
     private EntityStake fromEntity(Entity entity, NodeStake nodeStake, long stakedToMe, long stakeTotalStart) {
         return EntityStake.builder()
-                .declineRewardStart(entity.getDeclineReward())
                 .endStakePeriod(nodeStake.getEpochDay())
                 .id(entity.getId())
                 .stakedNodeIdStart(Optional.ofNullable(entity.getStakedNodeId()).orElse(-1L))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,8 +33,6 @@ import lombok.experimental.SuperBuilder;
 public abstract class AbstractEntityStake implements History {
 
     // The *Start properties are the entity's staking state at the beginning of the endStakePeriod + 1 staking period
-    private boolean declineRewardStart;
-
     // The epoch day of the period for which the pending reward has included so far
     private long endStakePeriod;
 

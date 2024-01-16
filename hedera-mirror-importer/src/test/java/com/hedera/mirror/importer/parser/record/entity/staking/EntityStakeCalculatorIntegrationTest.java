@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,12 +83,6 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                         .timestampRange(Range.atLeast(entityStakeLowerTimestamp)))
                 .persist();
         var treasury = domainBuilder.entity(TREASURY, domainBuilder.timestamp()).persist();
-        var entityStakeTreasury = fromEntity(treasury)
-                .customize(es -> es.endStakePeriod(epochDay - 1)
-                        .pendingReward(0L)
-                        .stakeTotalStart(0L)
-                        .timestampRange(Range.atLeast(entityStakeLowerTimestamp)))
-                .persist();
 
         // account1 was created two staking periods ago, there should be a row in entity_stake
         var account1 = domainBuilder
@@ -136,6 +130,46 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                 .persist();
         long account3Balance = 300 * TINYBARS_IN_ONE_HBAR;
         long accountId4 = domainBuilder.id();
+
+        // This account will be included in the calculation even though it has declined rewards,
+        // it has a staked account id
+        var account4 = domainBuilder
+                .entity()
+                .customize(e -> {
+                    long createdTimestamp =
+                            DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay - 1)) + 2000L;
+                    e.createdTimestamp(createdTimestamp)
+                            .declineReward(true)
+                            .stakedAccountId(domainBuilder.id())
+                            .timestampRange(Range.atLeast(createdTimestamp));
+                })
+                .persist();
+
+        // This account will not be included in the calculation because it has declined rewards and
+        // staked account id is 0
+        domainBuilder
+                .entity()
+                .customize(e -> {
+                    long createdTimestamp =
+                            DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay - 1)) + 2000L;
+                    e.createdTimestamp(createdTimestamp)
+                            .declineReward(true)
+                            .timestampRange(Range.atLeast(createdTimestamp));
+                })
+                .persist();
+
+        // This account will not be included in the calculation because it has no staked account id or staked node id
+        domainBuilder
+                .entity()
+                .customize(e -> {
+                    long createdTimestamp =
+                            DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay - 1)) + 2000L;
+                    e.createdTimestamp(createdTimestamp)
+                            .stakedAccountId(0L)
+                            .stakedNodeId(-1L)
+                            .timestampRange(Range.atLeast(createdTimestamp));
+                })
+                .persist();
 
         // account balance
         domainBuilder
@@ -205,12 +239,12 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                         .stakeTotalStart(0L)
                         .timestampRange(Range.atLeast(nodeStakeTimestamp)))
                 .get();
-        var expectedEntityStake800 = fromEntity(account800)
+        var expectedEntityStake4 = fromEntity(account4)
                 .customize(es -> es.endStakePeriod(endStakePeriod)
                         .stakeTotalStart(0L)
                         .timestampRange(Range.atLeast(nodeStakeTimestamp)))
                 .get();
-        var expectedEntityStakeTreasury = fromEntity(treasury)
+        var expectedEntityStake800 = fromEntity(account800)
                 .customize(es -> es.endStakePeriod(endStakePeriod)
                         .stakeTotalStart(0L)
                         .timestampRange(Range.atLeast(nodeStakeTimestamp)))
@@ -238,13 +272,11 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                                 expectedEntityStake1,
                                 expectedEntityStake2,
                                 expectedEntityStake3,
-                                expectedEntityStake800,
-                                expectedEntityStakeTreasury));
+                                expectedEntityStake4,
+                                expectedEntityStake800));
         entityStake1.setTimestampUpper(nodeStakeTimestamp);
         entityStake800.setTimestampUpper(nodeStakeTimestamp);
-        entityStakeTreasury.setTimestampUpper(nodeStakeTimestamp);
-        assertThat(findHistory(EntityStake.class))
-                .containsExactlyInAnyOrder(entityStake1, entityStake800, entityStakeTreasury);
+        assertThat(findHistory(EntityStake.class)).containsExactlyInAnyOrder(entityStake1, entityStake800);
     }
 
     @Test
@@ -269,7 +301,13 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                         .id(STAKING_REWARD_ACCOUNT)
                         .timestampRange(Range.atLeast(secondLastNodeStakeTimestamp)))
                 .persist();
-        domainBuilder.entity(TREASURY, balanceTimestamp - 6000).persist();
+        var treasury = domainBuilder
+                .entity()
+                .customize(e -> e.createdTimestamp(balanceTimestamp - 6000)
+                        .id(TREASURY)
+                        .stakedNodeId(1L)
+                        .timestampRange(Range.atLeast(secondLastNodeStakeTimestamp)))
+                .persist();
         var entityStakeTreasury = domainBuilder
                 .entityStake()
                 .customize(e -> e.endStakePeriod(epochDay - 2)
@@ -315,10 +353,12 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                 .endStakePeriod(epochDay)
                 .timestampRange(Range.atLeast(nodeStakeTimestamp))
                 .build();
-        var expectedEntityStakeTreasury = entityStakeTreasury.toBuilder()
-                .endStakePeriod(epochDay)
-                .timestampRange(Range.atLeast(nodeStakeTimestamp))
-                .build();
+        var expectedEntityStakeTreasury = fromEntity(treasury)
+                .customize(es -> es.endStakePeriod(epochDay)
+                        .stakeTotalStart(10L)
+                        .timestampRange(Range.atLeast(nodeStakeTimestamp)))
+                .get();
+
         var expectedHistory = List.of(
                 entityStake800.toBuilder()
                         .timestampRange(Range.closedOpen(secondLastNodeStakeTimestamp, lastNodeStakeTimestamp))
@@ -332,6 +372,8 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                         .build(),
                 entityStakeTreasury.toBuilder()
                         .endStakePeriod(epochDay - 1)
+                        .stakedNodeIdStart(1L)
+                        .stakeTotalStart(10L)
                         .timestampRange(Range.closedOpen(lastNodeStakeTimestamp, nodeStakeTimestamp))
                         .build());
         await().atMost(Durations.FIVE_SECONDS)
@@ -365,8 +407,7 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
     }
 
     private DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder<?, ?>> fromEntity(Entity entity) {
-        return domainBuilder.entityStake().customize(es -> es.declineRewardStart(entity.getDeclineReward())
-                .id(entity.getId())
+        return domainBuilder.entityStake().customize(es -> es.id(entity.getId())
                 .stakedNodeIdStart(entity.getStakedNodeId()));
     }
 }
