@@ -1,12 +1,5 @@
 drop view if exists transaction_hash;
 
-insert into transaction_hash_sharded
-select tho.*
-from transaction_hash_old tho
-where not exists (select 1 from transaction_hash_sharded ths where ths.hash = tho.hash);
-
-drop table transaction_hash_old;
-
 alter table transaction_hash_sharded rename to transaction_hash;
 
 alter table transaction_hash_sharded_00 rename to transaction_hash_00;
@@ -61,4 +54,10 @@ RETURN QUERY EXECUTE 'SELECT * from ' || shard || ' WHERE hash = $1'
 END
 $$ LANGUAGE plpgsql;
 
+insert into transaction_hash
+select *
+from transaction_hash_old tho
+where not exists (select get_transaction_info_by_hash(tho.hash));
+
+drop table transaction_hash_old;
 
