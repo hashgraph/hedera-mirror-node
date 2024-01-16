@@ -398,7 +398,9 @@ public class FunctionEncodeDecoder {
             final JsonNode rootNode = mapper.readTree(in);
 
             final JsonNode functionNode = StreamSupport.stream(rootNode.spliterator(), false)
-                    .filter(node -> node.get("name").asText().equals(functionName))
+                    .filter(node ->
+                            node.get("name") != null // in some ABIs the constructors do not have a name property
+                                    && node.get("name").asText().equals(functionName))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Function not found: " + functionName));
 
