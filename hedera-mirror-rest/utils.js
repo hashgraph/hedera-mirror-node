@@ -1440,14 +1440,16 @@ const getPoolClass = async (mock = false) => {
 
     if (logger.isTraceEnabled()) {
       const callerInfo = new Error().stack
-        .split('at ', 3)
+        .split('at ')
         .map((entry) => {
-          const result = entry.match(/\/hedera-mirror-rest\/(.*)\.js:(\d+):.*/);
-          return result && result.length === 3 && {name: result[1], line: result[2]};
+          const result = entry.match(/(^\S+).*\/(.*\.js):(\d+):.*/);
+          return result && result.length === 4 && {function: result[1], file: result[2], line: result[3]};
         })
         .filter((r) => !!r)
-        .filter((r) => r.name !== 'utils')[0];
-      logger.trace(`${callerInfo.name}:${callerInfo.line} query: ${query} ${utils.JSONStringify(params)}`);
+        .filter((r) => !(r.file === 'utils.js' || r.file === 'baseService.js'))[0];
+      logger.trace(
+        `${callerInfo.function} (${callerInfo.file}:${callerInfo.line}) query: ${query} ${JSONStringify(params)}`
+      );
     }
 
     try {
