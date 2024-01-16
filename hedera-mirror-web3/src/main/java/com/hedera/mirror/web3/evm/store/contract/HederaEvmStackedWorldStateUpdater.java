@@ -21,6 +21,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.account.SystemAccount;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
@@ -39,6 +40,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.fluent.SimpleAccount;
 
 @SuppressWarnings("java:S107")
 public class HederaEvmStackedWorldStateUpdater
@@ -81,18 +83,18 @@ public class HederaEvmStackedWorldStateUpdater
 
     @Override
     public Account get(final Address address) {
-        //        // entities from 1-1000 are system accounts/contracts
-        //        // some of them are missing in the db
-        //        // we create dummy empty account or SystemAccount
-        //        // since some of the system accounts/contracts are not present in the db
-        //        // and most operations with them are forbidden
-        //        if (isSystemAccount(address)) {
-        //            final var systemEntity = world.get(address);
-        //            if (systemEntity == null) {
-        //                return new SimpleAccount(address, 0, Wei.ZERO);
-        //            }
-        //            return new SystemAccount(address, systemEntity.getNonce(), systemEntity.getBalance());
-        //        }
+        // entities from 1-1000 are system accounts/contracts
+        // some of them are missing in the db
+        // we create dummy empty account or SystemAccount
+        // since some of the system accounts/contracts are not present in the db
+        // and most operations with them are forbidden
+        if (isSystemAccount(address)) {
+            final var systemEntity = world.get(address);
+            if (systemEntity == null) {
+                return new SimpleAccount(address, 0, Wei.ZERO);
+            }
+            return new SystemAccount(address, systemEntity.getNonce(), systemEntity.getBalance());
+        }
         if (isTokenRedirect(address)) {
             return new HederaEvmWorldStateTokenAccount(address);
         }
