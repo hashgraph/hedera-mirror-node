@@ -69,7 +69,7 @@ class EntityService extends BaseService {
 
     const aliasQuery = `${EntityService.entityFromAliasQuery} where ${conditions.join(' and ')}`;
 
-    const rows = await super.getRows(aliasQuery, params, 'getAccountFromAlias');
+    const rows = await super.getRows(aliasQuery, params);
 
     if (_.isEmpty(rows)) {
       return null;
@@ -87,7 +87,7 @@ class EntityService extends BaseService {
    * @returns {Promise} valid flag
    */
   async isValidAccount(accountId) {
-    const entity = await super.getSingleRow(EntityService.entityExistenceQuery, [accountId], 'isValidAccount');
+    const entity = await super.getSingleRow(EntityService.entityExistenceQuery, [accountId]);
     return !_.isNil(entity);
   }
 

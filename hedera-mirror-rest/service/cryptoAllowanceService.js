@@ -26,7 +26,7 @@ class CryptoAllowanceService extends BaseService {
 
   async getAccountCryptoAllowances(conditions, initParams, order, limit) {
     const {query, params} = this.getAccountAllowancesQuery(conditions, initParams, order, limit);
-    const rows = await super.getRows(query, params, 'getAccountCryptoAllowances');
+    const rows = await super.getRows(query, params);
     return rows.map((ca) => new CryptoAllowance(ca));
   }
 
