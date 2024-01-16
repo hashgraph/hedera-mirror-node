@@ -21,6 +21,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.account.SystemAccount;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
@@ -83,15 +84,19 @@ public class HederaEvmStackedWorldStateUpdater
 
     @Override
     public Account get(final Address address) {
-        final var entityId = EntityIdUtils.numFromEvmAddress(Bytes.wrap(address.toArrayUnsafe()).toArrayUnsafe());
-        // entities from 1-1000 are system accounts/contract
-        // some of them are missing in the database
+        final var entityId = EntityIdUtils.numFromEvmAddress(
+                Bytes.wrap(address.toArrayUnsafe()).toArrayUnsafe());
+        // entities from 1-1000 are system accounts/contracts
+        // some of them are missing in the db
         // we create dummy empty account if we have to interact with them
         // since some of the system accounts/contracts are not present in the db
         // and most operations with them are forbidden
         if (0 < entityId && entityId <= 1000) {
-            // return empty account, see AccountState.isEmpty()
-            return new SimpleAccount(address, 0, Wei.ZERO);
+            final var systemEntity = world.get(address);
+            if (systemEntity == null) {
+                return new SimpleAccount(address, 0, Wei.ZERO);
+            }
+            return new SystemAccount(address, systemEntity.getNonce(), systemEntity.getBalance());
         }
         if (isTokenRedirect(address)) {
             return new HederaEvmWorldStateTokenAccount(address);
