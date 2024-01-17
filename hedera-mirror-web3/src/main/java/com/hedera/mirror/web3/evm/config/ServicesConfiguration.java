@@ -124,6 +124,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -135,6 +136,9 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class ServicesConfiguration {
+
+    private static final int SYSTEM_ACCOUNT_BOUNDARY = 750;
+    private static final int STRICT_SYSTEM_ACCOUNT_BOUNDARY = 999;
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
@@ -747,5 +751,22 @@ public class ServicesConfiguration {
     HederaExtCodeHashOperation hederaExtCodeHashOperation(
             final GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
         return new HederaExtCodeHashOperation(gasCalculator, addressValidator);
+    }
+
+    @Bean
+    BiPredicate<Address, MessageFrame> addressValidator(final PrecompilesHolder precompilesHolder) {
+        final var precompiles = precompilesHolder.getHederaPrecompiles().keySet().stream()
+                .map(Address::fromHexString)
+                .collect(Collectors.toSet());
+        return (address, frame) ->
+                precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
+    }
+
+    @Bean
+    static Predicate<Address> strictSystemAccountDetector() {
+        // all addresses between 0-999 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing ExtCode operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), STRICT_SYSTEM_ACCOUNT_BOUNDARY) <= 0;
     }
 }
