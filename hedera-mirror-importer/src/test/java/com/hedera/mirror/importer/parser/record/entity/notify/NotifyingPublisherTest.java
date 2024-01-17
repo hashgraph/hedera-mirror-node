@@ -21,27 +21,28 @@ import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
+import com.hedera.mirror.importer.parser.record.entity.BatchPublisherTest;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.util.ArrayList;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.postgresql.jdbc.PgConnection;
-import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
-class NotifyingEntityListenerTest extends BatchEntityListenerTest {
+class NotifyingPublisherTest extends BatchPublisherTest {
 
     private final DataSource dataSource;
 
-    @Autowired
-    public NotifyingEntityListenerTest(
-            NotifyingEntityListener entityListener, NotifyProperties properties, DataSource dataSource) {
-        super(entityListener, properties);
+    public NotifyingPublisherTest(
+            NotifyingPublisher entityListener,
+            ParserContext parserContext,
+            NotifyProperties properties,
+            DataSource dataSource) {
+        super(entityListener, parserContext, properties);
         this.dataSource = dataSource;
     }
 
@@ -53,8 +54,8 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
         var topicMessages = subscribe(topicMessage.getTopicId());
 
         // when
-        entityListener.onTopicMessage(topicMessage);
-        entityListener.onSave(new EntityBatchSaveEvent(this));
+        parserContext.add(topicMessage);
+        batchPublisher.onEnd(null);
 
         // then
         StepVerifier.withVirtualTime(() -> topicMessages)

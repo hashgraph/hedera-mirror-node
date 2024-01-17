@@ -20,7 +20,7 @@ hedera:
             persist:
               syntheticContractResults: true
             redis:
-              enabled: false
+              enabled: true
           pubsub:
             topicName: testTopic
           retry:

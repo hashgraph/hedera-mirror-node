@@ -16,15 +16,15 @@
 
 package com.hedera.mirror.importer.parser.record.entity.notify;
 
+import com.hedera.mirror.importer.parser.record.entity.BatchPublisherProperties;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
 @ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
-public class NotifyProperties implements EntityListenerProperties {
+public class NotifyProperties implements BatchPublisherProperties {
 
     private boolean enabled = false;
 
