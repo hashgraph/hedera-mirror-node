@@ -15,6 +15,7 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
+import org.openapitools.generator.gradle.plugin.extensions.OpenApiGeneratorGenerateExtension
 
 description = "Hedera Mirror Node Test"
 
@@ -22,15 +23,19 @@ plugins {
     id("com.github.johnrengelman.shadow")
     id("docker-conventions")
     id("java-conventions")
+    id("openapi-conventions")
 }
 
 dependencies {
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation(platform("io.cucumber:cucumber-bom"))
     implementation("io.cucumber:cucumber-java")
     implementation("org.junit.platform:junit-platform-launcher")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-logging")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
     testImplementation("io.grpc:grpc-inprocess")
     testImplementation("com.esaulpaugh:headlong")
     testImplementation("com.google.guava:guava")
@@ -55,6 +60,8 @@ dependencies {
     testImplementation("org.apache.tuweni:tuweni-bytes")
     testImplementation("commons-codec:commons-codec")
 }
+
+java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }
 
 // Disable the default test task and only run acceptance tests during the standalone "acceptance"
 // task
