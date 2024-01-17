@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,6 +26,7 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -196,6 +198,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
     }
 
+
     @ParameterizedTest
     @CsvSource({
         // function getCodeHash with parameter hedera system accounts, expected 0 bytes
@@ -223,6 +226,41 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 Bytes.fromHexString(input), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedOutput);
+
+    @Test
+    void deployAddressThisContract() {
+        final var serviceParameters = serviceParametersForAddressThis(
+                Bytes.wrap(functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_BYTES_PATH)));
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+    }
+
+    @Test
+    void addressThisFromFunction() {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor("testAddressThis", ADDRESS_THIS_CONTRACT_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, ADDRESS_THIS_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+    }
+
+    @Test
+    void deployNestedAddressThisContract() {
+        final var serviceParameters = serviceParametersForAddressThis(
+                Bytes.wrap(functionEncodeDecoder.getContractBytes(NESTED_ADDRESS_THIS_CONTRACT_BYTES_PATH)));
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
     }
 
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {
@@ -240,6 +278,25 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .isStatic(true)
                 .callType(ETH_CALL)
                 .block(BlockType.LATEST)
+                .build();
+    }
+
+    private CallServiceParameters serviceParametersForAddressThis(final Bytes callData) {
+        final var sender = new HederaEvmAccount(SENDER_ADDRESS);
+        if (!areEntitiesPersisted) {
+            persistEntities();
+        }
+
+        return CallServiceParameters.builder()
+                .sender(sender)
+                .value(0L)
+                .receiver(Address.ZERO)
+                .callData(callData)
+                .callType(ETH_ESTIMATE_GAS)
+                .block(BlockType.LATEST)
+                .gas(15_000_000L)
+                .isStatic(false)
+                .isEstimate(true)
                 .build();
     }
 }
