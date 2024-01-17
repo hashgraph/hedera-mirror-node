@@ -30,6 +30,17 @@ import {filterKeys} from './constants';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
+const ENTIRY_STAKE_HISTORICAL_QUERY = `(
+        select * from (
+            select * from entity_stake as es where es.id = $1
+                  union all
+            select * from entity_stake_history as esh where esh.id = $1
+        )
+        as asd
+        where asd.timestamp_range && $2
+        ORDER BY asd.timestamp_range DESC LIMIT 1
+      )`;
+
 /**
  * Processes one row of the results of the SQL query and format into API return format
  * @param {Object} row One row of the SQL query result
@@ -217,12 +228,18 @@ const getEntityBalanceQuery = (
   const selectFields = [entityFields, selectTokenBalance, balanceField, balanceTimestampField];
   queries.push(`select ${selectFields.join(',\n')}
     from ${entityTable} as e
-      left join entity_stake as es on es.id = e.id
+    left join
+      ${paramsHasTimestampRange(params) ? ENTIRY_STAKE_HISTORICAL_QUERY : 'entity_stake'}
+    as es on es.id = e.id
     ${[whereClause, orderClause, limitQuery].filter(Boolean).join('\n')}`);
   const query = queries.join('\n');
 
   return {query, params};
 };
+
+const paramsHasTimestampRange = (params) => {
+  return params.some((param) => typeof param === 'object' && 'bounds' in param);
+}
 
 /**
  * Creates account query and params from filters with limit and order
@@ -536,11 +553,6 @@ const getOneAccount = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
-const accounts = {
-  getAccounts,
-  getOneAccount,
-};
-
 const acceptedAccountsParameters = new Set([
   constants.filterKeys.ACCOUNT_BALANCE,
   constants.filterKeys.ACCOUNT_ID,
@@ -557,6 +569,11 @@ const acceptedSingleAccountParameters = new Set([
   constants.filterKeys.TRANSACTION_TYPE,
   constants.filterKeys.TRANSACTIONS,
 ]);
+
+const accounts = {
+  getAccounts,
+  getOneAccount,
+};
 
 if (utils.isTestEnv()) {
   Object.assign(accounts, {
