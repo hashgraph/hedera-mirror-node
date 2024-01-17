@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: "0 1 * * *" # Daily at 1:00 AM
   push:
-    branches: [ main, 7509-add-rosetta-ci-workflow ]
+    branches: [ main ]
     tags: [ v* ]
 
 defaults:
