@@ -135,6 +135,7 @@ import org.springframework.context.annotation.Configuration;
 public class ServicesConfiguration {
 
     private static final int SYSTEM_ACCOUNT_BOUNDARY = 750;
+    private static final int STRICT_SYSTEM_ACCOUNT_BOUNDARY = 999;
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
@@ -750,5 +751,13 @@ public class ServicesConfiguration {
         // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
         return address -> address.numberOfLeadingZeroBytes() >= 18
                 && Integer.compareUnsigned(address.getInt(16), SYSTEM_ACCOUNT_BOUNDARY) <= 0;
+    }
+
+    @Bean
+    static Predicate<Address> strictSystemAccountDetector() {
+        // all addresses between 0-999 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing ExtCode operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), STRICT_SYSTEM_ACCOUNT_BOUNDARY) <= 0;
     }
 }
