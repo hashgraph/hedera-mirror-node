@@ -218,4 +218,12 @@ contract EvmCodes {
     function getLatestBlockHash() public view returns (bytes32) {
         return blockhash(block.number);
     }
+
+    function getCodeHash(address _address) external view returns (bytes32) {
+        bytes32 codehash;
+        assembly {
+            codehash := extcodehash(_address)
+        }
+        return codehash;
+    }
 }

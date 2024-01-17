@@ -73,14 +73,6 @@ contract EthCall is HederaTokenService {
 
         return address(newContract);
     }
-
-    function getCodeHash(address _address) external view returns (bytes32) {
-        bytes32 codehash;
-        assembly {
-            codehash := extcodehash(_address)
-        }
-        return codehash;
-    }
 }
 
 contract State {
