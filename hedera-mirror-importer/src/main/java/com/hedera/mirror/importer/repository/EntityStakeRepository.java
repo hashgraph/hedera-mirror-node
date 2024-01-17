@@ -73,11 +73,12 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             staked_node_id,
             stake_period_start
           from entity, end_period
-          where id = 800 or
-            (deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
-                and
-              ((decline_reward is false and (staked_node_id <> -1 or staked_account_id <> 0)) or (decline_reward is true and staked_account_id <> 0))
-            )
+          where id = 800 or (
+            deleted is not true and
+            type in ('ACCOUNT', 'CONTRACT') and
+            timestamp_range @> end_period.consensus_timestamp and
+            (staked_account_id <> 0 or (decline_reward is false and staked_node_id <> -1))
+          )
           union all
           select *
           from (
@@ -88,11 +89,12 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
               staked_node_id,
               stake_period_start
             from entity_history, end_period
-            where id = 800 or
-              (deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
-                  and
-                ((decline_reward is false and (staked_node_id <> -1 or staked_account_id <> 0)) or (decline_reward is true and staked_account_id <> 0))
-              )
+            where id <> 800 and (
+              deleted is not true and
+              type in ('ACCOUNT', 'CONTRACT') and
+              timestamp_range @> end_period.consensus_timestamp and
+              (staked_account_id <> 0 or (decline_reward is false and staked_node_id <> -1))
+            )
             order by id, timestamp_range desc
           ) as latest_history
         ), balance_snapshot as (
@@ -249,7 +251,8 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             from entity_state_start ess
               left join ending_period_stake_state on entity_id = ess.id
               left join proxy_staking ps on ps.staked_account_id = ess.id,
-              ending_period ep;
+              ending_period ep
+              where ess.staked_account_id = 0;
             create index on entity_stake_temp (id);
 
             -- history table

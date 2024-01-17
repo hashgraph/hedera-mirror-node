@@ -234,16 +234,6 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                         .stakeTotalStart(account2BalanceStart + account3BalanceStart)
                         .timestampRange(Range.atLeast(nodeStakeTimestamp)))
                 .get();
-        var expectedEntityStake3 = fromEntity(account3)
-                .customize(es -> es.endStakePeriod(endStakePeriod)
-                        .stakeTotalStart(0L)
-                        .timestampRange(Range.atLeast(nodeStakeTimestamp)))
-                .get();
-        var expectedEntityStake4 = fromEntity(account4)
-                .customize(es -> es.endStakePeriod(endStakePeriod)
-                        .stakeTotalStart(0L)
-                        .timestampRange(Range.atLeast(nodeStakeTimestamp)))
-                .get();
         var expectedEntityStake800 = fromEntity(account800)
                 .customize(es -> es.endStakePeriod(endStakePeriod)
                         .stakeTotalStart(0L)
@@ -268,12 +258,7 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
         await().atMost(Durations.FIVE_SECONDS)
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .untilAsserted(() -> assertThat(entityStakeRepository.findAll())
-                        .containsExactlyInAnyOrder(
-                                expectedEntityStake1,
-                                expectedEntityStake2,
-                                expectedEntityStake3,
-                                expectedEntityStake4,
-                                expectedEntityStake800));
+                        .containsExactlyInAnyOrder(expectedEntityStake1, expectedEntityStake2, expectedEntityStake800));
         entityStake1.setTimestampUpper(nodeStakeTimestamp);
         entityStake800.setTimestampUpper(nodeStakeTimestamp);
         assertThat(findHistory(EntityStake.class)).containsExactlyInAnyOrder(entityStake1, entityStake800);
