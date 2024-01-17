@@ -40,27 +40,14 @@ _Note:_ To test against an instance running on the same machine as Docker use yo
 
 ### Supported/unsupported operations
 
-| Estimate | Static | Operation Type                                                                            | Supported | Historical data support - eth_call| Reads | Modifications |
-| -------- | ------ | ----------------------------------------------------------------------------------------- | --------- |-----------------------------------| ----- | ------------- |
-| Y        | Y      | non precompile functions                                                                  | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for Hts system contract AssociatePrecompile                                    | Y         | Y                                 | Y     | Y             |
-| Y        | N      | non precompile functions with lazy account creation                                       | Y         | Y                                 | Y     | Y             |
-| Y        | Y      | operations for ERC precompile functions (balance, symbol, tokenURI, name, decimals, etc.) | Y         | Y                                 | Y     | N             |
-| Y        | N      | operations for HTS system contract MintPrecompile                                         | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract GrantKycPrecompile                                     | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract WipePrecompile                                         | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract BurnPrecompile                                         | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract DissociatePrecompile                                   | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract SetApprovalForAllPrecompile                            | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract ApprovePrecompile                                      | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract RevokeKycPrecompile                                    | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract UnpausePrecompile                                      | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract PausePrecompile                                        | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract DeleteTokenPrecompile                                  | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract PausePrecompile                                        | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract FreezePrecompile                                       | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for HTS system contract UnfreezePrecompile                                     | Y         | Y                                 | Y     | Y             |
-| Y        | N      | operations for IsApprovedForAllPrecompile                                                 | Y         | Y                                 | Y     | N             |
-| Y        | N      | operations for AllowancePrecompile                                                        | Y         | Y                                 | Y     | N             |
-| Y        | N      | operations for GetApprovedPrecompile                                                      | Y         | Y                                 | Y     | N             |
-| Y        | N      | operations for HTS system contract UpdateTokenKeysPrecompile                              | Y         | Y                                 | Y     | Y             |
+| Estimate | Static | Operation Type                                                                            | Supported | Historical | Reads | Modifications |
+| -------- | ------ |-------------------------------------------------------------------------------------------| --------- |------------| ----- | ------------- |
+| Y        | Y      | non precompile functions                                                                  | Y         | Y          | Y     | Y             |
+| Y        | N      | non precompile functions with lazy account creation                                       | Y         | Y          | Y     | Y             |
+| Y        | Y      | operations for ERC precompile functions (balance, symbol, tokenURI, name, decimals, etc.) | Y         | Y          | Y     | N             |
+| Y        | N      | operations for IsApprovedForAllPrecompile                                                 | Y         | Y          | Y     | N             |
+| Y        | N      | operations for AllowancePrecompile                                                        | Y         | Y          | Y     | N             |
+| Y        | N      | operations for GetApprovedPrecompile                                                      | Y         | Y          | Y     | N             |
+| Y        | N      | operations for HTS system contract                                                        | Y         | Y          | Y     | Y             |
+
+_Note:_ Gas estimation only supports the `latest` block
