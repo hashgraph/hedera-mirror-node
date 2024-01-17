@@ -120,6 +120,11 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -128,6 +133,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class ServicesConfiguration {
+
+    private static final int SYSTEM_ACCOUNT_BOUNDARY = 750;
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
@@ -726,5 +733,22 @@ public class ServicesConfiguration {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
+    }
+
+    @Bean
+    BiPredicate<Address, MessageFrame> addressValidator(final PrecompilesHolder precompilesHolder) {
+        final var precompiles = precompilesHolder.getHederaPrecompiles().keySet().stream()
+                .map(Address::fromHexString)
+                .collect(Collectors.toSet());
+        return (address, frame) ->
+                precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
+    }
+
+    @Bean
+    static Predicate<Address> systemAccountDetector() {
+        // all addresses between 0-750 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), SYSTEM_ACCOUNT_BOUNDARY) <= 0;
     }
 }

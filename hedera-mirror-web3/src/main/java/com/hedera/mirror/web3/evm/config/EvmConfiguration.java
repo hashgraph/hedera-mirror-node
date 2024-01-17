@@ -20,6 +20,8 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
+import com.hedera.mirror.web3.evm.contracts.operations.HederaSelfDestructOperation;
+import com.hedera.mirror.web3.evm.contracts.operations.HederaSelfDestructOperationV038;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
@@ -52,6 +54,7 @@ import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
+import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
@@ -88,12 +91,13 @@ public class EvmConfiguration {
     public static final String EVM_VERSION_0_30 = "v0.30";
     public static final String EVM_VERSION_0_34 = "v0.34";
     public static final String EVM_VERSION_0_38 = "v0.38";
-
     public static final String EVM_VERSION = EVM_VERSION_0_38;
     private final CacheProperties cacheProperties;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final GasCalculatorHederaV22 gasCalculator;
     private final HederaBlockHashOperation hederaBlockHashOperation;
+    private final HederaSelfDestructOperation hederaSelfDestructOperation;
+    private final HederaSelfDestructOperationV038 hederaSelfDestructOperationV038;
     private final AbstractAutoCreationLogic autoCreationLogic;
     private final EntityAddressSequencer entityAddressSequencer;
     private final PrecompiledContractProvider precompilesHolder;
@@ -216,6 +220,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                hederaSelfDestructOperation,
                 EvmSpecVersion.LONDON,
                 MainnetEVMs::registerLondonOperations);
     }
@@ -227,6 +232,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                hederaSelfDestructOperation,
                 EvmSpecVersion.PARIS,
                 MainnetEVMs::registerParisOperations);
     }
@@ -238,6 +244,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                hederaSelfDestructOperationV038,
                 EvmSpecVersion.SHANGHAI,
                 MainnetEVMs::registerShanghaiOperations);
     }
@@ -282,6 +289,7 @@ public class EvmConfiguration {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final HederaPrngSeedOperation prngSeedOperation,
             final HederaBlockHashOperation hederaBlockHashOperation,
+            final SelfDestructOperation selfDestructOperation,
             EvmSpecVersion specVersion,
             OperationRegistryCallback callback) {
         final var operationRegistry = new OperationRegistry();
@@ -303,7 +311,8 @@ public class EvmConfiguration {
                         new HederaExtCodeHashOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
                         prngSeedOperation,
-                        hederaBlockHashOperation)
+                        hederaBlockHashOperation,
+                        selfDestructOperation)
                 .forEach(operationRegistry::put);
 
         return new EVM(
