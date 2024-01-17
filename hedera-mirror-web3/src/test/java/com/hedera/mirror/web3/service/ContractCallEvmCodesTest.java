@@ -198,7 +198,6 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
     }
 
-
     @ParameterizedTest
     @CsvSource({
         // function getCodeHash with parameter hedera system accounts, expected 0 bytes
@@ -226,6 +225,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 Bytes.fromHexString(input), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedOutput);
+    }
 
     @Test
     void deployAddressThisContract() {
