@@ -168,7 +168,7 @@ public class TestUtils {
     }
 
     public Collection<TransactionHash> getShardTransactionHashes(int shard, JdbcTemplate jdbcTemplate) {
-        var sql = String.format("SELECT * from transaction_hash_sharded_%02d", shard);
+        var sql = String.format("SELECT * from transaction_hash_%02d", shard);
         return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
     }
 
@@ -178,8 +178,8 @@ public class TestUtils {
         return results.iterator().hasNext() ? results.iterator().next() : null;
     }
 
-    public void insertIntoTransactionHashSharded(JdbcTemplate jdbcTemplate, TransactionHash hash) {
-        var sql = "INSERT INTO transaction_hash_sharded(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)";
+    public void insertIntoTransactionHash(JdbcTemplate jdbcTemplate, TransactionHash hash) {
+        var sql = "INSERT INTO transaction_hash(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)";
         jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
     }
 
