@@ -236,7 +236,7 @@ const getEntityBalanceQuery = (
   queries.push(`select ${selectFields.join(',\n')}
     from ${entityTable} as e
     left join
-      ${getEntityStakeQuery(entityAccountQuery.query)}
+      ${getEntityStakeQuery(entityAccountQuery.query, isHistorical)}
     as es on es.id = e.id
     ${[whereClause, orderClause, limitQuery].filter(Boolean).join('\n')}`);
   const query = queries.join('\n');
