@@ -218,4 +218,8 @@ contract EvmCodes {
     function getLatestBlockHash() public view returns (bytes32) {
         return blockhash(block.number);
     }
+
+    function destroyContract(address payable beneficiary) public {
+        selfdestruct(beneficiary);
+    }
 }

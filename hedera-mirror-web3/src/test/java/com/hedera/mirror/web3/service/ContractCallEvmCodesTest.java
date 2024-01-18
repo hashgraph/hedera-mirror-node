@@ -194,6 +194,16 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
     }
 
+    @Test
+    void selfDestructCall() {
+        // destroyContract(address)
+        final var destroyContractInput = "0x016a3738000000000000000000000000" + SENDER_ALIAS.toUnprefixedHexString();
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(destroyContractInput), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+    }
+
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         if (!areEntitiesPersisted) {
