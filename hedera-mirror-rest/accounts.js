@@ -30,15 +30,21 @@ import {filterKeys} from './constants';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
-const ENTIRY_STAKE_HISTORICAL_QUERY = (filter) => `(
-        select * from (
-            select * from entity_stake as e where ${filter}
-                  union all
-            select * from entity_stake_history as e where ${filter}
-        )
-        as asd
-        order by asd.timestamp_range desc limit 1
-      )`;
+const getEntityStakeQuery = (filter, isHistorical = false) => {
+  if(isHistorical) {
+    return `(
+      select * from (
+          select * from entity_stake as e where ${filter}
+                union all
+          select * from entity_stake_history as e where ${filter}
+      )
+      as asd
+      order by asd.timestamp_range desc limit 1
+    )`;
+  }
+
+  return 'entity_stake'
+}
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -230,7 +236,7 @@ const getEntityBalanceQuery = (
   queries.push(`select ${selectFields.join(',\n')}
     from ${entityTable} as e
     left join
-      ${isHistorical ? ENTIRY_STAKE_HISTORICAL_QUERY(entityAccountQuery.query) : 'entity_stake'}
+      ${getEntityStakeQuery(entityAccountQuery.query)}
     as es on es.id = e.id
     ${[whereClause, orderClause, limitQuery].filter(Boolean).join('\n')}`);
   const query = queries.join('\n');
