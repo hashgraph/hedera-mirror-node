@@ -1440,13 +1440,13 @@ const getPoolClass = async (mock = false) => {
 
     if (logger.isTraceEnabled()) {
       const callerInfo = new Error().stack
-        .split('at ')
+        .split('\n')
+        .splice(1)
+        .filter((s) => !(s.includes('utils.js') || s.includes('baseService.js')))
         .map((entry) => {
-          const result = entry.match(/(^\S+).*\/(.*\.js):(\d+):.*/);
+          const result = entry.match(/^\s*at\s+(\S+).*\/(.*\.js):(\d+):.*/);
           return result && result.length === 4 && {function: result[1], file: result[2], line: result[3]};
-        })
-        .filter((r) => !!r)
-        .filter((r) => !(r.file === 'utils.js' || r.file === 'baseService.js'))[0];
+        })[0];
       logger.trace(
         `${callerInfo.function} (${callerInfo.file}:${callerInfo.line}) query: ${query} ${JSONStringify(params)}`
       );
