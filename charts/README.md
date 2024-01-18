@@ -14,7 +14,7 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 ## Requirements
 
 - [Helm 3+](https://helm.sh)
-- [Kubernetes 1.27+](https://kubernetes.io)
+- [Kubernetes 1.28+](https://kubernetes.io)
 
 Set environment variables that will be used for the remainder of the document:
 
@@ -92,7 +92,7 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
        --create-subnetwork="" \
        --network=default \
        --zone=us-central1-a \
-       --cluster-version=1.27 \
+       --cluster-version=1.28 \
        --machine-type=n1-standard-4
    ```
 
