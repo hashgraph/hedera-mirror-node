@@ -16,14 +16,7 @@
 
 import {isV2Schema} from '../testutils.js';
 
-const nullifyPayerAccountId = async () =>
-  pool.queryQuietly('update transaction_hash_sharded set payer_account_id = null');
-const putHashInOldTable = async () =>
-  pool.queryQuietly(
-    `with deleted as (DELETE from transaction_hash_sharded RETURNING *)
-                    INSERT into transaction_hash_old(consensus_timestamp, hash, payer_account_id)
-                       SELECT consensus_timestamp, hash, payer_account_id from deleted`
-  );
+const nullifyPayerAccountId = async () => pool.queryQuietly('update transaction_hash set payer_account_id = null');
 
 const applyMatrix = (spec) => {
   if (isV2Schema()) {
@@ -38,11 +31,7 @@ const applyMatrix = (spec) => {
   nullPayerAccountIdSpec.name = `${nullPayerAccountIdSpec.name} - null transaction_hash.payer_account_id`;
   nullPayerAccountIdSpec.postSetup = nullifyPayerAccountId;
 
-  const transactionHashOldSpec = {...spec};
-  transactionHashOldSpec.name = `${transactionHashOldSpec.name} - in old transaction_hash table`;
-  transactionHashOldSpec.postSetup = putHashInOldTable;
-
-  return [defaultSpec, transactionHashOldSpec, nullPayerAccountIdSpec];
+  return [defaultSpec, nullPayerAccountIdSpec];
 };
 
 export default applyMatrix;

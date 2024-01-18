@@ -32,6 +32,7 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -174,7 +175,8 @@ class MirrorEvmTxProcessorTest {
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
                 mirrorOperationTracer,
-                store);
+                store,
+                new EntityAddressSequencer());
 
         Pair<ResponseCodeEnum, Long> result = Pair.of(ResponseCodeEnum.OK, 100L);
     }

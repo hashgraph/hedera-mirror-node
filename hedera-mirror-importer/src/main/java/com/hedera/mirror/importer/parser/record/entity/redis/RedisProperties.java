@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.entity.redis;
 
+import com.hedera.mirror.importer.parser.record.entity.BatchPublisherProperties;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
 import jakarta.validation.constraints.Min;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -25,7 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Data
 @ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.redis")
-public class RedisProperties implements EntityListenerProperties {
+public class RedisProperties implements BatchPublisherProperties {
 
     private boolean enabled = true;
 
