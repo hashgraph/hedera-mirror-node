@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.contracts.operations;
+package com.hedera.services.evm.contracts.operations;
 
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import edu.umd.cs.findbugs.annotations.Nullable;
-import jakarta.inject.Named;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -42,22 +40,16 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  * <p>Halts the execution of the EVM transaction with {@link
  * HederaExceptionalHaltReason#SELF_DESTRUCT_TO_SELF} if the beneficiary address is the same as the
  * address being destructed
- * This class is a copy of HederaSelfDestructOperationV038 from hedera-services mono
+ * This class is a copy of HederaSelfDestructOperation from hedera-services mono
  */
-@Named
-public class HederaSelfDestructOperationV038 extends SelfDestructOperation {
+public class HederaSelfDestructOperation extends SelfDestructOperation {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
 
-    private final Predicate<Address> systemAccountDetector;
-
-    public HederaSelfDestructOperationV038(
-            final GasCalculator gasCalculator,
-            final BiPredicate<Address, MessageFrame> addressValidator,
-            Predicate<Address> systemAccountDetector) {
+    public HederaSelfDestructOperation(
+            final GasCalculator gasCalculator, final BiPredicate<Address, MessageFrame> addressValidator) {
         super(gasCalculator);
         this.addressValidator = addressValidator;
-        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
@@ -66,7 +58,7 @@ public class HederaSelfDestructOperationV038 extends SelfDestructOperation {
         final var beneficiaryAddress = Words.toAddress(frame.getStackItem(0));
         final var toBeDeleted = frame.getRecipientAddress();
 
-        if (systemAccountDetector.test(beneficiaryAddress) || !addressValidator.test(beneficiaryAddress, frame)) {
+        if (!addressValidator.test(beneficiaryAddress, frame)) {
             return reversionWith(null, HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS);
         }
         final var beneficiary = updater.get(beneficiaryAddress);

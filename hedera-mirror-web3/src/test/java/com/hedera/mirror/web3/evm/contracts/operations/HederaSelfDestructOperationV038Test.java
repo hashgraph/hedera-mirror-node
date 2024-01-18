@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV038;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
