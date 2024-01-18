@@ -5,7 +5,6 @@ importer:
         importer:
           db:
             loadBalance: false
-          downloader:
           parser:
             record:
               entity:
