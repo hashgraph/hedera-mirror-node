@@ -38,7 +38,7 @@ const ENTIRY_STAKE_HISTORICAL_QUERY = `(
         )
         as asd
         where asd.timestamp_range && $2
-        ORDER BY asd.timestamp_range DESC LIMIT 1
+        order by asd.timestamp_range desc limit 1
       )`;
 
 /**
@@ -130,6 +130,7 @@ const entityFields = [
  * @param pubKeyQuery
  * @param tokenBalanceQuery
  * @param accountBalanceQuery
+ * @param isHistorical whether to query historical data
  * @return {{query: string, params: *[]}}
  */
 const getEntityBalanceQuery = (
@@ -138,7 +139,8 @@ const getEntityBalanceQuery = (
   limitAndOrderQuery,
   pubKeyQuery,
   tokenBalanceQuery,
-  accountBalanceQuery
+  accountBalanceQuery,
+  isHistorical = false
 ) => {
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
 
@@ -229,17 +231,13 @@ const getEntityBalanceQuery = (
   queries.push(`select ${selectFields.join(',\n')}
     from ${entityTable} as e
     left join
-      ${paramsHasTimestampRange(params) ? ENTIRY_STAKE_HISTORICAL_QUERY : 'entity_stake'}
+      ${isHistorical ? ENTIRY_STAKE_HISTORICAL_QUERY : 'entity_stake'}
     as es on es.id = e.id
     ${[whereClause, orderClause, limitQuery].filter(Boolean).join('\n')}`);
   const query = queries.join('\n');
 
   return {query, params};
 };
-
-const paramsHasTimestampRange = (params) => {
-  return params.some((param) => typeof param === 'object' && 'bounds' in param);
-}
 
 /**
  * Creates account query and params from filters with limit and order
@@ -251,6 +249,7 @@ const paramsHasTimestampRange = (params) => {
  * @param limitAndOrderQuery optional limit and order query
  * @param pubKeyQuery optional entity public key query
  * @param includeBalance include balance info or not
+ * @param isHistorical whether to query historical data
  * @return {{query: string, params: []}}
  */
 const getAccountQuery = (
@@ -260,7 +259,8 @@ const getAccountQuery = (
   entityBalanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
   pubKeyQuery = {query: '', params: []},
-  includeBalance = true
+  includeBalance = true,
+  isHistorical = false
 ) => {
   if (!includeBalance) {
     const entityCondition = [`e.type in ('ACCOUNT', 'CONTRACT')`, entityAccountQuery.query, pubKeyQuery.query]
@@ -285,7 +285,8 @@ const getAccountQuery = (
     limitAndOrderQuery,
     pubKeyQuery,
     tokenBalanceQuery,
-    accountBalanceQuery
+    accountBalanceQuery,
+    isHistorical
   );
 };
 
@@ -332,7 +333,8 @@ const getAccounts = async (req, res) => {
     balanceQuery,
     limitAndOrderQuery,
     pubKeyQuery,
-    includeBalance
+    includeBalance,
+    false
   );
 
   const pgQuery = utils.convertMySqlStyleQueryToPostgres(query);
@@ -463,7 +465,12 @@ const getOneAccount = async (req, res) => {
   const {query: entityQuery, params: entityParams} = getAccountQuery(
     entityAccountQuery,
     tokenBalanceQuery,
-    accountBalanceQuery
+    accountBalanceQuery,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    timestampFilters.length > 0
   );
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
