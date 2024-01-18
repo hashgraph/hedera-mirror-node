@@ -1607,6 +1607,7 @@ export default {
   loadStakingRewardTransfers,
   loadTokenAccounts,
   loadTransactions,
+  loadEntityStakes,
   setAccountBalance,
   setup,
 };
