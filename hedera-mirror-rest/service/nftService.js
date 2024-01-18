@@ -147,7 +147,7 @@ class NftService extends BaseService {
    */
   async getNfts(query) {
     const {sqlQuery, params} = this.getQuery(query);
-    const rows = await super.getRows(sqlQuery, params, 'getNfts');
+    const rows = await super.getRows(sqlQuery, params);
     return rows.map((ta) => new Nft(ta));
   }
 }
