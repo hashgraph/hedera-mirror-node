@@ -20,7 +20,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
-import com.hedera.mirror.web3.evm.contracts.operations.HederaExtCodeHashOperationV038;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
@@ -32,6 +31,8 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Oper
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperationV038;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
@@ -51,6 +52,7 @@ import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
@@ -94,6 +96,7 @@ public class EvmConfiguration {
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final GasCalculatorHederaV22 gasCalculator;
     private final HederaBlockHashOperation hederaBlockHashOperation;
+    private final HederaExtCodeHashOperation hederaExtCodeHashOperation;
     private final HederaExtCodeHashOperationV038 hederaExtCodeHashOperationV038;
     private final AbstractAutoCreationLogic autoCreationLogic;
     private final EntityAddressSequencer entityAddressSequencer;
@@ -217,7 +220,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
-                hederaExtCodeHashOperationV038,
+                hederaExtCodeHashOperation,
                 EvmSpecVersion.LONDON,
                 MainnetEVMs::registerLondonOperations);
     }
@@ -229,7 +232,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
-                hederaExtCodeHashOperationV038,
+                hederaExtCodeHashOperation,
                 EvmSpecVersion.PARIS,
                 MainnetEVMs::registerParisOperations);
     }
@@ -286,7 +289,7 @@ public class EvmConfiguration {
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final HederaPrngSeedOperation prngSeedOperation,
             final HederaBlockHashOperation hederaBlockHashOperation,
-            final HederaExtCodeHashOperationV038 hederaExtCodeHashOperationV038,
+            final ExtCodeHashOperation extCodeHashOperation,
             EvmSpecVersion specVersion,
             OperationRegistryCallback callback) {
         final var operationRegistry = new OperationRegistry();
@@ -308,7 +311,7 @@ public class EvmConfiguration {
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
                         prngSeedOperation,
                         hederaBlockHashOperation,
-                        hederaExtCodeHashOperationV038)
+                        extCodeHashOperation)
                 .forEach(operationRegistry::put);
 
         return new EVM(

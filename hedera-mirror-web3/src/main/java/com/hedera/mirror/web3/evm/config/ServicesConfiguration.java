@@ -27,6 +27,8 @@ import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperationV038;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -120,6 +122,11 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -726,5 +733,19 @@ public class ServicesConfiguration {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
+    }
+
+    @Bean
+    HederaExtCodeHashOperationV038 hederaExtCodeHashOperationV038(
+            final GasCalculator gasCalculator,
+            final Predicate<Address> strictSystemAccountDetector,
+            BiPredicate<Address, MessageFrame> addressValidator) {
+        return new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, strictSystemAccountDetector);
+    }
+
+    @Bean
+    HederaExtCodeHashOperation hederaExtCodeHashOperation(
+            final GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
+        return new HederaExtCodeHashOperation(gasCalculator, addressValidator);
     }
 }
