@@ -17,10 +17,10 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.ALLOWANCE_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.ALLOWANCE_DIRECT_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.BALANCE_OF_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.DECIMALS_SELECTOR;
-import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_APPROVED_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_APPROVED_DIRECT_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR;
@@ -578,7 +578,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the allowance by direct call for a fungible token")
     public void getFungibleTokenAllowanceByDirectCall() {
-        var data = encodeData(ALLOWANCE_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
+        var data = encodeData(ALLOWANCE_DIRECT_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsNumber()).isZero();
     }
@@ -613,7 +613,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
     public void getNonFungibleTokenGetApprovedByDirectCall() {
-        var data = encodeData(GET_APPROVED_SELECTOR, new BigInteger("1"));
+        var data = encodeData(GET_APPROVED_DIRECT_SELECTOR, new BigInteger("1"));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertFalse(response.getResultAsBoolean());
     }
@@ -817,9 +817,9 @@ public class PrecompileContractFeature extends AbstractFeature {
         DECIMALS_SELECTOR("decimals()"),
         TOTAL_SUPPLY_SELECTOR("totalSupply()"),
         BALANCE_OF_SELECTOR("balanceOf(address)"),
-        ALLOWANCE_SELECTOR("allowance(address,address)"),
+        ALLOWANCE_DIRECT_SELECTOR("allowance(address,address)"),
         OWNER_OF_SELECTOR("ownerOf(uint256)"),
-        GET_APPROVED_SELECTOR("getApproved(uint256)"),
+        GET_APPROVED_DIRECT_SELECTOR("getApproved(uint256)"),
         IS_APPROVED_FOR_ALL_SELECTOR("isApprovedForAll(address,address)");
         private final String selector;
     }
