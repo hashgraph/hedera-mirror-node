@@ -15,7 +15,6 @@
  */
 
 import com.github.jengelman.gradle.plugins.shadow.transformers.PropertiesFileTransformer
-import org.openapitools.generator.gradle.plugin.extensions.OpenApiGeneratorGenerateExtension
 
 description = "Hedera Mirror Node Test"
 
@@ -60,8 +59,6 @@ dependencies {
     testImplementation("org.apache.tuweni:tuweni-bytes")
     testImplementation("commons-codec:commons-codec")
 }
-
-java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }
 
 // Disable the default test task and only run acceptance tests during the standalone "acceptance"
 // task

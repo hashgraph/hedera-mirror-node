@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.openapitools.generator.gradle.plugin.extensions.OpenApiGeneratorGenerateExtension
-
 description = "Hedera Mirror Node Monitor"
 
 plugins {
@@ -55,5 +53,3 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("uk.org.webcompere:system-stubs-jupiter")
 }
-
-java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }
