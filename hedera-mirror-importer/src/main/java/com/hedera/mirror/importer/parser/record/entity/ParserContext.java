@@ -16,20 +16,23 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
+import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.NonNull;
-import org.springframework.util.CollectionUtils;
 
 /**
  * Stores the domain objects parsed from the stream files before persisting to the database.
  */
+@Named
 public class ParserContext {
 
     private final Map<Class<?>, DomainContext<?>> state = new ConcurrentSkipListMap<>(new DomainClassComparator());
@@ -40,29 +43,29 @@ public class ParserContext {
     }
 
     public <T> void addAll(@NonNull Collection<T> objects) {
-        if (!CollectionUtils.isEmpty(objects)) {
+        if (!objects.isEmpty()) {
             var first = objects.iterator().next();
             var domainContext = getDomainContext(first);
             domainContext.getInserts().addAll(objects);
         }
     }
 
-    public void drainTo(@NonNull Consumer<Collection<?>> sink) {
-        state.forEach((c, v) -> sink.accept(v.getInserts()));
+    public void clear() {
         state.clear();
     }
 
-    public void drainTo(@NonNull Collection<Class<?>> domainClasses, @NonNull Consumer<Collection<?>> sink) {
-        for (var domainClass : domainClasses) {
-            var domainContext = getDomainContext(domainClass);
-            sink.accept(domainContext.getInserts());
-            domainContext.clear();
-        }
+    public void forEach(@NonNull Consumer<Collection<?>> sink) {
+        state.forEach((c, v) -> sink.accept(v.getInserts()));
     }
 
     public <T> T get(@NonNull Class<T> domainClass, @NonNull Object key) {
         var domainContext = getDomainContext(domainClass);
         return domainContext.getState().get(key);
+    }
+
+    public <T> Collection<T> get(@NonNull Class<T> domainClass) {
+        var domainContext = getDomainContext(domainClass);
+        return Collections.unmodifiableList(domainContext.getInserts());
     }
 
     public <T> void merge(@NonNull Object key, @NonNull T value, @NonNull BinaryOperator<T> mergeFunction) {
@@ -72,6 +75,11 @@ public class ParserContext {
         if (merged == value) {
             domainContext.getInserts().add(value);
         }
+    }
+
+    public void remove(@NonNull Class<?> domainClass) {
+        var domainContext = getDomainContext(domainClass);
+        domainContext.clear();
     }
 
     @SuppressWarnings("unchecked")
@@ -88,7 +96,7 @@ public class ParserContext {
     private class DomainContext<T> {
 
         @Getter
-        private final Collection<T> inserts = new ArrayList<>();
+        private final List<T> inserts = new ArrayList<>();
 
         @Getter(lazy = true)
         private final Map<Object, T> state = new HashMap<>();

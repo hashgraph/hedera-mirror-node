@@ -46,7 +46,7 @@ import reactor.core.scheduler.Schedulers;
 @Profile("!v2")
 public class TransactionHashBatchInserter implements BatchPersister {
     private final Map<Integer, BatchInserter> shardBatchInserters;
-    private final String shardedTableName;
+    private final String tableName;
     private final Scheduler scheduler;
     private final TransactionHashTxManager transactionManager;
 
@@ -55,9 +55,8 @@ public class TransactionHashBatchInserter implements BatchPersister {
             MeterRegistry meterRegistry,
             CommonParserProperties commonParserProperties,
             TransactionHashTxManager transactionHashTxManager) {
-        this.shardedTableName = CaseFormat.UPPER_CAMEL.to(
-                CaseFormat.LOWER_UNDERSCORE, TransactionHash.class.getSimpleName() + "_sharded");
-        this.scheduler = Schedulers.newParallel(this.shardedTableName, 8);
+        this.tableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, TransactionHash.class.getSimpleName());
+        this.scheduler = Schedulers.newParallel(this.tableName, 8);
         this.transactionManager = transactionHashTxManager;
 
         this.shardBatchInserters = IntStream.range(0, V1_SHARD_COUNT)
@@ -69,7 +68,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
                                 dataSource,
                                 meterRegistry,
                                 commonParserProperties,
-                                String.format("%s_%02d", shardedTableName, shard))));
+                                String.format("%s_%02d", tableName, shard))));
     }
 
     @Override
@@ -82,7 +81,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // After parser transaction completes, process all transactions for shards
-            transactionManager.initialize(items, this.shardedTableName);
+            transactionManager.initialize(items, this.tableName);
 
             Map<Integer, List<TransactionHash>> shardedItems = items.stream()
                     .map(TransactionHash.class::cast)
@@ -96,11 +95,11 @@ public class TransactionHashBatchInserter implements BatchPersister {
                     "Copied {} rows from {} shards to {} table in {}",
                     items.size(),
                     shardedItems.size(),
-                    this.shardedTableName,
+                    this.tableName,
                     stopwatch);
         } catch (Exception e) {
             throw new ParserException(
-                    String.format("Error copying %d items to table %s", items.size(), this.shardedTableName));
+                    String.format("Error copying %d items to table %s", items.size(), this.tableName));
         }
     }
 

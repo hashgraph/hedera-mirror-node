@@ -137,6 +137,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1264));
     protected static final Address REDIRECT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1265));
     protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1266));
+    protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1269));
 
     // Account addresses
     protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
@@ -567,6 +568,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/NestedCallsTestContract/NestedCallsTestContract.json")
     protected Path NESTED_CALLS_ABI_PATH;
 
+    @Value("classpath:contracts/TestContractAddress/TestAddressThis.bin")
+    protected Path ADDRESS_THIS_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/TestContractAddress/TestAddressThis.json")
+    protected Path ADDRESS_THIS_CONTRACT_ABI_PATH;
+
+    @Value("classpath:contracts/TestContractAddress/TestNestedAddressThis.bin")
+    protected Path NESTED_ADDRESS_THIS_CONTRACT_BYTES_PATH;
+
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
@@ -877,6 +887,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         precompileContractPersist();
         systemExchangeRateContractPersist();
         pseudoRandomNumberGeneratorContractPersist();
+        addressThisContractPersist();
         final var modificationContract = modificationContractPersist();
         final var ercContract = ercContractPersist();
         final var nestedContractId = dynamicEthCallContractPresist();
@@ -2429,6 +2440,41 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(randomNumberContractBytes))
                 .persist();
         return randomNumberContractEntityId;
+    }
+
+    private EntityId addressThisContractPersist() {
+        final var addressThisContractBytes = functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_BYTES_PATH);
+        final var addressThisContractEntityId = fromEvmAddress(ADDRESS_THIS_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var addressThisEvmAddress = toEvmAddress(addressThisContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(addressThisContractEntityId.getId())
+                        .num(addressThisContractEntityId.getNum())
+                        .evmAddress(addressThisEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(addressThisContractEntityId.getId()).runtimeBytecode(addressThisContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(addressThisContractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(addressThisContractBytes))
+                .persist();
+        return addressThisContractEntityId;
     }
 
     private void nestedEthCallsContractPersist() {

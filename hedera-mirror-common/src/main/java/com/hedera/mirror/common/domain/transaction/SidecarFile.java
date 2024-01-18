@@ -17,6 +17,9 @@
 package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.hedera.mirror.common.converter.ListToStringSerializer;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import jakarta.persistence.Column;
@@ -45,6 +48,7 @@ import org.springframework.data.domain.Persistable;
 @NoArgsConstructor
 public class SidecarFile implements Persistable<SidecarFile.Id> {
 
+    @JsonIgnore
     @ToString.Exclude
     @Transient
     private byte[] actualHash;
@@ -65,12 +69,14 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     private byte[] hash;
 
     @Column(name = "id")
+    @JsonProperty("id")
     @jakarta.persistence.Id
     private int index;
 
     private String name;
 
     @Builder.Default
+    @JsonIgnore
     @ToString.Exclude
     @Transient
     private List<TransactionSidecarRecord> records = Collections.emptyList();
@@ -78,6 +84,7 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     private Integer size;
 
     @Builder.Default
+    @JsonSerialize(using = ListToStringSerializer.class)
     private List<Integer> types = Collections.emptyList();
 
     @JsonIgnore

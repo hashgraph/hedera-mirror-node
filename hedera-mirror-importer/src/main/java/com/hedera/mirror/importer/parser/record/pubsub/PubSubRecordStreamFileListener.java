@@ -33,20 +33,10 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
     private final SidecarFileRepository sidecarFileRepository;
 
     @Override
-    public void onStart() throws ImporterException {
-        // Do nothing
-    }
-
-    @Override
     public void onEnd(RecordFile recordFile) throws ImporterException {
         if (recordFile != null) {
             recordFileRepository.save(recordFile);
             sidecarFileRepository.saveAll(recordFile.getSidecars());
         }
-    }
-
-    @Override
-    public void onError() {
-        // Do nothing
     }
 }

@@ -1,0 +1,104 @@
+name: Rosetta API
+
+on:
+  schedule:
+    - cron: "0 1 * * *" # Daily at 1:00 AM
+  push:
+    branches: [ main ]
+    tags: [ v* ]
+
+defaults:
+  run:
+    working-directory: ./hedera-mirror-rosetta
+
+env:
+  MODULE: hedera-mirror-rosetta
+  NETWORK: previewnet
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ROSETTA_CLI_VERSION: v0.10.3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set Importer StartDate
+        run: |
+          # Set start date to 60 seconds before the first block timestamp in the network
+          url="https://${NETWORK}.mirrornode.hedera.com/api/v1/blocks?limit=1&order=asc"
+          firstTimestamp=$(curl -s "${url}" | jq -r .blocks[0].timestamp.from)
+          if [[ -z "${firstTimestamp}" ]]; then
+            echo "Unable to get first block timestamp"
+            exit 1
+          fi
+
+          startSecs=$((${firstTimestamp%.*}-60))
+          startDate=$(date --date="@${startSecs}" -Iseconds -u | grep -o -e '^[0-9T:-]\+')
+          startDate="${startDate}Z"
+          echo "STARTDATE=${startDate}" >> $GITHUB_ENV
+          echo "Set importer startDate to ${startDate}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Image
+        uses: docker/build-push-action@v5
+        with:
+          build-args: GIT_REF=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          context: ./hedera-mirror-rosetta/container
+          load: true
+          provenance: false
+          push: false
+          tags: ${{ env.MODULE }}:${{ github.sha }}
+
+      - name: Importer Configuration
+        run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application_importer.yml
+
+      - name: Rosetta Configuration
+        run: echo "${{ secrets.ROSETTA_ROSETTA_CONFIG }}" | base64 -d > /tmp/application_rosetta.yml
+
+      - name: Run Mirror Node in Online Mode
+        run: |
+          ONLINE_CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=${STARTDATE} \
+            -e NETWORK=${NETWORK} \
+            -e HEDERA_MIRROR_ROSETTA_RESPONSE_MAXTRANSACTIONSINBLOCK=4 \
+            -v /tmp/application_importer.yml:/app/importer/application.yml \
+            -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
+            -p 5700:5700 "${MODULE}:${{ github.sha }}")
+          echo "ONLINE_CONTAINER_ID=$ONLINE_CONTAINER_ID" >> $GITHUB_ENV
+
+      - name: Wait for Mirror Node to Start Syncing
+        run: ./scripts/wait-for-mirror-node.sh
+        env:
+          MAX_WAIT_SECONDS: 900
+
+      - name: Rosetta CLI Configuration
+        working-directory: ./hedera-mirror-rosetta/scripts/validation/${{ env.NETWORK }}
+        run: |
+          # set start index to genesis index + 1
+          body='{"network_identifier": {"blockchain": "Hedera", "network": "'${NETWORK}'"}}'
+          startIndex=$(curl -sL -d "${body}" http://localhost:5700/network/status | jq '.genesis_block_identifier.index+1')
+          echo "Setting data start_index to $startIndex"
+          jq --argjson startIndex $startIndex '.data.start_index=$startIndex' validation.json > tmp.json && \
+            mv tmp.json validation.json
+
+      - name: Run Rosetta CLI Validation
+        working-directory: ./hedera-mirror-rosetta/scripts/validation
+        run: ./run-validation.sh ${NETWORK} data
+
+      - name: Run Rosetta Postman API Tests
+        working-directory: ./charts/hedera-mirror-rosetta
+        run: |
+          npm install -g newman
+          newman run postman.json
+
+      - name: Show Container Log
+        if: ${{ failure() }}
+        run: |
+          echo "Logs for online container ${ONLINE_CONTAINER_ID}"
+          [[ -n "${ONLINE_CONTAINER_ID}" ]] && docker logs ${ONLINE_CONTAINER_ID} || true

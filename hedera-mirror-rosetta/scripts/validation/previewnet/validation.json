@@ -1,0 +1,23 @@
+{
+  "network": {
+    "blockchain": "Hedera",
+    "network": "previewnet"
+  },
+  "online_url": "http://localhost:5700",
+  "http_timeout": 15,
+  "max_retries": 5,
+  "retry_elapsed_time": 100,
+  "tip_delay": 20,
+  "data": {
+    "balance_tracking_disabled": false,
+    "historical_balance_disabled": false,
+    "inactive_discrepancy_search_disabled": false,
+    "reconciliation_disabled": false,
+    "start_index": 1,
+    "end_conditions": {
+      "reconciliation_coverage": {
+        "coverage": 0.95
+      }
+    }
+  }
+}

@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
@@ -71,6 +73,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     private Integer hapiVersionPatch;
 
     @Getter(lazy = true)
+    @JsonIgnore
     @Transient
     private final Version hapiVersion = hapiVersion();
 
@@ -81,6 +84,7 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     @Builder.Default
     @EqualsAndHashCode.Exclude
+    @JsonIgnore
     @ToString.Exclude
     @Transient
     private Flux<RecordItem> items = Flux.empty();
@@ -93,6 +97,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     private byte[] logsBloom;
 
     @ToString.Exclude
+    @JsonIgnore
     @Transient
     private String metadataHash;
 
@@ -101,6 +106,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     private Long nodeId;
 
     @Column(name = "prev_hash")
+    @JsonProperty("prev_hash")
     @ToString.Exclude
     private String previousHash;
 
@@ -108,6 +114,7 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     @Builder.Default
     @EqualsAndHashCode.Exclude
+    @JsonIgnore
     @ToString.Exclude
     @Transient
     private List<SidecarFile> sidecars = Collections.emptyList();
@@ -129,6 +136,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     }
 
     @Override
+    @JsonIgnore
     public StreamType getType() {
         return StreamType.RECORD;
     }

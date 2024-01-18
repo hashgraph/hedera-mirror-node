@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-public interface EntityListenerProperties {
+public interface BatchPublisherProperties {
 
     boolean isEnabled();
 
