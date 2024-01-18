@@ -89,28 +89,24 @@
     ],
     "entityStakes": [
       {
-        "decline_reward_start": false,
         "end_stake_period": 2000,
         "id": 1,
         "pending_reward": 100,
         "stake_total_start": 1000
       },
       {
-        "decline_reward_start": false,
         "end_stake_period": 2000,
         "id": 2,
         "pending_reward": 200,
         "stake_total_start": 2000
       },
       {
-        "decline_reward_start": false,
         "end_stake_period": 2000,
         "id": 3,
         "pending_reward": 300,
         "stake_total_start": 3000
       },
       {
-        "decline_reward_start": false,
         "end_stake_period": 2000,
         "id": 4,
         "pending_reward": 400,
