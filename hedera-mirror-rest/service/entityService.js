@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ class EntityService extends BaseService {
 
     const aliasQuery = `${EntityService.entityFromAliasQuery} where ${conditions.join(' and ')}`;
 
-    const rows = await super.getRows(aliasQuery, params, 'getAccountFromAlias');
+    const rows = await super.getRows(aliasQuery, params);
 
     if (_.isEmpty(rows)) {
       return null;
@@ -87,7 +87,7 @@ class EntityService extends BaseService {
    * @returns {Promise} valid flag
    */
   async isValidAccount(accountId) {
-    const entity = await super.getSingleRow(EntityService.entityExistenceQuery, [accountId], 'isValidAccount');
+    const entity = await super.getSingleRow(EntityService.entityExistenceQuery, [accountId]);
     return !_.isNil(entity);
   }
 

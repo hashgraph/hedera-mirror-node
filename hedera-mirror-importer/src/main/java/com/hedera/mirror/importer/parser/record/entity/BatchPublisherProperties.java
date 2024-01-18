@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,9 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-import org.springframework.context.ApplicationEvent;
+public interface BatchPublisherProperties {
 
-public class EntityBatchSaveEvent extends ApplicationEvent {
-    private static final long serialVersionUID = -5121039174183266247L;
+    boolean isEnabled();
 
-    /**
-     * Create a new {@code ApplicationEvent}.
-     *
-     * @param source the object on which the event initially occurred or with which the event is associated (never
-     *               {@code null})
-     */
-    public EntityBatchSaveEvent(Object source) {
-        super(source);
-    }
+    void setEnabled(boolean enabled);
 }

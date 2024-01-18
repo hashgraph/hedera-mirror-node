@@ -27,8 +27,9 @@ in order to provide contract log notifications in almost real time.
 ### Importer
 
 1. Update RedisEntityListener (or create new listener) to send contract logs to contract_logs topic
- - Populate the ContractLogEvent for topic message submission
- - Messages will be serialized via RedisSerializer using msgpack
+
+- Populate the ContractLogEvent for topic message submission
+- Messages will be serialized via RedisSerializer using msgpack
 
 ### GraphQL
 
@@ -43,14 +44,14 @@ in order to provide contract log notifications in almost real time.
 4. Create RedisConfiguration to configure msgpack serializer
 5. Create a Redis Subscriber to listen for messages on contract_logs topic
 6. Capture metrics (Some of these may already be provided by Redis or GraphQL)
- - subscriber consumption rate
- - Active subscriptions counter
- - Messages received (From redis topic) rate
+
+- subscriber consumption rate
+- Active subscriptions counter
+- Messages received (From redis topic) rate
 
 #### GraphQL Schema
 
 ```graphql
-
 "Represents a Hedera Contract Log event"
 type ContractLogEvent {
   "The evm address (if available, otherwise the account-num alias) from which this log originated"
@@ -191,7 +192,6 @@ hedera:
           maxActiveSubscriptions: 10
           maxBufferSize: 16384
           keepAlive: 1m
-
 ```
 
 #### Example Request Body
@@ -200,21 +200,15 @@ Addresses and topics are both optional filters
 
 ```graphql
 {
-  contractLogs(subscription: {
-    addresses: ["EVM_ADDRESS_ALIAS OR ACCOUNT_NUM_ALIAS"],
-    topic0: [
-      "ARRAY_OF_CONTRACT_TOPICS"
-    ],
-    topic1: [
-      "ARRAY_OF_CONTRACT_TOPICS"
-    ],
-    topic2: [
-      "ARRAY_OF_CONTRACT_TOPICS"
-    ],
-    topic3: [
-      "ARRAY_OF_CONTRACT_TOPICS"
-    ]
-  }) {
+  contractLogs(
+    subscription: {
+      addresses: ["EVM_ADDRESS_ALIAS OR ACCOUNT_NUM_ALIAS"]
+      topic0: ["ARRAY_OF_CONTRACT_TOPICS"]
+      topic1: ["ARRAY_OF_CONTRACT_TOPICS"]
+      topic2: ["ARRAY_OF_CONTRACT_TOPICS"]
+      topic3: ["ARRAY_OF_CONTRACT_TOPICS"]
+    }
+  ) {
     address
     blockHash
     blockNumber
@@ -249,7 +243,7 @@ Addresses and topics are both optional filters
 #### Event Response DB Mapping
 
 | Response Field   | Source Field                                                                         |
-|------------------|--------------------------------------------------------------------------------------|
+| ---------------- | ------------------------------------------------------------------------------------ |
 | address          | account_num alias for contract entity                                                |
 | blockHash        | record_file.hash                                                                     |
 | blockNumber      | record_file.index                                                                    |
@@ -258,5 +252,3 @@ Addresses and topics are both optional filters
 | topics           | [contract_log.topic0, contract_log.topic1, contract_log.topic2, contract_log.topic3] |
 | transactionHash  | contract_log.transaction_hash                                                        |
 | transactionIndex | contract_log.transaction_index                                                       |
-
-

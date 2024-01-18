@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,9 +149,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @Getter
-    @NotNull
-    @DurationMin(seconds = 100)
-    private Duration rateLimit = Duration.ofSeconds(100L);
+    @Min(100)
+    private long rateLimit = 500;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);

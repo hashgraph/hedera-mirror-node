@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import com.hedera.mirror.web3.evm.store.accessor.UniqueTokenDatabaseAccessor;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
+import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
@@ -97,6 +98,9 @@ class HederaEvmWorldStateTest {
     private TokenAccountRepository tokenAccountRepository;
 
     @Mock
+    private TokenBalanceRepository tokenBalanceRepository;
+
+    @Mock
     private CustomFeeDatabaseAccessor customFeeDatabaseAccessor;
 
     @Mock
@@ -111,9 +115,13 @@ class HederaEvmWorldStateTest {
         final var accountDatabaseAccessor =
                 new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null);
         final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
-                tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor);
+                tokenRepository, entityDatabaseAccessor, entityRepository, customFeeDatabaseAccessor, nftRepository);
         final var tokenRelationshipDatabaseAccessor = new TokenRelationshipDatabaseAccessor(
-                tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository);
+                tokenDatabaseAccessor,
+                accountDatabaseAccessor,
+                tokenAccountRepository,
+                tokenBalanceRepository,
+                nftRepository);
         final var uniqueTokenDatabaseAccessor = new UniqueTokenDatabaseAccessor(nftRepository);
         final List<DatabaseAccessor<Object, ?>> accessors = List.of(
                 accountDatabaseAccessor,

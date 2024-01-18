@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.parser.record.entity;
+package com.hedera.mirror.web3.exception;
 
-public interface EntityListenerProperties {
+public class BlockNumberNotFoundException extends InvalidInputException {
 
-    boolean isEnabled();
+    private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
 
-    void setEnabled(boolean enabled);
+    public BlockNumberNotFoundException() {
+        super(UNKNOWN_BLOCK_NUMBER);
+    }
 }

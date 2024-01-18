@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,12 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-plugins {
-    `kotlin-dsl`
-}
+plugins { `kotlin-dsl` }
 
 repositories {
     gradlePluginPortal()
@@ -29,7 +23,7 @@ repositories {
 
 dependencies {
     implementation("com.bmuschko:gradle-docker-plugin:9.4.0")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.23.3")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.24.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.github.node-gradle:gradle-node-plugin:7.0.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
@@ -46,10 +40,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.1")
 }
 
-val gitHook = tasks.register<Exec>("gitHook") {
-    commandLine("git", "config", "core.hookspath", "buildSrc/src/main/resources/hooks")
-}
+val gitHook =
+    tasks.register<Exec>("gitHook") {
+        commandLine("git", "config", "core.hookspath", "buildSrc/src/main/resources/hooks")
+    }
 
-project.tasks.build {
-    dependsOn(gitHook)
-}
+project.tasks.build { dependsOn(gitHook) }

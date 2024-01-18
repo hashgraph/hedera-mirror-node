@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -320,10 +320,6 @@ const getAccounts = async (req, res) => {
 
   const pgQuery = utils.convertMySqlStyleQueryToPostgres(query);
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getAccounts query: ${pgQuery} ${utils.JSONStringify(params)}`);
-  }
-
   // Execute query
   // set random_page_cost to 0 to make the cost estimation of using the index on (public_key, index)
   // lower than that of other indexes so pg planner will choose the better index when querying by public key
@@ -451,10 +447,6 @@ const getOneAccount = async (req, res) => {
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${utils.JSONStringify(entityParams)}`);
-  }
-
   // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
@@ -482,10 +474,6 @@ const getOneAccount = async (req, res) => {
     const innerParams = utils.mergeParams(accountParams, transactionTsParams, params);
     const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
     const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
-
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${utils.JSONStringify(innerParams)}`);
-    }
 
     // Execute query & get a promise
     transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,11 +91,7 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromTimestamp(timestamp) {
-    const row = await super.getSingleRow(
-      RecordFileService.recordFileBlockDetailsFromTimestampQuery,
-      [timestamp],
-      'getRecordFileBlockDetailsFromTimestamp'
-    );
+    const row = await super.getSingleRow(RecordFileService.recordFileBlockDetailsFromTimestampQuery, [timestamp]);
 
     return _.isNull(row) ? null : new RecordFile(row);
   }
@@ -128,11 +124,7 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromIndex(index) {
-    const row = await super.getSingleRow(
-      RecordFileService.recordFileBlockDetailsFromIndexQuery,
-      [index],
-      'getRecordFileBlockDetailsFromIndex'
-    );
+    const row = await super.getSingleRow(RecordFileService.recordFileBlockDetailsFromIndexQuery, [index]);
 
     return _.isNull(row) ? null : new RecordFile(row);
   }
@@ -144,11 +136,7 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromHash(hash) {
-    const row = await super.getSingleRow(
-      RecordFileService.recordFileBlockDetailsFromHashQuery,
-      [`${hash}%`],
-      'getRecordFileBlockDetailsFromHash'
-    );
+    const row = await super.getSingleRow(RecordFileService.recordFileBlockDetailsFromHashQuery, [`${hash}%`]);
 
     return _.isNull(row) ? null : new RecordFile(row);
   }
@@ -163,7 +151,7 @@ class RecordFileService extends BaseService {
       order by ${filters.orderBy} ${filters.order}
       limit ${filters.limit}
     `;
-    const rows = await super.getRows(query, params, 'getBlocks');
+    const rows = await super.getRows(query, params);
     return rows.map((recordFile) => new RecordFile(recordFile));
   }
 
@@ -180,7 +168,7 @@ class RecordFileService extends BaseService {
     }
 
     const query = `${RecordFileService.blocksQuery} where ${whereStatement}`;
-    const row = await super.getSingleRow(query, params, 'getByHashOrNumber');
+    const row = await super.getSingleRow(query, params);
     return row ? new RecordFile(row) : null;
   }
 }

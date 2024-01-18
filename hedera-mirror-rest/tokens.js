@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -462,10 +462,6 @@ const getTokenInfoRequest = async (req, res) => {
 };
 
 const getTokens = async (pgSqlQuery, pgSqlParams) => {
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTokens query: ${pgSqlQuery}, params: ${pgSqlParams}`);
-  }
-
   const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams);
   logger.debug(`getTokens returning ${rows.length} entries`);
   return rows;
@@ -564,23 +560,29 @@ const extractSqlFromTokenBalancesRequest = async (tokenId, filters) => {
         where ${balanceConditions.join(' and ')}
         order by account_id ${order}`;
     }
+    query += `\nlimit $${params.push(limit)}`;
   } else {
     conditions.push('ti.associated = true');
     if (balanceConditions.length) {
       conditions.push(...balanceConditions);
     }
 
-    query = `select 
-        ti.account_id,
-        ti.balance,
-        (select max(consensus_end) from record_file) as consensus_timestamp
-       from token_account as ti
-       ${joinEntityClause}
-       where ${conditions.join(' and ')}
-       order by ti.account_id ${order}`;
+    query = `
+      with filtered_token_accounts as (
+        select ti.account_id, ti.balance, ti.balance_timestamp
+          from token_account as ti
+          ${joinEntityClause}
+          where ${conditions.join(' and ')}
+          order by ti.account_id ${order}
+          limit $${params.push(limit)}
+      )
+      select 
+        tif.account_id,
+        tif.balance,
+        (select MAX(balance_timestamp) from filtered_token_accounts) as consensus_timestamp
+      from filtered_token_accounts as tif`;
   }
 
-  query += `\nlimit $${params.push(limit)}`;
   return utils.buildPgSqlObject(query, params, order, limit);
 };
 
@@ -613,10 +615,6 @@ const getTokenBalances = async (req, res) => {
   const {query, params, limit, order} = await extractSqlFromTokenBalancesRequest(tokenId, filters);
   if (query === undefined) {
     return;
-  }
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenBalances query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
@@ -724,10 +722,6 @@ const getNftTokensRequest = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedNftsParameters, validateTokenQueryFilter);
 
   const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTokens query: ${query} ${utils.JSONStringify(params)}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   const response = {
     nfts: [],
@@ -768,10 +762,6 @@ const getNftTokenInfoRequest = async (req, res) => {
   const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
 
   const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, nftSelectQuery);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTokenInfo query: ${query} ${utils.JSONStringify(params)}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
@@ -783,10 +773,6 @@ const getNftTokenInfoRequest = async (req, res) => {
 };
 
 const getTokenInfo = async (query, params) => {
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenInfo query: ${query}, params: ${params}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
@@ -923,10 +909,6 @@ const getNftTransferHistoryRequest = async (req, res) => {
   );
 
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTransferHistory query: ${query} ${utils.JSONStringify(params)}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   const response = {
     transactions: rows.map(formatNftHistoryRow),

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -258,7 +258,7 @@ class ContractService extends BaseService {
     limit = defaultLimit
   ) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
-    const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
+    const rows = await super.getRows(query, params);
     return rows.map((cr) => {
       return {
         ...new ContractResult(cr),
@@ -287,7 +287,7 @@ class ContractService extends BaseService {
 
       query = [ContractService.contractStateTimestampQuery, where, orderClause, limitClause].join(' ');
     }
-    const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
+    const rows = await super.getRows(query, params);
     return rows.map((row) => new ContractState(row));
   }
 
@@ -311,7 +311,7 @@ class ContractService extends BaseService {
       whereClause,
     ].join('\n');
 
-    const rows = await super.getRows(query, params, 'getContractResultsByTimestamps');
+    const rows = await super.getRows(query, params);
 
     return rows.map((row) => {
       return {
@@ -348,7 +348,7 @@ class ContractService extends BaseService {
       `order by ${ContractTransactionHash.CONSENSUS_TIMESTAMP} asc`,
       limit ? `limit ${limit}` : '',
     ];
-    const transactionHashRows = await super.getRows(query.join('\n'), [hash], 'getTransactionHashDetailsByHash');
+    const transactionHashRows = await super.getRows(query.join('\n'), [hash]);
     return transactionHashRows.map((row) => {
       return new ContractTransactionHash(row);
     });
@@ -422,7 +422,7 @@ class ContractService extends BaseService {
    */
   async getContractLogs(query) {
     const [sqlQuery, params] = this.getContractLogsQuery(query);
-    const rows = await super.getRows(sqlQuery, params, 'getContractLogs');
+    const rows = await super.getRows(sqlQuery, params);
     const timestamps = [];
     rows.forEach((row) => {
       timestamps.push(row.consensus_timestamp);
@@ -449,7 +449,7 @@ class ContractService extends BaseService {
     const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
 
     const query = [ContractService.contractLogsWithEvmAddressQuery, whereClause, orderClause].join('\n');
-    const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
+    const rows = await super.getRows(query, params);
     return rows.map((row) => new ContractLog(row));
   }
 
@@ -479,7 +479,7 @@ class ContractService extends BaseService {
     const whereClause = 'where ' + conditions.join(' and ');
     const orderClause = `order by ${ContractStateChange.CONSENSUS_TIMESTAMP}, ${ContractStateChange.CONTRACT_ID}, ${ContractStateChange.SLOT}`;
     const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
-    const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
+    const rows = await super.getRows(query, params);
 
     return rows.map((row) => {
       return {
@@ -508,7 +508,7 @@ class ContractService extends BaseService {
   async getContractIdByEvmAddress(evmAddressFilter) {
     const {params, conditions} = this.computeConditionsAndParamsFromEvmAddressFilter({evmAddressFilter});
     const query = `${ContractService.contractIdByEvmAddressQuery} and ${conditions.join(' and ')}`;
-    const rows = await super.getRows(query, params, 'getContractIdByEvmAddress');
+    const rows = await super.getRows(query, params);
     if (rows.length === 0) {
       throw new NotFoundError(
         `No contract with the given evm address: ${JSONStringify(evmAddressFilter)} has been found.`
@@ -564,7 +564,7 @@ class ContractService extends BaseService {
 
     const query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
 
-    const rows = await super.getRows(query, params, 'getContractActions');
+    const rows = await super.getRows(query, params);
     return rows.map((row) => new ContractAction(row));
   }
 

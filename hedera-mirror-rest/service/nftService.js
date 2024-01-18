@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,7 +147,7 @@ class NftService extends BaseService {
    */
   async getNfts(query) {
     const {sqlQuery, params} = this.getQuery(query);
-    const rows = await super.getRows(sqlQuery, params, 'getNfts');
+    const rows = await super.getRows(sqlQuery, params);
     return rows.map((ta) => new Nft(ta));
   }
 }

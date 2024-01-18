@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,15 +189,12 @@ const getCleanupSql = async () => {
 const getMigratedFilename = () => path.join(process.env.MIGRATION_TMP_DIR, `.${process.env.JEST_WORKER_ID}.migrated`);
 
 const getMigrationScriptLocation = (locations) => {
-  if (!isV2Schema()) {
-    return locations;
-  }
-
   // Creating a temp directory for v2, without the repeatable partitioning file.
   const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-scripts-'));
+  const ignoredMigrations = ['R__01_temp_tables.sql', 'R__02_temp_table_distribution.sql'];
   logger.info(`Created temp directory for v2 migration scripts - ${dest}`);
   fs.readdirSync(locations)
-    .filter((filename) => filename !== 'R__maintain_partitions.sql' && filename !== 'R__create_partitions.sql')
+    .filter((filename) => ignoredMigrations.indexOf(filename) === -1)
     .forEach((filename) => {
       const srcFile = path.join(locations, filename);
       const dstFile = path.join(dest, filename);

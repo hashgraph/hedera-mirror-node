@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,15 @@
 
 package com.hedera.mirror.importer.parser.record.entity.notify;
 
+import com.hedera.mirror.importer.parser.record.entity.BatchPublisherProperties;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityListenerProperties;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @Data
 @ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.entity.notify")
-public class NotifyProperties implements EntityListenerProperties {
+public class NotifyProperties implements BatchPublisherProperties {
 
     private boolean enabled = false;
 

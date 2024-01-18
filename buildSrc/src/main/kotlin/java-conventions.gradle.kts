@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
@@ -35,12 +31,8 @@ configurations.all {
 }
 
 repositories {
-    maven {
-        url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/")
-    }
-    maven {
-        url = uri("https://artifacts.consensys.net/public/maven/maven/")
-    }
+    maven { url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/") }
+    maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
 }
 
 dependencyManagement {
@@ -60,7 +52,9 @@ dependencies {
 tasks.compileJava {
     dependsOn("generateEffectiveLombokConfig")
     // Disable deprecation, serial, and this-escape warnings due to errors in generated code
-    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-deprecation,-serial,-this-escape"))
+    options.compilerArgs.addAll(
+        listOf("-Werror", "-Xlint:all", "-Xlint:-deprecation,-serial,-this-escape")
+    )
     options.encoding = "UTF-8"
     sourceCompatibility = "21"
     targetCompatibility = "21"
@@ -74,9 +68,7 @@ tasks.compileTestJava {
     targetCompatibility = "21"
 }
 
-tasks.javadoc {
-    options.encoding = "UTF-8"
-}
+tasks.javadoc { options.encoding = "UTF-8" }
 
 tasks.test {
     finalizedBy(tasks.jacocoTestReport)
@@ -85,21 +77,15 @@ tasks.test {
     systemProperty("user.timezone", "UTC")
     systemProperty("spring.test.constructor.autowire.mode", "ALL")
     if (System.getenv().containsKey("CI")) {
-        retry {
-            maxRetries = 3
-        }
+        retry { maxRetries = 3 }
     }
-    useJUnitPlatform {
-        excludeTags("largedbperf", "performance")
-    }
+    useJUnitPlatform { excludeTags("largedbperf", "performance") }
 }
 
 tasks.register<Test>("performanceTest") {
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
-    useJUnitPlatform {
-        includeTags("performance")
-    }
+    useJUnitPlatform { includeTags("performance") }
 }
 
 tasks.jacocoTestReport {
@@ -110,6 +96,4 @@ tasks.jacocoTestReport {
     }
 }
 
-rootProject.tasks.named("sonarqube") {
-    dependsOn(tasks.jacocoTestReport)
-}
+rootProject.tasks.named("sonarqube") { dependsOn(tasks.jacocoTestReport) }

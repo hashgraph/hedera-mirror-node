@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 package persistence
@@ -46,7 +42,7 @@ const (
                                   ) current
                                   join address_book_entry abe on abe.consensus_timestamp = current.max
                                   left join address_book_service_endpoint abse
-                                    on abse.consensus_timestamp = current.max and abse.node_id = abe.node_id 
+                                    on abse.consensus_timestamp = current.max and abse.node_id = abe.node_id
                                   group by abe.node_id, abe.node_account_id`
 )
 

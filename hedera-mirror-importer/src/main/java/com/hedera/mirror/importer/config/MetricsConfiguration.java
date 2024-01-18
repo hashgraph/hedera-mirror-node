@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,8 +76,15 @@ class MetricsConfiguration {
     private void registerTableMetrics(MeterRegistry registry, String parentTableName, Collection<String> tableNames) {
         for (TableMetric tableMetric : TableMetric.values()) {
             ToDoubleFunction<DataSource> func = ds -> tableNames.stream()
-                    .map(tableName -> jdbcOperations.queryForObject(
-                            tableMetric.query, Long.class, dbProperties.getSchema(), tableName))
+                    .map(tableName -> {
+                        try {
+                            return jdbcOperations.queryForObject(
+                                    tableMetric.query, Long.class, dbProperties.getSchema(), tableName);
+                        } catch (Exception e) {
+                            // Ignore since table could've been deleted by a migration
+                            return null;
+                        }
+                    })
                     .filter(n -> n != null && n > 0)
                     .reduce(0L, Math::addExact);
             Gauge.builder(tableMetric.metricName, dataSource, func)

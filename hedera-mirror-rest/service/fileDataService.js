@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ class FileDataService extends BaseService {
   getFileData = async (fileId, timestamp) => {
     const params = [fileId, timestamp];
     const query = FileDataService.getFileDataQuery;
-    const row = await super.getSingleRow(query, params, 'getFileData');
+    const row = await super.getSingleRow(query, params);
     return _.isNil(row) ? null : row.data;
   };
 
@@ -99,7 +99,7 @@ class FileDataService extends BaseService {
 
   getLatestFileDataContents = async (fileId, filterQueries) => {
     const {where, params} = super.buildWhereSqlStatement(filterQueries.whereQuery, [fileId]);
-    return super.getSingleRow(this.getLatestFileContentsQuery(where), params, 'getLatestFileContents');
+    return super.getSingleRow(this.getLatestFileContentsQuery(where), params);
   };
 
   getExchangeRate = async (filterQueries) => {

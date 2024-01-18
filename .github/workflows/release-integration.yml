@@ -2,13 +2,25 @@ name: Release Integration
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   publish:
     strategy:
       matrix:
-        module: [ graphql, grpc, importer, monitor, rest, rest-java, rest-monitor, rosetta, test, web3 ]
+        module:
+          [
+            graphql,
+            grpc,
+            importer,
+            monitor,
+            rest,
+            rest-java,
+            rest-monitor,
+            rosetta,
+            test,
+            web3,
+          ]
     env:
       CONTEXT: hedera-mirror-${{ matrix.module }}
       IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
@@ -26,13 +38,13 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: "temurin"
           java-version: 21
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCR_KEY }}'
+          credentials_json: "${{ secrets.GCR_KEY }}"
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2

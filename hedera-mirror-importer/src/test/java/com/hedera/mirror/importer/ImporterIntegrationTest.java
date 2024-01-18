@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.ImporterIntegrationTest.Configuration;
 import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.converter.JsonbToListConverter;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.redis.testcontainers.RedisContainer;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import jakarta.annotation.Resource;
@@ -71,6 +72,9 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
 
     @Resource
     protected JdbcOperations jdbcOperations;
+
+    @Resource
+    protected ParserContext parserContext;
 
     @Resource
     protected RetryRecorder retryRecorder;
@@ -134,6 +138,7 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
         dateRangeCalculator.clear();
         importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
         importerProperties.setStartDate(Instant.EPOCH);
+        parserContext.clear();
         retryRecorder.reset();
     }
 
