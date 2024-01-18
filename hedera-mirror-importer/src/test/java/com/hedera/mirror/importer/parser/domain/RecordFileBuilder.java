@@ -98,7 +98,9 @@ public class RecordFileBuilder {
                 }
             });
 
-            return recordFile.get();
+            var current = recordFile.get();
+            previous = current;
+            return current;
         }
 
         public Builder previous(RecordFile recordFile) {

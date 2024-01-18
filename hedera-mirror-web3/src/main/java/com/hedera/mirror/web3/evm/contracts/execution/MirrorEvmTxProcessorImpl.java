@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
@@ -29,6 +30,7 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.store.models.Account;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
 import java.time.Instant;
@@ -50,6 +52,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     private final AbstractCodeCache codeCache;
     private final MirrorEvmContractAliases aliasManager;
     private final Store store;
+    private final EntityAddressSequencer entityAddressSequencer;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorImpl(
@@ -63,7 +66,8 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
             final MirrorOperationTracer operationTracer,
-            final Store store) {
+            final Store store,
+            final EntityAddressSequencer entityAddressSequencer) {
         super(
                 worldState,
                 pricesAndFeesProvider,
@@ -77,6 +81,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
         this.store = store;
+        this.entityAddressSequencer = entityAddressSequencer;
     }
 
     public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
@@ -105,10 +110,11 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     protected MessageFrame buildInitialFrame(
             final MessageFrame.Builder baseInitialFrame, final Address to, final Bytes payload, long value) {
         if (Address.ZERO.equals(to)) {
+            var contractAddress = EntityIdUtils.asTypedEvmAddress(entityAddressSequencer.getNewContractId(to));
             return baseInitialFrame
                     .type(MessageFrame.Type.CONTRACT_CREATION)
-                    .address(to)
-                    .contract(to)
+                    .address(contractAddress)
+                    .contract(contractAddress)
                     .inputData(Bytes.EMPTY)
                     .code(CodeFactory.createCode(payload, 0, false))
                     .build();
