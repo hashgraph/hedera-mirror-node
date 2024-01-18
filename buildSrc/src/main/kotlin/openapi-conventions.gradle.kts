@@ -54,7 +54,7 @@ openApiGenerate {
     invokerPackage = "${openApiPackage}.handler"
     library = "native"
     modelPackage = "${openApiPackage}.model"
-    typeMappings = mapOf("Timestamp" to "String")
+    typeMappings = mapOf("Timestamp" to "String", "string+binary" to "String")
 }
 
 
