@@ -23,8 +23,10 @@ const {
   response: {headers},
 } = config;
 
-const contentTypeHeader = 'Content-Type';
-const applicationJson = 'application/json; charset=utf-8';
+const CONTENT_TYPE_HEADER = 'Content-Type';
+const APPLICATION_JSON = 'application/json; charset=utf-8';
+const LINK_NEXT_HEADER = 'Link';
+const linkNextHeaderValue = (linksNext) => `${linksNext}; rel="next"`
 
 // Response middleware that pulls response data passed through request and sets in response.
 // Next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
@@ -38,11 +40,16 @@ const responseHandler = async (req, res, next) => {
     res.set(headers.path[req.route.path]);
 
     const code = res.locals.statusCode;
-    const contentType = res.locals[responseContentType] || applicationJson;
+    const contentType = res.locals[responseContentType] || APPLICATION_JSON;
+    const linksNext = res.locals.responseData.links?.next;
     res.status(code);
-    res.set(contentTypeHeader, contentType);
+    res.set(CONTENT_TYPE_HEADER, contentType);
 
-    if (contentType === applicationJson) {
+    if (linksNext) {
+      res.set(LINK_NEXT_HEADER, linkNextHeaderValue(linksNext));
+    }
+
+    if (contentType === APPLICATION_JSON) {
       res.send(JSONStringify(responseData));
     } else {
       res.send(responseData);
