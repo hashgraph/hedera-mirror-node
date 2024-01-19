@@ -813,7 +813,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         for (Selector selector : selectors) {
             var data = encodeData(selector.resource(), selector.selector(), asAddress(tokenId));
             var historicalResponse = callContract(initialBlockNumber, data, selector.contractAddress());
-            assertThat(currentResponses.get(selector)).isEqualTo(historicalResponse);
+            assertThat(currentResponses).containsEntry(selector, historicalResponse);
         }
 
         // recreating the deleted token
