@@ -21,6 +21,7 @@ logging:
     root: warn
     com.hedera.mirror.grpc: info
     io.grpc.netty.shaded.io.grpc.netty.NettyServerHandler: error
+    org.hibernate.orm.deprecation: error # Suppress hibernate.dialect warnings
     org.springframework.cloud.kubernetes.fabric8.config: error
     # io.grpc: debug
     # org.hibernate.SQL: debug
@@ -51,6 +52,7 @@ server:
     enabled: true
   http2:
     enabled: true
+  max-http-request-header-size: 1KB
   port: 8081
   shutdown: graceful
 spring:
@@ -80,6 +82,7 @@ spring:
       minimum-idle: 4
       validation-timeout: 3000
   jpa:
+    database: PostgreSQL
     properties:
       hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
       hibernate.generate_statistics: true

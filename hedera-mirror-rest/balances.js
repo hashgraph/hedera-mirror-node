@@ -140,11 +140,6 @@ const getBalances = async (req, res) => {
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
   const sqlParams = utils.mergeParams(tsParams, accountParams, pubKeyParams, balanceParams, params);
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getBalance query: ${pgSqlQuery} ${utils.JSONStringify(sqlParams)}`);
-  }
-
   const result = await pool.queryQuietly(pgSqlQuery, sqlParams);
   res.locals[constants.responseDataLabel] = formatBalancesResult(req, result, limit, order);
   logger.debug(`getBalances returning ${result.rows.length} entries`);
@@ -180,10 +175,6 @@ const getAccountBalanceTimestampRange = async (tsQuery, tsParams) => {
     where ${condition}
     order by consensus_timestamp desc
     limit 1`;
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getAccountBalanceTimestampRange query: ${query} ${utils.JSONStringify(params)}`);
-  }
 
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length === 0) {

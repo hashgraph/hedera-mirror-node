@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,9 +45,6 @@ const getSuccessfulTransactionConsensusNs = async (transactionId, nonce, schedul
          AND nonce = $3
          AND scheduled = $4
          AND result = 22`; // only the successful transaction
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${utils.JSONStringify(sqlParams)}`);
-  }
 
   const {rows} = await pool.queryQuietly(sqlQuery, sqlParams);
   if (_.isEmpty(rows)) {
@@ -77,9 +74,6 @@ const getRCDFileInfoByConsensusNs = async (consensusNs) => {
        where consensus_end >= $1
        order by consensus_end
        limit 1`;
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${consensusNs}`);
-  }
 
   const {rows} = await pool.queryQuietly(sqlQuery, consensusNs);
   if (_.isEmpty(rows)) {
@@ -122,10 +116,6 @@ const getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
     sqlQuery += `
       ORDER BY start_consensus_timestamp DESC
       LIMIT 1`;
-  }
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getAddressBooksAndNodeAccountIDsByConsensusNs: ${sqlQuery}, ${consensusNs}`);
   }
 
   const {rows} = await pool.queryQuietly(sqlQuery, consensusNs);

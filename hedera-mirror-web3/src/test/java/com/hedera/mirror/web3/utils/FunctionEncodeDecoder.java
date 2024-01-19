@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -398,7 +398,9 @@ public class FunctionEncodeDecoder {
             final JsonNode rootNode = mapper.readTree(in);
 
             final JsonNode functionNode = StreamSupport.stream(rootNode.spliterator(), false)
-                    .filter(node -> node.get("name").asText().equals(functionName))
+                    .filter(node ->
+                            node.get("name") != null // in some ABIs the constructors do not have a name property
+                                    && node.get("name").asText().equals(functionName))
                     .findFirst()
                     .orElseThrow(() -> new IllegalArgumentException("Function not found: " + functionName));
 

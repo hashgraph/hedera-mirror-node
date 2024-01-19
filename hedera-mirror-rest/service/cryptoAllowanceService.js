@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ class CryptoAllowanceService extends BaseService {
 
   async getAccountCryptoAllowances(conditions, initParams, order, limit) {
     const {query, params} = this.getAccountAllowancesQuery(conditions, initParams, order, limit);
-    const rows = await super.getRows(query, params, 'getAccountCryptoAllowances');
+    const rows = await super.getRows(query, params);
     return rows.map((ca) => new CryptoAllowance(ca));
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,7 +168,7 @@ public class TestUtils {
     }
 
     public Collection<TransactionHash> getShardTransactionHashes(int shard, JdbcTemplate jdbcTemplate) {
-        var sql = String.format("SELECT * from transaction_hash_sharded_%02d", shard);
+        var sql = String.format("SELECT * from transaction_hash_%02d", shard);
         return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
     }
 
@@ -178,8 +178,8 @@ public class TestUtils {
         return results.iterator().hasNext() ? results.iterator().next() : null;
     }
 
-    public void insertIntoTransactionHashSharded(JdbcTemplate jdbcTemplate, TransactionHash hash) {
-        var sql = "INSERT INTO transaction_hash_sharded(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)";
+    public void insertIntoTransactionHash(JdbcTemplate jdbcTemplate, TransactionHash hash) {
+        var sql = "INSERT INTO transaction_hash(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)";
         jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
     }
 

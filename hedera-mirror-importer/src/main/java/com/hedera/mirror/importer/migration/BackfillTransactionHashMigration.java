@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,8 +26,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import java.io.IOException;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
@@ -36,11 +34,11 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     private static final String BACKFILL_TRANSACTION_HASH_SQL =
             """
             begin;
-            truncate %1$s;
-            insert into %1$s (consensus_timestamp, hash, payer_account_id)
+            truncate transaction_hash;
+            insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
             select consensus_timestamp, transaction_hash, payer_account_id
             from transaction
-            where consensus_timestamp >= ? %2$s;
+            where consensus_timestamp >= ? %1$s;
             commit;
             """;
 
@@ -49,18 +47,15 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     private final EntityProperties entityProperties;
 
     private final JdbcTemplate jdbcTemplate;
-    private final boolean isV2;
 
     @Lazy
     public BackfillTransactionHashMigration(
             EntityProperties entityProperties,
             @Owner JdbcTemplate jdbcTemplate,
-            ImporterProperties importerProperties,
-            Environment environment) {
+            ImporterProperties importerProperties) {
         super(importerProperties.getMigration());
         this.entityProperties = entityProperties;
         this.jdbcTemplate = jdbcTemplate;
-        this.isV2 = environment.acceptsProfiles(Profiles.of("v2"));
     }
 
     @Override
@@ -87,10 +82,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
                                 .map(TransactionType::getProtoId)
                                 .map(Object::toString)
                                 .collect(joining(",")));
-        String sql = String.format(
-                BACKFILL_TRANSACTION_HASH_SQL,
-                isV2 ? "transaction_hash" : "transaction_hash_sharded",
-                transactionTypesCondition);
+        String sql = String.format(BACKFILL_TRANSACTION_HASH_SQL, transactionTypesCondition);
         jdbcTemplate.update(sql, startTimestamp);
 
         log.info("Backfilled transaction hash for transactions at or after {} in {}", startTimestamp, stopwatch);

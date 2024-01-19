@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.addressFromBytes;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_UINT256_RAW_TYPE;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_NFT_SERIAL_NUMBER;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.ABIType;
@@ -69,6 +71,9 @@ public class GetApprovedPrecompile extends AbstractReadOnlyPrecompile {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var inputData = frame.getInputData();
         final var wrapper = decodeGetApproved(inputData);
+        validateTrueOrRevert(
+                updater.tokenAccessor().isTokenAddress(addressFromBytes(wrapper.token())),
+                INVALID_TOKEN_NFT_SERIAL_NUMBER);
         final var spender =
                 updater.tokenAccessor().staticApprovedSpenderOf(addressFromBytes(wrapper.token()), wrapper.serialNo());
         return new GetApprovedResult(spender);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.TOTAL_SUPPLY_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.getAbiFunctionAsJsonString;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -72,15 +73,10 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.json.JSONObject;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -792,16 +788,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     private Tuple decodeFunctionResult(String functionName, ContractCallResponse response) throws Exception {
-        Optional<Object> function;
         try (var in = getResourceAsStream(PRECOMPILE.getPath())) {
-            function = Arrays.stream(readCompiledArtifact(in).getAbi())
-                    .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName))
-                    .findFirst();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            String abiFunctionAsJsonString = (new JSONObject((Map) function.get())).toString();
+            var abiFunctionAsJsonString = getAbiFunctionAsJsonString(readCompiledArtifact(in), functionName);
             return Function.fromJson(abiFunctionAsJsonString)
                     .decodeReturn(FastHex.decode(response.getResult().replace("0x", "")));
         } catch (Exception e) {

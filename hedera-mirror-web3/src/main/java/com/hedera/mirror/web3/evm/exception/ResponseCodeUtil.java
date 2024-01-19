@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static java.util.stream.Collectors.toMap;
 
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Map;
@@ -64,6 +65,8 @@ public class ResponseCodeUtil {
                 return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
             } else if (ExceptionalHaltReason.INSUFFICIENT_GAS == haltReason) {
                 return ResponseCodeEnum.INSUFFICIENT_GAS;
+            } else if (HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS == haltReason) {
+                return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
             }
         }
 

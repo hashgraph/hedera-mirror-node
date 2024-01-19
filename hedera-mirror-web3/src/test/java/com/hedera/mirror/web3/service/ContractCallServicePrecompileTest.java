@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -106,17 +107,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         if (Long.parseLong(blockNumber) < EVM_V_34_BLOCK) {
             switch (contractFunc) {
-                case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE,
-                        GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE,
-                        GET_CUSTOM_FEES_FOR_TOKEN_WITH_ROYALTY_FEE,
-                        HTS_GET_APPROVED,
-                        HTS_ALLOWANCE,
-                        HTS_IS_APPROVED_FOR_ALL -> {
-                    // TODO: add fix and test cases in a separate PR
+                    // These are the only cases where an exception is not thrown. There are custom
+                    // precompiles for these cases and an exception is thrown there but the top
+                    // stack frame overrides the result with the one from Besu and the zero address
+                    // is returned.
+                case HTS_GET_APPROVED, HTS_ALLOWANCE, HTS_IS_APPROVED_FOR_ALL -> {
+                    assertThat(contractCallService.processCall(serviceParameters))
+                            .isEqualTo(String.valueOf(Bytes32.ZERO));
                     return;
                 }
             }
-
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
@@ -671,7 +671,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_NFT_INFO("getInformationForNonFungibleToken", new Object[] {NFT_ADDRESS_HISTORICAL, 1L}, new Object[] {
             new Object[] {
                 NFT_HBAR_TOKEN_AND_KEYS_HISTORICAL,
-                1_000_000_000L,
+                2L,
                 false,
                 false,
                 true,
@@ -696,7 +696,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 }),
         GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS_HISTORICAL}, new Object[] {
             NFT_HBAR_TOKEN_AND_KEYS_HISTORICAL,
-            1_000_000_000L,
+            2L,
             false,
             false,
             true,

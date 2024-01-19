@@ -318,10 +318,6 @@ const getTopicMessageTimestampRanges = async (topicId, sequenceNumberFilters, ti
       order by sequence_number_range`;
   }
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTopicMessageTimestampRanges query: ${query}, params: ${params}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   return rows.map((r) => r.timestamp_range);
 };
@@ -330,10 +326,6 @@ const getTopicMessageTimestampRanges = async (topicId, sequenceNumberFilters, ti
  * Retrieves topic message from
  */
 const getMessage = async (query, params) => {
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getMessage query: ${query}, params: ${params}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
@@ -343,10 +335,6 @@ const getMessage = async (query, params) => {
 };
 
 const getMessages = async (query, params, preQueryHint) => {
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getMessages query: ${query}, params: ${params}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params, preQueryHint);
   logger.debug(`getMessages returning ${rows.length} entries`);
   return rows.map((row) => new TopicMessage(row));
@@ -360,10 +348,6 @@ const getTopicMessageTimestampRange = async (topicId, seqNum) => {
                     where topic_id = $1::bigint and sequence_number_range @> $2::bigint
                     order by sequence_number_range`;
   const params = [topicId, seqNum];
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getMessages query: ${query}, params: ${params}`);
-  }
 
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length === 0) {

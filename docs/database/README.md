@@ -5,7 +5,7 @@
 The table below documents the database indexes with the usage in APIs / services.
 
 | Table           | Indexed Columns                              | Component   | Service                                              | Description                                                                                                                            |
-|-----------------|----------------------------------------------|-------------|------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| --------------- | -------------------------------------------- | ----------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | contract_result | consensus_timestamp                          | REST API    | `/api/v1/contracts/results`                          | Used to query contract results with timestamp filter                                                                                   |
 | contract_result | contract_id, sender_id, consensus_timestamp  | REST API    | `/api/v1/contracts/:idOrAddress/results?from=:from`  | Used to query a specific contract's results with `from` filter                                                                         |
 | contract_result | contract_id, consensus_timestamp             | REST API    | `/api/v1/contracts/:idOrAddress/results`             | Used to query a specific contract's results with optional timestamp filter                                                             |
@@ -156,55 +156,55 @@ transactions in the balance and record streams. These issues should only appear 
 
 ### Account Balance File Skew
 
-* Period: 2019-09-13 to 2020-09-08
-* Scope: 6949 account balance files
-* Problem: Early account balances file did not respect the invariant that all transfers less than or equal to the
+- Period: 2019-09-13 to 2020-09-08
+- Scope: 6949 account balance files
+- Problem: Early account balances file did not respect the invariant that all transfers less than or equal to the
   timestamp of the file are reflected within that file.
-* Solution: Fixed in Hedera Services in Sept 2020. Fixed in Mirror Node v0.53.0 by adding
+- Solution: Fixed in Hedera Services in Sept 2020. Fixed in Mirror Node v0.53.0 by adding
   a `account_balance_file.time_offset` field with a value of `-1` that is used as an adjustment to the balance file's
   consensus timestamp for use when querying transfers.
 
 ### Failed Transfers in Record
 
-* Period: 2019-09-14 to 2019-10-03
-* Scope: Affected the records of 1177 transactions.
-* Problem: When a crypto transfer failed due to an insufficient account balance, the attempted transfers were
+- Period: 2019-09-14 to 2019-10-03
+- Scope: Affected the records of 1177 transactions.
+- Problem: When a crypto transfer failed due to an insufficient account balance, the attempted transfers were
   nonetheless listed in the record.
-* Solution: Fixed in Hedera Services v0.4.0 late 2019. Fixed in Mirror Node in v0.53.0 by adding an `errata` field to
+- Solution: Fixed in Hedera Services v0.4.0 late 2019. Fixed in Mirror Node in v0.53.0 by adding an `errata` field to
   the `crypto_transfer` table and setting the spurious transfers' `errata` field to `DELETE` to indicate they should be
   omitted.
 
 ### Record Missing for Insufficient Fee Funding
 
-* Period: 2019-09-14 to 2019-09-18
-* Scope: Affected the records of 31 transactions
-* Problem: When a transaction over-bid the balance of its payer account as a fee payment, its record was omitted from
+- Period: 2019-09-14 to 2019-09-18
+- Scope: Affected the records of 31 transactions
+- Problem: When a transaction over-bid the balance of its payer account as a fee payment, its record was omitted from
   the stream. When a transaction’s payer account could not afford the network fee, its record was omitted.
-* Solution: Fixed in Hedera Services v0.4.0 late 2019. Fixed in Mirror Node in v0.53.0 by adding an `errata` field
+- Solution: Fixed in Hedera Services v0.4.0 late 2019. Fixed in Mirror Node in v0.53.0 by adding an `errata` field
   to `crypto_transfer` and `transaction` tables and inserting the missing rows with the `errata` field set to `INSERT`.
 
 ### Record Missing for FAIL_INVALID NFT transfers
 
-* Period: 2022-07-31 to 2022-08-09
-* Scope: Affected the records of 70 transactions.
-* Problem: Any ledger that will grow to billions of entities must have an efficient way to remove expired entities. In
+- Period: 2022-07-31 to 2022-08-09
+- Scope: Affected the records of 70 transactions.
+- Problem: Any ledger that will grow to billions of entities must have an efficient way to remove expired entities. In
   the Hedera network, this means keeping a list of NFTs owned by an account, so that when an account expires, we can
   return its NFTs to their respective treasury accounts.
   Under certain conditions in the 0.27.5 release, a bug in the logic maintaining these lists could cause NFT transfers
   to fail, without refunding fees. This would manifest itself as a `FAIL_INVALID` transaction that does not get written
   to the record stream.
-* Solution: Fixed in Hedera Services [v0.27.7](https://docs.hedera.com/guides/docs/release-notes/services#v0.27.7) on
+- Solution: Fixed in Hedera Services [v0.27.7](https://docs.hedera.com/guides/docs/release-notes/services#v0.27.7) on
   August 9th 2022. Fixed in Mirror Node in v0.64.0 by a migration that adds the missing transactions and transfers.
 
 ### Record Missing for FAIL_INVALID NFT transfers
 
-* Period: 2023-02-10 to 2023-02-14
-* Scope: Affected the records of 12 transactions.
-* Problem: Fixes a bug in bookkeeping for NFT TokenWipe and TokenBurn operations with redundant serial numbers. The bug
+- Period: 2023-02-10 to 2023-02-14
+- Scope: Affected the records of 12 transactions.
+- Problem: Fixes a bug in bookkeeping for NFT TokenWipe and TokenBurn operations with redundant serial numbers. The bug
   makes an account appear to own fewer NFTs than it actually does. This can subsequently prevent an NFT owner from being
   changed as part of an atomic operation. When the atomic operation fails, an errata record is required for the missing
   transactions.
-* Solution: Fixed in Hedera Services [v0.34.2](https://github.com/hashgraph/hedera-services/releases/tag/v0.34.2) on
+- Solution: Fixed in Hedera Services [v0.34.2](https://github.com/hashgraph/hedera-services/releases/tag/v0.34.2) on
   February 17, 2023. Fixed in Mirror Node in v0.74.3 by a migration that adds the missing transactions.
 
 ## Breaking Schema Changes Introduced in 0.96.0
@@ -226,7 +226,7 @@ recommended configuration for a production Citus cluster. Note the storage size 
 since open access until April 2023.
 
 | Node Type   | Count | vCPU | Memory | Disk Storage |
-|-------------|-------|------|--------|--------------|
+| ----------- | ----- | ---- | ------ | ------------ |
 | Coordinator | 3     | 4    | 26 GB  | 256 GB       |
 | Worker      | 3     | 4    | 26 GB  | 5 TB         |
 

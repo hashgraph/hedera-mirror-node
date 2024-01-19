@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,22 +20,16 @@ import static com.hedera.mirror.common.converter.ObjectToStringSerializer.OBJECT
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.parser.record.entity.BatchPublisher;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.util.Utility;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCallback;
@@ -44,52 +38,40 @@ import org.springframework.jdbc.core.PreparedStatementCallback;
 @CustomLog
 @Named
 @Order(2)
-@RequiredArgsConstructor
-public class NotifyingEntityListener implements BatchEntityListener {
+public class NotifyingPublisher implements BatchPublisher {
 
     private static final String SQL = "select pg_notify('topic_message', ?)";
 
     private final NotifyProperties notifyProperties;
     private final JdbcTemplate jdbcTemplate;
-    private final MeterRegistry meterRegistry;
-    private final List<TopicMessage> topicMessages = new ArrayList<>();
+    private final ParserContext parserContext;
+    private final Timer timer;
 
-    private Timer timer;
-
-    @PostConstruct
-    void init() {
-        timer = Timer.builder("hedera.mirror.importer.publish.duration")
-                .description("The amount of time it took to publish the entity")
-                .tag("entity", TopicMessage.class.getSimpleName())
-                .tag("type", "notify")
-                .register(meterRegistry);
+    NotifyingPublisher(
+            NotifyProperties notifyProperties,
+            JdbcTemplate jdbcTemplate,
+            MeterRegistry meterRegistry,
+            ParserContext parserContext) {
+        this.notifyProperties = notifyProperties;
+        this.jdbcTemplate = jdbcTemplate;
+        this.parserContext = parserContext;
+        this.timer = PUBLISH_TIMER.tag("type", "notify").register(meterRegistry);
     }
 
     @Override
-    public boolean isEnabled() {
-        return notifyProperties.isEnabled();
-    }
-
-    @Override
-    public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-        topicMessages.add(topicMessage);
-    }
-
-    @Override
-    @EventListener
-    public void onSave(EntityBatchSaveEvent event) {
-        if (isEnabled()) {
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            timer.record(() -> jdbcTemplate.execute(SQL, callback(topicMessages)));
-            log.info("Finished notifying {} messages in {}", topicMessages.size(), stopwatch);
+    public void onEnd(RecordFile recordFile) {
+        if (!notifyProperties.isEnabled()) {
+            return;
         }
-    }
 
-    @Override
-    @EventListener
-    public void onCleanup(EntityBatchCleanupEvent event) {
-        log.debug("Finished clearing {} messages", topicMessages.size());
-        topicMessages.clear();
+        var topicMessages = parserContext.get(TopicMessage.class);
+        if (topicMessages.isEmpty()) {
+            return;
+        }
+
+        var stopwatch = Stopwatch.createStarted();
+        timer.record(() -> jdbcTemplate.execute(SQL, callback(topicMessages)));
+        log.info("Finished notifying {} messages in {}", topicMessages.size(), stopwatch);
     }
 
     private PreparedStatementCallback<int[]> callback(Collection<TopicMessage> topicMessages) {

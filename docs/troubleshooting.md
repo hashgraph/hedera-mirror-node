@@ -24,8 +24,8 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-    - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
-      morning).
+  - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
+    morning).
 
 - `Error closing connection`
 
@@ -33,10 +33,9 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-    - Check Cloud SQL console to figure out if connection limit is being reached. If so, restarting importer would be
-      one
-      way to temporarily fix it.
-    - Ensure no service outage happens due to connection limit, restart as needed.
+  - Check Cloud SQL console to figure out if connection limit is being reached. If so, restarting importer would be
+    one way to temporarily fix it.
+  - Ensure no service outage happens due to connection limit, restart as needed.
 
 - `Error parsing record file` \
   `previous hash is null` \
@@ -51,8 +50,8 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-    - Notify devops immediately
-    - Check if any recent changes were made to the code related to the error
+  - Notify devops immediately
+  - Check if any recent changes were made to the code related to the error
 
 - `Error saving file in database` \
   `Unable to connect to database` \
@@ -64,9 +63,8 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-    - Check Cloud SQL instance is up and running correctly (by executing some SQL queries). If the problem seems on
-      Cloud
-      SQL side, escalate to devops.
+  - Check Cloud SQL instance is up and running correctly (by executing some SQL queries). If the problem seems on
+    Cloud SQL side, escalate to devops.
 
 - `ERRORS processing account balances file`
 
@@ -75,15 +73,15 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-    - If bad data in the stream, escalate to devops
-    - If due to sql exception, check if next try is successful. If the error continues, investigate.
+  - If bad data in the stream, escalate to devops
+  - If due to sql exception, check if next try is successful. If the error continues, investigate.
 
 - `Exception`
 
   Actions:
 
-    - See exception details for more info (attempt to diagnose, including trying to restart the service, but escalate
-      anyway)
+  - See exception details for more info (attempt to diagnose, including trying to restart the service, but escalate
+    anyway)
 
 - `Failed downloading`
 
@@ -93,28 +91,28 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-    - Try downloading failing files locally (checks S3 is up)
-    - Check socket usage, packet loss, etc on importer instance
+  - Try downloading failing files locally (checks S3 is up)
+  - Check socket usage, packet loss, etc on importer instance
 
 - `Failed to parse NodeAddressBook from`
 
   Actions:
 
-    - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
-      morning).
+  - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
+    morning).
 
 - `Insufficient downloaded signature file count, requires at least`
   This can happen if
 
-    1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
-       Logging rate will be at most 20/min.
-    2. Bad signatures by some mainnet nodes, halts the downloader progress. Logging rate in this case can reach 100/min.
+  1. Some mainnet nodes are still in the process of uploading their signatures for the latest file (benign case).
+     Logging rate will be at most 20/min.
+  2. Bad signatures by some mainnet nodes, halts the downloader progress. Logging rate in this case can reach 100/min.
 
   Effect: In case of bad signatures, it'll halt system progress.
 
   Actions:
 
-    - If happens due to bad signatures, escalate to devops.
+  - If happens due to bad signatures, escalate to devops.
 
 - `Long overflow when converting time to nanos timestamp`
 
@@ -123,14 +121,14 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-    - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
-      morning).
+  - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
+    morning).
 
 - `Unable to copy address book from`
 
   Actions:
 
-    - For emergency fix, manually copy known good address book to the destination.
+  - For emergency fix, manually copy known good address book to the destination.
 
 - `Unable to guess correct transaction type since there's not exactly one`
 
@@ -139,8 +137,8 @@ Following is list of error messages and how to begin handling issues when they a
 
   Actions:
 
-    - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
-      morning).
+  - There is no immediate fix. Bring to team's attention immediately (during reasonable hours, otherwise next
+    morning).
 
 ## Detecting and alerting issues
 
@@ -193,7 +191,7 @@ Alerts: Low-Priority PagerDuty Alert during business hours only Response: Requir
 #### Log-based alerts
 
 | Log Message                                                              | Default Priority | Conditional Priority            |
-|--------------------------------------------------------------------------|------------------|---------------------------------|
+| ------------------------------------------------------------------------ | ---------------- | ------------------------------- |
 | `Error parsing record file`                                              | HIGH             |                                 |
 | `Error starting watch service`                                           | HIGH             |                                 |
 | `ERRORS processing account balances file`                                | HIGH             |                                 |

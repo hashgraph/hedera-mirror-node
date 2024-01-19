@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -126,7 +127,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
                 recordFileRepository,
                 recordItemListener,
                 recordStreamFileListener,
-                dateRangeCalculator);
+                dateRangeCalculator,
+                new ParserContext());
     }
 
     @Override

@@ -21,19 +21,19 @@ All listed commands with relative paths are assumed to be run from the repositor
 
 1. Create a Kubernetes cluster with the standard application node pool and auto-upgrade disabled.
 2. Create two node pools specific for the Citus coordinator and worker nodes. For each:
-    1. Use Ubuntu with containerd.
-    2. Set node security access scopes to `Allow full access to all Cloud APIs`.
-    3. Add a label and taint to node to match (change `citus-role` appropriately):
-    ```yaml
-    nodeSelector:
-      citus-role: worker
-      csi-type: zfs
-    tolerations:
-    - key: zfs
-      operator: Equal
-      value: "true"
-      effect: NoSchedule
-    ```
+   1. Use Ubuntu with containerd.
+   2. Set node security access scopes to `Allow full access to all Cloud APIs`.
+   3. Add a label and taint to node to match (change `citus-role` appropriately):
+   ```yaml
+   nodeSelector:
+     citus-role: worker
+     csi-type: zfs
+   tolerations:
+     - key: zfs
+       operator: Equal
+       value: "true"
+       effect: NoSchedule
+   ```
 
 On GKE, the following gcloud commands can be used to easily create the cluster and node pools:
 
@@ -41,7 +41,7 @@ On GKE, the following gcloud commands can be used to easily create the cluster a
 NETWORK="default"
 PROJECT="myproject"
 VERSION="1.26.5-gke.2100"
-gcloud beta container --project "${PROJECT}" clusters create "citus" --region "us-central1" --no-enable-basic-auth --cluster-version "${VERSION}" --release-channel "None" --machine-type "e2-custom-6-16384" --image-type "COS_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --metadata disable-legacy-endpoints=true --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "1" --logging=SYSTEM,WORKLOAD --monitoring=SYSTEM --enable-ip-alias --network "${NETWORK}" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --security-posture=standard --workload-vulnerability-scanning=disabled --enable-network-policy --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,NodeLocalDNS,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --no-enable-managed-prometheus --enable-shielded-nodes --node-locations "us-central1-a","us-central1-b" --workload-pool "${PROJECT}.svc.id.goog" --workload-metadata=GKE_METADATA 
+gcloud beta container --project "${PROJECT}" clusters create "citus" --region "us-central1" --no-enable-basic-auth --cluster-version "${VERSION}" --release-channel "None" --machine-type "e2-custom-6-16384" --image-type "COS_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --metadata disable-legacy-endpoints=true --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "1" --logging=SYSTEM,WORKLOAD --monitoring=SYSTEM --enable-ip-alias --network "${NETWORK}" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --security-posture=standard --workload-vulnerability-scanning=disabled --enable-network-policy --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,NodeLocalDNS,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --no-enable-managed-prometheus --enable-shielded-nodes --node-locations "us-central1-a","us-central1-b" --workload-pool "${PROJECT}.svc.id.goog" --workload-metadata=GKE_METADATA
 gcloud beta container --project "${PROJECT}" node-pools create "coordinator" --cluster "citus" --region "us-central1" --node-version "${VERSION}" --machine-type "e2-custom-6-32768" --image-type "UBUNTU_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --node-labels csi-type=zfs,citus-role=coordinator --metadata disable-legacy-endpoints=true --node-taints zfs=true:NoSchedule --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "1" --no-enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --node-locations "us-central1-a","us-central1-b" --workload-metadata=GKE_METADATA
 gcloud beta container --project "${PROJECT}" node-pools create "worker" --cluster "citus" --region "us-central1" --node-version "${VERSION}" --machine-type "e2-custom-6-32768" --image-type "UBUNTU_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --node-labels csi-type=zfs,citus-role=worker --metadata disable-legacy-endpoints=true --node-taints zfs=true:NoSchedule --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "2" --no-enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --node-locations "us-central1-a","us-central1-b","us-central1-c" --workload-metadata=GKE_METADATA
 ```
@@ -93,4 +93,3 @@ To delete a zpool on the node for a PVC, you must identify the PVC in question `
 find the corresponding zvolume `kubectl get zv --all-namespaces` then you may delete the volume
 using `kubectl delete zv -n <namespace> <zVolumeName>`. This will do the cleanup on the node itself and make the space
 available in the zpool again.
-

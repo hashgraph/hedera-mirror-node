@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,14 +59,10 @@ import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-import com.hedera.mirror.importer.repository.SidecarFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -74,8 +70,6 @@ import java.util.List;
 import java.util.Objects;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.BeanCreationNotAllowedException;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.util.CollectionUtils;
 
@@ -89,15 +83,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private static final List<Class<?>> NFT_FLUSH = List.of(Token.class, TokenAccount.class, Nft.class);
 
     private final BatchPersister batchPersister;
+    private final ParserContext context;
     private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
-    private final ApplicationEventPublisher eventPublisher;
     private final NftRepository nftRepository;
-    private final RecordFileRepository recordFileRepository;
-    private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
-
-    private final ParserContext context = new ParserContext();
 
     @Override
     public boolean isEnabled() {
@@ -105,27 +95,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onStart() {
-        cleanup();
-    }
-
-    @Override
     public void onEnd(RecordFile recordFile) {
-        flush();
         if (recordFile != null) {
-            var sidecars = recordFile.getSidecars();
-            recordFileRepository.save(recordFile);
-
-            if (!sidecars.isEmpty()) {
-                sidecarFileRepository.saveAll(sidecars);
-                log.info("Processed {} sidecars", sidecars.size());
-            }
+            context.add(recordFile);
+            context.addAll(recordFile.getSidecars());
         }
-    }
-
-    @Override
-    public void onError() {
-        cleanup();
+        flush();
     }
 
     @Override
@@ -354,37 +329,26 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         context.add(transactionSignature);
     }
 
-    private void cleanup() {
-        try {
-            context.drainTo(i -> {});
-            eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
-        } catch (BeanCreationNotAllowedException e) {
-            // This error can occur during shutdown
-        }
-    }
-
     private void flush() {
         try {
-            // batch save action may run asynchronously, triggering it before other operations can reduce latency
-            eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
-
             var stopwatch = Stopwatch.createStarted();
-            context.drainTo(batchPersister::persist);
-
+            context.forEach(batchPersister::persist);
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {
             throw new ParserException(e);
-        } finally {
-            cleanup();
         }
     }
 
     private void flushNftState() {
         try {
             // flush tables required for an accurate nft state in database to ensure correct state-dependent changes
-            context.drainTo(NFT_FLUSH, batchPersister::persist);
+            NFT_FLUSH.forEach(c -> {
+                var data = context.get(c);
+                batchPersister.persist(data);
+                context.remove(c);
+            });
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {

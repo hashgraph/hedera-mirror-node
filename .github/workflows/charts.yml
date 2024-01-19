@@ -2,11 +2,11 @@ name: Charts
 
 on:
   pull_request:
-    branches: [ main, release/** ]
-    paths: [ charts/** ]
+    branches: [main, release/**]
+    paths: [charts/**]
   push:
-    branches: [ main, release/** ]
-    tags: [ v* ]
+    branches: [main, release/**]
+    tags: [v*]
 
 jobs:
   lint:
@@ -22,7 +22,7 @@ jobs:
         run: ct lint --config .github/ct.yaml --all
 
   install:
-    runs-on: [ self-hosted, linux, large, ephemeral ]
+    runs-on: [self-hosted, linux, large, ephemeral]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,18 +36,18 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: "temurin"
           java-version: 21
 
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install Stackgres
         run: |
           helm repo add stackgres https://stackgres.io/downloads/stackgres-k8s/stackgres/helm
-          helm install stackgres stackgres/stackgres-operator --version 1.6.1 --create-namespace -n stackgres
+          helm install stackgres stackgres/stackgres-operator --version 1.7.0 --create-namespace -n stackgres
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.6.1

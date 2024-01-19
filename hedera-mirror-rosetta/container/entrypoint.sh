@@ -42,7 +42,10 @@ function init_db() {
   if [[ -f "${PGDATA}/PG_VERSION" ]]; then
     # relink the config dir just in case it's a newly created container with existing mapped /data dir
     ln -sTf ${PGDATA} ${PG_CLUSTER_CONF}
+    # copy the updated pg_hba.conf
+    su postgres -c 'cp /app/pg_hba.conf ${PGDATA}'
     echo "Database is already initialized"
+
     init_temp_schema
     return
   fi

@@ -2,13 +2,25 @@ name: Release Production
 
 on:
   push:
-    tags: [ v* ]
+    tags: [v*]
 
 jobs:
   image:
     strategy:
       matrix:
-        module: [ graphql, grpc, importer, monitor, rest, rest-java, rest-monitor, rosetta, test, web3 ]
+        module:
+          [
+            graphql,
+            grpc,
+            importer,
+            monitor,
+            rest,
+            rest-java,
+            rest-monitor,
+            rosetta,
+            test,
+            web3,
+          ]
     env:
       CONTEXT: hedera-mirror-${{ matrix.module }}
       IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
@@ -27,13 +39,13 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: "temurin"
           java-version: 21
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: '${{ secrets.GCR_KEY }}'
+          credentials_json: "${{ secrets.GCR_KEY }}"
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
@@ -98,8 +110,8 @@ jobs:
         id: google-auth
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: 'projects/798248771094/locations/global/workloadIdentityPools/default-pool/providers/gh-provider'
-          service_account: 'container-publisher@mirror-node-public.iam.gserviceaccount.com'
+          workload_identity_provider: "projects/798248771094/locations/global/workloadIdentityPools/default-pool/providers/gh-provider"
+          service_account: "container-publisher@mirror-node-public.iam.gserviceaccount.com"
 
       - name: Set GCloud CLI
         uses: google-github-actions/setup-gcloud@v2
@@ -111,7 +123,7 @@ jobs:
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
       - name: Create k3d cluster
-        run: k3d cluster create mirror --agents 1 --wait --image rancher/k3s:v1.27.7-k3s1
+        run: k3d cluster create mirror --agents 1 --wait --image rancher/k3s:v1.28.5-k3s1
 
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
@@ -120,7 +132,8 @@ jobs:
         run: curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
       - name: Install mpdev
-        run: docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
+        run:
+          docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
           && chmod +x ${MPDEV}
 
       - name: Install application

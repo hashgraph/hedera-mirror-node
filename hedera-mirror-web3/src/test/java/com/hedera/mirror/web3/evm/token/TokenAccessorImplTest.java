@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
+import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
@@ -105,6 +106,9 @@ class TokenAccessorImplTest {
     private TokenAccountRepository tokenAccountRepository;
 
     @Mock
+    private TokenBalanceRepository tokenBalanceRepository;
+
+    @Mock
     private CryptoAllowanceRepository cryptoAllowanceRepository;
 
     @Mock
@@ -135,8 +139,8 @@ class TokenAccessorImplTest {
     void setUp() {
         final var entityAccessor = new EntityDatabaseAccessor(entityRepository);
         final var customFeeAccessor = new CustomFeeDatabaseAccessor(customFeeRepository, entityAccessor);
-        final var tokenDatabaseAccessor =
-                new TokenDatabaseAccessor(tokenRepository, entityAccessor, entityRepository, customFeeAccessor);
+        final var tokenDatabaseAccessor = new TokenDatabaseAccessor(
+                tokenRepository, entityAccessor, entityRepository, customFeeAccessor, nftRepository);
         final var accountDatabaseAccessor = new AccountDatabaseAccessor(
                 entityAccessor,
                 nftAllowanceRepository,
@@ -151,7 +155,11 @@ class TokenAccessorImplTest {
                 accountDatabaseAccessor,
                 tokenDatabaseAccessor,
                 new TokenRelationshipDatabaseAccessor(
-                        tokenDatabaseAccessor, accountDatabaseAccessor, tokenAccountRepository),
+                        tokenDatabaseAccessor,
+                        accountDatabaseAccessor,
+                        tokenAccountRepository,
+                        tokenBalanceRepository,
+                        nftRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = new StoreImpl(stackedStateFrames);
@@ -218,8 +226,8 @@ class TokenAccessorImplTest {
         tokenAccount.setAssociated(true);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        when(token.getType()).thenReturn(null);
-        when(token.getSupplyType()).thenReturn(null);
+        when(token.getType()).thenReturn(TokenTypeEnum.FUNGIBLE_COMMON);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.ACCOUNT, EntityType.TOKEN);
         assertTrue(tokenAccessor.isFrozen(ACCOUNT, TOKEN));
@@ -232,8 +240,8 @@ class TokenAccessorImplTest {
         tokenAccount.setAssociated(true);
         when(tokenAccountRepository.findById(any())).thenReturn(Optional.of(tokenAccount));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        when(token.getType()).thenReturn(null);
-        when(token.getSupplyType()).thenReturn(null);
+        when(token.getType()).thenReturn(TokenTypeEnum.FUNGIBLE_COMMON);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.ACCOUNT, EntityType.TOKEN);
         assertTrue(tokenAccessor.isKyc(ACCOUNT, TOKEN));
@@ -247,8 +255,8 @@ class TokenAccessorImplTest {
         customFee.addFixedFee(FixedFee.builder().collectorAccountId(collectorId).build());
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(collectorId.toEntity()));
         when(tokenRepository.findById(any())).thenReturn(Optional.of(token));
-        when(token.getType()).thenReturn(null);
-        when(token.getSupplyType()).thenReturn(null);
+        when(token.getType()).thenReturn(TokenTypeEnum.FUNGIBLE_COMMON);
+        when(token.getSupplyType()).thenReturn(TokenSupplyTypeEnum.FINITE);
         when(entityRepository.findByIdAndDeletedIsFalse(any())).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOKEN);
         when(customFeeRepository.findById(any())).thenReturn(Optional.of(customFee));

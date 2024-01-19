@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.config.DateRangeCalculator;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -56,6 +57,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final DateRangeCalculator dateRangeCalculator;
+    private final ParserContext parserContext;
 
     // Metrics
     private final Map<Integer, Timer> latencyMetrics;
@@ -63,6 +65,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     private final Timer unknownLatencyMetric;
     private final DistributionSummary unknownSizeMetric;
 
+    @SuppressWarnings("java:S107")
     public RecordFileParser(
             ApplicationEventPublisher applicationEventPublisher,
             MeterRegistry meterRegistry,
@@ -70,13 +73,15 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             StreamFileRepository<RecordFile, Long> streamFileRepository,
             RecordItemListener recordItemListener,
             RecordStreamFileListener recordStreamFileListener,
-            DateRangeCalculator dateRangeCalculator) {
+            DateRangeCalculator dateRangeCalculator,
+            ParserContext parserContext) {
         super(meterRegistry, parserProperties, streamFileRepository);
         this.applicationEventPublisher = applicationEventPublisher;
         this.last = new AtomicReference<>();
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.dateRangeCalculator = dateRangeCalculator;
+        this.parserContext = parserContext;
 
         // build transaction latency metrics
         ImmutableMap.Builder<Integer, Timer> latencyMetricsBuilder = ImmutableMap.builder();
@@ -156,6 +161,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         } catch (Exception ex) {
             recordStreamFileListener.onError();
             throw ex;
+        } finally {
+            parserContext.clear();
         }
     }
 

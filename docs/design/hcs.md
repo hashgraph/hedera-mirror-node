@@ -166,8 +166,14 @@ Provide the ability to filter transactions before persisting via configuration:
 
 ```yaml
 include:
-  - transaction: [ ConsensusCreateTopic, ConsensusDeleteTopic, ConsensusUpdateTopic, ConsensusSubmitMessage ]
-    entity: [ 0.0.1001 ]
+  - transaction:
+      [
+        ConsensusCreateTopic,
+        ConsensusDeleteTopic,
+        ConsensusUpdateTopic,
+        ConsensusSubmitMessage,
+      ]
+    entity: [0.0.1001]
 ```
 
 - Remove options `hedera.mirror.importer.parser.record.persist*` and convert defaults to newer format

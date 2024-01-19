@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,15 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.addressFromBytes;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ADDRESS_TRIO_RAW_TYPE;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalseOrRevert;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenAllowanceWrapper;
 import com.hedera.services.store.contracts.precompile.AbiConstants;
@@ -67,6 +70,10 @@ public class AllowancePrecompile extends AbstractReadOnlyPrecompile {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var inputData = frame.getInputData();
         final var wrapper = decodeTokenAllowance(inputData);
+        final var store = updater.getStore();
+        final var account = store.getAccount(addressFromBytes(wrapper.owner()), OnMissing.THROW);
+        validateFalseOrRevert(account.isEmptyAccount(), INVALID_ACCOUNT_ID);
+
         final var allowances = updater.tokenAccessor()
                 .staticAllowanceOf(
                         addressFromBytes(wrapper.owner()),

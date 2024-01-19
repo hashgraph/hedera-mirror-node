@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
@@ -78,6 +79,20 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
                 .as("result must be within 5-20% bigger than the gas used from the first call")
                 .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
                 .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
+    }
+
+    @ParameterizedTest
+    @EnumSource(NestedEthCallContractFunctionsNegativeCases.class)
+    void failedNestedCallWithHardcodedResult(final NestedEthCallContractFunctionsNegativeCases func) {
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor(func.name, NESTED_CALLS_ABI_PATH, func.functionParameters);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, func.block);
+
+        final var successfulResponse =
+                functionEncodeDecoder.encodedResultFor(func.name, NESTED_CALLS_ABI_PATH, func.expectedResultFields);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @RequiredArgsConstructor
@@ -876,5 +891,52 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
+    }
+
+    @RequiredArgsConstructor
+    enum NestedEthCallContractFunctionsNegativeCases {
+        GET_TOKEN_INFO_HISTORICAL(
+                "nestedGetTokenInfoAndHardcodedResult",
+                new Object[] {NFT_ADDRESS_HISTORICAL},
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        GET_TOKEN_INFO(
+                "nestedGetTokenInfoAndHardcodedResult",
+                new Object[] {Address.ZERO},
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST),
+        HTS_GET_APPROVED_HISTORICAL(
+                "nestedHtsGetApprovedAndHardcodedResult",
+                new Object[] {NFT_ADDRESS_HISTORICAL, 1L},
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        HTS_GET_APPROVED(
+                "nestedHtsGetApprovedAndHardcodedResult",
+                new Object[] {Address.ZERO, 1L},
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST),
+        MINT_TOKEN_HISTORICAL(
+                "nestedMintTokenAndHardcodedResult",
+                new Object[] {
+                    NFT_ADDRESS_HISTORICAL,
+                    0L,
+                    new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+                },
+                new Object[] {"hardcodedResult"},
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1))),
+        MINT_TOKEN(
+                "nestedMintTokenAndHardcodedResult",
+                new Object[] {
+                    Address.ZERO,
+                    0L,
+                    new byte[][] {ByteString.copyFromUtf8("firstMeta").toByteArray()}
+                },
+                new Object[] {"hardcodedResult"},
+                BlockType.LATEST);
+
+        private final String name;
+        private final Object[] functionParameters;
+        private final Object[] expectedResultFields;
+        private final BlockType block;
     }
 }

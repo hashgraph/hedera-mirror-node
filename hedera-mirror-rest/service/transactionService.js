@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,7 +81,6 @@ class TransactionService extends BaseService {
     return this.getTransactionDetails(
       TransactionService.transactionDetailsFromTransactionIdQuery,
       [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), maxConsensusTimestamp],
-      'getTransactionDetailsFromTransactionId',
       excludeTransactionResults,
       nonce
     );
@@ -96,14 +95,13 @@ class TransactionService extends BaseService {
       )} = $1 and ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} = $2`,
     ].join('\n');
 
-    const rows = await super.getRows(query, params, 'getEthTransactionByTimestampAndPayerId');
+    const rows = await super.getRows(query, params);
     return rows.map((row) => new EthereumTransaction(row));
   }
 
   async getTransactionDetails(
     query,
     params,
-    parentFunctionName,
     excludeTransactionResults = [],
     nonce = undefined,
     limit = undefined,
@@ -126,7 +124,7 @@ class TransactionService extends BaseService {
       query += ` ${this.getLimitQuery(params.length)}`;
     }
 
-    const rows = await super.getRows(query, params, parentFunctionName);
+    const rows = await super.getRows(query, params);
     return rows.map((row) => new Transaction(row));
   }
 

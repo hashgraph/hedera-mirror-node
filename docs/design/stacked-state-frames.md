@@ -31,7 +31,7 @@ When a contract call completes successfully you commit its Hedera state changes 
 Each frame of the cache will track key/value pairs according to the following states:
 
 |       State       | Description                                                                                                                                |
-|:-----------------:|:-------------------------------------------------------------------------------------------------------------------------------------------|
+| :---------------: | :----------------------------------------------------------------------------------------------------------------------------------------- |
 | `NOT_YET_FETCHED` | The key has not yet be requested at this cache level.<br>Immediately defer to the upstream cache to see what<br>it thinks.                 |
 |     `MISSING`     | There's no value for this key in the upstream cache<br>(we've already looked).                                                             |
 |     `PRESENT`     | Value exists in the upstream cache, here it is. It hasn't<br> been changed at this level.                                                  |
@@ -40,7 +40,8 @@ Each frame of the cache will track key/value pairs according to the following st
 
 (There's also an `INVALID` state that would indicate a logic error within the cache if you ever ran across it.)
 
-### Important Usage Note: 
+### Important Usage Note:
+
 This _wants_ to be a cache of _values_ but in fact is a cache of _references_ - the user must be _cautious_!
 
 These caches cache references to things. They should really, really only be used to cache immutable value-like entities. Otherwise, if you actually modify an entities' state you'll modify it not only in the top-level cache but in the lower-caches _which breaks the "commit/revert" feature_. The implementation will attempt to detect, at runtime, that you're trying to update an entry with the same value (i.e., reference) that's already in the cache - which probably indicates that you modified the state and are attempting to update the cache with it - but it can't prevent you from just modifying the thing in place and _not_ updating it in the cache.
@@ -65,12 +66,12 @@ After trying a large number of variations this is the solution I came up with:
 
 - All classes use _Object_ as a key type, so that we can use different type of keys for different accessors. It's not possible to use a generic type, since the main fields which are stack and stack base are wrapped in ThreadLocal instances.
 - Each entity type is segregated into its own "cache" - an `UpdatableReferenceCache`.
-    - The `UpdatableReferenceCache` is actually holding `Objects` and relies on its users (owner classes) to make sure that only one kind of entity is stored in it.
+  - The `UpdatableReferenceCache` is actually holding `Objects` and relies on its users (owner classes) to make sure that only one kind of entity is stored in it.
 - A `CachingStateFrame` can hold multiple entity types - each one gets its own `UpdatableReferenceCache`.
-    - The entity types a `CachingStateFrame` can hold are specified at construction time by having the list of entity classes passed in to it.
-        - It then creates the needed `UpdatableReferenceCache`s to hold those entity types, and holds them in a map indexed by the `Class` instance.
-    - To ensure type-safety all accesses (`get`, `set`, and `delete` are done by _accessors_ available from the `CachingStateFrame`. You ask for one of those for the specific type you're interested in accessing (by giving its `Class` instance) and then you have fully type-safe access to `get`, `set`, and `delete` on those kinds of entities in that frame.
-        - It's inexpensive to get one of these accessors because they're created when the `CachingStateFrame` is constructed and then those instances are just used and reused whenever asked for.
+  - The entity types a `CachingStateFrame` can hold are specified at construction time by having the list of entity classes passed in to it.
+    - It then creates the needed `UpdatableReferenceCache`s to hold those entity types, and holds them in a map indexed by the `Class` instance.
+  - To ensure type-safety all accesses (`get`, `set`, and `delete` are done by _accessors_ available from the `CachingStateFrame`. You ask for one of those for the specific type you're interested in accessing (by giving its `Class` instance) and then you have fully type-safe access to `get`, `set`, and `delete` on those kinds of entities in that frame.
+    - It's inexpensive to get one of these accessors because they're created when the `CachingStateFrame` is constructed and then those instances are just used and reused whenever asked for.
 
 ## A few diagrams to help this description out
 

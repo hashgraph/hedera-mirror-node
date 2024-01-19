@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -274,7 +274,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @SuppressWarnings("unchecked")
     private List<CustomFee> getCustomFees(final Address address) {
-        return store.getToken(address, OnMissing.DONT_THROW).getCustomFees();
+        return store.getToken(address, OnMissing.THROW).getCustomFees();
     }
 
     private void setEvmKeys(final Token token, final EvmTokenInfo evmTokenInfo) {

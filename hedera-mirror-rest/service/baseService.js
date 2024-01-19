@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,19 +65,16 @@ class BaseService {
     };
   }
 
-  async getRows(query, params, functionName = '') {
-    if (logger.isTraceEnabled()) {
-      logger.trace(`${functionName} query: ${query}, params: ${params}`);
-    }
+  async getRows(query, params) {
     const {rows} = await pool.queryQuietly(query, params);
     if (logger.isTraceEnabled()) {
-      logger.trace(`${functionName} ${rows.length} entries`);
+      logger.trace(`Query returned ${rows.length} entries`);
     }
     return rows;
   }
 
-  async getSingleRow(query, params, functionName = '') {
-    const rows = await this.getRows(query, params, functionName);
+  async getSingleRow(query, params) {
+    const rows = await this.getRows(query, params);
     if (_.isEmpty(rows) || rows.length > 1) {
       return null;
     }
