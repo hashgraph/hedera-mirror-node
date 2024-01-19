@@ -252,7 +252,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
               left join ending_period_stake_state on entity_id = ess.id
               left join proxy_staking ps on ps.staked_account_id = ess.id,
               ending_period ep
-              where ess.staked_account_id = 0;
+              where (ess.id = 800 or ess.staked_node_id <> -1);
             create index on entity_stake_temp (id);
 
             -- history table

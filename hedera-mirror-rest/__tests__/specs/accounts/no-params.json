@@ -44,21 +44,27 @@
         "balance": 50,
         "balance_timestamp": "2004",
         "num": 5,
-        "key": "32250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        "key": "32250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401",
+        "staked_node_id": 4,
+        "stake_period_start": 2000
       },
       {
         "balance": 60,
         "balance_timestamp": "2005",
         "num": 6,
-        "key": "2a29080112250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        "key": "2a29080112250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401",
+        "stake_period_start": 2000
       },
       {
         "balance": 90,
         "balance_timestamp": "2006",
+        "decline_reward": true,
         "num": 9,
         "expiration_timestamp": "9223372036854775806",
         "max_automatic_token_associations": 150,
-        "receiver_sig_required": null
+        "receiver_sig_required": null,
+        "staked_node_id": 9,
+        "stake_period_start": 2000
       },
       {
         "alias": "32W353Y",
@@ -111,6 +117,24 @@
         "id": 4,
         "pending_reward": 400,
         "stake_total_start": 4000
+      },
+      {
+        "end_stake_period": 1998,
+        "id": 5,
+        "pending_reward": 500,
+        "stake_total_start": 5000
+      },
+      {
+        "end_stake_period": 1998,
+        "id": 6,
+        "pending_reward": 600,
+        "stake_total_start": 6000
+      },
+      {
+        "end_stake_period": 1998,
+        "id": 9,
+        "pending_reward": 900,
+        "stake_total_start": 9000
       }
     ],
     "tokenaccounts": [
@@ -317,8 +341,8 @@
         "pending_reward": 0,
         "receiver_sig_required": false,
         "staked_account_id": null,
-        "staked_node_id": null,
-        "stake_period_start": null
+        "staked_node_id": 4,
+        "stake_period_start": "172800000.000000000"
       },
       {
         "balance": {
@@ -405,7 +429,7 @@
         "alias": null,
         "auto_renew_period": null,
         "created_timestamp": null,
-        "decline_reward": false,
+        "decline_reward": true,
         "ethereum_nonce": null,
         "evm_address": "0x0000000000000000000000000000000000000009",
         "expiry_timestamp": "9223372036.854775806",
@@ -416,8 +440,8 @@
         "pending_reward": 0,
         "receiver_sig_required": null,
         "staked_account_id": null,
-        "staked_node_id": null,
-        "stake_period_start": null
+        "staked_node_id": 9,
+        "stake_period_start": "172800000.000000000"
       },
       {
         "balance": {

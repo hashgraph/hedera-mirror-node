@@ -129,7 +129,7 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                 })
                 .persist();
         long account3Balance = 300 * TINYBARS_IN_ONE_HBAR;
-        long accountId4 = domainBuilder.id();
+        long transferAccountId = domainBuilder.id();
 
         // This account will be included in the calculation even though it has declined rewards,
         // it has a staked account id
@@ -140,10 +140,11 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                             DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay - 1)) + 2000L;
                     e.createdTimestamp(createdTimestamp)
                             .declineReward(true)
-                            .stakedAccountId(domainBuilder.id())
+                            .stakedAccountId(account2.getId())
                             .timestampRange(Range.atLeast(createdTimestamp));
                 })
                 .persist();
+        long account4Balance = 400 * TINYBARS_IN_ONE_HBAR;
 
         // This account will not be included in the calculation because it has declined rewards and
         // staked account id is 0
@@ -208,15 +209,19 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                 .customize(
                         ab -> ab.balance(account3Balance).id(new Id(previousBalanceTimestamp, account3.toEntityId())))
                 .persist();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.balance(account4Balance).id(new Id(balanceTimestamp, account4.toEntityId())))
+                .persist();
 
         long creditAmount = 50 * TINYBARS_IN_ONE_HBAR;
         // crypto transfers right after the account balance snapshot timestamp and before the node stake update
-        persistCryptoTransfer(-2 * creditAmount, accountId4, balanceTimestamp + 1);
+        persistCryptoTransfer(-2 * creditAmount, transferAccountId, balanceTimestamp + 1);
         persistCryptoTransfer(creditAmount, account2.getId(), balanceTimestamp + 1);
         persistCryptoTransfer(creditAmount, account3.getId(), balanceTimestamp + 1);
 
         // crypto transfers after the node stake update
-        persistCryptoTransfer(-2 * creditAmount, accountId4, nodeStakeTimestamp + 1);
+        persistCryptoTransfer(-2 * creditAmount, transferAccountId, nodeStakeTimestamp + 1);
         persistCryptoTransfer(creditAmount, account2.getId(), nodeStakeTimestamp + 1);
         persistCryptoTransfer(creditAmount, account3.getId(), nodeStakeTimestamp + 1);
 
@@ -230,8 +235,8 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                 .get();
         var expectedEntityStake2 = fromEntity(account2)
                 .customize(es -> es.endStakePeriod(endStakePeriod)
-                        .stakedToMe(account3BalanceStart)
-                        .stakeTotalStart(account2BalanceStart + account3BalanceStart)
+                        .stakedToMe(account3BalanceStart + account4Balance)
+                        .stakeTotalStart(account2BalanceStart + account3BalanceStart + account4Balance)
                         .timestampRange(Range.atLeast(nodeStakeTimestamp)))
                 .get();
         var expectedEntityStake800 = fromEntity(account800)
