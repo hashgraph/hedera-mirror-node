@@ -1,0 +1,123 @@
+{
+  "description": "Account api calls for specific account using path and transaction timestamp with entity stake",
+  "setup": {
+    "accounts": [
+        {
+          "balance": 80,
+          "balance_timestamp": 1702684807000000000,
+          "num": 16446,
+          "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+          "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
+          "staked_node_id": 1,
+          "staked_account_id": 2,
+          "decline_reward": false,
+          "stake_period_start": 1705318581,
+          "timestamp_range": "[1702684807000000000,)"
+        },
+        {
+          "balance": 80,
+          "balance_timestamp": 1702684807000000000,
+          "num": 16446,
+          "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+          "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
+          "staked_node_id": 1,
+          "staked_account_id": 2,
+          "decline_reward": false,
+          "stake_period_start": 1705318581,
+          "timestamp_range": "[1701388800000000000,1701388807000000000)"
+        }
+    ],
+    "entityStakes": [
+      {
+        "decline_reward_start": false,
+        "end_stake_period": 147339525398408,
+        "id": 16446,
+        "staked_node_id_start": 1,
+        "staked_to_me": 95260078,
+        "stake_total_start": 10,
+        "pending_reward": 1,
+        "timestamp_range": "[1702684807000000000,)"
+      },
+      {
+        "decline_reward_start": false,
+        "end_stake_period": 147339525398408,
+        "id": 16446,
+        "staked_node_id_start": 1,
+        "staked_to_me": 95260078,
+        "stake_total_start": 10,
+        "pending_reward": 2,
+        "timestamp_range": "[1701388800000000000,1701388807000000000)"
+      }
+    ]
+  },
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/accounts/0.0.16446?timestamp=gte:1702684807.000000000"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "account": "0.0.16446",
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "created_timestamp": null,
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x000000000000000000000000000000000000403e",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false,
+        "staked_account_id": "0.0.2",
+        "staked_node_id": 1,
+        "stake_period_start": "147339525398400.000000000",
+        "pending_reward": 1,
+        "links": {
+          "next": null
+        },
+        "balance": {
+          "balance": 80,
+          "timestamp": "1702684807.000000000",
+          "tokens": []
+        },
+        "transactions": []
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/accounts/0.0.16446?timestamp=gte:1701388800.000000000&timestamp=lt:1701388807.000000000"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "account": "0.0.16446",
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "created_timestamp": null,
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x000000000000000000000000000000000000403e",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": false,
+        "staked_account_id": "0.0.2",
+        "staked_node_id": 1,
+        "stake_period_start": "147339525398400.000000000",
+        "pending_reward": 2,
+        "links": {
+          "next": null
+        },
+        "balance": {
+          "balance": 80,
+          "timestamp": "1702684807.000000000",
+          "tokens": []
+        },
+        "transactions": []
+      }
+    }
+  ]
+}
