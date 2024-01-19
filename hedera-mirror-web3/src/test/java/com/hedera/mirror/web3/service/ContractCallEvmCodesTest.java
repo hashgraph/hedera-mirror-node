@@ -19,8 +19,10 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -196,6 +198,26 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
 
         assertThat(contractCallService.processCall(serviceParameters))
                 .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // function getCodeHash with parameter hedera system accounts, expected to revert with INVALID_SOLIDITY_ADDRESS
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000167",
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000168",
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000002ee",
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000002e4",
+    })
+    void testSystemContractCodeHashPreVersion38(String input) {
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(input),
+                EVM_CODES_CONTRACT_ADDRESS,
+                ETH_CALL,
+                0L,
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     @ParameterizedTest

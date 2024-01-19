@@ -136,8 +136,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class ServicesConfiguration {
-
-    private static final int SYSTEM_ACCOUNT_BOUNDARY = 750;
     private static final int STRICT_SYSTEM_ACCOUNT_BOUNDARY = 999;
 
     @Bean
@@ -749,8 +747,8 @@ public class ServicesConfiguration {
 
     @Bean
     HederaExtCodeHashOperation hederaExtCodeHashOperation(
-            final GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> addressValidator) {
-        return new HederaExtCodeHashOperation(gasCalculator, addressValidator);
+            final GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> preV38AddressValidator) {
+        return new HederaExtCodeHashOperation(gasCalculator, preV38AddressValidator);
     }
 
     @Bean
@@ -760,6 +758,11 @@ public class ServicesConfiguration {
                 .collect(Collectors.toSet());
         return (address, frame) ->
                 precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
+    }
+
+    @Bean
+    BiPredicate<Address, MessageFrame> preV38AddressValidator() {
+        return (address, frame) -> frame.getWorldUpdater().get(address) != null;
     }
 
     @Bean

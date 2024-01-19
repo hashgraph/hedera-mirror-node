@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 // Example for precompiles used: https://github.com/jstoxrocky/zksnarks_example
-pragma solidity >=0.5.0 <0.9.0;
+
+// post 0.8.19 versions of solidity use opcode PUSH0, which is not available for pre-v0.38 EVM
+// and the historical calls would fail
+pragma solidity >=0.5.0 <0.8.20;
 
 contract EvmCodes {
 
