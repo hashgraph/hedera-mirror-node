@@ -18,9 +18,13 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -240,6 +244,21 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 Bytes.fromHexString(destroyContractInput), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+    }
+
+    @Test
+    void selfDestructCallWithSystemAccount() {
+        // destroyContract(address)
+        final var destroyContractInput = "0x016a3738000000000000000000000000" + OWNER_ADDRESS.toUnprefixedHexString();
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(destroyContractInput), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .satisfies(ex -> {
+                    MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
+                    assertEquals(exception.getMessage(), INVALID_SOLIDITY_ADDRESS.name());
+                });
     }
 
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {
