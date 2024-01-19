@@ -9,8 +9,7 @@ Feature: Historical Feature
     Given I successfully create estimate precompile contract
     Then the mirror node REST API should return status 200 for the contracts creation
     Then I verify the estimate precompile contract bytecode is deployed
-    Given I create fungible token
-    Given I create non-fungible token
+    Given I create fungible and non-fungible token
 
     Then I successfully update the contract storage and get the initial value via historical data
     Then I successfully update the balance of an account and get the initial balance via historical data
@@ -20,16 +19,8 @@ Feature: Historical Feature
     Then I verify that historical data for "pending" block is treated as latest
     Then I verify that historical data for "finalized" block is treated as latest
     Then I verify the response from non existing account
-    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getCustomFees
-    Then I verify historical data for "NFTHISTORICAL" is returned for getCustomFees
-    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenDefaultFreezeStatus
-    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenDefaultFreezeStatus
-    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenDefaultKYCStatus
-    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenDefaultKYCStatus
-    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenType
-    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenType
-    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenExpiryInfo
-    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenExpiryInfo
+    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for get token operations
+    Then I verify historical data for "NFTHISTORICAL" is returned for get token operations
     Then I verify historical data for "FUNGIBLEHISTORICAL" in invalid block returns bad request
     Then I verify historical data for "NFTHISTORICAL" in invalid block returns bad request
     Then I verify that historical data for "FUNGIBLEHISTORICAL" is returned via getTokenInfo
@@ -76,8 +67,6 @@ Feature: Historical Feature
     Then I verify historical data for "NFTHISTORICAL" is returned for getNonFungibleInfo when doing "wipe"
     Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for isKyc
     Then I verify historical data for "NFTHISTORICAL" is returned for isKyc
-    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for isToken
-    Then I verify historical data for "NFTHISTORICAL" is returned for isToken
     Then I update the token and account keys for "FUNGIBLEHISTORICAL"
     Then I update the token and account keys for "NFTHISTORICAL"
     Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenKey
