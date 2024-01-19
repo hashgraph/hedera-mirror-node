@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.contracts.operations;
+package com.hedera.services.evm.contracts.operations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,9 +23,7 @@ import static org.mockito.BDDMockito.given;
 
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV038;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
@@ -40,13 +38,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class HederaSelfDestructOperationV038Test {
+class HederaSelfDestructOperationTest {
 
-    static final Address BENEFICIARY = Address.fromHexString("0x0000000000000000000000000000000000000929");
-    static final Address BENEFICIARY_SYSTEM_ACCOUNT =
-            Address.fromHexString("0x00000000000000000000000000000000000002ED");
-    static final String ETH_ADDRESS = "0xc257274276a4e539741ca11b590b9447b26a8051";
-    static final Address EIP_1014_ETH_ADDRESS = Address.fromHexString(ETH_ADDRESS);
+    private static final Address BENEFICIARY = Address.fromHexString("0x0000000000000000000000000000000000000929");
+    private static final String ETH_ADDRESS = "0xc257274276a4e539741ca11b590b9447b26a8051";
+    private static final Address EIP_1014_ETH_ADDRESS = Address.fromHexString(ETH_ADDRESS);
 
     @Mock
     private HederaEvmStackedWorldStateUpdater worldUpdater;
@@ -66,14 +62,11 @@ class HederaSelfDestructOperationV038Test {
     @Mock
     private BiPredicate<Address, MessageFrame> addressValidator;
 
-    @Mock
-    private Predicate<Address> systemAccountDetector;
-
-    private HederaSelfDestructOperationV038 subject;
+    private HederaSelfDestructOperation subject;
 
     @BeforeEach
     void setUp() {
-        subject = new HederaSelfDestructOperationV038(gasCalculator, addressValidator, systemAccountDetector);
+        subject = new HederaSelfDestructOperation(gasCalculator, addressValidator);
 
         given(frame.getWorldUpdater()).willReturn(worldUpdater);
         given(gasCalculator.selfDestructOperationGasCost(any(), eq(Wei.ONE))).willReturn(2L);
@@ -116,24 +109,12 @@ class HederaSelfDestructOperationV038Test {
     void executeInvalidSolidityAddress() {
         givenRejectingValidator();
 
-        given(frame.getStackItem(0)).willReturn(BENEFICIARY_SYSTEM_ACCOUNT);
+        given(frame.getStackItem(0)).willReturn(BENEFICIARY);
 
         final var opResult = subject.execute(frame, evm);
 
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
-    }
-
-    @Test
-    void haltsWhenBeneficiaryIsSystemAccount() {
-        given(frame.getStackItem(0)).willReturn(BENEFICIARY);
-        given(frame.getRecipientAddress()).willReturn(EIP_1014_ETH_ADDRESS);
-        given(systemAccountDetector.test(any())).willReturn(true);
-        // when
-        final var result = subject.execute(frame, evm);
-        // then
-        assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, result.getHaltReason());
-        assertEquals(2L, result.getGasCost());
     }
 
     private void givenRubberstampValidator() {
