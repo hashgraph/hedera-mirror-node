@@ -258,7 +258,7 @@ paths:
         |               | ne                  | N       | | |
         |               | lt(e)               | Y       | Single occurrence only. | ?account.id=lte:X |
         |               | gt(e)               | Y       | Single occurrence only. | ?account.id=gte:X |
-        | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of a **spender.id** query | ?token.id=lt:Y |
+        | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of an **account.id** query | ?account.id=X&token.id=eq:Y |
         |               | ne                  | N       | | |
         |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** or **eq** **spender.id** query | ?account.id=lte:X&token.id=lt:Y |
         |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** or **eq** **spender.id** query | ?account.id=gte:X&token.id=gt:Y |
@@ -2957,9 +2957,9 @@ components:
           type: boolean
         owner:
           $ref: "#/components/schemas/EntityId"
-        payer_account_id:
-          $ref: "#/components/schemas/EntityId"
         spender:
+          $ref: "#/components/schemas/EntityId"
+        token_id:
           $ref: "#/components/schemas/EntityId"
         timestamp:
           type: object
@@ -2968,8 +2968,6 @@ components:
               $ref: "#/components/schemas/TimestampRange"
             to:
               $ref: "#/components/schemas/TimestampRange"
-        token_id:
-          $ref: "#/components/schemas/EntityId"
       example:
         approved_for_all: false
         owner: "0.0.11"

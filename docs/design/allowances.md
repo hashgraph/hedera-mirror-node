@@ -221,7 +221,7 @@ Optional Filters
 
 This API accepts a path parameter that represents either the owner or spender, depending on a boolean flag provided as a query parameter called `owner`. When the `owner` value is true, the `accountId` path parameter should specify the ID of the owner, and the API will retrieve the allowances that the owner has granted to different spenders. Conversely, when the `owner` value is false, the `accountId` path parameter should indicate the ID of the spender who has an allowance, and the API will instead provide the allowances granted to the spender by different owners of those tokens.
 
-`/api/v1/accounts/{accountId}/allowances/nfts`
+GET `/api/v1/accounts/{accountId}/allowances/nfts?limit=3&owner=true`
 
 ```json
 {
@@ -265,14 +265,14 @@ This API accepts a path parameter that represents either the owner or spender, d
 
 Optional Filters
 
-- `account.id`: Filter by the spender account ID or owner account ID, depending on the owner flag. `ne` operator is not supported.
-- `limit`: The maximum number of items to return.
+- `account.id`: Filter by the spender account ID or owner account ID, depending on the owner flag. `ne` operator is not supported. Only one occurrence is allowed.
+- `limit`: The maximum number of items to return. Defaults to 25 with a maximum of 100 allowed.
 - `order`: Order by `token.id` and `account.id`. Accepts `asc` or `desc` with a default of `asc`.
 - `owner`: Indicates whether the path parameter `accountId` is the owner or the spender ID. Accepts a boolean value of `true` or `false` with a default value set to `true`.
-- `token.id`: Filter by the token ID. `ne` operator is not supported.
+- `token.id`: Filter by the token ID. `ne` operator is not supported. Only one occurrence is allowed.
 
 The order is governed by a combination of the account ID and the token ID values, with the account ID being the parent column. The token ID value governs its order within the given account ID.
-The default order for this API is currently ascending.
+The default order for this API is ascending.
 
 Note this API is optional.
 
