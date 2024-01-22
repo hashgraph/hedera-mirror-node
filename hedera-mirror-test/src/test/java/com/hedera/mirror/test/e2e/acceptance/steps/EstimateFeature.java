@@ -405,6 +405,23 @@ public class EstimateFeature extends AbstractEstimateFeature {
         validateGasEstimation(bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null);
     }
 
+    @Then("I call estimateGas with contract deploy with bytecode as data with sender")
+    public void contractDeployEstimateGasWithSender() {
+        var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
+        validateGasEstimation(
+                bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null, Optional.of(contractClient.getClientAddress()));
+    }
+
+    @Then("I call estimateGas with contract deploy with bytecode as data with invalid sender")
+    public void contractDeployEstimateGasWithInvalidSender() {
+        var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
+        validateGasEstimation(
+                bytecodeData,
+                DEPLOY_CONTRACT_VIA_BYTECODE_DATA,
+                null,
+                Optional.of("0x0000000000000000000000000000000000000167"));
+    }
+
     /**
      * Estimate gas values are hardcoded at this moment until we get better solution such as actual gas used returned
      * from the consensus node. It will be changed in future PR when actualGasUsed field is added to the protobufs.

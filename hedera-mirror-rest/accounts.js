@@ -31,7 +31,7 @@ import {filterKeys} from './constants';
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
 const getEntityStakeQuery = (filter, isHistorical = false) => {
-  if(isHistorical) {
+  if (isHistorical) {
     return `(
       select * from (
           select * from entity_stake as e where ${filter}
@@ -43,8 +43,8 @@ const getEntityStakeQuery = (filter, isHistorical = false) => {
     )`;
   }
 
-  return 'entity_stake'
-}
+  return 'entity_stake';
+};
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
