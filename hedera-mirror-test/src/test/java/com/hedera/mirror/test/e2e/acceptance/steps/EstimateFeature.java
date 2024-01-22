@@ -203,7 +203,11 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with function that performs self destruct")
     public void destroyEstimateCall() {
-        validateGasEstimation(encodeData(ESTIMATE_GAS, DESTROY), DESTROY, contractSolidityAddress);
+        validateGasEstimation(
+                encodeData(ESTIMATE_GAS, DESTROY),
+                DESTROY,
+                contractSolidityAddress,
+                Optional.of(contractClient.getClientAddress()));
     }
 
     @Then("I call estimateGas with request body that contains wrong method signature")
