@@ -48,9 +48,7 @@ public class HederaEvmStackedWorldStateUpdater
     private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
     private final EvmProperties evmProperties;
-
     private final EntityAddressSequencer entityAddressSequencer;
-
     private final TokenAccessor tokenAccessor;
     private final MirrorEvmContractAliases mirrorEvmContractAliases;
 

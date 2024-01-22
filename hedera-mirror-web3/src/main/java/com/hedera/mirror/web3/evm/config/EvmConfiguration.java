@@ -32,6 +32,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreateOpera
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperationV038;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.evm.contracts.operations.HederaPrngSeedOperation;
@@ -54,6 +55,7 @@ import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
@@ -97,6 +99,8 @@ public class EvmConfiguration {
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final GasCalculatorHederaV22 gasCalculator;
     private final HederaBlockHashOperation hederaBlockHashOperation;
+    private final HederaExtCodeHashOperation hederaExtCodeHashOperation;
+    private final HederaExtCodeHashOperationV038 hederaExtCodeHashOperationV038;
     private final AbstractAutoCreationLogic autoCreationLogic;
     private final EntityAddressSequencer entityAddressSequencer;
     private final PrecompiledContractProvider precompilesHolder;
@@ -223,6 +227,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                hederaExtCodeHashOperation,
                 hederaSelfDestructOperation,
                 EvmSpecVersion.LONDON,
                 MainnetEVMs::registerLondonOperations);
@@ -237,6 +242,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                hederaExtCodeHashOperation,
                 hederaSelfDestructOperation,
                 EvmSpecVersion.PARIS,
                 MainnetEVMs::registerParisOperations);
@@ -251,6 +257,7 @@ public class EvmConfiguration {
                 mirrorNodeEvmProperties,
                 prngSeedOperation,
                 hederaBlockHashOperation,
+                hederaExtCodeHashOperationV038,
                 hederaSelfDestructOperationV038,
                 EvmSpecVersion.SHANGHAI,
                 MainnetEVMs::registerShanghaiOperations);
@@ -301,11 +308,13 @@ public class EvmConfiguration {
         return mirrorEvmMessageCallProcessor(evm);
     }
 
+    @SuppressWarnings("java:S107")
     private EVM evm(
             final GasCalculator gasCalculator,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final HederaPrngSeedOperation prngSeedOperation,
             final HederaBlockHashOperation hederaBlockHashOperation,
+            final ExtCodeHashOperation extCodeHashOperation,
             final SelfDestructOperation selfDestructOperation,
             EvmSpecVersion specVersion,
             OperationRegistryCallback callback) {
@@ -325,10 +334,10 @@ public class EvmConfiguration {
                         new HederaEvmCreateOperation(gasCalculator, createOperationExternalizer()),
                         new HederaEvmSLoadOperation(gasCalculator),
                         new HederaExtCodeCopyOperation(gasCalculator, validator),
-                        new HederaExtCodeHashOperation(gasCalculator, validator),
                         new HederaExtCodeSizeOperation(gasCalculator, validator),
                         prngSeedOperation,
                         hederaBlockHashOperation,
+                        extCodeHashOperation,
                         selfDestructOperation)
                 .forEach(operationRegistry::put);
 
