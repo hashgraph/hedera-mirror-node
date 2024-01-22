@@ -25,13 +25,11 @@ const {
   response: {headers},
 } = config;
 
-const responseData = {transactions: [], links: {next: null}};
-
 describe('Response middleware', () => {
-  let mockRequest;
-  let mockResponse;
+  let mockRequest, mockResponse, responseData
 
   beforeEach(() => {
+    responseData = {transactions: [], links: {next: null}};
     mockRequest = {
       ip: '127.0.0.1',
       method: 'GET',
@@ -85,5 +83,18 @@ describe('Response middleware', () => {
     expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
     expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Content-Type', mockResponse.locals.responseContentType);
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
+  });
+
+  test('should set the Link next header and confirm it exists', async () => {
+    const MOCK_URL = 'http://mock.url/next'
+    mockResponse.locals.responseData.links.next = MOCK_URL;
+    const assertNextValue = `<${MOCK_URL}>; rel=\"next\"`
+    await responseHandler(mockRequest, mockResponse, null);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(4, 'Link', assertNextValue);
+  });
+
+  test('should NOT set the Link next header and confirm it exists', async () => {
+    await responseHandler(mockRequest, mockResponse, null);
+    expect(mockResponse.set).toHaveBeenCalledTimes(3);
   });
 });

@@ -26,7 +26,7 @@ const {
 const CONTENT_TYPE_HEADER = 'Content-Type';
 const APPLICATION_JSON = 'application/json; charset=utf-8';
 const LINK_NEXT_HEADER = 'Link';
-const linkNextHeaderValue = (linksNext) => `${linksNext}; rel="next"`
+const linkNextHeaderValue = (linksNext) => `<${linksNext}>; rel="next"`
 
 // Response middleware that pulls response data passed through request and sets in response.
 // Next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
