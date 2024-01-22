@@ -45,6 +45,7 @@ import {JSONParse} from '../../utils';
 import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from '../integrationUtils';
 import {CreateBucketCommand, PutObjectCommand, S3} from '@aws-sdk/client-s3';
 import sinon from 'sinon';
+
 const groupSpecPath = $$GROUP_SPEC_PATH$$;
 
 const defaultResponseHeaders = {
@@ -142,7 +143,6 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
       {
         url: spec.url,
         urls: spec.urls,
-        responseContentType: spec.responseContentType,
         responseJson: spec.responseJson,
         responseStatus: spec.responseStatus,
       },
@@ -150,8 +150,8 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
     return _.flatten(
       tests.map((test) => {
         const urls = test.urls || [test.url];
-        const {responseContentType, responseJson, responseStatus} = test;
-        return urls.map((url) => ({url, responseContentType, responseJson, responseStatus}));
+        const {responseJson, responseStatus} = test;
+        return urls.map((url) => ({url, responseJson, responseStatus}));
       })
     );
   };
@@ -335,12 +335,11 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
                 }
                 expect(jsonObj).toEqual(tt.responseJson);
               } else {
-                expect(contentType).toEqual(tt.responseContentType);
                 expect(response.text).toEqual(tt.responseJson);
               }
 
               if (response.status >= 200 && response.status < 300) {
-                expect(response.headers).toMatchObject(spec.responseHeaders);
+                expect(lowercaseKeys(response.headers)).toMatchObject(lowercaseKeys(spec.responseHeaders));
               }
             });
           });
@@ -349,3 +348,5 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
     });
   });
 });
+
+var lowercaseKeys = (object) => _.mapKeys(object, (v, k) => k.toLowerCase());

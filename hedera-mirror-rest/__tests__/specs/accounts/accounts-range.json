@@ -175,6 +175,6 @@
     }
   },
   "responseHeaders": {
-    "link": "</api/v1/accounts?account.id=lt:0.0.21&account.id=gt:0.0.20&limit=3>; rel=\"next\""
+    "Link": "</api/v1/accounts?account.id=lt:0.0.21&account.id=gt:0.0.20&limit=3>; rel=\"next\""
   }
 }
