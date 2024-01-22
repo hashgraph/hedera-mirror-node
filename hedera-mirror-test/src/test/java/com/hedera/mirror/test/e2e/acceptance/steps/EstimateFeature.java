@@ -67,6 +67,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -403,15 +404,18 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with contract deploy with bytecode as data with sender")
     public void contractDeployEstimateGasWithSender() {
         var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
-        validateGasEstimationWithFrom(
-                bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null, contractClient.getClientAddress());
+        validateGasEstimation(
+                bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null, Optional.of(contractClient.getClientAddress()));
     }
 
     @Then("I call estimateGas with contract deploy with bytecode as data with invalid sender")
     public void contractDeployEstimateGasWithInvalidSender() {
         var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
-        validateGasEstimationWithFrom(
-                bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null, "0x0000000000000000000000000000000000000167");
+        validateGasEstimation(
+                bytecodeData,
+                DEPLOY_CONTRACT_VIA_BYTECODE_DATA,
+                null,
+                Optional.of("0x0000000000000000000000000000000000000167"));
     }
 
     /**
