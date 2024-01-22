@@ -81,6 +81,32 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
     }
 
     /**
+     * Validates the gas estimation for a specific contract call, including the sender's address.
+     * <p>
+     * This method estimates the gas cost for a given contract call considering the sender's address, and then checks
+     * whether the actual gas used falls within an acceptable deviation range. It utilizes the provided call endpoint
+     * to perform the contract call and then compares the estimated gas with the actual gas used.
+     *
+     * @param data            The function signature and method data of the contract call.
+     * @param actualGasUsed   The actual gas amount that was used for the call.
+     * @param solidityAddress The address of the solidity contract.
+     * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
+     */
+    protected void validateGasEstimationWithSender(
+            String data, ContractMethodInterface actualGasUsed, String solidityAddress) {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .data(data)
+                .to(solidityAddress)
+                .from(contractClient.getClientAddress())
+                .estimate(true)
+                .build();
+        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
+        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
+
+        assertWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
+    }
+
+    /**
      * Asserts that a specific contract call results in a "400 Bad Request" response.
      * <p>
      * This method constructs a contract call request using the given encoded function call and contract address, and
