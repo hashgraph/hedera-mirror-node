@@ -45,6 +45,7 @@ import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -126,7 +127,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
                 recordFileRepository,
                 recordItemListener,
                 recordStreamFileListener,
-                dateRangeCalculator);
+                dateRangeCalculator,
+                new ParserContext());
     }
 
     @Override

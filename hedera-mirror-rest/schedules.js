@@ -128,9 +128,7 @@ const getScheduleById = async (req, res) => {
   utils.validateReq(req);
   const parseOptions = {allowEvmAddress: false, paramName: constants.filterKeys.SCHEDULEID};
   const scheduleId = EntityId.parse(req.params.scheduleId, parseOptions).getEncodedId();
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${scheduleId}`);
-  }
+
   const {rows} = await pool.queryQuietly(getScheduleByIdQuery, scheduleId);
   if (rows.length !== 1) {
     throw new NotFoundError();
@@ -232,9 +230,6 @@ const getSchedules = async (req, res) => {
   // get sql filter query, params, order and limit from query filters
   const {filterQuery, params, order, limit} = extractSqlFromScheduleFilters(filters);
   const schedulesQuery = getSchedulesQuery(filterQuery, order, params.length);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getSchedules query: ${schedulesQuery}, params: ${params}`);
-  }
   const {rows: schedules} = await pool.queryQuietly(schedulesQuery, params);
 
   const schedulesResponse = {schedules: [], links: {next: null}};
@@ -254,11 +249,6 @@ const getSchedules = async (req, res) => {
     where entity_id in (${positions})
     group by entity_id
     order by entity_id ${order}`;
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getSchedulesEntity query: ${entityQuery}, params: ${entityIds}`);
-    logger.trace(`getSchedulesSignature query: ${signatureQuery}, params: ${entityIds}`);
-  }
 
   const [{rows: entities}, {rows: signatures}] = await Promise.all([
     pool.queryQuietly(entityQuery, entityIds),

@@ -229,4 +229,8 @@ contract EvmCodes {
         }
         return codehash;
     }
+
+    function destroyContract(address payable beneficiary) public {
+        selfdestruct(beneficiary);
+    }
 }

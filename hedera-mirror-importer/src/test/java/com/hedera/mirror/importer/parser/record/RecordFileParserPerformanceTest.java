@@ -66,8 +66,6 @@ class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
                 Uninterruptibles.sleepUninterruptibly(sleep, TimeUnit.MILLISECONDS);
             }
             endTime = System.currentTimeMillis();
-
-            builder.previous(recordFile);
         }
 
         assertTrue(

@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 @RequiredArgsConstructor
@@ -55,7 +54,6 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
     private final @Owner JdbcTemplate jdbcTemplate;
     private final ImporterProperties importerProperties;
     private final TransactionHashRepository transactionHashRepository;
-    private final Environment environment;
 
     private Set<TransactionType> defaultTransactionHashTypes;
     private BackfillTransactionHashMigration migration;
@@ -73,8 +71,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
                 .getParams()
                 .put("startTimestamp", Long.valueOf(DEFAULT_START_TIMESTAMP).toString());
         importerProperties.getMigration().put(MIGRATION_NAME, migrationProperties);
-        migration =
-                new BackfillTransactionHashMigration(entityProperties, jdbcTemplate, importerProperties, environment);
+        migration = new BackfillTransactionHashMigration(entityProperties, jdbcTemplate, importerProperties);
     }
 
     @AfterEach
@@ -250,7 +247,7 @@ class BackfillTransactionHashMigrationTest extends ImporterIntegrationTest {
             hashWrapper.persist();
         } else {
             var hash = hashWrapper.get();
-            TestUtils.insertIntoTransactionHashSharded(jdbcTemplate, hash);
+            TestUtils.insertIntoTransactionHash(jdbcTemplate, hash);
         }
     }
 

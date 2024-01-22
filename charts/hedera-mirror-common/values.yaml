@@ -356,7 +356,7 @@ testkube:
     image:
       registry: docker.io
       repository: grafana/k6
-      tag: 0.47.0
+      tag: 0.48.0
   namespace: testkube
   test:
     config:
