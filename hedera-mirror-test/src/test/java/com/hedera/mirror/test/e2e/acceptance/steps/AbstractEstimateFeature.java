@@ -106,6 +106,19 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
                 .hasMessageContaining("400 Bad Request from POST");
     }
 
+    protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress) {
+        var contractCallRequestBody = ContractCallRequest.builder()
+                .block(block)
+                .data(data)
+                .to(contractAddress)
+                .estimate(false)
+                .build();
+
+        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
     private ContractCallRequest buildContractCallRequest(String data, String solidityAddress, Optional<String> sender) {
         var requestBuilder =
                 ContractCallRequest.builder().data(data).to(solidityAddress).estimate(true);
