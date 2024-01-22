@@ -26,6 +26,7 @@ import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.jproto.JKey;
+import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.EntityNum;
 import java.util.Objects;
 import java.util.SortedMap;
@@ -197,8 +198,8 @@ public class Account extends HederaEvmAccount {
         return new Account(0L, Id.DEFAULT, 0L);
     }
 
-    public static Account getDefaultAccount() {
-        return new Account(0L, Id.DEFAULT, 1_000_000L);
+    public static Account getDummySenderAccount(Address senderAddress) {
+        return new Account(0L, Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)), 1_000_000L);
     }
 
     public boolean isEmptyAccount() {

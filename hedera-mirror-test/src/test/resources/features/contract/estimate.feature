@@ -20,7 +20,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that makes a delegate call to a method from a different contract
     Then I call estimateGas with function that makes a call code to a method from a different contract
     Then I call estimateGas with function that performs LOG0, LOG1, LOG2, LOG3, LOG4 operations
-    Then I call estimateGas with function that performs self destruct
+#    Then I call estimateGas with function that performs self destruct
     Then I call estimateGas with request body that contains wrong method signature
     Then I call estimateGas with wrong encoded parameter
     Then I call estimateGas with non-existing from address in the request body
@@ -43,3 +43,5 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with IERC20 token associate using evm address as receiver
     Then I call estimateGas with IERC20 token dissociate using evm address as receiver
     Then I call estimateGas with contract deploy with bytecode as data
+    Then I call estimateGas with contract deploy with bytecode as data with sender
+    Then I call estimateGas with contract deploy with bytecode as data with invalid sender

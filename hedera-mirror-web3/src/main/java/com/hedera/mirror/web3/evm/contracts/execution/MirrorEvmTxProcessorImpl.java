@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -89,8 +90,12 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
         store.wrap();
         if (params.isEstimate()) {
-            final var defaultAccount = Account.getDefaultAccount();
-            store.updateAccount(defaultAccount);
+            if (store.getAccount(params.getSender().canonicalAddress(), OnMissing.DONT_THROW)
+                    .isEmptyAccount()) {
+                final var senderAccount =
+                        Account.getDummySenderAccount(params.getSender().canonicalAddress());
+                store.updateAccount(senderAccount);
+            }
         }
 
         return super.execute(
