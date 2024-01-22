@@ -308,6 +308,7 @@ public class EvmConfiguration {
         return mirrorEvmMessageCallProcessor(evm);
     }
 
+    @SuppressWarnings("java:S107")
     private EVM evm(
             final GasCalculator gasCalculator,
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
