@@ -199,7 +199,8 @@ public class Account extends HederaEvmAccount {
     }
 
     public static Account getDummySenderAccount(Address senderAddress) {
-        return new Account(0L, Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)), 1_000_000L);
+        return new Account(
+                0L, Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(senderAddress)), Long.MAX_VALUE);
     }
 
     public boolean isEmptyAccount() {
