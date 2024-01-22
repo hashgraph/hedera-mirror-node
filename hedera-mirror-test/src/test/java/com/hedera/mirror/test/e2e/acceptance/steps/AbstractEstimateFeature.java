@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -66,18 +67,20 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @param data            The function signature and method data of the contract call.
      * @param actualGasUsed   The actual gas amount that was used for the call.
      * @param solidityAddress The address of the solidity contract.
+     * @param sender          The sender's address (optional).
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
-    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
-                .to(solidityAddress)
-                .estimate(true)
-                .build();
+    protected void validateGasEstimation(
+            String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
+        var contractCallRequestBody = buildContractCallRequest(data, solidityAddress, sender);
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
         int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
 
         assertWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
+    }
+
+    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress) {
+        validateGasEstimation(data, actualGasUsed, solidityAddress, Optional.empty());
     }
 
     /**
@@ -101,5 +104,14 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    private ContractCallRequest buildContractCallRequest(String data, String solidityAddress, Optional<String> sender) {
+        var requestBuilder =
+                ContractCallRequest.builder().data(data).to(solidityAddress).estimate(true);
+
+        sender.ifPresent(requestBuilder::from);
+
+        return requestBuilder.build();
     }
 }
