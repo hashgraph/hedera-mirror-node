@@ -1657,6 +1657,7 @@ export default {
   loadTokenAccounts,
   loadTopicMessageLookups,
   loadTransactions,
+  loadEntityStakes,
   setAccountBalance,
   setup,
 };
