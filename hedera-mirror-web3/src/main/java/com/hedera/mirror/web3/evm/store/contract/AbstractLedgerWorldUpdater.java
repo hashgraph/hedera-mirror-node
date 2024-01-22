@@ -56,8 +56,4 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     protected Collection<Address> getDeletedAccounts() {
         return deletedAccounts;
     }
-
-    public static boolean isSystemAccount(Address address) {
-        return address.numberOfLeadingZeroBytes() >= 18 && address.getInt(16) < 1001;
-    }
 }
