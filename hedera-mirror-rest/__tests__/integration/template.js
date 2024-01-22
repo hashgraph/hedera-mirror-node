@@ -349,4 +349,4 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
   });
 });
 
-var lowercaseKeys = (object) => _.mapKeys(object, (v, k) => k.toLowerCase());
+const lowercaseKeys = (object) => _.mapKeys(object, (v, k) => k.toLowerCase());
