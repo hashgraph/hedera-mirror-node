@@ -16,19 +16,21 @@
 
 import _ from 'lodash';
 
-import {applyResponseJsonMatrix} from './utils';
+import {applyResponseJsonMatrix} from '../integrationUtils';
 
 const applyMatrix = (spec) => {
   return [false, true].map((value) => {
     const clone = _.cloneDeep(spec);
-    clone.name = `${spec.name} with bindTimestampRange=${value}`;
+    const key = `bindTimestampRange=${value}`;
+
+    clone.name = `${spec.name} with ${key}`;
     clone.setup.config = _.merge(clone.setup.config, {
       query: {
         bindTimestampRange: value,
       },
     });
 
-    return applyResponseJsonMatrix(clone, `bindTimestampRange=${value}`);
+    return applyResponseJsonMatrix(clone, key);
   });
 };
 

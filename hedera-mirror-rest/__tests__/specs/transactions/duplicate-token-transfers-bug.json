@@ -3,15 +3,11 @@
   "extendedDescription": [
     "The test spec is used to reproduce https://github.com/hashgraph/hedera-mirror-node/issues/2066"
   ],
-  "matrix": "timestampBindingMatrix.js",
-  "matrixSetup": {
-    "true": {
-      "features": {
-        "fakeTime": "2009-02-13Z 23:40:00"
-      }
-    }
-  },
+  "matrix": "bindTimestampMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2009-02-13T23:40:00Z"
+    },
     "accounts": [
       {
         "num": 3

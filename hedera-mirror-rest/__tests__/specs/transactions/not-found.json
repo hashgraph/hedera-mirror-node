@@ -1,12 +1,6 @@
 {
   "description": "No transactions",
-  "matrix": "timestampBindingMatrix.js",
-  "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": []
-  },
+  "setup": {},
   "url": "/api/v1/transactions",
   "responseStatus": 200,
   "responseJson": {

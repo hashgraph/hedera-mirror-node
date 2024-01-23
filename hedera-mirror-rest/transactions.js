@@ -67,10 +67,6 @@ const transactionFields = [
 ];
 
 const transactionFullFields = transactionFields.map((f) => Transaction.getFullName(f));
-// consensus_timestamp in transfer_list is a coalesce of multiple consensus timestamp columns
-// const transferListFullFields = transactionFields
-//   .filter((f) => f !== Transaction.CONSENSUS_TIMESTAMP)
-//   .map((f) => `t.${f}`);
 
 const cryptoTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT},
@@ -455,7 +451,7 @@ const extractSqlFromTransactionsRequest = (accountId, filters) => {
     accountQuery =
       accountIds.length === 1
         ? `ctl.entity_id = $${params.push(accountIds[0])}`
-        : `ctl.entity_id in ($${params.push(accountId)})`;
+        : `ctl.entity_id = any($${params.push(accountIds)})`;
   }
 
   if (resultType) {
@@ -467,7 +463,7 @@ const extractSqlFromTransactionsRequest = (accountId, filters) => {
     transactionTypeQuery =
       transactionTypes.length === 1
         ? `type = $${params.push(transactionTypes[0])}`
-        : `type in ($${params.push(transactionTypes)})`;
+        : `type = any($${params.push(transactionTypes)})`;
   }
 
   const limitQuery = `limit $${params.push(limit)}`;
@@ -618,25 +614,20 @@ const getTransactionTimestampsQuery = (
 };
 
 /**
- * Transactions queries are organized as follows: First there's a query that selects the timestamps and payer IDs
- * for the required number of unique transactions. And then queries other tables to extract all relevant
- * information for those transactions.
- * This function returns the second query based on the consensus_timestamps list returned by the first query.
- * Also see: getTransactionTimestampsQuery function
+ * Get the transaction details given the payer account ids and consensus timestamps
  *
- * @param {{Object}[]} timestampQueryRows the results of the relevant timestamps query, which is rows
- * consisting of consensus_timestamp and payer_account_id attributes. At least one row is required.
+ * @param {{Object}[]} payAndTimestamps The transaction payer and consensus timestamp pairs
  * @param {String} order Sorting order
- * @return {Promise} Promise returning the transaction summary results for the provided transaction timestamp rows
+ * @return {Promise} Promise returning the transaction details
  */
-const getTransactionsSummary = async (timestampQueryRows, order) => {
-  if (timestampQueryRows.length === 0) {
+const getTransactionsDetails = async (payAndTimestamps, order) => {
+  if (payAndTimestamps.length === 0) {
     return {rows: []};
   }
 
   const uniquePayerIds = new Set();
   const timestamps = [];
-  timestampQueryRows.forEach((row) => {
+  payAndTimestamps.forEach((row) => {
     timestamps.push(row.consensus_timestamp);
     uniquePayerIds.add(row.payer_account_id);
   });
@@ -702,16 +693,13 @@ const doGetTransactions = async (accountId, filters, req, timestampRange) => {
   const {
     limit,
     order,
-    rows: timestampsRows,
+    rows: payAndTimestamps,
     sqlQuery: timestampsSqlQuery,
   } = await getTransactionTimestamps(accountId, filters, timestampRange);
 
-  const {rows: transactionsRows, sqlQuery: transactionsRowsSqlQuery} = await getTransactionsSummary(
-    timestampsRows,
-    order
-  );
+  const {rows, sqlQuery: transactionsRowsSqlQuery} = await getTransactionsDetails(payAndTimestamps, order);
 
-  const transactions = await formatTransactionRows(transactionsRows);
+  const transactions = await formatTransactionRows(rows);
   const next = utils.getPaginationLink(
     req,
     transactions.length !== limit,
@@ -902,12 +890,9 @@ const getTransactionsByIdOrHash = async (req, res) => {
 };
 
 const transactions = {
-  createTransferLists: formatTransactionRows,
   doGetTransactions,
   getTransactions,
   getTransactionsByIdOrHash,
-  getTransactionTimestamps,
-  getTransactionsSummary,
 };
 
 const acceptedTransactionParameters = new Set([
@@ -932,6 +917,7 @@ if (utils.isTestEnv()) {
     createStakingRewardTransferList,
     createTokenTransferList,
     extractSqlFromTransactionsByIdOrHashRequest,
+    formatTransactionRows,
     getFirstTransactionTimestamp,
     getStakingRewardTimestamps,
     isValidTransactionHash,

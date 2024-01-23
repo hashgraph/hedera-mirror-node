@@ -1,14 +1,10 @@
 {
   "description": "Transaction api calls for transactions via credit type query filter where account receives crypto and token transfers",
-  "matrix": "timestampBindingMatrix.js",
-  "matrixSetup": {
-    "true": {
-      "features": {
-        "fakeTime": "2009-02-13Z 23:40:00"
-      }
-    }
-  },
+  "matrix": "bindTimestampMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2009-02-13T23:40:00Z"
+    },
     "accounts": [
       {
         "num": 3
