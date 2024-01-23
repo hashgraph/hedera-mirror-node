@@ -148,6 +148,7 @@ create table if not exists contract_result
     function_result      bytea        null,
     gas_limit            bigint       not null,
     gas_used             bigint       null,
+    gas_consumed         bigint       null,
     payer_account_id     bigint       not null,
     sender_id            bigint       null,
     transaction_hash     bytea        null,

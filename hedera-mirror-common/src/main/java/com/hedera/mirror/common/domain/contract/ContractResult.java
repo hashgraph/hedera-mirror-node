@@ -68,6 +68,8 @@ public class ContractResult implements Persistable<Long> {
 
     private Long gasUsed;
 
+    private Long gasConsumed;
+
     private EntityId payerAccountId;
 
     private EntityId senderId;
