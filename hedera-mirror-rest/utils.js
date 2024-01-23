@@ -30,7 +30,6 @@ import config from './config';
 import ed25519 from './ed25519';
 import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
 import {Entity, FeeSchedule, TransactionResult, TransactionType} from './model';
-import {filterKeys, MAX_LONG} from './constants';
 
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
@@ -679,57 +678,6 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
 };
 
 /**
- * If enabled in config, ensure the returned timestamp range is fully bound; contains both a begin
- * and end timestamp value. The provided Range is not modified. If changes are made a copy is returned.
- *
- * @param {Range} tsRange timestamp range, typically based on query parameters
- * @param {string} order the order of the SQL query for which the timestamp range is being bound
- * @param {BigInt} unboundLowerTs when provided range is completely unbounded, this value is used as the begin value when an ascending order query
- * @return {Range} fully bound timestamp range
- */
-const bindTimestampRange = (tsRange, order = 'desc', unboundLowerTs = 0n) => {
-  const {bindTimestampRange, maxTimestampRangeNs} = config.query;
-  if (!bindTimestampRange) {
-    return tsRange;
-  }
-
-  const queryTsRange = tsRange ? Range(tsRange.begin ?? null, tsRange.end ?? null, tsRange.bounds ?? '[]') : Range();
-  const maxTimestampRangeNsInclusive = queryTsRange.bounds === '[]' ? maxTimestampRangeNs - 1n : maxTimestampRangeNs;
-
-  if (_.isNil(queryTsRange.end)) {
-    if (_.isNil(queryTsRange.begin)) {
-      // Completely unbounded
-      if (order === 'desc') {
-        queryTsRange.end = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
-        queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
-      } else {
-        queryTsRange.begin = unboundLowerTs;
-        queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
-      }
-    } else {
-      // Lower bound is set but not upper
-      queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
-    }
-  } else {
-    if (_.isNil(queryTsRange.begin)) {
-      // Upper bound set but not lower
-      queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
-    } else {
-      // Fully bound by client. Trim if not within max timestamp range.
-      if (queryTsRange.end - queryTsRange.begin > maxTimestampRangeNsInclusive) {
-        if (order === 'desc') {
-          queryTsRange.begin = queryTsRange.end - maxTimestampRangeNsInclusive;
-        } else {
-          queryTsRange.end = queryTsRange.begin + maxTimestampRangeNsInclusive;
-        }
-      }
-    }
-  }
-
-  return queryTsRange;
-};
-
-/**
  * Parse the result=[success | fail | all] parameter
  * @param {Request} req HTTP query request object
  * @param {String} columnName Column name for the transaction result
@@ -771,7 +719,7 @@ const extractTimestampRangeConditionFilters = (
   const params = [];
 
   filters
-    .filter((filter) => filter.key === filterKeys.TIMESTAMP)
+    .filter((filter) => filter.key === constants.filterKeys.TIMESTAMP)
     .forEach((filter) => {
       const position = `$${params.length + offset + 1}`;
       let condition;
@@ -1356,6 +1304,9 @@ const formatComparator = (comparator) => {
           comparator.value = parseInt(comparator.value, 16);
         }
         break;
+      case constants.filterKeys.CREDIT_TYPE:
+        comparator.value = comparator.value.toLowerCase();
+        break;
       case constants.filterKeys.FILE_ID:
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
@@ -1538,15 +1489,15 @@ const getStakingPeriod = (stakingPeriod) => {
  * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span
  * beyond a configured limit), or a set of equals operators within the same limit.
  *
- * @param {[]}timestampFilters an array of timestamp filters
+ * @param {[]}filters an array of timestamp filters
  * @param filterRequired indicates whether timestamp filters can be empty
  * @param allowNe indicates whether existence of ne filter is error condition
  * @param allowOpenRange indicates if we allow lt or gt to be passed individually
  * @param strictCheckOverride override feature flag to force strict checking
- * @return [range, eqValues, neqValues] - range is null in the case of equals
+ * @return range is null in the case of equals
  */
-const checkTimestampRange = (
-  timestampFilters,
+const parseTimestampFilters = (
+  filters,
   filterRequired = true,
   allowNe = false,
   allowOpenRange = false,
@@ -1554,67 +1505,85 @@ const checkTimestampRange = (
 ) => {
   const forceStrictChecks = strictCheckOverride || config.strictTimestampParam;
 
-  //No timestamp params provided
-  if (timestampFilters.length === 0) {
+  if (filters.length === 0) {
     if (filterRequired) {
       throw new InvalidArgumentError('No timestamp range or eq operator provided');
     }
 
-    return [null, [], []];
+    return {range: null, neValues: [], eqValues: []};
   }
 
-  const valuesByOp = {};
-  Object.values(opsMap).forEach((k) => (valuesByOp[k] = []));
-  timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(BigInt(filter.value)));
+  let earliest = null;
+  let latest = null;
+  let range = null;
+  const eqValues = [];
+  const neValues = [];
+  let lowerBoundFilterCount = 0;
+  let upperBoundFilterCount = 0;
 
-  const gtGteLength = valuesByOp[opsMap.gt].length + valuesByOp[opsMap.gte].length;
-  const ltLteLength = valuesByOp[opsMap.lt].length + valuesByOp[opsMap.lte].length;
+  for (const filter of filters) {
+    let value = BigInt(filter.value);
+    switch (filter.operator) {
+      case opsMap.eq:
+        eqValues.push(value);
+        break;
+      case opsMap.ne:
+        neValues.push(value);
+        break;
+      case opsMap.gt:
+        value += 1n;
+      case opsMap.gte:
+        earliest = bigIntMax(earliest ?? 0n, value);
+        lowerBoundFilterCount += 1;
+        break;
+      case opsMap.lt:
+        value -= 1n;
+      case opsMap.lte:
+        latest = bigIntMin(latest ?? constants.MAX_LONG, value);
+        upperBoundFilterCount += 1;
+        break;
+    }
+  }
 
   if (forceStrictChecks) {
-    if (!allowNe && valuesByOp[opsMap.ne].length > 0) {
-      // Don't allow ne
+    if (!allowNe && neValues.length > 0) {
       throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
     }
 
-    if (gtGteLength > 1) {
-      //Don't allow multiple gt/gte
+    if (lowerBoundFilterCount > 1) {
       throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
     }
 
-    if (ltLteLength > 1) {
-      //Don't allow multiple lt/lte
+    if (upperBoundFilterCount > 1) {
       throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
     }
 
-    if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0 || valuesByOp[opsMap.ne].length > 0)) {
-      //Combined eq with other operator
+    if (eqValues.length > 0 && (lowerBoundFilterCount > 0 || upperBoundFilterCount > 0 || neValues.length > 0)) {
       throw new InvalidArgumentError('Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param');
     }
   }
 
-  if (valuesByOp[opsMap.eq].length > 0) {
-    return [null, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
+  if (!allowOpenRange && eqValues.length === 0 && (lowerBoundFilterCount === 0 || upperBoundFilterCount === 0)) {
+    throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte), or eq operator');
   }
 
-  if (!allowOpenRange && (gtGteLength === 0 || ltLteLength === 0)) {
-    //Missing range
-    throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
+  if (eqValues.length === 0) {
+    const difference = latest !== null && earliest !== null ? latest - earliest + 1n : null;
+    const {maxTimestampRange, maxTimestampRangeNs} = config.query;
+
+    // If difference is null, we want to ignore because we allow open ranges and that is known to be true at this point
+    if (difference !== null && (difference > maxTimestampRangeNs || difference <= 0n)) {
+      throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
+    }
   }
 
-  // there should be exactly one gt/gte and/or one lt/lte at this point
-  const earliest = valuesByOp[opsMap.gt].length ? valuesByOp[opsMap.gt][0] + 1n : valuesByOp[opsMap.gte][0];
-  const latest = valuesByOp[opsMap.lt].length ? valuesByOp[opsMap.lt][0] - 1n : valuesByOp[opsMap.lte][0];
-
-  const difference = latest !== undefined && earliest !== undefined ? latest - earliest + 1n : undefined;
-  const {maxTimestampRange, maxTimestampRangeNs} = config.query;
-
-  // If difference is undefined, we want to ignore because we allow open ranges and that is known to be true at this point
-  if (difference > maxTimestampRangeNs || difference <= 0n) {
-    throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
+  if (earliest !== null || latest !== null) {
+    range = Range(earliest, latest, '[]');
   }
 
-  const range = earliest >= 0 || latest >= 0 ? Range(earliest ?? null, latest ?? null, '[]') : null;
-  return [range, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
+  // Note that we don't further check if the range and the eq values can result in an empty range, because some
+  // endpoints treat eq operator as lte
+  return {range, eqValues, neValues};
 };
 
 /**
@@ -1677,9 +1646,10 @@ const boundToOp = {
   ']': opsMap.lte,
 };
 
-const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildAsIn = true) => {
+const buildTimestampQuery = (column, timestampRange, buildAsIn = true) => {
   const conditions = [];
   const params = [];
+  const {range, eqValues, neValues} = timestampRange;
 
   if (range) {
     const bounds = [...range.bounds];
@@ -1714,9 +1684,10 @@ const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildA
   return [conditions.join(' and '), params];
 };
 
-const buildTimestampRangeQuery = (range, column, neValues = [], eqValues = []) => {
+const buildTimestampRangeQuery = (column, timestampRange) => {
   const conditions = [];
   const params = [];
+  const {range, eqValues, neValues} = timestampRange;
 
   if (range) {
     conditions.push(`${column} && ?`);
@@ -1749,7 +1720,6 @@ export {
   asNullIfDefault,
   bigIntMax,
   bigIntMin,
-  bindTimestampRange,
   buildAndValidateFilters,
   buildComparatorFilter,
   buildFilters,
@@ -1757,7 +1727,7 @@ export {
   buildTimestampRangeQuery,
   buildPgSqlObject,
   calculateExpiryTimestamp,
-  checkTimestampRange,
+  parseTimestampFilters,
   conflictingPathParam,
   convertGasPriceToTinyBars,
   convertMySqlStyleQueryToPostgres,

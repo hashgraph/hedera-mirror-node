@@ -224,6 +224,8 @@ const getEntityBalanceQuery = (
   return {query, params};
 };
 
+const emptyTransactionsPromise = Promise.resolve({transactions: [], links: {next: null}});
+
 /**
  * Creates account query and params from filters with limit and order
  *
@@ -369,19 +371,10 @@ const getOneAccount = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleAccountParameters);
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
-  const transactionsFilter = _.findLast(filters, {key: filterKeys.TRANSACTIONS});
-  const parsedQueryParams = req.query;
   const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
-  const [tsRange, tsEqValues, tsNeValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
-  const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
-    tsRange,
-    't.consensus_timestamp',
-    tsNeValues,
-    tsEqValues
-  );
+  const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false);
+  const transactionsFilter = _.findLast(filters, {key: filterKeys.TRANSACTIONS});
 
-  const resultTypeQuery = utils.parseResultParams(req);
-  const {query: limitQuery, params: limitParams, order, limit} = utils.parseLimitAndOrderParams(req);
   const accountIdParamIndex = 1;
   let paramCount = accountIdParamIndex;
   const tokenBalanceQuery = {
@@ -392,21 +385,17 @@ const getOneAccount = async (req, res) => {
   const entityAccountQuery = {query: `e.id = $${accountIdParamIndex}`, params: [encodedId]};
 
   const accountBalanceQuery = {query: '', params: []};
-  if (transactionTsQuery) {
+  if (timestampFilters.length > 0) {
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
-      tsRange,
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
-      tsNeValues,
-      tsEqValues
+      timestampRange,
     );
     entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
 
     const [balanceSnapshotTsQuery, balanceSnapshotTsParams] = utils.buildTimestampQuery(
-      tsRange,
       'consensus_timestamp',
-      tsNeValues,
-      tsEqValues,
+      timestampRange,
       false
     );
 
@@ -451,46 +440,17 @@ const getOneAccount = async (req, res) => {
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${utils.JSONStringify(entityParams)}`);
-  }
-
-  // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
   // when not specified or set as true
-  const includeTransactions = !transactionsFilter || transactionsFilter.value;
-  let transactionTimestampsPromise;
-  if (includeTransactions) {
-    const creditDebitQuery = ''; // type=credit|debit is not supported
-    const accountQuery = 'ctl.entity_id = $1';
-    const accountParams = [encodedId];
-    const pgLimitQuery = utils.convertMySqlStyleQueryToPostgres(limitQuery, 2);
-    const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
-    const transactionsParams = utils.mergeParams(accountParams, limitParams);
+  const includeTransactions = transactionsFilter?.value ?? true;
+  const transactionsPromise = includeTransactions ? transactions.doGetTransactions(encodedId, filters, req, timestampRange) : emptyTransactionsPromise;
 
-    transactionTimestampsPromise = transactions.getTransactionTimestamps(
-      {tsRange, tsEqValues, tsNeValues},
-      accountQuery,
-      resultTypeQuery,
-      pgLimitQuery,
-      creditDebitQuery,
-      transactionTypeQuery,
-      limit,
-      order,
-      transactionsParams
-    );
-  } else {
-    // Promise that returns empty result
-    transactionTimestampsPromise = Promise.resolve({rows: []});
-  }
-
-  // After all promises (for all of the above queries) have been resolved...
-  const [entityResults, transactionTimestampsResults] = await Promise.all([
+  const [entityResults, transactionResults] = await Promise.all([
     entityPromise,
-    transactionTimestampsPromise,
+    transactionsPromise,
   ]);
-  // Process the results of entities query
+
   if (entityResults.rows.length === 0) {
     throw new NotFoundError();
   }
@@ -499,35 +459,17 @@ const getOneAccount = async (req, res) => {
     throw new NotFoundError('Error: Could not get entity information');
   }
 
-  const ret = processRow(entityResults.rows[0]);
-  if (utils.isTestEnv()) {
-    ret.entitySqlQuery = entityResults.sqlQuery;
+  const ret = {
+    ...processRow(entityResults.rows[0]),
+    ...transactionResults,
   }
-
-  const {rows: transactionsRows} = await transactions.getTransactionsSummary(
-    transactionTimestampsResults.rows,
-    order,
-    limit
-  );
-  const transferList = await transactions.createTransferLists(transactionsRows);
-
-  ret.transactions = transferList.transactions;
-  const {anchorSecNs} = transferList;
-
-  // Pagination links
-  ret.links = {
-    next: utils.getPaginationLink(
-      req,
-      ret.transactions.length !== limit,
-      {
-        [constants.filterKeys.TIMESTAMP]: anchorSecNs,
-      },
-      order
-    ),
-  };
 
   logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
   res.locals[constants.responseDataLabel] = ret;
+
+  if (utils.isTestEnv()) {
+    ret.entitySqlQuery = entityResults.sqlQuery;
+  }
 };
 
 const accounts = {
