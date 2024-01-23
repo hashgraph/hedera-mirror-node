@@ -44,13 +44,16 @@
         "balance": 50,
         "balance_timestamp": "2004",
         "num": 5,
-        "key": "32250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        "key": "32250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401",
+        "staked_account_id": 200,
+        "stake_period_start": 2000
       },
       {
         "balance": 60,
         "balance_timestamp": "2005",
         "num": 6,
-        "key": "2a29080112250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        "key": "2a29080112250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401",
+        "stake_period_start": 2000
       },
       {
         "balance": 90,
@@ -58,17 +61,22 @@
         "num": 9,
         "expiration_timestamp": "9223372036854775806",
         "max_automatic_token_associations": 150,
-        "receiver_sig_required": null
+        "receiver_sig_required": null,
+        "staked_node_id": 3,
+        "stake_period_start": 2000
       },
       {
         "alias": "32W353Y",
         "balance": 100,
         "balance_timestamp": "2007",
+        "decline_reward": true,
         "evm_address": "81f45dd06f708f9829e3a0284b464d9cbec37e61",
         "ethereum_nonce": 9007199254740992,
         "num": 10,
         "expiration_timestamp": "9223372036854775807",
-        "receiver_sig_required": true
+        "receiver_sig_required": true,
+        "staked_node_id": 3,
+        "stake_period_start": 2000
       }
     ],
     "contracts": [
@@ -89,32 +97,52 @@
     ],
     "entityStakes": [
       {
-        "decline_reward_start": false,
         "end_stake_period": 2000,
         "id": 1,
         "pending_reward": 100,
         "stake_total_start": 1000
       },
       {
-        "decline_reward_start": false,
         "end_stake_period": 2000,
         "id": 2,
         "pending_reward": 200,
         "stake_total_start": 2000
       },
       {
-        "decline_reward_start": false,
         "end_stake_period": 2000,
         "id": 3,
         "pending_reward": 300,
         "stake_total_start": 3000
       },
       {
-        "decline_reward_start": false,
         "end_stake_period": 2000,
         "id": 4,
         "pending_reward": 400,
         "stake_total_start": 4000
+      },
+      {
+        "end_stake_period": 1999,
+        "id": 5,
+        "pending_reward": 500,
+        "stake_total_start": 5000
+      },
+      {
+        "end_stake_period": 1999,
+        "id": 6,
+        "pending_reward": 600,
+        "stake_total_start": 6000
+      },
+      {
+        "end_stake_period": 1999,
+        "id": 9,
+        "pending_reward": 900,
+        "stake_total_start": 9000
+      },
+      {
+        "end_stake_period": 1999,
+        "id": 10,
+        "pending_reward": 1000,
+        "stake_total_start": 10000
       }
     ],
     "tokenaccounts": [
@@ -320,7 +348,7 @@
         "memo": "entity memo",
         "pending_reward": 0,
         "receiver_sig_required": false,
-        "staked_account_id": null,
+        "staked_account_id": "0.0.200",
         "staked_node_id": null,
         "stake_period_start": null
       },
@@ -420,8 +448,8 @@
         "pending_reward": 0,
         "receiver_sig_required": null,
         "staked_account_id": null,
-        "staked_node_id": null,
-        "stake_period_start": null
+        "staked_node_id": 3,
+        "stake_period_start": "172800000.000000000"
       },
       {
         "balance": {
@@ -433,7 +461,7 @@
         "alias": "32W353Y",
         "auto_renew_period": null,
         "created_timestamp": null,
-        "decline_reward": false,
+        "decline_reward": true,
         "deleted": false,
         "ethereum_nonce": 9007199254740992,
         "evm_address": "0x81f45dd06f708f9829e3a0284b464d9cbec37e61",
@@ -444,8 +472,8 @@
         "memo": "entity memo",
         "receiver_sig_required": true,
         "staked_account_id": null,
-        "staked_node_id": null,
-        "stake_period_start": null
+        "staked_node_id": 3,
+        "stake_period_start": "172800000.000000000"
       }
     ],
     "links": {

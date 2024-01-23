@@ -31,7 +31,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                     """
         create temp table entity_state_start (
           balance            bigint not null,
-          decline_reward     boolean not null,
           id                 bigint not null,
           staked_account_id  bigint not null,
           staked_node_id     bigint not null,
@@ -69,25 +68,33 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
           limit 1
         ), entity_state as (
           select
-            decline_reward,
             id,
             staked_account_id,
             staked_node_id,
             stake_period_start
           from entity, end_period
-          where deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
+          where id = 800 or (
+            deleted is not true and
+            type in ('ACCOUNT', 'CONTRACT') and
+            timestamp_range @> end_period.consensus_timestamp and
+            (staked_account_id <> 0 or (decline_reward is false and staked_node_id <> -1))
+          )
           union all
           select *
           from (
             select
               distinct on (id)
-              decline_reward,
               id,
               staked_account_id,
               staked_node_id,
               stake_period_start
             from entity_history, end_period
-            where deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
+            where id <> 800 and (
+              deleted is not true and
+              type in ('ACCOUNT', 'CONTRACT') and
+              timestamp_range @> end_period.consensus_timestamp and
+              (staked_account_id <> 0 or (decline_reward is false and staked_node_id <> -1))
+            )
             order by id, timestamp_range desc
           ) as latest_history
         ), balance_snapshot as (
@@ -97,10 +104,9 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             ab.consensus_timestamp <= bt.consensus_timestamp
           order by account_id, ab.consensus_timestamp desc
         )
-        insert into entity_state_start (balance, decline_reward, id, staked_account_id, staked_node_id, stake_period_start)
+        insert into entity_state_start (balance, id, staked_account_id, staked_node_id, stake_period_start)
         select
           coalesce(balance, 0) + coalesce(change, 0),
-          decline_reward,
           id,
           coalesce(staked_account_id, 0),
           coalesce(staked_node_id, -1),
@@ -156,9 +162,8 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
      * <p>
      * Algorithm to update pending reward:
      * <p>
-     * 1. IF there is no such row in entity_stake (new entity created in the ending stake period), OR its
-     * decline_reward_start is true (decline reward for the ending staking period), OR it didn't stake to a node for the
-     * ending staking period, the new pending reward is 0
+     * 1. IF there is no such row in entity_stake (new entity created in the ending stake period),
+     * OR it didn't stake to a node for the ending staking period, the new pending reward is 0
      * <p>
      * 2. IF there is no node stake info for the node the entity staked to, the pending reward keeps the same
      * <p>
@@ -204,7 +209,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
               limit 1
             ), ending_period_stake_state as (
               select
-                decline_reward_start,
                 id as entity_id,
                 pending_reward,
                 staked_node_id_start,
@@ -222,15 +226,13 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
               where staked_account_id <> 0
               group by staked_account_id
             )
-            insert into entity_stake_temp (decline_reward_start, end_stake_period, id, pending_reward,
+            insert into entity_stake_temp (end_stake_period, id, pending_reward,
               staked_node_id_start, staked_to_me, stake_total_start, timestamp_range)
             select
-              ess.decline_reward as decline_reward_start,
               epoch_day as end_stake_period,
               ess.id,
               (case
-                 when coalesce(decline_reward_start, true) is true
-                      or coalesce(staked_node_id_start, -1) = -1
+                 when coalesce(staked_node_id_start, -1) = -1
                       then 0
                  when reward_rate is null then pending_reward
                  when ess.stake_period_start > epoch_day - 1 then 0
@@ -242,19 +244,19 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                 end) as pending_reward,
               ess.staked_node_id as staked_node_id_start,
               coalesce(ps.staked_to_me, 0) as staked_to_me,
-              (case when ess.decline_reward is true or ess.staked_node_id = -1 then 0
+              (case when ess.staked_node_id = -1 then 0
                     else ess.balance + coalesce(ps.staked_to_me, 0)
                end) as stake_total_start,
               int8range(ep.consensus_timestamp, null) as timestamp_range
             from entity_state_start ess
               left join ending_period_stake_state on entity_id = ess.id
               left join proxy_staking ps on ps.staked_account_id = ess.id,
-              ending_period ep;
+              ending_period ep
+              where (ess.id = 800 or ess.staked_node_id <> -1);
             create index on entity_stake_temp (id);
 
             -- history table
             insert into entity_stake_history (
-                decline_reward_start,
                 end_stake_period,
                 id,
                 pending_reward,
@@ -264,7 +266,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                 timestamp_range
               )
             select
-              e.decline_reward_start,
               e.end_stake_period,
               e.id,
               e.pending_reward,
@@ -277,7 +278,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
 
             -- current table
             insert into entity_stake (
-                decline_reward_start,
                 end_stake_period,
                 id,
                 pending_reward,
@@ -287,7 +287,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                 timestamp_range
               )
             select
-              t.decline_reward_start,
               t.end_stake_period,
               t.id,
               t.pending_reward,
@@ -298,7 +297,6 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             from entity_stake_temp t
             on conflict (id) do update
             set
-              decline_reward_start = excluded.decline_reward_start,
               end_stake_period = excluded.end_stake_period,
               pending_reward = excluded.pending_reward,
               staked_node_id_start = excluded.staked_node_id_start,
