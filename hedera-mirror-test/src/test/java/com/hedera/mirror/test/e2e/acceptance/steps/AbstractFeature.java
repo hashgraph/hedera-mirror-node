@@ -26,16 +26,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.mirror.rest.model.ContractCallResponse;
+import com.hedera.mirror.rest.model.NetworkExchangeRateSetResponse;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
+import com.hedera.mirror.rest.model.TransactionDetail;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.ExchangeRateResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -68,7 +68,7 @@ abstract class AbstractFeature {
     @Autowired
     protected ObjectMapper mapper;
 
-    protected ExchangeRateResponse exchangeRates;
+    protected NetworkExchangeRateSetResponse exchangeRates;
 
     @Autowired
     private ResourceLoader resourceLoader;
@@ -87,14 +87,14 @@ abstract class AbstractFeature {
         return (long) ((usdInCents * usdFee / hbarPriceInCents + 1) * 100000000);
     }
 
-    protected MirrorTransaction verifyMirrorTransactionsResponse(MirrorNodeClient mirrorClient, int status) {
+    protected TransactionDetail verifyMirrorTransactionsResponse(MirrorNodeClient mirrorClient, int status) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+        TransactionByIdResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
-        List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
+        List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        MirrorTransaction mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.get(0);
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
@@ -169,25 +169,13 @@ abstract class AbstractFeature {
     }
 
     protected ContractCallResponse callContract(String data, String contractAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
-                .from(contractClient.getClientAddress())
-                .to(contractAddress)
-                .estimate(false)
-                .build();
-
-        return mirrorClient.contractsCall(contractCallRequestBody);
+        var contractCallRequest = ModelBuilder.contractCallRequest(data, false, contractClient.getClientAddress(), contractAddress);
+        return mirrorClient.contractsCall(contractCallRequest);
     }
 
     protected ContractCallResponse estimateContract(String data, String contractAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
-                .from(contractClient.getClientAddress())
-                .to(contractAddress)
-                .estimate(true)
-                .build();
-
-        return mirrorClient.contractsCall(contractCallRequestBody);
+        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, contractClient.getClientAddress(), contractAddress);
+        return mirrorClient.contractsCall(contractCallRequest);
     }
 
     protected String encodeData(ContractResource resource, SelectorInterface method, Object... args) {

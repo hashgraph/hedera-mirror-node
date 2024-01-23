@@ -40,6 +40,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.util.ContractResponseUtil;
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -89,7 +90,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, NAME_SELECTOR, asAddress(fungibleTokenId));
         var getNameResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getNameResponse.getResultAsText()).isEqualTo(TokenNameEnum.FUNGIBLE_DELETABLE.getSymbol() + "_name");
+        assertThat(ContractResponseUtil.of(getNameResponse).getResultAsText()).isEqualTo(TokenNameEnum.FUNGIBLE_DELETABLE.getSymbol() + "_name");
     }
 
     @RetryAsserts
@@ -98,7 +99,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, SYMBOL_SELECTOR, asAddress(fungibleTokenId));
         var getSymbolResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getSymbolResponse.getResultAsText()).isEqualTo(TokenNameEnum.FUNGIBLE_DELETABLE.getSymbol());
+        assertThat(ContractResponseUtil.of(getSymbolResponse).getResultAsText()).isEqualTo(TokenNameEnum.FUNGIBLE_DELETABLE.getSymbol());
     }
 
     @RetryAsserts
@@ -107,7 +108,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, DECIMALS_SELECTOR, asAddress(fungibleTokenId));
         var getDecimalsResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getDecimalsResponse.getResultAsNumber()).isEqualTo(10L);
+        assertThat(ContractResponseUtil.of(getDecimalsResponse).getResultAsNumber()).isEqualTo(10L);
     }
 
     @RetryAsserts
@@ -116,7 +117,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, TOTAL_SUPPLY_SELECTOR, asAddress(fungibleTokenId));
         var getTotalSupplyResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getTotalSupplyResponse.getResultAsNumber()).isEqualTo(1_000_000L);
+        assertThat(ContractResponseUtil.of(getTotalSupplyResponse).getResultAsNumber()).isEqualTo(1_000_000L);
     }
 
     @RetryAsserts
@@ -124,7 +125,7 @@ public class ERCContractFeature extends AbstractFeature {
     public void ownerOfContractCall() {
         var data = encodeData(ERC, GET_OWNER_OF_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getOwnerOfResponse = callContract(data, ercTestContractSolidityAddress);
-        tokenClient.validateAddress(getOwnerOfResponse.getResultAsAddress());
+        tokenClient.validateAddress(ContractResponseUtil.of(getOwnerOfResponse).getResultAsAddress());
     }
 
     @RetryAsserts
@@ -133,7 +134,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, TOKEN_URI_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getTokenURIResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getTokenURIResponse.getResultAsText()).isEqualTo("TEST_metadata");
+        assertThat(ContractResponseUtil.of(getTokenURIResponse).getResultAsText()).isEqualTo("TEST_metadata");
     }
 
     @RetryAsserts
@@ -142,7 +143,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, GET_APPROVED_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getApprovedResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getApprovedResponse.getResultAsAddress()).isEqualTo("0000000000000000000000000000000000000000");
+        assertThat(ContractResponseUtil.of(getApprovedResponse).getResultAsAddress()).isEqualTo("0000000000000000000000000000000000000000");
     }
 
     @RetryAsserts
@@ -152,7 +153,7 @@ public class ERCContractFeature extends AbstractFeature {
                 ERC, ALLOWANCE_SELECTOR, asAddress(fungibleTokenId), asAddress(tokenClient), asAddress(contractClient));
         var getAllowanceResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getAllowanceResponse.getResultAsNumber()).isZero();
+        assertThat(ContractResponseUtil.of(getAllowanceResponse).getResultAsNumber()).isZero();
     }
 
     @RetryAsserts
@@ -166,7 +167,7 @@ public class ERCContractFeature extends AbstractFeature {
                 asAddress(allowanceSpenderAccountId));
         var getAllowanceResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getAllowanceResponse.getResultAsNumber()).isEqualTo(2);
+        assertThat(ContractResponseUtil.of(getAllowanceResponse).getResultAsNumber()).isEqualTo(2);
     }
 
     @RetryAsserts
@@ -180,7 +181,7 @@ public class ERCContractFeature extends AbstractFeature {
                 asAddress(contractClient));
         var getIsApproveForAllResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isFalse();
+        assertThat(ContractResponseUtil.of(getIsApproveForAllResponse).getResultAsBoolean()).isFalse();
     }
 
     @RetryAsserts
@@ -194,7 +195,7 @@ public class ERCContractFeature extends AbstractFeature {
                 asAddress(spenderAccountIdForAllSerials));
         var getIsApproveForAllResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isTrue();
+        assertThat(ContractResponseUtil.of(getIsApproveForAllResponse).getResultAsBoolean()).isTrue();
     }
 
     @RetryAsserts
@@ -203,7 +204,7 @@ public class ERCContractFeature extends AbstractFeature {
         var data = encodeData(ERC, BALANCE_OF_SELECTOR, asAddress(fungibleTokenId), asAddress(contractClient));
         var getBalanceOfResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(1000000);
+        assertThat(ContractResponseUtil.of(getBalanceOfResponse).getResultAsNumber()).isEqualTo(1000000);
     }
 
     @RetryAsserts
@@ -211,7 +212,7 @@ public class ERCContractFeature extends AbstractFeature {
     public void verifyNftAllowance() {
         var data = encodeData(ERC, GET_APPROVED_SELECTOR, asAddress(nonFungibleTokenId), new BigInteger("1"));
         var getApprovedResponse = callContract(data, ercTestContractSolidityAddress);
-        assertThat(getApprovedResponse.getResultAsAddress()).isEqualTo(spenderAccountAlias);
+        assertThat(ContractResponseUtil.of(getApprovedResponse).getResultAsAddress()).isEqualTo(spenderAccountAlias);
     }
 
     @Given("I successfully create an erc contract from contract bytes with balance 0")
@@ -313,7 +314,7 @@ public class ERCContractFeature extends AbstractFeature {
                         .getAccountDetailsByAccountId(ecdsaAccount.getAccountId())
                         .getEvmAddress()));
         var getIsApproveForAllResponse = callContract(data, ercTestContractSolidityAddress);
-        assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isTrue();
+        assertThat(ContractResponseUtil.of(getIsApproveForAllResponse).getResultAsBoolean()).isTrue();
     }
 
     @RetryAsserts
@@ -329,7 +330,7 @@ public class ERCContractFeature extends AbstractFeature {
                         .getEvmAddress()));
         var getAllowanceResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getAllowanceResponse.getResultAsNumber()).isEqualTo(1000);
+        assertThat(ContractResponseUtil.of(getAllowanceResponse).getResultAsNumber()).isEqualTo(1000);
     }
 
     @RetryAsserts
@@ -344,7 +345,7 @@ public class ERCContractFeature extends AbstractFeature {
                         .getEvmAddress()));
         var getBalanceOfResponse = callContract(data, ercTestContractSolidityAddress);
 
-        assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(500);
+        assertThat(ContractResponseUtil.of(getBalanceOfResponse).getResultAsNumber()).isEqualTo(500);
     }
 
     @Getter

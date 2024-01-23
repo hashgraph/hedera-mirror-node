@@ -20,9 +20,9 @@ import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.rest.model.TransactionDetailAllOfAssessedCustomFees;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorAssessedCustomFee;
 import com.hedera.mirror.test.e2e.acceptance.steps.TokenFeature;
 import io.cucumber.java.DataTableType;
 import java.util.Map;
@@ -37,10 +37,10 @@ public class CustomFeesConverter {
     private final TokenFeature tokenFeature;
 
     @DataTableType
-    public MirrorAssessedCustomFee mirrorAssessedCustomFee(Map<String, String> entry) {
+    public TransactionDetailAllOfAssessedCustomFees mirrorAssessedCustomFee(Map<String, String> entry) {
         var collector = accountClient.getAccount(AccountNameEnum.valueOf(entry.get("collector")));
 
-        var assessedCustomFee = new MirrorAssessedCustomFee();
+        var assessedCustomFee = new TransactionDetailAllOfAssessedCustomFees();
         assessedCustomFee.setAmount(Long.parseLong(entry.get("amount")));
         assessedCustomFee.setCollectorAccountId(collector.getAccountId().toString());
         assessedCustomFee.setTokenId(getToken(entry.get("token")));

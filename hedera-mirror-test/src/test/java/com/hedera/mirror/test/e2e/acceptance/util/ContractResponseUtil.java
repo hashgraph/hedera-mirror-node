@@ -1,37 +1,19 @@
-/*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-package com.hedera.mirror.test.e2e.acceptance.response;
+package com.hedera.mirror.test.e2e.acceptance.util;
 
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
 import com.google.common.base.Splitter;
-import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
-import jakarta.inject.Named;
+import com.hedera.mirror.rest.model.ContractCallResponse;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import lombok.Data;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
-@Data
-@Named
-public class ContractCallResponse {
-
-    private String result;
+@RequiredArgsConstructor(staticName = "of")
+public class ContractResponseUtil {
+    @NonNull private ContractCallResponse response;
 
     public BigInteger getResultAsNumber() {
         return getResultAsBytes().toBigInteger();
@@ -46,11 +28,11 @@ public class ContractCallResponse {
     }
 
     public boolean getResultAsBoolean() {
-        return Long.parseUnsignedLong(result.replace("0x", ""), 16) > 0;
+        return Long.parseUnsignedLong(response.getResult().replace("0x", ""), 16) > 0;
     }
 
     public Bytes getResultAsBytes() {
-        return Bytes.fromHexString(result);
+        return Bytes.fromHexString(response.getResult());
     }
 
     public String getResultAsText() {
@@ -62,11 +44,11 @@ public class ContractCallResponse {
         // 1st 32 bytes - string info
         // 2nd 32 bytes - data length in the last 32 bytes
         // 3rd 32 bytes - actual string suffixed with zeroes
-        return hexToAscii(result.replace("0x", "").substring(128).trim());
+        return hexToAscii(response.getResult().replace("0x", "").substring(128).trim());
     }
 
     public List<BigInteger> getResultAsListDecimal() {
-        result = result.replace("0x", "");
+        var result = response.getResult().replace("0x", "");
 
         return Splitter.fixedLength(64)
                 .splitToStream(result)
@@ -75,7 +57,7 @@ public class ContractCallResponse {
     }
 
     public List<String> getResultAsListAddress() {
-        result = result.replace("0x", "");
+        var result = response.getResult().replace("0x", "");
 
         return Splitter.fixedLength(64).splitToStream(result).toList();
     }

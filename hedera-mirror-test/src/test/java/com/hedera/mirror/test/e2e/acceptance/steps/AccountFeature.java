@@ -16,21 +16,22 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOCREATEACCOUNT;
+import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOTRANSFER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.mirror.rest.model.CryptoAllowance;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
+import com.hedera.mirror.rest.model.TransactionDetail;
+import com.hedera.mirror.rest.model.TransactionTransfersInner;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.Cleanable;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoAllowance;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransfer;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import io.cucumber.java.AfterAll;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.And;
@@ -116,20 +117,24 @@ public class AccountFeature extends AbstractFeature {
                 .getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
                 .getTransactions()
                 .stream()
-                .sorted(Comparator.comparing(MirrorTransaction::getConsensusTimestamp))
+                .sorted(Comparator.comparing(TransactionDetail::getConsensusTimestamp))
                 .toList();
 
-        assertNotNull(accountInfo.getAccount());
-        assertEquals(amount, accountInfo.getBalanceInfo().getBalance());
-        assertEquals(1, accountInfo.getTransactions().size());
-        assertEquals(2, transactions.size());
+        assertThat(accountInfo.getAccount()).isNotNull();
+        assertThat(accountInfo.getBalance().getBalance()).isEqualTo(amount);
+        assertThat(accountInfo.getTransactions()).hasSize(1);
+        assertThat(transactions).hasSize(2);
 
         var createAccountTransaction = transactions.get(0);
         var transferTransaction = transactions.get(1);
 
-        assertEquals(transferTransaction, accountInfo.getTransactions().get(0));
-        assertEquals("CRYPTOCREATEACCOUNT", createAccountTransaction.getName());
-        assertEquals(createAccountTransaction.getConsensusTimestamp(), accountInfo.getCreatedTimestamp());
+        assertThat(transferTransaction)
+                .usingRecursiveComparison()
+                .ignoringFields("assessedCustomFees")
+                .isEqualTo(accountInfo.getTransactions().get(0));
+
+        assertThat(createAccountTransaction.getName()).isEqualTo(CRYPTOCREATEACCOUNT);
+        assertThat(createAccountTransaction.getConsensusTimestamp()).isEqualTo(accountInfo.getCreatedTimestamp());
     }
 
     @When("I send {long} tℏ to newly created account")
@@ -186,28 +191,28 @@ public class AccountFeature extends AbstractFeature {
     @Then("the mirror node REST API should return status {int} for the crypto transfer transaction")
     public void verifyMirrorAPICryptoTransferResponse(int status) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+        TransactionByIdResponse mirrorTransactionByIdResponse = mirrorClient.getTransactions(transactionId);
 
         // verify valid set of transactions
-        List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
+        List<TransactionDetail> transactions = mirrorTransactionByIdResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
 
         // verify transaction details
-        MirrorTransaction mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.get(0);
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
         }
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
-        assertThat(mirrorTransaction.getName()).isEqualTo("CRYPTOTRANSFER");
+        assertThat(mirrorTransaction.getName()).isEqualTo(CRYPTOTRANSFER);
 
         assertThat(mirrorTransaction.getTransfers()).hasSizeGreaterThanOrEqualTo(2); // Minimal fee transfers
 
         // verify transfer credit and debits balance out
         long transferSum = 0;
-        for (MirrorTransfer cryptoTransfer : mirrorTransaction.getTransfers()) {
+        for (TransactionTransfersInner cryptoTransfer : mirrorTransaction.getTransfers()) {
             transferSum += cryptoTransfer.getAmount();
         }
 
@@ -237,11 +242,11 @@ public class AccountFeature extends AbstractFeature {
                 .isNotEmpty()
                 .first()
                 .isNotNull()
-                .returns(remainingAmount, MirrorCryptoAllowance::getAmount)
-                .returns(approvedAmount, MirrorCryptoAllowance::getAmountGranted)
-                .returns(owner, MirrorCryptoAllowance::getOwner)
-                .returns(spender, MirrorCryptoAllowance::getSpender)
-                .extracting(MirrorCryptoAllowance::getTimestamp)
+                .returns(remainingAmount, CryptoAllowance::getAmount)
+                .returns(approvedAmount, CryptoAllowance::getAmountGranted)
+                .returns(owner, CryptoAllowance::getOwner)
+                .returns(spender, CryptoAllowance::getSpender)
+                .extracting(CryptoAllowance::getTimestamp)
                 .isNotNull()
                 .satisfies(t -> assertThat(t.getFrom()).isNotBlank())
                 .satisfies(t -> assertThat(t.getTo()).isBlank());
@@ -254,13 +259,14 @@ public class AccountFeature extends AbstractFeature {
 
         // verify valid set of transactions
         var owner = accountClient.getClient().getOperatorAccountId().toString();
+        // TODO some kind of domain builder class needed? See how extensive this is
+        var expectedCryptoTransfer = new TransactionTransfersInner()
+                .account(owner)
+                .amount(-transferAmount)
+                .isApproval(true);
         var transactions = mirrorTransactionsResponse.getTransactions();
         assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTransfers())
-                .contains(MirrorTransfer.builder()
-                        .account(owner)
-                        .amount(-transferAmount)
-                        .isApproval(true)
-                        .build()));
+                .contains(expectedCryptoTransfer));
     }
 
     @When("I delete the crypto allowance for {string}")

@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.rest.model.TransactionTypes.CONTRACTCALL;
+import static com.hedera.mirror.rest.model.TransactionTypes.CONTRACTCREATEINSTANCE;
+import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOCREATEACCOUNT;
+import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOTRANSFER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,16 +31,16 @@ import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.mirror.rest.model.ContractResponse;
+import com.hedera.mirror.rest.model.ContractResult;
+import com.hedera.mirror.rest.model.TransactionDetail;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ContractResponseUtil;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -159,48 +163,23 @@ public class ContractFeature extends AbstractFeature {
         var from = contractClient.getClientAddress();
         var to = deployedParentContract.contractId().toSolidityAddress();
 
-        var contractCallRequestGetAccountBalance = ContractCallRequest.builder()
-                .data(GET_ACCOUNT_BALANCE_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
+        var contractCallRequestGetAccountBalance = ModelBuilder.contractCallRequest(GET_ACCOUNT_BALANCE_SELECTOR, false, from, to);
         var getAccountBalanceResponse = mirrorClient.contractsCall(contractCallRequestGetAccountBalance);
-        assertThat(getAccountBalanceResponse.getResultAsNumber()).isEqualTo(1000L);
+        assertThat(ContractResponseUtil.of(getAccountBalanceResponse).getResultAsNumber()).isEqualTo(1000L);
 
-        var contractCallRequestGetSender = ContractCallRequest.builder()
-                .data(GET_SENDER_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
+        var contractCallRequestGetSender = ModelBuilder.contractCallRequest(GET_SENDER_SELECTOR, false, from, to);
         var getSenderResponse = mirrorClient.contractsCall(contractCallRequestGetSender);
-        assertThat(getSenderResponse.getResultAsAddress()).isEqualTo(from);
+        assertThat(ContractResponseUtil.of(getSenderResponse).getResultAsAddress()).isEqualTo(from);
 
-        var contractCallMultiplySimpleNumbers = ContractCallRequest.builder()
-                .data(MULTIPLY_SIMPLE_NUMBERS_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
+        var contractCallMultiplySimpleNumbers = ModelBuilder.contractCallRequest(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, false, from, to);
         var multiplySimpleNumbersResponse = mirrorClient.contractsCall(contractCallMultiplySimpleNumbers);
-        assertThat(multiplySimpleNumbersResponse.getResultAsNumber()).isEqualTo(4L);
+        assertThat(ContractResponseUtil.of(multiplySimpleNumbersResponse).getResultAsNumber()).isEqualTo(4L);
 
-        var contractCallIdentifier = ContractCallRequest.builder()
-                .data(IDENTIFIER_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
+        var contractCallIdentifier = ModelBuilder.contractCallRequest(IDENTIFIER_SELECTOR, false, from, to);
         var identifierResponse = mirrorClient.contractsCall(contractCallIdentifier);
-        assertThat(identifierResponse.getResultAsSelector()).isEqualTo(IDENTIFIER_SELECTOR);
+        assertThat(ContractResponseUtil.of(identifierResponse).getResultAsSelector()).isEqualTo(IDENTIFIER_SELECTOR);
 
-        var contractCallWrongSelector = ContractCallRequest.builder()
-                .data(WRONG_SELECTOR)
-                .from(from)
-                .to(to)
-                .estimate(false)
-                .build();
+        var contractCallWrongSelector = ModelBuilder.contractCallRequest(WRONG_SELECTOR, false, from, to);
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallWrongSelector))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
@@ -246,15 +225,15 @@ public class ContractFeature extends AbstractFeature {
                 .getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
                 .getTransactions()
                 .stream()
-                .sorted(Comparator.comparing(MirrorTransaction::getConsensusTimestamp))
+                .sorted(Comparator.comparing(TransactionDetail::getConsensusTimestamp))
                 .toList();
 
         assertEquals(2, transactions.size());
-        assertEquals("CRYPTOCREATEACCOUNT", transactions.get(0).getName());
-        assertEquals("CRYPTOTRANSFER", transactions.get(1).getName());
+        assertEquals(CRYPTOCREATEACCOUNT, transactions.get(0).getName());
+        assertEquals(CRYPTOTRANSFER, transactions.get(1).getName());
 
         assertNotNull(mirrorAccountResponse.getAccount());
-        assertEquals(amount, mirrorAccountResponse.getBalanceInfo().getBalance());
+        assertEquals(amount, mirrorAccountResponse.getBalance().getBalance());
         // Hollow account indicated by not having a public key defined.
         assertEquals(ACCOUNT_EMPTY_KEYLIST, mirrorAccountResponse.getKey().getKey());
     }
@@ -281,7 +260,7 @@ public class ContractFeature extends AbstractFeature {
                 .getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
                 .getTransactions()
                 .stream()
-                .sorted(Comparator.comparing(MirrorTransaction::getConsensusTimestamp))
+                .sorted(Comparator.comparing(TransactionDetail::getConsensusTimestamp))
                 .toList();
 
         assertNotNull(transactions);
@@ -289,9 +268,9 @@ public class ContractFeature extends AbstractFeature {
         assertEquals(
                 deployedParentContract.contractId().toString(),
                 transactions.get(0).getEntityId());
-        assertEquals("CONTRACTCALL", transactions.get(0).getName());
+        assertEquals(CONTRACTCALL, transactions.get(0).getName());
         assertEquals(create2ChildContractEntityId, transactions.get(1).getEntityId());
-        assertEquals("CONTRACTCREATEINSTANCE", transactions.get(1).getName());
+        assertEquals(CONTRACTCREATEINSTANCE, transactions.get(1).getName());
 
         String childContractBytecodeFromParentHex = HexFormat.of().formatHex(childContractBytecodeFromParent);
         assertEquals(
@@ -314,7 +293,7 @@ public class ContractFeature extends AbstractFeature {
         executeSelfDestructTransaction();
     }
 
-    private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) {
+    private ContractResponse verifyContractFromMirror(boolean isDeleted) {
         var mirrorContract =
                 mirrorClient.getContractInfo(deployedParentContract.contractId().toString());
 
@@ -331,7 +310,7 @@ public class ContractFeature extends AbstractFeature {
         assertThat(mirrorContract.getContractId())
                 .isEqualTo(deployedParentContract.contractId().toString());
         assertThat(mirrorContract.getCreatedTimestamp()).isNotBlank();
-        assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
+        assertThat(mirrorContract.getDeleted()).isEqualTo(isDeleted);
         assertThat(mirrorContract.getFileId())
                 .isEqualTo(deployedParentContract.fileId().toString());
         assertThat(mirrorContract.getMemo()).isNotBlank();
@@ -366,7 +345,7 @@ public class ContractFeature extends AbstractFeature {
     }
 
     private void verifyContractExecutionResultsById() {
-        List<MirrorContractResult> contractResults = mirrorClient
+        List<ContractResult> contractResults = mirrorClient
                 .getContractResultsById(deployedParentContract.contractId().toString())
                 .getResults();
 
@@ -374,7 +353,7 @@ public class ContractFeature extends AbstractFeature {
     }
 
     private void verifyContractExecutionResultsByTransactionId() {
-        MirrorContractResultResponse contractResult = mirrorClient.getContractResultByTransactionId(
+        ContractResult contractResult = mirrorClient.getContractResultByTransactionId(
                 networkTransactionResponse.getTransactionIdStringNoCheckSum());
 
         verifyContractExecutionResults(contractResult);
@@ -387,7 +366,7 @@ public class ContractFeature extends AbstractFeature {
         return !StringUtils.hasLength(hexString) || hexString.equals("0x");
     }
 
-    private void verifyContractExecutionResults(MirrorContractResult contractResult) {
+    private void verifyContractExecutionResults(ContractResult contractResult) {
         ContractExecutionStage contractExecutionStage = isEmptyHex(contractResult.getFunctionParameters())
                 ? ContractExecutionStage.CREATION
                 : ContractExecutionStage.CALL;
@@ -395,7 +374,7 @@ public class ContractFeature extends AbstractFeature {
         assertThat(contractResult.getCallResult()).isNotBlank();
         assertThat(contractResult.getContractId())
                 .isEqualTo(deployedParentContract.contractId().toString());
-        String[] createdIds = contractResult.getCreatedContractIds();
+        var createdIds = contractResult.getCreatedContractIds();
         assertThat(createdIds).isNotEmpty();
         assertThat(contractResult.getErrorMessage()).isBlank();
         assertThat(contractResult.getFailedInitcode()).isBlank();

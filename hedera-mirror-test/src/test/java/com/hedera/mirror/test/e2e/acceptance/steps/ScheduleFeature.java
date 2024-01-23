@@ -24,14 +24,15 @@ import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.ScheduleId;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.mirror.rest.model.Schedule;
+import com.hedera.mirror.rest.model.ScheduleSignature;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
+import com.hedera.mirror.rest.model.TransactionDetail;
+import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ScheduleClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorScheduleSignature;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -117,9 +118,9 @@ public class ScheduleFeature {
     @Then("the mirror node REST API should return status {int} for the schedule transaction")
     public void verifyMirrorAPIResponses(int status) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+        TransactionByIdResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
-        MirrorTransaction mirrorTransaction =
+        TransactionDetail mirrorTransaction =
                 verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status, true);
 
         assertThat(mirrorTransaction.getValidStartTimestamp())
@@ -129,7 +130,7 @@ public class ScheduleFeature {
 
     @Then("the mirror node REST API should verify the executed schedule entity")
     public void verifyExecutedScheduleFromMirror() {
-        MirrorScheduleResponse mirrorSchedule = verifyScheduleFromMirror(ScheduleStatus.EXECUTED);
+        Schedule mirrorSchedule = verifyScheduleFromMirror(ScheduleStatus.EXECUTED);
         verifyScheduledTransaction(mirrorSchedule.getExecutedTimestamp());
     }
 
@@ -143,7 +144,7 @@ public class ScheduleFeature {
         verifyScheduleFromMirror(ScheduleStatus.DELETED);
     }
 
-    private MirrorScheduleResponse verifyScheduleFromMirror(ScheduleStatus scheduleStatus) {
+    private Schedule verifyScheduleFromMirror(ScheduleStatus scheduleStatus) {
         var mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
 
         assertNotNull(mirrorSchedule);
@@ -151,7 +152,7 @@ public class ScheduleFeature {
 
         // get unique set of signatures
         var signatureSet = mirrorSchedule.getSignatures().stream()
-                .map(MirrorScheduleSignature::getPublicKeyPrefix)
+                .map(ScheduleSignature::getPublicKeyPrefix)
                 .collect(Collectors.toSet());
         assertThat(signatureSet).hasSize(currentSignersCount);
 
@@ -166,21 +167,44 @@ public class ScheduleFeature {
     }
 
     private void verifyScheduledTransaction(String timestamp) {
-        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactionInfoByTimestamp(timestamp);
+        TransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactionInfoByTimestamp(timestamp);
 
-        MirrorTransaction mirrorTransaction =
+        com.hedera.mirror.rest.model.Transaction mirrorTransaction =
                 verifyMirrorTransactionsResponse(mirrorTransactionsResponse, HttpStatus.OK.value(), false);
 
         assertThat(mirrorTransaction.getConsensusTimestamp()).isEqualTo(timestamp);
-        assertThat(mirrorTransaction.isScheduled()).isTrue();
+        assertThat(mirrorTransaction.getScheduled()).isTrue();
     }
 
-    private MirrorTransaction verifyMirrorTransactionsResponse(
-            MirrorTransactionsResponse mirrorTransactionsResponse, int status, boolean verifyEntityId) {
-        List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
+    private TransactionDetail verifyMirrorTransactionsResponse(
+            TransactionByIdResponse mirrorTransactionsResponse, int status, boolean verifyEntityId) {
+        List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        MirrorTransaction mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.get(0);
+
+        if (status == HttpStatus.OK.value()) {
+            assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
+        }
+
+        assertThat(mirrorTransaction.getValidStartTimestamp()).isNotNull();
+        assertThat(mirrorTransaction.getName()).isNotNull();
+        assertThat(mirrorTransaction.getResult()).isNotNull();
+        assertThat(mirrorTransaction.getConsensusTimestamp()).isNotNull();
+
+        if (verifyEntityId) {
+            assertThat(mirrorTransaction.getEntityId()).isEqualTo(scheduleId.toString());
+        }
+
+        return mirrorTransaction;
+    }
+
+    private com.hedera.mirror.rest.model.Transaction verifyMirrorTransactionsResponse(
+            TransactionsResponse mirrorTransactionsResponse, int status, boolean verifyEntityId) {
+        List<com.hedera.mirror.rest.model.Transaction> transactions = mirrorTransactionsResponse.getTransactions();
+        assertNotNull(transactions);
+        assertThat(transactions).isNotEmpty();
+        com.hedera.mirror.rest.model.Transaction mirrorTransaction = transactions.get(0);
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");

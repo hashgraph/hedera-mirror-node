@@ -57,11 +57,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ContractResponseUtil;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -173,7 +174,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I get mock contract address and getAddress selector")
     public void getMockAddress() {
         var data = encodeData(ESTIMATE_GAS, GET_MOCK_ADDRESS);
-        mockAddress = callContract(data, contractSolidityAddress).getResultAsAddress();
+        mockAddress = ContractResponseUtil.of(callContract(data, contractSolidityAddress)).getResultAsAddress();
         addressSelector = new BigInteger("0x38cc4831".substring(2), 16).toByteArray();
     }
 
@@ -220,14 +221,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with non-existing from address in the request body")
     public void wrongFromParameterEstimateCall() {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(encodeData(ESTIMATE_GAS, MESSAGE_SIGNER))
-                .to(contractSolidityAddress)
-                .from(newAccountEvmAddress)
-                .estimate(true)
-                .build();
-        ContractCallResponse msgSignerResponse = mirrorClient.contractsCall(contractCallRequestBody);
-        int estimatedGas = msgSignerResponse.getResultAsNumber().intValue();
+        var data = encodeData(ESTIMATE_GAS, MESSAGE_SIGNER);
+        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, newAccountEvmAddress, contractSolidityAddress);
+        ContractCallResponse msgSignerResponse = mirrorClient.contractsCall(contractCallRequest);
+        int estimatedGas = ContractResponseUtil.of(msgSignerResponse).getResultAsNumber().intValue();
 
         assertWithinDeviation(MESSAGE_SIGNER.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
     }
@@ -298,12 +295,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
     public void progressiveStateUpdateContractFunction() {
         // making 5 times to state update
         var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("5"));
-        var firstResponse = estimateContract(data, contractSolidityAddress)
+        var firstResponse = ContractResponseUtil.of(estimateContract(data, contractSolidityAddress))
                 .getResultAsNumber()
                 .intValue();
         // making 10 times to state update
         var secondData = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("10"));
-        var secondResponse = estimateContract(secondData, contractSolidityAddress)
+        var secondResponse = ContractResponseUtil.of(estimateContract(secondData, contractSolidityAddress))
                 .getResultAsNumber()
                 .intValue();
         // verifying that estimateGas for 10 state updates is higher than 5 state updates

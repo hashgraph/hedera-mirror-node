@@ -19,9 +19,10 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
+import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -69,13 +70,9 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
     protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
-                .to(solidityAddress)
-                .estimate(true)
-                .build();
-        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
-        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
+        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, solidityAddress);
+        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
+        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();
 
         assertWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
     }
@@ -92,13 +89,8 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @throws AssertionError If the response from the contract call does not contain "400 Bad Request from POST".
      */
     protected void assertContractCallReturnsBadRequest(String data, String contractAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
-                .to(contractAddress)
-                .estimate(true)
-                .build();
-
-        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
+        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, contractAddress);
+        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }

@@ -146,15 +146,15 @@ import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
+import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -171,6 +171,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.tuweni.bytes.Bytes;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -1533,7 +1534,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public int validateAndReturnGas(byte[] data, ContractMethods contractMethods, String contractAddress) {
         var encodedData = Strings.encode(ByteBuffer.wrap(data));
         var response = estimateContract(encodedData, contractAddress);
-        var estimateGasValue = response.getResultAsNumber().intValue();
+        var estimateGasValue = Bytes.fromHexString(response.getResult()).toBigInteger().intValue();
         assertWithinDeviation(contractMethods.getActualGas(), estimateGasValue, lowerDeviation, upperDeviation);
         return estimateGasValue;
     }
@@ -1903,15 +1904,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     }
 
     private void validateGasEstimationForCreateToken(String data, int actualGasUsed, long value) {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(data)
-                .to(estimatePrecompileContractSolidityAddress)
-                .from(contractClient.getClientAddress())
-                .estimate(true)
-                .value(value)
-                .build();
-        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
-        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
+        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, contractClient.getClientAddress(), estimatePrecompileContractSolidityAddress);
+        contractCallRequest.value(value);
+        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
+        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();
         assertWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation);
     }
 

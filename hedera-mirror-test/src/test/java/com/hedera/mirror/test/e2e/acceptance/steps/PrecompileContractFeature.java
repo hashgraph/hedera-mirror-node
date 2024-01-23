@@ -57,17 +57,18 @@ import com.hedera.hashgraph.sdk.CustomRoyaltyFee;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.mirror.rest.model.AccountInfo;
+import com.hedera.mirror.rest.model.ContractCallResponse;
+import com.hedera.mirror.rest.model.Nft;
+import com.hedera.mirror.rest.model.TokenInfo;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ContractResponseUtil;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -188,7 +189,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     public void checkIfFungibleTokenIsToken() {
         var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
-        assertTrue(response.getResultAsBoolean());
+        assertTrue(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("check if non fungible token is token")
@@ -197,7 +198,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertTrue(response.getResultAsBoolean());
+        assertTrue(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @Then("the contract call REST API to is token with invalid account id should return an error")
@@ -226,7 +227,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("verify non fungible token isn't frozen")
@@ -236,7 +237,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @Given("I freeze a non fungible token")
@@ -257,7 +258,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertTrue(response.getResultAsBoolean());
+        assertTrue(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @Given("I unfreeze a non fungible token")
@@ -278,7 +279,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @Given("I freeze fungible token for evm address")
@@ -293,7 +294,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if fungible token is frozen for evm address")
     public void checkIfTokenIsFrozenForEvmAddress() {
-        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
+        AccountInfo accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
         var data = encodeData(
                 PRECOMPILE,
                 IS_TOKEN_FROZEN_SELECTOR,
@@ -302,7 +303,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertTrue(response.getResultAsBoolean());
+        assertTrue(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @Given("I unfreeze fungible token for evm address")
@@ -317,7 +318,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if fungible token is unfrozen for evm address")
     public void checkIfTokenIsUnfrozenForEvmAddress() {
-        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
+        AccountInfo accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
         var data = encodeData(
                 PRECOMPILE,
                 IS_TOKEN_FROZEN_SELECTOR,
@@ -326,7 +327,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @Retryable(
@@ -334,7 +335,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyTx(String txId) {
-        MirrorTransactionsResponse txResponse = mirrorClient.getTransactions(txId);
+        TransactionByIdResponse txResponse = mirrorClient.getTransactions(txId);
         assertNotNull(txResponse);
     }
 
@@ -345,7 +346,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertTrue(response.getResultAsBoolean());
+        assertTrue(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("check if non fungible token is kyc granted")
@@ -355,7 +356,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertTrue(response.getResultAsBoolean());
+        assertTrue(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the default freeze for a fungible token")
@@ -364,7 +365,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the default freeze for a non fungible token")
@@ -373,7 +374,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the default kyc for a fungible token")
@@ -382,7 +383,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the default kyc for a non fungible token")
@@ -391,7 +392,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the information for token for a fungible token")
@@ -467,7 +468,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         var data = encodeData(PRECOMPILE, GET_TYPE_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertThat(response.getResultAsNumber()).isZero();
+        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isZero();
     }
 
     @And("the contract call REST API should return the type for a non fungible token")
@@ -475,7 +476,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         var data = encodeData(PRECOMPILE, GET_TYPE_SELECTOR, asAddress(nonFungibleTokenId));
         var response = callContract(data, precompileTestContractSolidityAddress);
 
-        assertThat(response.getResultAsNumber()).isEqualTo(1);
+        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isEqualTo(1);
     }
 
     @And("the contract call REST API should return the expiry token info for a fungible token")
@@ -523,7 +524,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyToken(TokenId tokenId) {
-        MirrorTokenResponse mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
+        TokenInfo mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
 
         assertNotNull(mirrorToken);
         assertThat(mirrorToken.getTokenId()).isEqualTo(tokenId.toString());
@@ -534,7 +535,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyNft(TokenId tokenId, Long serialNumber) {
-        MirrorNftResponse mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
+        Nft mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
 
         assertNotNull(mirrorNft);
         assertThat(mirrorNft.getTokenId()).isEqualTo(tokenId.toString());
@@ -545,84 +546,84 @@ public class PrecompileContractFeature extends AbstractFeature {
     public void getFungibleTokenNameByDirectCall() {
         var data = encodeData(NAME_SELECTOR);
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsAsciiString()).contains("_name");
+        assertThat(ContractResponseUtil.of(response).getResultAsAsciiString()).contains("_name");
     }
 
     @And("the contract call REST API should return the symbol by direct call for a fungible token")
     public void getFungibleTokenSymbolByDirectCall() {
         var data = encodeData(SYMBOL_SELECTOR);
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsAsciiString()).isNotEmpty();
+        assertThat(ContractResponseUtil.of(response).getResultAsAsciiString()).isNotEmpty();
     }
 
     @And("the contract call REST API should return the decimals by direct call for a  fungible token")
     public void getFungibleTokenDecimalsByDirectCall() {
         var data = encodeData(DECIMALS_SELECTOR);
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsNumber()).isEqualTo(10);
+        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isEqualTo(10);
     }
 
     @And("the contract call REST API should return the total supply by direct call for a  fungible token")
     public void getFungibleTokenTotalSupplyByDirectCall() {
         var data = encodeData(TOTAL_SUPPLY_SELECTOR);
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsNumber()).isEqualTo(1000000);
+        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isEqualTo(1000000);
     }
 
     @And("the contract call REST API should return the balanceOf by direct call for a fungible token")
     public void getFungibleTokenBalanceOfByDirectCall() {
         var data = encodeData(BALANCE_OF_SELECTOR, asAddress(contractClient));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsNumber()).isEqualTo(1000000);
+        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isEqualTo(1000000);
     }
 
     @And("the contract call REST API should return the allowance by direct call for a fungible token")
     public void getFungibleTokenAllowanceByDirectCall() {
         var data = encodeData(ALLOWANCE_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsNumber()).isZero();
+        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isZero();
     }
 
     @And("the contract call REST API should return the name by direct call for a non fungible token")
     public void getNonFungibleTokenNameByDirectCall() {
         var data = encodeData(NAME_SELECTOR);
         var response = callContract(data, nonFungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsAsciiString()).contains("_name");
+        assertThat(ContractResponseUtil.of(response).getResultAsAsciiString()).contains("_name");
     }
 
     @And("the contract call REST API should return the symbol by direct call for a non fungible token")
     public void getNonFungibleTokenSymbolByDirectCall() {
         var data = encodeData(SYMBOL_SELECTOR);
         var response = callContract(data, nonFungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsAsciiString()).isNotEmpty();
+        assertThat(ContractResponseUtil.of(response).getResultAsAsciiString()).isNotEmpty();
     }
 
     @And("the contract call REST API should return the total supply by direct call for a non fungible token")
     public void getNonFungibleTokenTotalSupplyByDirectCall() {
         var data = encodeData(TOTAL_SUPPLY_SELECTOR);
         var response = callContract(data, nonFungibleTokenId.toSolidityAddress());
-        assertThat(response.getResultAsNumber()).isEqualTo(1);
+        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isEqualTo(1);
     }
 
     @And("the contract call REST API should return the ownerOf by direct call for a non fungible token")
     public void getNonFungibleTokenOwnerOfByDirectCall() {
         var data = encodeData(OWNER_OF_SELECTOR, new BigInteger("1"));
         var response = callContract(data, nonFungibleTokenId.toSolidityAddress());
-        tokenClient.validateAddress(response.getResultAsAddress());
+        tokenClient.validateAddress(ContractResponseUtil.of(response).getResultAsAddress());
     }
 
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
     public void getNonFungibleTokenGetApprovedByDirectCall() {
         var data = encodeData(GET_APPROVED_SELECTOR, new BigInteger("1"));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the isApprovedForAll by direct call for a non fungible token")
     public void getNonFungibleTokenIsApprovedForAllByDirectCallOwner() {
         var data = encodeData(IS_APPROVED_FOR_ALL_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
-        assertFalse(response.getResultAsBoolean());
+        assertFalse(ContractResponseUtil.of(response).getResultAsBoolean());
     }
 
     @And("the contract call REST API should return the custom fees for a fungible token")

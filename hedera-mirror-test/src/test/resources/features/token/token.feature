@@ -24,10 +24,10 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should return the transaction
     Then I pause the token
     And the mirror node REST API should return the transaction
-    And the mirror node Token Info REST API should return pause status "PAUSED"
+    And the mirror node Token Info REST API should return pause status PAUSED
     Then I unpause the token
     And the mirror node REST API should return the transaction
-    And the mirror node Token Info REST API should return pause status "UNPAUSED"
+    And the mirror node Token Info REST API should return pause status UNPAUSED
     Then I dissociate the account from the token
     And the mirror node REST API should return the transaction
     Then I delete the token
