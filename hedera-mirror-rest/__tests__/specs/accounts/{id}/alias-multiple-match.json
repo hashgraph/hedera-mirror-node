@@ -1,6 +1,5 @@
 {
   "description": "Account api calls for specific alias matching multiple alive accounts",
-  "matrix": "timestampBindingMatrix.js",
   "setup": {
     "accounts": [
       {

@@ -391,9 +391,19 @@ const getOneAccount = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleAccountParameters);
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
-  const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
+  const timestampFilters = [];
+  let includeTransactions = true;
+  for (const filter of filters) {
+    switch (filter.key) {
+      case filterKeys.TIMESTAMP:
+        timestampFilters.push(filter);
+        break;
+      case filterKeys.TRANSACTIONS:
+        includeTransactions = filter.value;
+        break;
+    }
+  }
   const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false);
-  const transactionsFilter = _.findLast(filters, {key: filterKeys.TRANSACTIONS});
 
   const accountIdParamIndex = 1;
   let paramCount = accountIdParamIndex;
@@ -466,8 +476,6 @@ const getOneAccount = async (req, res) => {
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
-  // when not specified or set as true
-  const includeTransactions = transactionsFilter?.value ?? true;
   const transactionsPromise = includeTransactions
     ? transactions.doGetTransactions(encodedId, filters, req, timestampRange)
     : emptyTransactionsPromise;

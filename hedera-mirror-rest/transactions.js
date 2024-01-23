@@ -289,7 +289,7 @@ const convertStakingRewardTransfers = (rows) => {
 const getFirstTransactionTimestamp = (() => {
   let timestamp;
 
-  return async () => {
+  const func = async () => {
     if (timestamp === undefined) {
       const {rows} = await pool.queryQuietly(`select consensus_timestamp
         from transaction
@@ -305,6 +305,12 @@ const getFirstTransactionTimestamp = (() => {
 
     return timestamp;
   };
+
+  if (utils.isTestEnv()) {
+    func.reset = () => (timestamp = undefined);
+  }
+
+  return func;
 })();
 
 /**
@@ -683,6 +689,15 @@ const getTransactions = async (req, res) => {
   res.locals[constants.responseDataLabel] = await doGetTransactions(null, filters, req, timestampRange);
 };
 
+/**
+ * Get transactions per the http request.
+ *
+ * @param {BigInt|Number} accountId The account id from the path parameter
+ * @param {Object[]} filters The filters extracted from the http request
+ * @param {Request} req The http request
+ * @param timestampRange The timestamp range parsed from the http request
+ * @returns {Promise<{links: {next: String}, transactions: *}>}
+ */
 const doGetTransactions = async (accountId, filters, req, timestampRange) => {
   const {
     limit,
@@ -917,6 +932,7 @@ if (utils.isTestEnv()) {
     createStakingRewardTransferList,
     createTokenTransferList,
     extractSqlFromTransactionsByIdOrHashRequest,
+    getFirstTransactionTimestamp,
     getStakingRewardTimestamps,
     isValidTransactionHash,
   });

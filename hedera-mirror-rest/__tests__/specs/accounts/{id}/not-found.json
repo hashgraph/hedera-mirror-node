@@ -3,7 +3,6 @@
   "extendedDescription": [
     "account 18 is deleted, when querying by its alias, the rest api should return 404"
   ],
-  "matrix": "timestampBindingMatrix.js",
   "setup": {
     "accounts": [
       {

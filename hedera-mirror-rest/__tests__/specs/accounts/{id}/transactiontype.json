@@ -1,14 +1,10 @@
 {
   "description": "Account api calls for specific account using path and transaction type filter",
-  "matrix": "timestampBindingMatrix.js",
-  "matrixSetup": {
-    "true": {
-      "features": {
-        "fakeTime": "2009-02-13Z 23:40:00"
-      }
-    }
-  },
+  "matrix": "bindTimestampMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2009-02-13T23:40:00Z"
+    },
     "accounts": [
       {
         "num": 3

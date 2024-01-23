@@ -1,6 +1,6 @@
 {
   "description": "Account api calls for specific account using path and transaction timestamp lte filter",
-  "matrix": "timestampBindingMatrix.js",
+  "matrix": "bindTimestampMatrix.js",
   "setup": {
     "accounts": [
       {

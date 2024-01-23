@@ -1,6 +1,6 @@
 {
   "description": "Account api calls for specific account using path and closed timestamp range",
-  "matrix": "timestampBindingMatrix.js",
+  "matrix": "bindTimestampMatrix.js",
   "setup": {
     "config": {
       "query": {
