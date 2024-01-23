@@ -1588,7 +1588,9 @@ const parseTimestampFilters = (
 
     // If difference is null, we want to ignore because we allow open ranges and that is known to be true at this point
     if (difference !== null && (difference > maxTimestampRangeNs || difference <= 0n)) {
-      throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
+      throw new InvalidArgumentError(
+        `Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`
+      );
     }
   }
 

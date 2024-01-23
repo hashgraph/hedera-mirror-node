@@ -37,9 +37,13 @@ import {
 } from './model';
 
 import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
-import {resultSuccess} from "./utils";
 
-const {query: {maxTransactionConsensusTimestampRangeNs}, response: {limit: {default: defaultResponseLimit}}} = config;
+const {
+  query: {maxTransactionConsensusTimestampRangeNs},
+  response: {
+    limit: {default: defaultResponseLimit},
+  },
+} = config;
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
@@ -317,7 +321,11 @@ const bindTimestampRange = async (range, order = constants.orderFilterValues.DES
     return range;
   }
 
-  const boundRange = Range(range?.begin ?? await getFirstTransactionTimestamp(), range?.end ?? BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND, '[]');
+  const boundRange = Range(
+    range?.begin ?? (await getFirstTransactionTimestamp()),
+    range?.end ?? BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND,
+    '[]'
+  );
   if (boundRange.end - boundRange.begin + 1n <= maxTimestampRangeNs) {
     return boundRange;
   }
@@ -419,7 +427,8 @@ const extractSqlFromTransactionsRequest = (accountId, filters) => {
         if (creditDebitQuery) {
           return {};
         }
-        creditDebitQuery = `ctl.amount ${filter.value === constants.cryptoTransferType.CREDIT ? '>' : '<'} $${params.push(0)}`;
+        const operator = filter.value === constants.cryptoTransferType.CREDIT ? '>' : '<';
+        creditDebitQuery = `ctl.amount ${operator} $${params.push(0)}`;
         break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
@@ -437,15 +446,22 @@ const extractSqlFromTransactionsRequest = (accountId, filters) => {
   }
 
   if (accountIds.length > 0) {
-    accountQuery = accountIds.length === 1 ? `ctl.entity_id = $${params.push(accountIds[0])}` : `ctl.entity_id in ($${params.push(accountId)})`;
+    accountQuery =
+      accountIds.length === 1
+        ? `ctl.entity_id = $${params.push(accountIds[0])}`
+        : `ctl.entity_id in ($${params.push(accountId)})`;
   }
 
   if (resultType) {
-    resultTypeQuery = `t.result ${resultType === constants.transactionResultFilter.SUCCESS ? '=' : '<>'} $${params.push(utils.resultSuccess)}`;
+    const operator = resultType === constants.transactionResultFilter.SUCCESS ? '=' : '<>';
+    resultTypeQuery = `t.result ${operator} $${params.push(utils.resultSuccess)}`;
   }
 
   if (transactionTypes.length > 0) {
-    transactionTypeQuery = transactionTypes.length === 1 ? `type = $${params.push(transactionTypes[0])}` : `type in ($${params.push(transactionTypes)})`;
+    transactionTypeQuery =
+      transactionTypes.length === 1
+        ? `type = $${params.push(transactionTypes[0])}`
+        : `type in ($${params.push(transactionTypes)})`;
   }
 
   const limitQuery = `limit $${params.push(limit)}`;
@@ -468,16 +484,13 @@ const extractSqlFromTransactionsRequest = (accountId, filters) => {
  * @param timestampRange the timestamp range object
  * @return {Promise} the Promise for obtaining the results of the query
  */
-const getTransactionTimestamps = async (
-  accountId,
-  filters,
-  timestampRange,
-) => {
+const getTransactionTimestamps = async (accountId, filters, timestampRange) => {
   if (timestampRange.eqValues.length > 1) {
     return {rows: []};
   }
 
-  const {accountQuery, creditDebitQuery, limit, limitQuery, order, resultTypeQuery, transactionTypeQuery, params} = extractSqlFromTransactionsRequest(accountId, filters);
+  const {accountQuery, creditDebitQuery, limit, limitQuery, order, resultTypeQuery, transactionTypeQuery, params} =
+    extractSqlFromTransactionsRequest(accountId, filters);
   if (limit === undefined) {
     return {rows: []};
   }
@@ -671,25 +684,31 @@ const getTransactions = async (req, res) => {
 };
 
 const doGetTransactions = async (accountId, filters, req, timestampRange) => {
-  const {limit, order, rows: timestampsRows, sqlQuery: timestampsSqlQuery} = await getTransactionTimestamps(
-    accountId,
-    filters,
-    timestampRange,
-  );
+  const {
+    limit,
+    order,
+    rows: timestampsRows,
+    sqlQuery: timestampsSqlQuery,
+  } = await getTransactionTimestamps(accountId, filters, timestampRange);
 
   const {rows: transactionsRows, sqlQuery: transactionsRowsSqlQuery} = await getTransactionsSummary(
     timestampsRows,
-    order,
+    order
   );
 
   const transactions = await formatTransactionRows(transactionsRows);
-  const next = utils.getPaginationLink(req, transactions.length !== limit,{
-    [constants.filterKeys.TIMESTAMP]: transactions[transactions.length - 1]?.consensus_timestamp,
-  }, order);
+  const next = utils.getPaginationLink(
+    req,
+    transactions.length !== limit,
+    {
+      [constants.filterKeys.TIMESTAMP]: transactions[transactions.length - 1]?.consensus_timestamp,
+    },
+    order
+  );
   return {
     transactions,
     links: {next},
-  }
+  };
 };
 
 // The first part of the regex is for the base64url encoded 48-byte transaction hash. Note base64url replaces '+' with
