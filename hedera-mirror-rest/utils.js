@@ -1439,6 +1439,21 @@ const getPoolClass = async (mock = false) => {
     const clientErrorCallback = (error) => {
       logger.error(`error event emitted on pg pool. ${error.stack}`);
     };
+
+    if (logger.isTraceEnabled()) {
+      const callerInfo = new Error().stack
+        .split('\n')
+        .splice(1)
+        .filter((s) => !(s.includes('utils.js') || s.includes('baseService.js')))
+        .map((entry) => {
+          const result = entry.match(/^\s*at\s+(\S+).*\/(.*\.js):(\d+):.*/);
+          return result && result.length === 4 && {function: result[1], file: result[2], line: result[3]};
+        })[0];
+      logger.trace(
+        `${callerInfo.function} (${callerInfo.file}:${callerInfo.line}) query: ${query} ${JSONStringify(params)}`
+      );
+    }
+
     try {
       if (!preQueryHint) {
         result = await this.query(query, params);

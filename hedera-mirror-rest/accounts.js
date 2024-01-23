@@ -30,6 +30,22 @@ import balances from './balances';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
+const getEntityStakeQuery = (filter, isHistorical = false) => {
+  if (isHistorical) {
+    return `(
+      select * from (
+          select * from entity_stake as e where ${filter}
+                union all
+          select * from entity_stake_history as e where ${filter}
+      )
+      as asd
+      order by asd.timestamp_range desc limit 1
+    )`;
+  }
+
+  return 'entity_stake';
+};
+
 /**
  * Processes one row of the results of the SQL query and format into API return format
  * @param {Object} row One row of the SQL query result
@@ -119,6 +135,7 @@ const entityFields = [
  * @param pubKeyQuery
  * @param tokenBalanceQuery
  * @param accountBalanceQuery
+ * @param isHistorical whether to query historical data
  * @return {{query: string, params: *[]}}
  */
 const getEntityBalanceQuery = (
@@ -127,7 +144,8 @@ const getEntityBalanceQuery = (
   limitAndOrderQuery,
   pubKeyQuery,
   tokenBalanceQuery,
-  accountBalanceQuery
+  accountBalanceQuery,
+  isHistorical = false
 ) => {
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
 
@@ -217,7 +235,9 @@ const getEntityBalanceQuery = (
   const selectFields = [entityFields, selectTokenBalance, balanceField, balanceTimestampField];
   queries.push(`select ${selectFields.join(',\n')}
     from ${entityTable} as e
-      left join entity_stake as es on es.id = e.id
+    left join
+      ${getEntityStakeQuery(entityAccountQuery.query, isHistorical)}
+    as es on es.id = e.id
     ${[whereClause, orderClause, limitQuery].filter(Boolean).join('\n')}`);
   const query = queries.join('\n');
 
@@ -236,6 +256,7 @@ const emptyTransactionsPromise = Promise.resolve({transactions: [], links: {next
  * @param limitAndOrderQuery optional limit and order query
  * @param pubKeyQuery optional entity public key query
  * @param includeBalance include balance info or not
+ * @param isHistorical whether to query historical data
  * @return {{query: string, params: []}}
  */
 const getAccountQuery = (
@@ -245,7 +266,8 @@ const getAccountQuery = (
   entityBalanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
   pubKeyQuery = {query: '', params: []},
-  includeBalance = true
+  includeBalance = true,
+  isHistorical = false
 ) => {
   if (!includeBalance) {
     const entityCondition = [`e.type in ('ACCOUNT', 'CONTRACT')`, entityAccountQuery.query, pubKeyQuery.query]
@@ -270,7 +292,8 @@ const getAccountQuery = (
     limitAndOrderQuery,
     pubKeyQuery,
     tokenBalanceQuery,
-    accountBalanceQuery
+    accountBalanceQuery,
+    isHistorical
   );
 };
 
@@ -317,14 +340,11 @@ const getAccounts = async (req, res) => {
     balanceQuery,
     limitAndOrderQuery,
     pubKeyQuery,
-    includeBalance
+    includeBalance,
+    false
   );
 
   const pgQuery = utils.convertMySqlStyleQueryToPostgres(query);
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getAccounts query: ${pgQuery} ${utils.JSONStringify(params)}`);
-  }
 
   // Execute query
   // set random_page_cost to 0 to make the cost estimation of using the index on (public_key, index)
@@ -388,7 +408,7 @@ const getOneAccount = async (req, res) => {
   if (timestampFilters.length > 0) {
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
-      timestampRange,
+      timestampRange
     );
     entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
@@ -435,21 +455,24 @@ const getOneAccount = async (req, res) => {
   const {query: entityQuery, params: entityParams} = getAccountQuery(
     entityAccountQuery,
     tokenBalanceQuery,
-    accountBalanceQuery
+    accountBalanceQuery,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    timestampFilters.length > 0
   );
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
-
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
   // when not specified or set as true
   const includeTransactions = transactionsFilter?.value ?? true;
-  const transactionsPromise = includeTransactions ? transactions.doGetTransactions(encodedId, filters, req, timestampRange) : emptyTransactionsPromise;
+  const transactionsPromise = includeTransactions
+    ? transactions.doGetTransactions(encodedId, filters, req, timestampRange)
+    : emptyTransactionsPromise;
 
-  const [entityResults, transactionResults] = await Promise.all([
-    entityPromise,
-    transactionsPromise,
-  ]);
+  const [entityResults, transactionResults] = await Promise.all([entityPromise, transactionsPromise]);
 
   if (entityResults.rows.length === 0) {
     throw new NotFoundError();
@@ -462,7 +485,7 @@ const getOneAccount = async (req, res) => {
   const ret = {
     ...processRow(entityResults.rows[0]),
     ...transactionResults,
-  }
+  };
 
   logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
   res.locals[constants.responseDataLabel] = ret;
@@ -470,11 +493,6 @@ const getOneAccount = async (req, res) => {
   if (utils.isTestEnv()) {
     ret.entitySqlQuery = entityResults.sqlQuery;
   }
-};
-
-const accounts = {
-  getAccounts,
-  getOneAccount,
 };
 
 const acceptedAccountsParameters = new Set([
@@ -493,6 +511,11 @@ const acceptedSingleAccountParameters = new Set([
   constants.filterKeys.TRANSACTION_TYPE,
   constants.filterKeys.TRANSACTIONS,
 ]);
+
+const accounts = {
+  getAccounts,
+  getOneAccount,
+};
 
 if (utils.isTestEnv()) {
   Object.assign(accounts, {

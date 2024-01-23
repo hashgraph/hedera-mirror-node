@@ -27,6 +27,8 @@ import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperationV038;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -120,6 +122,12 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -128,6 +136,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class ServicesConfiguration {
+    private static final int SYSTEM_ACCOUNT_BOUNDARY = 750;
+    private static final int STRICT_SYSTEM_ACCOUNT_BOUNDARY = 999;
 
     @Bean
     GasCalculatorHederaV22 gasCalculatorHederaV22(
@@ -726,5 +736,49 @@ public class ServicesConfiguration {
                 store,
                 tokenAccessor,
                 precompilePricingUtils);
+    }
+
+    @Bean
+    HederaExtCodeHashOperationV038 hederaExtCodeHashOperationV038(
+            final GasCalculator gasCalculator,
+            final Predicate<Address> strictSystemAccountDetector,
+            BiPredicate<Address, MessageFrame> addressValidator) {
+        return new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, strictSystemAccountDetector);
+    }
+
+    @Bean
+    HederaExtCodeHashOperation hederaExtCodeHashOperation(
+            final GasCalculator gasCalculator, BiPredicate<Address, MessageFrame> preV38AddressValidator) {
+        return new HederaExtCodeHashOperation(gasCalculator, preV38AddressValidator);
+    }
+
+    @Bean
+    BiPredicate<Address, MessageFrame> addressValidator(final PrecompilesHolder precompilesHolder) {
+        final var precompiles = precompilesHolder.getHederaPrecompiles().keySet().stream()
+                .map(Address::fromHexString)
+                .collect(Collectors.toSet());
+        return (address, frame) ->
+                precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
+    }
+
+    @Bean
+    BiPredicate<Address, MessageFrame> preV38AddressValidator() {
+        return (address, frame) -> frame.getWorldUpdater().get(address) != null;
+    }
+
+    @Bean
+    static Predicate<Address> systemAccountDetector() {
+        // all addresses between 0-750 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing Call, Balance, and SelfDestruct operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), SYSTEM_ACCOUNT_BOUNDARY) <= 0;
+    }
+
+    @Bean
+    static Predicate<Address> strictSystemAccountDetector() {
+        // all addresses between 0-999 (inclusive) are treated as system accounts
+        // from the perspective of the EVM when executing ExtCode operations
+        return address -> address.numberOfLeadingZeroBytes() >= 18
+                && Integer.compareUnsigned(address.getInt(16), STRICT_SYSTEM_ACCOUNT_BOUNDARY) <= 0;
     }
 }

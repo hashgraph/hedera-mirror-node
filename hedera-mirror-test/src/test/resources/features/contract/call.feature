@@ -6,7 +6,6 @@ Feature: eth_call Contract Base Coverage Feature
     Given I successfully create Precompile contract
     Given I verify the precompile contract bytecode is deployed
     Given I successfully create EstimateGas contract
-    Given I successfully create EstimateGas contract
     Given I ensure token "FUNGIBLE" has been created
     Given I ensure token "NFT" has been created
     Then I call function with IERC721Metadata token "NFT" name

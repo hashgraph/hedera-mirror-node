@@ -255,6 +255,7 @@ const getStakingRewardTransferList = async (stakingRewardTimestamps) => {
     from ${StakingRewardTransfer.tableName}
     where ${StakingRewardTransfer.CONSENSUS_TIMESTAMP} in (${positions})
     group by ${StakingRewardTransfer.CONSENSUS_TIMESTAMP}`;
+
   const {rows} = await pool.queryQuietly(query, stakingRewardTimestamps);
   return rows;
 };
@@ -776,9 +777,6 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
     const v1ShardQueryEnabled = await transactionHashShardedQueryEnabled();
     const usedTransactionHashQuery = v1ShardQueryEnabled ? transactionHashShardedQuery : transactionHashQuery;
     const transactionHash = Buffer.from(transactionIdOrHash, encoding);
-    if (logger.isTraceEnabled()) {
-      logger.trace(`transactionHashQuery: ${usedTransactionHashQuery}, ${utils.JSONStringify(transactionHash)}`);
-    }
 
     const {rows} = await pool.queryQuietly(usedTransactionHashQuery, [transactionHash]);
     if (rows.length === 0) {
@@ -854,9 +852,6 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
 const getTransactionsByIdOrHash = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleTransactionParameters);
   const {query, params} = await extractSqlFromTransactionsByIdOrHashRequest(req.params.transactionIdOrHash, filters);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
-  }
 
   // Execute query
   const {rows} = await pool.queryQuietly(query, params);

@@ -67,6 +67,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -202,7 +203,11 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with function that performs self destruct")
     public void destroyEstimateCall() {
-        validateGasEstimation(encodeData(ESTIMATE_GAS, DESTROY), DESTROY, contractSolidityAddress);
+        validateGasEstimation(
+                encodeData(ESTIMATE_GAS, DESTROY),
+                DESTROY,
+                contractSolidityAddress,
+                Optional.of(contractClient.getClientAddress()));
     }
 
     @Then("I call estimateGas with request body that contains wrong method signature")
@@ -398,6 +403,23 @@ public class EstimateFeature extends AbstractEstimateFeature {
     public void contractDeployEstimateGas() {
         var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
         validateGasEstimation(bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null);
+    }
+
+    @Then("I call estimateGas with contract deploy with bytecode as data with sender")
+    public void contractDeployEstimateGasWithSender() {
+        var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
+        validateGasEstimation(
+                bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null, Optional.of(contractClient.getClientAddress()));
+    }
+
+    @Then("I call estimateGas with contract deploy with bytecode as data with invalid sender")
+    public void contractDeployEstimateGasWithInvalidSender() {
+        var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
+        validateGasEstimation(
+                bytecodeData,
+                DEPLOY_CONTRACT_VIA_BYTECODE_DATA,
+                null,
+                Optional.of("0x0000000000000000000000000000000000000167"));
     }
 
     /**

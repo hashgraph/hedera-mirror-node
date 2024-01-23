@@ -198,7 +198,6 @@ public class HederaEvmTxProcessor {
 
     protected void process(final MessageFrame frame, final OperationTracer operationTracer, final String evmVersion) {
         final AbstractMessageProcessor executor = getMessageProcessor(frame.getType(), evmVersion);
-
         executor.process(frame, operationTracer);
     }
 

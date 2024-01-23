@@ -35,7 +35,7 @@ class StakingRewardTransferService extends BaseService {
 
   async getRewards(order, limit, conditions, initParams) {
     const {query, params} = this.getRewardsQuery(order, limit, conditions, initParams);
-    const rows = await super.getRows(query, params, 'getRewards');
+    const rows = await super.getRows(query, params);
     return rows.map((srt) => new StakingRewardTransfer(srt));
   }
 

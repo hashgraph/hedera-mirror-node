@@ -171,6 +171,20 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
+    @EnumSource(ErcContractReadOnlyFunctionsNegative.class)
+    void supportedErcReadOnlyRedirectPrecompileNegativeOperationsTest(
+            final ErcContractReadOnlyFunctionsNegative ercFunction) {
+        final var functionName = ercFunction.name + REDIRECT_SUFFIX;
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class);
+    }
+
+    @ParameterizedTest
     @EnumSource(ErcContractModificationFunctions.class)
     void supportedErcModificationsRedirectPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
         final var functionName = ercFunction.name + "Redirect";
@@ -224,6 +238,17 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         public String getName(final boolean isStatic) {
             return isStatic ? name : name + NON_STATIC_SUFFIX;
         }
+    }
+
+    @RequiredArgsConstructor
+    public enum ErcContractReadOnlyFunctionsNegative {
+        // Negative scenarios - expected to throw an exception
+        ERC_DECIMALS_NEGATIVE("decimals", new Address[] {NFT_ADDRESS}),
+        OWNER_OF_NEGATIVE("getOwnerOf", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L}),
+        TOKEN_URI_NEGATIVE("tokenURI", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L});
+
+        private final String name;
+        private final Object[] functionParameters;
     }
 
     @RequiredArgsConstructor
