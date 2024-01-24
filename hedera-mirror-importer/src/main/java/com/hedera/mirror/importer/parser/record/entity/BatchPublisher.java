@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,13 @@
 
 package com.hedera.mirror.importer.parser.record.entity;
 
-import org.springframework.context.ApplicationEvent;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import io.micrometer.core.instrument.Timer;
 
-public class EntityBatchCleanupEvent extends ApplicationEvent {
+public interface BatchPublisher extends RecordStreamFileListener {
 
-    private static final long serialVersionUID = -1720341150125359382L;
-
-    /**
-     * Create a new {@code ApplicationEvent}.
-     *
-     * @param source the object on which the event initially occurred or with which the event is associated (never
-     *               {@code null})
-     */
-    public EntityBatchCleanupEvent(Object source) {
-        super(source);
-    }
+    Timer.Builder PUBLISH_TIMER = Timer.builder("hedera.mirror.importer.publish.duration")
+            .description("The amount of time it took to publish the domain entity")
+            .tag("entity", TopicMessage.class.getSimpleName());
 }

@@ -21,25 +21,20 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.topic.StreamMessage;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.parser.record.entity.BatchPublisher;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
-import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import jakarta.annotation.PostConstruct;
 import jakarta.inject.Named;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.event.EventListener;
+import lombok.SneakyThrows;
 import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
@@ -48,32 +43,28 @@ import org.springframework.data.redis.core.SessionCallback;
 @CustomLog
 @Named
 @Order(1)
-@RequiredArgsConstructor
-public class RedisEntityListener implements BatchEntityListener {
+public class RedisPublisher implements BatchPublisher {
 
     private static final String TOPIC_FORMAT = "topic.%d";
 
+    private final LoadingCache<Long, String> channelNames;
+    private final ParserContext parserContext;
     private final RedisProperties redisProperties;
     private final RedisOperations<String, StreamMessage> redisOperations;
-    private final MeterRegistry meterRegistry;
-    private final LoadingCache<Long, String> channelNames =
-            Caffeine.newBuilder().maximumSize(1000L).build(this::getChannelName);
+    private final Timer timer;
+    private final BlockingQueue<Collection<TopicMessage>> topicMessagesQueue;
 
-    private AtomicLong lastConsensusTimestamp;
-    private Timer timer;
-    private List<TopicMessage> topicMessages;
-    private BlockingQueue<List<TopicMessage>> topicMessagesQueue;
-
-    @PostConstruct
-    void init() {
-        lastConsensusTimestamp = new AtomicLong(0);
-        timer = Timer.builder("hedera.mirror.importer.publish.duration")
-                .description("The amount of time it took to publish the domain entity")
-                .tag("entity", TopicMessage.class.getSimpleName())
-                .tag("type", "redis")
-                .register(meterRegistry);
-        topicMessages = new ArrayList<>();
-        topicMessagesQueue = new ArrayBlockingQueue<>(redisProperties.getQueueCapacity());
+    RedisPublisher(
+            RedisProperties redisProperties,
+            RedisOperations<String, StreamMessage> redisOperations,
+            MeterRegistry meterRegistry,
+            ParserContext parserContext) {
+        this.channelNames = Caffeine.newBuilder().maximumSize(1000L).build(this::getChannelName);
+        this.parserContext = parserContext;
+        this.redisOperations = redisOperations;
+        this.redisProperties = redisProperties;
+        this.timer = PUBLISH_TIMER.tag("type", "redis").register(meterRegistry);
+        this.topicMessagesQueue = new ArrayBlockingQueue<>(redisProperties.getQueueCapacity());
 
         Executor executor = Executors.newSingleThreadExecutor();
         executor.execute(() -> {
@@ -88,44 +79,21 @@ public class RedisEntityListener implements BatchEntityListener {
     }
 
     @Override
-    public boolean isEnabled() {
-        return redisProperties.isEnabled();
-    }
-
-    @Override
-    public void onTopicMessage(TopicMessage topicMessage) throws ImporterException {
-        long consensusTimestamp = topicMessage.getConsensusTimestamp();
-        if (consensusTimestamp <= lastConsensusTimestamp.get()) {
+    @SneakyThrows
+    public void onEnd(RecordFile recordFile) {
+        if (!redisProperties.isEnabled()) {
             return;
         }
 
-        lastConsensusTimestamp.set(consensusTimestamp);
-        topicMessages.add(topicMessage);
-    }
+        var topicMessages = parserContext.get(TopicMessage.class);
 
-    @Override
-    @EventListener
-    public void onSave(EntityBatchSaveEvent event) throws InterruptedException {
-        if (!isEnabled() || topicMessages.isEmpty()) {
-            return;
-        }
-
-        List<TopicMessage> latestMessageBatch = topicMessages;
-        topicMessages = new ArrayList<>();
-        if (!topicMessagesQueue.offer(latestMessageBatch)) {
+        if (!topicMessages.isEmpty() && !topicMessagesQueue.offer(topicMessages)) {
             log.warn("topicMessagesQueue is full, will block until space is available");
-            topicMessagesQueue.put(latestMessageBatch);
+            topicMessagesQueue.put(topicMessages);
         }
     }
 
-    @Override
-    @EventListener
-    public void onCleanup(EntityBatchCleanupEvent event) {
-        log.debug("Finished clearing {} messages", topicMessages.size());
-        topicMessages.clear();
-    }
-
-    private void publish(List<TopicMessage> messages) {
+    private void publish(Collection<TopicMessage> messages) {
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
             timer.record(() -> redisOperations.executePipelined(callback(messages)));
@@ -136,7 +104,7 @@ public class RedisEntityListener implements BatchEntityListener {
     }
 
     // Batch send using Redis pipelining
-    private SessionCallback<Object> callback(List<TopicMessage> messages) {
+    private SessionCallback<Object> callback(Collection<TopicMessage> messages) {
         return new SessionCallback<>() {
             @Override
             public <K, V> Object execute(RedisOperations<K, V> operations) {

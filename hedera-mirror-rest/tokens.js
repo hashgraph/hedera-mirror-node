@@ -462,10 +462,6 @@ const getTokenInfoRequest = async (req, res) => {
 };
 
 const getTokens = async (pgSqlQuery, pgSqlParams) => {
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTokens query: ${pgSqlQuery}, params: ${pgSqlParams}`);
-  }
-
   const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams);
   logger.debug(`getTokens returning ${rows.length} entries`);
   return rows;
@@ -621,10 +617,6 @@ const getTokenBalances = async (req, res) => {
     return;
   }
 
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenBalances query: ${query} ${utils.JSONStringify(params)}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length > 0) {
     response.timestamp = utils.nsToSecNs(rows[0].consensus_timestamp);
@@ -730,10 +722,6 @@ const getNftTokensRequest = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedNftsParameters, validateTokenQueryFilter);
 
   const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTokens query: ${query} ${utils.JSONStringify(params)}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   const response = {
     nfts: [],
@@ -774,10 +762,6 @@ const getNftTokenInfoRequest = async (req, res) => {
   const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
 
   const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, nftSelectQuery);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTokenInfo query: ${query} ${utils.JSONStringify(params)}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
@@ -789,10 +773,6 @@ const getNftTokenInfoRequest = async (req, res) => {
 };
 
 const getTokenInfo = async (query, params) => {
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenInfo query: ${query}, params: ${params}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length !== 1) {
     throw new NotFoundError();
@@ -929,10 +909,6 @@ const getNftTransferHistoryRequest = async (req, res) => {
   );
 
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTransferHistory query: ${query} ${utils.JSONStringify(params)}`);
-  }
-
   const {rows} = await pool.queryQuietly(query, params);
   const response = {
     transactions: rows.map(formatNftHistoryRow),

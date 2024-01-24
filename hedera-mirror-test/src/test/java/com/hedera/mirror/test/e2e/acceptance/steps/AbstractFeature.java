@@ -169,8 +169,15 @@ abstract class AbstractFeature {
     }
 
     protected ContractCallResponse callContract(String data, String contractAddress) {
-        var contractCallRequest = ModelBuilder.contractCallRequest(data, false, contractClient.getClientAddress(), contractAddress);
-        return mirrorClient.contractsCall(contractCallRequest);
+        return callContract("LATEST", data, contractAddress);
+    }
+
+    protected ContractCallResponse callContract(String blockNumber, String data, String contractAddress) {
+        var contractCallRequestBody = ModelBuilder.contractCallRequest(
+                data, false, contractClient.getClientAddress(), contractAddress)
+                .block(blockNumber);
+
+        return mirrorClient.contractsCall(contractCallRequestBody);
     }
 
     protected ContractCallResponse estimateContract(String data, String contractAddress) {

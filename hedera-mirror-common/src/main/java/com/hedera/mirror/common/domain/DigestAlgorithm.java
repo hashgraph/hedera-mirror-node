@@ -16,11 +16,13 @@
 
 package com.hedera.mirror.common.domain;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 
 @Getter
+@JsonFormat(shape = JsonFormat.Shape.NUMBER)
 public enum DigestAlgorithm {
     SHA_384("SHA-384", 48, 0x58ff811b);
 

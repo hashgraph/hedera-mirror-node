@@ -57,6 +57,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
@@ -139,6 +140,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NodeStakeRepository nodeStakeRepository;
+    private final ParserContext parserContext;
     private final PrngRepository prngRepository;
     private final RecordFileRepository recordFileRepository;
     private final SidecarFileRepository sidecarFileRepository;
@@ -721,6 +723,14 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         nonEmptyCustomFee.setTimestampUpper(emptyCustomFee.getTimestampLower());
         assertThat(customFeeRepository.findAll()).containsExactly(emptyCustomFee);
         assertThat(findHistory(CustomFee.class)).containsExactly(nonEmptyCustomFee);
+    }
+
+    @Test
+    void onEnd() {
+        var recordFile = domainBuilder.recordFile().get();
+        sqlEntityListener.onEnd(recordFile);
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertThat(sidecarFileRepository.findAll()).containsExactlyInAnyOrderElementsOf(recordFile.getSidecars());
     }
 
     @Test
@@ -3007,6 +3017,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         RecordFile recordFile =
                 domainBuilder.recordFile().customize(r -> r.sidecars(List.of())).get();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
+        parserContext.clear();
 
         assertThat(recordFileRepository.findAll()).contains(recordFile);
     }

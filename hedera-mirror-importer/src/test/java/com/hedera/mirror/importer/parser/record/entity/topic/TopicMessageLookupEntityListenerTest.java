@@ -87,6 +87,7 @@ class TopicMessageLookupEntityListenerTest extends AbstractTopicMessageLookupInt
 
         // when
         completeFileAndFail(topicMessages, recordFile);
+        parserContext.clear();
 
         // then
         assertThat(topicMessageLookupRepository.count()).isZero();

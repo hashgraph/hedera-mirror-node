@@ -8,20 +8,13 @@ cd "${parent_path}"
 network=${1:-demo}
 api=${2:-data}
 
-case $network in
-  demo)
-    check="check:$api"
-    config="./${network}/validation.json"
-    ;;
-  testnet)
-    check="check:$api"
-    config="./${network}/validation.json"
-    ;;
-  *)
+if [[ "$network" != "demo" && "$network" != "mainnet" && "$network" != "previewnet" && "$network" != "testnet" ]]; then
     echo "Unsupported network ${network}"
     exit 1
-    ;;
-esac
+fi
+
+check="check:$api"
+config="./${network}/validation.json"
 
 if (./rosetta-cli 2>&1 | grep 'CLI for the Rosetta API' > /dev/null); then
     echo "Rosetta CLI already installed. Skipping installation"

@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import java.util.Optional;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,14 +68,22 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @param data            The function signature and method data of the contract call.
      * @param actualGasUsed   The actual gas amount that was used for the call.
      * @param solidityAddress The address of the solidity contract.
+     * @param sender          The sender's address (optional).
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
-    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress) {
-        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, solidityAddress);
+    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
+        var contractCallRequest = sender.isPresent()
+                ? ModelBuilder.contractCallRequest(data, true, solidityAddress, sender.get())
+                : ModelBuilder.contractCallRequest(data, true, solidityAddress);
+
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
         int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();
 
         assertWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
+    }
+
+    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress) {
+        validateGasEstimation(data, actualGasUsed, solidityAddress, Optional.empty());
     }
 
     /**
@@ -90,6 +99,14 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      */
     protected void assertContractCallReturnsBadRequest(String data, String contractAddress) {
         var contractCallRequest = ModelBuilder.contractCallRequest(data, true, contractAddress);
+        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress) {
+        var contractCallRequest = ModelBuilder.contractCallRequest(data, false, contractAddress).block(block);
+
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");

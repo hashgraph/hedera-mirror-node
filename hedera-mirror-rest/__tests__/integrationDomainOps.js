@@ -22,7 +22,7 @@ import base32 from '../base32';
 import config from '../config';
 import * as constants from '../constants';
 import EntityId from '../entityId';
-import {isV2Schema, valueToBuffer} from './testutils';
+import {valueToBuffer} from './testutils';
 import {JSONStringify} from '../utils';
 
 const NETWORK_FEE = 1n;
@@ -913,11 +913,7 @@ const addTransaction = async (transaction) => {
 
 const addTransactionHash = async (transactionHash) => {
   transactionHash.hash = valueToBuffer(transactionHash.hash);
-  let table = 'transaction_hash';
-  if (!isV2Schema()) {
-    table = 'transaction_hash_sharded';
-  }
-  await insertDomainObject(table, Object.keys(transactionHash), transactionHash);
+  await insertDomainObject('transaction_hash', Object.keys(transactionHash), transactionHash);
 };
 
 const insertTransfers = async (
@@ -1661,6 +1657,7 @@ export default {
   loadTokenAccounts,
   loadTopicMessageLookups,
   loadTransactions,
+  loadEntityStakes,
   setAccountBalance,
   setup,
 };

@@ -129,7 +129,7 @@ class NetworkNodeService extends BaseService {
   getNetworkNodes = async (whereConditions, whereParams, order, limit) => {
     const [query, params] = this.getNetworkNodesWithFiltersQuery(whereConditions, whereParams, order, limit);
 
-    const rows = await super.getRows(query, params, 'getNetworkNodes');
+    const rows = await super.getRows(query, params);
     return rows.map((x) => new NetworkNode(x));
   };
 
@@ -147,7 +147,7 @@ class NetworkNodeService extends BaseService {
   };
 
   getNetworkStake = async () => {
-    const row = await super.getSingleRow(NetworkNodeService.networkStakeQuery, [], 'getNetworkStake');
+    const row = await super.getSingleRow(NetworkNodeService.networkStakeQuery, []);
     return row && new NetworkStake(row);
   };
 
@@ -158,7 +158,7 @@ class NetworkNodeService extends BaseService {
       query = this.getNetworkSupplyByTimestampQuery(conditions.join(' and '));
     }
 
-    return await super.getSingleRow(query, params, 'getSupply');
+    return await super.getSingleRow(query, params);
   };
 }
 

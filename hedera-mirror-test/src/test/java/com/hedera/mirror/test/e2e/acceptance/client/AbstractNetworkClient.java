@@ -38,8 +38,11 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -69,15 +72,24 @@ public abstract class AbstractNetworkClient implements Cleanable {
     }
 
     protected final <T> void deleteAll(Collection<T> ids, Consumer<T> deleteAction) {
-        ids.forEach(id -> {
-            try {
-                deleteAction.accept(id);
-            } catch (Exception e) {
-                log.warn("Unable to delete {}: {}", id, e.getMessage());
-            }
-        });
+        try (var executorService = Executors.newCachedThreadPool()) {
+            var futures = ids.stream()
+                    .map(id -> (Callable<T>) () -> {
+                        try {
+                            deleteAction.accept(id);
+                        } catch (Exception e) {
+                            log.warn("Unable to delete {}: {}", id, e.getMessage());
+                        }
+                        return id;
+                    })
+                    .collect(Collectors.toList());
 
-        ids.clear();
+            executorService.invokeAll(futures);
+        } catch (Exception e) {
+            log.error("Unable to delete IDs: {}", ids, e);
+        } finally {
+            ids.clear();
+        }
     }
 
     @SneakyThrows

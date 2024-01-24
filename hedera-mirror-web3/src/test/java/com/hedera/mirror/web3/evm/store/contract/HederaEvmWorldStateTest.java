@@ -233,9 +233,10 @@ class HederaEvmWorldStateTest {
 
     @Test
     void updater() {
+        final var nonSystemAddress = Address.fromHexString("0x0000000000000000000000000000000000000436");
         var actualSubject = subject.updater();
         assertThat(actualSubject.getSbhRefund()).isZero();
-        assertThat(actualSubject.updater().get(Address.RIPEMD160)).isNull();
+        assertThat(actualSubject.updater().get(nonSystemAddress)).isNull();
     }
 
     @Test

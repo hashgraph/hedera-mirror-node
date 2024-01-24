@@ -43,7 +43,7 @@ public class TransactionHashTxManager implements TransactionSynchronization {
     private final DataSource dataSource;
     private long itemCount;
     private long recordTimestamp;
-    private String shardedTableName;
+    private String tableName;
 
     @Override
     public void afterCompletion(int status) {
@@ -88,14 +88,14 @@ public class TransactionHashTxManager implements TransactionSynchronization {
                     "Successfully {} {} items in {} shards {} in file containing timestamp {}",
                     statusString,
                     itemCount,
-                    shardedTableName,
+                    tableName,
                     successfulShards,
                     recordTimestamp);
         } else {
             log.error(
                     "Errors occurred processing sharded table {}. parent status {} successful shards {} "
                             + "failed shards {} in file containing timestamp {}",
-                    shardedTableName,
+                    tableName,
                     statusString,
                     successfulShards,
                     failedShards,
@@ -104,7 +104,7 @@ public class TransactionHashTxManager implements TransactionSynchronization {
         threadConnections.clear();
     }
 
-    public void initialize(Collection<?> items, String shardedTableName) {
+    public void initialize(Collection<?> items, String tableName) {
         // This will be non-empty when there are multiple calls to persist
         // in the same parent transaction which is the case if batch limit is reached
         if (!threadConnections.isEmpty()) {
@@ -112,7 +112,7 @@ public class TransactionHashTxManager implements TransactionSynchronization {
             return;
         }
 
-        this.shardedTableName = shardedTableName;
+        this.tableName = tableName;
         this.itemCount = items.size();
         this.recordTimestamp = ((TransactionHash) items.iterator().next()).getConsensusTimestamp();
         TransactionSynchronizationManager.registerSynchronization(this);

@@ -690,10 +690,6 @@ class ContractController extends BaseController {
       contractIdParam,
     });
 
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getContractById query: ${query}, params: ${params}`);
-    }
-
     const {rows} = await pool.queryQuietly(query, params);
     if (rows.length !== 1) {
       throw new NotFoundError();
@@ -719,12 +715,7 @@ class ContractController extends BaseController {
 
     // get sql filter query, params, limit and limit query from query filters
     const {filterQuery, params, order, limit, limitQuery} = await extractSqlFromContractFilters(filters);
-
     const query = getContractsQuery(filterQuery, limitQuery, order);
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getContracts query: ${query}, params: ${params}`);
-    }
-
     const {rows} = await pool.queryQuietly(query, params);
     logger.debug(`getContracts returning ${rows.length} entries`);
 
