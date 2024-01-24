@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.97.0-rc1'
+      version: '0.97.0-rc2'
   dependsOn:
     - name: mirror
       namespace: common
@@ -60,4 +60,7 @@ spec:
               acceptance:
                 network: OTHER
       cucumberTags: "@acceptance and not @web3"
+    web3:
+      env:
+        HEDERA_MIRROR_WEB3_EVM_NETWORK: OTHER
 
