@@ -2356,7 +2356,7 @@ components:
             amount_granted:
               description: The granted amount of the spender's allowance in tinybars.
               type: integer
-
+              format: int64
     CryptoAllowances:
       type: array
       items:
