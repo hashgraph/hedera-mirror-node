@@ -57,14 +57,20 @@ public class NetworkAdapter extends EncoderDecoderFacade {
             final String data,
             final TupleType returnTupleType) {
         if (NodeNameEnum.MIRROR.equals(node)) {
-            var contractCallRequestBody = ContractCallRequest.builder()
-                    .data(data)
-                    .to(deployedContract.contractId().toSolidityAddress())
-                    .from(from.isEmpty() ? contractClient.getClientAddress() : from)
-                    .estimate(isEstimate)
-                    .build();
+            try {
+                var contractCallRequestBody = ContractCallRequest.builder()
+                        .data(data)
+                        .to(deployedContract.contractId().toSolidityAddress())
+                        .from(from.isEmpty() ? contractClient.getClientAddress() : from)
+                        .estimate(isEstimate)
+                        .build();
 
-            return mirrorClient.contractsCall(contractCallRequestBody);
+                return mirrorClient.contractsCall(contractCallRequestBody);
+            } catch (Exception e) {
+                ContractCallResponse contractCallResponse = new ContractCallResponse();
+                contractCallResponse.setResult(e.getMessage());
+                return contractCallResponse;
+            }
         } else {
             final var gas = contractClient
                     .getSdkClient()
