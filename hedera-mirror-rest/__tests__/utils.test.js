@@ -22,7 +22,6 @@ import * as constants from '../constants';
 import {InvalidArgumentError, InvalidClauseError} from '../errors';
 import {Entity} from '../model/index.js';
 import {Range} from 'pg-range';
-import sinon from 'sinon';
 
 const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
 const ecdsaProtoKey = {ECDSASecp256k1: Buffer.from(ecdsaKey, 'hex')};
@@ -118,6 +117,14 @@ describe('Utils nsToSecNs tests', () => {
   test('Verify nsToSecNsWithHyphen returns correct result for null validStartNs', () => {
     const val = utils.nsToSecNsWithHyphen(null);
     expect(val).toBe(null);
+  });
+});
+
+describe('nowInNs', () => {
+  test('value within range', () => {
+    const expected = BigInt(Date.now()) * 1_000_000n;
+    const delta = 1_000_000_000n;
+    expect(utils.nowInNs()).toBeWithin(expected - delta, expected + delta);
   });
 });
 
@@ -987,48 +994,6 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
   parseQueryParamTest(testSpecs, (spec) => utils.parsePublicKeyQueryParam(spec.parsedQueryParams, 'account.publickey'));
 });
 
-describe('Utils parseCreditDebitParams tests', () => {
-  const testSpecs = [
-    {
-      name: 'Single parameter credit',
-      parsedQueryParams: {type: 'credit'},
-      expectedClause: 'type > ?',
-      expectedValues: [0],
-    },
-    {
-      name: 'Single parameter debit',
-      parsedQueryParams: {type: 'debit'},
-      expectedClause: 'type < ?',
-      expectedValues: [0],
-    },
-    {
-      name: noParamTestName,
-      parsedQueryParams: {},
-      expectedClause: '',
-      expectedValues: [],
-    },
-    {
-      name: 'Multiple parameters both values',
-      parsedQueryParams: {type: ['credit', 'debit']},
-      expectedClause: 'type > ? and type < ?',
-      expectedValues: [0, 0],
-    },
-    {
-      name: 'Single parameter op ignored',
-      parsedQueryParams: {type: ['gte:credit']},
-      expectedClause: 'type > ?',
-      expectedValues: [0],
-    },
-    {
-      name: 'Single parameter invalid value',
-      parsedQueryParams: {type: ['cash']},
-      expectedClause: '',
-      expectedValues: [],
-    },
-  ];
-  parseQueryParamTest(testSpecs, (spec) => utils.parseCreditDebitParams(spec.parsedQueryParams, 'type'));
-});
-
 describe('utils isRepeatedQueryParameterValidLength', () => {
   const {maxRepeatedQueryParameters} = config.query;
   test(`verify account.id with valid amount ${maxRepeatedQueryParameters - 1}`, () => {
@@ -1300,210 +1265,7 @@ describe('Utils getLimitParamValue', () => {
   });
 });
 
-describe('Utils test - utils.parseTransactionTypeParam', () => {
-  test('Verify null query params', () => {
-    expect(utils.parseTransactionTypeParam(null)).toBe('');
-  });
-  test('Verify undefined query params', () => {
-    expect(utils.parseTransactionTypeParam(undefined)).toBe('');
-  });
-  test('Verify empty query params', () => {
-    expect(utils.parseTransactionTypeParam({})).toBe('');
-  });
-  test('Verify empty transaction type query', () => {
-    expect(() => utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(
-      InvalidArgumentError
-    );
-  });
-  test('Verify non applicable transaction type query', () => {
-    expect(() =>
-      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
-    ).toThrowError(InvalidArgumentError);
-  });
-  test('Verify applicable TOKENCREATION transaction type query', () => {
-    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type in (29)`
-    );
-  });
-  test('Verify applicable TOKENASSOCIATE transaction type query', () => {
-    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type in (40)`
-    );
-  });
-  test('Verify applicable consensussubmitmessage transaction type query', () => {
-    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type in (27)`
-    );
-  });
-  test('Verify multiple transactiontype query params', () => {
-    expect(
-      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ['TOKENCREATION', 'TOKENASSOCIATE']})
-    ).toBe(`type in (29,40)`);
-  });
-  test('Verify multiple transactiontype query params reversed', () => {
-    expect(
-      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ['TOKENASSOCIATE', 'TOKENCREATION']})
-    ).toBe('type in (40,29)');
-  });
-  test('Verify multiple transactiontype query params with duplicates', () => {
-    expect(
-      utils.parseTransactionTypeParam({
-        [constants.filterKeys.TRANSACTION_TYPE]: ['TOKENASSOCIATE', 'TOKENCREATION', 'TOKENASSOCIATE', 'TOKENCREATION'],
-      })
-    ).toBe('type in (40,29)');
-  });
-});
-
-describe('Utils test - utils.bindTimestampRange', () => {
-  let clock;
-  let saveBindTimestampRange;
-  let saveMaxTimestampRangeNs;
-
-  // Set now, so Date.now() returns the expected epoch millis
-  const now = Date.parse('2022-10-15T08:10:15.333Z');
-  const nowNs = BigInt(now) * constants.NANOSECONDS_PER_MILLISECOND;
-
-  beforeAll(() => {
-    saveBindTimestampRange = config.query.bindTimestampRange;
-    saveMaxTimestampRangeNs = config.query.maxTimestampRangeNs;
-    clock = sinon.useFakeTimers({now});
-  });
-
-  afterAll(() => {
-    config.query.bindTimestampRange = saveBindTimestampRange;
-    config.query.maxTimestampRangeNs = saveMaxTimestampRangeNs;
-    clock.restore();
-  });
-
-  test('Verify provided Range returned when disabled', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = false;
-    const inputRange = Range(1000000n, 2000000n, '()');
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toBe(inputRange);
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toBe(inputRange);
-    expect(utils.bindTimestampRange(undefined)).toBe(undefined);
-    expect(utils.bindTimestampRange(null)).toBe(null);
-  });
-  test('Verify already bound range under max - exclusive', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(1000000n, 2000000n, '()');
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(inputRange);
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(inputRange);
-  });
-  test('Verify already bound range under max - inclusive', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(1000000n, 2000000n, '[]');
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(inputRange);
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(inputRange);
-  });
-  test('Verify already bound range at max - exclusive', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(1000000000n, 2000000000n, '(]');
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(inputRange);
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(inputRange);
-  });
-  test('Verify already bound range at max - inclusive', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(1000000000n, 2000000000n, '[]');
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
-      Range(inputRange.end - config.query.maxTimestampRangeNs + 1n, inputRange.end, inputRange.bound)
-    );
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
-      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs - 1n, inputRange.bound)
-    );
-  });
-  test('Verify already bound range exceeds max - exclusive', () => {
-    config.query.maxTimestampRangeNs = 50000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(1000000000n, 2000000000n, '[)');
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
-      Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end, inputRange.bounds)
-    );
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
-      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs, inputRange.bounds)
-    );
-  });
-  test('Verify already bound range exceeds max - inclusive', () => {
-    config.query.maxTimestampRangeNs = 50000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(1000000000n, 2000000000n, '[]');
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(
-      Range(inputRange.end - config.query.maxTimestampRangeNs + 1n, inputRange.end, inputRange.bounds)
-    );
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(
-      Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs - 1n, inputRange.bounds)
-    );
-  });
-  test('Verify end only range - exclusive', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(null, 2000000000n, '[)');
-    const outputRange = Range(inputRange.end - config.query.maxTimestampRangeNs, inputRange.end, inputRange.bounds);
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(outputRange);
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(outputRange);
-  });
-  test('Verify end only range - inclusive', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(null, 2000000000n, '[]');
-    const outputRange = Range(
-      inputRange.end - config.query.maxTimestampRangeNs + 1n,
-      inputRange.end,
-      inputRange.bounds
-    );
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(outputRange);
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(outputRange);
-  });
-  test('Verify begin only range - exclusive', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(1000000000n, null, '(]');
-    const outputRange = Range(inputRange.begin, inputRange.begin + config.query.maxTimestampRangeNs, inputRange.bounds);
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(outputRange);
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(outputRange);
-  });
-  test('Verify begin only range - inclusive', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const inputRange = Range(1000000000n, null, '[]');
-    const outputRange = Range(
-      inputRange.begin,
-      inputRange.begin + config.query.maxTimestampRangeNs - 1n,
-      inputRange.bounds
-    );
-
-    expect(utils.bindTimestampRange(inputRange, 'desc')).toEqual(outputRange);
-    expect(utils.bindTimestampRange(inputRange, 'asc')).toEqual(outputRange);
-  });
-  test('Verify undefined, null and empty range', () => {
-    config.query.maxTimestampRangeNs = 1000000000n;
-    config.query.bindTimestampRange = true;
-    const emptyRange = Range();
-    const outputRangeDesc = Range(nowNs - config.query.maxTimestampRangeNs + 1n, nowNs);
-    const outputRangeAsc = Range(0n, config.query.maxTimestampRangeNs - 1n);
-
-    expect(utils.bindTimestampRange(emptyRange, 'desc')).toEqual(outputRangeDesc);
-    expect(utils.bindTimestampRange(emptyRange, 'asc')).toEqual(outputRangeAsc);
-    expect(utils.bindTimestampRange(undefined)).toEqual(outputRangeDesc);
-    expect(utils.bindTimestampRange(null)).toEqual(outputRangeDesc);
-  });
-});
-
-describe('parseTimestampRange', () => {
+describe('parseTimestampFilters', () => {
   const makeFilter = (operator, value) => ({
     key: constants.filterKeys.TIMESTAMP,
     operator,
@@ -1566,6 +1328,7 @@ describe('parseTimestampRange', () => {
         name: 'ne combined with gt lt - ne allowed',
         filters: [
           makeFilter(utils.opsMap.ne, '1638921702000000001'),
+          makeFilter(utils.opsMap.ne, '1638921702000000001'),
           makeFilter(utils.opsMap.gt, '1638921702000000000'),
           makeFilter(utils.opsMap.lt, '1638921702000000005'),
         ],
@@ -1592,6 +1355,8 @@ describe('parseTimestampRange', () => {
         name: 'two filters ne and eq - strict check disabled',
         filters: [
           makeFilter(utils.opsMap.ne, '1638921702000000000'),
+          makeFilter(utils.opsMap.ne, '1638921702000000000'),
+          makeFilter(utils.opsMap.eq, '1638921703000000000'),
           makeFilter(utils.opsMap.eq, '1638921703000000000'),
         ],
         expected: {range: null, eqValues: [1638921703000000000n], neValues: [1638921702000000000n]},
@@ -1605,12 +1370,12 @@ describe('parseTimestampRange', () => {
           makeFilter(utils.opsMap.eq, '1638921702000000003'),
           makeFilter(utils.opsMap.eq, '1638921702000000004'),
           makeFilter(utils.opsMap.gt, '1638921702000000005'),
-          makeFilter(utils.opsMap.gte, '1638921702000000010'),
+          makeFilter(utils.opsMap.gte, '1638921702000000006'),
           makeFilter(utils.opsMap.lt, '1638921702000000007'),
           makeFilter(utils.opsMap.lte, '1638921702000000008'),
         ],
         expected: {
-          range: Range(1638921702000000010n, 1638921702000000006n),
+          range: Range(1638921702000000006n, 1638921702000000006n),
           eqValues: [1638921702000000003n, 1638921702000000004n],
           neValues: [1638921702000000001n, 1638921702000000002n],
         },

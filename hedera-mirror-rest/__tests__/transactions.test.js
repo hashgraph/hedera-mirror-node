@@ -14,12 +14,7 @@
  * limitations under the License.
  */
 
-import request from 'supertest';
-import sinon from 'sinon';
-
-import config from '../config';
 import * as constants from '../constants';
-import server from '../server';
 import * as testutils from './testutils';
 import subject from '../transactions';
 import * as utils from '../utils';
@@ -31,423 +26,11 @@ const {
   createCryptoTransferList,
   createNftTransferList,
   extractSqlFromTransactionsByIdOrHashRequest,
+  extractSqlFromTransactionsRequest,
   formatTransactionRows,
   getStakingRewardTimestamps,
   isValidTransactionHash,
 } = subject;
-
-// Fixed timestamp setup in sinon timer fixes Date.now() in MockPool as well.
-const timeNowMs = Date.parse('2022-10-15T08:10:15.000Z');
-const timeNow = timeNowMs / 1000;
-const timeOneHourAgo = timeNow - 60 * 60;
-
-// Validation functions
-/**
- * Validate length of the transactions returned by the api
- * @param {Array} transactions Array of transactions returned by the rest api
- * @param {Number} len Expected length
- * @return {Boolean}  Result of the check
- */
-const validateLen = function (transactions, len) {
-  return transactions.length === len;
-};
-
-/**
- * Validate the range of timestamps in the transactions returned by the api
- * @param {Array} transactions Array of transactions returned by the rest api
- * @param {Number} low Expected low limit of the timestamps
- * @param {Number} high Expected high limit of the timestamps
- * @return {Boolean}  Result of the check
- */
-const validateTsRange = function (transactions, low, high) {
-  let ret = true;
-  let offender = null;
-  for (const tx of transactions) {
-    if (tx.consensus_timestamp < low || tx.consensus_timestamp > high) {
-      offender = tx;
-      ret = false;
-    }
-  }
-  if (!ret) {
-    logger.warn(`validateTsRange check failed: ${offender.consensus_timestamp} is not between ${low} and  ${high}`);
-  }
-  return ret;
-};
-
-/**
- * Validate the range of account ids in the transactions returned by the api
- * At least one transfer in a transaction should match the expected range
- * @param {Array} transactions Array of transactions returned by the rest api
- * @param {Number} low Expected low limit of the account ids
- * @param {Number} high Expected high limit of the account ids
- * @return {Boolean}  Result of the check
- */
-const validateAccNumRange = function (transactions, low, high) {
-  let ret = false;
-  for (const tx of transactions) {
-    for (const xfer of tx.transfers) {
-      const accNum = xfer.account.split('.')[2];
-      if (accNum >= low && accNum <= high) {
-        // if at least one transfer is valid move to next transaction
-        ret = true;
-        break;
-      }
-    }
-
-    if (!ret) {
-      logger.warn(
-        `validateAccNumRange check failed: No transfer with account between ${low} and ${high} was found in transaction : ${utils.JSONStringify(
-          tx
-        )}`
-      );
-      return false;
-    }
-
-    // reset ret
-    ret = false;
-  }
-
-  return true;
-};
-
-/**
- * Validate that account ids in the transactions returned by the api are in the list of valid account ids
- * At least one transfer in a transaction should be the expected list of values
- * @param {Array} transactions Array of transactions returned by the rest api
- * @param {Array} list of valid account ids
- * @return {Boolean}  Result of the check
- */
-const validateAccNumInArray = function (transactions, ...potentialValues) {
-  for (const tx of transactions) {
-    if (!testutils.validateAccNumInArray(tx.transfers, potentialValues)) {
-      return false;
-    }
-  }
-  return true;
-};
-
-/**
- * Validate that all required fields are present in the response
- * @param {Array} transactions Array of transactions returned by the rest api
- * @return {Boolean}  Result of the check
- */
-const validateFields = function (transactions) {
-  const errors = [];
-  const transaction = transactions[0];
-
-  // Assert that all mandatory fields are present in the response
-  [
-    'consensus_timestamp',
-    'charged_tx_fee',
-    'entity_id',
-    'max_fee',
-    'memo_base64',
-    'name',
-    'node',
-    'result',
-    'scheduled',
-    'transaction_hash',
-    'transaction_id',
-    'transfers',
-    'valid_duration_seconds',
-    'valid_start_timestamp',
-  ].forEach((field) => {
-    if (!(field in transaction)) {
-      errors.push(`missing field "${field}"`);
-    }
-  });
-
-  if (Array.isArray(transaction.transfers)) {
-    ['account', 'amount'].forEach((field) => {
-      if (!(field in transaction.transfers[0])) {
-        errors.push(`missing field "${field}" in transfers[0]`);
-      }
-    });
-  } else {
-    errors.push('field "transfers" is not an array');
-  }
-
-  if (errors.length !== 0) {
-    logger.warn(`validateFields check failed: ${errors.join(',\n\t')}`);
-  }
-
-  return errors.length === 0;
-};
-
-/**
- * Validate the order of timestamps in the transactions returned by the api
- * @param {Array} transactions Array of transactions returned by the rest api
- * @param {String} order Expected order ('asc' or 'desc')
- * @return {Boolean}  Result of the check
- */
-const validateOrder = function (transactions, order) {
-  let ret = true;
-  let offenderTx = null;
-  let offenderVal = null;
-  const direction = order === 'desc' ? -1 : 1;
-  let val = transactions[0].consensus_timestamp - direction;
-  for (const tx of transactions) {
-    if (val * direction > tx.consensus_timestamp * direction) {
-      offenderTx = tx;
-      offenderVal = val;
-      ret = false;
-    }
-    val = tx.consensus_timestamp;
-  }
-  if (!ret) {
-    logger.warn(
-      `validateOrder check failed: ${offenderTx.consensus_timestamp} - previous timestamp ${offenderVal} Order  ${order}`
-    );
-  }
-  return ret;
-};
-
-/**
- * This is the list of individual tests. Each test validates one query parameter
- * such as timestamp=1234 or account.id=gt:5678.
- *
- * Definition of each test consists of the url string that is used in the query, and an
- * array of checks to be performed on the resultant SQL query. There are two SQL queries
- * issued, the second dependent on the results of the first. Thus, there are checks for each
- * query. The second query is defined based on the consensus_timestamp and payer_account_id
- * column values returned by MockPool. Thus, the consensus_timestamp values checked between the
- * two queries may differ.
- *
- * These individual tests can be combined to form complex combinations as shown in the
- * definition of combinedTests below.
- *
- * The limit parameter is used to limit the number of fields that need to be checked since
- * the second query uses = ANY() for each timestamp and account payer ID to be retrieved.
- *
- * NOTE: To add more tests, just give it a unique name, specify the url query string, and
- * a set of checks you would like to perform on the resultant SQL query.
- */
-const limit = 25;
-const singleTests = {
-  timestamp_lowerlimit: {
-    urlparam: `timestamp=gte:${timeOneHourAgo}`,
-    checks1: [
-      {field: 'consensus_timestamp', operator: '>=', value: Number(`${timeOneHourAgo}000000000`)},
-      {field: 'order', operator: '=', value: 'desc'},
-    ],
-    checks2: [
-      {field: 'consensus_timestamp', operator: '>=', value: `${timeNow - limit + 1}000000000`},
-      {field: 'consensus_timestamp', operator: '<=', value: `${timeNow}000000000`},
-      {field: 'payer_account_id', operator: 'in', value: [0, 1, 2]},
-      {
-        field: 'consensus_timestamp',
-        operator: 'in',
-        value: [`${timeNow}000000000`, `${timeNow - 100}000000000`, `${timeNow - 2}000000000`],
-      },
-    ],
-    checkFunctions: [
-      {func: validateTsRange, args: [timeOneHourAgo, Number.MAX_SAFE_INTEGER]},
-      {func: validateFields, args: []},
-    ],
-  },
-  timestamp_higherlimit: {
-    urlparam: `timestamp=lt:${timeNow}`,
-    checks1: [
-      {field: 'consensus_timestamp', operator: '<=', value: Number(`${timeNow}000000000`)},
-      {field: 'limit', operator: '=', value: limit},
-      {field: 'order', operator: '=', value: 'desc'},
-    ],
-    checks2: [
-      {field: 'consensus_timestamp', operator: '>=', value: `${timeNow - limit + 1}000000000`},
-      {field: 'consensus_timestamp', operator: '<=', value: `${timeNow}000000000`},
-      {field: 'payer_account_id', operator: 'in', value: [0, 1, 2]},
-      {
-        field: 'consensus_timestamp',
-        operator: 'in',
-        value: [`${timeNow}000000000`, `${timeNow - 1}000000000`, `${timeNow - 2}000000000`],
-      },
-    ],
-    checkFunctions: [
-      {func: validateTsRange, args: [0, timeNowMs]},
-      {func: validateFields, args: []},
-    ],
-  },
-  accountid_lowerlimit: {
-    urlparam: 'account.id=gte:0.0.1111',
-    checks1: [{field: 'entity_id', operator: '>=', value: 1111}],
-    checks2: [{field: 'entity_id', operator: '>=', value: 1111}],
-    checkFunctions: [
-      {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
-      {func: validateFields, args: []},
-    ],
-  },
-  accountid_higherlimit: {
-    urlparam: 'account.id=lt:0.0.2222',
-    checks1: [{field: 'entity_id', operator: '<', value: 2222}],
-    checks2: [{field: 'entity_id', operator: '<', value: 2222}],
-    checkFunctions: [
-      {func: validateAccNumRange, args: [0, 2222]},
-      {func: validateFields, args: []},
-    ],
-  },
-  accountid_equal: {
-    urlparam: 'account.id=0.0.3333',
-    checks1: [{field: 'entity_id', operator: 'in', value: 3333}],
-    checks2: [{field: 'entity_id', operator: 'in', value: 3333}],
-    checkFunctions: [{func: validateAccNumInArray, args: [3333]}],
-  },
-  accountid_multiple: {
-    urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
-    checks1: [
-      {field: 'entity_id', operator: 'in', value: 3333},
-      {field: 'entity_id', operator: 'in', value: 3334},
-    ],
-    checks2: [
-      {field: 'entity_id', operator: 'in', value: 3333},
-      {field: 'entity_id', operator: 'in', value: 3334},
-    ],
-    checkFunctions: [{func: validateAccNumInArray, args: [3333, 3334]}],
-  },
-  limit: {
-    urlparam: 'limit=99',
-    checks1: [{field: 'limit', operator: '=', value: 99}],
-    checks2: [{field: 'limit', operator: '=', value: 99}],
-    checkFunctions: [
-      {func: validateLen, args: [99]},
-      {func: validateFields, args: []},
-    ],
-  },
-  order_asc: {
-    urlparam: 'order=asc',
-    checks1: [{field: 'order', operator: '=', value: 'asc'}],
-    checks2: [{field: 'order', operator: '=', value: 'asc'}],
-    checkFunctions: [{func: validateOrder, args: ['asc']}],
-  },
-  order_desc: {
-    urlparam: 'order=desc',
-    checks1: [{field: 'order', operator: '=', value: 'desc'}],
-    checks2: [{field: 'order', operator: '=', value: 'desc'}],
-    checkFunctions: [{func: validateOrder, args: ['desc']}],
-  },
-  result_fail: {
-    urlparam: 'result=fail',
-    checks1: [{field: 'result', operator: '!=', value: `${utils.resultSuccess}`}],
-    checks2: [{field: 'result', operator: '!=', value: `${utils.resultSuccess}`}],
-  },
-  result_success: {
-    urlparam: 'result=success',
-    checks1: [{field: 'result', operator: '=', value: `${utils.resultSuccess}`}],
-  },
-};
-
-/**
- * This list allows creation of combinations of individual tests to exercise presence
- * of multiple query parameters. The combined query string is created by adding the query
- * strings of each of the individual tests, and all checks from all of the individual tests
- * are performed on the resultant SQL query
- * NOTE: To add more combined tests, just add an entry to following array using the
- * individual (single) tests in the object above.
- */
-const combinedTests = [
-  ['timestamp_lowerlimit', 'timestamp_higherlimit'],
-  ['accountid_lowerlimit', 'accountid_higherlimit'],
-  ['timestamp_lowerlimit', 'timestamp_higherlimit', 'accountid-lowerlimit', 'accountid_higherlimit'],
-  ['timestamp_lowerlimit', 'accountid_higherlimit', 'limit'],
-  ['timestamp_higherlimit', 'accountid_lowerlimit', 'result_fail'],
-  ['limit', 'result_success', 'order_asc'],
-];
-
-// Start of tests
-describe.skip('Transaction tests', () => {
-  const api = '/api/v1/transactions';
-  // let clock;
-  // let saveBindTimestampRange;
-  // let saveMaxTimestampRangeNs;
-  //
-  // beforeAll(() => {
-  //   saveBindTimestampRange = config.query.bindTimestampRange;
-  //   saveMaxTimestampRangeNs = config.query.maxTimestampRangeNs;
-  //   config.query.bindTimestampRange = false;
-  //   clock = sinon.useFakeTimers({now: timeNowMs});
-  // });
-  //
-  // afterAll(() => {
-  //   config.query.bindTimestampRange = saveBindTimestampRange;
-  //   config.query.maxTimestampRangeNs = saveMaxTimestampRangeNs;
-  //   clock.restore();
-  // });
-
-  // First, execute the single tests
-  for (const [name, item] of Object.entries(singleTests)) {
-    test(`Transactions single test: ${name} - URL: ${item.urlparam}`, async () => {
-      const response = await request(server).get([api, item.urlparam].join('?'));
-      expect(response.status).toEqual(200);
-
-      // First query SQL parameters are compared directly
-      const parsedResponse = JSON.parse(response.text);
-      const parsedParams1 = parsedResponse.timestampsSqlQuery.parsedparams;
-      expect(parsedParams1).toEqual(expect.arrayContaining(item.checks1));
-      // Second query parameters are plentiful, and just ensure the check values are present
-      const parsedParams2 = parsedResponse.sqlQuery.parsedparams;
-      expect.toBeTrue(item.checks2?.every((field) => parsedParams2.includes(field)));
-
-      // Execute the specified functions to validate the output from the REST API
-      const {transactions} = parsedResponse;
-      let check = true;
-      if (item.hasOwnProperty('checkFunctions')) {
-        for (const cf of item.checkFunctions) {
-          check = check && cf.func.apply(null, [transactions].concat(cf.args));
-        }
-      }
-      expect(check).toBeTruthy();
-    });
-  }
-
-  // And now, execute the combined tests
-  for (const combination of combinedTests) {
-    // Combine the individual (single) checks as specified in the combinedTests array
-    const combtest = {urls: [], checks1: [], checks2: [], checkFunctions: [], names: ''};
-    for (const testname of combination) {
-      if (testname in singleTests) {
-        combtest.names += `${testname} `;
-        combtest.urls.push(singleTests[testname].urlparam);
-        combtest.checks1 = combtest.checks1.concat(singleTests[testname].checks1);
-        combtest.checkFunctions = combtest.checkFunctions.concat(
-          singleTests[testname].hasOwnProperty('checkFunctions') ? singleTests[testname].checkFunctions : []
-        );
-      }
-    }
-    const comburl = combtest.urls.join('&');
-
-    test(`Transactions combination test: ${combtest.names} - URL: ${comburl}`, async () => {
-      const response = await request(server).get([api, comburl].join('?'));
-      expect(response.status).toEqual(200);
-
-      // Verify the two sql queries against each of the specified checks
-      const parsedResponse = JSON.parse(response.text);
-      const parsedParams1 = parsedResponse.timestampsSqlQuery.parsedparams;
-      expect(parsedParams1).toEqual(expect.arrayContaining(combtest.checks1));
-
-      // Second query parameters are plentiful, and just ensure the check values are present
-      const parsedParams2 = parsedResponse.sqlQuery.parsedparams;
-      expect.toBeTrue(combtest.checks2?.every((field) => parsedParams2.includes(field)));
-
-      // const parsedParams2 = parsedResponse.sqlQuery.parsedparams;
-      // expect(parsedParams2).toEqual(expect.arrayContaining(combtest.checks2));
-
-      // Execute the specified functions to validate the output from the REST API
-      const {transactions} = parsedResponse;
-      let check = true;
-      if (combtest.hasOwnProperty('checkFunctions')) {
-        for (const cf of combtest.checkFunctions) {
-          check = check && cf.func.apply(null, [transactions].concat(cf.args));
-        }
-      }
-      expect(check).toBeTruthy();
-    });
-  }
-
-  // Negative testing
-  testutils.testBadParams(request, server, api, 'timestamp', testutils.badParamsList());
-  testutils.testBadParams(request, server, api, 'account.id', testutils.badParamsList());
-  testutils.testBadParams(request, server, api, 'limit', testutils.badParamsList());
-  testutils.testBadParams(request, server, api, 'order', testutils.badParamsList());
-});
 
 describe('buildWhereClause', () => {
   const testSpecs = [
@@ -839,15 +422,15 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
       t.valid_start_ns,
       t.index,
       (
-          select jsonb_agg(jsonb_build_object('amount', amount, 'entity_id', ctr.entity_id, 'is_approval', is_approval) order by ctr.entity_id, amount)
-          from crypto_transfer ctr
+          select jsonb_agg(jsonb_build_object('amount', amount, 'entity_id', entity_id, 'is_approval', is_approval) order by entity_id, amount)
+          from crypto_transfer
           where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as crypto_transfer_list,
       (
           select jsonb_agg(
               jsonb_build_object('account_id', account_id, 'amount', amount, 'token_id', token_id, 'is_approval', is_approval)
               order by token_id, account_id)
-          from token_transfer tk_tr
+          from token_transfer
           where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as token_transfer_list,
       (
@@ -856,7 +439,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
                   'amount', amount, 'collector_account_id', collector_account_id,
                   'effective_payer_account_ids', effective_payer_account_ids,
                   'token_id', token_id) order by collector_account_id, amount)
-          from assessed_custom_fee acf
+          from assessed_custom_fee
           where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as assessed_custom_fees
     from transaction t
@@ -986,6 +569,192 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         ).rejects.toThrowErrorMatchingSnapshot();
       });
     });
+  });
+});
+
+describe('extractSqlFromTransactionsRequest', () => {
+  const {CREDIT, DEBIT} = constants.cryptoTransferType;
+  const defaultExpected = {
+    accountQuery: '',
+    creditDebitQuery: '',
+    limit: 25,
+    limitQuery: 'limit $1',
+    order: constants.orderFilterValues.DESC,
+    params: [25],
+    resultTypeQuery: '',
+    transactionTypeQuery: '',
+  };
+
+  test('empty filters', () => {
+    expect(extractSqlFromTransactionsRequest([])).toEqual(defaultExpected);
+  });
+
+  describe('account id', () => {
+    test('single equal', () => {
+      const filters = [{key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.eq, value: 123}];
+      const expected = {
+        ...defaultExpected,
+        accountQuery: 'ctl.entity_id = $1',
+        limitQuery: 'limit $2',
+        params: [123, 25],
+      };
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+
+    test('multiple equals', () => {
+      const filters = [
+        {key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.eq, value: 123},
+        {key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.eq, value: 124},
+      ];
+      const expected = {
+        ...defaultExpected,
+        accountQuery: 'ctl.entity_id = any($1)',
+        limitQuery: 'limit $2',
+        params: [[123, 124], 25],
+      };
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+
+    test('range and equal', () => {
+      const filters = [
+        {key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.gt, value: 100},
+        {key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.lt, value: 200},
+        {key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.eq, value: 123},
+      ];
+      const expected = {
+        ...defaultExpected,
+        accountQuery: 'ctl.entity_id > $1 and ctl.entity_id < $2 and ctl.entity_id = $3',
+        limitQuery: 'limit $4',
+        params: [100, 200, 123, 25],
+      };
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+  });
+
+  describe('credit type', () => {
+    test('single value', () => {
+      const expected = {
+        ...defaultExpected,
+        creditDebitQuery: 'ctl.amount > 0',
+      };
+      const filters = [{key: constants.filterKeys.CREDIT_TYPE, operator: utils.opsMap.eq, value: CREDIT}];
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+
+      expected.creditDebitQuery = 'ctl.amount < 0';
+      filters[0].value = DEBIT;
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+
+    test('repeated same values', () => {
+      const expected = {
+        ...defaultExpected,
+        creditDebitQuery: 'ctl.amount > 0',
+      };
+      const filters = [
+        {key: constants.filterKeys.CREDIT_TYPE, operator: utils.opsMap.eq, value: CREDIT},
+        {key: constants.filterKeys.CREDIT_TYPE, operator: utils.opsMap.eq, value: CREDIT},
+      ];
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+
+      expected.creditDebitQuery = 'ctl.amount < 0';
+      filters.forEach((filter) => (filter.value = 'debit'));
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+
+    test('credit and debit', () => {
+      const filters = [
+        {key: constants.filterKeys.CREDIT_TYPE, operator: utils.opsMap.eq, value: CREDIT},
+        {key: constants.filterKeys.CREDIT_TYPE, operator: utils.opsMap.eq, value: DEBIT},
+      ];
+      expect(extractSqlFromTransactionsRequest(filters)).toBeNull();
+    });
+  });
+
+  describe('result', () => {
+    test('single value', () => {
+      const expected = {
+        ...defaultExpected,
+        limitQuery: 'limit $2',
+        params: ['22', 25],
+        resultTypeQuery: 't.result = $1',
+      };
+      const filters = [{key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'success'}];
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+
+      expected.resultTypeQuery = 't.result <> $1';
+      filters[0].value = 'fail';
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+
+    test('multiple values', () => {
+      const expected = {
+        ...defaultExpected,
+        limitQuery: 'limit $2',
+        params: ['22', 25],
+        resultTypeQuery: 't.result = $1',
+      };
+      const filters = [
+        {key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'success'},
+        {key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'fail'},
+        {key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'success'},
+      ];
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+
+      expected.resultTypeQuery = 't.result <> $1';
+      filters[2].value = 'fail';
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+  });
+
+  describe('transaction type', () => {
+    test('single transaction type', () => {
+      const expected = {
+        ...defaultExpected,
+        limitQuery: 'limit $2',
+        params: ['14', 25],
+        transactionTypeQuery: 'type = $1',
+      };
+      const filters = [
+        {key: constants.filterKeys.TRANSACTION_TYPE, operator: utils.opsMap.eq, value: 'CRYPTOTRANSFER'},
+      ];
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+
+    test('multiple transaction types', () => {
+      const expected = {
+        ...defaultExpected,
+        limitQuery: 'limit $2',
+        params: [['14', '15'], 25],
+        transactionTypeQuery: 'type = any($1)',
+      };
+      const filters = [
+        {key: constants.filterKeys.TRANSACTION_TYPE, operator: utils.opsMap.eq, value: 'CRYPTOTRANSFER'},
+        {key: constants.filterKeys.TRANSACTION_TYPE, operator: utils.opsMap.eq, value: 'CRYPTOUPDATEACCOUNT'},
+      ];
+      expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
+    });
+  });
+
+  test('all filters', () => {
+    const expected = {
+      accountQuery: 'ctl.entity_id = $1',
+      creditDebitQuery: 'ctl.amount > 0',
+      limit: 30,
+      limitQuery: 'limit $4',
+      order: 'asc',
+      params: [123, '22', '14', 30],
+      resultTypeQuery: 't.result = $2',
+      transactionTypeQuery: 'type = $3',
+    };
+    const filters = [
+      {key: constants.filterKeys.ACCOUNT_ID, operator: utils.opsMap.eq, value: 123},
+      {key: constants.filterKeys.CREDIT_TYPE, operator: utils.opsMap.eq, value: CREDIT},
+      {key: constants.filterKeys.RESULT, operator: utils.opsMap.eq, value: 'success'},
+      {key: constants.filterKeys.TRANSACTION_TYPE, operator: utils.opsMap.eq, value: 'CRYPTOTRANSFER'},
+      {key: constants.filterKeys.LIMIT, operator: utils.opsMap.eq, value: 30},
+      {key: constants.filterKeys.ORDER, operator: utils.opsMap.eq, value: constants.orderFilterValues.ASC},
+    ];
+    expect(extractSqlFromTransactionsRequest(filters)).toEqual(expected);
   });
 });
 

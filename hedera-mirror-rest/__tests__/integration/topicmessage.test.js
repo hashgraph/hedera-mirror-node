@@ -16,12 +16,12 @@
 
 import {Range} from 'pg-range';
 
-import * as constants from '../constants';
-import integrationDomainOps from './integrationDomainOps';
-import {setupIntegrationTest} from './integrationUtils';
-import * as utils from '../utils';
+import * as constants from '../../constants';
+import integrationDomainOps from '../integrationDomainOps';
+import {setupIntegrationTest} from '../integrationUtils';
+import * as utils from '../../utils';
 
-import topicMessage from '../topicmessage';
+import topicMessage from '../../topicmessage';
 
 setupIntegrationTest();
 

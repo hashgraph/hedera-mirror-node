@@ -476,8 +476,10 @@ const getOneAccount = async (req, res) => {
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
+  // Add the account id path parameter as a query filter for the transactions handler
+  filters.push({key: filterKeys.ACCOUNT_ID, operator: opsMap.eq, value: encodedId});
   const transactionsPromise = includeTransactions
-    ? transactions.doGetTransactions(encodedId, filters, req, timestampRange)
+    ? transactions.doGetTransactions(filters, req, timestampRange)
     : emptyTransactionsPromise;
 
   const [entityResults, transactionResults] = await Promise.all([entityPromise, transactionsPromise]);

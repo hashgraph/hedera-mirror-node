@@ -19,7 +19,6 @@ import * as math from 'mathjs';
 import path from 'path';
 
 import {getResponseLimit} from '../config';
-import EntityId from '../entityId';
 import * as testutils from './testutils';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -40,13 +39,8 @@ class MockPool {
     this.TEST_DATA_MAX_ACCOUNTS = 1000000n;
     this.TEST_DATA_MAX_HISTORY = 60 * 60; // seconds
     this.TEST_DATA_MAX_BALANCE = 1000000;
-    this.NUM_NODES = 39;
-    this.TRANSACTIONS_SECOND_QUERY_SIGNAL = 'transfer_list as';
 
-    this.TRANSACTIONS_ACCOUNT_NUMBER = {
-      low: 1n,
-      high: this.TEST_DATA_MAX_ACCOUNTS,
-    };
+    this.timeNow = Math.floor(new Date().getTime() / 1000);
     this.on = jest.fn();
   }
 
@@ -77,8 +71,8 @@ class MockPool {
    * This Pool.query method gets called when the code tries to query the database.
    * This method mocks the real database. It parses the SQL query and extracts the
    * filter clauses of the query, and returns those as part of the query response.
-   * This code can be enhanced to return dummy data for transactions, balances, or
-   * queries. Right now, we return a blank arrays
+   * This code can be enhanced to return dummy data for balances, or queries.
+   * Right now, we return a blank arrays
    * @param {String} sqlquery The SQL query string for postgreSQL
    * @param {Array} sqlparams The array of values for positional parameters
    * @return {Promise} promise Javascript promise that gets resolved with the response
@@ -86,7 +80,7 @@ class MockPool {
    */
   query(sqlquery, sqlparams) {
     // Since this is a generic mock DB, first find out if this is a query
-    // for transactions, balances, or accounts
+    // for balances, or accounts
     let callerFile;
     try {
       const callerFiles = new Error().stack
@@ -109,9 +103,6 @@ class MockPool {
     // To parse the sql parameters, we need the 'order by' param used
     let orderprefix = '';
     switch (callerFile) {
-      case 'transactions':
-        orderprefix = 'consensus_timestamp';
-        break;
       case 'balances':
         orderprefix = 'account_id';
         break;
@@ -124,7 +115,7 @@ class MockPool {
 
     // Parse the SQL query
     const parsedparams = testutils.parseSqlQueryAndParams(sqlquery, sqlparams, orderprefix);
-    const rows = this.createMockData(callerFile, parsedparams, sqlquery);
+    const rows = this.createMockData(callerFile, parsedparams);
     return Promise.resolve({
       rows,
       sqlQuery: {
@@ -139,175 +130,15 @@ class MockPool {
    * Create mock data
    * @param {String} callerFile Which file invoked this Pool query
    * @param {Object} parsedparams Parsed parameters that were present in the SQL query
-   * @param {String} sqlquery The SQL query string for postgreSQL
    * @return {Array} rows array filled with mock data
    */
-  createMockData(callerFile, parsedparams, sqlquery) {
+  createMockData(callerFile, parsedparams) {
     let rows = [];
-    if (callerFile === 'transactions') {
-      rows = this.createMockTransactions(parsedparams, sqlquery);
-    } else if (callerFile === 'balances') {
+    if (callerFile === 'balances') {
       rows = this.createMockBalances(parsedparams);
     } else if (callerFile === 'accounts') {
       rows = this.createMockAccounts(parsedparams);
     }
-    return rows;
-  }
-
-  /**
-   * Create mock data for /transactions query
-   * @param {Object} parsedparams Parsed parameters that were present in the SQL query
-   * @param {String} sqlquery The SQL query string for postgreSQL
-   * @return {Array} rows array filled with mock data
-   */
-  createMockTransactions(parsedparams, sqlquery) {
-    if (sqlquery.includes(this.TRANSACTIONS_SECOND_QUERY_SIGNAL)) {
-      return this.createMockTransactionsRows(parsedparams);
-    }
-    return this.createMockTransactionTimestampsRows(parsedparams);
-  }
-
-  /**
-   * Create mock data for /transactions first query. For matching rows, only the matching/coalesced
-   * payer_account_id and consensus_timestamp columns are returned.
-   *
-   * @param {Object} parsedparams Parsed parameters that were present in the SQL query
-   * @return {Array} rows array filled with mock data
-   */
-  createMockTransactionTimestampsRows(parsedparams) {
-    let accountNum = {
-      low: 1n,
-      high: this.TEST_DATA_MAX_ACCOUNTS,
-    };
-    let limit = {
-      low: defaultLimit,
-      high: defaultLimit,
-    };
-    let order = 'desc';
-
-    // Adjust the low/high values based on the SQL query parameters
-    for (const param of parsedparams) {
-      switch (param.field) {
-        case 'payer_account_id':
-          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum, BigInt);
-          // the account number to be used in the second transaction query response
-          this.TRANSACTIONS_ACCOUNT_NUMBER = accountNum;
-          break;
-        case 'limit':
-          limit = this.adjustRangeBasedOnConstraints(param, limit);
-          break;
-        case 'order':
-          order = param.value;
-          break;
-      }
-    }
-
-    // Sanity check on the numbers
-    [accountNum, limit].forEach((pVar) => {
-      this.sanityCheck(pVar);
-    });
-
-    // Create a mock response based on the sql query parameters
-    let rows = [];
-    const timeNowSec = Date.now() / 1000;
-    for (let i = 0; i < limit.high; i++) {
-      const accountNumValue = this.getAccountId(accountNum, i);
-      const row = {
-        payer_account_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
-        consensus_timestamp: this.toNs(timeNowSec - i),
-      };
-      rows.push(row);
-    }
-
-    return rows;
-  }
-
-  /**
-   * Create mock data for /transactions second query. The first query has already determined
-   * the relevant payer account IDs and consensus timestamps, and those are present in parsedparams.
-   * Constraints on consensus_timestamp are also provided to limit the partitions accessed in
-   * V2 (Citus) for the CTEs within the query. However, they are just the min and max timestamp
-   * values retrieved by the first query and do not need to be further bounded here.
-   *
-   * @param {Object} parsedparams Parsed parameters that were present in the SQL query
-   * @return {Array} rows array filled with mock data
-   */
-  createMockTransactionsRows(parsedparams) {
-    let limit = {
-      low: defaultLimit,
-      high: defaultLimit,
-    };
-    let order = 'desc';
-    let payerAccountIds;
-    let transactionTimestamps;
-
-    // Adjust the low/high values based on the SQL query parameters
-    for (const param of parsedparams) {
-      switch (param.field) {
-        case 'limit':
-          limit = this.adjustRangeBasedOnConstraints(param, limit);
-          break;
-        case 'order':
-          order = param.value;
-          break;
-        case 'consensus_timestamp':
-          if (param.operator === 'in') {
-            transactionTimestamps = param.value;
-          } else if (param.operator === '=') {
-            transactionTimestamps = [param.value];
-          }
-          break;
-        case 'payer_account_id':
-          if (param.operator === 'in') {
-            payerAccountIds = param.value;
-          } else if (param.operator === '=') {
-            payerAccountIds = [param.value];
-          }
-          break;
-      }
-    }
-
-    // Sanity check on the numbers
-    this.sanityCheck(limit);
-
-    // Create a mock response based on the sql query parameters
-    // Transfer account ID/entity ID from the first query is not present here.
-    const numRows = Math.min(limit.high, payerAccountIds.length, transactionTimestamps.length);
-    let rows = [];
-    for (let i = 0; i < numRows; i++) {
-      const accountNumValue = this.getAccountId(this.TRANSACTIONS_ACCOUNT_NUMBER, i);
-      const consensusTimestamp = BigInt(transactionTimestamps[i]);
-      const row = {
-        payer_account_id: EntityId.of(0n, 0n, BigInt(payerAccountIds[i])).getEncodedId(),
-        memo: Buffer.from(`Test memo ${i}`),
-        consensus_timestamp: consensusTimestamp,
-        valid_start_ns: consensusTimestamp - 1n,
-        result: 'SUCCESS',
-        type: 14,
-        name: 'CRYPTOTRANSFER',
-        node_account_id: EntityId.of(0n, 0n, BigInt(i % this.NUM_NODES)).getEncodedId(),
-        nonce: 0,
-        crypto_transfer_list: [
-          {
-            amount: i * 1000,
-            entity_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
-          },
-        ],
-        charged_tx_fee: 100 + i,
-        entity_id: null,
-        max_fee: i,
-        scheduled: false,
-        transaction_bytes: '',
-        transaction_hash: '',
-        valid_duration_seconds: i,
-      };
-
-      rows.push(row);
-    }
-    if (['asc', 'ASC'].includes(order)) {
-      rows = rows.reverse();
-    }
-
     return rows;
   }
 
@@ -318,14 +149,13 @@ class MockPool {
    * @return {Array} rows array filled with mock data
    */
   createMockBalances(parsedparams) {
-    const timeNowSec = Math.floor(Date.now() / 1000);
     let accountNum = {
       low: 1n,
       high: this.TEST_DATA_MAX_ACCOUNTS,
     };
     let timestamp = {
-      low: timeNowSec - this.TEST_DATA_MAX_HISTORY,
-      high: timeNowSec,
+      low: this.timeNow - this.TEST_DATA_MAX_HISTORY,
+      high: this.timeNow,
     };
     let balance = {
       low: 0,
@@ -430,17 +260,16 @@ class MockPool {
     });
 
     // Create a mock response based on the sql query parameters
-    const timeNowSec = Math.floor(Date.now() / 1000);
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
       const row = {
         alias: null,
         auto_renew_period: i * 1000,
         balance: balance.low + Math.floor((balance.high - balance.low) / limit.high),
-        consensus_timestamp: this.toNs(timeNowSec),
+        consensus_timestamp: this.toNs(this.timeNow),
         decline_reward: false,
         deleted: false,
-        expiration_timestamp: this.toNs(timeNowSec + 1000),
+        expiration_timestamp: this.toNs(this.timeNow + 1000),
         id: this.getAccountId(accountNum, i),
         key: Buffer.from(`Key for row ${i}`),
         max_automatic_token_associations: i,
@@ -494,6 +323,7 @@ class MockPool {
         pVar.low = value;
         pVar.high = value;
         break;
+      // Only account.id supports in currently
       case 'in':
         if (pVar.equals) {
           pVar.equals.push(value);

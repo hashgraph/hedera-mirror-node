@@ -22,7 +22,6 @@
         "num": 98
       }
     ],
-    "balances": [],
     "transactions": [
       {
         "charged_tx_fee": 0,
@@ -71,7 +70,10 @@
       }
     ]
   },
-  "url": "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&result=success&timestamp=1565779666.711927001",
+  "urls": [
+    "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&result=success&timestamp=1565779666.711927001",
+    "/api/v1/transactions?timestamp=1565779209.711927001&account.id=0.0.9&type=credit&type=debit&result=success"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [],

@@ -22,7 +22,6 @@
         "num": 98
       }
     ],
-    "balances": [],
     "transactions": [
       {
         "charged_tx_fee": 0,
@@ -95,7 +94,6 @@
         "transaction_id": "0.0.8-1565779333-711927000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
-        "token_transfers": [],
         "transfers": [
           {
             "account": "0.0.8",
@@ -134,7 +132,6 @@
         "transaction_id": "0.0.10-1565779209-711927000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
-        "token_transfers": [],
         "transfers": [
           {
             "account": "0.0.9",

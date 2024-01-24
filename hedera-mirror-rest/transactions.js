@@ -317,17 +317,13 @@ const getFirstTransactionTimestamp = (() => {
  * @param {string} order the order in the http request
  * @return {Range} fully bound timestamp range
  */
-const bindTimestampRange = async (range, order = constants.orderFilterValues.DESC) => {
+const bindTimestampRange = async (range, order) => {
   const {bindTimestampRange, maxTimestampRangeNs} = config.query;
   if (!bindTimestampRange) {
     return range;
   }
 
-  const boundRange = Range(
-    range?.begin ?? (await getFirstTransactionTimestamp()),
-    range?.end ?? BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND,
-    '[]'
-  );
+  const boundRange = Range(range?.begin ?? (await getFirstTransactionTimestamp()), range?.end ?? utils.nowInNs(), '[]');
   if (boundRange.end - boundRange.begin + 1n <= maxTimestampRangeNs) {
     return boundRange;
   }
@@ -408,50 +404,63 @@ const getTransferDistinctTimestampsQuery = (
 const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(Transaction.NONCE)} = 0 or
   ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null`;
 
-const extractSqlFromTransactionsRequest = (accountId, filters) => {
-  const accountIds = accountId !== null ? [accountId] : [];
-  let accountQuery = '';
+const getQueryWithValues = (column, params, values) => {
+  if (values.length === 0) {
+    return '';
+  }
+
+  return values.length === 1 ? `${column} = $${params.push(values[0])}` : `${column} = any($${params.push(values)})`;
+};
+
+const extractSqlFromTransactionsRequest = (filters) => {
+  const accountConditions = [];
+  const accountIdEqValues = [];
   let creditDebitQuery = '';
+  let lastCreditDebitValue = null;
   let limit = defaultResponseLimit;
   let order = constants.orderFilterValues.DESC;
   const params = [];
   let resultType = null;
   let resultTypeQuery = '';
   const transactionTypes = [];
-  let transactionTypeQuery = '';
 
   for (const filter of filters) {
-    switch (filter.key) {
+    const {key, operator, value} = filter;
+    switch (key) {
       case constants.filterKeys.ACCOUNT_ID:
-        accountIds.push(filter.value);
+        if (operator === utils.opsMap.eq) {
+          accountIdEqValues.push(value);
+        } else {
+          accountConditions.push(`ctl.entity_id${operator}$${params.push(value)}`);
+        }
         break;
       case constants.filterKeys.CREDIT_TYPE:
-        if (creditDebitQuery) {
-          return {};
+        if (lastCreditDebitValue !== null && lastCreditDebitValue !== value) {
+          return null;
         }
-        const operator = filter.value === constants.cryptoTransferType.CREDIT ? '>' : '<';
-        creditDebitQuery = `ctl.amount ${operator} $${params.push(0)}`;
+        lastCreditDebitValue = value;
         break;
       case constants.filterKeys.LIMIT:
-        limit = filter.value;
+        limit = value;
         break;
       case constants.filterKeys.ORDER:
-        order = filter.value;
+        order = value;
         break;
       case constants.filterKeys.RESULT:
-        resultType = filter.value;
+        resultType = value;
         break;
       case constants.filterKeys.TRANSACTION_TYPE:
-        transactionTypes.push(TransactionType.getProtoId(filter.value));
+        transactionTypes.push(TransactionType.getProtoId(value));
         break;
     }
   }
 
-  if (accountIds.length > 0) {
-    accountQuery =
-      accountIds.length === 1
-        ? `ctl.entity_id = $${params.push(accountIds[0])}`
-        : `ctl.entity_id = any($${params.push(accountIds)})`;
+  accountConditions.push(getQueryWithValues('ctl.entity_id', params, accountIdEqValues));
+  const accountQuery = accountConditions.filter(Boolean).join(' and ');
+
+  if (lastCreditDebitValue) {
+    const operator = lastCreditDebitValue.toLowerCase() === constants.cryptoTransferType.CREDIT ? '>' : '<';
+    creditDebitQuery = `ctl.amount ${operator} 0`;
   }
 
   if (resultType) {
@@ -459,13 +468,7 @@ const extractSqlFromTransactionsRequest = (accountId, filters) => {
     resultTypeQuery = `t.result ${operator} $${params.push(utils.resultSuccess)}`;
   }
 
-  if (transactionTypes.length > 0) {
-    transactionTypeQuery =
-      transactionTypes.length === 1
-        ? `type = $${params.push(transactionTypes[0])}`
-        : `type = any($${params.push(transactionTypes)})`;
-  }
-
+  const transactionTypeQuery = getQueryWithValues('type', params, transactionTypes);
   const limitQuery = `limit $${params.push(limit)}`;
 
   return {
@@ -481,27 +484,27 @@ const extractSqlFromTransactionsRequest = (accountId, filters) => {
 };
 
 /**
- * @param {BigInt|Number} accountId encoded account id
  * @param filters The filters from the http request
  * @param timestampRange the timestamp range object
  * @return {Promise} the Promise for obtaining the results of the query
  */
-const getTransactionTimestamps = async (accountId, filters, timestampRange) => {
+const getTransactionTimestamps = async (filters, timestampRange) => {
   if (timestampRange.eqValues.length > 1) {
     return {rows: []};
   }
 
-  const {accountQuery, creditDebitQuery, limit, limitQuery, order, resultTypeQuery, transactionTypeQuery, params} =
-    extractSqlFromTransactionsRequest(accountId, filters);
-  if (limit === undefined) {
+  const result = extractSqlFromTransactionsRequest(filters);
+  if (result === null) {
     return {rows: []};
   }
+  const {accountQuery, creditDebitQuery, limit, limitQuery, order, resultTypeQuery, transactionTypeQuery, params} =
+    result;
 
-  const boundTimestampRange = {
-    ...timestampRange,
-    range: await bindTimestampRange(timestampRange.range, order),
-  };
-  let [timestampQuery, timestampParams] = utils.buildTimestampQuery('t.consensus_timestamp', boundTimestampRange);
+  if (timestampRange.eqValues.length === 0) {
+    timestampRange.range = await bindTimestampRange(timestampRange.range, order);
+  }
+
+  let [timestampQuery, timestampParams] = utils.buildTimestampQuery('t.consensus_timestamp', timestampRange);
   timestampQuery = utils.convertMySqlStyleQueryToPostgres(timestampQuery, params.length + 1);
   params.push(...timestampParams);
 
@@ -616,27 +619,27 @@ const getTransactionTimestampsQuery = (
 /**
  * Get the transaction details given the payer account ids and consensus timestamps
  *
- * @param {{Object}[]} payAndTimestamps The transaction payer and consensus timestamp pairs
+ * @param {{Object}[]} payerAndTimestamps The transaction payer and consensus timestamp pairs
  * @param {String} order Sorting order
  * @return {Promise} Promise returning the transaction details
  */
-const getTransactionsDetails = async (payAndTimestamps, order) => {
-  if (payAndTimestamps.length === 0) {
+const getTransactionsDetails = async (payerAndTimestamps, order) => {
+  if (payerAndTimestamps.length === 0) {
     return {rows: []};
   }
 
-  const uniquePayerIds = new Set();
+  const payerAccountIds = new Set();
   const timestamps = [];
-  payAndTimestamps.forEach((row) => {
+  payerAndTimestamps.forEach((row) => {
     timestamps.push(row.consensus_timestamp);
-    uniquePayerIds.add(row.payer_account_id);
+    payerAccountIds.add(row.payer_account_id);
   });
 
-  const params = [Array.from(uniquePayerIds), timestamps];
-  const payerAccountIdsCondition = 'payer_account_id = any($1)';
-  const timestampsCondition = 'consensus_timestamp = any($2)';
-  const outerPayerAccountIdsCondition = 't.payer_account_id = any($1)';
-  const outerTimestampsCondition = 't.consensus_timestamp = any($2)';
+  const params = [];
+  const payerAccountIdsCondition = getQueryWithValues('payer_account_id', params, Array.from(payerAccountIds));
+  const timestampsCondition = getQueryWithValues('consensus_timestamp', params, timestamps);
+  const outerPayerAccountIdsCondition = 't.' + payerAccountIdsCondition;
+  const outerTimestampsCondition = 't.' + timestampsCondition;
 
   const query = `with c_list as (
       select
@@ -677,27 +680,20 @@ const getTransactions = async (req, res) => {
   const timestampFilters = filters.filter((filter) => filter.key === constants.filterKeys.TIMESTAMP);
   const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false);
 
-  res.locals[constants.responseDataLabel] = await doGetTransactions(null, filters, req, timestampRange);
+  res.locals[constants.responseDataLabel] = await doGetTransactions(filters, req, timestampRange);
 };
 
 /**
  * Get transactions per the http request.
  *
- * @param {BigInt|Number} accountId The account id from the path parameter
  * @param {Object[]} filters The filters extracted from the http request
  * @param {Request} req The http request
  * @param timestampRange The timestamp range parsed from the http request
  * @returns {Promise<{links: {next: String}, transactions: *}>}
  */
-const doGetTransactions = async (accountId, filters, req, timestampRange) => {
-  const {
-    limit,
-    order,
-    rows: payAndTimestamps,
-    sqlQuery: timestampsSqlQuery,
-  } = await getTransactionTimestamps(accountId, filters, timestampRange);
-
-  const {rows, sqlQuery: transactionsRowsSqlQuery} = await getTransactionsDetails(payAndTimestamps, order);
+const doGetTransactions = async (filters, req, timestampRange) => {
+  const {limit, order, rows: payAndTimestamps} = await getTransactionTimestamps(filters, timestampRange);
+  const {rows} = await getTransactionsDetails(payAndTimestamps, order);
 
   const transactions = await formatTransactionRows(rows);
   const next = utils.getPaginationLink(
@@ -760,17 +756,17 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
     ${transactionFullFields},
     (
       select ${cryptoTransferJsonAgg}
-      from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
+      from ${CryptoTransfer.tableName}
       where ${CryptoTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as crypto_transfer_list,
     (
       select ${tokenTransferJsonAgg}
-      from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
+      from ${TokenTransfer.tableName}
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}
-      from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
+      from ${AssessedCustomFee.tableName}
       where ${AssessedCustomFee.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as assessed_custom_fees
   from ${Transaction.tableName} ${Transaction.tableAlias}
@@ -846,8 +842,6 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
         case constants.filterKeys.SCHEDULED:
           scheduled = filter.value;
           break;
-        default:
-          break;
       }
     }
 
@@ -909,6 +903,7 @@ const acceptedSingleTransactionParameters = new Set([constants.filterKeys.NONCE,
 
 if (utils.isTestEnv()) {
   Object.assign(transactions, {
+    bindTimestampRange,
     buildWhereClause,
     convertStakingRewardTransfers,
     createAssessedCustomFeeList,
@@ -917,6 +912,7 @@ if (utils.isTestEnv()) {
     createStakingRewardTransferList,
     createTokenTransferList,
     extractSqlFromTransactionsByIdOrHashRequest,
+    extractSqlFromTransactionsRequest,
     formatTransactionRows,
     getFirstTransactionTimestamp,
     getStakingRewardTimestamps,

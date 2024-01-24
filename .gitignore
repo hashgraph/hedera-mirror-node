@@ -124,7 +124,8 @@ local.properties
 hedera-mirror-rest/check-state-proof/output
 
 # generated spec based integration test modules
-hedera-mirror-rest/__tests__/integration/*.test.js
+hedera-mirror-rest/__tests__/integration/*.spec.test.js
+
 
 # Rosetta
 rosetta-cli

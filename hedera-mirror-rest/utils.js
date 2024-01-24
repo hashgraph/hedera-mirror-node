@@ -609,26 +609,6 @@ const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
 };
 
 /**
- * Parse the type=[credit | debit] parameter
- */
-const parseCreditDebitParams = (parsedQueryParams, columnName) => {
-  return parseParams(
-    parsedQueryParams[constants.filterKeys.CREDIT_TYPE],
-    (value) => value,
-    (op, value) => {
-      if (value === 'credit') {
-        return [`${columnName} > ?`, [0]];
-      }
-      if (value === 'debit') {
-        return [`${columnName} < ?`, [0]];
-      }
-      return null;
-    },
-    false
-  );
-};
-
-/**
  * Parses the integer string into a Number if it's safe or otherwise a BigInt
  *
  * @param {string} str
@@ -675,24 +655,6 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
     (op, value) => [`${columnName}${op}?`, [value]],
     false
   );
-};
-
-/**
- * Parse the result=[success | fail | all] parameter
- * @param {Request} req HTTP query request object
- * @param {String} columnName Column name for the transaction result
- * @return {String} Value of the resultType parameter
- */
-const parseResultParams = (req, columnName) => {
-  const resultType = req.query.result;
-  let query = '';
-
-  if (resultType === constants.transactionResultFilter.SUCCESS) {
-    query = `${columnName} = ${resultSuccess}`;
-  } else if (resultType === constants.transactionResultFilter.FAIL) {
-    query = `${columnName} != ${resultSuccess}`;
-  }
-  return query;
 };
 
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
@@ -901,6 +863,8 @@ const mergeParams = (initial, ...params) => {
     return previous;
   }, initial);
 };
+
+const nowInNs = () => BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
 
 /**
  * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
@@ -1304,9 +1268,6 @@ const formatComparator = (comparator) => {
           comparator.value = parseInt(comparator.value, 16);
         }
         break;
-      case constants.filterKeys.CREDIT_TYPE:
-        comparator.value = comparator.value.toLowerCase();
-        break;
       case constants.filterKeys.FILE_ID:
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
@@ -1353,6 +1314,8 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.TOKEN_TYPE:
         // db requires upper case matching for enum
+        // 'type' is overloaded for both transaction credit / debit type and token type, as a result, the transactions
+        // endpoint need to handle the value in all upper cases
         comparator.value = comparator.value.toUpperCase();
         break;
       case constants.filterKeys.TRANSACTIONS:
@@ -1391,27 +1354,6 @@ const parseTokenBalances = (tokenBalances) => {
         balance,
       };
     });
-};
-
-const parseTransactionTypeParam = (parsedQueryParams) => {
-  if (_.isNil(parsedQueryParams)) {
-    return '';
-  }
-
-  const transactionType = parsedQueryParams[constants.filterKeys.TRANSACTION_TYPE];
-  if (_.isNil(transactionType)) {
-    return '';
-  }
-
-  const transactionTypes = !_.isArray(transactionType) ? [transactionType] : transactionType;
-  const protoIds = transactionTypes
-    .map((t) => TransactionType.getProtoId(t))
-    .reduce((result, protoId) => {
-      result.add(protoId);
-      return result;
-    }, new Set());
-
-  return `${constants.transactionColumns.TYPE} in (${Array.from(protoIds)})`;
 };
 
 const isTestEnv = () => process.env.NODE_ENV === 'test';
@@ -1502,7 +1444,9 @@ const getStakingPeriod = (stakingPeriod) => {
 
 /**
  * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span
- * beyond a configured limit), or a set of equals operators within the same limit.
+ * beyond a configured limit), or a set of equals operators within the same limit. When there are multiple gt / gte
+ * filters, the largest value is returned as the lower bound. Same applies to lt / lte filters so the smallest values is
+ * returned as the upper bound. For equals and not equals operators, the values are deduplicated.
  *
  * @param {[]}filters an array of timestamp filters
  * @param filterRequired indicates whether timestamp filters can be empty
@@ -1531,8 +1475,8 @@ const parseTimestampFilters = (
   let earliest = null;
   let latest = null;
   let range = null;
-  const eqValues = [];
-  const neValues = [];
+  const eqValues = new Set();
+  const neValues = new Set();
   let lowerBoundFilterCount = 0;
   let upperBoundFilterCount = 0;
 
@@ -1540,10 +1484,10 @@ const parseTimestampFilters = (
     let value = BigInt(filter.value);
     switch (filter.operator) {
       case opsMap.eq:
-        eqValues.push(value);
+        eqValues.add(value);
         break;
       case opsMap.ne:
-        neValues.push(value);
+        neValues.add(value);
         break;
       case opsMap.gt:
         value += 1n;
@@ -1561,7 +1505,7 @@ const parseTimestampFilters = (
   }
 
   if (forceStrictChecks) {
-    if (!allowNe && neValues.length > 0) {
+    if (!allowNe && neValues.size > 0) {
       throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
     }
 
@@ -1573,25 +1517,21 @@ const parseTimestampFilters = (
       throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
     }
 
-    if (eqValues.length > 0 && (lowerBoundFilterCount > 0 || upperBoundFilterCount > 0 || neValues.length > 0)) {
+    if (eqValues.size > 0 && (lowerBoundFilterCount > 0 || upperBoundFilterCount > 0 || neValues.size > 0)) {
       throw new InvalidArgumentError('Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param');
     }
   }
 
-  if (!allowOpenRange && eqValues.length === 0 && (lowerBoundFilterCount === 0 || upperBoundFilterCount === 0)) {
+  if (!allowOpenRange && eqValues.size === 0 && (lowerBoundFilterCount === 0 || upperBoundFilterCount === 0)) {
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte), or eq operator');
   }
 
-  if (eqValues.length === 0) {
-    const difference = latest !== null && earliest !== null ? latest - earliest + 1n : null;
-    const {maxTimestampRange, maxTimestampRangeNs} = config.query;
+  const difference = latest !== null && earliest !== null ? latest - earliest + 1n : null;
+  const {maxTimestampRange, maxTimestampRangeNs} = config.query;
 
-    // If difference is null, we want to ignore because we allow open ranges and that is known to be true at this point
-    if (difference !== null && (difference > maxTimestampRangeNs || difference <= 0n)) {
-      throw new InvalidArgumentError(
-        `Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`
-      );
-    }
+  // If difference is null, we want to ignore because we allow open ranges and that is known to be true at this point
+  if (difference !== null && (difference > maxTimestampRangeNs || difference <= 0n)) {
+    throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
   }
 
   if (earliest !== null || latest !== null) {
@@ -1600,7 +1540,7 @@ const parseTimestampFilters = (
 
   // Note that we don't further check if the range and the eq values can result in an empty range, because some
   // endpoints treat eq operator as lte
-  return {range, eqValues, neValues};
+  return {range, eqValues: Array.from(eqValues), neValues: Array.from(neValues)};
 };
 
 /**
@@ -1783,23 +1723,21 @@ export {
   isValidValueIgnoreCase,
   ltLte,
   mergeParams,
+  nowInNs,
   nsToSecNs,
   nsToSecNsWithHyphen,
   opsMap,
   parseAccountIdQueryParam,
   parseBalanceQueryParam,
   parseBooleanValue,
-  parseCreditDebitParams,
   parseInteger,
   parseLimitAndOrderParams,
   parseParams,
   parsePublicKey,
   parsePublicKeyQueryParam,
-  parseResultParams,
   parseTimestampParam,
   parseTimestampQueryParam,
   parseTokenBalances,
-  parseTransactionTypeParam,
   randomString,
   resultSuccess,
   toHexString,

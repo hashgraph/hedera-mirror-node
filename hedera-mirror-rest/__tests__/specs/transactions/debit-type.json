@@ -22,8 +22,6 @@
         "num": 98
       }
     ],
-    "balances": [],
-    "transactions": [],
     "cryptotransfers": [
       {
         "consensus_timestamp": "1565779111711927001",
