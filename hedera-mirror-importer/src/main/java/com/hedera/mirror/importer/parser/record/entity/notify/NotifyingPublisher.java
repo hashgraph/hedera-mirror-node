@@ -37,7 +37,7 @@ import org.springframework.jdbc.core.PreparedStatementCallback;
 @ConditionOnEntityRecordParser
 @CustomLog
 @Named
-@Order(2)
+@Order(1)
 public class NotifyingPublisher implements BatchPublisher {
 
     private static final String SQL = "select pg_notify('topic_message', ?)";
