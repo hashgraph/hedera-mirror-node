@@ -73,7 +73,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      */
     protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
         var contractCallRequest = sender.isPresent()
-                ? ModelBuilder.contractCallRequest(data, true, solidityAddress, sender.get())
+                ? ModelBuilder.contractCallRequest(data, true, sender.get(), solidityAddress)
                 : ModelBuilder.contractCallRequest(data, true, solidityAddress);
 
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);

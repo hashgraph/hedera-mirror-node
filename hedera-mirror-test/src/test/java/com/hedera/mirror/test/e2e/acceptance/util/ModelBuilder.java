@@ -3,7 +3,8 @@ package com.hedera.mirror.test.e2e.acceptance.util;
 import com.hedera.mirror.rest.model.ContractCallRequest;
 
 /**
- * Utility class for building instances of some of the more involved OpenAPI generated model classes.
+ * Utility class for building instances of some of the more involved OpenAPI generated model classes. The previous
+ * manually coded POJOs set default values for some fields.
  */
 public class ModelBuilder {
 

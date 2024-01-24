@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
@@ -153,6 +154,7 @@ public class ScheduleFeature {
         // get unique set of signatures
         var signatureSet = mirrorSchedule.getSignatures().stream()
                 .map(ScheduleSignature::getPublicKeyPrefix)
+                .map(Bytes::wrap)
                 .collect(Collectors.toSet());
         assertThat(signatureSet).hasSize(currentSignersCount);
 
