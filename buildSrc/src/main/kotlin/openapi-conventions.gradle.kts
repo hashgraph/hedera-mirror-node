@@ -57,6 +57,5 @@ openApiGenerate {
     typeMappings = mapOf("Timestamp" to "String", "string+binary" to "String")
 }
 
-
 tasks.withType<JavaCompile> { dependsOn("openApiGenerate") }
 java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }

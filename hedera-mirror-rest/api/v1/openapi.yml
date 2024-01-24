@@ -2962,12 +2962,7 @@ components:
           type: integer
           nullable: true
         timestamp:
-          type: object
-          properties:
-            from:
-              $ref: "#/components/schemas/TimestampRange"
-            to:
-              $ref: "#/components/schemas/TimestampRange"
+          $ref: "#/components/schemas/TimestampRange"
       example:
         count: 3
         gas_used: 300000
