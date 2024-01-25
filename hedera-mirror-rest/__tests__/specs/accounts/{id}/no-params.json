@@ -71,7 +71,6 @@
     ],
     "entityStakes": [
       {
-        "decline_reward_start": false,
         "end_stake_period": 810,
         "id": 8,
         "pending_reward": 123,

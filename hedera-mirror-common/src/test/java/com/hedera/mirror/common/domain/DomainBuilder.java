@@ -485,7 +485,6 @@ public class DomainBuilder {
 
     public DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder<?, ?>> entityStake() {
         var builder = EntityStake.builder()
-                .declineRewardStart(false)
                 .endStakePeriod(0L)
                 .id(id())
                 .pendingReward(0L)
@@ -499,7 +498,6 @@ public class DomainBuilder {
     public DomainWrapper<EntityStakeHistory, EntityStakeHistory.EntityStakeHistoryBuilder<?, ?>> entityStakeHistory() {
         long timestamp = timestamp();
         var builder = EntityStakeHistory.builder()
-                .declineRewardStart(false)
                 .endStakePeriod(0L)
                 .id(id())
                 .pendingReward(0L)

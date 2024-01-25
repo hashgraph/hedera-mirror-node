@@ -42,7 +42,7 @@ import org.springframework.data.redis.core.SessionCallback;
 @ConditionOnEntityRecordParser
 @CustomLog
 @Named
-@Order(1)
+@Order(0) // Triggering the async publishing before other operations can reduce latency
 public class RedisPublisher implements BatchPublisher {
 
     private static final String TOPIC_FORMAT = "topic.%d";

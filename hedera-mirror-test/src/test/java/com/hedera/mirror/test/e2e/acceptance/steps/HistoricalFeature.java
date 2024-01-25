@@ -85,6 +85,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class HistoricalFeature extends AbstractEstimateFeature {
+    private final AccountClient accountClient;
+    private final TokenClient tokenClient;
     private DeployedContract deployedEstimateContract;
     private DeployedContract deployedEstimatePrecompileContract;
     private DeployedContract deployedPrecompileContract;
@@ -93,13 +95,10 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     private String estimatePrecompileContractSolidityAddress;
     private String precompileContractSolidityAddress;
     private String ercContractSolidityAddress;
-
     private ExpandedAccountId receiverAccountId;
     private ExpandedAccountId secondReceiverAccountId;
     private ExpandedAccountId deletableAccountId;
     private ExpandedAccountId admin;
-    private final AccountClient accountClient;
-    private final TokenClient tokenClient;
 
     @Given("I successfully create estimateGas contract")
     public void createNewEstimateContract() throws IOException {
@@ -847,17 +846,14 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         try {
             Awaitility.await()
-                    .atMost(2, TimeUnit.SECONDS)
+                    .atMost(3, TimeUnit.SECONDS)
                     .pollInterval(250, TimeUnit.MILLISECONDS)
                     .ignoreExceptions()
                     .until(() -> Integer.parseInt(getLastBlockNumber()) > currentBlockNumber);
-            log.info("Found new block.");
         } catch (ConditionTimeoutException e) {
-            log.info("No new block found within 2 seconds.");
+            log.info("No new block found within 3 seconds");
         }
     }
-
-    record Selector(SelectorInterface selector, ContractResource resource, String contractAddress) {}
 
     @Getter
     @RequiredArgsConstructor
@@ -866,4 +862,6 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         private final String selector;
     }
+
+    record Selector(SelectorInterface selector, ContractResource resource, String contractAddress) {}
 }
