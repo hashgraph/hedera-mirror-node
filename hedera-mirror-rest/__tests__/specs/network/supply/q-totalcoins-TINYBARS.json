@@ -30,7 +30,9 @@
     ]
   },
   "url": "/api/v1/network/supply?q=totalcoins",
-  "responseContentType": "text/plain; charset=utf-8",
+  "responseHeaders": {
+    "Content-Type": "text/plain; charset=utf-8"
+  },
   "responseStatus": 200,
   "responseJson": "5000000000000000000"
 }

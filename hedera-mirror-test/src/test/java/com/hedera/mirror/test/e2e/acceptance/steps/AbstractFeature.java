@@ -169,7 +169,12 @@ abstract class AbstractFeature {
     }
 
     protected ContractCallResponse callContract(String data, String contractAddress) {
+        return callContract("LATEST", data, contractAddress);
+    }
+
+    protected ContractCallResponse callContract(String blockNumber, String data, String contractAddress) {
         var contractCallRequestBody = ContractCallRequest.builder()
+                .block(blockNumber)
                 .data(data)
                 .from(contractClient.getClientAddress())
                 .to(contractAddress)

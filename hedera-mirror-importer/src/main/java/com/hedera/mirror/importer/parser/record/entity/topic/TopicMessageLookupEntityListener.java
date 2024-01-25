@@ -37,7 +37,7 @@ import org.springframework.core.annotation.Order;
 
 @CustomLog
 @Named
-@Order(1)
+@Order(3)
 @ConditionOnEntityRecordParser
 public class TopicMessageLookupEntityListener implements EntityListener, RecordStreamFileListener {
 

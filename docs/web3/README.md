@@ -41,7 +41,7 @@ _Note:_ To test against an instance running on the same machine as Docker use yo
 ### Supported/unsupported operations
 
 | Estimate | Static | Operation Type                                                                            | Supported | Historical | Reads | Modifications |
-| -------- |--------|-------------------------------------------------------------------------------------------| --------- |------------| ----- |---------------|
+| -------- | ------ | ----------------------------------------------------------------------------------------- | --------- | ---------- | ----- | ------------- |
 | Y        | Y      | non precompile functions                                                                  | Y         | Y          | Y     | Y             |
 | Y        | N      | non precompile functions with lazy account creation                                       | Y         | Y          | Y     | Y             |
 | Y        | Y      | operations for ERC precompile functions (balance, symbol, tokenURI, name, decimals, etc.) | Y         | Y          | Y     | N             |
@@ -50,3 +50,5 @@ _Note:_ To test against an instance running on the same machine as Docker use yo
 | Y        | Y      | operations for GetApprovedPrecompile                                                      | Y         | Y          | Y     | N             |
 | Y        | Y      | read-only operations for HTS system contract                                              | Y         | Y          | Y     | N             |
 | Y        | N      | modifying operations for HTS system contract                                              | Y         | Y          | Y     | Y             |
+
+_Note:_ Gas estimation only supports the `latest` block

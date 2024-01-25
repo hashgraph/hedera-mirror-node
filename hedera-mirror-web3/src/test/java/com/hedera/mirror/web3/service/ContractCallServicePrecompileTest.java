@@ -30,7 +30,6 @@ import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -258,8 +257,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(InvalidTransactionException.class)
-                .hasMessage("Precompile result is null");
+                .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
     private static long getValue(SupportedContractModificationFunctions contractFunc) {
