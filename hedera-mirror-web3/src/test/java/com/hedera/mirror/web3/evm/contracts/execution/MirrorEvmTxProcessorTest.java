@@ -265,7 +265,7 @@ class MirrorEvmTxProcessorTest {
     }
 
     @Test
-    void precompileCallSucceds() {
+    void precompileCallSucceeds() {
         final var validPrecompilePayload =
                 Bytes.fromHexString("0x8dac847b6279746573333200000000000000000000000000000000000000000000000000");
         // setup:
