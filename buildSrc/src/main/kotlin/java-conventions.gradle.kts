@@ -33,6 +33,8 @@ configurations.all {
 repositories {
     maven { url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/") }
     maven { url = uri("https://artifacts.consensys.net/public/maven/maven/") }
+    // Temporarily added until GA protobuf is released
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
 }
 
 dependencyManagement {

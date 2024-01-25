@@ -20,6 +20,7 @@ import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -117,7 +118,13 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
 
         if (!EntityId.isEmpty(senderId) && entityProperties.getPersist().isTrackNonce()) {
             Entity entity = senderId.toEntity();
-            entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
+            if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
+                // Backwards compatibility for pre-0.47.0, continue to increment the nonce
+                entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
+            } else if (functionResult.hasSignerNonce()) { // The ethereumNonce will not be changed if not present
+                entity.setEthereumNonce(functionResult.getSignerNonce().getValue());
+            }
+
             entity.setTimestampRange(null); // Don't trigger a history row
             entityListener.onEntity(entity);
             recordItem.addEntityId(senderId);
