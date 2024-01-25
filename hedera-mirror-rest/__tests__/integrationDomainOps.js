@@ -625,7 +625,6 @@ const addEntity = async (defaults, custom) => {
 const SECONDS_PER_DAY = 86400;
 
 const defaultEntityStake = {
-  decline_reward_start: true,
   end_stake_period: 1,
   id: null,
   pending_reward: 0,
