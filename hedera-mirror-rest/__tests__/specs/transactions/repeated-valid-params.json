@@ -1,6 +1,6 @@
 {
   "description": "Transaction api calls using repeated valid queries. Results in param combination with no matching result.",
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
       "fakeTime": "2019-08-14T10:50:00Z"

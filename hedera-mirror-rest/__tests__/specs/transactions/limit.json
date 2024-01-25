@@ -1,6 +1,6 @@
 {
   "description": "Transaction api calls for transactions with limit",
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "config": {
       "response": {

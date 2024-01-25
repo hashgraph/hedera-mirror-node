@@ -1,6 +1,6 @@
 {
   "description": "Transaction api calls with no arguments",
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
       "fakeTime": "2009-02-13T23:50:00Z"

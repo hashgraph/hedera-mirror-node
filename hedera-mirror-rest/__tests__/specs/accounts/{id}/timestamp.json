@@ -5,7 +5,7 @@
     "is from the entity table because there is no balance snapshot in the account balance partitions, and the",
     "transactions array is empty because there are no transaction in the range (now - max range, now]"
   ],
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
       "fakeTime": "2009-04-13T23:40:00Z"

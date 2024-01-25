@@ -194,12 +194,13 @@ describe('Override query config', () => {
 
   test('success', async () => {
     const queryConfig = {
+      bindTimestampRange: true,
       maxRepeatedQueryParameters: 2,
       maxTimestampRange: '1d',
       maxTransactionConsensusTimestampRange: '10m',
     };
     const expected = {
-      bindTimestampRange: false,
+      bindTimestampRange: true,
       maxRepeatedQueryParameters: 2,
       maxTimestampRange: '1d',
       maxTimestampRangeNs: 86400000000000n,

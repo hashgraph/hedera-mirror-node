@@ -404,7 +404,7 @@ const getTransferDistinctTimestampsQuery = (
 const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(Transaction.NONCE)} = 0 or
   ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null`;
 
-const getQueryWithValues = (column, params, values) => {
+const getQueryWithEqualValues = (column, params, values) => {
   if (values.length === 0) {
     return '';
   }
@@ -455,7 +455,7 @@ const extractSqlFromTransactionsRequest = (filters) => {
     }
   }
 
-  accountConditions.push(getQueryWithValues('ctl.entity_id', params, accountIdEqValues));
+  accountConditions.push(getQueryWithEqualValues('ctl.entity_id', params, accountIdEqValues));
   const accountQuery = accountConditions.filter(Boolean).join(' and ');
 
   if (lastCreditDebitValue) {
@@ -468,7 +468,7 @@ const extractSqlFromTransactionsRequest = (filters) => {
     resultTypeQuery = `t.result ${operator} $${params.push(utils.resultSuccess)}`;
   }
 
-  const transactionTypeQuery = getQueryWithValues('type', params, transactionTypes);
+  const transactionTypeQuery = getQueryWithEqualValues('type', params, transactionTypes);
   const limitQuery = `limit $${params.push(limit)}`;
 
   return {
@@ -636,8 +636,8 @@ const getTransactionsDetails = async (payerAndTimestamps, order) => {
   });
 
   const params = [];
-  const payerAccountIdsCondition = getQueryWithValues('payer_account_id', params, Array.from(payerAccountIds));
-  const timestampsCondition = getQueryWithValues('consensus_timestamp', params, timestamps);
+  const payerAccountIdsCondition = getQueryWithEqualValues('payer_account_id', params, Array.from(payerAccountIds));
+  const timestampsCondition = getQueryWithEqualValues('consensus_timestamp', params, timestamps);
   const outerPayerAccountIdsCondition = 't.' + payerAccountIdsCondition;
   const outerTimestampsCondition = 't.' + timestampsCondition;
 

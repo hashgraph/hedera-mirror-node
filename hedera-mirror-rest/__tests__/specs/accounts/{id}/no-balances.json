@@ -1,6 +1,6 @@
 {
   "description": "Account api calls for specific account using path for account with no balance",
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
       "fakeTime": "2009-02-13T23:40:00Z"

@@ -1,6 +1,6 @@
 {
   "description": "Transaction api calls for transactions with nft transfers",
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
       "fakeTime": "2009-02-13T23:40:00Z"

@@ -4,7 +4,7 @@
     "This test spec is designed to reproduce issue #3137. Due to missing 'order by consensus_timestamp' clause,",
     "with certain query params, the response may miss some transactions which should match the filters otherwise."
   ],
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
       "fakeTime": "2019-08-14T10:50:00Z"

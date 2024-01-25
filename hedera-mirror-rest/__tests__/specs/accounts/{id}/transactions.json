@@ -4,7 +4,7 @@
     "account 8 has transactions associated to it. When `transactions` is not specified or is `true`",
     "the transactions are included in the response. When the flag `transactions` is `false` they are not included."
   ],
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
       "fakeTime": "2009-02-13T23:40:00Z"

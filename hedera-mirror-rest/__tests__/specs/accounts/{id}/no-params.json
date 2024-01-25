@@ -4,7 +4,7 @@
     "account 8 and account 9 have the same alias, however, account 9 is deleted, so when querying by the alias, ",
     "the rest API should return the information for account 8"
   ],
-  "matrix": "bindTimestampMatrix.js",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
       "fakeTime": "2009-02-13T23:40:00Z"
