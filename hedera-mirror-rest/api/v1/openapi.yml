@@ -1481,7 +1481,7 @@ components:
         allowances:
           $ref: "#/components/schemas/NftAllowances"
         links:
-          $ref: "#/components/schemas/NftLink"
+          $ref: "#/components/schemas/Links"
     SchedulesResponse:
       type: object
       properties:
@@ -2955,20 +2955,17 @@ components:
       type: object
       properties:
         approved_for_all:
+          description: A boolean value indicating if the spender has the allowance to spend all NFTs owned by the given owner
+          example: true
           type: boolean
         owner:
           $ref: "#/components/schemas/EntityId"
         spender:
           $ref: "#/components/schemas/EntityId"
+        timestamp:
+          $ref: "#/components/schemas/TimestampRange"
         token_id:
           $ref: "#/components/schemas/EntityId"
-        timestamp:
-          type: object
-          properties:
-            from:
-              $ref: "#/components/schemas/TimestampRange"
-            to:
-              $ref: "#/components/schemas/TimestampRange"
       example:
         approved_for_all: false
         owner: "0.0.11"
@@ -2981,7 +2978,6 @@ components:
       required:
         - approved_for_all
         - owner
-        - payer_account_id
         - spender
         - timestamp
         - token_id
@@ -2989,13 +2985,6 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/NftAllowance"
-    NftLink:
-      type: object
-      properties:
-        next:
-          example: "/api/v1/accounts/0.0.11/allowances/nfts?limit=1&order=asc&account.id=gte:15&token.id=gt:0.0.99"
-          nullable: true
-          type: string
     NftTransactionTransfer:
       type: object
       properties:
@@ -4282,7 +4271,7 @@ components:
         default: desc
     ownerQueryParam:
       name: owner
-      description: If provided and set to true the accountId path parameter will be treated as the owner.id, else it will be treated as spender.id
+      description: When the owner value is true or omitted, the accountId path parameter will specify the ID of the owner, and the API will retrieve the allowances that the owner has granted to different spenders. Conversely, when the owner value is false, the accountId path parameter will indicate the ID of the spender who has an allowance, and the API will instead provide the allowances granted to the spender by different owners of those tokens.
       in: query
       example: true
       schema:
