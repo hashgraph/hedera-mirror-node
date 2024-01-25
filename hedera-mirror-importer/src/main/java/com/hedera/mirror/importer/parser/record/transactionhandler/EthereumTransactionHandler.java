@@ -119,7 +119,7 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
         if (!EntityId.isEmpty(senderId) && entityProperties.getPersist().isTrackNonce()) {
             Entity entity = senderId.toEntity();
             if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
-                // Backwards compatibility for pre-0.47.0, continue to increment the nonce
+                // Increment the nonce for backwards compatibility
                 entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
             } else if (functionResult.hasSignerNonce()) { // The ethereumNonce will not be changed if not present
                 entity.setEthereumNonce(functionResult.getSignerNonce().getValue());

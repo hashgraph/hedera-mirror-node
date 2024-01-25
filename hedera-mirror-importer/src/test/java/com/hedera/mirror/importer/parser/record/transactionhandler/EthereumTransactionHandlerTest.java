@@ -197,7 +197,6 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     void updateTransactionNullSignerNonce(boolean create) {
         var recordItem = recordItemBuilder
                 .ethereumTransaction(create)
-                .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_47_0))
                 .record(x -> x.setContractCallResult(
                         recordItemBuilder.contractFunctionResult().clearSignerNonce()))
                 .build();
