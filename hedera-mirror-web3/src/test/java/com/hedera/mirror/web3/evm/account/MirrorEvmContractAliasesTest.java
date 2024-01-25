@@ -102,15 +102,15 @@ class MirrorEvmContractAliasesTest {
     @Test
     void isPrecompileAddressShouldReturnTrue() {
         final var precompileAddress = Address.ECREC;
-        assertTrue(mirrorEvmContractAliases.isPrecompileAddress(precompileAddress));
+        assertTrue(mirrorEvmContractAliases.isNativePrecompileAddress(precompileAddress));
     }
 
     @Test
     void isPrecompileAddressShouldReturnFalse() {
         final var zeroAddress = Address.ZERO;
 
-        assertFalse(mirrorEvmContractAliases.isPrecompileAddress(zeroAddress));
-        assertFalse(mirrorEvmContractAliases.isPrecompileAddress(Address.fromHexString(HEX)));
+        assertFalse(mirrorEvmContractAliases.isNativePrecompileAddress(zeroAddress));
+        assertFalse(mirrorEvmContractAliases.isNativePrecompileAddress(Address.fromHexString(HEX)));
     }
 
     //    @Test
