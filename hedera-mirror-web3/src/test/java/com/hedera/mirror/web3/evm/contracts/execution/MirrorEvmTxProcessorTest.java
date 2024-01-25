@@ -293,7 +293,7 @@ class MirrorEvmTxProcessorTest {
                 commonInitialFrame, precompileAddress, validPrecompilePayload, 0L);
 
         assertThat(sender.canonicalAddress()).isEqualTo(buildMessageFrame.getSenderAddress());
-        assertThat(Wei.ZERO).isEqualTo(buildMessageFrame.getApparentValue());
+        assertThat(buildMessageFrame.getApparentValue()).isEqualTo(Wei.ZERO);
         assertThat(precompileAddress).isEqualTo(buildMessageFrame.getRecipientAddress());
     }
 
