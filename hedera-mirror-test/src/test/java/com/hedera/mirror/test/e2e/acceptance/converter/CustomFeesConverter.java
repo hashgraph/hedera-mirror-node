@@ -25,6 +25,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.steps.TokenFeature;
 import io.cucumber.java.DataTableType;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -39,10 +40,17 @@ public class CustomFeesConverter {
     @DataTableType
     public TransactionDetailAllOfAssessedCustomFees mirrorAssessedCustomFee(Map<String, String> entry) {
         var collector = accountClient.getAccount(AccountNameEnum.valueOf(entry.get("collector")));
+        var effectivePayerAccountName = entry.get("effective");
+        var effectivePayerAccountId = effectivePayerAccountName == null
+                ? null
+                : accountClient.getAccount(AccountNameEnum.valueOf(effectivePayerAccountName));
 
         var assessedCustomFee = new TransactionDetailAllOfAssessedCustomFees();
         assessedCustomFee.setAmount(Long.parseLong(entry.get("amount")));
         assessedCustomFee.setCollectorAccountId(collector.getAccountId().toString());
+        if (effectivePayerAccountId != null) {
+            assessedCustomFee.setEffectivePayerAccountIds(List.of(effectivePayerAccountId.getAccountId().toString()));
+        }
         assessedCustomFee.setTokenId(getToken(entry.get("token")));
         return assessedCustomFee;
     }
