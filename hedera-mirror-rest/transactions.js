@@ -489,7 +489,7 @@ const extractSqlFromTransactionsRequest = (filters) => {
  * @return {Promise} the Promise for obtaining the results of the query
  */
 const getTransactionTimestamps = async (filters, timestampRange) => {
-  if (timestampRange.eqValues.length > 1) {
+  if (timestampRange.eqValues.length > 1 || timestampRange.range?.isEmpty()) {
     return {rows: []};
   }
 
@@ -678,7 +678,7 @@ const getTransactionsDetails = async (payerAndTimestamps, order) => {
 const getTransactions = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedTransactionParameters);
   const timestampFilters = filters.filter((filter) => filter.key === constants.filterKeys.TIMESTAMP);
-  const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false);
+  const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false, false);
 
   res.locals[constants.responseDataLabel] = await doGetTransactions(filters, req, timestampRange);
 };

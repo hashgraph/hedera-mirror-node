@@ -403,7 +403,10 @@ const getOneAccount = async (req, res) => {
         break;
     }
   }
-  const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false);
+  const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false, false);
+  if (timestampRange.range?.isEmpty()) {
+    throw new NotFoundError('Timestamp range is empty');
+  }
 
   const accountIdParamIndex = 1;
   let paramCount = accountIdParamIndex;

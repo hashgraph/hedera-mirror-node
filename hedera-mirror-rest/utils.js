@@ -1453,6 +1453,7 @@ const getStakingPeriod = (stakingPeriod) => {
  * @param allowNe indicates whether existence of ne filter is error condition
  * @param allowOpenRange indicates if we allow lt or gt to be passed individually
  * @param strictCheckOverride override feature flag to force strict checking
+ * @param validateRange indicates whether to validate the range is not empty and within the configured limit
  * @return range is null in the case of equals
  */
 const parseTimestampFilters = (
@@ -1460,7 +1461,8 @@ const parseTimestampFilters = (
   filterRequired = true,
   allowNe = false,
   allowOpenRange = false,
-  strictCheckOverride = true
+  strictCheckOverride = true,
+  validateRange = true
 ) => {
   const forceStrictChecks = strictCheckOverride || config.strictTimestampParam;
 
@@ -1526,16 +1528,22 @@ const parseTimestampFilters = (
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte), or eq operator');
   }
 
-  const difference = latest !== null && earliest !== null ? latest - earliest + 1n : null;
-  const {maxTimestampRange, maxTimestampRangeNs} = config.query;
+  if (validateRange) {
+    const difference = latest !== null && earliest !== null ? latest - earliest + 1n : null;
+    const {maxTimestampRange, maxTimestampRangeNs} = config.query;
 
-  // If difference is null, we want to ignore because we allow open ranges and that is known to be true at this point
-  if (difference !== null && (difference > maxTimestampRangeNs || difference <= 0n)) {
-    throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
+    // If difference is null, we want to ignore because we allow open ranges and that is known to be true at this point
+    if (difference !== null && (difference > maxTimestampRangeNs || difference <= 0n)) {
+      throw new InvalidArgumentError(
+        `Timestamp range by the lower and upper bounds must be positive and within ${maxTimestampRange}`
+      );
+    }
   }
 
   if (earliest !== null || latest !== null) {
-    range = Range(earliest, latest, '[]');
+    // Return an empty range when the latest is less than the earliest. Note Range(1, 0, '[]').isEmpty() is false, so
+    // need to return Range() instead.
+    range = (latest ?? constants.MAX_LONG) < (earliest ?? 0n) ? Range() : Range(earliest, latest, '[]');
   }
 
   // Note that we don't further check if the range and the eq values can result in an empty range, because some

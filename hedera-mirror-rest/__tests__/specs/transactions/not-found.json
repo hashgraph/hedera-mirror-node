@@ -1,7 +1,13 @@
 {
   "description": "No transactions",
+  "extendedDescription": [
+    "The second URL has a timestamp range larger than 7 days, to test no error is thrown"
+  ],
   "setup": {},
-  "url": "/api/v1/transactions",
+  "urls": [
+    "/api/v1/transactions",
+    "/api/v1/transactions?timestamp=gt:1565779209.711927000&timestamp=lt:1566384010.711927000"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [],

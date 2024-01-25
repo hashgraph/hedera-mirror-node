@@ -251,6 +251,16 @@
           }
         }
       }
+    },
+    {
+      "url": "/api/v1/transactions?timestamp=gt:1565779209.711927000&timestamp=lte:1565779209.711927000",
+      "responseStatus": 200,
+      "responseJson": {
+        "transactions": [],
+        "links": {
+          "next": null
+        }
+      }
     }
   ]
 }

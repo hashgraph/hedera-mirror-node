@@ -1382,6 +1382,24 @@ describe('parseTimestampFilters', () => {
         strictCheckOverride: false,
       },
       {
+        name: 'empty range and validateRange disabled',
+        filters: [
+          makeFilter(utils.opsMap.gte, '1638921702000000000'),
+          makeFilter(utils.opsMap.lt, '1638921702000000000'),
+        ],
+        expected: {range: Range(), eqValues: [], neValues: []},
+        validateRange: false,
+      },
+      {
+        name: 'range over limit and validateRange disabled',
+        filters: [
+          makeFilter(utils.opsMap.gte, '1638921702000000000'),
+          makeFilter(utils.opsMap.lt, '1639526502000000000'),
+        ],
+        expected: {range: Range(1638921702000000000n, 1639526501999999999n), eqValues: [], neValues: []},
+        validateRange: false,
+      },
+      {
         name: 'empty - required false',
         filters: [],
         required: false,
@@ -1399,7 +1417,8 @@ describe('parseTimestampFilters', () => {
             spec.required,
             spec.allowNe,
             spec.allowOpenRange,
-            spec.strictCheckOverride
+            spec.strictCheckOverride,
+            spec.validateRange
           )
         ).toEqual(spec.expected);
       });
