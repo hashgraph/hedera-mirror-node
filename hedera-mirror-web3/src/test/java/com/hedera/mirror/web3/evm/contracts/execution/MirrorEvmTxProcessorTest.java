@@ -88,6 +88,7 @@ class MirrorEvmTxProcessorTest {
     private final HederaEvmAccount sender = new HederaEvmAccount(Address.ALTBN128_ADD);
     private final HederaEvmAccount receiver = new HederaEvmAccount(Address.ALTBN128_MUL);
     private final Address receiverAddress = receiver.canonicalAddress();
+    private final Address precompileAddress = Address.SHA256;
 
     @Mock
     private PricesAndFeesProvider pricesAndFeesProvider;
@@ -261,6 +262,39 @@ class MirrorEvmTxProcessorTest {
         // expect:
         assertThat(sender.canonicalAddress()).isEqualTo(buildMessageFrame.getSenderAddress());
         assertThat(oneWei).isEqualTo(buildMessageFrame.getApparentValue());
+    }
+
+    @Test
+    void precompileCallSucceds() {
+        final var validPrecompilePayload =
+                Bytes.fromHexString("0x8dac847b6279746573333200000000000000000000000000000000000000000000000000");
+        // setup:
+        given(hederaEvmContractAliases.resolveForEvm(precompileAddress)).willReturn(precompileAddress);
+        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
+        given(hederaEvmContractAliases.isMirror(precompileAddress)).willReturn(true);
+
+        final long GAS_LIMIT = 300_000L;
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
+                .maxStackSize(MAX_STACK_SIZE)
+                .worldUpdater(mock(WorldUpdater.class))
+                .initialGas(GAS_LIMIT)
+                .originator(sender.canonicalAddress())
+                .gasPrice(Wei.ZERO)
+                .sender(sender.canonicalAddress())
+                .value(Wei.ZERO)
+                .apparentValue(Wei.ZERO)
+                .blockValues(mock(BlockValues.class))
+                .completer(__ -> {})
+                .miningBeneficiary(Address.ZERO)
+                .blockHashLookup(h -> null);
+
+        // when:
+        final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
+                commonInitialFrame, precompileAddress, validPrecompilePayload, 0L);
+
+        assertThat(sender.canonicalAddress()).isEqualTo(buildMessageFrame.getSenderAddress());
+        assertThat(Wei.ZERO).isEqualTo(buildMessageFrame.getApparentValue());
+        assertThat(precompileAddress).isEqualTo(buildMessageFrame.getRecipientAddress());
     }
 
     private void givenValidMockWithoutGetOrCreate() {

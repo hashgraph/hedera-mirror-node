@@ -99,6 +99,20 @@ class MirrorEvmContractAliasesTest {
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
     }
 
+    @Test
+    void isPrecompileAddressShouldReturnTrue() {
+        final var precompileAddress = Address.ECREC;
+        assertTrue(mirrorEvmContractAliases.isPrecompileAddress(precompileAddress));
+    }
+
+    @Test
+    void isPrecompileAddressShouldReturnFalse() {
+        final var zeroAddress = Address.ZERO;
+
+        assertFalse(mirrorEvmContractAliases.isPrecompileAddress(zeroAddress));
+        assertFalse(mirrorEvmContractAliases.isPrecompileAddress(Address.fromHexString(HEX)));
+    }
+
     //    @Test
     //    void link() {
     //        mirrorEvmContractAliases.link(ALIAS, ADDRESS);

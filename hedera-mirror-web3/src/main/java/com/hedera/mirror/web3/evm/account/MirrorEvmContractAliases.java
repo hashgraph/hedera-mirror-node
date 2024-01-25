@@ -78,6 +78,11 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         }
     }
 
+    public boolean isPrecompileAddress(Address addressOrAlias) {
+        final var addressDecimals = Long.parseLong(addressOrAlias.toHexString().substring(2), 16);
+        return addressDecimals > 0 && addressDecimals < 10;
+    }
+
     public boolean isInUse(final Address address) {
         return store.exists(address);
     }
