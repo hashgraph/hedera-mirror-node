@@ -1446,7 +1446,7 @@ const getStakingPeriod = (stakingPeriod) => {
  * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span
  * beyond a configured limit), or a set of equals operators within the same limit. When there are multiple gt / gte
  * filters, the largest value is returned as the lower bound. Same applies to lt / lte filters so the smallest values is
- * returned as the upper bound. For equals and not equals operators, the values are deduplicated.
+ * returned as the upper bound. For equals and not equals operators, the values are unique.
  *
  * @param {[]}filters an array of timestamp filters
  * @param filterRequired indicates whether timestamp filters can be empty
@@ -1528,8 +1528,9 @@ const parseTimestampFilters = (
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte), or eq operator');
   }
 
+  const difference = latest !== null && earliest !== null ? latest - earliest + 1n : null;
+
   if (validateRange) {
-    const difference = latest !== null && earliest !== null ? latest - earliest + 1n : null;
     const {maxTimestampRange, maxTimestampRangeNs} = config.query;
 
     // If difference is null, we want to ignore because we allow open ranges and that is known to be true at this point
@@ -1543,7 +1544,7 @@ const parseTimestampFilters = (
   if (earliest !== null || latest !== null) {
     // Return an empty range when the latest is less than the earliest. Note Range(1, 0, '[]').isEmpty() is false, so
     // need to return Range() instead.
-    range = (latest ?? constants.MAX_LONG) < (earliest ?? 0n) ? Range() : Range(earliest, latest, '[]');
+    range = difference !== null && difference <= 0n ? Range() : Range(earliest, latest, '[]');
   }
 
   // Note that we don't further check if the range and the eq values can result in an empty range, because some
