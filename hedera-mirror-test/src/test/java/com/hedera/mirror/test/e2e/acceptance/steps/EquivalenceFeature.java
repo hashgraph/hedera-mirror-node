@@ -27,8 +27,6 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Con
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_SIZE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -114,7 +112,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, asAddress(equivalenceDestructContract.contractId()));
         var functionResult =
                 callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
-        assertEquals(new BigInteger("10000"), functionResult.getResultAsNumber());
+        assertThat(new BigInteger("10000")).isEqualTo(functionResult.getResultAsNumber());
     }
 
     @Then("I verify extcodesize opcode against a system account {string} address returns 0 with call to {node}")
@@ -123,7 +121,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var data = encodeData(EQUIVALENCE_CALL, GET_CODE_SIZE, asAddress(accountId));
         var functionResult =
                 callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, data, BIG_INTEGER_TUPLE);
-        assertEquals(BigInteger.ZERO, functionResult.getResultAsNumber());
+        assertThat(BigInteger.ZERO).isEqualTo(functionResult.getResultAsNumber());
     }
 
     @Then(
@@ -132,7 +130,7 @@ public class EquivalenceFeature extends AbstractFeature {
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, COPY_CODE, asAddress(accountId));
         var functionResult = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data, BYTES_TUPLE);
-        assertEquals("", functionResult.getResultAsText());
+        assertThat("").isEqualTo(functionResult.getResultAsText());
     }
 
     @Then(
@@ -141,7 +139,7 @@ public class EquivalenceFeature extends AbstractFeature {
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, GET_CODE_HASH, asAddress(accountId));
         var functionResult = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, data, BYTES_TUPLE);
-        assertArrayEquals(new byte[0], functionResult.getResultAsBytes().toArray());
+        assertThat(new byte[0]).isEqualTo(functionResult.getResultAsBytes().toArray());
     }
 
     @Then("I execute selfdestruct and set beneficiary to the deleted contract address with call to {node}")
