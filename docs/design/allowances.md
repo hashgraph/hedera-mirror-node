@@ -309,7 +309,7 @@ GET `/api/v1/accounts/0.0.8488/allowances/nfts?limit=3&owner=false`
 
 Query Parameters:
 
-- `account.id`: Filter by the spender account ID or owner account ID, depending on the owner flag. `ne` operator is not supported. Only one occurrence is allowed.
+- `account.id`: Filter by the spender account ID or owner account ID, depending on the owner flag. When the `owner` value is true or omitted, the `account.id` query parameter will specify the spender ID, and the API will filter the allowances by the spender. Conversely, when the `owner` value is false, the `account.id` query parameter should indicate the ID of the owner of the allowance, and the API will filter the allowances by the owner. `ne` operator is not supported. Only one occurrence is allowed.
 - `limit`: The maximum number of items to return. Defaults to 25 with a maximum of 100 allowed.
 - `order`: Order by `account.id` then `token.id`. Accepts `asc` or `desc` with a default of `asc`.
 - `owner`: Indicates whether the path parameter `accountId` is the owner or the spender ID. Accepts a boolean value of `true` or `false` with a default value set to `true`.
