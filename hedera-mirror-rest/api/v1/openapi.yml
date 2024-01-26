@@ -2974,7 +2974,7 @@ components:
         timestamp:
           from: "1651560386.060890949"
           to: "1651560386.661997287"
-        token_id: 0.0.99
+        token_id: "0.0.99"
       required:
         - approved_for_all
         - owner
