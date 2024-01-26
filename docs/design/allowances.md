@@ -219,7 +219,7 @@ Optional Filters
 
 ##### Approved For All NFT Allowances
 
-This API accepts a path parameter that represents either the owner or spender, depending on a boolean flag provided as a query parameter called `owner`. When the `owner` value is true, the `accountId` path parameter should specify the ID of the owner, and the API will retrieve the allowances that the owner has granted to different spenders. Conversely, when the `owner` value is false, the `accountId` path parameter should indicate the ID of the spender who has an allowance, and the API will instead provide the allowances granted to the spender by different owners of those tokens.
+This API accepts a path parameter that represents either the owner or spender, depending on a boolean flag provided as a query parameter called `owner`. When the `owner` value is true or omitted , the `accountId` path parameter should specify the ID of the owner, and the API will retrieve the allowances that the owner has granted to different spenders. Conversely, when the `owner` value is false, the `accountId` path parameter should indicate the ID of the spender who has an allowance, and the API will instead provide the allowances granted to the spender by different owners of those tokens.
 
 GET `/api/v1/accounts/{accountId}/allowances/nfts?limit=3&owner=true`
 
