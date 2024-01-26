@@ -289,9 +289,9 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
-    @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void updateTransactionUpdateNonceOnFailure(boolean setPriorHapiVersion) {
+    @MethodSource("provideNonceOnFailureArguments")
+    void updateTransactionUpdateNonceOnFailure(boolean setPriorHapiVersion, ResponseCodeEnum status) {
         boolean create = true;
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
@@ -299,7 +299,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var builder = recordItemBuilder
                 .ethereumTransaction(create)
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
-                .status(ResponseCodeEnum.INSUFFICIENT_GAS);
+                .status(status);
         if (setPriorHapiVersion) {
             builder.record(x ->
                             // This HAPI version has no signer nonce so create it with a new builder to remove the field
@@ -317,19 +317,26 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .get();
 
         transactionHandler.updateTransaction(transaction, recordItem);
-
-        var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
-        var senderId = functionResult.getSenderId().getAccountNum();
-        var expectedNonce = setPriorHapiVersion
-                ? ethereumTransaction.getNonce() + 1
-                : functionResult.getSignerNonce().getValue();
-        verify(entityListener).onEthereumTransaction(ethereumTransaction);
-        verify(entityListener)
-                .onEntity(argThat(e -> e.getId() == senderId
-                        && e.getTimestampRange() == null
-                        && e.getEthereumNonce() == expectedNonce));
-        assertThat(recordItem.getEntityTransactions())
-                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
+        if (status == ResponseCodeEnum.WRONG_NONCE && setPriorHapiVersion) {
+            // If the HAPI version is prior to 0.46.0 and the status is not
+            // SUCCESS, INSUFFICIENT_GAS, or CONTRACT_REVERT_EXECUTED
+            // then the nonce should not be updated
+            verify(entityListener).onEthereumTransaction(ethereumTransaction);
+            verify(entityListener, never()).onEntity(any());
+        } else {
+            var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
+            var senderId = functionResult.getSenderId().getAccountNum();
+            var expectedNonce = setPriorHapiVersion
+                    ? ethereumTransaction.getNonce() + 1
+                    : functionResult.getSignerNonce().getValue();
+            verify(entityListener).onEthereumTransaction(ethereumTransaction);
+            verify(entityListener)
+                    .onEntity(argThat(e -> e.getId() == senderId
+                            && e.getTimestampRange() == null
+                            && e.getEthereumNonce() == expectedNonce));
+            assertThat(recordItem.getEntityTransactions())
+                    .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
+        }
     }
 
     @Test
@@ -426,6 +433,18 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 EntityId.of(record.getContractCreateResult().getSenderId()),
                 EntityId.of(
                         recordItem.getTransactionBody().getEthereumTransaction().getCallData()));
+    }
+
+    private static Stream<Arguments> provideNonceOnFailureArguments() {
+        return Stream.of(
+                Arguments.of(true, ResponseCodeEnum.SUCCESS),
+                Arguments.of(false, ResponseCodeEnum.SUCCESS),
+                Arguments.of(true, ResponseCodeEnum.INSUFFICIENT_GAS),
+                Arguments.of(false, ResponseCodeEnum.INSUFFICIENT_GAS),
+                Arguments.of(true, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                Arguments.of(false, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                Arguments.of(true, ResponseCodeEnum.WRONG_NONCE),
+                Arguments.of(false, ResponseCodeEnum.WRONG_NONCE));
     }
 
     private static Stream<Arguments> provideUpdateTransactionArguments() {

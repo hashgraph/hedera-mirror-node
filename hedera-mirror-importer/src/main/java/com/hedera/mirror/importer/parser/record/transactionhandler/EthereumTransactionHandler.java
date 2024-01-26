@@ -28,6 +28,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -122,6 +123,13 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
         if (functionResult.hasSignerNonce()) {
             entity.setEthereumNonce(functionResult.getSignerNonce().getValue());
         } else if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
+            var status = recordItem.getTransactionRecord().getReceipt().getStatus();
+            if (!recordItem.isSuccessful()
+                    && status != ResponseCodeEnum.CONTRACT_REVERT_EXECUTED
+                    && status != ResponseCodeEnum.INSUFFICIENT_GAS) {
+                return;
+            }
+
             // Increment the nonce for backwards compatibility
             entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
         }
