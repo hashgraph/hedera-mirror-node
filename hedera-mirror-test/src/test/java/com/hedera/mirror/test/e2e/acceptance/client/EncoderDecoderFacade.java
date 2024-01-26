@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,14 +24,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.SelectorInterface;
-import jakarta.inject.Named;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
-@Named
 public abstract class EncoderDecoderFacade {
 
     @Autowired

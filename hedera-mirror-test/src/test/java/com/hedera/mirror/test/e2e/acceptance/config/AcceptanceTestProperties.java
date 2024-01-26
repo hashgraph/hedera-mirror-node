@@ -17,6 +17,7 @@
 package com.hedera.mirror.test.e2e.acceptance.config;
 
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import jakarta.inject.Named;
 import jakarta.validation.constraints.Max;
@@ -89,6 +90,9 @@ public class AcceptanceTestProperties {
     @DurationMin(seconds = 0L)
     @NotNull
     private Duration startupTimeout = Duration.ofMinutes(60);
+
+    @NotNull
+    private NodeNameEnum nodeType;
 
     public enum HederaNetwork {
         MAINNET,

@@ -31,6 +31,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.math.BigInteger;
@@ -43,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class EquivalenceFeature extends AbstractFeature {
+    private final AcceptanceTestProperties acceptanceTestProperties;
     private static final String OBTAINER_SAME_CONTRACT_ID_EXCEPTION = "OBTAINER_SAME_CONTRACT_ID";
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
     private static final String BAD_REQUEST = "400 Bad Request";
@@ -72,18 +74,19 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute selfdestruct and set beneficiary to {string} address with call to {node}")
-    public void selfDestructAndSetBeneficiary(String beneficiary, NodeNameEnum node) {
+    @Then("I execute selfdestruct and set beneficiary to {string} address")
+    public void selfDestructAndSetBeneficiary(String beneficiary) {
+        var nodeType = acceptanceTestProperties.getNodeType();
         var accountId = new AccountId(extractAccountNumber(beneficiary));
 
         var data = encodeData(EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, asAddress(accountId));
-        var functionResult =
-                callContract(node, StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, data, TupleType.EMPTY);
+        var functionResult = callContract(
+                nodeType, StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, data, TupleType.EMPTY);
 
         // The contract is removed from the map when executed against the consensus node to prevent potential issues
         // in subsequent runs. This is because if the contract were not removed, the system would seek the cached
         // address on the next execution.
-        if (node.equals(NodeNameEnum.CONSENSUS)) {
+        if (acceptanceTestProperties.getNodeType().equals(NodeNameEnum.CONSENSUS)) {
             removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
         }
 
@@ -98,57 +101,62 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute balance opcode to system account {string} address would return 0 with call to {node}")
-    public void balanceOfAddress(String address, NodeNameEnum node) {
+    @Then("I execute balance opcode to system account {string} address would return 0")
+    public void balanceOfAddress(String address) {
+        var nodeType = acceptanceTestProperties.getNodeType();
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, asAddress(accountId));
         var functionResult =
-                callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
+                callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
         assertThat(BigInteger.ZERO).isEqualTo(functionResult.getResultAsNumber());
     }
 
-    @Then("I execute balance opcode against a contract with balance with call to {node}")
-    public void balanceOfContract(NodeNameEnum node) {
+    @Then("I execute balance opcode against a contract with balance")
+    public void balanceOfContract() {
+        var nodeType = acceptanceTestProperties.getNodeType();
         var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, asAddress(equivalenceDestructContract.contractId()));
         var functionResult =
-                callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
+                callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
         assertThat(new BigInteger("10000")).isEqualTo(functionResult.getResultAsNumber());
     }
 
-    @Then("I verify extcodesize opcode against a system account {string} address returns 0 with call to {node}")
-    public void extCodeSizeAgainstSystemAccount(String address, NodeNameEnum node) {
+    @Then("I verify extcodesize opcode against a system account {string} address returns 0")
+    public void extCodeSizeAgainstSystemAccount(String address) {
+        var nodeType = acceptanceTestProperties.getNodeType();
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, GET_CODE_SIZE, asAddress(accountId));
         var functionResult =
-                callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, data, BIG_INTEGER_TUPLE);
+                callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, data, BIG_INTEGER_TUPLE);
         assertThat(BigInteger.ZERO).isEqualTo(functionResult.getResultAsNumber());
     }
 
-    @Then(
-            "I verify extcodecopy opcode against a system account {string} address returns empty bytes with call to {node}")
-    public void extCodeCopyAgainstSystemAccount(String address, NodeNameEnum node) {
+    @Then("I verify extcodecopy opcode against a system account {string} address returns empty bytes")
+    public void extCodeCopyAgainstSystemAccount(String address) {
+        var nodeType = acceptanceTestProperties.getNodeType();
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, COPY_CODE, asAddress(accountId));
-        var functionResult = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data, BYTES_TUPLE);
+        var functionResult = callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data, BYTES_TUPLE);
         assertThat("").isEqualTo(functionResult.getResultAsText());
     }
 
-    @Then(
-            "I verify extcodehash opcode against a system account {string} address returns empty bytes with call to {node}")
-    public void extCodeHashAgainstSystemAccount(String address, NodeNameEnum node) {
+    @Then("I verify extcodehash opcode against a system account {string} address returns empty bytes")
+    public void extCodeHashAgainstSystemAccount(String address) {
+        var nodeType = acceptanceTestProperties.getNodeType();
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, GET_CODE_HASH, asAddress(accountId));
-        var functionResult = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, data, BYTES_TUPLE);
+        var functionResult =
+                callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, data, BYTES_TUPLE);
         assertThat(new byte[0]).isEqualTo(functionResult.getResultAsBytes().toArray());
     }
 
-    @Then("I execute selfdestruct and set beneficiary to the deleted contract address with call to {node}")
-    public void selfDestructAndSetBeneficiaryToDeletedContract(NodeNameEnum node) {
+    @Then("I execute selfdestruct and set beneficiary to the deleted contract address")
+    public void selfDestructAndSetBeneficiaryToDeletedContract() {
+        var nodeType = acceptanceTestProperties.getNodeType();
         var data = encodeData(
                 EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, asAddress(equivalenceDestructContractSolidityAddress));
-        var functionResult =
-                callContract(node, StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, data, TupleType.EMPTY);
-        if (node.equals(NodeNameEnum.CONSENSUS)) {
+        var functionResult = callContract(
+                nodeType, StringUtils.EMPTY, EQUIVALENCE_DESTRUCT, DESTROY_CONTRACT, data, TupleType.EMPTY);
+        if (nodeType.equals(NodeNameEnum.CONSENSUS)) {
             removeFromContractIdMap(EQUIVALENCE_DESTRUCT);
         }
         var message = functionResult.getResultAsText();
