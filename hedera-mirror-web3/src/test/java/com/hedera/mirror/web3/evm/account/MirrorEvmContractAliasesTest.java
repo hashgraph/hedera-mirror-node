@@ -113,6 +113,7 @@ class MirrorEvmContractAliasesTest {
     void isPrecompileAddressShouldReturnFalse(int address) {
         assertThat(mirrorEvmContractAliases.isNativePrecompileAddress(Address.precompiled(address)))
                 .isFalse();
+        assertThat(mirrorEvmContractAliases.isNativePrecompileAddress(null)).isFalse();
     }
 
     //    @Test
