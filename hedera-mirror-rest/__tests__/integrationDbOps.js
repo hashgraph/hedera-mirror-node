@@ -111,6 +111,7 @@ const flywayMigrate = async () => {
       "placeholders.api-user": "${apiUsername}",
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
+      "placeholders.hashShardCount": 2,
       "placeholders.idPartitionSize": 1000000000000000,
       "placeholders.maxEntityId": 5000000,
       "placeholders.maxEntityIdRatio": 2.0,

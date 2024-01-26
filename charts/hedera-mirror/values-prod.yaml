@@ -126,7 +126,7 @@ stackgres:
   coordinator:
     instances: 2
     resources:
-      cpu: 3700m
+      cpu: 7000m
       memory: 24Gi
     persistentVolume:
       size: 256Gi
@@ -135,7 +135,7 @@ stackgres:
     instances: 3
     replicasPerInstance: 1
     resources:
-      cpu: 3700m
+      cpu: 7300m
       memory: 24Gi
     persistentVolume:
       size: 3000Gi

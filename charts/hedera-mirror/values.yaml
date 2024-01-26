@@ -272,14 +272,16 @@ rosetta:
 stackgres:
   coordinator:
     config:
+      autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
       citus.executor_slow_start_interval: "100ms"
       citus.max_cached_conns_per_worker: "4"
       citus.max_shared_pool_size: "380"
+      full_page_writes: "false"
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       maintenance_work_mem: "256MB"
-      max_connections: "300"
+      max_connections: "1200"
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
@@ -311,7 +313,9 @@ stackgres:
   prometheus: false
   worker:
     config:
+      autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
+      full_page_writes: "false"
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       maintenance_work_mem: "256MB"
