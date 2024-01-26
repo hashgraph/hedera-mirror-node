@@ -105,14 +105,14 @@ class MirrorEvmContractAliasesTest {
     @ParameterizedTest
     void isPrecompileAddressShouldReturnTrue(int address) {
         assertThat(mirrorEvmContractAliases.isNativePrecompileAddress(Address.precompiled(address)))
-                .isEqualTo(true);
+                .isTrue();
     }
 
     @ValueSource(ints = {0, 10, 100})
     @ParameterizedTest
     void isPrecompileAddressShouldReturnFalse(int address) {
         assertThat(mirrorEvmContractAliases.isNativePrecompileAddress(Address.precompiled(address)))
-                .isEqualTo(false);
+                .isFalse();
     }
 
     //    @Test
