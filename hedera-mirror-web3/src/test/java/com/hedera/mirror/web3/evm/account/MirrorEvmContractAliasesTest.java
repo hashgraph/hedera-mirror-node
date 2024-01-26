@@ -41,6 +41,8 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -99,18 +101,18 @@ class MirrorEvmContractAliasesTest {
         assertThat(mirrorEvmContractAliases.resolveForEvm(ALIAS)).isEqualTo(Bytes.wrap(toEvmAddress(entityId)));
     }
 
-    @Test
-    void isPrecompileAddressShouldReturnTrue() {
-        final var precompileAddress = Address.ECREC;
-        assertTrue(mirrorEvmContractAliases.isNativePrecompileAddress(precompileAddress));
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6, 7, 8, 9})
+    @ParameterizedTest
+    void isPrecompileAddressShouldReturnTrue(int address) {
+        assertThat(mirrorEvmContractAliases.isNativePrecompileAddress(Address.precompiled(address)))
+                .isEqualTo(true);
     }
 
-    @Test
-    void isPrecompileAddressShouldReturnFalse() {
-        final var zeroAddress = Address.ZERO;
-
-        assertFalse(mirrorEvmContractAliases.isNativePrecompileAddress(zeroAddress));
-        assertFalse(mirrorEvmContractAliases.isNativePrecompileAddress(Address.fromHexString(HEX)));
+    @ValueSource(ints = {0, 10, 100})
+    @ParameterizedTest
+    void isPrecompileAddressShouldReturnFalse(int address) {
+        assertThat(mirrorEvmContractAliases.isNativePrecompileAddress(Address.precompiled(address)))
+                .isEqualTo(false);
     }
 
     //    @Test

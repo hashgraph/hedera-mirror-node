@@ -79,8 +79,8 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     }
 
     public boolean isNativePrecompileAddress(Address addressOrAlias) {
-        final var addressDecimals = Long.parseLong(addressOrAlias.toHexString().substring(2), 16);
-        return addressDecimals > 0 && addressDecimals < 10;
+        return addressOrAlias != null
+                && addressOrAlias.compareTo(Address.ZERO) > 0 & addressOrAlias.compareTo(Address.KZG_POINT_EVAL) < 0;
     }
 
     public boolean isInUse(final Address address) {
