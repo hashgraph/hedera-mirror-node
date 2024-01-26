@@ -644,25 +644,25 @@ const getTransactionsDetails = async (payerAndTimestamps, order) => {
   const query = `with c_list as (
       select
         consensus_timestamp,
+        payer_account_id,
         ${cryptoTransferJsonAgg} as crypto_transfer_list
       from crypto_transfer
       where ${payerAccountIdsCondition} and ${timestampsCondition}
-      group by consensus_timestamp
+      group by consensus_timestamp, payer_account_id
     ), t_list as (
       select
         consensus_timestamp,
+        payer_account_id,
         ${tokenTransferJsonAgg} as token_transfer_list
       from token_transfer
       where ${payerAccountIdsCondition} and ${timestampsCondition}
-      group by consensus_timestamp
+      group by consensus_timestamp, payer_account_id
     )
     select
       ${transactionFullFields},
-      c.crypto_transfer_list,
-      tt.token_transfer_list
+      (select crypto_transfer_list from c_list where consensus_timestamp = t.consensus_timestamp and payer_account_id = t.payer_account_id),
+      (select token_transfer_list from t_list where consensus_timestamp = t.consensus_timestamp and payer_account_id = t.payer_account_id)
     from transaction as t
-    left join c_list as c on c.consensus_timestamp = t.consensus_timestamp
-    left join t_list as tt on tt.consensus_timestamp = t.consensus_timestamp
     where ${outerPayerAccountIdsCondition} and ${outerTimestampsCondition}
     order by t.consensus_timestamp ${order}`;
 
