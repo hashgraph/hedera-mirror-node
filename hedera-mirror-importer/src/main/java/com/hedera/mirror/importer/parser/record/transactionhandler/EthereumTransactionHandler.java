@@ -102,6 +102,10 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
+        if (!entityProperties.getPersist().isTrackNonce()) {
+            return;
+        }
+
         var transactionRecord = recordItem.getTransactionRecord();
 
         // It should not update the nonce if it's unsuccessful and failed before EVM execution
@@ -116,13 +120,13 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
                 : transactionRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
 
-        if (!EntityId.isEmpty(senderId) && entityProperties.getPersist().isTrackNonce()) {
+        if (!EntityId.isEmpty(senderId)) {
             Entity entity = senderId.toEntity();
-            if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
+            if (functionResult.hasSignerNonce()) {
+                entity.setEthereumNonce(functionResult.getSignerNonce().getValue());
+            } else if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
                 // Increment the nonce for backwards compatibility
                 entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
-            } else if (functionResult.hasSignerNonce()) { // The ethereumNonce will not be changed if not present
-                entity.setEthereumNonce(functionResult.getSignerNonce().getValue());
             }
 
             entity.setTimestampRange(null); // Don't trigger a history row

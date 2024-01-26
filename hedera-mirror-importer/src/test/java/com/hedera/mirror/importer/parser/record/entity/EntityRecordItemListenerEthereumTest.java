@@ -32,6 +32,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.ethereum.LegacyEthereumTransactionParserTest;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.FileID;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -83,12 +84,24 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
     @ParameterizedTest
     @MethodSource("provideSignatureNonceArguments")
-    void ethereumTransactionSignatureNonce(boolean create, Version hapiVersion) {
-        var recordItem = recordItemBuilder
-                .ethereumTransaction(create)
-                .recordItem(r -> r.hapiVersion(hapiVersion))
-                .build();
+    void ethereumTransactionSignatureNonce(boolean create, boolean setPriorHapiVersion) {
+        var builder = recordItemBuilder.ethereumTransaction(create);
+        if (setPriorHapiVersion) {
+            builder.record(x -> {
+                        // This version has no signer nonce so create it with a new builder to remove the field
+                        var contractFunctionResult = ContractFunctionResult.newBuilder()
+                                .setSenderId(recordItemBuilder.accountId())
+                                .build();
+                        if (create) {
+                            x.setContractCreateResult(contractFunctionResult);
+                        } else {
+                            x.setContractCallResult(contractFunctionResult);
+                        }
+                    })
+                    .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_46_0));
+        }
 
+        var recordItem = builder.build();
         var record = recordItem.getTransactionRecord();
         var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
@@ -220,9 +233,9 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
     private static Stream<Arguments> provideSignatureNonceArguments() {
         return Stream.of(
-                Arguments.of(true, HAPI_VERSION_0_46_0),
-                Arguments.of(true, RecordFile.HAPI_VERSION_0_47_0),
-                Arguments.of(false, HAPI_VERSION_0_46_0),
-                Arguments.of(false, RecordFile.HAPI_VERSION_0_47_0));
+                Arguments.of(true, false),
+                Arguments.of(true, true),
+                Arguments.of(false, false),
+                Arguments.of(false, true));
     }
 }

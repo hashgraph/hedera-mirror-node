@@ -35,7 +35,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -120,7 +119,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @ParameterizedTest
     @MethodSource("provideUpdateTransactionArguments")
-    void updateTransaction(boolean create, Version hapiVersion) {
+    void updateTransaction(boolean create, boolean setPriorHapiVersion) {
         var fileId = EntityId.of(999L);
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         var gasLimit = ethereumTransaction.getGasLimit();
@@ -129,12 +128,26 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .toByteArray();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
-        var recordItem = recordItemBuilder
+        var builder = recordItemBuilder
                 .ethereumTransaction(create)
-                .recordItem(r -> r.hapiVersion(hapiVersion))
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
-                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getNum())))
-                .build();
+                .transactionBody(b -> b.setCallData(FileID.newBuilder().setFileNum(fileId.getNum())));
+        if (setPriorHapiVersion) {
+            builder.record(x -> {
+                        // This version has no signer nonce so create it with a new builder to remove the field
+                        var contractFunctionResult = ContractFunctionResult.newBuilder()
+                                .setSenderId(recordItemBuilder.accountId())
+                                .build();
+                        if (create) {
+                            x.setContractCreateResult(contractFunctionResult);
+                        } else {
+                            x.setContractCallResult(contractFunctionResult);
+                        }
+                    })
+                    .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_46_0));
+        }
+
+        var recordItem = builder.build();
         var transaction = domainBuilder
                 .transaction()
                 .customize(t -> t.consensusTimestamp(recordItem.getConsensusTimestamp()))
@@ -158,7 +171,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
-        var expectedNonce = hapiVersion.isLessThan(RecordFile.HAPI_VERSION_0_47_0)
+        var expectedNonce = setPriorHapiVersion
                 ? ethereumTransaction.getNonce() + 1
                 : functionResult.getSignerNonce().getValue();
         verify(entityListener)
@@ -197,8 +210,15 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     void updateTransactionNullSignerNonce(boolean create) {
         var recordItem = recordItemBuilder
                 .ethereumTransaction(create)
-                .record(x -> x.setContractCallResult(
-                        recordItemBuilder.contractFunctionResult().clearSignerNonce()))
+                .record(x -> {
+                    var contractFunctionResult =
+                            recordItemBuilder.contractFunctionResult().clearSignerNonce();
+                    if (create) {
+                        x.setContractCreateResult(contractFunctionResult);
+                    } else {
+                        x.setContractCallResult(contractFunctionResult);
+                    }
+                })
                 .build();
         var transaction = domainBuilder
                 .transaction()
@@ -269,19 +289,27 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
 
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    @MethodSource("provideUpdateTransactionNonceOnFailureArguments")
-    void updateTransactionUpdateNonceOnFailure(Version hapiVersion) {
+    void updateTransactionUpdateNonceOnFailure(boolean setPriorHapiVersion) {
         boolean create = true;
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
-        var recordItem = recordItemBuilder
+        var builder = recordItemBuilder
                 .ethereumTransaction(create)
                 .record(x -> x.setEthereumHash(ETHEREUM_HASH))
-                .recordItem(r -> r.hapiVersion(hapiVersion))
-                .status(ResponseCodeEnum.INSUFFICIENT_GAS)
-                .build();
+                .status(ResponseCodeEnum.INSUFFICIENT_GAS);
+        if (setPriorHapiVersion) {
+            builder.record(x ->
+                            // This HAPI version has no signer nonce so create it with a new builder to remove the field
+                            x.setContractCreateResult(ContractFunctionResult.newBuilder()
+                                    .setSenderId(recordItemBuilder.accountId())
+                                    .build()))
+                    .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_46_0));
+        }
+
+        var recordItem = builder.build();
         var transaction = domainBuilder
                 .transaction()
                 .customize(t ->
@@ -292,7 +320,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
-        var expectedNonce = hapiVersion.isLessThan(RecordFile.HAPI_VERSION_0_47_0)
+        var expectedNonce = setPriorHapiVersion
                 ? ethereumTransaction.getNonce() + 1
                 : functionResult.getSignerNonce().getValue();
         verify(entityListener).onEthereumTransaction(ethereumTransaction);
@@ -402,13 +430,9 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private static Stream<Arguments> provideUpdateTransactionArguments() {
         return Stream.of(
-                Arguments.of(true, HAPI_VERSION_0_46_0),
-                Arguments.of(true, RecordFile.HAPI_VERSION_0_47_0),
-                Arguments.of(false, HAPI_VERSION_0_46_0),
-                Arguments.of(false, RecordFile.HAPI_VERSION_0_47_0));
-    }
-
-    private static Stream<Arguments> provideUpdateTransactionNonceOnFailureArguments() {
-        return Stream.of(Arguments.of(HAPI_VERSION_0_46_0), Arguments.of(RecordFile.HAPI_VERSION_0_47_0));
+                Arguments.of(true, true),
+                Arguments.of(true, false),
+                Arguments.of(false, true),
+                Arguments.of(false, false));
     }
 }
