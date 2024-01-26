@@ -17,7 +17,6 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -107,11 +106,7 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
         }
 
         var transactionRecord = recordItem.getTransactionRecord();
-
-        // It should not update the nonce if it's unsuccessful and failed before EVM execution
-        if (!recordItem.isSuccessful()
-                && !transactionRecord.hasContractCallResult()
-                && !transactionRecord.hasContractCreateResult()) {
+        if (!transactionRecord.hasContractCallResult() && !transactionRecord.hasContractCreateResult()) {
             return;
         }
 
@@ -119,20 +114,21 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
                 ? transactionRecord.getContractCreateResult()
                 : transactionRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
-
-        if (!EntityId.isEmpty(senderId)) {
-            Entity entity = senderId.toEntity();
-            if (functionResult.hasSignerNonce()) {
-                entity.setEthereumNonce(functionResult.getSignerNonce().getValue());
-            } else if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
-                // Increment the nonce for backwards compatibility
-                entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
-            }
-
-            entity.setTimestampRange(null); // Don't trigger a history row
-            entityListener.onEntity(entity);
-            recordItem.addEntityId(senderId);
+        if (EntityId.isEmpty(senderId)) {
+            return;
         }
+
+        var entity = senderId.toEntity();
+        if (functionResult.hasSignerNonce()) {
+            entity.setEthereumNonce(functionResult.getSignerNonce().getValue());
+        } else if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
+            // Increment the nonce for backwards compatibility
+            entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
+        }
+
+        entity.setTimestampRange(null); // Don't trigger a history row
+        entityListener.onEntity(entity);
+        recordItem.addEntityId(senderId);
     }
 
     private void convertGasWeiToTinyBars(EthereumTransaction transaction) {
