@@ -4,7 +4,6 @@ hedera:
       acceptance:
         # grpc endpoint
         mirrorNodeAddress: testnet.mirrornode.hedera.com:443
-        nodeType: MIRROR
         network: testnet
         rest:
           baseUrl: https://testnet.mirrornode.hedera.com
