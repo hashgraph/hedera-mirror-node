@@ -72,9 +72,11 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
     protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
-        var contractCallRequest = sender.isPresent()
-                ? ModelBuilder.contractCallRequest(data, true, sender.get(), solidityAddress)
-                : ModelBuilder.contractCallRequest(data, true, solidityAddress);
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .data(data)
+                .estimate(true)
+                .to(solidityAddress);
+        sender.ifPresent(contractCallRequest::from);
 
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
         int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();
@@ -98,14 +100,21 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @throws AssertionError If the response from the contract call does not contain "400 Bad Request from POST".
      */
     protected void assertContractCallReturnsBadRequest(String data, String contractAddress) {
-        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, contractAddress);
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .data(data)
+                .estimate(true)
+                .to(contractAddress);
+
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
 
     protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress) {
-        var contractCallRequest = ModelBuilder.contractCallRequest(data, false, contractAddress).block(block);
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .block(block)
+                .data(data)
+                .to(contractAddress);
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(WebClientResponseException.class)

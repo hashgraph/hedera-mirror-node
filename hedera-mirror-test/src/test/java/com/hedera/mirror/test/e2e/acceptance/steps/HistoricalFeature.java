@@ -66,7 +66,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-import com.hedera.mirror.test.e2e.acceptance.util.ContractResponseUtil;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -200,7 +199,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 deployedEstimateContract.contractId(), maxGas, "updateCounter", parameters, null);
 
         var response = callContract(initialBlockNumber, data, estimateContractSolidityAddress);
-        assertThat(ContractResponseUtil.of(initialResponse).getResultAsNumber()).isEqualTo(ContractResponseUtil.of(response).getResultAsNumber());
+        assertThat(initialResponse.getResultAsNumber()).isEqualTo(response.getResultAsNumber());
     }
 
     @Then("I successfully update the balance of an account and get the initial balance via historical data")
@@ -211,14 +210,13 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         networkTransactionResponse =
                 accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
-        var initialResponse =
-                ContractResponseUtil.of(callContract(data, estimateContractSolidityAddress)).getResultAsNumber();
+        var initialResponse = callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         var initialBlockNumber = getLastBlockNumber();
         waitForNextBlock();
         networkTransactionResponse =
                 accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var response = ContractResponseUtil.of(callContract(initialBlockNumber, data, estimateContractSolidityAddress))
+        var response = callContract(initialBlockNumber, data, estimateContractSolidityAddress)
                 .getResultAsNumber();
         assertThat(initialResponse).isEqualTo(response);
     }
@@ -248,10 +246,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
-        var responseFromType =
-                ContractResponseUtil.of(callContract(blockType, data, estimateContractSolidityAddress)).getResultAsNumber();
+        var responseFromType = callContract(blockType, data, estimateContractSolidityAddress).getResultAsNumber();
         var responseFromLatest =
-                ContractResponseUtil.of(callContract(data, estimateContractSolidityAddress)).getResultAsNumber();
+                callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         assertThat(responseFromLatest).isEqualTo(responseFromType);
     }
 
@@ -348,7 +345,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
-        var initialBalance = ContractResponseUtil.of(response).getResultAsNumber();
+        var initialBalance = response.getResultAsNumber();
 
         waitForNextBlock();
 
@@ -367,7 +364,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-        var balanceOfHistorical = ContractResponseUtil.of(historicalResponse).getResultAsNumber();
+        var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertThat(initialBalance).isEqualTo(balanceOfHistorical);
     }
 
@@ -378,7 +375,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(BALANCE_OF_SELECTOR, asAddress(admin));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, tokenId.toSolidityAddress());
-        var initialBalance = ContractResponseUtil.of(response).getResultAsNumber();
+        var initialBalance = response.getResultAsNumber();
 
         waitForNextBlock();
 
@@ -390,7 +387,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
-        var balanceOfHistorical = ContractResponseUtil.of(historicalResponse).getResultAsNumber();
+        var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertThat(initialBalance).isEqualTo(balanceOfHistorical);
     }
 
@@ -400,7 +397,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(admin));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
-        var initialBalance = ContractResponseUtil.of(response).getResultAsNumber();
+        var initialBalance = response.getResultAsNumber();
 
         waitForNextBlock();
 
@@ -411,7 +408,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-        var balanceOfHistorical = ContractResponseUtil.of(historicalResponse).getResultAsNumber();
+        var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertThat(initialBalance).isEqualTo(balanceOfHistorical);
     }
 
@@ -421,7 +418,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ERC, BALANCE_OF, asAddress(tokenId), asAddress(receiverAccountId));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, ercContractSolidityAddress);
-        var initialBalance = ContractResponseUtil.of(response).getResultAsNumber();
+        var initialBalance = response.getResultAsNumber();
 
         waitForNextBlock();
 
@@ -432,7 +429,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-        var balanceOfHistorical = ContractResponseUtil.of(historicalResponse).getResultAsNumber();
+        var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertThat(initialBalance).isEqualTo(balanceOfHistorical);
     }
 
@@ -443,7 +440,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, ALLOWANCE, asAddress(tokenId), asAddress(admin), asAddress(receiverAccountId));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
-        var initialAllowance = ContractResponseUtil.of(response).getResultAsNumber();
+        var initialAllowance = response.getResultAsNumber();
 
         waitForNextBlock();
 
@@ -451,7 +448,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
-        var historicalAllowance = ContractResponseUtil.of(historicalResponse).getResultAsNumber();
+        var historicalAllowance = historicalResponse.getResultAsNumber();
         assertThat(initialAllowance).isEqualTo(historicalAllowance);
     }
 
@@ -464,14 +461,14 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(ESTIMATE_PRECOMPILE, GET_APPROVED, asAddress(tokenId), new BigInteger("1"));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
-        var initialApprovedAddress = ContractResponseUtil.of(response).getResultAsAddress();
+        var initialApprovedAddress = response.getResultAsAddress();
 
         waitForNextBlock();
 
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
-        var historicalApprovedAddress = ContractResponseUtil.of(historicalResponse).getResultAsAddress();
+        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
         assertThat(initialApprovedAddress).isEqualTo(historicalApprovedAddress);
     }
 
@@ -482,7 +479,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data =
                 encodeData(ERC, ALLOWANCE_SELECTOR, asAddress(tokenId), asAddress(admin), asAddress(receiverAccountId));
         var response = callContract(data, ercContractSolidityAddress);
-        var initialAllowance = ContractResponseUtil.of(response).getResultAsNumber();
+        var initialAllowance = response.getResultAsNumber();
 
         waitForNextBlock();
 
@@ -490,7 +487,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-        var historicalAllowance = ContractResponseUtil.of(historicalResponse).getResultAsNumber();
+        var historicalAllowance = historicalResponse.getResultAsNumber();
         assertThat(initialAllowance).isEqualTo(historicalAllowance);
     }
 
@@ -503,14 +500,14 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(ERC, GET_APPROVED_SELECTOR, asAddress(tokenId), new BigInteger("1"));
         var response = callContract(data, ercContractSolidityAddress);
-        var initialApprovedAddress = ContractResponseUtil.of(response).getResultAsAddress();
+        var initialApprovedAddress = response.getResultAsAddress();
 
         waitForNextBlock();
 
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-        var historicalApprovedAddress = ContractResponseUtil.of(historicalResponse).getResultAsAddress();
+        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
         assertThat(initialApprovedAddress).isEqualTo(historicalApprovedAddress);
     }
 
@@ -520,14 +517,14 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var data = encodeData(ALLOWANCE_DIRECT_SELECTOR, asAddress(admin), asAddress(receiverAccountId));
         var initialBlockNumber = getLastBlockNumber();
         var response = callContract(data, tokenId.toSolidityAddress());
-        var initialAllowance = ContractResponseUtil.of(response).getResultAsNumber();
+        var initialAllowance = response.getResultAsNumber();
 
         waitForNextBlock();
 
         networkTransactionResponse = accountClient.approveToken(tokenId, receiverAccountId.getAccountId(), 200L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
-        var historicalAllowance = ContractResponseUtil.of(historicalResponse).getResultAsNumber();
+        var historicalAllowance = historicalResponse.getResultAsNumber();
         assertThat(initialAllowance).isEqualTo(historicalAllowance);
     }
 
@@ -540,14 +537,14 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(GET_APPROVED_DIRECT_SELECTOR, new BigInteger("1"));
         var response = callContract(data, tokenId.toSolidityAddress());
-        var initialApprovedAddress = ContractResponseUtil.of(response).getResultAsAddress();
+        var initialApprovedAddress = response.getResultAsAddress();
 
         waitForNextBlock();
 
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, tokenId.toSolidityAddress());
-        var historicalApprovedAddress = ContractResponseUtil.of(historicalResponse).getResultAsAddress();
+        var historicalApprovedAddress = historicalResponse.getResultAsAddress();
         assertThat(initialApprovedAddress).isEqualTo(historicalApprovedAddress);
     }
 
@@ -562,14 +559,14 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(admin),
                 asAddress(receiverAccountId));
         var response = callContract(data, estimatePrecompileContractSolidityAddress);
-        var initialResult = ContractResponseUtil.of(response).getResultAsAddress();
+        var initialResult = response.getResultAsAddress();
 
         waitForNextBlock();
 
         networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress);
-        var historicalResult = ContractResponseUtil.of(historicalResponse).getResultAsAddress();
+        var historicalResult = historicalResponse.getResultAsAddress();
         assertThat(initialResult).isEqualTo(historicalResult);
     }
 
@@ -579,7 +576,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         var initialBlockNumber = getLastBlockNumber();
         var data = encodeData(ERC, GET_OWNER_OF_SELECTOR, asAddress(tokenId.toSolidityAddress()), new BigInteger("1"));
         var response = callContract(data, ercContractSolidityAddress);
-        var initialOwner = ContractResponseUtil.of(response).getResultAsAddress();
+        var initialOwner = response.getResultAsAddress();
 
         waitForNextBlock();
 
@@ -587,7 +584,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 tokenId, admin, receiverAccountId.getAccountId(), List.of(1L), receiverAccountId.getPrivateKey());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
-        var historicalOwner = ContractResponseUtil.of(historicalResponse).getResultAsAddress();
+        var historicalOwner = historicalResponse.getResultAsAddress();
         assertThat(initialOwner).isEqualTo(historicalOwner);
     }
 
@@ -601,13 +598,13 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         var response = callContract(data, precompileContractSolidityAddress);
         var initialBlockNumber = getLastBlockNumber();
-        var initialFreezeStatus = ContractResponseUtil.of(response).getResultAsBoolean();
+        var initialFreezeStatus = response.getResultAsBoolean();
 
         waitForNextBlock();
 
         networkTransactionResponse = tokenClient.freeze(tokenId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalFreezeStatus = ContractResponseUtil.of(callContract(initialBlockNumber, data, precompileContractSolidityAddress))
+        var historicalFreezeStatus = callContract(initialBlockNumber, data, precompileContractSolidityAddress)
                 .getResultAsBoolean();
         assertThat(initialFreezeStatus).isEqualTo(historicalFreezeStatus);
 

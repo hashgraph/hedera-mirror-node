@@ -259,7 +259,6 @@ public class AccountFeature extends AbstractFeature {
 
         // verify valid set of transactions
         var owner = accountClient.getClient().getOperatorAccountId().toString();
-        // TODO some kind of domain builder class needed? See how extensive this is
         var expectedCryptoTransfer = new TransactionTransfersInner()
                 .account(owner)
                 .amount(-transferAmount)

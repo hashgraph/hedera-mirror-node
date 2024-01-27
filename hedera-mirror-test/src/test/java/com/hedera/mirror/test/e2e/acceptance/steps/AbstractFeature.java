@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.mirror.rest.model.ContractCallResponse;
+import com.hedera.mirror.rest.model.ContractCallRequest;
 import com.hedera.mirror.rest.model.NetworkExchangeRateSetResponse;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionDetail;
@@ -35,6 +35,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import java.io.IOException;
 import java.io.InputStream;
@@ -168,21 +169,32 @@ abstract class AbstractFeature {
         return mapper.readValue(in, CompiledSolidityArtifact.class);
     }
 
-    protected ContractCallResponse callContract(String data, String contractAddress) {
+    protected ContractCallResponseWrapper callContract(String data, String contractAddress) {
         return callContract("LATEST", data, contractAddress);
     }
 
-    protected ContractCallResponse callContract(String blockNumber, String data, String contractAddress) {
-        var contractCallRequestBody = ModelBuilder.contractCallRequest(
-                data, false, contractClient.getClientAddress(), contractAddress)
-                .block(blockNumber);
+    protected ContractCallResponseWrapper callContract(String blockNumber, String data, String contractAddress) {
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .block(blockNumber)
+                .data(data)
+                .from(contractClient.getClientAddress())
+                .to(contractAddress);
 
-        return mirrorClient.contractsCall(contractCallRequestBody);
+        return callContract(contractCallRequest);
     }
 
-    protected ContractCallResponse estimateContract(String data, String contractAddress) {
-        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, contractClient.getClientAddress(), contractAddress);
-        return mirrorClient.contractsCall(contractCallRequest);
+    protected ContractCallResponseWrapper callContract(ContractCallRequest contractCallRequest) {
+        return ContractCallResponseWrapper.of(mirrorClient.contractsCall(contractCallRequest));
+    }
+
+    protected ContractCallResponseWrapper estimateContract(String data, String contractAddress) {
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .data(data)
+                .estimate(true)
+                .from(contractClient.getClientAddress())
+                .to(contractAddress);
+
+        return ContractCallResponseWrapper.of(mirrorClient.contractsCall(contractCallRequest));
     }
 
     protected String encodeData(ContractResource resource, SelectorInterface method, Object... args) {

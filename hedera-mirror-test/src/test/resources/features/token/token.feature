@@ -82,9 +82,9 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should return the transaction
     When DAVE transfers 200 tokens to ALICE with fractional fee 20
     Then the mirror node REST API should return the transaction for token fund flow with assessed custom fees
-      | amount | collector | effective | token |
-      | 100    | ALICE     | DAVE      |       |
-      | 20     | CAROL     | ALICE     | 0     |
+      | amount | collector | effectivePayer | token |
+      | 100    | ALICE     | DAVE           |       |
+      | 20     | CAROL     | ALICE          | 0     |
 
     Examples:
       | fundAmount |

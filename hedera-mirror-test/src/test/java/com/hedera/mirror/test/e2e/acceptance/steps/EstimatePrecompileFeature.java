@@ -1534,7 +1534,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public int validateAndReturnGas(byte[] data, ContractMethods contractMethods, String contractAddress) {
         var encodedData = Strings.encode(ByteBuffer.wrap(data));
         var response = estimateContract(encodedData, contractAddress);
-        var estimateGasValue = Bytes.fromHexString(response.getResult()).toBigInteger().intValue();
+        var estimateGasValue = response.getResultAsNumber().intValue();
         assertWithinDeviation(contractMethods.getActualGas(), estimateGasValue, lowerDeviation, upperDeviation);
         return estimateGasValue;
     }
@@ -1904,7 +1904,11 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     }
 
     private void validateGasEstimationForCreateToken(String data, int actualGasUsed, long value) {
-        var contractCallRequest = ModelBuilder.contractCallRequest(data, true, contractClient.getClientAddress(), estimatePrecompileContractSolidityAddress);
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .data(data)
+                .estimate(true)
+                .from(contractClient.getClientAddress())
+                .to(estimatePrecompileContractSolidityAddress);
         contractCallRequest.value(value);
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
         int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();

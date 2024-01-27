@@ -235,7 +235,7 @@ public class MirrorNodeClient {
         do {
             var response = callRestEndpoint(next, NetworkNodesResponse.class);
             nodes.addAll(response.getNodes());
-            next = response.getLinks().getNext();
+            next = response.getLinks() != null ? response.getLinks().getNext() : null;
         } while (next != null);
 
         return nodes;

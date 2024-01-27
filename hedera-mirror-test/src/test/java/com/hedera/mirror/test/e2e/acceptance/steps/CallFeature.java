@@ -68,7 +68,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnu
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.util.ContractResponseUtil;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -234,7 +233,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(ERC, IERC721_TOKEN_NAME_SELECTOR, asAddress(tokenId));
         var response = callContract(data, ercContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsText()).isEqualTo(tokenNameEnum.getSymbol() + "_name");
+        assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol() + "_name");
     }
 
     // ETHCALL-018
@@ -247,7 +246,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(ERC, IERC721_TOKEN_SYMBOL_SELECTOR, asAddress(tokenId));
         var response = callContract(data, ercContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsText()).isEqualTo(tokenNameEnum.getSymbol());
+        assertThat(response.getResultAsText()).isEqualTo(tokenNameEnum.getSymbol());
     }
 
     // ETHCALL-019
@@ -260,7 +259,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(ERC, IERC721_TOKEN_TOTAL_SUPPLY_SELECTOR, asAddress(nonFungibleTokenId));
         var response = callContract(data, ercContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isEqualTo(totalSupplyOfNft);
+        assertThat(response.getResultAsNumber()).isEqualTo(totalSupplyOfNft);
     }
 
     // ETHCALL-020
@@ -272,7 +271,7 @@ public class CallFeature extends AbstractFeature {
                 ERC, IERC721_TOKEN_BALANCE_OF_SELECTOR, asAddress(nonFungibleTokenId), asAddress(contractClient));
         var response = callContract(data, ercContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsNumber()).isEqualTo(balanceOfNft);
+        assertThat(response.getResultAsNumber()).isEqualTo(balanceOfNft);
     }
 
     @RetryAsserts
@@ -290,7 +289,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(PRECOMPILE, HTS_IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsBoolean()).isTrue();
+        assertThat(response.getResultAsBoolean()).isTrue();
     }
 
     // ETHCALL-026
@@ -301,7 +300,7 @@ public class CallFeature extends AbstractFeature {
                 encodeData(PRECOMPILE, HTS_IS_FROZEN_SELECTOR, asAddress(fungibleTokenId), asAddress(contractClient));
         var response = callContract(data, precompileContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsBoolean()).isFalse();
+        assertThat(response.getResultAsBoolean()).isFalse();
     }
 
     // ETHCALL-027
@@ -312,7 +311,7 @@ public class CallFeature extends AbstractFeature {
                 PRECOMPILE, HTS_IS_KYC_GRANTED_SELECTOR, asAddress(fungibleTokenId), asAddress(contractClient));
         var response = callContract(data, precompileContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsBoolean()).isTrue();
+        assertThat(response.getResultAsBoolean()).isTrue();
     }
 
     // ETHCALL-028
@@ -322,7 +321,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(PRECOMPILE, HTS_GET_DEFAULT_FREEZE_STATUS_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsBoolean()).isFalse();
+        assertThat(response.getResultAsBoolean()).isFalse();
     }
 
     // ETHCALL-029
@@ -332,7 +331,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(PRECOMPILE, HTS_GET_TOKEN_DEFAULT_KYC_STATUS_SELECTOR, asAddress(fungibleTokenId));
         var response = callContract(data, precompileContractAddress);
 
-        assertThat(ContractResponseUtil.of(response).getResultAsBoolean()).isFalse();
+        assertThat(response.getResultAsBoolean()).isFalse();
     }
 
     @Then("I call function with update and I expect return of the updated value")
@@ -341,7 +340,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(ESTIMATE_GAS, UPDATE_COUNTER_SELECTOR, updateValue);
         var response = callContract(data, estimateContractAddress);
 
-        assertEquals(ContractResponseUtil.of(response).getResultAsNumber(), updateValue);
+        assertEquals(response.getResultAsNumber(), updateValue);
     }
 
     @Then("I call function that makes N times state update")
@@ -349,7 +348,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_N_TIMES_SELECTOR, new BigInteger("15"));
         var response = callContract(data, estimateContractAddress);
 
-        assertEquals(String.valueOf(ContractResponseUtil.of(response).getResultAsNumber()), "14");
+        assertEquals(String.valueOf(response.getResultAsNumber()), "14");
     }
 
     @Then("I call function with nested deploy using create function")
@@ -377,7 +376,7 @@ public class CallFeature extends AbstractFeature {
     public void getBalance() throws InterruptedException {
         final var receiverAddress = asAddress(receiverAccountId.getAccountId().toSolidityAddress());
         var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, receiverAddress);
-        var initialBalance = ContractResponseUtil.of(callContract(data, estimateContractAddress)).getResultAsNumber();
+        var initialBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         networkTransactionResponse = accountClient.sendCryptoTransfer(
                 receiverAccountId.getAccountId(),
                 Hbar.fromTinybars(initialBalance.longValue()),
@@ -385,7 +384,7 @@ public class CallFeature extends AbstractFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         // wait for token cache to expire
         Thread.sleep(2000);
-        var updatedBalance = ContractResponseUtil.of(callContract(data, estimateContractAddress)).getResultAsNumber();
+        var updatedBalance = callContract(data, estimateContractAddress).getResultAsNumber();
         assertThat(initialBalance).isEqualTo(updatedBalance.divide(BigInteger.TWO));
     }
 
@@ -413,7 +412,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(admin));
 
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(4);
 
         assertThat(intValue(results.get(0)) + 1)
@@ -438,7 +437,7 @@ public class CallFeature extends AbstractFeature {
                         .getAccountId()
                         .toSolidityAddress()));
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(4);
 
         assertThat(intValue(results.get(0)) + 1)
@@ -460,7 +459,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(admin));
 
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(4);
 
         assertThat(intValue(intValue(results.get(0)) - 1L))
@@ -482,7 +481,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(admin));
 
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(4);
 
         assertThat(intValue(results.get(0)) - 1)
@@ -504,7 +503,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(receiverAccountId));
 
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(4);
 
         assertThat(intValue(intValue(results.get(0)) - 1L))
@@ -526,7 +525,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(receiverAccountId));
 
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(4);
 
         assertThat(intValue(results.get(0)) - 1)
@@ -619,7 +618,7 @@ public class CallFeature extends AbstractFeature {
                 new BigInteger("1"),
                 new BigInteger("0"));
         var response = callContract(data, precompileContractAddress);
-        var resultList = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var resultList = response.getResultAsListDecimal();
         var statusAfterAssociate = resultList.get(0);
         var statusAfterDissociate = resultList.get(1);
 
@@ -642,7 +641,7 @@ public class CallFeature extends AbstractFeature {
                 new BigInteger("0"),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
-        var resultList = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var resultList = response.getResultAsListDecimal();
         var statusAfterAssociate = resultList.get(0);
         var statusAfterDissociate = resultList.get(1);
 
@@ -666,7 +665,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(thirdReceiver),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(4);
 
         assertThat(intValue(results.get(0)))
@@ -689,7 +688,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(receiverAccountId),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListAddress();
+        var results = response.getResultAsListAddress();
         assertThat(results).isNotNull().hasSize(4);
 
         assertThat(results.get(0))
@@ -714,7 +713,7 @@ public class CallFeature extends AbstractFeature {
                 asAddress(secondReceiverAlias),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
-        var results = ContractResponseUtil.of(response).getResultAsListDecimal();
+        var results = response.getResultAsListDecimal();
         assertThat(results).isNotNull().hasSize(5);
 
         assertThat(results.get(0)).as("isKYC after grant should be true").isEqualTo(1);

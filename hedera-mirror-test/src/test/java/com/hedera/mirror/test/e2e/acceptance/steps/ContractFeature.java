@@ -38,7 +38,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
-import com.hedera.mirror.test.e2e.acceptance.util.ContractResponseUtil;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
@@ -163,24 +162,39 @@ public class ContractFeature extends AbstractFeature {
         var from = contractClient.getClientAddress();
         var to = deployedParentContract.contractId().toSolidityAddress();
 
-        var contractCallRequestGetAccountBalance = ModelBuilder.contractCallRequest(GET_ACCOUNT_BALANCE_SELECTOR, false, from, to);
-        var getAccountBalanceResponse = mirrorClient.contractsCall(contractCallRequestGetAccountBalance);
-        assertThat(ContractResponseUtil.of(getAccountBalanceResponse).getResultAsNumber()).isEqualTo(1000L);
+        var contractCallRequestGetAccountBalance = ModelBuilder.contractCallRequest()
+                .data(GET_ACCOUNT_BALANCE_SELECTOR)
+                .from(from)
+                .to(to);
+        var getAccountBalanceResponse = callContract(contractCallRequestGetAccountBalance);
+        assertThat(getAccountBalanceResponse.getResultAsNumber()).isEqualTo(1000L);
 
-        var contractCallRequestGetSender = ModelBuilder.contractCallRequest(GET_SENDER_SELECTOR, false, from, to);
-        var getSenderResponse = mirrorClient.contractsCall(contractCallRequestGetSender);
-        assertThat(ContractResponseUtil.of(getSenderResponse).getResultAsAddress()).isEqualTo(from);
+        var contractCallRequestGetSender = ModelBuilder.contractCallRequest()
+                .data(GET_SENDER_SELECTOR)
+                .from(from)
+                .to(to);
+        var getSenderResponse = callContract(contractCallRequestGetSender);
+        assertThat(getSenderResponse.getResultAsAddress()).isEqualTo(from);
 
-        var contractCallMultiplySimpleNumbers = ModelBuilder.contractCallRequest(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, false, from, to);
-        var multiplySimpleNumbersResponse = mirrorClient.contractsCall(contractCallMultiplySimpleNumbers);
-        assertThat(ContractResponseUtil.of(multiplySimpleNumbersResponse).getResultAsNumber()).isEqualTo(4L);
+        var contractCallMultiplySimpleNumbers = ModelBuilder.contractCallRequest()
+                .data(MULTIPLY_SIMPLE_NUMBERS_SELECTOR)
+                .from(from)
+                .to(to);
+        var multiplySimpleNumbersResponse = callContract(contractCallMultiplySimpleNumbers);
+        assertThat(multiplySimpleNumbersResponse.getResultAsNumber()).isEqualTo(4L);
 
-        var contractCallIdentifier = ModelBuilder.contractCallRequest(IDENTIFIER_SELECTOR, false, from, to);
-        var identifierResponse = mirrorClient.contractsCall(contractCallIdentifier);
-        assertThat(ContractResponseUtil.of(identifierResponse).getResultAsSelector()).isEqualTo(IDENTIFIER_SELECTOR);
+        var contractCallIdentifier = ModelBuilder.contractCallRequest()
+                .data(IDENTIFIER_SELECTOR)
+                .from(from)
+                .to(to);
+        var identifierResponse = callContract(contractCallIdentifier);
+        assertThat(identifierResponse.getResultAsSelector()).isEqualTo(IDENTIFIER_SELECTOR);
 
-        var contractCallWrongSelector = ModelBuilder.contractCallRequest(WRONG_SELECTOR, false, from, to);
-        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallWrongSelector))
+        var contractCallWrongSelector = ModelBuilder.contractCallRequest()
+                .data(WRONG_SELECTOR)
+                .from(from)
+                .to(to);
+        assertThatThrownBy(() -> callContract(contractCallWrongSelector))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
