@@ -1362,6 +1362,20 @@ components:
           $ref: "#/components/schemas/EntityId"
         timestamp:
           $ref: "#/components/schemas/TimestampRange"
+    AssessedCustomFee:
+      type: object
+      properties:
+        amount:
+          format: int64
+          type: integer
+        collector_account_id:
+          $ref: "#/components/schemas/EntityId"
+        effective_payer_account_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/EntityId"
+        token_id:
+          $ref: "#/components/schemas/EntityId"
     BalancesResponse:
       type: object
       properties:
@@ -3691,19 +3705,7 @@ components:
             assessed_custom_fees:
               type: array
               items:
-                type: object
-                properties:
-                  amount:
-                    format: int64
-                    type: integer
-                  collector_account_id:
-                    $ref: "#/components/schemas/EntityId"
-                  effective_payer_account_ids:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/EntityId"
-                  token_id:
-                    $ref: "#/components/schemas/EntityId"
+                $ref: "#/components/schemas/AssessedCustomFee"
       example:
         assessed_custom_fees:
           - amount: 100

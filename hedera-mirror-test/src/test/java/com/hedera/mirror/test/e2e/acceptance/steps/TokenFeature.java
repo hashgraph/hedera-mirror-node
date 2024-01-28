@@ -33,6 +33,7 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
+import com.hedera.mirror.rest.model.AssessedCustomFee;
 import com.hedera.mirror.rest.model.CustomFees;
 import com.hedera.mirror.rest.model.FixedFee;
 import com.hedera.mirror.rest.model.FractionalFee;
@@ -49,7 +50,6 @@ import com.hedera.mirror.rest.model.TokenRelationship.KycStatusEnum;
 import com.hedera.mirror.rest.model.TokenRelationshipResponse;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionDetail;
-import com.hedera.mirror.rest.model.TransactionDetailAllOfAssessedCustomFees;
 import com.hedera.mirror.rest.model.TransactionNftTransfersInner;
 import com.hedera.mirror.rest.model.TransactionTokenTransfersInner;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
@@ -419,11 +419,11 @@ public class TokenFeature extends AbstractFeature {
 
     @Then("the mirror node REST API should return the transaction for token fund flow with assessed custom fees")
     @RetryAsserts
-    public void verifyMirrorTokenFundFlow(List<TransactionDetailAllOfAssessedCustomFees> assessedCustomFees) {
+    public void verifyMirrorTokenFundFlow(List<AssessedCustomFee> assessedCustomFees) {
         verifyMirrorTokenFundFlow(tokenId, assessedCustomFees);
     }
 
-    private void verifyMirrorTokenFundFlow(TokenId tokenId, List<TransactionDetailAllOfAssessedCustomFees> assessedCustomFees) {
+    private void verifyMirrorTokenFundFlow(TokenId tokenId, List<AssessedCustomFee> assessedCustomFees) {
         verifyTransactions(assessedCustomFees);
         verifyToken(tokenId);
         verifyTokenTransfers(tokenId);
@@ -591,7 +591,7 @@ public class TokenFeature extends AbstractFeature {
         return verifyTransactions(Collections.emptyList());
     }
 
-    private TransactionDetail verifyTransactions(List<TransactionDetailAllOfAssessedCustomFees> assessedCustomFees) {
+    private TransactionDetail verifyTransactions(List<AssessedCustomFee> assessedCustomFees) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         TransactionByIdResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
@@ -705,10 +705,10 @@ public class TokenFeature extends AbstractFeature {
         TokenInfo response = verifyToken(tokenId);
 
         CustomFees expected = new CustomFees()
+                .createdTimestamp(createdTimestamp)
                 .fixedFees(new ArrayList<>())
                 .fractionalFees(new ArrayList<>());
 
-        expected.createdTimestamp(createdTimestamp);
         for (CustomFee customFee : customFees) {
             if (customFee instanceof CustomFixedFee sdkFixedFee) {
                 FixedFee fixedFee = new FixedFee();
