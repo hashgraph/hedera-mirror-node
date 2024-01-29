@@ -68,7 +68,7 @@ dependencies {
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.45.3")
         api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
-        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.2")
+        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.4")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
