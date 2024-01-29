@@ -1,0 +1,33 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "EquivalenceDestruct",
+  "sourceName": "contracts/EquivalenceDestruct.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "payable",
+      "type": "constructor"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "fallback"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address payable",
+          "name": "beneficiary",
+          "type": "address"
+        }
+      ],
+      "name": "destroyContract",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405260bf806100126000396000f3fe608060405260043610601c5760003560e01c8063016a373814601e575b005b348015602957600080fd5b50601c6035366004604e565b8073ffffffffffffffffffffffffffffffffffffffff16ff5b600060208284031215605f57600080fd5b813573ffffffffffffffffffffffffffffffffffffffff81168114608257600080fd5b939250505056fea2646970667358221220935b250d46b6379f7eebb869774fcbebaf31da8d7f35b02fa78f400c767a68dd64736f6c63430008090033",
+  "deployedBytecode": "0x608060405260043610601c5760003560e01c8063016a373814601e575b005b348015602957600080fd5b50601c6035366004604e565b8073ffffffffffffffffffffffffffffffffffffffff16ff5b600060208284031215605f57600080fd5b813573ffffffffffffffffffffffffffffffffffffffff81168114608257600080fd5b939250505056fea2646970667358221220935b250d46b6379f7eebb869774fcbebaf31da8d7f35b02fa78f400c767a68dd64736f6c63430008090033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

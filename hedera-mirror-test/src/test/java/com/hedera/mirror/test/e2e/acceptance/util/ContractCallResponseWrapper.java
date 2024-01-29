@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 /**
@@ -34,6 +35,8 @@ import org.apache.tuweni.bytes.Bytes;
  */
 @RequiredArgsConstructor(staticName = "of")
 public class ContractCallResponseWrapper {
+    private static final String EMPTY_RESULT = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
     @NonNull private final ContractCallResponse response;
 
     public String getResult() {
@@ -41,7 +44,12 @@ public class ContractCallResponseWrapper {
     }
 
     public BigInteger getResultAsNumber() {
-        return getResultAsBytes().toBigInteger();
+        var result = getResult();
+        if (!StringUtils.startsWith(result, "0x")) {
+            return new BigInteger(result);
+        } else {
+            return getResultAsBytes().toBigInteger();
+        }
     }
 
     public String getResultAsSelector() {
@@ -57,7 +65,16 @@ public class ContractCallResponseWrapper {
     }
 
     public Bytes getResultAsBytes() {
-        return Bytes.fromHexString(response.getResult());
+        var result = getResult();
+        if (StringUtils.isEmpty(result) || EMPTY_RESULT.equals(result)) {
+            return Bytes.EMPTY;
+        }
+
+        if (result.startsWith("0x")) {
+            return Bytes.fromHexString(result);
+        } else {
+            return Bytes.wrap(result.getBytes());
+        }
     }
 
     public String getResultAsText() {

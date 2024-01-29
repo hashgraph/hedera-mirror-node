@@ -44,7 +44,6 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Comparator;
 import java.util.HexFormat;
@@ -80,7 +79,7 @@ public class ContractFeature extends AbstractFeature {
     private byte[] childContractBytecodeFromParent;
 
     @Given("I successfully create a contract from the parent contract bytes with 10000000 balance")
-    public void createNewContract() throws IOException {
+    public void createNewContract() {
         deployedParentContract = getContract(ContractResource.PARENT_CONTRACT);
     }
 
