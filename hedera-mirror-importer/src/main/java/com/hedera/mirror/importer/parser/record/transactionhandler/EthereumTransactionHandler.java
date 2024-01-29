@@ -126,7 +126,7 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
             var status = recordItem.getTransactionRecord().getReceipt().getStatus();
             if (!recordItem.isSuccessful()
                     && status != ResponseCodeEnum.CONTRACT_REVERT_EXECUTED
-                    && status != ResponseCodeEnum.INSUFFICIENT_GAS) {
+                    && status != ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED) {
                 return;
             }
 

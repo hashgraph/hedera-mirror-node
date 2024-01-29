@@ -319,7 +319,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
         if (status == ResponseCodeEnum.WRONG_NONCE && setPriorHapiVersion) {
             // If the HAPI version is prior to 0.46.0 and the status is not
-            // SUCCESS, INSUFFICIENT_GAS, or CONTRACT_REVERT_EXECUTED
+            // SUCCESS, MAX_CHILD_RECORDS_EXCEEDED, or CONTRACT_REVERT_EXECUTED
             // then the nonce should not be updated
             verify(entityListener).onEthereumTransaction(ethereumTransaction);
             verify(entityListener, never()).onEntity(any());
@@ -439,10 +439,10 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         return Stream.of(
                 Arguments.of(true, ResponseCodeEnum.SUCCESS),
                 Arguments.of(false, ResponseCodeEnum.SUCCESS),
-                Arguments.of(true, ResponseCodeEnum.INSUFFICIENT_GAS),
-                Arguments.of(false, ResponseCodeEnum.INSUFFICIENT_GAS),
                 Arguments.of(true, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
                 Arguments.of(false, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
+                Arguments.of(true, ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED),
+                Arguments.of(false, ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED),
                 Arguments.of(true, ResponseCodeEnum.WRONG_NONCE),
                 Arguments.of(false, ResponseCodeEnum.WRONG_NONCE));
     }
