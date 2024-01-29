@@ -100,7 +100,7 @@ public class TokenFeature extends AbstractFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
         var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
-        log.info("Get token info for token {}: {}", tokenId, tokenInfo);
+        log.info("Get token info for token {}: {}", tokenName, tokenInfo);
     }
 
     @Given("I associate account {account} with token {token}")
