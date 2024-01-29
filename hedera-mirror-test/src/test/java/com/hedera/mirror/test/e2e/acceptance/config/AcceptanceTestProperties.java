@@ -92,7 +92,7 @@ public class AcceptanceTestProperties {
     private Duration startupTimeout = Duration.ofMinutes(60);
 
     @NotNull
-    private NodeNameEnum nodeType = NodeNameEnum.MIRROR;;
+    private NodeNameEnum nodeType = NodeNameEnum.MIRROR;
 
     public enum HederaNetwork {
         MAINNET,
