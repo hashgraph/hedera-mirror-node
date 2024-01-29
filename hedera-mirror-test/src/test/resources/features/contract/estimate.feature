@@ -37,6 +37,15 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with function that executes reentrancy attack with call
     Then I call estimateGas with function that executes positive nested calls
     Then I call estimateGas with function that executes limited nested calls
+    Then I call estimateGas with call to ethereum precompile ecRecover
+    Then I call estimateGas with call to ethereum precompile SHA2
+    Then I call estimateGas with call to ethereum precompile RIPEMD
+    Then I call estimateGas with call to ethereum precompile identity
+    Then I call estimateGas with call to ethereum precompile modexp
+    Then I call estimateGas with call to ethereum precompile ecAdd
+    Then I call estimateGas with call to ethereum precompile ecMul
+    Then I call estimateGas with call to ethereum precompile ecPairing
+    Then I call estimateGas with call to ethereum precompile blake2f
     Then I call estimateGas with IERC20 token transfer using long zero address as receiver
     Then I call estimateGas with IERC20 token transfer using evm address as receiver
     Then I call estimateGas with IERC20 token approve using evm address as receiver
