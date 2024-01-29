@@ -25,6 +25,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 @Data
@@ -32,9 +33,14 @@ import org.apache.tuweni.bytes.Bytes;
 public class ContractCallResponse {
 
     private String result;
+    private static final String EMPTY_RESULT = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
     public BigInteger getResultAsNumber() {
-        return getResultAsBytes().toBigInteger();
+        if (!StringUtils.startsWith(result, "0x")) {
+            return new BigInteger(result);
+        } else {
+            return getResultAsBytes().toBigInteger();
+        }
     }
 
     public String getResultAsSelector() {
@@ -50,7 +56,15 @@ public class ContractCallResponse {
     }
 
     public Bytes getResultAsBytes() {
-        return Bytes.fromHexString(result);
+        if (StringUtils.isEmpty(result) || EMPTY_RESULT.equals(result)) {
+            return Bytes.EMPTY;
+        }
+
+        if (result.startsWith("0x")) {
+            return Bytes.fromHexString(result);
+        } else {
+            return Bytes.wrap(result.getBytes());
+        }
     }
 
     public String getResultAsText() {
