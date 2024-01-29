@@ -27,7 +27,6 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.ethereum.LegacyEthereumTransactionParserTest;
@@ -49,6 +48,7 @@ import org.springframework.data.util.Version;
 @RequiredArgsConstructor
 class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListenerTest {
     private static final Version HAPI_VERSION_0_46_0 = new Version(0, 46, 0);
+    private static final long SIGNER_NONCE = 10L;
 
     private final EthereumTransactionRepository ethereumTransactionRepository;
 
@@ -79,12 +79,12 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem, sender, create));
+                () -> assertEthereumTransaction(recordItem, sender, SIGNER_NONCE));
     }
 
     @ParameterizedTest
-    @MethodSource("provideSignatureNonceArguments")
-    void ethereumTransactionSignatureNonce(boolean create, boolean setPriorHapiVersion) {
+    @MethodSource("provideSignerNonceArguments")
+    void ethereumTransactionSignerNonce(boolean create, boolean setPriorHapiVersion, long expectedNonce) {
         var builder = recordItemBuilder.ethereumTransaction(create);
         if (setPriorHapiVersion) {
             builder.record(x -> {
@@ -111,12 +111,12 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .persist();
 
         parseRecordItemAndCommit(recordItem);
-        assertEthereumTransaction(recordItem, sender, create);
+        assertEthereumTransaction(recordItem, sender, expectedNonce);
     }
 
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void ethereumTransactionNullSignatureNonce(boolean create) {
+    void ethereumTransactionNullSignerNonce(boolean create) {
         var recordItem = recordItemBuilder
                 .ethereumTransaction(create)
                 .record(x -> x.setContractCallResult(
@@ -157,7 +157,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem, null, create));
+                () -> assertEthereumTransaction(recordItem, null, SIGNER_NONCE));
     }
 
     @ValueSource(booleans = {true, false})
@@ -176,7 +176,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem, null, create));
+                () -> assertEthereumTransaction(recordItem, null, SIGNER_NONCE));
     }
 
     @Test
@@ -200,7 +200,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .build();
     }
 
-    private void assertEthereumTransaction(RecordItem recordItem, Entity sender, boolean create) {
+    private void assertEthereumTransaction(RecordItem recordItem, Entity sender, long expectedNonce) {
         long createdTimestamp = recordItem.getConsensusTimestamp();
         var ethTransaction =
                 ethereumTransactionRepository.findById(createdTimestamp).get();
@@ -219,23 +219,16 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
         if (sender != null) {
             var ethereumNonce = entityRepository.findById(sender.getId()).get().getEthereumNonce();
-            if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
-                assertThat(ethereumNonce).isEqualTo(ethTransaction.getNonce() + 1);
-            } else {
-                var functionResult = create
-                        ? transactionRecord.getContractCreateResult()
-                        : transactionRecord.getContractCallResult();
-                var expectedNonce = functionResult.getSignerNonce().getValue();
-                assertThat(ethereumNonce).isEqualTo(expectedNonce);
-            }
+            assertThat(ethereumNonce).isEqualTo(expectedNonce);
         }
     }
 
-    private static Stream<Arguments> provideSignatureNonceArguments() {
+    private static Stream<Arguments> provideSignerNonceArguments() {
+        long incrementedNonce = 3L;
         return Stream.of(
-                Arguments.of(true, false),
-                Arguments.of(true, true),
-                Arguments.of(false, false),
-                Arguments.of(false, true));
+                Arguments.of(true, false, SIGNER_NONCE),
+                Arguments.of(true, true, incrementedNonce),
+                Arguments.of(false, false, SIGNER_NONCE),
+                Arguments.of(false, true, incrementedNonce));
     }
 }

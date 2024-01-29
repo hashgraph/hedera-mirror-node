@@ -119,7 +119,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @ParameterizedTest
     @MethodSource("provideUpdateTransactionArguments")
-    void updateTransaction(boolean create, boolean setPriorHapiVersion) {
+    void updateTransaction(boolean create, boolean setPriorHapiVersion, long expectedNonce) {
         var fileId = EntityId.of(999L);
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         var gasLimit = ethereumTransaction.getGasLimit();
@@ -171,13 +171,10 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
-        var expectedNonce = setPriorHapiVersion
-                ? ethereumTransaction.getNonce() + 1
-                : functionResult.getSignerNonce().getValue();
         verify(entityListener)
                 .onEntity(argThat(e -> e.getId() == senderId
                         && e.getTimestampRange() == null
-                        && e.getEthereumNonce() == expectedNonce));
+                        && e.getEthereumNonce().longValue() == expectedNonce));
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
     }
@@ -227,9 +224,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        verify(entityListener).onEntity(argThat(e -> e.getEthereumNonce() == null));
-        assertThat(recordItem.getEntityTransactions())
-                .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
+        verify(entityListener, never()).onEntity(any());
     }
 
     @Test
@@ -291,7 +286,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @ParameterizedTest
     @MethodSource("provideNonceOnFailureArguments")
-    void updateTransactionUpdateNonceOnFailure(boolean setPriorHapiVersion, ResponseCodeEnum status) {
+    void updateTransactionUpdateNonceOnFailure(
+            boolean setPriorHapiVersion, ResponseCodeEnum status, Long expectedNonce) {
         boolean create = true;
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
@@ -317,7 +313,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .get();
 
         transactionHandler.updateTransaction(transaction, recordItem);
-        if (status == ResponseCodeEnum.WRONG_NONCE && setPriorHapiVersion) {
+        if (expectedNonce == null) {
             // If the HAPI version is prior to 0.46.0 and the status is not
             // SUCCESS, MAX_CHILD_RECORDS_EXCEEDED, or CONTRACT_REVERT_EXECUTED
             // then the nonce should not be updated
@@ -326,14 +322,11 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         } else {
             var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
             var senderId = functionResult.getSenderId().getAccountNum();
-            var expectedNonce = setPriorHapiVersion
-                    ? ethereumTransaction.getNonce() + 1
-                    : functionResult.getSignerNonce().getValue();
             verify(entityListener).onEthereumTransaction(ethereumTransaction);
             verify(entityListener)
                     .onEntity(argThat(e -> e.getId() == senderId
                             && e.getTimestampRange() == null
-                            && e.getEthereumNonce() == expectedNonce));
+                            && e.getEthereumNonce().longValue() == expectedNonce));
             assertThat(recordItem.getEntityTransactions())
                     .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
         }
@@ -436,22 +429,26 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     private static Stream<Arguments> provideNonceOnFailureArguments() {
+        long signerNonce = 10L;
+        long incrementedNonce = 1235L;
         return Stream.of(
-                Arguments.of(true, ResponseCodeEnum.SUCCESS),
-                Arguments.of(false, ResponseCodeEnum.SUCCESS),
-                Arguments.of(true, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
-                Arguments.of(false, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED),
-                Arguments.of(true, ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED),
-                Arguments.of(false, ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED),
-                Arguments.of(true, ResponseCodeEnum.WRONG_NONCE),
-                Arguments.of(false, ResponseCodeEnum.WRONG_NONCE));
+                Arguments.of(true, ResponseCodeEnum.SUCCESS, incrementedNonce),
+                Arguments.of(false, ResponseCodeEnum.SUCCESS, signerNonce),
+                Arguments.of(true, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, incrementedNonce),
+                Arguments.of(false, ResponseCodeEnum.CONTRACT_REVERT_EXECUTED, signerNonce),
+                Arguments.of(true, ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED, incrementedNonce),
+                Arguments.of(false, ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED, signerNonce),
+                Arguments.of(true, ResponseCodeEnum.WRONG_NONCE, null),
+                Arguments.of(false, ResponseCodeEnum.WRONG_NONCE, signerNonce));
     }
 
     private static Stream<Arguments> provideUpdateTransactionArguments() {
+        long signerNonce = 10L;
+        long incrementedNonce = 1235L;
         return Stream.of(
-                Arguments.of(true, true),
-                Arguments.of(true, false),
-                Arguments.of(false, true),
-                Arguments.of(false, false));
+                Arguments.of(true, true, incrementedNonce),
+                Arguments.of(true, false, signerNonce),
+                Arguments.of(false, true, incrementedNonce),
+                Arguments.of(false, false, signerNonce));
     }
 }

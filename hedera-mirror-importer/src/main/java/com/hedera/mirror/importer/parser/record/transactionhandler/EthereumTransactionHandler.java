@@ -123,7 +123,7 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
         if (functionResult.hasSignerNonce()) {
             entity.setEthereumNonce(functionResult.getSignerNonce().getValue());
         } else if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
-            var status = recordItem.getTransactionRecord().getReceipt().getStatus();
+            var status = transactionRecord.getReceipt().getStatus();
             if (!recordItem.isSuccessful()
                     && status != ResponseCodeEnum.CONTRACT_REVERT_EXECUTED
                     && status != ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED) {
@@ -132,6 +132,8 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
 
             // Increment the nonce for backwards compatibility
             entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
+        } else {
+            return;
         }
 
         entity.setTimestampRange(null); // Don't trigger a history row
