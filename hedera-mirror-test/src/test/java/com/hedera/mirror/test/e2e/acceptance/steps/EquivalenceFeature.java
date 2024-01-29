@@ -67,13 +67,6 @@ public class EquivalenceFeature extends AbstractFeature {
         equivalenceCallContract = getContract(EQUIVALENCE_CALL);
     }
 
-    @Then("the mirror node REST API should return status {int} for the contracts creation")
-    public void verifyMirrorAPIResponse(int status) {
-        if (networkTransactionResponse != null) {
-            verifyMirrorTransactionsResponse(mirrorClient, status);
-        }
-    }
-
     @Then("I execute selfdestruct and set beneficiary to {string} address")
     public void selfDestructAndSetBeneficiary(String beneficiary) {
         var nodeType = acceptanceTestProperties.getNodeType();
