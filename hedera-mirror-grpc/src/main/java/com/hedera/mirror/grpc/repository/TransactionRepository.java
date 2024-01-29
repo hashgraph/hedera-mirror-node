@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,22 @@
 
 package com.hedera.mirror.grpc.repository;
 
-import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface TopicMessageRepository extends CrudRepository<TopicMessage, Long>, TopicMessageRepositoryCustom {}
+public interface TransactionRepository extends CrudRepository<Transaction, Long> {
+
+    @Query(
+            value =
+                    """
+       select *
+       from transaction
+       where consensus_timestamp > ?1 and result = 22 and type = ?3
+       order by consensus_timestamp
+       limit ?2
+       """,
+            nativeQuery = true)
+    List<Transaction> findSuccessfulTransactionsByTypeAfterTimestamp(long consensusTimestamp, int limit, int type);
+}

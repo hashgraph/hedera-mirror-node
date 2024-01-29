@@ -20,24 +20,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.ReactiveDomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import jakarta.annotation.Resource;
 import java.time.Instant;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 
+@RequiredArgsConstructor
 class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
-    @Resource
-    private TopicMessageRepository topicMessageRepository;
-
-    @Autowired
-    private ReactiveDomainBuilder domainBuilder;
+    private final TopicMessageRepository topicMessageRepository;
+    private final ReactiveDomainBuilder domainBuilder;
 
     @Test
     void findByFilterEmpty() {
@@ -126,13 +122,20 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
     @Test
     void findLatest() {
-        TopicMessage topicMessage1 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage2 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage3 = domainBuilder.topicMessage().block();
-        TopicMessage topicMessage4 = domainBuilder.topicMessage().block();
-        Pageable pageable = PageRequest.of(0, 2);
+        // given
+        var topicMessage1 = domainBuilder.topicMessage().block();
+        var topicMessage2 = domainBuilder.topicMessage().block();
+        domainBuilder
+                .transaction(t -> t.type(TransactionType.CRYPTOTRANSFER.getProtoId()))
+                .block();
+        domainBuilder.transaction(t -> t.result(10)).block();
 
-        assertThat(topicMessageRepository.findLatest(topicMessage1.getConsensusTimestamp(), pageable))
-                .containsExactly(topicMessage2, topicMessage3);
+        // when, then
+        assertThat(topicMessageRepository.findLatest(topicMessage1.getConsensusTimestamp() - 1, 10))
+                .containsExactly(topicMessage1, topicMessage2);
+        assertThat(topicMessageRepository.findLatest(topicMessage1.getConsensusTimestamp() - 1, 1))
+                .containsExactly(topicMessage1);
+        assertThat(topicMessageRepository.findLatest(topicMessage1.getConsensusTimestamp(), 10))
+                .containsExactly(topicMessage2);
     }
 }

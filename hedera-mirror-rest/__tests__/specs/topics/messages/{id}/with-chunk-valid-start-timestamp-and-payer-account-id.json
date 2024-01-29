@@ -1,10 +1,6 @@
 {
   "description": "Get single message by valid consensus timestamp",
   "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
@@ -24,6 +20,32 @@
         "consensus_timestamp": "1234567890000000003",
         "sequence_number": 3,
         "topic_id": 7
+      }
+    ],
+    "transactions": [
+      {
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000001",
+        "name": "CONSENSUSSUBMITMESSAGE",
+        "type": 27,
+        "entity_id": "0.0.7"
+      },
+      {
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000002",
+        "name": "CONSENSUSSUBMITMESSAGE",
+        "type": 27,
+        "entity_id": "0.0.7"
+      },
+      {
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000003",
+        "name": "CONSENSUSSUBMITMESSAGE",
+        "type": 27,
+        "entity_id": "0.0.7"
       }
     ]
   },

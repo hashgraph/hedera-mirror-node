@@ -19,10 +19,11 @@ import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import {InvalidArgumentError, NotFoundError} from './errors';
-import {TopicMessage} from './model';
+import {TopicMessage, TransactionType} from './model';
 import * as utils from './utils';
 import {TopicMessageViewModel} from './viewmodel';
 
+const consensusSubmitMessageType = Number(TransactionType.getProtoId('CONSENSUSSUBMITMESSAGE'));
 const {default: defaultLimit} = getResponseLimit();
 
 const columnMap = {
@@ -78,10 +79,18 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 
   const consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
-  const query = `select *
-                      from ${TopicMessage.tableName}
-                      where ${TopicMessage.CONSENSUS_TIMESTAMP} = $1`;
-  const params = [consensusTimestamp];
+  let query = `select consensus_timestamp, entity_id, type
+    from transaction
+    where consensus_timestamp = $1 and result = 22`;
+  const {rows} = await pool.queryQuietly(query, [consensusTimestamp]);
+  if (rows.length !== 1 || rows[0].type !== consensusSubmitMessageType) {
+    throw new NotFoundError();
+  }
+
+  query = `select *
+    from topic_message
+    where topic_id = $1 and consensus_timestamp = $2`;
+  const params = [rows[0].entity_id, rows[0].consensus_timestamp];
 
   res.locals[constants.responseDataLabel] = await getMessage(query, params);
 };

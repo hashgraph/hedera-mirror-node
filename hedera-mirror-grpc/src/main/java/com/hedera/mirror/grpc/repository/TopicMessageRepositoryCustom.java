@@ -25,4 +25,7 @@ public interface TopicMessageRepositoryCustom {
 
     @Transactional(readOnly = true)
     Stream<TopicMessage> findByFilter(TopicMessageFilter filter);
+
+    @Transactional(readOnly = true)
+    Stream<TopicMessage> findLatest(long consensusTimestamp, int limit);
 }

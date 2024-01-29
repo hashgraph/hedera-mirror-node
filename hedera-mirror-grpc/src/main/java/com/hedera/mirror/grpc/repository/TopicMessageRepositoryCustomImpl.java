@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.grpc.repository;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityManager;
@@ -25,6 +27,8 @@ import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.stream.Stream;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -35,13 +39,14 @@ import org.hibernate.jpa.HibernateHints;
 @RequiredArgsConstructor
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
 
+    private static final String CONSENSUS_TIMESTAMP = "consensusTimestamp";
+    private static final String TOPIC_ID = "topicId";
     // make the cost estimation of using the index on (topic_id, consensus_timestamp) lower than that of
     // the primary key so pg planner will choose the better index when querying topic messages by id
     private static final String TOPIC_MESSAGES_BY_ID_QUERY_HINT = "set local random_page_cost = 0";
 
-    private static final String CONSENSUS_TIMESTAMP = "consensusTimestamp";
-
     private final EntityManager entityManager;
+    private final TransactionRepository transactionRepository;
 
     @Override
     public Stream<TopicMessage> findByFilter(TopicMessageFilter filter) {
@@ -50,7 +55,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         Root<TopicMessage> root = query.from(TopicMessage.class);
 
         Predicate predicate = cb.and(
-                cb.equal(root.get("topicId"), filter.getTopicId()),
+                cb.equal(root.get(TOPIC_ID), filter.getTopicId()),
                 cb.greaterThanOrEqualTo(root.get(CONSENSUS_TIMESTAMP), filter.getStartTime()));
 
         if (filter.getEndTime() != null) {
@@ -72,5 +77,36 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         }
 
         return typedQuery.getResultList().stream(); // getResultStream()'s cursor doesn't work with reactive streams
+    }
+
+    @Override
+    public Stream<TopicMessage> findLatest(long consensusTimestamp, int limit) {
+        var transactions = transactionRepository.findSuccessfulTransactionsByTypeAfterTimestamp(
+                consensusTimestamp, limit, TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId());
+        if (transactions.isEmpty()) {
+            return Stream.empty();
+        }
+
+        var timestamps = new ArrayList<Long>();
+        var topicIds = new HashSet<EntityId>();
+        for (var transaction : transactions) {
+            var entityId = transaction.getEntityId();
+            if (EntityId.isEmpty(entityId)) {
+                continue;
+            }
+
+            topicIds.add(entityId);
+            timestamps.add(transaction.getConsensusTimestamp());
+        }
+
+        var cb = entityManager.getCriteriaBuilder();
+        var query = cb.createQuery(TopicMessage.class);
+        var root = query.from(TopicMessage.class);
+
+        var predicate = cb.and(
+                root.get(TOPIC_ID).in(topicIds), root.get(CONSENSUS_TIMESTAMP).in(timestamps));
+        query = query.select(root).where(predicate).orderBy(cb.asc(root.get(CONSENSUS_TIMESTAMP)));
+        var typedQuery = entityManager.createQuery(query);
+        return typedQuery.getResultList().stream();
     }
 }
