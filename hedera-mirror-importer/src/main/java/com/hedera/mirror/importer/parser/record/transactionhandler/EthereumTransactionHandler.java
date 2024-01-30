@@ -119,9 +119,9 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
             return;
         }
 
-        var entity = senderId.toEntity();
+        Long nonce = null;
         if (functionResult.hasSignerNonce()) {
-            entity.setEthereumNonce(functionResult.getSignerNonce().getValue());
+            nonce = functionResult.getSignerNonce().getValue();
         } else if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
             var status = transactionRecord.getReceipt().getStatus();
             if (!recordItem.isSuccessful()
@@ -131,14 +131,16 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
             }
 
             // Increment the nonce for backwards compatibility
-            entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
-        } else {
-            return;
+            nonce = ethereumTransaction.getNonce() + 1;
         }
 
-        entity.setTimestampRange(null); // Don't trigger a history row
-        entityListener.onEntity(entity);
-        recordItem.addEntityId(senderId);
+        if (nonce != null) {
+            var entity = senderId.toEntity();
+            entity.setEthereumNonce(nonce);
+            entity.setTimestampRange(null); // Don't trigger a history row
+            entityListener.onEntity(entity);
+            recordItem.addEntityId(senderId);
+        }
     }
 
     private void convertGasWeiToTinyBars(EthereumTransaction transaction) {
