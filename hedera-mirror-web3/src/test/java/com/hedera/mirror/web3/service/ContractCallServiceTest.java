@@ -80,7 +80,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @MethodSource("provideBlockTypes")
-    void pureCallWithCustomBlock(BlockType blockType) {
+    void pureCallWithBlock(BlockType blockType) {
         domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder.index(blockType.number()))
@@ -106,17 +106,19 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @ParameterizedTest
     @MethodSource("provideCustomBlockTypes")
     void pureCallWithCustomBlock(BlockType blockType, String expectedResponse, boolean checkGas) {
-        domainBuilder
-                .recordFile()
-                .customize(recordFileBuilder -> recordFileBuilder.index(blockType.number()))
-                .persist();
-
         final var pureFuncHash = "8070450f";
 
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ETH_CALL);
 
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
+
+        // we need entities present before the block timestamp of the custom block because we won't find them
+        // when searching against the custom block timestamp
+        domainBuilder
+                .recordFile()
+                .customize(recordFileBuilder -> recordFileBuilder.index(blockType.number()))
+                .persist();
 
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
             assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))

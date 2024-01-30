@@ -480,6 +480,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static RecordFile recordFileBeforeEvm34;
     protected static RecordFile recordFileAfterEvm34;
     protected static RecordFile recordFileEvm38;
+    protected static RecordFile recordFileEvm38Latest;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -879,7 +880,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     protected void persistEntities() {
         genesisBlockPersist();
-        historicalBlocksPersist();
         evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
@@ -1126,6 +1126,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
+        historicalBlocksPersist();
         historicalDataPersist();
     }
 
@@ -1146,6 +1147,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         recordFileEvm38 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_38_BLOCK))
+                .persist();
+        recordFileEvm38Latest = domainBuilder
+                .recordFile()
                 .persist();
     }
 

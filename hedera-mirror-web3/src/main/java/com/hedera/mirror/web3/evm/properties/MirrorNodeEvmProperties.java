@@ -180,6 +180,21 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     }
 
     @Override
+    public boolean allowCallsToNonContractAccounts() {
+        return true;
+    }
+
+    @Override
+    public Set<Address> grandfatherContracts() {
+        return null;
+    }
+
+    @Override
+    public boolean callsToNonExistingEntitiesEnabled(Address target) {
+        return false;
+    }
+
+    @Override
     public boolean dynamicEvmVersion() {
         return dynamicEvmVersion;
     }

@@ -742,8 +742,10 @@ public class ServicesConfiguration {
     HederaExtCodeHashOperationV038 hederaExtCodeHashOperationV038(
             final GasCalculator gasCalculator,
             final Predicate<Address> strictSystemAccountDetector,
-            BiPredicate<Address, MessageFrame> addressValidator) {
-        return new HederaExtCodeHashOperationV038(gasCalculator, addressValidator, strictSystemAccountDetector);
+            BiPredicate<Address, MessageFrame> addressValidator,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new HederaExtCodeHashOperationV038(gasCalculator, addressValidator,
+                strictSystemAccountDetector, mirrorNodeEvmProperties);
     }
 
     @Bean

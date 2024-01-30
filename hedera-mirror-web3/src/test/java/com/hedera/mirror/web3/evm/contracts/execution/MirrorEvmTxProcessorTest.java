@@ -237,7 +237,6 @@ class MirrorEvmTxProcessorTest {
     void assertTransactionSenderAndValue() {
         // setup:
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         given(hederaEvmContractAliases.isMirror(receiverAddress)).willReturn(true);
         final long GAS_LIMIT = 300_000L;
         final Wei oneWei = Wei.of(1L);
