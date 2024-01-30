@@ -57,6 +57,7 @@ class CommonTestConfiguration {
                 .put("api-user", "mirror_api")
                 .put("db-name", "mirror_node")
                 .put("db-user", "mirror_importer")
+                .put("hashShardCount", "6")
                 .put("idPartitionSize", "1000000000000000")
                 .put("maxEntityId", "5000000")
                 .put("maxEntityIdRatio", "2.0")

@@ -1,9 +1,10 @@
 {
   "description": "Account api calls for specific account using path and closed timestamp range",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "config": {
       "query": {
-        "maxTimestampRangeNs": 31536000000000000
+        "maxTransactionsTimestampRangeNs": 31536000000000000
       }
     },
     "features": {

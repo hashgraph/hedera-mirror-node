@@ -21,7 +21,7 @@ import parseDuration from 'parse-duration';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
-import {cloudProviders, defaultBucketNames, networks} from './constants';
+import {NANOSECONDS_PER_MILLISECOND, cloudProviders, defaultBucketNames, networks} from './constants';
 import {InvalidConfigError} from './errors';
 import configureLogger from './logger';
 
@@ -165,25 +165,22 @@ const parseDurationConfig = (name, value) => {
   if (!ms) {
     throw new InvalidConfigError(`invalid ${name} ${value}`);
   }
-  return BigInt(ms) * 1_000_000n;
+  return BigInt(ms) * NANOSECONDS_PER_MILLISECOND;
 };
 
 const parseQueryConfig = () => {
   const conf = getConfig();
 
-  // maxRepeatedQueryParameters, for backwards compatibility, conf.maxRepeatedQueryParameters takes priority
-  conf.query.maxRepeatedQueryParameters = conf?.maxRepeatedQueryParameters ?? conf.query.maxRepeatedQueryParameters;
-  delete conf.maxRepeatedQueryParameters;
-
-  // maxTimestampRange, for backwards compatibility, conf.maxTimestampRange takes priority
-  conf.query.maxTimestampRangeNs = parseDurationConfig(
-    'query.maxTimestampRange',
-    conf?.maxTimestampRange ?? conf.query.maxTimestampRange
-  );
+  conf.query.maxTimestampRangeNs = parseDurationConfig('query.maxTimestampRange', conf.query.maxTimestampRange);
 
   conf.query.maxTransactionConsensusTimestampRangeNs = parseDurationConfig(
     'query.maxTransactionConsensusTimestampRange',
     conf.query.maxTransactionConsensusTimestampRange
+  );
+
+  conf.query.maxTransactionsTimestampRangeNs = parseDurationConfig(
+    'query.maxTransactionsTimestampRange',
+    conf.query.maxTransactionsTimestampRange
   );
 };
 

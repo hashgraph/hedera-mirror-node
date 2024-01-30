@@ -19,8 +19,8 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.mirror.rest.model.NetworkStakeResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import lombok.Data;
@@ -32,7 +32,7 @@ public class NetworkFeature {
 
     private final MirrorNodeClient mirrorClient;
 
-    private MirrorNetworkStake networkStake;
+    private NetworkStakeResponse networkStake;
 
     @When("I query the network stake")
     public void verifyNetworkStake() {
