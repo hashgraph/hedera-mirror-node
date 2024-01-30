@@ -1,4 +1,4 @@
-#@contractbase @fullsuite @equivalence @acceptance
+@contractbase @fullsuite @equivalence @acceptance
 Feature: in-equivalence tests
 
   Scenario Outline: Validate in-equivalence system accounts for balance, extcodesize, extcodecopy, extcodehash
