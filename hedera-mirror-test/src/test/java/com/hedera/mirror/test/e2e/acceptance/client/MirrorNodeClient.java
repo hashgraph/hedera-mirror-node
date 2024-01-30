@@ -23,27 +23,29 @@ import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
+import com.hedera.mirror.rest.model.AccountBalanceTransactions;
+import com.hedera.mirror.rest.model.AccountInfo;
+import com.hedera.mirror.rest.model.BlocksResponse;
+import com.hedera.mirror.rest.model.ContractCallRequest;
+import com.hedera.mirror.rest.model.ContractCallResponse;
+import com.hedera.mirror.rest.model.ContractResponse;
+import com.hedera.mirror.rest.model.ContractResult;
+import com.hedera.mirror.rest.model.ContractResultsResponse;
+import com.hedera.mirror.rest.model.CryptoAllowancesResponse;
+import com.hedera.mirror.rest.model.NetworkExchangeRateSetResponse;
+import com.hedera.mirror.rest.model.NetworkNode;
+import com.hedera.mirror.rest.model.NetworkNodesResponse;
+import com.hedera.mirror.rest.model.NetworkStakeResponse;
+import com.hedera.mirror.rest.model.Nft;
+import com.hedera.mirror.rest.model.NftTransactionHistory;
+import com.hedera.mirror.rest.model.Schedule;
+import com.hedera.mirror.rest.model.TokenAllowancesResponse;
+import com.hedera.mirror.rest.model.TokenInfo;
+import com.hedera.mirror.rest.model.TokenRelationshipResponse;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
+import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.ExchangeRateResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorBlockResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenAllowanceResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
 import java.util.ArrayList;
@@ -161,22 +163,22 @@ public class MirrorNodeClient {
         return subscriptionResponse;
     }
 
-    public MirrorCryptoAllowanceResponse getAccountCryptoAllowance(String accountId) {
+    public CryptoAllowancesResponse getAccountCryptoAllowance(String accountId) {
         log.debug("Verify account '{}''s crypto allowance is returned by Mirror Node", accountId);
         return callRestEndpoint(
-                "/accounts/{accountId}/allowances/crypto", MirrorCryptoAllowanceResponse.class, accountId);
+                "/accounts/{accountId}/allowances/crypto", CryptoAllowancesResponse.class, accountId);
     }
 
-    public MirrorCryptoAllowanceResponse getAccountCryptoAllowanceBySpender(String accountId, String spenderId) {
+    public CryptoAllowancesResponse getAccountCryptoAllowanceBySpender(String accountId, String spenderId) {
         log.debug("Verify account '{}''s crypto allowance for {} is returned by Mirror Node", accountId, spenderId);
         return callRestEndpoint(
                 "/accounts/{accountId}/allowances/crypto?spender.id={spenderId}",
-                MirrorCryptoAllowanceResponse.class,
+                CryptoAllowancesResponse.class,
                 accountId,
                 spenderId);
     }
 
-    public MirrorTokenAllowanceResponse getAccountTokenAllowanceBySpender(
+    public TokenAllowancesResponse getAccountTokenAllowanceBySpender(
             String accountId, String tokenId, String spenderId) {
         log.debug(
                 "Verify account '{}''s token allowance for token {} and spender {} is returned by Mirror Node",
@@ -185,53 +187,53 @@ public class MirrorNodeClient {
                 spenderId);
         return callRestEndpoint(
                 "/accounts/{accountId}/allowances/tokens?token.id={tokenId}&spender.id={spenderId}",
-                MirrorTokenAllowanceResponse.class,
+                TokenAllowancesResponse.class,
                 accountId,
                 tokenId,
                 spenderId);
     }
 
-    public MirrorContractResponse getContractInfo(String contractId) {
+    public ContractResponse getContractInfo(String contractId) {
         log.debug("Verify contract '{}' is returned by Mirror Node", contractId);
-        return callRestEndpoint("/contracts/{contractId}", MirrorContractResponse.class, contractId);
+        return callRestEndpoint("/contracts/{contractId}", ContractResponse.class, contractId);
     }
 
-    public MirrorContractResponse getContractInfoWithNotFound(String contractId) {
+    public ContractResponse getContractInfoWithNotFound(String contractId) {
         log.debug("Verify contract '{}' is not found", contractId);
-        return callRestEndpointWithNotFound("/contracts/{contractId}", MirrorContractResponse.class, contractId);
+        return callRestEndpointWithNotFound("/contracts/{contractId}", ContractResponse.class, contractId);
     }
 
-    public MirrorContractResultsResponse getContractResultsById(String contractId) {
+    public ContractResultsResponse getContractResultsById(String contractId) {
         log.debug("Verify contract results '{}' is returned by Mirror Node", contractId);
-        return callRestEndpoint("/contracts/{contractId}/results", MirrorContractResultsResponse.class, contractId);
+        return callRestEndpoint("/contracts/{contractId}/results", ContractResultsResponse.class, contractId);
     }
 
-    public MirrorContractResultResponse getContractResultByTransactionId(String transactionId) {
+    public ContractResult getContractResultByTransactionId(String transactionId) {
         log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
         return callRestEndpoint(
-                "/contracts/results/{transactionId}", MirrorContractResultResponse.class, transactionId);
+                "/contracts/results/{transactionId}", ContractResult.class, transactionId);
     }
 
-    public ExchangeRateResponse getExchangeRates() {
+    public NetworkExchangeRateSetResponse getExchangeRates() {
         log.debug("Get exchange rates by Mirror Node");
-        return callRestEndpoint("/network/exchangerate", ExchangeRateResponse.class);
+        return callRestEndpoint("/network/exchangerate", NetworkExchangeRateSetResponse.class);
     }
 
     public ContractCallResponse contractsCall(ContractCallRequest request) {
         return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, request);
     }
 
-    public MirrorBlockResponse getBlocks() {
+    public BlocksResponse getBlocks() {
         log.debug("Get blocks data by Mirror Node");
-        return callRestEndpoint("/blocks", MirrorBlockResponse.class);
+        return callRestEndpoint("/blocks", BlocksResponse.class);
     }
 
-    public List<MirrorNetworkNode> getNetworkNodes() {
-        List<MirrorNetworkNode> nodes = new ArrayList<>();
+    public List<NetworkNode> getNetworkNodes() {
+        List<NetworkNode> nodes = new ArrayList<>();
         String next = "/network/nodes?limit=25";
 
         do {
-            var response = callRestEndpoint(next, MirrorNetworkNodes.class);
+            var response = callRestEndpoint(next, NetworkNodesResponse.class);
             nodes.addAll(response.getNodes());
             next = response.getLinks() != null ? response.getLinks().getNext() : null;
         } while (next != null);
@@ -239,77 +241,77 @@ public class MirrorNodeClient {
         return nodes;
     }
 
-    public MirrorNetworkStake getNetworkStake() {
+    public NetworkStakeResponse getNetworkStake() {
         String stakeEndpoint = "/network/stake";
-        return callRestEndpoint(stakeEndpoint, MirrorNetworkStake.class);
+        return callRestEndpoint(stakeEndpoint, NetworkStakeResponse.class);
     }
 
-    public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {
+    public Nft getNftInfo(String tokenId, long serialNumber) {
         log.debug("Verify serial number '{}' for token '{}' is returned by Mirror Node", serialNumber, tokenId);
         return callRestEndpoint(
-                "/tokens/{tokenId}/nfts/{serialNumber}", MirrorNftResponse.class, tokenId, serialNumber);
+                "/tokens/{tokenId}/nfts/{serialNumber}", Nft.class, tokenId, serialNumber);
     }
 
-    public MirrorNftTransactionsResponse getNftTransactions(TokenId tokenId, Long serialNumber) {
+    public NftTransactionHistory getNftTransactions(TokenId tokenId, Long serialNumber) {
         log.debug(
                 "Get list of transactions for token '{}' and serial number '{}' from Mirror Node",
                 tokenId,
                 serialNumber);
         return callRestEndpoint(
                 "/tokens/{tokenId}/nfts/{serialNumber}/transactions",
-                MirrorNftTransactionsResponse.class,
+                NftTransactionHistory.class,
                 tokenId,
                 serialNumber);
     }
 
-    public MirrorScheduleResponse getScheduleInfo(String scheduleId) {
+    public Schedule getScheduleInfo(String scheduleId) {
         log.debug("Verify schedule '{}' is returned by Mirror Node", scheduleId);
-        return callRestEndpoint("/schedules/{scheduleId}", MirrorScheduleResponse.class, scheduleId);
+        return callRestEndpoint("/schedules/{scheduleId}", Schedule.class, scheduleId);
     }
 
-    public MirrorTokenResponse getTokenInfo(String tokenId) {
+    public TokenInfo getTokenInfo(String tokenId) {
         log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
-        return callRestEndpoint("/tokens/{tokenId}", MirrorTokenResponse.class, tokenId);
+        return callRestEndpoint("/tokens/{tokenId}", TokenInfo.class, tokenId);
     }
 
-    public MirrorTransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
+    public TransactionsResponse getTransactionInfoByTimestamp(String timestamp) {
         log.debug("Verify transaction with consensus timestamp '{}' is returned by Mirror Node", timestamp);
-        return callRestEndpoint("/transactions?timestamp={timestamp}", MirrorTransactionsResponse.class, timestamp);
+        return callRestEndpoint("/transactions?timestamp={timestamp}", TransactionsResponse.class, timestamp);
     }
 
-    public MirrorTransactionsResponse getTransactions(String transactionId) {
+    public TransactionByIdResponse getTransactions(String transactionId) {
         log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
-        return callRestEndpoint("/transactions/{transactionId}", MirrorTransactionsResponse.class, transactionId);
+        return callRestEndpoint("/transactions/{transactionId}", TransactionByIdResponse.class, transactionId);
     }
 
-    public MirrorTokenRelationshipResponse getTokenRelationships(AccountId accountId, TokenId tokenId) {
+    public TokenRelationshipResponse getTokenRelationships(AccountId accountId, TokenId tokenId) {
         log.debug(
                 "Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node",
                 accountId,
                 tokenId);
         return callRestEndpoint(
                 "/accounts/{accountId}/tokens?token.id={tokenId}",
-                MirrorTokenRelationshipResponse.class,
+                TokenRelationshipResponse.class,
                 accountId,
                 tokenId);
     }
 
-    public MirrorAccountResponse getAccountDetailsUsingAlias(@NonNull AccountId accountId) {
+    public AccountBalanceTransactions getAccountDetailsUsingAlias(@NonNull AccountId accountId) {
         log.debug("Retrieving account details for accountId '{}'", accountId);
         return callRestEndpoint(
                 "/accounts/{accountId}",
-                MirrorAccountResponse.class,
+                AccountBalanceTransactions.class,
                 TestUtil.getAliasFromPublicKey(accountId.aliasKey));
     }
 
-    public MirrorAccountResponse getAccountDetailsUsingEvmAddress(@NonNull AccountId accountId) {
+    public AccountInfo getAccountDetailsUsingEvmAddress(@NonNull AccountId accountId) {
         log.debug("Retrieving account details for accountId '{}'", accountId);
-        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class, accountId.evmAddress);
+        return callRestEndpoint("/accounts/{accountId}", AccountInfo.class, accountId.evmAddress);
     }
 
-    public MirrorAccountResponse getAccountDetailsByAccountId(@NonNull AccountId accountId) {
+    public AccountInfo getAccountDetailsByAccountId(@NonNull AccountId accountId) {
         log.debug("Retrieving account details for accountId '{}'", accountId);
-        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class, accountId.toString());
+        return callRestEndpoint("/accounts/{accountId}", AccountInfo.class, accountId.toString());
     }
 
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {

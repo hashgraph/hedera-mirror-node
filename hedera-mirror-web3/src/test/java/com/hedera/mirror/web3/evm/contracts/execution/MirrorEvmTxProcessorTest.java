@@ -88,6 +88,8 @@ class MirrorEvmTxProcessorTest {
     private final HederaEvmAccount sender = new HederaEvmAccount(Address.ALTBN128_ADD);
     private final HederaEvmAccount receiver = new HederaEvmAccount(Address.ALTBN128_MUL);
     private final Address receiverAddress = receiver.canonicalAddress();
+    private final Address nativePrecompileAddress = Address.SHA256;
+    private final Address invalidNativePrecompileAddress = Address.BLS12_G1MUL;
 
     @Mock
     private PricesAndFeesProvider pricesAndFeesProvider;
@@ -260,6 +262,72 @@ class MirrorEvmTxProcessorTest {
         // expect:
         assertThat(sender.canonicalAddress()).isEqualTo(buildMessageFrame.getSenderAddress());
         assertThat(oneWei).isEqualTo(buildMessageFrame.getApparentValue());
+    }
+
+    @Test
+    void nativePrecompileCallSucceeds() {
+        final var validPrecompilePayload = Bytes.fromHexString("0xFF");
+        // setup:
+        given(hederaEvmContractAliases.resolveForEvm(nativePrecompileAddress)).willReturn(nativePrecompileAddress);
+        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(null);
+        given(hederaEvmContractAliases.isMirror(nativePrecompileAddress)).willReturn(true);
+        given(hederaEvmContractAliases.isNativePrecompileAddress(nativePrecompileAddress))
+                .willReturn(true);
+
+        final long GAS_LIMIT = 300_000L;
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
+                .maxStackSize(MAX_STACK_SIZE)
+                .worldUpdater(mock(WorldUpdater.class))
+                .initialGas(GAS_LIMIT)
+                .originator(sender.canonicalAddress())
+                .gasPrice(Wei.ZERO)
+                .sender(sender.canonicalAddress())
+                .value(Wei.ZERO)
+                .apparentValue(Wei.ZERO)
+                .blockValues(mock(BlockValues.class))
+                .completer(__ -> {})
+                .miningBeneficiary(Address.ZERO)
+                .blockHashLookup(h -> null);
+
+        // when:
+        final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
+                commonInitialFrame, nativePrecompileAddress, validPrecompilePayload, 0L);
+
+        assertThat(sender.canonicalAddress()).isEqualTo(buildMessageFrame.getSenderAddress());
+        assertThat(buildMessageFrame.getApparentValue()).isEqualTo(Wei.ZERO);
+        assertThat(nativePrecompileAddress).isEqualTo(buildMessageFrame.getRecipientAddress());
+    }
+
+    @Test
+    void invalidNativePrecompileCallFails() {
+        final var validPrecompilePayload = Bytes.fromHexString("0xFF");
+        // setup:
+        given(hederaEvmContractAliases.resolveForEvm(invalidNativePrecompileAddress))
+                .willReturn(invalidNativePrecompileAddress);
+        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(null);
+        given(hederaEvmContractAliases.isMirror(invalidNativePrecompileAddress)).willReturn(true);
+        given(hederaEvmContractAliases.isNativePrecompileAddress(invalidNativePrecompileAddress))
+                .willReturn(false);
+
+        final long GAS_LIMIT = 300_000L;
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
+                .maxStackSize(MAX_STACK_SIZE)
+                .worldUpdater(mock(WorldUpdater.class))
+                .initialGas(GAS_LIMIT)
+                .originator(sender.canonicalAddress())
+                .gasPrice(Wei.ZERO)
+                .sender(sender.canonicalAddress())
+                .value(Wei.ZERO)
+                .apparentValue(Wei.ZERO)
+                .blockValues(mock(BlockValues.class))
+                .completer(__ -> {})
+                .miningBeneficiary(Address.ZERO)
+                .blockHashLookup(h -> null);
+
+        // when:
+        assertThatExceptionOfType(MirrorEvmTransactionException.class)
+                .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, invalidNativePrecompileAddress, validPrecompilePayload, 0L));
     }
 
     private void givenValidMockWithoutGetOrCreate() {

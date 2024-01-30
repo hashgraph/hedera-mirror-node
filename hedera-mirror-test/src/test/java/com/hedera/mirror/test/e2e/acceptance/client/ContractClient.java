@@ -18,6 +18,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractCallQuery;
 import com.hedera.hashgraph.sdk.ContractCreateTransaction;
 import com.hedera.hashgraph.sdk.ContractDeleteTransaction;
 import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
@@ -27,11 +28,15 @@ import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.ContractUpdateTransaction;
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeoutException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
@@ -169,6 +174,28 @@ public class ContractClient extends AbstractNetworkClient {
         return new ExecuteContractResult(transactionRecord.contractFunctionResult, response);
     }
 
+    public ContractFunctionResult executeContractQuery(
+            ContractId contractId, String functionName, Long gas, byte[] data)
+            throws PrecheckStatusException, TimeoutException {
+        ContractCallQuery contractCallQuery =
+                new ContractCallQuery().setContractId(contractId).setGas(gas);
+
+        contractCallQuery.setFunctionParameters(data);
+
+        long costInTinybars = contractCallQuery.getCost(client).toTinybars();
+
+        long additionalTinybars = 10000;
+        long totalPaymentInTinybars = costInTinybars + additionalTinybars;
+
+        contractCallQuery.setQueryPayment(Hbar.fromTinybars(totalPaymentInTinybars));
+
+        ContractFunctionResult functionResult = contractCallQuery.execute(client);
+
+        log.info("Executed query on contract {} function {}, result: {}", contractId, functionName, functionResult);
+
+        return functionResult;
+    }
+
     private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
         if (contractFunctionResult == null) {
             return;
@@ -180,6 +207,22 @@ public class ContractClient extends AbstractNetworkClient {
                 contractFunctionResult.contractId,
                 contractFunctionResult.gasUsed,
                 contractFunctionResult.logs.size());
+    }
+
+    @RequiredArgsConstructor
+    public enum NodeNameEnum {
+        CONSENSUS("consensus"),
+        MIRROR("mirror");
+
+        private final String name;
+
+        static Optional<NodeNameEnum> of(String name) {
+            try {
+                return Optional.ofNullable(name).map(NodeNameEnum::valueOf);
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        }
     }
 
     public String getClientAddress() {

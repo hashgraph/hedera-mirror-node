@@ -24,10 +24,10 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should return the transaction
     Then I pause the token
     And the mirror node REST API should return the transaction
-    And the mirror node Token Info REST API should return pause status "PAUSED"
+    And the mirror node Token Info REST API should return pause status PAUSED
     Then I unpause the token
     And the mirror node REST API should return the transaction
-    And the mirror node Token Info REST API should return pause status "UNPAUSED"
+    And the mirror node Token Info REST API should return pause status UNPAUSED
     Then I dissociate the account from the token
     And the mirror node REST API should return the transaction
     Then I delete the token
@@ -82,9 +82,9 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should return the transaction
     When DAVE transfers 200 tokens to ALICE with fractional fee 20
     Then the mirror node REST API should return the transaction for token fund flow with assessed custom fees
-      | amount | collector | token |
-      | 100    | ALICE     |       |
-      | 20     | CAROL     | 0     |
+      | amount | collector | effectivePayer | token |
+      | 100    | ALICE     | DAVE           |       |
+      | 20     | CAROL     | ALICE          | 0     |
 
     Examples:
       | fundAmount |

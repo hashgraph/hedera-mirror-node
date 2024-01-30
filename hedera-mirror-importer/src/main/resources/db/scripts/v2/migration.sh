@@ -109,6 +109,7 @@ log "Copying Flyway configuration"
 cp "${MIGRATIONS_DIR}/V2.0."[0-2]* ${FLYWAY_DIR}/sql/
 cat > "${FLYWAY_DIR}/conf/flyway.conf" <<EOF
 flyway.password=${TARGET_DB_PASSWORD}
+flyway.placeholders.hashShardCount=6
 flyway.placeholders.idPartitionSize=1000000
 flyway.placeholders.maxEntityId=5000000
 flyway.placeholders.maxEntityIdRatio=2.0

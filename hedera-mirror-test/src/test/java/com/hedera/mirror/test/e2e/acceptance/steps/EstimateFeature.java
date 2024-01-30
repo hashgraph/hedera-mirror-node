@@ -59,9 +59,8 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -225,13 +224,13 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with non-existing from address in the request body")
     public void wrongFromParameterEstimateCall() {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(encodeData(ESTIMATE_GAS, MESSAGE_SIGNER))
-                .to(contractSolidityAddress)
-                .from(newAccountEvmAddress)
+        var data = encodeData(ESTIMATE_GAS, MESSAGE_SIGNER);
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .data(data)
                 .estimate(true)
-                .build();
-        ContractCallResponse msgSignerResponse = mirrorClient.contractsCall(contractCallRequestBody);
+                .from(newAccountEvmAddress)
+                .to(contractSolidityAddress);
+        var msgSignerResponse = callContract(contractCallRequest);
         int estimatedGas = msgSignerResponse.getResultAsNumber().intValue();
 
         assertWithinDeviation(MESSAGE_SIGNER.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);

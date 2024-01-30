@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.test.e2e.acceptance;
 
+import com.hedera.mirror.rest.model.TokenInfo.PauseStatusEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import io.cucumber.java.ParameterType;
 import io.cucumber.spring.CucumberContextConfiguration;
@@ -41,7 +43,17 @@ public class AcceptanceTest {
     }
 
     @ParameterType("\"?([A-Z]+)\"?")
+    public PauseStatusEnum pauseStatus(String name) {
+        return PauseStatusEnum.valueOf(name);
+    }
+
+    @ParameterType("\"?([A-Z]+)\"?")
     public TokenNameEnum token(String name) {
         return TokenNameEnum.valueOf(name);
+    }
+
+    @ParameterType("\"?([A-Z]+)\"?")
+    public NodeNameEnum node(String name) {
+        return NodeNameEnum.valueOf(name);
     }
 }

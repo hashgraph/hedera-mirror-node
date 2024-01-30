@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-import org.openapitools.generator.gradle.plugin.extensions.OpenApiGeneratorGenerateExtension
-
 description = "Hedera Mirror Node Rest Java"
 
 plugins {
-    id("org.openapi.generator")
+    id("openapi-conventions")
     id("spring-conventions")
 }
 
@@ -44,10 +42,3 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
 }
 
-val configureOpenApi: (OpenApiGeneratorGenerateExtension) -> Void by extra
-
-configureOpenApi(openApiGenerate)
-
-tasks.withType<JavaCompile> { dependsOn("openApiGenerate") }
-
-java.sourceSets["main"].java { srcDir(openApiGenerate.outputDir) }
