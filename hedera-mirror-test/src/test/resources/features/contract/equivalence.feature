@@ -28,6 +28,5 @@ Feature: in-equivalence tests
       Given I successfully create equivalence call contract
       Then I verify the equivalence contract bytecode is deployed
       Then the mirror node REST API should return status 200 for the contracts creation
-      Then I verify the equivalence contract bytecode is deployed
       Then I execute balance opcode against a contract with balance
       Then I execute selfdestruct and set beneficiary to the deleted contract address
