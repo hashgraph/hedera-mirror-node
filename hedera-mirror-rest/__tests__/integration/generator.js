@@ -29,6 +29,6 @@ fs.readdirSync(specsPath, {withFileTypes: true})
   .filter((dirent) => dirent.isDirectory())
   .forEach((dirent) => {
     const group = dirent.name;
-    const filename = path.join(dirname, `${group}.test.js`);
+    const filename = path.join(dirname, `${group}.spec.test.js`);
     fs.writeFileSync(filename, template.replace(mark, `'${group}'`));
   });

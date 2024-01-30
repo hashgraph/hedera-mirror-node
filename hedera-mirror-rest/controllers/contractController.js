@@ -301,7 +301,7 @@ const checkTimestampsForTopics = (filters) => {
   }
   if (hasTopic) {
     try {
-      utils.checkTimestampRange(timestampFilters);
+      utils.parseTimestampFilters(timestampFilters);
     } catch (e) {
       throw new InvalidArgumentError(`Cannot search topics without a valid timestamp range: ${e.message}`);
     }

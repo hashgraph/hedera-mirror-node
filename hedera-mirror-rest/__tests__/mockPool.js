@@ -19,7 +19,6 @@ import * as math from 'mathjs';
 import path from 'path';
 
 import {getResponseLimit} from '../config';
-import EntityId from '../entityId';
 import * as testutils from './testutils';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -40,7 +39,6 @@ class MockPool {
     this.TEST_DATA_MAX_ACCOUNTS = 1000000n;
     this.TEST_DATA_MAX_HISTORY = 60 * 60; // seconds
     this.TEST_DATA_MAX_BALANCE = 1000000;
-    this.NUM_NODES = 39;
 
     this.timeNow = Math.floor(new Date().getTime() / 1000);
     this.on = jest.fn();
@@ -73,8 +71,8 @@ class MockPool {
    * This Pool.query method gets called when the code tries to query the database.
    * This method mocks the real database. It parses the SQL query and extracts the
    * filter clauses of the query, and returns those as part of the query response.
-   * This code can be enhanced to return dummy data for transactions, balances, or
-   * queries. Right now, we return a blank arrays
+   * This code can be enhanced to return dummy data for balances, or queries.
+   * Right now, we return a blank arrays
    * @param {String} sqlquery The SQL query string for postgreSQL
    * @param {Array} sqlparams The array of values for positional parameters
    * @return {Promise} promise Javascript promise that gets resolved with the response
@@ -82,7 +80,7 @@ class MockPool {
    */
   query(sqlquery, sqlparams) {
     // Since this is a generic mock DB, first find out if this is a query
-    // for transactions, balances, or accounts
+    // for balances, or accounts
     let callerFile;
     try {
       const callerFiles = new Error().stack
@@ -105,9 +103,6 @@ class MockPool {
     // To parse the sql parameters, we need the 'order by' param used
     let orderprefix = '';
     switch (callerFile) {
-      case 'transactions':
-        orderprefix = 'consensus_timestamp';
-        break;
       case 'balances':
         orderprefix = 'account_id';
         break;
@@ -139,94 +134,11 @@ class MockPool {
    */
   createMockData(callerFile, parsedparams) {
     let rows = [];
-    if (callerFile === 'transactions') {
-      rows = this.createMockTransactions(parsedparams);
-    } else if (callerFile === 'balances') {
+    if (callerFile === 'balances') {
       rows = this.createMockBalances(parsedparams);
     } else if (callerFile === 'accounts') {
       rows = this.createMockAccounts(parsedparams);
     }
-    return rows;
-  }
-
-  /**
-   * Create mock data for /transactions query
-   * @param {Object} parsedparams Parsed parameters that were present in the SQL query
-   * @return {Array} rows array filled with mock data
-   */
-  createMockTransactions(parsedparams) {
-    let accountNum = {
-      low: 1n,
-      high: this.TEST_DATA_MAX_ACCOUNTS,
-    };
-    let timestamp = {
-      low: this.toNs(this.timeNow - this.TEST_DATA_MAX_HISTORY),
-      high: this.toNs(this.timeNow),
-    };
-    let limit = {
-      low: defaultLimit,
-      high: defaultLimit,
-    };
-    let order = 'desc';
-
-    // Adjust the low/high values based on the SQL query parameters
-    for (const param of parsedparams) {
-      switch (param.field) {
-        case 'entity_id':
-          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum, BigInt);
-          break;
-        case 'consensus_timestamp':
-          timestamp = this.adjustRangeBasedOnConstraints(param, timestamp);
-          break;
-        case 'limit':
-          limit = this.adjustRangeBasedOnConstraints(param, limit);
-          break;
-        case 'order':
-          order = param.value;
-          break;
-      }
-    }
-
-    // Sanity check on the numbers
-    [accountNum, timestamp, limit].forEach((pVar) => {
-      this.sanityCheck(pVar);
-    });
-
-    // Create a mock response based on the sql query parameters
-    let rows = [];
-    for (let i = 0; i < limit.high; i++) {
-      const accountNumValue = this.getAccountId(accountNum, i);
-      const row = {
-        payer_account_id: EntityId.of(0n, 0n, BigInt(i)).getEncodedId(),
-        memo: Buffer.from(`Test memo ${i}`),
-        consensus_timestamp: this.toNs(this.timeNow - i),
-        valid_start_ns: this.toNs(this.timeNow - i - 1),
-        result: 'SUCCESS',
-        type: 14,
-        name: 'CRYPTOTRANSFER',
-        node_account_id: EntityId.of(0n, 0n, BigInt(i % this.NUM_NODES)).getEncodedId(),
-        nonce: 0,
-        crypto_transfer_list: [
-          {
-            amount: i * 1000,
-            entity_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
-          },
-        ],
-        charged_tx_fee: 100 + i,
-        entity_id: null,
-        max_fee: i,
-        scheduled: false,
-        transaction_bytes: '',
-        transaction_hash: '',
-        valid_duration_seconds: i,
-      };
-
-      rows.push(row);
-    }
-    if (['asc', 'ASC'].includes(order)) {
-      rows = rows.reverse();
-    }
-
     return rows;
   }
 

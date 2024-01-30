@@ -1,6 +1,10 @@
 {
   "description": "Transaction api calls with no arguments",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2009-02-13T23:50:00Z"
+    },
     "accounts": [
       {
         "num": 3
@@ -18,7 +22,6 @@
         "num": 98
       }
     ],
-    "balances": [],
     "transactions": [
       {
         "payerAccountId": "0.0.8",
@@ -310,7 +313,6 @@
         "staking_reward_transfers": [],
         "token_transfers": [],
         "bytes": "Ynl0ZXM=",
-        "token_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567800-000000008",
         "transfers": [

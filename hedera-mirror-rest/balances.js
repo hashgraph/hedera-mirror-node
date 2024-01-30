@@ -260,7 +260,7 @@ const getOptimizedTimestampRange = (tsQuery, tsParams) => {
   // With the assumption that the data in db is in sync with the network, in other words, the balance information is
   // update-to-date as of NOW in wall clock, the algorithm below sets lower bound to
   //   max(lowerBound from user, first day of the month before the month min(now, upperBound) is in)
-  const nowInNs = BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
+  const nowInNs = utils.nowInNs();
   const effectiveUpperBound = utils.bigIntMin(upperBound, nowInNs);
   const optimalLowerBound = utils.getFirstDayOfMonth(effectiveUpperBound, -1);
   lowerBound = utils.bigIntMax(lowerBound, optimalLowerBound);

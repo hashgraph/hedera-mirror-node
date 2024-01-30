@@ -94,6 +94,19 @@
           ]
         }
       }
+    },
+    {
+      "url": "/api/v1/accounts/0.0.7?timestamp=gt:1566199013.000111222&timestamp=lte:1566199013.000111222",
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Timestamp range is empty"
+            }
+          ]
+        }
+      }
     }
   ]
 }

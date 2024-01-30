@@ -1,6 +1,10 @@
 {
   "description": "Transaction api calls for transactions via account id query filter where account only receives token transfer",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2009-02-13T23:40:00Z"
+    },
     "accounts": [
       {
         "num": 3
@@ -18,7 +22,6 @@
         "num": 98
       }
     ],
-    "balances": [],
     "transactions": [
       {
         "name": "CRYPTOTRANSFER",
