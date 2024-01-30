@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,24 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.test.e2e.acceptance.props;
+import _ from 'lodash';
 
-import lombok.*;
+import {applyResponseJsonMatrix} from '../integrationUtils';
 
-@Getter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class ContractCallRequest {
+const applyMatrix = (spec) => {
+  return [false, true].map((value) => {
+    const clone = _.cloneDeep(spec);
+    const key = `bindTimestampRange=${value}`;
 
-    @Builder.Default
-    private String block = "latest";
+    clone.name = `${spec.name} with ${key}`;
+    clone.setup.config = _.merge(clone.setup.config, {
+      query: {
+        bindTimestampRange: value,
+      },
+    });
 
-    private String data;
+    return applyResponseJsonMatrix(clone, key);
+  });
+};
 
-    private boolean estimate;
-
-    @Builder.Default
-    private long gas = 15000000;
-
-    @Builder.Default
-    private long gasPrice = 100000000;
-
-    private String from;
-
-    private String to;
-
-    @Builder.Default
-    private long value = 0;
-}
+export default applyMatrix;

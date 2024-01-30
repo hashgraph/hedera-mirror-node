@@ -22,11 +22,11 @@ import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.DeployedContract;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.SelectorInterface;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import jakarta.inject.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
@@ -58,12 +58,11 @@ public class NetworkAdapter extends EncoderDecoderFacade {
             final TupleType returnTupleType) {
         if (NodeNameEnum.MIRROR.equals(node)) {
             try {
-                var contractCallRequestBody = ContractCallRequest.builder()
+                var contractCallRequestBody = ModelBuilder.contractCallRequest()
                         .data(data)
-                        .to(deployedContract.contractId().toSolidityAddress())
-                        .from(from.isEmpty() ? contractClient.getClientAddress() : from)
                         .estimate(isEstimate)
-                        .build();
+                        .from(from.isEmpty() ? contractClient.getClientAddress() : from)
+                        .to(deployedContract.contractId().toSolidityAddress());
 
                 return mirrorClient.contractsCall(contractCallRequestBody);
             } catch (Exception e) {

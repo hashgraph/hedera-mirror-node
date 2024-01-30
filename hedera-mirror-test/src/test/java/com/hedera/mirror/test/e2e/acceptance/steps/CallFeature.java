@@ -643,8 +643,9 @@ public class CallFeature extends AbstractFeature {
                 new BigInteger("1"),
                 new BigInteger("0"));
         var response = callContract(data, precompileContractAddress);
-        var statusAfterAssociate = response.getResultAsListDecimal().get(0);
-        var statusAfterDissociate = response.getResultAsListDecimal().get(1);
+        var resultList = response.getResultAsListDecimal();
+        var statusAfterAssociate = resultList.get(0);
+        var statusAfterDissociate = resultList.get(1);
 
         assertThat(statusAfterAssociate)
                 .as("transfer after associate should pass -> response code 22 equals SUCCESS")
@@ -665,8 +666,9 @@ public class CallFeature extends AbstractFeature {
                 new BigInteger("0"),
                 new BigInteger("1"));
         var response = callContract(data, precompileContractAddress);
-        var statusAfterAssociate = response.getResultAsListDecimal().get(0);
-        var statusAfterDissociate = response.getResultAsListDecimal().get(1);
+        var resultList = response.getResultAsListDecimal();
+        var statusAfterAssociate = resultList.get(0);
+        var statusAfterDissociate = resultList.get(1);
 
         assertThat(statusAfterAssociate)
                 .as("transfer after associate should pass -> response code 22 equals SUCCESS")
@@ -761,10 +763,6 @@ public class CallFeature extends AbstractFeature {
                 mirrorClient.getTokenRelationships(accountId, tokenId).getTokens();
         assertThat(tokenRelationships).isNotNull().hasSize(1);
         return tokenRelationships.get(0).getBalance();
-    }
-
-    private long getTotalSupplyOfToken(TokenId tokenId) {
-        return mirrorClient.getTokenInfo(tokenId.toString()).getTotalSupply().longValue();
     }
 
     @Getter

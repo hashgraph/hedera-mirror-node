@@ -1,5 +1,6 @@
 {
   "description": "Transaction api calls for transactions with limit",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "config": {
       "response": {
@@ -8,6 +9,9 @@
           "max": 4
         }
       }
+    },
+    "features": {
+      "fakeTime": "2019-08-14T10:50:00Z"
     },
     "accounts": [
       {
@@ -26,7 +30,6 @@
         "num": 98
       }
     ],
-    "balances": [],
     "transactions": [
       {
         "payerAccountId": "0.0.8",

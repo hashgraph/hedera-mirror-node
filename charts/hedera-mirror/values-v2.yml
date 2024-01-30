@@ -14,6 +14,13 @@ importer:
     SPRING_PROFILES_ACTIVE: v2
 postgresql:
   enabled: false
+rest:
+  config:
+    hedera:
+      mirror:
+        rest:
+          query:
+            bindTimestampRange: true
 stackgres:
   enabled: true
 

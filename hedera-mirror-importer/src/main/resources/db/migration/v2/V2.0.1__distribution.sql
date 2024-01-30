@@ -6,11 +6,11 @@
 
 
 -- Tables distributed on id
-select create_distributed_table('contract_transaction_hash', 'hash', shard_count := ${shardCount});
-
 select create_distributed_table('entity', 'id', shard_count := ${shardCount});
 
-select create_distributed_table('transaction_hash', 'hash', shard_count := ${shardCount});
+-- Tables distributed on hash
+select create_distributed_table('contract_transaction_hash', 'hash', shard_count := ${hashShardCount});
+select create_distributed_table('transaction_hash', 'hash', shard_count := ${hashShardCount});
 
 -- Tables that will be colocated with tables above
 select create_distributed_table('assessed_custom_fee', 'payer_account_id', colocate_with => 'entity');

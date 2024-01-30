@@ -1,6 +1,10 @@
 {
   "description": "Transaction api calls with transactiontype query filter",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2019-08-14T10:50:00Z"
+    },
     "accounts": [
       {
         "num": 3
@@ -18,7 +22,6 @@
         "num": 98
       }
     ],
-    "balances": [],
     "transactions": [
       {
         "charged_tx_fee": 0,

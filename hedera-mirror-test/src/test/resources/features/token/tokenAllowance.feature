@@ -1,5 +1,5 @@
 @tokenallowance @allowance @fullsuite
-Feature: Account Crypto Allowance Coverage Feature
+Feature: Account Token Allowance Coverage Feature
 
   @critical @release @acceptance
   Scenario Outline: Validate approval TokenTransfer affect on TokenAllowance amount
