@@ -318,20 +318,20 @@ const getFirstTransactionTimestamp = (() => {
  * @return {Range} fully bound timestamp range
  */
 const bindTimestampRange = async (range, order) => {
-  const {bindTimestampRange, maxTimestampRangeNs} = config.query;
+  const {bindTimestampRange, maxTransactionsTimestampRangeNs} = config.query;
   if (!bindTimestampRange) {
     return range;
   }
 
   const boundRange = Range(range?.begin ?? (await getFirstTransactionTimestamp()), range?.end ?? utils.nowInNs(), '[]');
-  if (boundRange.end - boundRange.begin + 1n <= maxTimestampRangeNs) {
+  if (boundRange.end - boundRange.begin + 1n <= maxTransactionsTimestampRangeNs) {
     return boundRange;
   }
 
   if (order === constants.orderFilterValues.DESC) {
-    boundRange.begin = boundRange.end - maxTimestampRangeNs + 1n;
+    boundRange.begin = boundRange.end - maxTransactionsTimestampRangeNs + 1n;
   } else {
-    boundRange.end = boundRange.begin + maxTimestampRangeNs - 1n;
+    boundRange.end = boundRange.begin + maxTransactionsTimestampRangeNs - 1n;
   }
 
   return boundRange;

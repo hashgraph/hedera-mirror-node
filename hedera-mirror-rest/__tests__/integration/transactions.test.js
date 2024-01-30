@@ -32,7 +32,7 @@ describe('bindTimestampRange', () => {
     let clock;
     const now = Date.parse('2022-10-15T08:10:15.333Z');
     const nowInNs = BigInt(now) * NANOSECONDS_PER_MILLISECOND;
-    const {query: {maxTimestampRangeNs}} = config;
+    const {query: {maxTransactionsTimestampRangeNs}} = config;
 
     beforeEach(async () => {
       await integrationDomainOps.loadTransactions([{consensus_timestamp: 1606123456000111222n, payerAccountId: 2000}]);
@@ -48,28 +48,28 @@ describe('bindTimestampRange', () => {
     const spec = [
       {
         name: 'empty and desc',
-        expected: Range(nowInNs - maxTimestampRangeNs + 1n, nowInNs),
+        expected: Range(nowInNs - maxTransactionsTimestampRangeNs + 1n, nowInNs),
       },
       {
         name: 'empty and asc',
         order: ASC,
-        expected: Range(1606123456000111222n, 1606123456000111222n + maxTimestampRangeNs - 1n),
+        expected: Range(1606123456000111222n, 1606123456000111222n + maxTransactionsTimestampRangeNs - 1n),
       },
       {
         name: 'no adjustment',
-        range: Range(1000n, maxTimestampRangeNs + 999n),
-        expected: Range(1000n, maxTimestampRangeNs + 999n)
+        range: Range(1000n, maxTransactionsTimestampRangeNs + 999n),
+        expected: Range(1000n, maxTransactionsTimestampRangeNs + 999n)
       },
       {
         name: 'adjust lower bound',
-        range: Range(1000n, 1000n + maxTimestampRangeNs),
-        expected: Range(1001n, 1000n + maxTimestampRangeNs),
+        range: Range(1000n, 1000n + maxTransactionsTimestampRangeNs),
+        expected: Range(1001n, 1000n + maxTransactionsTimestampRangeNs),
       },
       {
         name: 'adjust upper bound',
-        range: Range(1000n, 1000n + maxTimestampRangeNs),
+        range: Range(1000n, 1000n + maxTransactionsTimestampRangeNs),
         order: ASC,
-        expected: Range(1000n, 999n + maxTimestampRangeNs),
+        expected: Range(1000n, 999n + maxTransactionsTimestampRangeNs),
       }
     ];
     test.each(spec)('$name', async ({expected, range, order = DESC}) => {

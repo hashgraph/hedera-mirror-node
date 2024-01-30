@@ -4,7 +4,7 @@
   "setup": {
     "config": {
       "query": {
-        "maxTimestampRangeNs": 31536000000000000
+        "maxTransactionsTimestampRangeNs": 31536000000000000
       }
     },
     "features": {

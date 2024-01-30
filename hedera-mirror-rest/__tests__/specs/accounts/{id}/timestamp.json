@@ -8,7 +8,7 @@
   "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
     "features": {
-      "fakeTime": "2009-04-13T23:40:00Z"
+      "fakeTime": "2009-06-19T23:40:00Z"
     },
     "accounts": [
       {
