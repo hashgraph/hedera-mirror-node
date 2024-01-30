@@ -39,6 +39,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.Assertions;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -54,6 +55,7 @@ public class EquivalenceFeature extends AbstractFeature {
     private DeployedContract equivalenceCallContract;
 
     private String equivalenceDestructContractSolidityAddress;
+    private String equivalenceCallContractSolidityAddress;
 
     @Given("I successfully create selfdestruct contract")
     public void createNewSelfDestructContract() {
@@ -65,6 +67,24 @@ public class EquivalenceFeature extends AbstractFeature {
     @Given("I successfully create equivalence call contract")
     public void createNewEquivalenceCallContract() {
         equivalenceCallContract = getContract(EQUIVALENCE_CALL);
+        equivalenceCallContractSolidityAddress =
+                equivalenceCallContract.contractId().toSolidityAddress();
+    }
+
+    @RetryAsserts
+    @Given("I verify the equivalence contract bytecode is deployed")
+    public void verifyEquivalenceContractDeployed() {
+        var response = mirrorClient.getContractInfo(equivalenceCallContractSolidityAddress);
+        Assertions.assertThat(response.getBytecode()).isNotBlank();
+        Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
+    }
+
+    @RetryAsserts
+    @Given("I verify the selfdestruct contract bytecode is deployed")
+    public void verifyDestructContractDeployed() {
+        var response = mirrorClient.getContractInfo(equivalenceDestructContractSolidityAddress);
+        Assertions.assertThat(response.getBytecode()).isNotBlank();
+        Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
     @Then("I execute selfdestruct and set beneficiary to {string} address")
