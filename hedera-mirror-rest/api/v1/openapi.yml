@@ -1362,6 +1362,20 @@ components:
           $ref: "#/components/schemas/EntityId"
         timestamp:
           $ref: "#/components/schemas/TimestampRange"
+    AssessedCustomFee:
+      type: object
+      properties:
+        amount:
+          format: int64
+          type: integer
+        collector_account_id:
+          $ref: "#/components/schemas/EntityId"
+        effective_payer_account_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/EntityId"
+        token_id:
+          $ref: "#/components/schemas/EntityId"
     BalancesResponse:
       type: object
       properties:
@@ -2410,8 +2424,12 @@ components:
         - properties:
             amount:
               description: The amount remaining of the original amount granted in tinybars.
+              type: integer
+              format: int64
             amount_granted:
               description: The granted amount of the spender's allowance in tinybars.
+              type: integer
+              format: int64
     CryptoAllowances:
       type: array
       items:
@@ -3051,12 +3069,7 @@ components:
           type: integer
           nullable: true
         timestamp:
-          type: object
-          properties:
-            from:
-              $ref: "#/components/schemas/TimestampRange"
-            to:
-              $ref: "#/components/schemas/TimestampRange"
+          $ref: "#/components/schemas/TimestampRange"
       example:
         count: 3
         gas_used: 300000
@@ -3692,19 +3705,7 @@ components:
             assessed_custom_fees:
               type: array
               items:
-                type: object
-                properties:
-                  amount:
-                    format: int64
-                    type: integer
-                  collector_account_id:
-                    $ref: "#/components/schemas/EntityId"
-                  effective_payer_account_ids:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/EntityId"
-                  token_id:
-                    $ref: "#/components/schemas/EntityId"
+                $ref: "#/components/schemas/AssessedCustomFee"
       example:
         assessed_custom_fees:
           - amount: 100

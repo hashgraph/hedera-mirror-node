@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance;
 
+import com.hedera.mirror.rest.model.TokenInfo.PauseStatusEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
@@ -39,6 +40,11 @@ public class AcceptanceTest {
     @ParameterType("\"?([A-Z]+)\"?")
     public AccountNameEnum account(String name) {
         return AccountNameEnum.valueOf(name);
+    }
+
+    @ParameterType("\"?([A-Z]+)\"?")
+    public PauseStatusEnum pauseStatus(String name) {
+        return PauseStatusEnum.valueOf(name);
     }
 
     @ParameterType("\"?([A-Z]+)\"?")

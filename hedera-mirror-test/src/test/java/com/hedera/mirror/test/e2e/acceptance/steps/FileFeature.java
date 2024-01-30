@@ -21,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.FileInfo;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
+import com.hedera.mirror.rest.model.TransactionDetail;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -88,21 +88,21 @@ public class FileFeature {
     @Then("the mirror node REST API should return status {int} for the file transaction")
     public void verifyMirrorAPIResponses(int status) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+        TransactionByIdResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
-        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status);
+        TransactionDetail mirrorTransaction = verifyMirrorTransactionsResponse(mirrorTransactionsResponse, status);
 
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
     }
 
-    private MirrorTransaction verifyMirrorTransactionsResponse(
-            MirrorTransactionsResponse mirrorTransactionsResponse, int status) {
-        List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
+    private TransactionDetail verifyMirrorTransactionsResponse(
+            TransactionByIdResponse mirrorTransactionsResponse, int status) {
+        List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        MirrorTransaction mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.get(0);
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");

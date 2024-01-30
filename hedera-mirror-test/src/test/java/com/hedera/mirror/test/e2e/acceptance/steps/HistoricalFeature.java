@@ -210,8 +210,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         networkTransactionResponse =
                 accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
-        var initialResponse =
-                callContract(data, estimateContractSolidityAddress).getResultAsNumber();
+        var initialResponse = callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         var initialBlockNumber = getLastBlockNumber();
         waitForNextBlock();
         networkTransactionResponse =
@@ -247,8 +246,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
-        var responseFromType =
-                callContract(blockType, data, estimateContractSolidityAddress).getResultAsNumber();
+        var responseFromType = callContract(blockType, data, estimateContractSolidityAddress).getResultAsNumber();
         var responseFromLatest =
                 callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         assertThat(responseFromLatest).isEqualTo(responseFromType);
