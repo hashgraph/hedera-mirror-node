@@ -137,5 +137,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
                 .containsExactly(topicMessage1);
         assertThat(topicMessageRepository.findLatest(topicMessage1.getConsensusTimestamp(), 10))
                 .containsExactly(topicMessage2);
+        assertThat(topicMessageRepository.findLatest(topicMessage2.getConsensusTimestamp(), 10))
+                .isEmpty();
     }
 }

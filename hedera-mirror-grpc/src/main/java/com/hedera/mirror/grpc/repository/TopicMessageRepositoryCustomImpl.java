@@ -90,12 +90,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         var timestamps = new ArrayList<Long>();
         var topicIds = new HashSet<EntityId>();
         for (var transaction : transactions) {
-            var entityId = transaction.getEntityId();
-            if (EntityId.isEmpty(entityId)) {
-                continue;
-            }
-
-            topicIds.add(entityId);
+            topicIds.add(transaction.getEntityId());
             timestamps.add(transaction.getConsensusTimestamp());
         }
 
