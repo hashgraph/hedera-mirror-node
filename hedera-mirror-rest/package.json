@@ -76,36 +76,5 @@
   "overrides": {
     "protobufjs": "^7.2.4"
   },
-  "bundleDependencies": [
-    "@awaitjs/express",
-    "@aws-sdk/client-s3",
-    "@godaddy/terminus",
-    "@hashgraph/proto",
-    "@trufflesuite/bigint-buffer",
-    "asn1js",
-    "body-parser",
-    "compression",
-    "cors",
-    "express",
-    "express-http-context",
-    "express-openapi-validator",
-    "extend",
-    "ip-anonymize",
-    "js-yaml",
-    "json-bigint",
-    "lodash",
-    "log4js",
-    "long",
-    "mathjs",
-    "parse-duration",
-    "pg",
-    "pg-range",
-    "prom-client",
-    "qs",
-    "quick-lru",
-    "rfc4648",
-    "swagger-stats",
-    "swagger-ui-express",
-    "word-wrap"
-  ]
+  "bundleDependencies": true
 }
