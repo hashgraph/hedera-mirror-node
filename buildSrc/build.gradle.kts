@@ -23,7 +23,7 @@ repositories {
 
 dependencies {
     implementation("com.bmuschko:gradle-docker-plugin:9.4.0")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.24.0")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.25.0")
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.github.node-gradle:gradle-node-plugin:7.0.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")

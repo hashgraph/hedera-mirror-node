@@ -7,7 +7,7 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.8.3
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
 	github.com/cucumber/godog v0.13.0
-	github.com/ethereum/go-ethereum v1.13.10
+	github.com/ethereum/go-ethereum v1.13.11
 	github.com/go-playground/validator/v10 v10.17.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20230720072335-ed5726877e99
 	github.com/hashgraph/hedera-sdk-go/v2 v2.34.1
@@ -29,7 +29,7 @@ require (
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.5.4
-	gorm.io/gorm v1.25.5
+	gorm.io/gorm v1.25.6
 )
 
 require (
