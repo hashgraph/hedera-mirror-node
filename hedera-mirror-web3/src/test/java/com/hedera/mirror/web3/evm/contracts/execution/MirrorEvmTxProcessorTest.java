@@ -269,7 +269,6 @@ class MirrorEvmTxProcessorTest {
         final var validPrecompilePayload = Bytes.fromHexString("0xFF");
         // setup:
         given(hederaEvmContractAliases.resolveForEvm(nativePrecompileAddress)).willReturn(nativePrecompileAddress);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(null);
         given(hederaEvmContractAliases.isMirror(nativePrecompileAddress)).willReturn(true);
         given(hederaEvmContractAliases.isNativePrecompileAddress(nativePrecompileAddress))
                 .willReturn(true);
@@ -304,7 +303,6 @@ class MirrorEvmTxProcessorTest {
         // setup:
         given(hederaEvmContractAliases.resolveForEvm(invalidNativePrecompileAddress))
                 .willReturn(invalidNativePrecompileAddress);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(null);
         given(hederaEvmContractAliases.isMirror(invalidNativePrecompileAddress)).willReturn(true);
         given(hederaEvmContractAliases.isNativePrecompileAddress(invalidNativePrecompileAddress))
                 .willReturn(false);
