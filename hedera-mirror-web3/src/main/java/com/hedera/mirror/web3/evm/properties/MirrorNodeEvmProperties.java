@@ -181,7 +181,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return true;
+        return false;
     }
 
     @Override
