@@ -89,7 +89,6 @@ public class EquivalenceFeature extends AbstractFeature {
         Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
-
     @Then("I execute selfdestruct and set beneficiary to {string} address")
     public void selfDestructAndSetBeneficiary(String beneficiary) {
         var nodeType = acceptanceTestProperties.getNodeType();
