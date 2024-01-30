@@ -19,10 +19,11 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import java.util.Optional;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
+import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -70,11 +71,15 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @param sender          The sender's address (optional).
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
-    protected void validateGasEstimation(
-            String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
-        var contractCallRequestBody = buildContractCallRequest(data, solidityAddress, sender);
-        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequestBody);
-        int estimatedGas = msgSenderResponse.getResultAsNumber().intValue();
+    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .data(data)
+                .estimate(true)
+                .to(solidityAddress);
+        sender.ifPresent(contractCallRequest::from);
+
+        ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
+        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();
 
         assertWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
     }
@@ -95,36 +100,24 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @throws AssertionError If the response from the contract call does not contain "400 Bad Request from POST".
      */
     protected void assertContractCallReturnsBadRequest(String data, String contractAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
+        var contractCallRequest = ModelBuilder.contractCallRequest()
                 .data(data)
-                .to(contractAddress)
                 .estimate(true)
-                .build();
+                .to(contractAddress);
 
-        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
+        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
 
     protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress) {
-        var contractCallRequestBody = ContractCallRequest.builder()
+        var contractCallRequest = ModelBuilder.contractCallRequest()
                 .block(block)
                 .data(data)
-                .to(contractAddress)
-                .estimate(false)
-                .build();
+                .to(contractAddress);
 
-        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequestBody))
+        assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
-    }
-
-    private ContractCallRequest buildContractCallRequest(String data, String solidityAddress, Optional<String> sender) {
-        var requestBuilder =
-                ContractCallRequest.builder().data(data).to(solidityAddress).estimate(true);
-
-        sender.ifPresent(requestBuilder::from);
-
-        return requestBuilder.build();
     }
 }
