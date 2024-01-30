@@ -159,7 +159,7 @@ Update `EntityListener`
 Optional Filters
 
 - `limit`: The maximum amount of items to return.
-- `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `desc`.
+- `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `asc`.
 - `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
 
 #### NFT Allowances
@@ -219,7 +219,11 @@ Optional Filters
 
 ##### Approved For All NFT Allowances
 
-`/api/v1/accounts/{accountId}/allowances/nfts`
+This API accepts a path parameter that represents either the owner or spender, depending on a boolean flag provided as a query parameter called `owner`. When the `owner` value is true or omitted, the `accountId` path parameter should specify the ID of the owner, and the API will retrieve the allowances that the owner has granted to different spenders. Conversely, when the `owner` value is false, the `accountId` path parameter should indicate the ID of the spender who has an allowance, and the API will instead provide the allowances granted to the spender by different owners of those tokens.
+
+Following are example responses of the NFT allowance API:
+
+GET `/api/v1/accounts/0.0.1000/allowances/nfts?limit=3&owner=true`
 
 ```json
 {
@@ -237,10 +241,10 @@ Optional Filters
     {
       "approved_for_all": false,
       "owner": "0.0.1000",
-      "spender": "0.0.8488",
+      "spender": "0.0.8489",
       "token_id": "0.0.1034",
       "timestamp": {
-        "from": "1633466229.96874612",
+        "from": "1633466229.96874618",
         "to": null
       }
     },
@@ -250,21 +254,92 @@ Optional Filters
       "spender": "0.0.9857",
       "token_id": "0.0.1032",
       "timestamp": {
-        "from": "1633466229.96874612",
+        "from": "1633466229.96884615",
         "to": null
       }
     }
   ],
-  "links": {}
+  "links": {
+    "next": "/api/v1/accounts/0.0.1000/allowances/nfts?limit=3&order=asc&account.id=gte:9857&token.id=gt:0.0.1032"
+  }
 }
 ```
 
-Optional Filters
+GET `/api/v1/accounts/0.0.8488/allowances/nfts?limit=3&owner=false`
 
-- `limit`: The maximum amount of items to return.
-- `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `desc`.
-- `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
-- `token.id`: Filter by the token ID. `ne` operator is not supported.
+```json
+{
+  "allowances": [
+    {
+      "approved_for_all": true,
+      "owner": "0.0.1000",
+      "spender": "0.0.8488",
+      "token_id": "0.0.1033",
+      "timestamp": {
+        "from": "1633466229.96874612",
+        "to": null
+      }
+    },
+    {
+      "approved_for_all": true,
+      "owner": "0.0.1000",
+      "spender": "0.0.8488",
+      "token_id": "0.0.1034",
+      "timestamp": {
+        "from": "1633466229.96874618",
+        "to": null
+      }
+    },
+    {
+      "approved_for_all": false,
+      "owner": "0.0.1001",
+      "spender": "0.0.8488",
+      "token_id": "0.0.1099",
+      "timestamp": {
+        "from": "1633466229.96875612",
+        "to": null
+      }
+    }
+  ],
+  "links": {
+    "next": "/api/v1/accounts/0.0.8488/allowances/nfts?limit=3&order=asc&account.id=gte:1001&token.id=gt:0.0.1099"
+  }
+}
+```
+
+Query Parameters:
+
+- `account.id`: Filter by the spender account ID or owner account ID, depending on the owner flag. When the `owner` value is true or omitted, the `account.id` query parameter will specify the spender ID, and the API will filter the allowances by the spender. Conversely, when the `owner` value is false, the `account.id` query parameter should indicate the ID of the owner of the allowance, and the API will filter the allowances by the owner. `ne` operator is not supported. Only one occurrence is allowed.
+- `limit`: The maximum number of items to return. Defaults to 25 with a maximum of 100 allowed.
+- `order`: Order by `account.id` then `token.id`. Accepts `asc` or `desc` with a default of `asc`.
+- `owner`: Indicates whether the path parameter `accountId` is the owner or the spender ID. Accepts a boolean value of `true` or `false` with a default value set to `true`.
+- `token.id`: Filter by the token ID. `ne` operator is not supported. Only one occurrence is allowed.
+
+Pagination is important to implement because there are accounts that could have a large number of NFT allowances, making a non-paginated response impractical. This requires multi-column pagination, including owner, spender, and token IDs.
+
+**Ordering**
+
+The order is governed by a combination of the account ID and the token ID values, with the account ID being the parent column. The token ID value governs its order within the given account ID.
+The default order for this API is ascending.
+
+**Filtering**
+
+When filtering there are some restrictions enforced to ensure correctness and scalability.
+
+The table below defines the restrictions and support for the endpoint.
+
+| Query Param | Comparison Operator | Support | Description                                                                                   | Example                         |
+| ----------- | ------------------- | ------- | --------------------------------------------------------------------------------------------- | ------------------------------- |
+| account.id  | eq                  | Y       | Single occurrence only.                                                                       | ?account.id=X                   |
+|             | ne                  | N       |                                                                                               |                                 |
+|             | lt(e)               | Y       | Single occurrence only.                                                                       | ?account.id=lte:X               |
+|             | gt(e)               | Y       | Single occurrence only.                                                                       | ?account.id=gte:X               |
+| token.id    | eq                  | Y       | Single occurrence only. Requires the presence of an `account.id` query parameter              | ?account.id=X&token.id=eq:Y     |
+|             | ne                  | N       |                                                                                               |                                 |
+|             | lt(e)               | Y       | Single occurrence only. Requires the presence of a `lte` or `eq` `account.id` query parameter | ?account.id=lte:X&token.id=lt:Y |
+|             | gt(e)               | Y       | Single occurrence only. Requires the presence of a `gte` or `eq` `account.id` query parameter | ?account.id=gte:X&token.id=gt:Y |
+
+Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
 Note this API is optional.
 
