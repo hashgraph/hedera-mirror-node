@@ -18,15 +18,15 @@ import _ from 'lodash';
 import base32 from './base32';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
+import {filterKeys} from './constants';
 import EntityId from './entityId';
 import * as utils from './utils';
+import {opsMap} from './utils';
 import {EntityService} from './service';
 import transactions from './transactions';
 import {NotFoundError} from './errors';
 import {Entity} from './model';
 import balances from './balances';
-import {opsMap} from './utils';
-import {filterKeys} from './constants';
 
 const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
@@ -244,6 +244,8 @@ const getEntityBalanceQuery = (
   return {query, params};
 };
 
+const emptyTransactionsPromise = Promise.resolve({transactions: [], links: {next: null}});
+
 /**
  * Creates account query and params from filters with limit and order
  *
@@ -379,7 +381,7 @@ const getAccounts = async (req, res) => {
 };
 
 /**
- * Handler function for /account/:idOrAliasOrEvmAddress API.
+ * Handler function for /accounts/:idOrAliasOrEvmAddress API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @return {Promise}
@@ -389,19 +391,23 @@ const getOneAccount = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleAccountParameters);
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
-  const transactionsFilter = _.findLast(filters, {key: filterKeys.TRANSACTIONS});
-  const parsedQueryParams = req.query;
-  const timestampFilters = filters.filter((filter) => filter.key === filterKeys.TIMESTAMP);
-  const [tsRange, eqValues, neValues] = utils.checkTimestampRange(timestampFilters, false, true, true, false);
-  const [transactionTsQuery, transactionTsParams] = utils.buildTimestampQuery(
-    tsRange,
-    't.consensus_timestamp',
-    neValues,
-    eqValues
-  );
+  const timestampFilters = [];
+  let includeTransactions = true;
+  for (const filter of filters) {
+    switch (filter.key) {
+      case filterKeys.TIMESTAMP:
+        timestampFilters.push(filter);
+        break;
+      case filterKeys.TRANSACTIONS:
+        includeTransactions = filter.value;
+        break;
+    }
+  }
+  const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false, false);
+  if (timestampRange.range?.isEmpty()) {
+    throw new NotFoundError('Timestamp range is empty');
+  }
 
-  const resultTypeQuery = utils.parseResultParams(req);
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   const accountIdParamIndex = 1;
   let paramCount = accountIdParamIndex;
   const tokenBalanceQuery = {
@@ -412,21 +418,17 @@ const getOneAccount = async (req, res) => {
   const entityAccountQuery = {query: `e.id = $${accountIdParamIndex}`, params: [encodedId]};
 
   const accountBalanceQuery = {query: '', params: []};
-  if (transactionTsQuery) {
+  if (timestampFilters.length > 0) {
     const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
-      tsRange,
       Entity.getFullName(Entity.TIMESTAMP_RANGE),
-      neValues,
-      eqValues
+      timestampRange
     );
     entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
     entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
 
     const [balanceSnapshotTsQuery, balanceSnapshotTsParams] = utils.buildTimestampQuery(
-      tsRange,
       'consensus_timestamp',
-      neValues,
-      eqValues,
+      timestampRange,
       false
     );
 
@@ -475,45 +477,16 @@ const getOneAccount = async (req, res) => {
   );
 
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
-
-  // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
-  const creditDebitQuery = ''; // type=credit|debit is not supported
-  const accountQuery = 'ctl.entity_id = ?';
-  const accountParams = [encodedId];
+  // Add the account id path parameter as a query filter for the transactions handler
+  filters.push({key: filterKeys.ACCOUNT_ID, operator: opsMap.eq, value: encodedId});
+  const transactionsPromise = includeTransactions
+    ? transactions.doGetTransactions(filters, req, timestampRange)
+    : emptyTransactionsPromise;
 
-  let transactionsPromise;
+  const [entityResults, transactionResults] = await Promise.all([entityPromise, transactionsPromise]);
 
-  // when not specified or set as true
-  const includeTransactions = !transactionsFilter || transactionsFilter.value;
-  if (includeTransactions) {
-    const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
-
-    const innerQuery = transactions.getTransactionsInnerQuery(
-      accountQuery,
-      transactionTsQuery,
-      resultTypeQuery,
-      query,
-      creditDebitQuery,
-      transactionTypeQuery,
-      order
-    );
-
-    const innerParams = utils.mergeParams(accountParams, transactionTsParams, params);
-    const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
-    const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
-
-    // Execute query & get a promise
-    transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
-  } else {
-    // Promise that returns empty result
-    transactionsPromise = Promise.resolve({rows: []});
-  }
-
-  // After all promises (for all of the above queries) have been resolved...
-  const [entityResults, transactionsResults] = await Promise.all([entityPromise, transactionsPromise]);
-  // Process the results of entities query
   if (entityResults.rows.length === 0) {
     throw new NotFoundError();
   }
@@ -522,35 +495,17 @@ const getOneAccount = async (req, res) => {
     throw new NotFoundError('Error: Could not get entity information');
   }
 
-  const ret = processRow(entityResults.rows[0]);
-
-  if (utils.isTestEnv()) {
-    ret.entitySqlQuery = entityResults.sqlQuery;
-  }
-
-  // Process the results of transaction query
-  const transferList = await transactions.createTransferLists(transactionsResults.rows);
-  ret.transactions = transferList.transactions;
-  const {anchorSecNs} = transferList;
-
-  if (utils.isTestEnv()) {
-    ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-  }
-
-  // Pagination links
-  ret.links = {
-    next: utils.getPaginationLink(
-      req,
-      ret.transactions.length !== limit,
-      {
-        [constants.filterKeys.TIMESTAMP]: anchorSecNs,
-      },
-      order
-    ),
+  const ret = {
+    ...processRow(entityResults.rows[0]),
+    ...transactionResults,
   };
 
   logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
   res.locals[constants.responseDataLabel] = ret;
+
+  if (utils.isTestEnv()) {
+    ret.entitySqlQuery = entityResults.sqlQuery;
+  }
 };
 
 const acceptedAccountsParameters = new Set([

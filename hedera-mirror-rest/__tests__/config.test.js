@@ -194,16 +194,21 @@ describe('Override query config', () => {
 
   test('success', async () => {
     const queryConfig = {
+      bindTimestampRange: true,
       maxRepeatedQueryParameters: 2,
       maxTimestampRange: '1d',
       maxTransactionConsensusTimestampRange: '10m',
+      maxTransactionsTimestampRange: '20d',
     };
     const expected = {
+      bindTimestampRange: true,
       maxRepeatedQueryParameters: 2,
       maxTimestampRange: '1d',
       maxTimestampRangeNs: 86400000000000n,
       maxTransactionConsensusTimestampRange: '10m',
       maxTransactionConsensusTimestampRangeNs: 600000000000n,
+      maxTransactionsTimestampRange: '20d',
+      maxTransactionsTimestampRangeNs: 1728000000000000n,
       strictTimestampParam: true,
       topicMessageLookup: false,
     };
@@ -215,6 +220,7 @@ describe('Override query config', () => {
     name                                               | queryConfig
     ${'invalid maxTimestampRange'}                     | ${{maxTimestampRange: '1q'}}
     ${'invalid maxTransactionConsensusTimestampRange'} | ${{maxTransactionConsensusTimestampRange: '1z'}}
+    ${'invalid maxTransactionsTimestampRange'}         | ${{maxTransactionsTimestampRange: '1z'}}
   `('$name', async ({queryConfig}) => {
     await expect(loadCustomConfig(customConfig(queryConfig))).rejects.toThrowErrorMatchingSnapshot();
   });

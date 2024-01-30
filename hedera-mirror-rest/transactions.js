@@ -15,6 +15,7 @@
  */
 
 import _ from 'lodash';
+import {Range} from 'pg-range';
 
 import config from './config';
 import * as constants from './constants';
@@ -37,7 +38,12 @@ import {
 
 import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
 
-const {maxTransactionConsensusTimestampRangeNs} = config.query;
+const {
+  query: {maxTransactionConsensusTimestampRangeNs},
+  response: {
+    limit: {default: defaultResponseLimit},
+  },
+} = config;
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
@@ -59,17 +65,14 @@ const transactionFields = [
   Transaction.VALID_START_NS,
   Transaction.INDEX,
 ];
+
 const transactionFullFields = transactionFields.map((f) => Transaction.getFullName(f));
-// consensus_timestamp in transfer_list is a coalesce of multiple consensus timestamp columns
-const transferListFullFields = transactionFields
-  .filter((f) => f !== Transaction.CONSENSUS_TIMESTAMP)
-  .map((f) => `t.${f}`);
 
 const cryptoTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT},
-    '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)},
+    '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.ENTITY_ID},
     '${CryptoTransfer.IS_APPROVAL}', ${CryptoTransfer.IS_APPROVAL}
-  ) order by ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}, ${CryptoTransfer.AMOUNT})`;
+  ) order by ${CryptoTransfer.ENTITY_ID}, ${CryptoTransfer.AMOUNT})`;
 
 const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
     '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.ACCOUNT_ID},
@@ -84,89 +87,6 @@ const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
     '${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS}', ${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS},
     '${AssessedCustomFee.TOKEN_ID}', ${AssessedCustomFee.TOKEN_ID}
   ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT})`;
-
-/**
- * Gets the select clause with crypto transfers, token transfers, and nft transfers
- *
- * @param innerQuery
- * @param order
- * @return {string}
- */
-const getSelectClauseWithTransfers = (innerQuery, order = 'desc') => {
-  const transactionTimeStampCte = (modifyingQuery) => {
-    let timestampFilter = '';
-    let timestampFilterJoin = '';
-    let limitQuery = 'limit $1';
-    let fromTables = `from ${Transaction.tableName} ${Transaction.tableAlias}`;
-
-    // populate pre-clause queries where a timestamp filter is applied
-    if (!_.isUndefined(modifyingQuery)) {
-      fromTables = `from timestamp_range tr, ${Transaction.tableName} ${Transaction.tableAlias}`;
-      timestampFilter = `timestampFilter as (${modifyingQuery}),
-      timestamp_range as (select min(consensus_timestamp) as min, max(consensus_timestamp) as max from timestampFilter),`;
-      timestampFilterJoin = `join timestampFilter tf on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} =
-        tf.consensus_timestamp
-        WHERE ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} >= tr.min
-        AND ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} <= tr.max`;
-      limitQuery = '';
-    }
-
-    const tquery = `select ${transactionFullFields}
-                    ${fromTables}
-                    ${timestampFilterJoin}
-                    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
-                    ${limitQuery}`;
-    return `${timestampFilter}
-      tlist as (${tquery})`;
-  };
-
-  // aggregate crypto transfers, token transfers, and nft transfers
-  let additionalFromTable = '';
-  let cryptoTransferListCteWhereClause = '';
-  let tokenTransferListCteWhereClause = '';
-  if (!_.isUndefined(innerQuery)) {
-    additionalFromTable = 'timestamp_range tr, ';
-    cryptoTransferListCteWhereClause = `WHERE ${CryptoTransfer.getFullName(
-      CryptoTransfer.CONSENSUS_TIMESTAMP
-    )} >= tr.min
-      AND ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} <= tr.max`;
-    tokenTransferListCteWhereClause = `WHERE ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
-      AND ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} <= tr.max`;
-  }
-
-  const cryptoTransferListCte = `c_list as (
-      select ${cryptoTransferJsonAgg} as ctr_list, ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
-      from ${additionalFromTable} ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
-      join tlist on ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
-      and ${CryptoTransfer.getFullName(CryptoTransfer.PAYER_ACCOUNT_ID)} = tlist.payer_account_id
-      ${cryptoTransferListCteWhereClause} group by ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
-  )`;
-
-  const tokenTransferListCte = `t_list as (
-    select ${tokenTransferJsonAgg} as ttr_list, ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
-    from ${additionalFromTable} ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
-    join tlist on ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
-    and ${TokenTransfer.getFullName(TokenTransfer.PAYER_ACCOUNT_ID)} = tlist.payer_account_id
-    ${tokenTransferListCteWhereClause} group by ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
-  )`;
-
-  const transfersListCte = `transfer_list as (
-    select coalesce(t.consensus_timestamp, ctrl.consensus_timestamp, ttrl.consensus_timestamp) AS consensus_timestamp,
-      ctrl.ctr_list,
-      ttrl.ttr_list,
-      ${transferListFullFields}
-    from tlist t
-    full outer join c_list ctrl on t.consensus_timestamp = ctrl.consensus_timestamp
-    full outer join t_list ttrl on t.consensus_timestamp = ttrl.consensus_timestamp
-  )`;
-  const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte, transfersListCte];
-  const fields = [...transactionFullFields, `t.ctr_list AS crypto_transfer_list`, `t.ttr_list AS token_transfer_list`];
-
-  return `with ${ctes.join(',\n')}
-    SELECT
-    ${fields.join(',\n')}
-  `;
-};
 
 /**
  * Creates an assessed custom fee list from aggregated array of JSON objects in the query result
@@ -247,14 +167,14 @@ const createNftTransferList = (nftTransferList) => {
 };
 
 /**
- * Create transferlists from the output of SQL queries.
+ * Format the output of the SQL query as an array of transaction objects per the view model.
  *
- * @param {Array of objects} rows Array of rows returned as a result of an SQL query
- * @return {{anchorSecNs: (String|number), transactions: {}}}
+ * @param rows Array of rows returned as a result of the SQL query
+ * @return An array of transaction objects
  */
-const createTransferLists = async (rows) => {
+const formatTransactionRows = async (rows) => {
   const stakingRewardMap = await createStakingRewardTransferList(rows);
-  const transactions = rows.map((row) => {
+  return rows.map((row) => {
     const validStartTimestamp = row.valid_start_ns;
     const payerAccountId = EntityId.parse(row.payer_account_id).toString();
     return {
@@ -281,13 +201,6 @@ const createTransferLists = async (rows) => {
       valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
     };
   });
-
-  const anchorSecNs = transactions.length > 0 ? transactions[transactions.length - 1].consensus_timestamp : 0;
-
-  return {
-    transactions,
-    anchorSecNs,
-  };
 };
 
 /**
@@ -364,21 +277,64 @@ const convertStakingRewardTransfers = (rows) => {
 };
 
 /**
- * Transactions queries are organized as follows: First there's an inner query that selects the
- * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
- * extract all relevant information for those transactions.
- * This function returns the outer query base on the consensus_timestamps list returned by the inner query.
- * Also see: getTransactionsInnerQuery function
+ * Get the first transaction's consensus timestamp from the database. Note the db query runs once and the timestamp is
+ * cached for subsequent calls.
  *
- * @param {String} innerQuery SQL query that provides a list of unique transactions that match the query criteria
- * @param {String} order Sorting order
- * @return {String} outerQuery Fully formed SQL query
+ * @return {Promise<bigint>} the first transaction's consensus timestamp
  */
-const getTransactionsOuterQuery = (innerQuery, order) => {
-  return `
-    ${getSelectClauseWithTransfers(innerQuery, order)}
-    FROM transfer_list t
-    ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}`;
+const getFirstTransactionTimestamp = (() => {
+  let timestamp;
+
+  const func = async () => {
+    if (timestamp === undefined) {
+      const {rows} = await pool.queryQuietly(`select consensus_timestamp
+        from transaction
+        order by consensus_timestamp
+        limit 1`);
+      if (rows.length !== 1) {
+        return 0n; // fallback to 0
+      }
+
+      timestamp = rows[0].consensus_timestamp;
+      logger.info(`First transaction's consensus timestamp is ${timestamp}`);
+    }
+
+    return timestamp;
+  };
+
+  if (utils.isTestEnv()) {
+    func.reset = () => (timestamp = undefined);
+  }
+
+  return func;
+})();
+
+/**
+ * If enabled in config, ensure the returned timestamp range is fully bound; contains both a begin
+ * and end timestamp value. The provided Range is not modified. If changes are made a copy is returned.
+ *
+ * @param {Range} range timestamp range, typically based on query parameters. Note the bounds should be '[]'
+ * @param {string} order the order in the http request
+ * @return {Range} fully bound timestamp range
+ */
+const bindTimestampRange = async (range, order) => {
+  const {bindTimestampRange, maxTransactionsTimestampRangeNs} = config.query;
+  if (!bindTimestampRange) {
+    return range;
+  }
+
+  const boundRange = Range(range?.begin ?? (await getFirstTransactionTimestamp()), range?.end ?? utils.nowInNs(), '[]');
+  if (boundRange.end - boundRange.begin + 1n <= maxTransactionsTimestampRangeNs) {
+    return boundRange;
+  }
+
+  if (order === constants.orderFilterValues.DESC) {
+    boundRange.begin = boundRange.end - maxTransactionsTimestampRangeNs + 1n;
+  } else {
+    boundRange.end = boundRange.begin + maxTransactionsTimestampRangeNs - 1n;
+  }
+
+  return boundRange;
 };
 
 /**
@@ -388,24 +344,8 @@ const getTransactionsOuterQuery = (innerQuery, order) => {
  * @return {string} The where clause built from the query conditions
  */
 const buildWhereClause = function (...conditions) {
-  const clause = conditions.filter((q) => q !== '').join(' AND ');
-  return clause === '' ? '' : `WHERE ${clause}`;
-};
-
-/**
- * Convert parameters to the named format.
- *
- * @param {String} query - the mysql query
- * @param {String} prefix - the prefix for the named parameters
- * @return {String} - The converted query
- */
-const convertToNamedQuery = function (query, prefix) {
-  let index = 0;
-  return query.replace(/\?/g, () => {
-    const namedParam = `?${prefix}${index}`;
-    index += 1;
-    return namedParam;
-  });
+  const clause = conditions.filter((q) => q !== '').join(' and ');
+  return clause === '' ? '' : `where ${clause}`;
 };
 
 /**
@@ -413,241 +353,361 @@ const convertToNamedQuery = function (query, prefix) {
  *
  * @param {string} tableName - Name of the transfers table to query
  * @param {string} tableAlias - Alias to reference the table by
- * @param namedTsQuery - Transaction table timestamp query with named parameters
- * @param {string} timestampColumn - Name of the timestamp column for the table
+ * @param timestampQuery - Transaction table timestamp query with named parameters
  * @param resultTypeQuery - Transaction result query
  * @param transactionTypeQuery - Transaction type query
- * @param namedAccountQuery - Account query with named parameters
- * @param namedCreditDebitQuery - Credit/debit query
+ * @param accountQuery - Account query with named parameters
+ * @param creditDebitQuery - Credit/debit query
  * @param order - Sorting order
- * @param namedLimitQuery - Limit query with named parameters
- * @return {string} - The distinct timestamp query for the given table name
+ * @param limitQuery - Limit query with named parameters
+ * @return {string} - The distinct timestamp query for the given table
  */
-const getTransferDistinctTimestampsQuery = function (
+const getTransferDistinctTimestampsQuery = (
   tableName,
   tableAlias,
-  namedTsQuery,
-  timestampColumn,
+  timestampQuery,
   resultTypeQuery,
   transactionTypeQuery,
-  namedAccountQuery,
-  namedCreditDebitQuery,
+  accountQuery,
+  creditDebitQuery,
   order,
-  namedLimitQuery
-) {
-  const namedTransferTsQuery = namedTsQuery.replace(/t\.consensus_timestamp/g, `${tableAlias}.${timestampColumn}`);
+  limitQuery
+) => {
+  const fullTimestampColumn = `${tableAlias}.consensus_timestamp`;
+  const fullPayerAccountIdColumn = `${tableAlias}.payer_account_id`;
+  const transferTimestampQuery = timestampQuery.replace(/t\.consensus_timestamp/g, `${fullTimestampColumn}`);
   const joinClause =
     (resultTypeQuery || transactionTypeQuery) &&
-    `join ${Transaction.tableName} as ${
-      Transaction.tableAlias
-    } on ${tableAlias}.${timestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} and
-      ${tableAlias}.${Transaction.PAYER_ACCOUNT_ID} = ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}`;
+    `join ${Transaction.tableName} as ${Transaction.tableAlias}
+      on ${fullTimestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} and
+        ${fullPayerAccountIdColumn} = ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}`;
   const whereClause = buildWhereClause(
-    namedAccountQuery,
-    namedTransferTsQuery,
+    accountQuery,
+    transferTimestampQuery,
     resultTypeQuery,
     transactionTypeQuery,
-    namedCreditDebitQuery
+    creditDebitQuery
   );
 
   return `
-    SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
-    FROM ${tableName} AS ${tableAlias}
+    select
+      distinct ${fullTimestampColumn} as consensus_timestamp,
+      ${fullPayerAccountIdColumn} as payer_account_id
+    from ${tableName} as ${tableAlias}
     ${joinClause}
     ${whereClause}
-    ORDER BY ${tableAlias}.consensus_timestamp ${order}
-    ${namedLimitQuery}`;
+    order by ${fullTimestampColumn} ${order}
+    ${limitQuery}`;
 };
 
 // the condition to exclude synthetic transactions attached to a user submitted transaction
 const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(Transaction.NONCE)} = 0 or
   ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null`;
 
+const getQueryWithEqualValues = (column, params, values) => {
+  if (values.length === 0) {
+    return '';
+  }
+
+  return values.length === 1 ? `${column} = $${params.push(values[0])}` : `${column} = any($${params.push(values)})`;
+};
+
+const extractSqlFromTransactionsRequest = (filters) => {
+  const accountConditions = [];
+  const accountIdEqValues = [];
+  let creditDebitQuery = '';
+  let lastCreditDebitValue = null;
+  let limit = defaultResponseLimit;
+  let order = constants.orderFilterValues.DESC;
+  const params = [];
+  let resultType = null;
+  let resultTypeQuery = '';
+  const transactionTypes = [];
+
+  for (const filter of filters) {
+    const {key, operator, value} = filter;
+    switch (key) {
+      case constants.filterKeys.ACCOUNT_ID:
+        if (operator === utils.opsMap.eq) {
+          accountIdEqValues.push(value);
+        } else {
+          accountConditions.push(`ctl.entity_id${operator}$${params.push(value)}`);
+        }
+        break;
+      case constants.filterKeys.CREDIT_TYPE:
+        if (lastCreditDebitValue !== null && lastCreditDebitValue !== value) {
+          return null;
+        }
+        lastCreditDebitValue = value;
+        break;
+      case constants.filterKeys.LIMIT:
+        limit = value;
+        break;
+      case constants.filterKeys.ORDER:
+        order = value;
+        break;
+      case constants.filterKeys.RESULT:
+        resultType = value;
+        break;
+      case constants.filterKeys.TRANSACTION_TYPE:
+        transactionTypes.push(TransactionType.getProtoId(value));
+        break;
+    }
+  }
+
+  accountConditions.push(getQueryWithEqualValues('ctl.entity_id', params, accountIdEqValues));
+  const accountQuery = accountConditions.filter(Boolean).join(' and ');
+
+  if (lastCreditDebitValue) {
+    const operator = lastCreditDebitValue.toLowerCase() === constants.cryptoTransferType.CREDIT ? '>' : '<';
+    creditDebitQuery = `ctl.amount ${operator} 0`;
+  }
+
+  if (resultType) {
+    const operator = resultType === constants.transactionResultFilter.SUCCESS ? '=' : '<>';
+    resultTypeQuery = `t.result ${operator} $${params.push(utils.resultSuccess)}`;
+  }
+
+  const transactionTypeQuery = getQueryWithEqualValues('type', params, transactionTypes);
+  const limitQuery = `limit $${params.push(limit)}`;
+
+  return {
+    accountQuery,
+    creditDebitQuery,
+    limit,
+    limitQuery,
+    order,
+    params,
+    resultTypeQuery,
+    transactionTypeQuery,
+  };
+};
+
 /**
- * Transactions queries are organized as follows: First there's an inner query that selects the
- * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
- * extract all relevant information for those transactions.
- * This function forms the inner query base based on all the query criteria specified in the REST URL
- * It selects a list of unique transactions (consensus_timestamps).
- * Also see: getTransactionsOuterQuery function
+ * @param filters The filters from the http request
+ * @param timestampRange the timestamp range object
+ * @return {Promise} the Promise for obtaining the results of the query
+ */
+const getTransactionTimestamps = async (filters, timestampRange) => {
+  if (timestampRange.eqValues.length > 1 || timestampRange.range?.isEmpty()) {
+    return {rows: []};
+  }
+
+  const result = extractSqlFromTransactionsRequest(filters);
+  if (result === null) {
+    return {rows: []};
+  }
+  const {accountQuery, creditDebitQuery, limit, limitQuery, order, resultTypeQuery, transactionTypeQuery, params} =
+    result;
+
+  if (timestampRange.eqValues.length === 0) {
+    timestampRange.range = await bindTimestampRange(timestampRange.range, order);
+  }
+
+  let [timestampQuery, timestampParams] = utils.buildTimestampQuery('t.consensus_timestamp', timestampRange);
+  timestampQuery = utils.convertMySqlStyleQueryToPostgres(timestampQuery, params.length + 1);
+  params.push(...timestampParams);
+
+  const query = getTransactionTimestampsQuery(
+    accountQuery,
+    timestampQuery,
+    resultTypeQuery,
+    limitQuery,
+    creditDebitQuery,
+    transactionTypeQuery,
+    order
+  );
+  const {rows} = await pool.queryQuietly(query, params);
+
+  return {limit, order, rows};
+};
+
+/**
+ *
  *
  * @param {String} accountQuery SQL query that filters based on the account ids
- * @param {String} tsQuery SQL query that filters based on the timestamps for transaction table
+ * @param {String} timestampQuery SQL query that filters based on the timestamps for transaction table
  * @param {String} resultTypeQuery SQL query that filters based on the result types
  * @param {String} limitQuery SQL query that limits the number of unique transactions returned
  * @param {String} creditDebitQuery SQL query that filters for credit/debit transactions
  * @param {String} transactionTypeQuery SQL query that filters by transaction type
  * @param {String} order Sorting order
- * @return {String} innerQuery SQL query that filters transactions based on various types of queries
+ * @return {String} query to retrieve relevant timestamp and payer ID information
  */
-const getTransactionsInnerQuery = function (
+const getTransactionTimestampsQuery = (
   accountQuery,
-  tsQuery,
+  timestampQuery,
   resultTypeQuery,
   limitQuery,
   creditDebitQuery,
   transactionTypeQuery,
   order
-) {
-  // convert the mysql style '?' placeholder to the named parameter format, later the same named parameter is converted
-  // to the same positional index, thus the caller only has to pass the value once for the same column
-  const namedAccountQuery = convertToNamedQuery(accountQuery, 'acct');
-  const namedTsQuery = convertToNamedQuery(tsQuery, 'ts');
-  const namedLimitQuery = convertToNamedQuery(limitQuery, 'limit');
-  const namedCreditDebitQuery = convertToNamedQuery(creditDebitQuery, 'cd');
-
-  const transactionAccountQuery = namedAccountQuery
-    ? `${namedAccountQuery.replace(/ctl\.entity_id/g, 't.payer_account_id')}
+) => {
+  const transactionAccountQuery = accountQuery
+    ? `${accountQuery.replace(/ctl\.entity_id/g, 't.payer_account_id')}
       and (${transactionByPayerExcludeSyntheticCondition})`
     : '';
   const transactionWhereClause = buildWhereClause(
     transactionAccountQuery,
-    namedTsQuery,
+    timestampQuery,
     resultTypeQuery,
     transactionTypeQuery
   );
-  const transactionOnlyLimitQuery = _.isNil(namedLimitQuery) ? '' : namedLimitQuery;
-  const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
-    ? undefined
-    : `select ${Transaction.CONSENSUS_TIMESTAMP}
+  const transactionOnlyQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}
     from ${Transaction.tableName} as ${Transaction.tableAlias}
     ${transactionWhereClause}
     order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
-    ${transactionOnlyLimitQuery}`;
+    ${limitQuery}`;
 
-  if (creditDebitQuery || namedAccountQuery) {
-    const ctlQuery = getTransferDistinctTimestampsQuery(
+  if (creditDebitQuery || accountQuery) {
+    const cryptoTransferQuery = getTransferDistinctTimestampsQuery(
       CryptoTransfer.tableName,
       'ctl',
-      namedTsQuery,
-      CryptoTransfer.CONSENSUS_TIMESTAMP,
+      timestampQuery,
       resultTypeQuery,
       transactionTypeQuery,
-      namedAccountQuery,
-      namedCreditDebitQuery,
+      accountQuery,
+      creditDebitQuery,
       order,
-      namedLimitQuery
+      limitQuery
     );
 
-    const namedTtlAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id');
-    const namedTtlCreditDebitQuery = namedCreditDebitQuery.replace(/ctl\.amount/g, 'ttl.amount');
-    const ttlQuery = getTransferDistinctTimestampsQuery(
+    const tokenTransferQuery = getTransferDistinctTimestampsQuery(
       TokenTransfer.tableName,
       'ttl',
-      namedTsQuery,
-      TokenTransfer.CONSENSUS_TIMESTAMP,
+      timestampQuery,
       resultTypeQuery,
       transactionTypeQuery,
-      namedTtlAccountQuery,
-      namedTtlCreditDebitQuery,
+      accountQuery.replace(/ctl\.entity_id/g, 'ttl.account_id'),
+      creditDebitQuery.replace(/ctl\.amount/g, 'ttl.amount'),
       order,
-      namedLimitQuery
+      limitQuery
     );
 
     if (creditDebitQuery) {
       // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
       // transactions that only have a crypto_transfer or a token_transfer
       return `
-        SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
-        FROM (${ctlQuery}) AS ctl
-        FULL OUTER JOIN (${ttlQuery}) as ttl
-        ON ctl.consensus_timestamp = ttl.consensus_timestamp
-        ORDER BY consensus_timestamp ${order}
-        ${namedLimitQuery}`;
+        select
+          coalesce(ctl.consensus_timestamp, ttl.consensus_timestamp) as consensus_timestamp,
+          coalesce(ctl.payer_account_id, ttl.payer_account_id) as payer_account_id
+        from (${cryptoTransferQuery}) as ctl
+        full outer join (${tokenTransferQuery}) as ttl
+          on ctl.consensus_timestamp = ttl.consensus_timestamp
+        order by consensus_timestamp ${order}
+        ${limitQuery}`;
     }
 
     // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id,
     // and token_transfer.account_id, a full outer join between the four tables is needed to get rows that may only exist in one.
     return `
-      SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
-      FROM (${transactionOnlyQuery}) AS ${Transaction.tableAlias}
-      FULL OUTER JOIN (${ctlQuery}) AS ctl
-      ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
-      FULL OUTER JOIN (${ttlQuery}) AS ttl
-      ON coalesce(${Transaction.getFullName(
-        Transaction.CONSENSUS_TIMESTAMP
-      )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      select
+        coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) as consensus_timestamp,
+        coalesce(t.payer_account_id, ctl.payer_account_id, ttl.payer_account_id) as payer_account_id
+      from (${transactionOnlyQuery}) as t
+      full outer join (${cryptoTransferQuery}) as ctl
+        on t.consensus_timestamp = ctl.consensus_timestamp
+      full outer join (${tokenTransferQuery}) as ttl
+        on coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
       order by consensus_timestamp ${order}
-      ${namedLimitQuery}`;
+      ${limitQuery}`;
   }
 
   return transactionOnlyQuery;
 };
 
-const reqToSql = function (req) {
-  // Parse the filter parameters for account-numbers, timestamp, credit/debit, and pagination (limit)
-  const parsedQueryParams = req.query;
-  const sqlParams = [];
-  let [accountQuery, accountParams] = utils.parseAccountIdQueryParam(parsedQueryParams, 'ctl.entity_id');
-  accountQuery = utils.convertMySqlStyleQueryToPostgres(accountQuery, sqlParams.length + 1);
-  sqlParams.push(...accountParams);
-  let [tsQuery, tsParams] = utils.parseTimestampQueryParam(
-    parsedQueryParams,
-    Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)
-  );
-  tsQuery = utils.convertMySqlStyleQueryToPostgres(tsQuery, sqlParams.length + 1);
-  sqlParams.push(...tsParams);
-  let [creditDebitQuery, creditDebitParams] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
-  creditDebitQuery = utils.convertMySqlStyleQueryToPostgres(creditDebitQuery, sqlParams.length + 1);
-  sqlParams.push(...creditDebitParams);
-  const resultTypeQuery = utils.parseResultParams(req, Transaction.getFullName(Transaction.RESULT));
-  const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
-  const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-  sqlParams.push(...params);
+/**
+ * Get the transaction details given the payer account ids and consensus timestamps
+ *
+ * @param {{Object}[]} payerAndTimestamps The transaction payer and consensus timestamp pairs
+ * @param {String} order Sorting order
+ * @return {Promise} Promise returning the transaction details
+ */
+const getTransactionsDetails = async (payerAndTimestamps, order) => {
+  if (payerAndTimestamps.length === 0) {
+    return {rows: []};
+  }
 
-  const innerQuery = getTransactionsInnerQuery(
-    accountQuery,
-    tsQuery,
-    resultTypeQuery,
-    query,
-    creditDebitQuery,
-    transactionTypeQuery,
-    order
-  );
-  const sqlQuery = getTransactionsOuterQuery(innerQuery, order);
+  const payerAccountIds = new Set();
+  const timestamps = [];
+  payerAndTimestamps.forEach((row) => {
+    timestamps.push(row.consensus_timestamp);
+    payerAccountIds.add(row.payer_account_id);
+  });
 
-  return {
-    limit,
-    query: utils.convertMySqlStyleQueryToPostgres(sqlQuery, sqlParams.length),
-    order,
-    params: sqlParams,
-  };
+  const params = [];
+  const payerAccountIdsCondition = getQueryWithEqualValues('payer_account_id', params, Array.from(payerAccountIds));
+  const timestampsCondition = getQueryWithEqualValues('consensus_timestamp', params, timestamps);
+  const outerPayerAccountIdsCondition = 't.' + payerAccountIdsCondition;
+  const outerTimestampsCondition = 't.' + timestampsCondition;
+
+  const query = `with c_list as (
+      select
+        consensus_timestamp,
+        payer_account_id,
+        ${cryptoTransferJsonAgg} as crypto_transfer_list
+      from crypto_transfer
+      where ${payerAccountIdsCondition} and ${timestampsCondition}
+      group by consensus_timestamp, payer_account_id
+    ), t_list as (
+      select
+        consensus_timestamp,
+        payer_account_id,
+        ${tokenTransferJsonAgg} as token_transfer_list
+      from token_transfer
+      where ${payerAccountIdsCondition} and ${timestampsCondition}
+      group by consensus_timestamp, payer_account_id
+    )
+    select
+      ${transactionFullFields},
+      (select crypto_transfer_list from c_list where consensus_timestamp = t.consensus_timestamp and payer_account_id = t.payer_account_id),
+      (select token_transfer_list from t_list where consensus_timestamp = t.consensus_timestamp and payer_account_id = t.payer_account_id)
+    from transaction as t
+    where ${outerPayerAccountIdsCondition} and ${outerTimestampsCondition}
+    order by t.consensus_timestamp ${order}`;
+
+  return pool.queryQuietly(query, params);
 };
 
 /**
  * Handler function for /transactions API.
  * @param {Request} req HTTP request object
- * @return {Promise} Promise for PostgreSQL query
+ * @param {Response} res HTTP response object
+ * @return {Promise}
  */
 const getTransactions = async (req, res) => {
-  // Validate query parameters first
-  utils.validateReq(req, acceptedTransactionParameters);
-  const query = reqToSql(req);
+  const filters = utils.buildAndValidateFilters(req.query, acceptedTransactionParameters);
+  const timestampFilters = filters.filter((filter) => filter.key === constants.filterKeys.TIMESTAMP);
+  const timestampRange = utils.parseTimestampFilters(timestampFilters, false, true, true, false, false);
 
-  // Execute query
-  const {rows, sqlQuery} = await pool.queryQuietly(query.query, query.params);
-  const transferList = await createTransferLists(rows);
-  const ret = {
-    transactions: transferList.transactions,
+  res.locals[constants.responseDataLabel] = await doGetTransactions(filters, req, timestampRange);
+};
+
+/**
+ * Get transactions per the http request.
+ *
+ * @param {Object[]} filters The filters extracted from the http request
+ * @param {Request} req The http request
+ * @param timestampRange The timestamp range parsed from the http request
+ * @returns {Promise<{links: {next: String}, transactions: *}>}
+ */
+const doGetTransactions = async (filters, req, timestampRange) => {
+  const {limit, order, rows: payAndTimestamps} = await getTransactionTimestamps(filters, timestampRange);
+  const {rows} = await getTransactionsDetails(payAndTimestamps, order);
+
+  const transactions = await formatTransactionRows(rows);
+  const next = utils.getPaginationLink(
+    req,
+    transactions.length !== limit,
+    {
+      [constants.filterKeys.TIMESTAMP]: transactions[transactions.length - 1]?.consensus_timestamp,
+    },
+    order
+  );
+  return {
+    transactions,
+    links: {next},
   };
-
-  ret.links = {
-    next: utils.getPaginationLink(
-      req,
-      ret.transactions.length !== query.limit,
-      {
-        [constants.filterKeys.TIMESTAMP]: transferList.anchorSecNs,
-      },
-      query.order
-    ),
-  };
-
-  if (utils.isTestEnv()) {
-    ret.sqlQuery = sqlQuery;
-  }
-
-  logger.debug(`getTransactions returning ${ret.transactions.length} entries`);
-  res.locals[constants.responseDataLabel] = ret;
 };
 
 // The first part of the regex is for the base64url encoded 48-byte transaction hash. Note base64url replaces '+' with
@@ -674,7 +734,7 @@ const transactionHashShardedQueryEnabled = (() => {
         return result;
       }
 
-      const {rows} = await pool.queryQuietly(`SELECT count(*) > 0 as enabled
+      const {rows} = await pool.queryQuietly(`select count(*) > 0 as enabled
                        from pg_proc
                        where proname = 'get_transaction_info_by_hash'`);
       result = rows[0].enabled;
@@ -696,17 +756,17 @@ const getTransactionQuery = (mainCondition, subQueryCondition) => {
     ${transactionFullFields},
     (
       select ${cryptoTransferJsonAgg}
-      from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
+      from ${CryptoTransfer.tableName}
       where ${CryptoTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as crypto_transfer_list,
     (
       select ${tokenTransferJsonAgg}
-      from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
+      from ${TokenTransfer.tableName}
       where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}
-      from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
+      from ${AssessedCustomFee.tableName}
       where ${AssessedCustomFee.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as assessed_custom_fees
   from ${Transaction.tableName} ${Transaction.tableAlias}
@@ -782,8 +842,6 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
         case constants.filterKeys.SCHEDULED:
           scheduled = filter.value;
           break;
-        default:
-          break;
       }
     }
 
@@ -817,20 +875,18 @@ const getTransactionsByIdOrHash = async (req, res) => {
     throw new NotFoundError();
   }
 
-  const transferList = await createTransferLists(rows);
+  const transactions = await formatTransactionRows(rows);
 
-  logger.debug(`getTransactionsByIdOrHash returning ${transferList.transactions.length} entries`);
+  logger.debug(`getTransactionsByIdOrHash returning ${transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
-    transactions: transferList.transactions,
+    transactions,
   };
 };
 
 const transactions = {
-  createTransferLists,
+  doGetTransactions,
   getTransactions,
   getTransactionsByIdOrHash,
-  getTransactionsInnerQuery,
-  getTransactionsOuterQuery,
 };
 
 const acceptedTransactionParameters = new Set([
@@ -847,6 +903,7 @@ const acceptedSingleTransactionParameters = new Set([constants.filterKeys.NONCE,
 
 if (utils.isTestEnv()) {
   Object.assign(transactions, {
+    bindTimestampRange,
     buildWhereClause,
     convertStakingRewardTransfers,
     createAssessedCustomFeeList,
@@ -855,9 +912,11 @@ if (utils.isTestEnv()) {
     createStakingRewardTransferList,
     createTokenTransferList,
     extractSqlFromTransactionsByIdOrHashRequest,
+    extractSqlFromTransactionsRequest,
+    formatTransactionRows,
+    getFirstTransactionTimestamp,
     getStakingRewardTimestamps,
     isValidTransactionHash,
-    reqToSql,
   });
 }
 

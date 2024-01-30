@@ -1,33 +1,33 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Utils test - utils.checkTimestampRange invalid bad range lower bound > higher bound gt lt 1`] = `"Timestamp lower and upper bounds must be positive and within 7d"`;
+exports[`parseTimestampFilters invalid bad range lower bound > higher bound gt lt 1`] = `"Timestamp range by the lower and upper bounds must be positive and within 7d"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid bad range lower bound > higher bound gt lte 1`] = `"Timestamp lower and upper bounds must be positive and within 7d"`;
+exports[`parseTimestampFilters invalid bad range lower bound > higher bound gt lte 1`] = `"Timestamp range by the lower and upper bounds must be positive and within 7d"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid bad range lower bound > higher bound gte lt 1`] = `"Timestamp lower and upper bounds must be positive and within 7d"`;
+exports[`parseTimestampFilters invalid bad range lower bound > higher bound gte lt 1`] = `"Timestamp range by the lower and upper bounds must be positive and within 7d"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid bad range lower bound > higher bound gte lte 1`] = `"Timestamp lower and upper bounds must be positive and within 7d"`;
+exports[`parseTimestampFilters invalid bad range lower bound > higher bound gte lte 1`] = `"Timestamp range by the lower and upper bounds must be positive and within 7d"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid ne combined with eq - ne allowed 1`] = `"Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param"`;
+exports[`parseTimestampFilters invalid ne combined with eq - ne allowed 1`] = `"Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid no filters 1`] = `"No timestamp range or eq operator provided"`;
+exports[`parseTimestampFilters invalid no filters 1`] = `"No timestamp range or eq operator provided"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid one filter gt 1`] = `"Timestamp range must have gt (or gte) and lt (or lte)"`;
+exports[`parseTimestampFilters invalid one filter gt 1`] = `"Timestamp range must have gt (or gte) and lt (or lte), or eq operator"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid one filter ne 1`] = `"Not equals operator not supported for timestamp param"`;
+exports[`parseTimestampFilters invalid one filter ne 1`] = `"Not equals operator not supported for timestamp param"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid range exceeds configured max gt and lt 1`] = `"Timestamp lower and upper bounds must be positive and within 7d"`;
+exports[`parseTimestampFilters invalid range exceeds configured max gt and lt 1`] = `"Timestamp range by the lower and upper bounds must be positive and within 7d"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid range exceeds configured max gt and lte 1`] = `"Timestamp lower and upper bounds must be positive and within 7d"`;
+exports[`parseTimestampFilters invalid range exceeds configured max gt and lte 1`] = `"Timestamp range by the lower and upper bounds must be positive and within 7d"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid range exceeds configured max gte and lt 1`] = `"Timestamp lower and upper bounds must be positive and within 7d"`;
+exports[`parseTimestampFilters invalid range exceeds configured max gte and lt 1`] = `"Timestamp range by the lower and upper bounds must be positive and within 7d"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid range exceeds configured max gte and lte 1`] = `"Timestamp lower and upper bounds must be positive and within 7d"`;
+exports[`parseTimestampFilters invalid range exceeds configured max gte and lte 1`] = `"Timestamp range by the lower and upper bounds must be positive and within 7d"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid three filters gt lte eq 1`] = `"Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param"`;
+exports[`parseTimestampFilters invalid three filters gt lte eq 1`] = `"Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid two filters gt and eq 1`] = `"Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param"`;
+exports[`parseTimestampFilters invalid two filters gt and eq 1`] = `"Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid two filters gt and get 1`] = `"Multiple gt or gte operators not permitted for timestamp param"`;
+exports[`parseTimestampFilters invalid two filters gt and get 1`] = `"Multiple gt or gte operators not permitted for timestamp param"`;
 
-exports[`Utils test - utils.checkTimestampRange invalid two filters lt and lte 1`] = `"Multiple lt or lte operators not permitted for timestamp param"`;
+exports[`parseTimestampFilters invalid two filters lt and lte 1`] = `"Multiple lt or lte operators not permitted for timestamp param"`;
