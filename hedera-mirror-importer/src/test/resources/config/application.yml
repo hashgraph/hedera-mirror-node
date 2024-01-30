@@ -29,6 +29,7 @@ hedera:
 spring:
   flyway:
     placeholders:
+      hashShardCount: 2
       idPartitionSize: 1000000000000000
       partitionStartDate: "'1970-01-01'"
       partitionTimeInterval: "'10 years'"
