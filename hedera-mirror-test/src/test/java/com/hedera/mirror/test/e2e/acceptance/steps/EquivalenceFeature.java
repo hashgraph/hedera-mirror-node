@@ -74,18 +74,21 @@ public class EquivalenceFeature extends AbstractFeature {
     @RetryAsserts
     @Given("I verify the equivalence contract bytecode is deployed")
     public void verifyEquivalenceContractDeployed() {
-        var response = mirrorClient.getContractInfo(equivalenceCallContractSolidityAddress);
-        Assertions.assertThat(response.getBytecode()).isNotBlank();
-        Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
+        verifyContractDeployed(equivalenceCallContractSolidityAddress);
     }
 
     @RetryAsserts
     @Given("I verify the selfdestruct contract bytecode is deployed")
     public void verifyDestructContractDeployed() {
-        var response = mirrorClient.getContractInfo(equivalenceDestructContractSolidityAddress);
+        verifyContractDeployed(equivalenceDestructContractSolidityAddress);
+    }
+
+    private void verifyContractDeployed(String contractAddress) {
+        var response = mirrorClient.getContractInfo(contractAddress);
         Assertions.assertThat(response.getBytecode()).isNotBlank();
         Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
+
 
     @Then("I execute selfdestruct and set beneficiary to {string} address")
     public void selfDestructAndSetBeneficiary(String beneficiary) {
