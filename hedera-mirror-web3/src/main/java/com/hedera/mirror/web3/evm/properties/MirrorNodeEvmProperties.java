@@ -186,7 +186,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public Set<Address> grandfatherContracts() {
-        return null;
+        return new HashSet<>();
     }
 
     @Override
