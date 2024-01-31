@@ -35,11 +35,11 @@ import org.hibernate.jpa.HibernateHints;
 @RequiredArgsConstructor
 public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryCustom {
 
+    private static final String CONSENSUS_TIMESTAMP = "consensusTimestamp";
+    private static final String TOPIC_ID = "topicId";
     // make the cost estimation of using the index on (topic_id, consensus_timestamp) lower than that of
     // the primary key so pg planner will choose the better index when querying topic messages by id
     private static final String TOPIC_MESSAGES_BY_ID_QUERY_HINT = "set local random_page_cost = 0";
-
-    private static final String CONSENSUS_TIMESTAMP = "consensusTimestamp";
 
     private final EntityManager entityManager;
 
@@ -50,7 +50,7 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
         Root<TopicMessage> root = query.from(TopicMessage.class);
 
         Predicate predicate = cb.and(
-                cb.equal(root.get("topicId"), filter.getTopicId()),
+                cb.equal(root.get(TOPIC_ID), filter.getTopicId()),
                 cb.greaterThanOrEqualTo(root.get(CONSENSUS_TIMESTAMP), filter.getStartTime()));
 
         if (filter.getEndTime() != null) {

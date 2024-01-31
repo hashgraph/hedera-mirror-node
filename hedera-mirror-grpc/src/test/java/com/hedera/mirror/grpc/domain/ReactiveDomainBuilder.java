@@ -21,6 +21,8 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
@@ -73,8 +75,8 @@ public class ReactiveDomainBuilder {
     }
 
     /**
-     * Generates a Topic Message with sane defaults and inserts it into the database. The consensusTimestamp and
-     * sequenceNumber auto-increase by one on each call.
+     * Generates a Topic Message and its matching Transaction with sane defaults and inserts them into the database. The
+     * consensusTimestamp and sequenceNumber auto-increase by one on each call.
      *
      * @param customizer allows one to customize the TopicMessage before it is inserted
      * @return the inserted TopicMessage
@@ -87,7 +89,10 @@ public class ReactiveDomainBuilder {
                         .topicId(EntityId.of(100L)))
                 .customize(customizer)
                 .get();
-        return insert(topicMessage).thenReturn(topicMessage);
+        return insert(topicMessage)
+                .then(transaction(t -> t.consensusTimestamp(topicMessage.getConsensusTimestamp())
+                        .entityId(topicMessage.getTopicId())))
+                .thenReturn(topicMessage);
     }
 
     public Flux<TopicMessage> topicMessages(long count, long startTime) {
@@ -97,6 +102,22 @@ public class ReactiveDomainBuilder {
             publishers.add(topicMessage(t -> t.consensusTimestamp(consensusTimestamp)));
         }
         return Flux.concat(publishers);
+    }
+
+    /**
+     * Generates a Transaction and inserts it into the database. Note by default the transaction type is
+     * CONSENSUSSUBMITMESSAGE.
+     *
+     * @param customizer allows one to customize the Transaction before it is inserted
+     * @return the inserted Transaction
+     */
+    public Mono<Transaction> transaction(Consumer<Transaction.TransactionBuilder> customizer) {
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId()))
+                .customize(customizer)
+                .persist();
+        return Mono.just(transaction);
     }
 
     private Mono<Entity> insert(Entity entity) {

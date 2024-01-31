@@ -1,13 +1,30 @@
 {
   "description": "Invalid consensus timestamp",
   "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "topicmessages": []
+    "transactions": [
+      {
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000001",
+        "name": "CONSENSUSSUBMITMESSAGE",
+        "result": 10,
+        "type": 27,
+        "entity_id": "0.0.7"
+      },
+      {
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000002",
+        "name": "CRYPTOTRANSFER",
+        "type": 14
+      }
+    ]
   },
-  "url": "/api/v1/topics/messages/123.123456789",
+  "urls": [
+    "/api/v1/topics/messages/123.123456789",
+    "/api/v1/topics/messages/1234567890.000000001",
+    "/api/v1/topics/messages/1234567890.000000002"
+  ],
   "responseStatus": 404,
   "responseJson": {
     "_status": {
