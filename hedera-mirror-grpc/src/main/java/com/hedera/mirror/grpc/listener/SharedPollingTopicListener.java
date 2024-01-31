@@ -74,7 +74,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
             return Flux.empty();
         }
 
-        return Flux.fromStream(topicMessageRepository.findLatest(
+        return Flux.fromIterable(topicMessageRepository.findLatest(
                         context.getLastConsensusTimestamp().get(), listenerProperties.getMaxPageSize()))
                 .doOnNext(context::onNext)
                 .doOnCancel(context::onPollEnd)
