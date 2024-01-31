@@ -461,16 +461,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         IERC20_TOKEN_TRANSFER("transfer(address,uint256)", 37837),
         IERC20_TOKEN_APPROVE("approve(address,uint256)", 727978),
         IERC20_TOKEN_ASSOCIATE("associate()", 727972),
-        IERC20_TOKEN_DISSOCIATE("dissociate()", 727972),
-        ECRecover_CALL("ecRecover", 25676),
-        SHA2_CALL("SHA2-256", 21088),
-        RIPEMD("RIPEMD", 21736),
-        IDENTITY("identity", 21034),
-        MODEXP("modexp", 21784),
-        ECADD("ecAdd", 21710),
-        ECMUL("ecMul", 27420),
-        ECPAIRING("ecPairing", 139760),
-        BLAKE2F("blake2f", 22704);
+        IERC20_TOKEN_DISSOCIATE("dissociate()", 727972);
 
         private final String selector;
         private final int actualGas;

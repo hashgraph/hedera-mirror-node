@@ -401,6 +401,31 @@ public class CallFeature extends AbstractFeature {
         assertEquals(Integer.parseInt(balances[1], 16), 990000);
     }
 
+    @Then("I directly call Ethereum precompile 0x01")
+    public void directCallTowardsEthereumPrecompileECRecover() {
+        final var precompileAddress = "0x0000000000000000000000000000000000000001";
+        final var hash = "0x456e9aea5e197a1f1af7a3e85a3212fa4049a3ba34c2289b4c860fc0b0c64ef3";
+        final var v = "000000000000000000000000000000000000000000000000000000000000001c";
+        final var r = "9242685bf161793cc25603c231bc2f568eb630ea16aa137d2664ac8038825608";
+        final var s = "4f8ae3bd7535248d0bd448298cc2e2071e56992d0774dc340c368ae950852ada";
+        final var correctResult = "0x0000000000000000000000007156526fbd7a3c72969b54f64e42c10fbb768c8a";
+
+        final var data = hash.concat(v).concat(r).concat(s);
+
+        var response = callContract(data, precompileAddress);
+        assertThat(response.getResult()).isEqualTo(correctResult);
+    }
+
+    @Then("I directly call Ethereum precompile 0x02")
+    public void directCallTowardsEthereumPrecompileSHA256() {
+        final var precompileAddress = "0x0000000000000000000000000000000000000002";
+        final var data = "0xFF";
+        final var correctResult = "0xa8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89";
+
+        var response = callContract(data, precompileAddress);
+        assertThat(response.getResult()).isEqualTo(correctResult);
+    }
+
     @Then("I mint FUNGIBLE token and get the total supply and balance")
     public void ethCallMintFungibleTokenGetTotalSupplyAndBalanceOfTreasury() {
         var data = encodeData(
