@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-// Common tests for streams (record and events) which are linked by previous file's hash.
+// Common tests for streams (record) which are linked by previous file's hash.
 public abstract class AbstractLinkedStreamDownloaderTest<T extends StreamFile<?>> extends AbstractDownloaderTest<T> {
 
     @Test

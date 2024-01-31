@@ -38,10 +38,6 @@ Database upgrades are now performed automatically when the mirror node component
 
 This is to ease onboarding on the integration test network, there are a few gaps in the file hash history as a result of testing which result in the parser stopping, setting this value to "X" in the `config.json` file will ensure parsing continues regardless of the hash history. This should not be set to "X" in production of course.
 
-### Addition of event parsing
-
-Event files from the network may now be parsed with the mirror node.
-
 ### Updates to config.json
 
 Renamed `stopLoggingIfHashMismatch` to `stopLoggingIfRecordHashMismatch`.

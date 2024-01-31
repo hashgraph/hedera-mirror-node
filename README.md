@@ -52,11 +52,9 @@ expose the data. This approach provides the following advantages:
 - Record files can then be processed and transactions and records processed for long term storage.
 
 In addition, nodes regularly generate
-a [balance file](https://github.com/hashgraph/hedera-protobufs/blob/main/streams/account_balance_file.proto) and an
-event file. The balance file contains the list of Hedera accounts and their corresponding HBAR and token balances.
-The event file contains events that were gossiped between nodes. Both of these files are processed by the mirror node in
-a similar
-fashion as outlined above.
+a [balance file](https://github.com/hashgraph/hedera-protobufs/blob/main/streams/account_balance_file.proto). The
+balance file contains the list of Hedera accounts and their corresponding HBAR and token balances. This file is
+processed by the mirror node in a similar fashion as outlined above.
 
 ## Getting Started
 
