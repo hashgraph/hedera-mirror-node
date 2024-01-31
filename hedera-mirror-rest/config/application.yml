@@ -59,9 +59,11 @@ hedera:
         swaggerUIPath: "docs"
       port: 5551
       query:
+        bindTimestampRange: false
         maxRepeatedQueryParameters: 100
         maxTimestampRange: 7d
         maxTransactionConsensusTimestampRange: 35m
+        maxTransactionsTimestampRange: 60d
         strictTimestampParam: true
         topicMessageLookup: false
       response:

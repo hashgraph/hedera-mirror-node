@@ -18,10 +18,33 @@ import {jest} from '@jest/globals';
 import {exec} from 'child_process';
 
 import integrationDbOps from './integrationDbOps';
+import transactions from '../transactions';
 
 // set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
 // it's 12 minutes for CI to workaround possible DockerHub rate limit.
 const defaultBeforeAllTimeoutMillis = process.env.CI ? 12 * 60 * 1000 : 4 * 60 * 1000;
+
+const applyResponseJsonMatrix = (spec, key) => {
+  if (spec.responseJsonMatrix?.[key]) {
+    spec.responseJson = {
+      ...spec.responseJson,
+      ...spec.responseJsonMatrix[key],
+    };
+  }
+
+  if (spec.tests) {
+    for (const test of spec.tests) {
+      if (test.responseJsonMatrix?.[key]) {
+        test.responseJson = {
+          ...test.responseJson,
+          ...test.responseJsonMatrix[key],
+        };
+      }
+    }
+  }
+
+  return spec;
+};
 
 const isDockerInstalled = function () {
   return new Promise((resolve) => {
@@ -44,7 +67,8 @@ const setupIntegrationTest = () => {
 
   beforeEach(async () => {
     await integrationDbOps.cleanUp();
+    transactions.getFirstTransactionTimestamp.reset();
   });
 };
 
-export {defaultBeforeAllTimeoutMillis, isDockerInstalled, setupIntegrationTest};
+export {applyResponseJsonMatrix, defaultBeforeAllTimeoutMillis, isDockerInstalled, setupIntegrationTest};

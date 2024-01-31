@@ -120,6 +120,14 @@ describe('Utils nsToSecNs tests', () => {
   });
 });
 
+describe('nowInNs', () => {
+  test('value within range', () => {
+    const expected = BigInt(Date.now()) * 1_000_000n;
+    const delta = 1_000_000_000n;
+    expect(utils.nowInNs()).toBeWithin(expected - delta, expected + delta);
+  });
+});
+
 describe('Utils incrementTimestampByOneDay tests', () => {
   test('Verify incrementTimestampByOneDay adds a day to the timestamp and rounds', () => {
     const val = utils.incrementTimestampByOneDay(1655164799999999999n);
@@ -986,48 +994,6 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
   parseQueryParamTest(testSpecs, (spec) => utils.parsePublicKeyQueryParam(spec.parsedQueryParams, 'account.publickey'));
 });
 
-describe('Utils parseCreditDebitParams tests', () => {
-  const testSpecs = [
-    {
-      name: 'Single parameter credit',
-      parsedQueryParams: {type: 'credit'},
-      expectedClause: 'type > ?',
-      expectedValues: [0],
-    },
-    {
-      name: 'Single parameter debit',
-      parsedQueryParams: {type: 'debit'},
-      expectedClause: 'type < ?',
-      expectedValues: [0],
-    },
-    {
-      name: noParamTestName,
-      parsedQueryParams: {},
-      expectedClause: '',
-      expectedValues: [],
-    },
-    {
-      name: 'Multiple parameters both values',
-      parsedQueryParams: {type: ['credit', 'debit']},
-      expectedClause: 'type > ? and type < ?',
-      expectedValues: [0, 0],
-    },
-    {
-      name: 'Single parameter op ignored',
-      parsedQueryParams: {type: ['gte:credit']},
-      expectedClause: 'type > ?',
-      expectedValues: [0],
-    },
-    {
-      name: 'Single parameter invalid value',
-      parsedQueryParams: {type: ['cash']},
-      expectedClause: '',
-      expectedValues: [],
-    },
-  ];
-  parseQueryParamTest(testSpecs, (spec) => utils.parseCreditDebitParams(spec.parsedQueryParams, 'type'));
-});
-
 describe('utils isRepeatedQueryParameterValidLength', () => {
   const {maxRepeatedQueryParameters} = config.query;
   test(`verify account.id with valid amount ${maxRepeatedQueryParameters - 1}`, () => {
@@ -1299,193 +1265,145 @@ describe('Utils getLimitParamValue', () => {
   });
 });
 
-describe('Utils test - utils.parseTransactionTypeParam', () => {
-  test('Verify null query params', () => {
-    expect(utils.parseTransactionTypeParam(null)).toBe('');
+describe('parseTimestampFilters', () => {
+  const makeFilter = (operator, value) => ({
+    key: constants.filterKeys.TIMESTAMP,
+    operator,
+    value,
   });
-  test('Verify undefined query params', () => {
-    expect(utils.parseTransactionTypeParam(undefined)).toBe('');
-  });
-  test('Verify empty query params', () => {
-    expect(utils.parseTransactionTypeParam({})).toBe('');
-  });
-  test('Verify empty transaction type query', () => {
-    expect(() => utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(
-      InvalidArgumentError
-    );
-  });
-  test('Verify non applicable transaction type query', () => {
-    expect(() =>
-      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
-    ).toThrowError(InvalidArgumentError);
-  });
-  test('Verify applicable TOKENCREATION transaction type query', () => {
-    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type in (29)`
-    );
-  });
-  test('Verify applicable TOKENASSOCIATE transaction type query', () => {
-    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type in (40)`
-    );
-  });
-  test('Verify applicable consensussubmitmessage transaction type query', () => {
-    expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type in (27)`
-    );
-  });
-  test('Verify multiple transactiontype query params', () => {
-    expect(
-      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ['TOKENCREATION', 'TOKENASSOCIATE']})
-    ).toBe(`type in (29,40)`);
-  });
-  test('Verify multiple transactiontype query params reversed', () => {
-    expect(
-      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ['TOKENASSOCIATE', 'TOKENCREATION']})
-    ).toBe('type in (40,29)');
-  });
-  test('Verify multiple transactiontype query params with duplicates', () => {
-    expect(
-      utils.parseTransactionTypeParam({
-        [constants.filterKeys.TRANSACTION_TYPE]: ['TOKENASSOCIATE', 'TOKENCREATION', 'TOKENASSOCIATE', 'TOKENCREATION'],
-      })
-    ).toBe('type in (40,29)');
-  });
-});
-
-describe('Utils test - utils.checkTimestampRange', () => {
-  const makeTimestampFilter = (operator, value) => {
-    return {
-      key: constants.filterKeys.TIMESTAMP,
-      operator,
-      value,
-    };
-  };
 
   describe('valid', () => {
     const testSpecs = [
       {
-        filters: [makeTimestampFilter(utils.opsMap.eq, '1638921702000000000')],
-        expected: [null, [1638921702000000000n], []],
+        filters: [makeFilter(utils.opsMap.eq, '1638921702000000000')],
+        expected: {range: null, eqValues: [1638921702000000000n], neValues: []},
       },
       {
         name: 'two filters gte and lte',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gte, '1000000000'),
-          makeTimestampFilter(utils.opsMap.lte, '2000000000'),
-        ],
-        expected: [Range(1000000000n, 2000000000n, '[]'), [], []],
+        filters: [makeFilter(utils.opsMap.gte, '1000000000'), makeFilter(utils.opsMap.lte, '2000000000')],
+        expected: {range: Range(1000000000n, 2000000000n), eqValues: [], neValues: []},
       },
       {
         name: 'two eq',
-        filters: [
-          makeTimestampFilter(utils.opsMap.eq, '1000000000'),
-          makeTimestampFilter(utils.opsMap.eq, '1638921702000000000'),
-        ],
-        expected: [null, [1000000000n, 1638921702000000000n], []],
+        filters: [makeFilter(utils.opsMap.eq, '1000000000'), makeFilter(utils.opsMap.eq, '1638921702000000000')],
+        expected: {range: null, eqValues: [1000000000n, 1638921702000000000n], neValues: []},
       },
       {
         name: '1ns range with gt and lt',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gt, '1000999999'),
-          makeTimestampFilter(utils.opsMap.lt, '1001000001'),
-        ],
-        expected: [Range(1001000000n, 1001000000n), [], []],
+        filters: [makeFilter(utils.opsMap.gt, '1000999999'), makeFilter(utils.opsMap.lt, '1001000001')],
+        expected: {range: Range(1001000000n, 1001000000n), eqValues: [], neValues: []},
       },
       {
         // [1000000, 604800001000000)
         name: 'max range with gte and lt',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gte, '1000000'),
-          makeTimestampFilter(utils.opsMap.lt, '604800001000000'),
-        ],
-        expected: [Range(1000000n, 604800000999999n), [], []],
+        filters: [makeFilter(utils.opsMap.gte, '1000000'), makeFilter(utils.opsMap.lt, '604800001000000')],
+        expected: {range: Range(1000000n, 604800000999999n), eqValues: [], neValues: []},
       },
       {
         // effectively the same as [1000000, 604800001000000)
         name: 'max range with gt and lt',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gt, '999999'),
-          makeTimestampFilter(utils.opsMap.lt, '604800001000000'),
-        ],
-        expected: [Range(1000000n, 604800000999999n), [], []],
+        filters: [makeFilter(utils.opsMap.gt, '999999'), makeFilter(utils.opsMap.lt, '604800001000000')],
+        expected: {range: Range(1000000n, 604800000999999n), eqValues: [], neValues: []},
       },
       {
         // effectively the same as [1000000, 604800001000000)
         name: 'max range with gt and lte',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gt, '1000000'),
-          makeTimestampFilter(utils.opsMap.lte, '604800000999999'),
-        ],
-        expected: [Range(1000001n, 604800000999999n), [], []],
+        filters: [makeFilter(utils.opsMap.gt, '1000000'), makeFilter(utils.opsMap.lte, '604800000999999')],
+        expected: {range: Range(1000001n, 604800000999999n), eqValues: [], neValues: []},
       },
       {
         // effectively the same as [1000000, 604800001000000)
         name: 'max range with gt and lt',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gte, '1000000'),
-          makeTimestampFilter(utils.opsMap.lte, '604800000999999'),
-        ],
-        expected: [Range(1000000n, 604800000999999n), [], []],
+        filters: [makeFilter(utils.opsMap.gte, '1000000'), makeFilter(utils.opsMap.lte, '604800000999999')],
+        expected: {range: Range(1000000n, 604800000999999n), eqValues: [], neValues: []},
       },
       {
         name: 'one filter - ne allowed',
-        filters: [makeTimestampFilter(utils.opsMap.ne, '1638921702000000000')],
+        filters: [makeFilter(utils.opsMap.ne, '1638921702000000000')],
         allowNe: true,
         allowOpenRange: true,
-        expected: [null, [], [1638921702000000000n]],
+        expected: {range: null, eqValues: [], neValues: [1638921702000000000n]},
       },
       {
         name: 'ne combined with gt lt - ne allowed',
         filters: [
-          makeTimestampFilter(utils.opsMap.ne, '1638921702000000001'),
-          makeTimestampFilter(utils.opsMap.gt, '1638921702000000000'),
-          makeTimestampFilter(utils.opsMap.lt, '1638921702000000005'),
+          makeFilter(utils.opsMap.ne, '1638921702000000001'),
+          makeFilter(utils.opsMap.ne, '1638921702000000001'),
+          makeFilter(utils.opsMap.gt, '1638921702000000000'),
+          makeFilter(utils.opsMap.lt, '1638921702000000005'),
         ],
         allowNe: true,
-        expected: [Range(1638921702000000001n, 1638921702000000004n), [], [1638921702000000001n]],
+        expected: {
+          range: Range(1638921702000000001n, 1638921702000000004n),
+          eqValues: [],
+          neValues: [1638921702000000001n],
+        },
       },
       {
         name: 'single lt filter - allow open ranges',
-        filters: [makeTimestampFilter(utils.opsMap.lt, '1638921702000000001')],
+        filters: [makeFilter(utils.opsMap.lt, '1638921702000000001')],
         allowOpenRange: true,
-        expected: [Range(null, 1638921702000000000n, '[]'), [], []],
+        expected: {range: Range(null, 1638921702000000000n, '[]'), eqValues: [], neValues: []},
       },
       {
         name: 'single gt filter - allow open ranges',
-        filters: [makeTimestampFilter(utils.opsMap.gt, '1638921702000000000')],
+        filters: [makeFilter(utils.opsMap.gt, '1638921702000000000')],
         allowOpenRange: true,
-        expected: [Range(1638921702000000001n, null, '[]'), [], []],
+        expected: {range: Range(1638921702000000001n, null, '[]'), eqValues: [], neValues: []},
       },
       {
         name: 'two filters ne and eq - strict check disabled',
         filters: [
-          makeTimestampFilter(utils.opsMap.ne, '1638921702000000000'),
-          makeTimestampFilter(utils.opsMap.eq, '1638921703000000000'),
+          makeFilter(utils.opsMap.ne, '1638921702000000000'),
+          makeFilter(utils.opsMap.ne, '1638921702000000000'),
+          makeFilter(utils.opsMap.eq, '1638921703000000000'),
+          makeFilter(utils.opsMap.eq, '1638921703000000000'),
         ],
-        expected: [null, [1638921703000000000n], [1638921702000000000n]],
+        expected: {range: null, eqValues: [1638921703000000000n], neValues: [1638921702000000000n]},
         strictCheckOverride: false,
       },
       {
         name: 'multiple filters of each type - strict check disabled',
         filters: [
-          makeTimestampFilter(utils.opsMap.ne, '1638921702000000001'),
-          makeTimestampFilter(utils.opsMap.ne, '1638921702000000002'),
-          makeTimestampFilter(utils.opsMap.eq, '1638921702000000003'),
-          makeTimestampFilter(utils.opsMap.eq, '1638921702000000004'),
-          makeTimestampFilter(utils.opsMap.gt, '1638921702000000005'),
-          makeTimestampFilter(utils.opsMap.gte, '1638921702000000006'),
-          makeTimestampFilter(utils.opsMap.lt, '1638921702000000007'),
-          makeTimestampFilter(utils.opsMap.lte, '1638921702000000008'),
+          makeFilter(utils.opsMap.ne, '1638921702000000001'),
+          makeFilter(utils.opsMap.ne, '1638921702000000002'),
+          makeFilter(utils.opsMap.eq, '1638921702000000003'),
+          makeFilter(utils.opsMap.eq, '1638921702000000004'),
+          makeFilter(utils.opsMap.gt, '1638921702000000005'),
+          makeFilter(utils.opsMap.gte, '1638921702000000006'),
+          makeFilter(utils.opsMap.lt, '1638921702000000007'),
+          makeFilter(utils.opsMap.lte, '1638921702000000008'),
         ],
-        expected: [null, [1638921702000000003n, 1638921702000000004n], [1638921702000000001n, 1638921702000000002n]],
+        expected: {
+          range: Range(1638921702000000006n, 1638921702000000006n),
+          eqValues: [1638921702000000003n, 1638921702000000004n],
+          neValues: [1638921702000000001n, 1638921702000000002n],
+        },
         strictCheckOverride: false,
+      },
+      {
+        name: 'empty range and validateRange disabled',
+        filters: [
+          makeFilter(utils.opsMap.gte, '1638921702000000000'),
+          makeFilter(utils.opsMap.lt, '1638921702000000000'),
+        ],
+        expected: {range: Range(), eqValues: [], neValues: []},
+        validateRange: false,
+      },
+      {
+        name: 'range over limit and validateRange disabled',
+        filters: [
+          makeFilter(utils.opsMap.gte, '1638921702000000000'),
+          makeFilter(utils.opsMap.lt, '1639526502000000000'),
+        ],
+        expected: {range: Range(1638921702000000000n, 1639526501999999999n), eqValues: [], neValues: []},
+        validateRange: false,
       },
       {
         name: 'empty - required false',
         filters: [],
         required: false,
-        expected: [null, [], []],
+        expected: {range: null, eqValues: [], neValues: []},
       },
     ];
     const strictCheckConfig = config.strictTimestampParam;
@@ -1494,12 +1412,13 @@ describe('Utils test - utils.checkTimestampRange', () => {
       config.strictTimestampParam = spec.strictCheckOverride;
       test(spec.name, () => {
         expect(
-          utils.checkTimestampRange(
+          utils.parseTimestampFilters(
             spec.filters,
             spec.required,
             spec.allowNe,
             spec.allowOpenRange,
-            spec.strictCheckOverride
+            spec.strictCheckOverride,
+            spec.validateRange
           )
         ).toEqual(spec.expected);
       });
@@ -1515,88 +1434,73 @@ describe('Utils test - utils.checkTimestampRange', () => {
       },
       {
         name: 'one filter gt',
-        filters: [makeTimestampFilter(utils.opsMap.gt, '1638921702000000000')],
+        filters: [makeFilter(utils.opsMap.gt, '1638921702000000000')],
       },
       {
         name: 'one filter ne',
-        filters: [makeTimestampFilter(utils.opsMap.ne, '1638921702000000000')],
+        filters: [makeFilter(utils.opsMap.ne, '1638921702000000000')],
       },
       {
         name: 'two filters gt and eq',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gt, '1638921702000'),
-          makeTimestampFilter(utils.opsMap.eq, '1638921702000000000'),
-        ],
+        filters: [makeFilter(utils.opsMap.gt, '1638921702000'), makeFilter(utils.opsMap.eq, '1638921702000000000')],
       },
       {
         name: 'bad range lower bound > higher bound gte lte',
-        filters: [makeTimestampFilter(utils.opsMap.gte, '1000'), makeTimestampFilter(utils.opsMap.lte, '999')],
+        filters: [makeFilter(utils.opsMap.gte, '1000'), makeFilter(utils.opsMap.lte, '999')],
       },
       {
         name: 'bad range lower bound > higher bound gte lt',
-        filters: [makeTimestampFilter(utils.opsMap.gte, '1000'), makeTimestampFilter(utils.opsMap.lt, '1000')],
+        filters: [makeFilter(utils.opsMap.gte, '1000'), makeFilter(utils.opsMap.lt, '1000')],
       },
       {
         name: 'bad range lower bound > higher bound gt lte',
-        filters: [makeTimestampFilter(utils.opsMap.gt, '999'), makeTimestampFilter(utils.opsMap.lte, '999')],
+        filters: [makeFilter(utils.opsMap.gt, '999'), makeFilter(utils.opsMap.lte, '999')],
       },
       {
         name: 'two filters gt and get',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gte, '1000000000'),
-          makeTimestampFilter(utils.opsMap.gt, '1638921702000000000'),
-        ],
+        filters: [makeFilter(utils.opsMap.gte, '1000000000'), makeFilter(utils.opsMap.gt, '1638921702000000000')],
       },
       {
         name: 'two filters lt and lte',
-        filters: [
-          makeTimestampFilter(utils.opsMap.lt, '1000000000'),
-          makeTimestampFilter(utils.opsMap.lte, '1638921702000000000'),
-        ],
+        filters: [makeFilter(utils.opsMap.lt, '1000000000'), makeFilter(utils.opsMap.lte, '1638921702000000000')],
       },
       {
         name: 'three filters gt lte eq',
         filters: [
-          makeTimestampFilter(utils.opsMap.lt, '1000000000'),
-          makeTimestampFilter(utils.opsMap.gte, '2000000000'),
-          makeTimestampFilter(utils.opsMap.eq, '1000000000'),
+          makeFilter(utils.opsMap.lt, '1000000000'),
+          makeFilter(utils.opsMap.gte, '2000000000'),
+          makeFilter(utils.opsMap.eq, '1000000000'),
         ],
       },
       {
         name: 'bad range lower bound > higher bound gt lt',
-        filters: [makeTimestampFilter(utils.opsMap.gt, '999'), makeTimestampFilter(utils.opsMap.lt, '1000')],
+        filters: [makeFilter(utils.opsMap.gt, '999'), makeFilter(utils.opsMap.lt, '1000')],
       },
       {
         // effectively [100, 604800000000101)
         name: 'range exceeds configured max gt and lt',
-        filters: [makeTimestampFilter(utils.opsMap.gt, '99'), makeTimestampFilter(utils.opsMap.lt, '604800000000101')],
+        filters: [makeFilter(utils.opsMap.gt, '99'), makeFilter(utils.opsMap.lt, '604800000000101')],
       },
       {
         // [100, 604800000000101)
         name: 'range exceeds configured max gte and lt',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gte, '100'),
-          makeTimestampFilter(utils.opsMap.lt, '604800000000101'),
-        ],
+        filters: [makeFilter(utils.opsMap.gte, '100'), makeFilter(utils.opsMap.lt, '604800000000101')],
       },
       {
         // effectively [100, 604800000000101)
         name: 'range exceeds configured max gt and lte',
-        filters: [makeTimestampFilter(utils.opsMap.gt, '99'), makeTimestampFilter(utils.opsMap.lte, '604800000000100')],
+        filters: [makeFilter(utils.opsMap.gt, '99'), makeFilter(utils.opsMap.lte, '604800000000100')],
       },
       {
         // [100, 604800000000101)
         name: 'range exceeds configured max gte and lte',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gte, '100'),
-          makeTimestampFilter(utils.opsMap.lte, '604800000000100'),
-        ],
+        filters: [makeFilter(utils.opsMap.gte, '100'), makeFilter(utils.opsMap.lte, '604800000000100')],
       },
       {
         name: 'ne combined with eq - ne allowed',
         filters: [
-          makeTimestampFilter(utils.opsMap.ne, '1638921702000000001'),
-          makeTimestampFilter(utils.opsMap.eq, '1638921702000000003'),
+          makeFilter(utils.opsMap.ne, '1638921702000000001'),
+          makeFilter(utils.opsMap.eq, '1638921702000000003'),
         ],
         allowNe: true,
       },
@@ -1605,7 +1509,7 @@ describe('Utils test - utils.checkTimestampRange', () => {
     testSpecs.forEach((spec) =>
       test(spec.name, () => {
         expect(() =>
-          utils.checkTimestampRange(
+          utils.parseTimestampFilters(
             spec.filters,
             spec.required,
             spec.allowNe,

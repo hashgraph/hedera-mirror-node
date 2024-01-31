@@ -36,7 +36,7 @@ extra.apply {
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.2")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.1")
+    set("vertxVersion", "4.5.2")
 }
 
 // Temporarily override json version until snyk/gradle-plugin has an update with a fix
@@ -65,7 +65,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.46.0")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.45.3")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.46.0")
         api("com.hedera.hashgraph:sdk:2.29.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.4")

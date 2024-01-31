@@ -1,6 +1,10 @@
 {
   "description": "Transaction api calls for transactions with success result type",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2019-08-14T10:50:00Z"
+    },
     "accounts": [
       {
         "num": 3
@@ -18,8 +22,6 @@
         "num": 98
       }
     ],
-    "balances": [],
-    "transactions": [],
     "cryptotransfers": [
       {
         "consensus_timestamp": "1565779111711927001",
@@ -78,7 +80,6 @@
         "node": "0.0.3",
         "nonce": 0,
         "parent_consensus_timestamp": null,
-        "token_transfers": [],
         "transaction_id": "0.0.8-1565779666-711927000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
@@ -120,7 +121,6 @@
         "transaction_id": "0.0.10-1565779209-711927000",
         "valid_duration_seconds": "11",
         "max_fee": "33",
-        "token_transfers": [],
         "transfers": [
           {
             "account": "0.0.9",
