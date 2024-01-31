@@ -78,10 +78,18 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 
   const consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
-  const query = `select *
-                      from ${TopicMessage.tableName}
-                      where ${TopicMessage.CONSENSUS_TIMESTAMP} = $1`;
-  const params = [consensusTimestamp];
+  let query = `select consensus_timestamp, entity_id
+    from transaction
+    where consensus_timestamp = $1 and result = 22 and type = 27`;
+  const {rows} = await pool.queryQuietly(query, consensusTimestamp);
+  if (rows.length !== 1) {
+    throw new NotFoundError();
+  }
+
+  query = `select *
+    from topic_message
+    where topic_id = $1 and consensus_timestamp = $2`;
+  const params = [rows[0].entity_id, rows[0].consensus_timestamp];
 
   res.locals[constants.responseDataLabel] = await getMessage(query, params);
 };
