@@ -1148,9 +1148,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .recordFile()
                 .customize(f -> f.index(EVM_V_38_BLOCK))
                 .persist();
-        recordFileEvm38Latest = domainBuilder
-                .recordFile()
-                .persist();
+        recordFileEvm38Latest = domainBuilder.recordFile().persist();
     }
 
     private void historicalDataPersist() {

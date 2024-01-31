@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.config;
 
+import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMode.JOURNALED;
+
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
@@ -219,6 +221,12 @@ public class EvmConfiguration {
     }
 
     @Bean
+    org.hyperledger.besu.evm.internal.EvmConfiguration provideEvmConfiguration() {
+        return new org.hyperledger.besu.evm.internal.EvmConfiguration(
+                org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT.jumpDestCacheWeightKB(), JOURNALED);
+    }
+
+    @Bean
     EVM evm030(
             final HederaPrngSeedOperation prngSeedOperation,
             final HederaSelfDestructOperation hederaSelfDestructOperation) {
@@ -341,11 +349,7 @@ public class EvmConfiguration {
                         selfDestructOperation)
                 .forEach(operationRegistry::put);
 
-        return new EVM(
-                operationRegistry,
-                gasCalculator,
-                org.hyperledger.besu.evm.internal.EvmConfiguration.DEFAULT,
-                specVersion);
+        return new EVM(operationRegistry, gasCalculator, provideEvmConfiguration(), specVersion);
     }
 
     private ContractCreationProcessor contractCreationProcessor(EVM evm) {
