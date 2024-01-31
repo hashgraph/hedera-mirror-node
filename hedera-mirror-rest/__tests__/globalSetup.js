@@ -30,7 +30,17 @@ let dockerDb;
 
 const createDbContainer = async (maxWorkers) => {
   const image = isV2Schema() ? v2DatabaseImage : v1DatabaseImage;
-  dockerDb = await new PostgreSqlContainer(image).start();
+  const initSqlPath = path.resolve('../../hedera-mirror-node/hedera-mirror-common/src/test/resources/init.sql');
+  const filesToCopy = {
+    source: initSqlPath,
+    target: '/docker-entrypoint-initdb.d/init.sql',
+  };
+  dockerDb = await new PostgreSqlContainer(image)
+    .withCopyFilesToContainer([filesToCopy])
+    .withDatabase('mirror_node')
+    .withPassword('mirror_node_pass')
+    .withUsername('mirror_node')
+    .start();
   console.info(`Started PostgreSQL container ${image}`);
 
   process.env.INTEGRATION_DATABASE_URL = dockerDb.getConnectionUri();
