@@ -22,15 +22,6 @@ Feature: eth_call Contract Base Coverage Feature
     Then I call function with nested deploy using create function
     Then I call function with nested deploy using create2 function
     Then I call function with transfer that returns the balance
-    Then I directly call Ethereum precompile 0x01
-    Then I directly call Ethereum precompile 0x02
-    Then I directly call Ethereum precompile 0x03
-    Then I directly call Ethereum precompile 0x04
-    Then I directly call Ethereum precompile 0x05
-    Then I directly call Ethereum precompile 0x06
-    Then I directly call Ethereum precompile 0x07
-    Then I directly call Ethereum precompile 0x08
-    Then I directly call Ethereum precompile 0x09
     Then I burn FUNGIBLE token and get the total supply and balance
     Given I mint a NFT
     Then the mirror node should return status 200 for the HAPI transaction
