@@ -480,6 +480,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static RecordFile recordFileBeforeEvm34;
     protected static RecordFile recordFileAfterEvm34;
     protected static RecordFile recordFileEvm38;
+    protected static RecordFile recordFileEvm38Latest;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -880,6 +881,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected void persistEntities() {
         genesisBlockPersist();
         historicalBlocksPersist();
+        historicalDataPersist();
         evmCodesContractPersist();
         ethCallContractPersist();
         reverterContractPersist();
@@ -1126,7 +1128,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         exchangeRatesPersist();
         feeSchedulesPersist();
-        historicalDataPersist();
     }
 
     private void genesisBlockPersist() {
@@ -1147,6 +1148,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .recordFile()
                 .customize(f -> f.index(EVM_V_38_BLOCK))
                 .persist();
+        recordFileEvm38Latest = domainBuilder.recordFile().persist();
     }
 
     private void historicalDataPersist() {
@@ -2298,7 +2300,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .num(contractEntityId.getNum())
                         .evmAddress(contractEvmAddress)
                         .type(CONTRACT)
-                        .balance(1500L))
+                        .balance(1500L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
                 .persist();
 
         domainBuilder
@@ -2350,7 +2354,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .num(ercContractEntityId.getNum())
                         .evmAddress(ercContractEvmAddress)
                         .type(CONTRACT)
-                        .balance(1500L))
+                        .balance(1500L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
                 .persist();
 
         domainBuilder
@@ -2418,7 +2424,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .num(randomNumberContractEntityId.getNum())
                         .evmAddress(randomNumberContractEvmAddress)
                         .type(CONTRACT)
-                        .balance(1500L))
+                        .balance(1500L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
                 .persist();
 
         domainBuilder
@@ -2492,7 +2500,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 .setEd25519(ByteString.copyFrom(Arrays.copyOfRange(KEY_PROTO, 3, KEY_PROTO.length)))
                                 .build()
                                 .toByteArray())
-                        .balance(1500L))
+                        .balance(1500L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
                 .persist();
 
         domainBuilder
@@ -2528,7 +2538,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .num(exchangeRateContractEntityId.getNum())
                         .evmAddress(exchangeRteContractEvmAddress)
                         .type(CONTRACT)
-                        .balance(1500L))
+                        .balance(1500L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
                 .persist();
 
         domainBuilder
