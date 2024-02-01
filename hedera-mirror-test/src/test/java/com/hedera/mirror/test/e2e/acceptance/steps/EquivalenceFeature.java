@@ -27,11 +27,18 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Con
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_SIZE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.TupleType;
+import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.math.BigInteger;
@@ -39,6 +46,7 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.api.Assertions;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -47,7 +55,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class EquivalenceFeature extends AbstractFeature {
     private final AcceptanceTestProperties acceptanceTestProperties;
     private static final String OBTAINER_SAME_CONTRACT_ID_EXCEPTION = "OBTAINER_SAME_CONTRACT_ID";
-    private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
+    private static final String INVALID_SOLIDITY_ADDRESS = "INVALID_SOLIDITY_ADDRESS";
+    private static final String INVALID_FEE_SUBMITTED = "INVALID_FEE_SUBMITTED";
     private static final String BAD_REQUEST = "400 Bad Request";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
 
@@ -108,7 +117,7 @@ public class EquivalenceFeature extends AbstractFeature {
         final var message = functionResult.getResultAsText();
 
         if (extractAccountNumber(beneficiary) < 751) {
-            var condition = message.startsWith("400 Bad Request") || message.equals(INVALID_SOLIDITY_ADDRESS_EXCEPTION);
+            var condition = message.startsWith("400 Bad Request") || message.equals(INVALID_SOLIDITY_ADDRESS);
             assertThat(condition).isTrue();
         } else {
             var condition = functionResult.getResult().equals("0x") || message.equals(TRANSACTION_SUCCESSFUL_MESSAGE);
@@ -179,12 +188,120 @@ public class EquivalenceFeature extends AbstractFeature {
         assertThat(condition).isTrue();
     }
 
+    @Then("I make internal {string} to system account {string} {string} amount to {node} node")
+    public void callToSystemAddress(String call, String address, String amountType, NodeNameEnum node) {
+        var accountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var callType = getMethodName(call, amountType);
+
+        byte[] functionParameterData;
+        if (call.equals("callcode")) {
+            functionParameterData = new byte[] {0x21, 0x21, 0x12, 0x12};
+        } else {
+            functionParameterData = new byte[0];
+        }
+        byte[] data =
+                encodeDataToByteArray(EQUIVALENCE_CALL, callType, TestUtil.asAddress(accountId), functionParameterData);
+
+        Hbar amount = null;
+        if (amountType.equals("with")) {
+            amount = Hbar.fromTinybars(10);
+        }
+
+        var response = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, callType, data, amount);
+        var accountNumber = extractAccountNumber(address);
+
+        if (node.equals(NodeNameEnum.CONSENSUS)) {
+            // POTENTIAL BUG
+            // CALL WITH AMOUNT RETURNS FAILURE FOR THE 2ND CALL WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_FEE_SUBMITTED
+            // CALL WITHOUT RETURNS FAILURE FOR THE 2ND CALL WITH PRECOMPILE_ERROR - > WE EXPECT INVALID_SOLIDITY_ADDRESS
+            // TOP LEVEL TRANSACTION IS SUCCESS
+            // WAITING TO BE CLARIFIED
+            if (accountNumber > 751) {
+                assertThat(response.errorMessage()).isBlank();
+            }
+        } else {
+            if (call.equals("callcode")) {
+                var returnedDataBytes = response.contractCallResponse().getResultAsBytes();
+                var returnedDataMessage = response.contractCallResponse().getResult();
+                if (amount == null) {
+                    if (shouldSystemAccountWithoutAmountReturnInvalidSolidityAddress(accountNumber)) {
+                        assertEquals(INVALID_SOLIDITY_ADDRESS, returnedDataMessage);
+                    } else if (shouldSystemAccountWithoutAmountReturnSuccess(accountNumber)) {
+                        assertArrayEquals(functionParameterData, returnedDataBytes.trimTrailingZeros().toArray());
+                    }
+                } else {
+                    if (shouldSystemAccountWithAmountReturnInvalidFeeSubmitted(accountNumber)) {
+                        assertEquals(INVALID_FEE_SUBMITTED, returnedDataMessage);
+                    } else {
+                        assertArrayEquals(functionParameterData, returnedDataBytes.trimTrailingZeros().toArray());
+                    }
+                }
+            } else {
+                TupleType tupleType = TupleType.parse("(bool,bytes)");
+                var decodedResult = tupleType.decode(
+                        ByteString.fromHex(response.contractCallResponse().getResult().substring(2)).toByteArray());
+                var isSuccess = (boolean) decodedResult.get(0);
+                var returnedData = String.valueOf(
+                        Bytes.wrap((byte[]) decodedResult.get(1)).trimLeadingZeros().toUnprefixedHexString());
+
+                if (amount == null) {
+                    if (shouldSystemAccountWithoutAmountReturnInvalidSolidityAddress(accountNumber)) {
+                        assertFalse(isSuccess);
+                        assertEquals(INVALID_SOLIDITY_ADDRESS, returnedData);
+                    } else if (shouldSystemAccountWithoutAmountReturnSuccess(accountNumber)) {
+                        assertTrue(isSuccess);
+                    }
+                } else {
+                    if (shouldSystemAccountWithAmountReturnInvalidFeeSubmitted(accountNumber)) {
+                        assertFalse(isSuccess);
+                        assertEquals(INVALID_FEE_SUBMITTED, returnedData);
+                    } else {
+                        assertTrue(isSuccess);
+                    }
+                }
+            }
+        }
+    }
+
+    public String getMethodName(String typeOfCall, String amountValue) {
+        String combinedKey = typeOfCall + "_" + amountValue;
+
+        return switch (combinedKey) {
+            case "call_without" -> "makeCallWithoutAmount";
+            case "call_with" -> "makeCallWithAmount";
+            case "staticcall_without" -> "makeStaticCall";
+            case "delegatecall_without" -> "makeDelegateCall";
+            case "callcode_without" -> "callCodeToContractWithoutAmount";
+            case "callcode_with" -> "callCodeToContractWithAmount";
+            case "non_fungible_transferFrom" -> "transferFromNFTExternal";
+            case "fungible_transferFrom" -> "transferFromExternal";
+            case "fungible_transfer" -> "transferTokenExternal";
+            case "non_fungible_transfer" -> "transferNFTExternal";
+            default -> "Unknown";
+        };
+    }
+
     public static long extractAccountNumber(String account) {
         String[] parts = account.split("\\.");
         return Long.parseLong(parts[parts.length - 1]);
     }
 
-    @Getter
+    private boolean shouldSystemAccountWithoutAmountReturnInvalidSolidityAddress(long accountNumber) {
+        return accountNumber == 0
+                || (accountNumber >= 10 && accountNumber <= 357)
+                || (accountNumber >= 361 && accountNumber <= 1000);
+    }
+
+    private boolean shouldSystemAccountWithoutAmountReturnSuccess(long accountNumber) {
+        return (accountNumber >= 1 && accountNumber <= 9)
+                || (accountNumber >= 358 && accountNumber <= 360);
+    }
+
+    private boolean shouldSystemAccountWithAmountReturnInvalidFeeSubmitted(long accountNumber) {
+        return accountNumber >= 0 && accountNumber <= 750;
+    }
+
+        @Getter
     @RequiredArgsConstructor
     enum ContractMethods implements SelectorInterface {
         GET_BALANCE("getBalance"),
