@@ -42,6 +42,7 @@ class ContractResult {
   static FUNCTION_RESULT = 'function_result';
   static GAS_LIMIT = 'gas_limit';
   static GAS_USED = 'gas_used';
+  static GAS_CONSUMED = 'gas_consumed';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
   static SENDER_ID = 'sender_id';
   static TRANSACTION_HASH = 'transaction_hash';

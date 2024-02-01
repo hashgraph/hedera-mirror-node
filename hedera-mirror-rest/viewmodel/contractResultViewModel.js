@@ -42,6 +42,7 @@ class ContractResultViewModel {
     this.function_parameters = toHexString(contractResult.functionParameters, true);
     this.gas_limit = contractResult.gasLimit;
     this.gas_used = contractResult.gasUsed;
+    this.gas_consumed = contractResult.gasConsumed;
     this.timestamp = nsToSecNs(contractResult.consensusTimestamp);
     this.to = contractId.toEvmAddress();
     this.hash = toHexString(contractResult.transactionHash, true);

@@ -1077,6 +1077,7 @@ const contractResultDefaults = {
   function_result: null,
   gas_limit: 1000,
   gas_used: null,
+  gas_consumed: null,
   payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
   sender_id: DEFAULT_SENDER_ID,
   transaction_hash: Buffer.from([...Array(32).keys()]),
