@@ -52,7 +52,6 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowanceHistory;
-import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.job.ReconciliationJob;
 import com.hedera.mirror.common.domain.job.ReconciliationStatus;
@@ -547,25 +546,6 @@ public class DomainBuilder {
             builder.callDataId(entityId());
         }
 
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
-    public DomainWrapper<EventFile, EventFile.EventFileBuilder> eventFile() {
-        long timestamp = timestamp();
-        var builder = EventFile.builder()
-                .bytes(bytes(128))
-                .consensusStart(timestamp)
-                .consensusEnd(timestamp + 1)
-                .count(1L)
-                .digestAlgorithm(DigestAlgorithm.SHA_384)
-                .fileHash(text(96))
-                .hash(text(96))
-                .loadEnd(now.plusSeconds(1).getEpochSecond())
-                .loadStart(now.getEpochSecond())
-                .name(now.toString().replace(':', '_') + ".rcd")
-                .nodeId(number())
-                .previousHash(text(96))
-                .version(3);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

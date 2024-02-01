@@ -19,14 +19,11 @@ package com.hedera.mirror.importer.config;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.parser.ParserProperties;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParser;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
-import com.hedera.mirror.importer.parser.event.EventFileParser;
-import com.hedera.mirror.importer.parser.event.EventParserProperties;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import org.springframework.context.annotation.Bean;
@@ -44,16 +41,10 @@ public class MessagingConfiguration {
     // Shared channel containing all stream types until they're routed to the individual channels
     public static final String CHANNEL_STREAM = "stream";
     private static final String CHANNEL_BALANCE = CHANNEL_STREAM + ".balance";
-    private static final String CHANNEL_EVENT = CHANNEL_STREAM + ".event";
     private static final String CHANNEL_RECORD = CHANNEL_STREAM + ".record";
 
     @Bean(CHANNEL_BALANCE)
     MessageChannel channelBalance(BalanceParserProperties properties) {
-        return channel(properties);
-    }
-
-    @Bean(CHANNEL_EVENT)
-    MessageChannel channelEvent(EventParserProperties properties) {
         return channel(properties);
     }
 
@@ -70,11 +61,6 @@ public class MessagingConfiguration {
     @Bean
     IntegrationFlow integrationFlowBalance(AccountBalanceFileParser parser) {
         return integrationFlow(parser, AccountBalanceFile.class);
-    }
-
-    @Bean
-    IntegrationFlow integrationFlowEvent(EventFileParser parser) {
-        return integrationFlow(parser, EventFile.class);
     }
 
     @Bean

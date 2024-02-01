@@ -33,11 +33,9 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.balance.BalanceDownloaderProperties;
-import com.hedera.mirror.importer.downloader.event.EventDownloaderProperties;
 import com.hedera.mirror.importer.downloader.record.RecordDownloaderProperties;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.repository.EventFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -64,9 +62,6 @@ class DateRangeCalculatorTest {
     private AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Mock
-    private EventFileRepository eventFileRepository;
-
-    @Mock
     private RecordFileRepository recordFileRepository;
 
     private ImporterProperties importerProperties;
@@ -79,19 +74,15 @@ class DateRangeCalculatorTest {
         importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
         var commonDownloaderProperties = new CommonDownloaderProperties(importerProperties);
         var balanceDownloaderProperties = new BalanceDownloaderProperties(commonDownloaderProperties);
-        var eventDownloaderProperties = new EventDownloaderProperties(commonDownloaderProperties);
         var recordDownloaderProperties = new RecordDownloaderProperties(commonDownloaderProperties);
-        downloaderPropertiesList =
-                List.of(balanceDownloaderProperties, eventDownloaderProperties, recordDownloaderProperties);
-        dateRangeCalculator = new DateRangeCalculator(
-                importerProperties, accountBalanceFileRepository, eventFileRepository, recordFileRepository);
+        downloaderPropertiesList = List.of(balanceDownloaderProperties, recordDownloaderProperties);
+        dateRangeCalculator =
+                new DateRangeCalculator(importerProperties, accountBalanceFileRepository, recordFileRepository);
 
         balanceDownloaderProperties.setEnabled(true);
-        eventDownloaderProperties.setEnabled(true);
         recordDownloaderProperties.setEnabled(true);
 
         streamFileRepositories.putIfAbsent(StreamType.BALANCE, accountBalanceFileRepository);
-        streamFileRepositories.putIfAbsent(StreamType.EVENT, eventFileRepository);
         streamFileRepositories.putIfAbsent(StreamType.RECORD, recordFileRepository);
     }
 

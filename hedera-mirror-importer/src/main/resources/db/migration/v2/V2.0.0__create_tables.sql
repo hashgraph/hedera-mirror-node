@@ -340,24 +340,6 @@ create table if not exists ethereum_transaction
 ) partition by range (consensus_timestamp);
 comment on table ethereum_transaction is 'Ethereum transaction details';
 
--- event_file
-create table if not exists event_file
-(
-    bytes            bytea                  null,
-    consensus_end    bigint                 not null,
-    consensus_start  bigint                 not null,
-    count            bigint                 not null,
-    digest_algorithm int                    not null,
-    file_hash        character varying(96)  not null,
-    hash             character varying(96)  not null,
-    load_end         bigint                 not null,
-    load_start       bigint                 not null,
-    name             character varying(250) not null,
-    node_id          bigint                 not null,
-    previous_hash    character varying(96)  not null,
-    version          integer                not null
-) partition by range (consensus_end);
-
 -- file_data
 create table if not exists file_data
 (
