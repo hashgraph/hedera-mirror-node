@@ -47,9 +47,13 @@ public abstract class EncoderDecoderFacade {
     }
 
     protected byte[] encodeDataToByteArray(ContractResource resource, SelectorInterface method, Object... args) {
+        return encodeDataToByteArray(resource, method.getSelector(), args);
+    }
+
+    protected byte[] encodeDataToByteArray(ContractResource resource, String method, Object... args) {
         String json;
         try (var in = getResourceAsStream(resource.getPath())) {
-            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method.getSelector());
+            json = getAbiFunctionAsJsonString(readCompiledArtifact(in), method);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
