@@ -16,19 +16,10 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static org.apache.tuweni.bytes.Bytes.EMPTY;
-import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
-import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
-
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.swirlds.base.utility.Pair;
 import jakarta.inject.Named;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -38,7 +29,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 @Named
-public class MirrorEvmMessageCallProcessorV30 extends HederaEvmMessageCallProcessor {
+public class MirrorEvmMessageCallProcessorV30 extends AbstractEvmMessageCallProcessor {
 
     public MirrorEvmMessageCallProcessorV30(
             @Named("evm030") EVM v30,
@@ -52,37 +43,11 @@ public class MirrorEvmMessageCallProcessorV30 extends HederaEvmMessageCallProces
     @Override
     protected void executeHederaPrecompile(
             PrecompiledContract contract, MessageFrame frame, OperationTracer operationTracer) {
-        Bytes output = EMPTY;
-        Long gasRequirement = 0L;
-        if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
-            var updater = (AbstractLedgerEvmWorldUpdater) frame.getWorldUpdater();
-            final var costedResult = htsPrecompile.computeCosted(
-                    frame.getInputData(),
-                    frame,
-                    (now, minimumTinybarCost) -> minimumTinybarCost,
-                    updater.tokenAccessor());
-            output = costedResult.getValue();
-            gasRequirement = costedResult.getKey();
-        }
-        if (!"HTS".equals(contract.getName()) && !"EvmHTS".equals(contract.getName())) {
-            output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
-            gasRequirement = contract.gasRequirement(frame.getInputData());
-        }
+        Pair<Long, Bytes> costAndResult = calculatePrecompileGasAndOutput(contract, frame);
 
-        operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-        if (frame.getState() == REVERT) {
-            return;
-        }
-        if (frame.getRemainingGas() < gasRequirement) {
-            frame.decrementRemainingGas(frame.getRemainingGas());
-            frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
-            frame.setState(EXCEPTIONAL_HALT);
-        } else if (output != null) {
-            frame.decrementRemainingGas(gasRequirement);
-            frame.setOutputData(output);
-            frame.setState(COMPLETED_SUCCESS);
-        } else {
-            frame.setState(EXCEPTIONAL_HALT);
-        }
+        Long gasRequirement = costAndResult.left();
+        Bytes output = costAndResult.right();
+
+        traceAndHandleExecutionResult(frame, operationTracer, gasRequirement, output);
     }
 }
