@@ -59,5 +59,7 @@ jobs:
           arguments: :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
-        if: always() && matrix.schema == 'v1'
+        uses: codecov/codecov-action@v4
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        if: always() && matrix.schema == 'v1' && matrix.project != 'rest:monitoring' && matrix.project != 'test'

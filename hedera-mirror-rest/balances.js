@@ -64,10 +64,6 @@ const formatBalancesResult = (req, result, limit, order) => {
     ),
   };
 
-  if (utils.isTestEnv()) {
-    ret.sqlQuery = sqlQuery;
-  }
-
   return ret;
 };
 

@@ -37,7 +37,11 @@ describe('bindTimestampRange', () => {
     beforeEach(async () => {
       await integrationDomainOps.loadTransactions([{consensus_timestamp: 1606123456000111222n, payerAccountId: 2000}]);
       config.query.bindTimestampRange = true;
-      clock = sinon.useFakeTimers(now);
+      clock = sinon.useFakeTimers({
+        now,
+        shouldAdvanceTime: true,
+        shouldClearNativeTimers: true,
+      });
     });
 
     afterEach(() => {

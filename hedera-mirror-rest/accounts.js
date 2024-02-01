@@ -372,10 +372,6 @@ const getAccounts = async (req, res) => {
     ),
   };
 
-  if (utils.isTestEnv()) {
-    ret.sqlQuery = result.sqlQuery;
-  }
-
   logger.debug(`getAccounts returning ${ret.accounts.length} entries`);
   res.locals[constants.responseDataLabel] = ret;
 };
@@ -502,10 +498,6 @@ const getOneAccount = async (req, res) => {
 
   logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
   res.locals[constants.responseDataLabel] = ret;
-
-  if (utils.isTestEnv()) {
-    ret.entitySqlQuery = entityResults.sqlQuery;
-  }
 };
 
 const acceptedAccountsParameters = new Set([
