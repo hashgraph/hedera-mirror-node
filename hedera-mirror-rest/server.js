@@ -80,7 +80,7 @@ if (config.db.tls.enabled) {
   };
 }
 
-const Pool = await getPoolClass(isTestEnv());
+const Pool = getPoolClass();
 const pool = new Pool(poolConfig);
 pool.on('error', (error) => {
   logger.error(`error event emitted on pg pool. ${error.stack}`);
