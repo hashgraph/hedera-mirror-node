@@ -111,7 +111,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (container_memory_working_set_bytes{id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}) / sum (machine_memory_bytes{kubernetes_io_hostname=~\"^$Node$\"}) * 100",
+          "expr": "sum (container_memory_working_set_bytes{id=\"/\",node=~\"^$Node$\"}) / sum (machine_memory_bytes{node=~\"^$Node$\"}) * 100",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -184,7 +184,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (rate (container_cpu_usage_seconds_total{id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}[$interval])) / sum (machine_cpu_cores{kubernetes_io_hostname=~\"^$Node$\"}) * 100",
+          "expr": "sum (rate (container_cpu_usage_seconds_total{id=\"/\",node=~\"^$Node$\"}[$__rate_interval])) / sum (machine_cpu_cores{node=~\"^$Node$\"}) * 100",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -258,7 +258,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (container_fs_usage_bytes{device=~\"^/dev/vda.$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}) / sum (container_fs_limit_bytes{device=~\"^/dev/vda.$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}) * 100",
+          "expr": "sum (container_fs_usage_bytes{device=~\"^/dev/vda.$\",id=\"/\",node=~\"^$Node$\"}) / sum (container_fs_limit_bytes{device=~\"^/dev/vda.$\",id=\"/\",node=~\"^$Node$\"}) * 100",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -329,7 +329,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (container_memory_working_set_bytes{id=\"/\",kubernetes_io_hostname=~\"^$Node$\"})",
+          "expr": "sum (container_memory_working_set_bytes{id=\"/\",node=~\"^$Node$\"})",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -398,7 +398,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (machine_memory_bytes{kubernetes_io_hostname=~\"^$Node$\"})",
+          "expr": "sum (machine_memory_bytes{node=~\"^$Node$\"})",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -467,7 +467,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (rate (container_cpu_usage_seconds_total{id=\"/\",kubernetes_io_hostname=~\"^$Node$\"}[$interval]))",
+          "expr": "sum (rate (container_cpu_usage_seconds_total{id=\"/\",node=~\"^$Node$\"}[$interval]))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -537,7 +537,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (machine_cpu_cores{kubernetes_io_hostname=~\"^$Node$\"})",
+          "expr": "sum (machine_cpu_cores{node=~\"^$Node$\"})",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -606,7 +606,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (container_fs_usage_bytes{device=~\"^/dev/vda.$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"})",
+          "expr": "sum (container_fs_usage_bytes{device=~\"^/dev/vda.$\",id=\"/\",node=~\"^$Node$\"})",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -676,7 +676,7 @@
           "datasource": {
             "uid": "$datasource"
           },
-          "expr": "sum (container_fs_limit_bytes{device=~\"^/dev/vda.$\",id=\"/\",kubernetes_io_hostname=~\"^$Node$\"})",
+          "expr": "sum (container_fs_limit_bytes{device=~\"^/dev/vda.$\",id=\"/\",node=~\"^$Node$\"})",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -808,7 +808,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum (rate (container_cpu_usage_seconds_total{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (pod) > 0",
+          "expr": "sum (rate (container_cpu_usage_seconds_total{node=~\"^$Node$\",namespace=~\"$namespace\"}[$__rate_interval])) by (pod) > 0",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -920,7 +920,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(container_cpu_cfs_throttled_seconds_total{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (pod) > 0",
+          "expr": "sum(rate(container_cpu_cfs_throttled_seconds_total{node=~\"^$Node$\",namespace=~\"$namespace\"}[$__rate_interval])) by (pod) > 0",
           "interval": "10s",
           "legendFormat": "{{ pod }}",
           "range": true,
@@ -1050,7 +1050,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum (container_memory_working_set_bytes{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod) > 0",
+          "expr": "sum (container_memory_working_set_bytes{node=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod) > 0",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1159,7 +1159,7 @@
             "uid": "$datasource"
           },
           "exemplar": true,
-          "expr": "sum(container_memory_working_set_bytes{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod) / sum(kube_pod_container_resource_limits{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod)",
+          "expr": "sum(container_memory_working_set_bytes{node=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod) / sum(kube_pod_container_resource_limits{node=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod)",
           "interval": "10s",
           "legendFormat": "{{ pod }}",
           "refId": "B"
