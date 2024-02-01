@@ -62,4 +62,4 @@ jobs:
         uses: codecov/codecov-action@v4
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        if: always() && matrix.schema == 'v1'
+        if: always() && matrix.schema == 'v1' && matrix.project != 'rest:monitoring' && matrix.project != 'test'
