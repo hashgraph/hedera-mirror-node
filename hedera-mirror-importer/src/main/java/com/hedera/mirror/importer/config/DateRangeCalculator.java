@@ -26,7 +26,6 @@ import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.importer.repository.EventFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -48,7 +47,6 @@ public class DateRangeCalculator {
 
     private final ImporterProperties importerProperties;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
-    private final EventFileRepository eventFileRepository;
     private final RecordFileRepository recordFileRepository;
 
     private final Map<StreamType, DateRangeFilter> filters = new ConcurrentHashMap<>();
@@ -59,7 +57,7 @@ public class DateRangeCalculator {
     }
 
     /**
-     * Gets the DateRangeFilter for the downloader (record, balance, event).
+     * Gets the DateRangeFilter for the downloader (record, balance).
      *
      * @param type - downloader type
      * @return the DateRangeFilter
@@ -161,7 +159,6 @@ public class DateRangeCalculator {
     private StreamFileRepository<?, ?> getStreamFileRepository(StreamType streamType) {
         return switch (streamType) {
             case BALANCE -> accountBalanceFileRepository;
-            case EVENT -> eventFileRepository;
             case RECORD -> recordFileRepository;
         };
     }
