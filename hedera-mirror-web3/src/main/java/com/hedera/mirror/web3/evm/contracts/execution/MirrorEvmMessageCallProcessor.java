@@ -32,16 +32,13 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.swirlds.base.utility.Pair;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcessor {
@@ -60,17 +57,6 @@ public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcess
         this.entityAddressSequencer = entityAddressSequencer;
 
         MainnetPrecompiledContracts.populateForIstanbul(precompiles, gasCalculator);
-    }
-
-    @Override
-    protected void executeHederaPrecompile(
-            PrecompiledContract contract, MessageFrame frame, OperationTracer operationTracer) {
-        Pair<Long, Bytes> costAndResult = calculatePrecompileGasAndOutput(contract, frame);
-
-        Long gasRequirement = costAndResult.left();
-        Bytes output = costAndResult.right();
-
-        traceAndHandleExecutionResult(frame, operationTracer, gasRequirement, output);
     }
 
     /**

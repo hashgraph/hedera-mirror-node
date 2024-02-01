@@ -44,7 +44,18 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
         super(evm, precompiles, hederaPrecompileList);
     }
 
-    protected Pair<Long, Bytes> calculatePrecompileGasAndOutput(PrecompiledContract contract, MessageFrame frame) {
+    @Override
+    protected void executeHederaPrecompile(
+            PrecompiledContract contract, MessageFrame frame, OperationTracer operationTracer) {
+        Pair<Long, Bytes> costAndResult = calculatePrecompileGasAndOutput(contract, frame);
+
+        Long gasRequirement = costAndResult.left();
+        Bytes output = costAndResult.right();
+
+        traceAndHandleExecutionResult(frame, operationTracer, gasRequirement, output);
+    }
+
+    private Pair<Long, Bytes> calculatePrecompileGasAndOutput(PrecompiledContract contract, MessageFrame frame) {
         Bytes output = EMPTY;
         Long gasRequirement = 0L;
 
@@ -67,7 +78,7 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
         return Pair.of(gasRequirement, output);
     }
 
-    protected void traceAndHandleExecutionResult(
+    private void traceAndHandleExecutionResult(
             MessageFrame frame, OperationTracer operationTracer, Long gasRequirement, Bytes output) {
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);
         if (frame.getState() == REVERT) {

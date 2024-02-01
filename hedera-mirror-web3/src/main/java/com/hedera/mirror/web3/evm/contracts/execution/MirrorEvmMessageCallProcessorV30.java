@@ -18,15 +18,10 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
-import com.swirlds.base.utility.Pair;
 import jakarta.inject.Named;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 @Named
 public class MirrorEvmMessageCallProcessorV30 extends AbstractEvmMessageCallProcessor {
@@ -38,16 +33,5 @@ public class MirrorEvmMessageCallProcessorV30 extends AbstractEvmMessageCallProc
             final GasCalculatorHederaV22 gasCalculator) {
         super(v30, precompiles, precompilesHolder.getHederaPrecompiles());
         MainnetPrecompiledContracts.populateForIstanbul(precompiles, gasCalculator);
-    }
-
-    @Override
-    protected void executeHederaPrecompile(
-            PrecompiledContract contract, MessageFrame frame, OperationTracer operationTracer) {
-        Pair<Long, Bytes> costAndResult = calculatePrecompileGasAndOutput(contract, frame);
-
-        Long gasRequirement = costAndResult.left();
-        Bytes output = costAndResult.right();
-
-        traceAndHandleExecutionResult(frame, operationTracer, gasRequirement, output);
     }
 }
