@@ -16,18 +16,25 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.response.GeneralContractExecutionResponse;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.DeployedContract;
 import com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.SelectorInterface;
+import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import jakarta.inject.Named;
+import java.nio.ByteBuffer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +55,7 @@ public class NetworkAdapter extends EncoderDecoderFacade {
     public static final TupleType BIG_INTEGER_TUPLE = TupleType.parse(UINT256);
     public static final TupleType BYTES_TUPLE = TupleType.parse(BYTES);
 
-    public ContractCallResponse contractsCall(
+    public ContractCallResponseWrapper contractsCall(
             final NodeNameEnum node,
             boolean isEstimate,
             final String from,
@@ -64,11 +71,11 @@ public class NetworkAdapter extends EncoderDecoderFacade {
                         .from(from.isEmpty() ? contractClient.getClientAddress() : from)
                         .to(deployedContract.contractId().toSolidityAddress());
 
-                return mirrorClient.contractsCall(contractCallRequestBody);
+                return ContractCallResponseWrapper.of(mirrorClient.contractsCall(contractCallRequestBody));
             } catch (Exception e) {
                 ContractCallResponse contractCallResponse = new ContractCallResponse();
                 contractCallResponse.setResult(e.getMessage());
-                return contractCallResponse;
+                return ContractCallResponseWrapper.of(contractCallResponse);
             }
         } else {
             final var gas = contractClient
@@ -88,13 +95,46 @@ public class NetworkAdapter extends EncoderDecoderFacade {
                 if (e instanceof PrecheckStatusException pse) {
                     final var exceptionReason = pse.status.toString();
                     contractCallResponse.setResult(exceptionReason);
-                    return contractCallResponse;
+                    return ContractCallResponseWrapper.of(contractCallResponse);
                 }
 
                 contractCallResponse.setResult(e.getMessage());
             }
 
-            return contractCallResponse;
+            return ContractCallResponseWrapper.of(contractCallResponse);
+        }
+    }
+
+    public GeneralContractExecutionResponse contractsCall(
+            final NodeNameEnum node,
+            boolean isEstimate,
+            final String from,
+            final DeployedContract deployedContract,
+            final String method,
+            final byte[] data,
+            final Hbar amount) {
+        if (NodeNameEnum.MIRROR.equals(node)) {
+            var contractCallRequestBody = ModelBuilder.contractCallRequest()
+                    .data(Strings.encode(ByteBuffer.wrap(data)))
+                    .to(deployedContract.contractId().toSolidityAddress())
+                    .from(from.isEmpty() ? contractClient.getClientAddress() : from)
+                    .estimate(isEstimate)
+                    .value(amount != null ? amount.toTinybars() : 0);
+
+            var response = mirrorClient.contractsCall(contractCallRequestBody);
+            return new GeneralContractExecutionResponse(ContractCallResponseWrapper.of(response));
+        } else {
+            final var gas = contractClient
+                    .getSdkClient()
+                    .getAcceptanceTestProperties()
+                    .getFeatureProperties()
+                    .getMaxContractFunctionGas();
+
+            final var result = contractClient.executeContract(deployedContract.contractId(), gas, method, data, amount);
+            final var txId =
+                    result.networkTransactionResponse().getTransactionId().toString();
+            final var errorMessage = extractInternalCallErrorMessage(extractTransactionId(txId));
+            return new GeneralContractExecutionResponse(txId, result.networkTransactionResponse(), errorMessage);
         }
     }
 
@@ -114,5 +154,28 @@ public class NetworkAdapter extends EncoderDecoderFacade {
             contractCallResponse.setResult(encodedResult.toString());
         }
         return contractCallResponse;
+    }
+
+    private String extractInternalCallErrorMessage(String transactionId) throws IllegalArgumentException {
+        var actions = mirrorClient.getContractActions(transactionId).getActions();
+        if (actions == null || actions.size() < 2) {
+            throw new IllegalArgumentException("The actions list must contain at least two elements.");
+        }
+
+        if (!actions.get(1).getResultDataType().equalsIgnoreCase("OUTPUT")) {
+            String hexString = actions.get(1).getResultData();
+            return hexToAscii(hexString.replace("0x", ""));
+        }
+        return null;
+    }
+
+    private static String extractTransactionId(String message) {
+        Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
+        Matcher matcher = pattern.matcher(message);
+        if (matcher.find()) {
+            return matcher.group(1) + "-" + matcher.group(2) + "-" + matcher.group(3);
+        } else {
+            return "Not found";
+        }
     }
 }

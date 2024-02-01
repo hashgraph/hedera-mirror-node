@@ -30,3 +30,49 @@ Feature: in-equivalence tests
       Then the mirror node REST API should return status 200 for the contracts creation
       Then I execute balance opcode against a contract with balance
       Then I execute selfdestruct and set beneficiary to the deleted contract address
+
+  Scenario Outline: Validate in-equivalence tests for system accounts with call, staticcall, delegatecall
+  and callcode
+    Given I successfully create equivalence call contract
+    Then the mirror node REST API should return status 200 for the contracts creation
+    Then I verify the equivalence contract bytecode is deployed
+    Then I make internal <callType> to system account <account> <amountType> amount to <node> node
+
+    Examples:
+      | callType       | account   | amountType | node     |
+      | "call"         | "0.0.0"   | "without"  | "MIRROR" |
+      | "call"         | "0.0.0"   | "with"     | "MIRROR" |
+      | "call"         | "0.0.9"   | "without"  | "MIRROR" |
+      | "call"         | "0.0.9"   | "with"     | "MIRROR" |
+      | "call"         | "0.0.357" | "without"  | "MIRROR" |
+      | "call"         | "0.0.357" | "with"     | "MIRROR" |
+      | "call"         | "0.0.358" | "without"  | "MIRROR" |
+      | "call"         | "0.0.358" | "with"     | "MIRROR" |
+      | "call"         | "0.0.741" | "without"  | "MIRROR" |
+      | "call"         | "0.0.741" | "with"     | "MIRROR" |
+      | "call"         | "0.0.800" | "without"  | "MIRROR" |
+      | "call"         | "0.0.800" | "with"     | "MIRROR" |
+      | "staticcall"   | "0.0.0"   | "without"  | "MIRROR" |
+      | "staticcall"   | "0.0.9"   | "without"  | "MIRROR" |
+      | "staticcall"   | "0.0.357" | "without"  | "MIRROR" |
+      | "staticcall"   | "0.0.358" | "without"  | "MIRROR" |
+      | "staticcall"   | "0.0.741" | "without"  | "MIRROR" |
+      | "staticcall"   | "0.0.800" | "without"  | "MIRROR" |
+      | "delegatecall" | "0.0.0"   | "without"  | "MIRROR" |
+      | "delegatecall" | "0.0.9"   | "without"  | "MIRROR" |
+      | "delegatecall" | "0.0.357" | "without"  | "MIRROR" |
+      | "delegatecall" | "0.0.358" | "without"  | "MIRROR" |
+      | "delegatecall" | "0.0.741" | "without"  | "MIRROR" |
+      | "delegatecall" | "0.0.800" | "without"  | "MIRROR" |
+      | "callcode"     | "0.0.0"   | "without"  | "MIRROR" |
+      | "callcode"     | "0.0.0"   | "with"     | "MIRROR" |
+      | "callcode"     | "0.0.9"   | "without"  | "MIRROR" |
+      | "callcode"     | "0.0.9"   | "with"     | "MIRROR" |
+      | "callcode"     | "0.0.357" | "without"  | "MIRROR" |
+      | "callcode"     | "0.0.357" | "with"     | "MIRROR" |
+      | "callcode"     | "0.0.358" | "without"  | "MIRROR" |
+      | "callcode"     | "0.0.358" | "with"     | "MIRROR" |
+      | "callcode"     | "0.0.741" | "without"  | "MIRROR" |
+      | "callcode"     | "0.0.741" | "with"     | "MIRROR" |
+      | "callcode"     | "0.0.800" | "without"  | "MIRROR" |
+      | "callcode"     | "0.0.800" | "with"     | "MIRROR" |
