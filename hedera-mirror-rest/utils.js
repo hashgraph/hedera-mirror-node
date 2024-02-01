@@ -1369,11 +1369,9 @@ const ipMask = (ip) => {
 
 /**
  * Gets the pool class with queryQuietly
- *
- * @param {boolean} mock
  */
-const getPoolClass = async (mock = false) => {
-  const Pool = mock ? (await import('./__tests__/mockPool')).default : pg.Pool;
+const getPoolClass = () => {
+  const {Pool} = pg;
   Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
     let client;
     let result;

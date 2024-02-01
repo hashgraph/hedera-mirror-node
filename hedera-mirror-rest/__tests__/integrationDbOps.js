@@ -25,7 +25,7 @@ import {getModuleDirname, isV2Schema} from './testutils';
 import {getPoolClass} from '../utils';
 
 const {db: defaultDbConfig} = config;
-const Pool = await getPoolClass();
+const Pool = getPoolClass();
 
 const cleanupSql = {
   v1: fs.readFileSync(
