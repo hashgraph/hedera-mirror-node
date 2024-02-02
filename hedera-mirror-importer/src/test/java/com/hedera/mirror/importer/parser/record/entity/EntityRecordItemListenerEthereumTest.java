@@ -17,7 +17,9 @@
 package com.hedera.mirror.importer.parser.record.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
@@ -29,17 +31,24 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.ethereum.LegacyEthereumTransactionParserTest;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.FileID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.data.util.Version;
 
 @RequiredArgsConstructor
 class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListenerTest {
+    private static final Version HAPI_VERSION_0_46_0 = new Version(0, 46, 0);
+    private static final long SIGNER_NONCE = 10L;
 
     private final EthereumTransactionRepository ethereumTransactionRepository;
 
@@ -70,7 +79,66 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem, sender));
+                () -> assertEthereumTransaction(recordItem, sender, SIGNER_NONCE));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideSignerNonceArguments")
+    void ethereumTransactionSignerNonce(boolean create, boolean setPriorHapiVersion, long expectedNonce) {
+        var builder = recordItemBuilder.ethereumTransaction(create);
+        if (setPriorHapiVersion) {
+            builder.record(x -> {
+                        // This version has no signer nonce so create it with a new builder to remove the field
+                        var contractFunctionResult = ContractFunctionResult.newBuilder()
+                                .setSenderId(recordItemBuilder.accountId())
+                                .build();
+                        if (create) {
+                            x.setContractCreateResult(contractFunctionResult);
+                        } else {
+                            x.setContractCallResult(contractFunctionResult);
+                        }
+                    })
+                    .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_46_0));
+        }
+
+        var recordItem = builder.build();
+        var record = recordItem.getTransactionRecord();
+        var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
+        var senderId = EntityId.of(functionResult.getSenderId());
+        Entity sender = domainBuilder
+                .entity()
+                .customize(e -> e.id(senderId.getId()).num(senderId.getNum()))
+                .persist();
+
+        parseRecordItemAndCommit(recordItem);
+        assertEthereumTransaction(recordItem, sender, expectedNonce);
+    }
+
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void ethereumTransactionNullSignerNonce(boolean create) {
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(create)
+                .record(x -> x.setContractCallResult(
+                        recordItemBuilder.contractFunctionResult().clearSignerNonce()))
+                .build();
+
+        var record = recordItem.getTransactionRecord();
+        var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
+        var senderId = EntityId.of(functionResult.getSenderId());
+        long nonceValue = 500L;
+        Entity sender = domainBuilder
+                .entity()
+                .customize(e -> e.id(senderId.getId()).num(senderId.getNum()).ethereumNonce(nonceValue))
+                .persist();
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        var ethereumNonce = entityRepository.findById(sender.getId()).get().getEthereumNonce();
+        // the nonce value is unchanged
+        assertThat(ethereumNonce).isEqualTo(nonceValue);
     }
 
     @ValueSource(booleans = {true, false})
@@ -89,7 +157,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem, null));
+                () -> assertEthereumTransaction(recordItem, null, SIGNER_NONCE));
     }
 
     @ValueSource(booleans = {true, false})
@@ -108,7 +176,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem, null));
+                () -> assertEthereumTransaction(recordItem, null, SIGNER_NONCE));
     }
 
     @Test
@@ -132,11 +200,12 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .build();
     }
 
-    private void assertEthereumTransaction(RecordItem recordItem, Entity sender) {
+    private void assertEthereumTransaction(RecordItem recordItem, Entity sender, long expectedNonce) {
         long createdTimestamp = recordItem.getConsensusTimestamp();
         var ethTransaction =
                 ethereumTransactionRepository.findById(createdTimestamp).get();
         var transactionBody = recordItem.getTransactionBody().getEthereumTransaction();
+        var transactionRecord = recordItem.getTransactionRecord();
 
         var fileId = transactionBody.getCallData() == FileID.getDefaultInstance()
                 ? null
@@ -146,15 +215,20 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(DomainUtils.toBytes(transactionBody.getEthereumData()), EthereumTransaction::getData)
                 .returns(transactionBody.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
-                .returns(
-                        DomainUtils.toBytes(recordItem.getTransactionRecord().getEthereumHash()),
-                        EthereumTransaction::getHash);
+                .returns(DomainUtils.toBytes(transactionRecord.getEthereumHash()), EthereumTransaction::getHash);
 
         if (sender != null) {
-            assertThat(entityRepository.findById(sender.getId()))
-                    .get()
-                    .extracting(Entity::getEthereumNonce)
-                    .isEqualTo(ethTransaction.getNonce() + 1);
+            var ethereumNonce = entityRepository.findById(sender.getId()).get().getEthereumNonce();
+            assertThat(ethereumNonce).isEqualTo(expectedNonce);
         }
+    }
+
+    private static Stream<Arguments> provideSignerNonceArguments() {
+        long incrementedNonce = 3L;
+        return Stream.of(
+                Arguments.of(true, false, SIGNER_NONCE),
+                Arguments.of(true, true, incrementedNonce),
+                Arguments.of(false, false, SIGNER_NONCE),
+                Arguments.of(false, true, incrementedNonce));
     }
 }

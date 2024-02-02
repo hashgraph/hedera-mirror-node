@@ -17,9 +17,9 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -28,6 +28,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -101,12 +102,12 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
-        var transactionRecord = recordItem.getTransactionRecord();
+        if (!entityProperties.getPersist().isTrackNonce()) {
+            return;
+        }
 
-        // It should not update the nonce if it's unsuccessful and failed before EVM execution
-        if (!recordItem.isSuccessful()
-                && !transactionRecord.hasContractCallResult()
-                && !transactionRecord.hasContractCreateResult()) {
+        var transactionRecord = recordItem.getTransactionRecord();
+        if (!transactionRecord.hasContractCallResult() && !transactionRecord.hasContractCreateResult()) {
             return;
         }
 
@@ -114,10 +115,28 @@ class EthereumTransactionHandler extends AbstractTransactionHandler {
                 ? transactionRecord.getContractCreateResult()
                 : transactionRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
+        if (EntityId.isEmpty(senderId)) {
+            return;
+        }
 
-        if (!EntityId.isEmpty(senderId) && entityProperties.getPersist().isTrackNonce()) {
-            Entity entity = senderId.toEntity();
-            entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
+        Long nonce = null;
+        if (functionResult.hasSignerNonce()) {
+            nonce = functionResult.getSignerNonce().getValue();
+        } else if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_47_0)) {
+            var status = transactionRecord.getReceipt().getStatus();
+            if (!recordItem.isSuccessful()
+                    && status != ResponseCodeEnum.CONTRACT_REVERT_EXECUTED
+                    && status != ResponseCodeEnum.MAX_CHILD_RECORDS_EXCEEDED) {
+                return;
+            }
+
+            // Increment the nonce for backwards compatibility
+            nonce = ethereumTransaction.getNonce() + 1;
+        }
+
+        if (nonce != null) {
+            var entity = senderId.toEntity();
+            entity.setEthereumNonce(nonce);
             entity.setTimestampRange(null); // Don't trigger a history row
             entityListener.onEntity(entity);
             recordItem.addEntityId(senderId);

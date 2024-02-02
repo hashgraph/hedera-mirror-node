@@ -48,6 +48,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     public static final Version HAPI_VERSION_NOT_SET = new Version(0, 0, 0);
     public static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);
     public static final Version HAPI_VERSION_0_27_0 = new Version(0, 27, 0);
+    public static final Version HAPI_VERSION_0_47_0 = new Version(0, 47, 0);
 
     @ToString.Exclude
     private byte[] bytes;
