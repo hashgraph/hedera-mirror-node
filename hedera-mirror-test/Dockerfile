@@ -8,4 +8,4 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 USER 1000:1000
 
-ENTRYPOINT ["java", "-jar", "test.jar"]
+ENTRYPOINT ["java", "-jar", "/app/test.jar"]
