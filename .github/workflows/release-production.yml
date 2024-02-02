@@ -42,6 +42,9 @@ jobs:
           distribution: "temurin"
           java-version: 21
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
@@ -54,10 +57,8 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build
-        uses: gradle/gradle-build-action@v2
         if: matrix.module != 'rest' && matrix.module != 'rest-monitor' && matrix.module != 'rosetta'
-        with:
-          arguments: build -x test
+        run: ./gradlew build -x test
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v3
