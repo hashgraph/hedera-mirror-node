@@ -58,7 +58,6 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.rest.model.AccountInfo;
-import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.rest.model.Nft;
 import com.hedera.mirror.rest.model.TokenInfo;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
@@ -126,7 +125,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
         var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
-        log.info("Get token info for token {}: {}", TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN, tokenInfo);
+        log.debug("Get token info for token {}: {}", TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN, tokenInfo);
     }
 
     @Given("I successfully create and verify a non fungible token for precompile contract tests")

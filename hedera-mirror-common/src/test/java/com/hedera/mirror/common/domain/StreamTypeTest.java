@@ -33,13 +33,11 @@ class StreamTypeTest {
 
     private static final Map<StreamType, List<String>> dataExtensions = ImmutableMap.<StreamType, List<String>>builder()
             .put(StreamType.BALANCE, List.of("csv", "pb"))
-            .put(StreamType.EVENT, List.of("evts"))
             .put(StreamType.RECORD, List.of("rcd"))
             .build();
     private static final Map<StreamType, List<String>> signatureExtensions =
             ImmutableMap.<StreamType, List<String>>builder()
                     .put(StreamType.BALANCE, List.of("csv_sig", "pb_sig"))
-                    .put(StreamType.EVENT, List.of("evts_sig"))
                     .put(StreamType.RECORD, List.of("rcd_sig"))
                     .build();
 

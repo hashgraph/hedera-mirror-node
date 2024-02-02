@@ -204,11 +204,13 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @CsvSource({
-        // function getCodeHash with parameter hedera system accounts, expected to revert with INVALID_SOLIDITY_ADDRESS
+        // function getCodeHash with parameter hedera system accounts or accounts that do not exist
+        // expected to revert with INVALID_SOLIDITY_ADDRESS
         "0x81ea44080000000000000000000000000000000000000000000000000000000000000167",
         "0x81ea44080000000000000000000000000000000000000000000000000000000000000168",
-        "0x81ea440800000000000000000000000000000000000000000000000000000000000002ee",
-        "0x81ea440800000000000000000000000000000000000000000000000000000000000002e4",
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000169",
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000005ee",
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000005e4",
     })
     void testSystemContractCodeHashPreVersion38(String input) {
         final var serviceParameters = serviceParametersForExecution(

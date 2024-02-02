@@ -408,9 +408,6 @@ select create_time_partitions(table_name :='public.ethereum_transaction',
                               partition_interval := ${partitionTimeInterval},
                               start_from := ${partitionStartDate}::timestamptz,
                               end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
-select create_time_partitions(table_name :='public.event_file', partition_interval := ${partitionTimeInterval},
-                              start_from := ${partitionStartDate}::timestamptz,
-                              end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});
 select create_time_partitions(table_name :='public.file_data', partition_interval := ${partitionTimeInterval},
                               start_from := ${partitionStartDate}::timestamptz,
                               end_at := CURRENT_TIMESTAMP + ${partitionTimeInterval});

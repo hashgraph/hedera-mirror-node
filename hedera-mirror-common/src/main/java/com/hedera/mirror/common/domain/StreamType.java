@@ -18,7 +18,6 @@ package com.hedera.mirror.common.domain;
 
 import com.google.common.collect.ImmutableSortedSet;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import java.time.Duration;
 import java.util.Comparator;
@@ -39,7 +38,6 @@ public enum StreamType {
             "_Balances",
             List.of("csv", "pb"),
             Duration.ofMinutes(15L)),
-    EVENT(EventFile::new, "eventsStreams", "events_", "", List.of("evts"), Duration.ofSeconds(5L)),
     RECORD(RecordFile::new, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
 
     public static final String SIGNATURE_SUFFIX = "_sig";

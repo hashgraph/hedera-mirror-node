@@ -70,6 +70,12 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     @Override
+    public MutableAccount getOrCreate(Address address) {
+        final MutableAccount account = getAccount(address);
+        return account == null ? createAccount(address) : account;
+    }
+
+    @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public MutableAccount createAccount(Address address, long nonce, Wei balance) {
         persistAccount(address, nonce, balance);

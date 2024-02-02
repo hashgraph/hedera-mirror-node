@@ -64,10 +64,9 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     static final String QUERY_START_AFTER = "start-after";
 
     private static final Pattern ENTITY_ID_PATTERN =
-            Pattern.compile("/(balance|event|record)(s_)?(\\d{1,10})\\.\\d{1,10}\\.(\\d{1,10})");
+            Pattern.compile("/(balance|record)(s_)?(\\d{1,10})\\.\\d{1,10}\\.(\\d{1,10})");
     private static final Pattern SIDECAR_PATTERN = Pattern.compile("Z_\\d{1,2}\\.rcd");
-    private static final Pattern NODE_ID_PATTERN =
-            Pattern.compile("[^/]/(\\d{1,10})/(\\d{1,10})/(balance|event|record)/");
+    private static final Pattern NODE_ID_PATTERN = Pattern.compile("[^/]/(\\d{1,10})/(\\d{1,10})/(balance|record)/");
 
     private final MeterRegistry meterRegistry;
 

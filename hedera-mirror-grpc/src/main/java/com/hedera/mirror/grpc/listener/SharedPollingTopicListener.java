@@ -28,8 +28,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.Data;
 import org.reactivestreams.Subscription;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import reactor.core.observability.micrometer.Micrometer;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
@@ -76,9 +74,8 @@ public class SharedPollingTopicListener extends SharedTopicListener {
             return Flux.empty();
         }
 
-        Pageable pageable = PageRequest.of(0, listenerProperties.getMaxPageSize());
         return Flux.fromIterable(topicMessageRepository.findLatest(
-                        context.getLastConsensusTimestamp().get(), pageable))
+                        context.getLastConsensusTimestamp().get(), listenerProperties.getMaxPageSize()))
                 .doOnNext(context::onNext)
                 .doOnCancel(context::onPollEnd)
                 .doOnComplete(context::onPollEnd)

@@ -239,7 +239,6 @@ class MirrorEvmTxProcessorTest {
     void assertTransactionSenderAndValue() {
         // setup:
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         given(hederaEvmContractAliases.isMirror(receiverAddress)).willReturn(true);
         final long GAS_LIMIT = 300_000L;
         final Wei oneWei = Wei.of(1L);
@@ -270,7 +269,6 @@ class MirrorEvmTxProcessorTest {
         final var validPrecompilePayload = Bytes.fromHexString("0xFF");
         // setup:
         given(hederaEvmContractAliases.resolveForEvm(nativePrecompileAddress)).willReturn(nativePrecompileAddress);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(null);
         given(hederaEvmContractAliases.isMirror(nativePrecompileAddress)).willReturn(true);
         given(hederaEvmContractAliases.isNativePrecompileAddress(nativePrecompileAddress))
                 .willReturn(true);
@@ -305,7 +303,6 @@ class MirrorEvmTxProcessorTest {
         // setup:
         given(hederaEvmContractAliases.resolveForEvm(invalidNativePrecompileAddress))
                 .willReturn(invalidNativePrecompileAddress);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(null);
         given(hederaEvmContractAliases.isMirror(invalidNativePrecompileAddress)).willReturn(true);
         given(hederaEvmContractAliases.isNativePrecompileAddress(invalidNativePrecompileAddress))
                 .willReturn(false);
