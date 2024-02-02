@@ -290,7 +290,10 @@ paths:
   /api/v1/balances:
     get:
       summary: List account balances
-      description: Returns a timestamped list of account balances on the network, limited to at most 50 token balances per account as outlined in HIP-367. This includes both HBAR and token balances for accounts.
+      description:
+        Returns a list of account balances on the network, limited to at most 50 token balances per account as outlined
+        in HIP-367. As such, it's not recommended for general use and we instead recommend using either
+        `/api/v1/accounts/{id}/tokens` or `/api/v1/tokens/{id}/balances` to obtain token balance information.
       operationId: listAccountBalances
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressQueryParam"

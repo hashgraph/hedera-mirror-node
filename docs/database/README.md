@@ -24,7 +24,7 @@ Some Hedera environments get [reset](https://docs.hedera.com/hedera/testnet#test
 nodes connected to those environments will need to be reset to remain functional.
 
 1. Stop the [Importer](/docs/importer/README.md) process.
-2. Run [cleanup.sql](/hedera-mirror-common/src/test/resources/cleanup.sql) as the database owner to
+2. Run [cleanup.sql](/hedera-mirror-importer/src/main/resources/db/scripts/cleanup.sql) as the database owner to
    truncate the tables.
 
    ```bash
