@@ -100,7 +100,7 @@ public class TokenFeature extends AbstractFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
         var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
-        log.info("Get token info for token {}: {}", tokenName, tokenInfo);
+        log.debug("Get token info for token {}: {}", tokenName, tokenInfo);
     }
 
     @Given("I associate account {account} with token {token}")
@@ -614,8 +614,7 @@ public class TokenFeature extends AbstractFeature {
 
     private NftTransactionTransfer verifyNftTransactions(TokenId tokenId, Long serialNumber) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-        NftTransactionHistory mirrorTransactionsResponse =
-                mirrorClient.getNftTransactions(tokenId, serialNumber);
+        NftTransactionHistory mirrorTransactionsResponse = mirrorClient.getNftTransactions(tokenId, serialNumber);
 
         List<NftTransactionTransfer> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
