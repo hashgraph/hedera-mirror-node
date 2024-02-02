@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.4.9 <0.9.0;
 
-library HederaResponseCodes {
+abstract contract HederaResponseCodes {
 
     // response codes
     int32 internal constant OK = 0; // The transaction passed the precheck validations.
