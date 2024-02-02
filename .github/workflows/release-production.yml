@@ -54,7 +54,7 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         if: matrix.module != 'rest' && matrix.module != 'rest-monitor' && matrix.module != 'rosetta'
         with:
           arguments: build -x test

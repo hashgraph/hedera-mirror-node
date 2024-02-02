@@ -81,7 +81,7 @@ jobs:
           fi
 
       - name: Gradle Release
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         with:
           arguments: release -Pversion=${{ env.VERSION }}
 
@@ -161,7 +161,7 @@ jobs:
           git reset --hard $RELEASE_BRANCH
 
       - name: Gradle Release for Next Minor Snapshot
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         with:
           arguments: release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
 

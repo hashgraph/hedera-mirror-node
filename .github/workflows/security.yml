@@ -22,7 +22,7 @@ jobs:
           java-version: 21
 
       - name: Vulnerability check
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         with:
           arguments: dependencyCheckAggregate
 
@@ -78,7 +78,7 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Execute Gradle
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -103,7 +103,7 @@ jobs:
         run: npm install -g snyk-to-html @wcj/html-to-markdown-cli
 
       - name: Execute Gradle Snyk Test
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -139,7 +139,7 @@ jobs:
         run: npm install -g snyk-to-html @wcj/html-to-markdown-cli
 
       - name: Execute Gradle Snyk Code Test
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -172,7 +172,7 @@ jobs:
           java-version: 21
 
       - name: Execute Gradle Snyk Monitor
-        uses: gradle/gradle-build-action@v2
+        uses: gradle/actions/setup-gradle@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
