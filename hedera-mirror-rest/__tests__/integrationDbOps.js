@@ -20,7 +20,7 @@ import os from 'os';
 import path from 'path';
 
 import config from '../config';
-import {getDatabaseName} from './globalSetup';
+import {getOwnerConnectionUri, getDatabaseName, getReadOnlyUser, getReadOnlyPassword} from './globalSetup';
 import {getModuleDirname, isV2Schema} from './testutils';
 import {getPoolClass} from '../utils';
 
@@ -57,11 +57,11 @@ const schemaConfigs = isV2Schema() ? v2SchemaConfigs : v1SchemaConfigs;
 
 const dbUrlRegex = /^postgres:\/\/(.*):(.*)@(.*):(\d+)/;
 
-const extractDbConnectionParams = (url) => {
+const extractDbConnectionParams = (url, readOnly = false) => {
   const found = url.match(dbUrlRegex);
   return {
-    user: found[1],
-    password: found[2],
+    user: readOnly ? getReadOnlyUser() : found[1],
+    password: readOnly ? getReadOnlyPassword() : found[2],
     host: found[3],
     port: found[4],
   };
@@ -69,14 +69,23 @@ const extractDbConnectionParams = (url) => {
 
 const cleanUp = async () => {
   const cleanupSql = await getCleanupSql();
-  await pool.query(cleanupSql);
+  await ownerPool.query(cleanupSql);
 };
 
 const createPool = () => {
   const database = getDatabaseName();
-  const dbConnectionParams = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
-  global.pool = new Pool({
+  const connectionUri = getOwnerConnectionUri(process.env.JEST_WORKER_ID);
+
+  const dbConnectionParams = extractDbConnectionParams(connectionUri);
+  global.ownerPool = new Pool({
     ...dbConnectionParams,
+    database,
+    sslmode: 'DISABLE',
+  });
+
+  const dbReadOnlyConnectionParams = extractDbConnectionParams(connectionUri, true);
+  global.pool = new Pool({
+    ...dbReadOnlyConnectionParams,
     database,
     sslmode: 'DISABLE',
   });
@@ -93,7 +102,8 @@ const flywayMigrate = async () => {
 
   const workerId = process.env.JEST_WORKER_ID;
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
-  const dbConnectionParams = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
+  const connectionUri = getOwnerConnectionUri(workerId);
+  const dbConnectionParams = extractDbConnectionParams(connectionUri);
   const apiUsername = `${defaultDbConfig.username}_${workerId}`;
   const dbName = getDatabaseName();
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
@@ -168,7 +178,7 @@ const getCleanupSql = async () => {
   // The query returns the tables without partitions or the parent tables of the partitions. This is to reduce the
   // exact amount of time caused by trying to delete from partitions. The cleanup sql for v2 is generated once for
   // each jest worker, it's done this way because the query to find the correct table names is also slow.
-  const {rows} = await pool.queryQuietly(`
+  const {rows} = await ownerPool.queryQuietly(`
       select table_name
       from information_schema.tables
                left join time_partitions on partition::text = table_name::text
