@@ -26,7 +26,6 @@ import java.util.Map;
 import lombok.Data;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
@@ -70,11 +69,6 @@ public class GasConsumedMigration extends AbstractJavaMigration {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final SidecarProperties sidecarProperties;
-    static final DataClassRowMapper<MigrationSidecar> resultRowMapper;
-
-    static {
-        resultRowMapper = new DataClassRowMapper<>(MigrationSidecar.class);
-    }
 
     @Lazy
     public GasConsumedMigration(final @Owner JdbcTemplate jdbcTemplate, final SidecarProperties sidecarProperties) {
