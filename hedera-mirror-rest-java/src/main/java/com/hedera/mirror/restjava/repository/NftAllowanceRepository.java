@@ -25,13 +25,12 @@ import org.springframework.data.repository.CrudRepository;
 public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
 
     @Query(
-            value = "select * from nft_allowance where owner = ? and token_id = ? " + "order by owner,token_id limit ?",
+            value = "select * from nft_allowance where owner = ? and token_id = ? order by owner,token_id limit ?",
             nativeQuery = true)
     List<NftAllowance> findByOwnerAndTokenEq(long owner, long tokenId, int limit);
 
     @Query(
-            value = "select * from nft_allowance where owner = ? and token_id >= ? "
-                    + "order by owner,token_id limit ?",
+            value = "select * from nft_allowance where spender = ? and token_id >= ? order by spender,token_id limit ?",
             nativeQuery = true)
-    List<NftAllowance> findByOwnerAndTokenGte(long owner, long tokenId, int limit);
+    List<NftAllowance> findBySpenderAndTokenGte(long spenderId, long tokenId, int limit);
 }

@@ -42,7 +42,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         var nftAllowance = domainBuilder.nftAllowance().get();
         nftAllowanceRepository.save(nftAllowance);
         assertThat(nftAllowanceRepository
-                        .findByOwnerAndTokenGte(nftAllowance.getOwner(), nftAllowance.getTokenId(), 1)
+                        .findBySpenderAndTokenGte(nftAllowance.getSpender(), nftAllowance.getTokenId(), 1)
                         .get(0))
                 .isEqualTo(nftAllowance);
     }
