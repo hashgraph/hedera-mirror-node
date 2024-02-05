@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.Map;
 import lombok.Data;
 import org.flywaydb.core.api.MigrationVersion;
-import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -87,6 +86,10 @@ public class GasConsumedMigration extends AbstractJavaMigration {
     protected void doMigrate() throws IOException {
         jdbcTemplate.getJdbcOperations().execute(ADD_GAS_CONSUMED_COLUMN);
 
+        if (!sidecarProperties.isEnabled()) {
+            return;
+        }
+
         jdbcTemplate.query(SELECT_CONTRACT_TRANSACTIONS_SQL, rs -> {
             long consensusTimestamp = rs.getLong("consensus_timestamp");
             long entityId = rs.getLong("entity_id");
@@ -118,11 +121,6 @@ public class GasConsumedMigration extends AbstractJavaMigration {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    @Override
-    protected boolean skipMigration(Configuration configuration) {
-        return !sidecarProperties.isEnabled() || super.skipMigration(configuration);
     }
 
     @Override
