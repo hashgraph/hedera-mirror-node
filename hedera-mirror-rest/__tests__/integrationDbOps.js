@@ -105,7 +105,6 @@ const flywayMigrate = async () => {
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
   const connectionUri = getOwnerConnectionUri(workerId);
   const dbConnectionParams = extractDbConnectionParams(connectionUri);
-  const apiUsername = `${defaultDbConfig.username}_${workerId}`;
   const dbName = getDatabaseName();
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = path.join('.', 'build', 'flyway');
@@ -119,7 +118,7 @@ const flywayMigrate = async () => {
       "locations": "filesystem:${locations}",
       "password": "${dbConnectionParams.password}",
       "placeholders.api-password": "${defaultDbConfig.password}",
-      "placeholders.api-user": "${apiUsername}",
+      "placeholders.api-user": "${defaultDbConfig.user}",
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
       "placeholders.idPartitionSize": 1000000000000000,

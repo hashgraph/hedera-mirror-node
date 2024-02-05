@@ -30,16 +30,7 @@ let dockerDbs = [];
 
 const createDbContainers = async (maxWorkers) => {
   const image = isV2Schema() ? v2DatabaseImage : v1DatabaseImage;
-  const initSqlPath = path.join(
-    '..',
-    '..',
-    'hedera-mirror-node',
-    'hedera-mirror-common',
-    'src',
-    'test',
-    'resources',
-    'init.sql'
-  );
+  const initSqlPath = path.join('..', 'hedera-mirror-common', 'src', 'test', 'resources', 'init.sql');
   const initSqlCopy = {
     source: initSqlPath,
     target: '/docker-entrypoint-initdb.d/init.sql',
@@ -63,8 +54,8 @@ const createDbContainers = async (maxWorkers) => {
 
 const getDatabases = () => dockerDbs;
 const getDatabaseName = () => dbName;
-const getReadOnlyUser = () => 'mirror_rest_java';
-const getReadOnlyPassword = () => 'mirror_rest_java_pass';
+const getReadOnlyUser = () => 'mirror_rest';
+const getReadOnlyPassword = () => 'mirror_rest_pass';
 
 const setJestEnvironment = (dockerDb, workerId) => {
   const ownerUri = `${dockerNamePrefix}_${workerId}`;

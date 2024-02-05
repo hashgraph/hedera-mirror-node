@@ -24,6 +24,6 @@ export default async function () {
     fs.rmSync(tmpDir, {force: true, recursive: true});
     console.log(`Removed temp directory ${tmpDir}`);
   }
-  await getDatabases().forEach((d) => d.stop());
+  await Promise.all(getDatabases().map((d) => d.stop()));
   log4js.shutdown();
 }
