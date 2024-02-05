@@ -18,6 +18,20 @@ package com.hedera.mirror.restjava.repository;
 
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {}
+public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
+
+    @Query(
+            value = "select * from nft_allowance where owner = ? and token_id = ? " + "order by owner,token_id limit ?",
+            nativeQuery = true)
+    List<NftAllowance> findByOwnerAndTokenEq(long owner, long tokenId, int limit);
+
+    @Query(
+            value = "select * from nft_allowance where owner = ? and token_id >= ? "
+                    + "order by owner,token_id limit ?",
+            nativeQuery = true)
+    List<NftAllowance> findByOwnerAndTokenGte(long owner, long tokenId, int limit);
+}
