@@ -20,7 +20,7 @@ import path from 'path';
 import {PostgreSqlContainer} from '@testcontainers/postgresql';
 
 const dbName = 'mirror_node';
-const dbNamePrefix = 'INTEGRATION_DATABASE_URL';
+const dockerNamePrefix = 'INTEGRATION_DATABASE_URL';
 const v1DatabaseImage = 'postgres:14-alpine';
 const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.1.1';
 
@@ -40,13 +40,13 @@ const createDbContainers = async (maxWorkers) => {
     'resources',
     'init.sql'
   );
-  const filesToCopy = {
+  const initSqlCopy = {
     source: initSqlPath,
     target: '/docker-entrypoint-initdb.d/init.sql',
   };
   for (let i = 1; i <= maxWorkers; i++) {
     const dockerDb = await new PostgreSqlContainer(image)
-      .withCopyFilesToContainer([filesToCopy])
+      .withCopyFilesToContainer([initSqlCopy])
       .withDatabase(dbName)
       .withPassword('mirror_node_pass')
       .withUsername('mirror_node')
@@ -63,16 +63,15 @@ const createDbContainers = async (maxWorkers) => {
 
 const getDatabases = () => dockerDbs;
 const getDatabaseName = () => dbName;
-
 const getReadOnlyUser = () => 'mirror_rest_java';
 const getReadOnlyPassword = () => 'mirror_rest_java_pass';
 
 const setJestEnvironment = (dockerDb, workerId) => {
-  const ownerUri = `${dbNamePrefix}_${workerId}`;
+  const ownerUri = `${dockerNamePrefix}_${workerId}`;
   process.env[ownerUri] = dockerDb.getConnectionUri();
 };
 
-const getOwnerConnectionUri = (workerId) => process.env[`${dbNamePrefix}_${workerId}`];
+const getOwnerConnectionUri = (workerId) => process.env[`${dockerNamePrefix}_${workerId}`];
 
 export default async function (globalConfig) {
   await createDbContainers(globalConfig.maxWorkers);

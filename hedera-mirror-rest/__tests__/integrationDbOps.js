@@ -57,11 +57,11 @@ const schemaConfigs = isV2Schema() ? v2SchemaConfigs : v1SchemaConfigs;
 
 const dbUrlRegex = /^postgres:\/\/(.*):(.*)@(.*):(\d+)/;
 
-const extractDbConnectionParams = (url, readOnly = false) => {
+const extractDbConnectionParams = (url) => {
   const found = url.match(dbUrlRegex);
   return {
-    user: readOnly ? getReadOnlyUser() : found[1],
-    password: readOnly ? getReadOnlyPassword() : found[2],
+    user: found[1],
+    password: found[2],
     host: found[3],
     port: found[4],
   };
@@ -83,9 +83,10 @@ const createPool = () => {
     sslmode: 'DISABLE',
   });
 
-  const dbReadOnlyConnectionParams = extractDbConnectionParams(connectionUri, true);
+  dbConnectionParams.user = getReadOnlyUser();
+  dbConnectionParams.password = getReadOnlyPassword();
   global.pool = new Pool({
-    ...dbReadOnlyConnectionParams,
+    ...dbConnectionParams,
     database,
     sslmode: 'DISABLE',
   });
