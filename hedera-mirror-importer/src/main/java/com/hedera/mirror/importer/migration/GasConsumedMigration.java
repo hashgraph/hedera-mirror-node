@@ -23,7 +23,6 @@ import com.hedera.mirror.importer.util.GasCalculatorHelper;
 import jakarta.inject.Named;
 import java.io.IOException;
 import java.util.Map;
-import lombok.Data;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -125,11 +124,5 @@ public class GasConsumedMigration extends AbstractJavaMigration {
     @Override
     public String getDescription() {
         return "Add gasConsumed field to contract_result and populate it with data derived from sidecars associated with contract transactions.";
-    }
-
-    @Data
-    static class MigrationSidecar {
-        private long consensusTimestamp;
-        private long entityId;
     }
 }
