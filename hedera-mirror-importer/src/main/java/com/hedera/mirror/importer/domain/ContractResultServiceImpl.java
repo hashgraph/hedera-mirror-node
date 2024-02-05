@@ -35,6 +35,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.util.GasCalculatorHelper;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractBytecode;
@@ -62,27 +63,23 @@ public class ContractResultServiceImpl implements ContractResultService {
     private final SidecarContractMigration sidecarContractMigration;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
-    private static final long TX_DATA_ZERO_COST = 4L;
-    private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
-    private static final long TX_BASE_COST = 21_000L;
-    private static final long TX_CREATE_EXTRA = 32_000L;
-
     @Override
-    public void process(@NonNull final RecordItem recordItem, final Transaction transaction) {
+    @SuppressWarnings("java:S2259")
+    public void process(@NonNull RecordItem recordItem, Transaction transaction) {
         if (!entityProperties.getPersist().isContracts()) {
             return;
         }
 
-        final var transactionBody = recordItem.getTransactionBody();
-        final var transactionRecord = recordItem.getTransactionRecord();
-        final var functionResult = transactionRecord.hasContractCreateResult()
+        var transactionBody = recordItem.getTransactionBody();
+        var transactionRecord = recordItem.getTransactionRecord();
+        var functionResult = transactionRecord.hasContractCreateResult()
                 ? transactionRecord.getContractCreateResult()
                 : transactionRecord.getContractCallResult();
 
         final var sidecarProcessingResult = processSidecarRecords(recordItem);
 
         // handle non create/call transactions
-        final var contractCallOrCreate = isContractCreateOrCall(transactionBody);
+        var contractCallOrCreate = isContractCreateOrCall(transactionBody);
         if (!contractCallOrCreate && !isValidContractFunctionResult(functionResult)) {
             addDefaultEthereumTransactionContractResult(recordItem, transaction);
             // skip any other transaction which is neither a create/call and has no valid ContractFunctionResult
@@ -90,14 +87,14 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         // contractResult
-        final var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
+        var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
 
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
-        final var contractId = (contractCallOrCreate
+        var contractId = (contractCallOrCreate
                         ? Optional.ofNullable(transaction.getEntityId())
                         : entityIdService.lookup(functionResult.getContractID()))
                 .orElse(EntityId.EMPTY);
-        final var isRecoverableError = EntityId.isEmpty(contractId)
+        var isRecoverableError = EntityId.isEmpty(contractId)
                 && !contractCallOrCreate
                 && !ContractID.getDefaultInstance().equals(functionResult.getContractID());
         if (isRecoverableError) {
@@ -111,9 +108,8 @@ public class ContractResultServiceImpl implements ContractResultService {
                 recordItem, contractId, functionResult, transaction, transactionHandler, sidecarProcessingResult);
     }
 
-    private void addDefaultEthereumTransactionContractResult(
-            final RecordItem recordItem, final Transaction transaction) {
-        final var status = recordItem.getTransactionRecord().getReceipt().getStatus();
+    private void addDefaultEthereumTransactionContractResult(RecordItem recordItem, Transaction transaction) {
+        var status = recordItem.getTransactionRecord().getReceipt().getStatus();
         if (recordItem.isSuccessful()
                 || status == ResponseCodeEnum.DUPLICATE_TRANSACTION
                 || status == ResponseCodeEnum.WRONG_NONCE
@@ -123,12 +119,12 @@ public class ContractResultServiceImpl implements ContractResultService {
             return;
         }
 
-        final var ethereumTransaction = recordItem.getEthereumTransaction();
-        final var functionParameters = ethereumTransaction.getCallData() != null
+        var ethereumTransaction = recordItem.getEthereumTransaction();
+        var functionParameters = ethereumTransaction.getCallData() != null
                 ? ethereumTransaction.getCallData()
                 : DomainUtils.EMPTY_BYTE_ARRAY;
-        final var payerAccountId = transaction.getPayerAccountId();
-        final var contractResult = ContractResult.builder()
+        var payerAccountId = transaction.getPayerAccountId();
+        var contractResult = ContractResult.builder()
                 .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
                 .consensusTimestamp(transaction.getConsensusTimestamp())
                 .contractId(0)
@@ -145,17 +141,17 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onContractResult(contractResult);
     }
 
-    private boolean isValidContractFunctionResult(final ContractFunctionResult contractFunctionResult) {
+    private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
         return !contractFunctionResult.equals(ContractFunctionResult.getDefaultInstance());
     }
 
-    private boolean isContractCreateOrCall(final TransactionBody transactionBody) {
+    private boolean isContractCreateOrCall(TransactionBody transactionBody) {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
     }
 
-    private void processContractAction(final ContractAction action, final int index, final RecordItem recordItem) {
-        final long consensusTimestamp = recordItem.getConsensusTimestamp();
-        final var contractAction = new com.hedera.mirror.common.domain.contract.ContractAction();
+    private void processContractAction(ContractAction action, int index, RecordItem recordItem) {
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var contractAction = new com.hedera.mirror.common.domain.contract.ContractAction();
 
         try {
             switch (action.getCallerCase()) {
@@ -170,7 +166,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 default -> Utility.handleRecoverableError(
                         "Invalid caller for contract action at {}: {}", consensusTimestamp, action.getCallerCase());
             }
-        } catch (final InvalidEntityException e) {
+        } catch (InvalidEntityException e) {
             Utility.handleRecoverableError("Invalid caller for contract action at {}: {}", consensusTimestamp, action);
         }
 
@@ -185,7 +181,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                     // ContractCreate transaction has no recipient
                 }
             }
-        } catch (final InvalidEntityException e) {
+        } catch (InvalidEntityException e) {
             // In some cases, consensus nodes can send entity IDs with negative numbers.
             Utility.handleRecoverableError(
                     "Invalid recipient for contract action at {}: {}", consensusTimestamp, action);
@@ -228,7 +224,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             final TransactionHandler transactionHandler,
             final SidecarProcessingResult sidecarProcessingResult) {
         // create child contracts regardless of contractResults support
-        final List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
+        List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
         processContractNonce(functionResult);
 
         if (!entityProperties.getPersist().isContractResults()) {
@@ -236,10 +232,10 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         // Normalize the two distinct hashes into one 32 byte hash
-        final var transactionHash = recordItem.getTransactionHash();
-        final var payerAccountId = recordItem.getPayerAccountId();
+        var transactionHash = recordItem.getTransactionHash();
+        var payerAccountId = recordItem.getPayerAccountId();
 
-        final var contractResult = new ContractResult();
+        var contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setContractId(contractEntityId.getId());
         contractResult.setPayerAccountId(payerAccountId);
@@ -272,7 +268,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractResult.setGasConsumed(sidecarProcessingResult.gasConsumed());
 
             if (functionResult.hasSenderId()) {
-                final var senderId = EntityId.of(functionResult.getSenderId());
+                var senderId = EntityId.of(functionResult.getSenderId());
                 contractResult.setSenderId(senderId);
                 recordItem.addEntityId(senderId);
             }
@@ -285,11 +281,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onContractResult(contractResult);
     }
 
-    private void processContractNonce(final ContractFunctionResult functionResult) {
+    private void processContractNonce(ContractFunctionResult functionResult) {
         if (entityProperties.getPersist().isTrackNonce()) {
             functionResult.getContractNoncesList().forEach(nonceInfo -> {
-                final var contractId = EntityId.of(nonceInfo.getContractId());
-                final var entity = contractId.toEntity();
+                var contractId = EntityId.of(nonceInfo.getContractId());
+                var entity = contractId.toEntity();
                 entity.setEthereumNonce(nonceInfo.getNonce());
                 entity.setTimestampRange(null); // Don't trigger a history row
                 entity.setType(EntityType.CONTRACT);
@@ -299,14 +295,12 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processContractLogs(
-            final ContractFunctionResult functionResult,
-            final ContractResult contractResult,
-            final RecordItem recordItem) {
+            ContractFunctionResult functionResult, ContractResult contractResult, RecordItem recordItem) {
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
-            final var contractLoginfo = functionResult.getLogInfo(index);
-            final var contractLog = new ContractLog();
-            final var contractId = EntityId.of(contractLoginfo.getContractID());
-            final var rootContractId = EntityId.of(contractResult.getContractId());
+            var contractLoginfo = functionResult.getLogInfo(index);
+            var contractLog = new ContractLog();
+            var contractId = EntityId.of(contractLoginfo.getContractID());
+            var rootContractId = EntityId.of(contractResult.getContractId());
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
             contractLog.setContractId(contractId);
@@ -327,13 +321,12 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    private void processContractStateChange(
-            final boolean migration, final RecordItem recordItem, final ContractStateChange stateChange) {
-        final long consensusTimestamp = recordItem.getConsensusTimestamp();
-        final var contractId = EntityId.of(stateChange.getContractId());
-        final var payerAccountId = recordItem.getPayerAccountId();
-        for (final var storageChange : stateChange.getStorageChangesList()) {
-            final var contractStateChange = new com.hedera.mirror.common.domain.contract.ContractStateChange();
+    private void processContractStateChange(boolean migration, RecordItem recordItem, ContractStateChange stateChange) {
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var contractId = EntityId.of(stateChange.getContractId());
+        var payerAccountId = recordItem.getPayerAccountId();
+        for (var storageChange : stateChange.getStorageChangesList()) {
+            var contractStateChange = new com.hedera.mirror.common.domain.contract.ContractStateChange();
             contractStateChange.setConsensusTimestamp(consensusTimestamp);
             contractStateChange.setContractId(contractId);
             contractStateChange.setMigration(migration);
@@ -355,14 +348,13 @@ public class ContractResultServiceImpl implements ContractResultService {
         recordItem.addEntityId(contractId);
     }
 
+    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(
-            final ContractFunctionResult functionResult,
-            final RecordItem recordItem,
-            final EntityId parentEntityContractId) {
-        final List<Long> createdContractIds = new ArrayList<>();
-        final boolean persist = shouldPersistCreatedContractIDs(recordItem);
-        for (final var createdContractId : functionResult.getCreatedContractIDsList()) {
-            final var contractId = entityIdService.lookup(createdContractId).orElse(EntityId.EMPTY);
+            ContractFunctionResult functionResult, RecordItem recordItem, EntityId parentEntityContractId) {
+        List<Long> createdContractIds = new ArrayList<>();
+        boolean persist = shouldPersistCreatedContractIDs(recordItem);
+        for (var createdContractId : functionResult.getCreatedContractIDsList()) {
+            var contractId = entityIdService.lookup(createdContractId).orElse(EntityId.EMPTY);
             if (!EntityId.isEmpty(contractId)) {
                 createdContractIds.add(contractId.getId());
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
@@ -376,8 +368,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         return createdContractIds;
     }
 
-    private void processCreatedContractEntity(final RecordItem recordItem, final EntityId contractEntityId) {
-        final Entity entity = contractEntityId.toEntity();
+    private void processCreatedContractEntity(RecordItem recordItem, EntityId contractEntityId) {
+        Entity entity = contractEntityId.toEntity();
         entity.setBalance(0L);
         entity.setBalanceTimestamp(recordItem.getConsensusTimestamp());
         entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
@@ -393,6 +385,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onEntity(entity);
     }
 
+    @SuppressWarnings("java:S3776")
     private SidecarProcessingResult processSidecarRecords(final RecordItem recordItem) {
         ByteString failedInitcode = null;
         final var sidecarRecords = recordItem.getSidecarRecords();
@@ -400,9 +393,9 @@ public class ContractResultServiceImpl implements ContractResultService {
             return new SidecarProcessingResult(null, null);
         }
 
-        final var contractBytecodes = new ArrayList<ContractBytecode>();
+        var contractBytecodes = new ArrayList<ContractBytecode>();
         int migrationCount = 0;
-        final var stopwatch = Stopwatch.createStarted();
+        var stopwatch = Stopwatch.createStarted();
 
         long totalGasUsed = 0;
         ByteString contractDeployment = null;
@@ -410,12 +403,12 @@ public class ContractResultServiceImpl implements ContractResultService {
         for (final var sidecarRecord : sidecarRecords) {
             final boolean migration = sidecarRecord.getMigration();
             if (sidecarRecord.hasStateChanges()) {
-                final var stateChanges = sidecarRecord.getStateChanges();
-                for (final var stateChange : stateChanges.getContractStateChangesList()) {
+                var stateChanges = sidecarRecord.getStateChanges();
+                for (var stateChange : stateChanges.getContractStateChangesList()) {
                     processContractStateChange(migration, recordItem, stateChange);
                 }
             } else if (sidecarRecord.hasActions()) {
-                final var actions = sidecarRecord.getActions();
+                var actions = sidecarRecord.getActions();
                 for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
                     final var action = actions.getContractActions(actionIndex);
                     totalGasUsed = totalGasUsed + action.getGasUsed();
@@ -426,9 +419,9 @@ public class ContractResultServiceImpl implements ContractResultService {
                     contractBytecodes.add(sidecarRecord.getBytecode());
                 } else if (!recordItem.isSuccessful()) {
                     failedInitcode = sidecarRecord.getBytecode().getInitcode();
+                } else {
+                    contractDeployment = sidecarRecord.getBytecode().getInitcode();
                 }
-            } else {
-                contractDeployment = sidecarRecord.getBytecode().getInitcode();
             }
             if (migration) {
                 ++migrationCount;
@@ -444,7 +437,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                     stopwatch);
         }
 
-        totalGasUsed = addIntrinsicGas(totalGasUsed, contractDeployment);
+        totalGasUsed = GasCalculatorHelper.addIntrinsicGas(totalGasUsed, contractDeployment);
 
         return new SidecarProcessingResult(failedInitcode, totalGasUsed);
     }
@@ -458,8 +451,9 @@ public class ContractResultServiceImpl implements ContractResultService {
      * @param entity     The contract entity
      * @param recordItem The recordItem in which the contract is created
      */
-    private void updateContractEntityOnCreate(final Entity entity, final RecordItem recordItem) {
-        final var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+    @SuppressWarnings("deprecation")
+    private void updateContractEntityOnCreate(Entity entity, RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
@@ -475,7 +469,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         entity.setMemo(transactionBody.getMemo());
 
-        final Contract contract = new Contract();
+        Contract contract = new Contract();
         contract.setId(entity.getId());
 
         // No need to check initcode and other newer fields since they weren't available in older HAPI versions
@@ -494,35 +488,10 @@ public class ContractResultServiceImpl implements ContractResultService {
      * @param recordItem to check
      * @return Whether the createdContractIDs list should be persisted.
      */
-    private boolean shouldPersistCreatedContractIDs(final RecordItem recordItem) {
+    private boolean shouldPersistCreatedContractIDs(RecordItem recordItem) {
         return recordItem.isSuccessful()
                 && entityProperties.getPersist().isContracts()
                 && recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
-    }
-    /**
-     * Adds the intrinsic gas cost to the gas consumed by the EVM.
-     * In case of contract deployment, the init code is used to
-     * calculate the intrinsic gas cost. Otherwise, it's fixed at 21_000.
-     *
-     * @param gas The gas consumed by the EVM for the transaction
-     * @param initByteCode The init code of the contract
-     */
-    private long addIntrinsicGas(final long gas, final ByteString initByteCode) {
-        if (initByteCode == null) {
-            return gas + TX_BASE_COST;
-        }
-
-        int zeros = 0;
-        for (int i = 0; i < initByteCode.size(); i++) {
-            if (initByteCode.byteAt(i) == 0) {
-                ++zeros;
-            }
-        }
-        final int nonZeros = initByteCode.size() - zeros;
-
-        long costForByteCode = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
-
-        return costForByteCode + gas + TX_CREATE_EXTRA;
     }
 
     /**

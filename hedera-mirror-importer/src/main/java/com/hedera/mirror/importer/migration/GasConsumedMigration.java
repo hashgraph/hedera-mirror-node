@@ -16,61 +16,113 @@
 
 package com.hedera.mirror.importer.migration;
 
+import com.google.protobuf.ByteString;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.sidecar.SidecarProperties;
+import com.hedera.mirror.importer.util.GasCalculatorHelper;
+import jakarta.inject.Named;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Map;
-import java.util.Objects;
 import lombok.Data;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.DataClassRowMapper;
-import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+@Named
 public class GasConsumedMigration extends AbstractJavaMigration {
 
-    private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.94.0");
-    private final JdbcOperations jdbcOperations;
-    private final SidecarProperties sidecarProperties;
-    static final DataClassRowMapper<MigrationSidecar> resultRowMapper;
-    private static final String UPDATE_CONTRACT_RESULT_SQL =
+    private static final String ADD_GAS_CONSUMED_COLUMN =
             """
-                    insert into contract_result(gas_consumed)
-                    values(:gasConsumed)
-                    where id = :id;
+                    ALTER TABLE contract_result
+                    ADD COLUMN IF NOT EXISTS gas_consumed bigint null;
                     """;
 
-    private static final long TX_DATA_ZERO_COST = 4L;
-    private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
-    private static final long TX_BASE_COST = 21_000L;
-    private static final long TX_CREATE_EXTRA = 32_000L;
+    private static final String SELECT_CONTRACT_TRANSACTIONS_SQL =
+            """
+                    SELECT consensus_timestamp, entity_id
+                    FROM contract_transaction;
+                    """;
+
+    private static final String SELECT_GAS_USED_SQL =
+            """
+                    SELECT gas_used
+                    FROM contract_action
+                    WHERE consensus_timestamp = :consensusTimestamp;
+                    """;
+
+    private static final String SELECT_INIT_CODE_SQL =
+            """
+                    SELECT init_code
+                    FROM contract
+                    WHERE entity_id = :entityId;
+                    """;
+
+    private static final String UPDATE_CONTRACT_RESULT_SQL =
+            """
+                    UPDATE contract_result
+                    SET gas_consumed = :gasConsumed
+                    WHERE consensus_timestamp = :consensusTimestamp;
+                    """;
+
+    private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.93.0");
+
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final SidecarProperties sidecarProperties;
+    static final DataClassRowMapper<MigrationSidecar> resultRowMapper;
 
     static {
         resultRowMapper = new DataClassRowMapper<>(MigrationSidecar.class);
     }
 
     @Lazy
-    public GasConsumedMigration(JdbcOperations jdbcOperations, SidecarProperties sidecarProperties) {
-        this.jdbcOperations = jdbcOperations;
+    public GasConsumedMigration(final @Owner JdbcTemplate jdbcTemplate, final SidecarProperties sidecarProperties) {
+        this.jdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
         this.sidecarProperties = sidecarProperties;
     }
 
     @Override
     protected void doMigrate() throws IOException {
-        // check if sidecars are enabled
+        jdbcTemplate.getJdbcOperations().execute(ADD_GAS_CONSUMED_COLUMN);
 
-        // get records
-        final var select =
-                """
-                select id, initcode, gas_used, gas_consumed from contract
-                join contract_action on id = consensus_timestamp
-                """;
-        jdbcOperations.query(select, rs -> {
-            updateGasConsumed(Objects.requireNonNull(resultRowMapper.mapRow(rs, rs.getRow())));
+        jdbcTemplate.query(SELECT_CONTRACT_TRANSACTIONS_SQL, rs -> {
+            long consensusTimestamp = rs.getLong("consensus_timestamp");
+            long entityId = rs.getLong("entity_id");
+
+            long gasConsumed = calculateTotalGasUsed(consensusTimestamp);
+            var initByteCode = fetchInitCode(entityId);
+
+            gasConsumed = GasCalculatorHelper.addIntrinsicGas(gasConsumed, initByteCode);
+
+            jdbcTemplate.update(
+                    UPDATE_CONTRACT_RESULT_SQL,
+                    Map.of("consensusTimestamp", consensusTimestamp, "gasConsumed", gasConsumed));
         });
-        // then update
-        jdbcOperations.update(UPDATE_CONTRACT_RESULT_SQL);
+    }
+
+    private long calculateTotalGasUsed(long consensusTimestamp) {
+        return jdbcTemplate
+                .queryForList(SELECT_GAS_USED_SQL, Map.of("consensusTimestamp", consensusTimestamp), Long.class)
+                .stream()
+                .mapToLong(Long::longValue)
+                .sum();
+    }
+
+    private ByteString fetchInitCode(long entityId) {
+        try {
+            byte[] initCodeBytes =
+                    jdbcTemplate.queryForObject(SELECT_INIT_CODE_SQL, Map.of("entityId", entityId), byte[].class);
+            return initCodeBytes != null ? ByteString.copyFrom(initCodeBytes) : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    @Override
+    protected boolean skipMigration(Configuration configuration) {
+        return !sidecarProperties.isEnabled() || super.skipMigration(configuration);
     }
 
     @Override
@@ -83,41 +135,9 @@ public class GasConsumedMigration extends AbstractJavaMigration {
         return "Add gasConsumed values prior records having sidecars from consensus nodes.";
     }
 
-    @Override
-    protected boolean skipMigration(Configuration configuration) {
-        return !sidecarProperties.isEnabled() || super.skipMigration(configuration);
-    }
-
-    private void updateGasConsumed(MigrationSidecar sidecar) {
-
-        var gasConsumed = BigInteger.ZERO;
-        final var initCode = sidecar.getInitcode();
-        if (initCode == null || initCode.length == 0) {
-            gasConsumed = sidecar.gasConsumed.add(BigInteger.valueOf(TX_BASE_COST));
-        } else {
-            int zeros = 0;
-            for (byte b : initCode) {
-                if (b == 0) {
-                    ++zeros;
-                }
-            }
-            final int nonZeros = initCode.length - zeros;
-
-            long costForByteCode = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
-
-            gasConsumed = sidecar.gasConsumed
-                    .add(BigInteger.valueOf(costForByteCode))
-                    .add(sidecar.getGasUsed())
-                    .add(BigInteger.valueOf(TX_CREATE_EXTRA));
-        }
-        jdbcOperations.update(UPDATE_CONTRACT_RESULT_SQL, Map.of("id", sidecar.getId(), "gasConsumed", gasConsumed));
-    }
-
     @Data
     static class MigrationSidecar {
-        private long id;
-        private byte[] initcode;
-        private BigInteger gasUsed;
-        private BigInteger gasConsumed;
+        private long consensusTimestamp;
+        private long entityId;
     }
 }

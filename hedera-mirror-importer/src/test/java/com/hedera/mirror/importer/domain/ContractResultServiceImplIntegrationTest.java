@@ -378,7 +378,7 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
     @Test
     void processGasConsumedCalculationContractCreate() {
         // Given RecordItem with 2 contract actions and bytecode sidecar record
-        final var recordItem = recordItemBuilder.contractCall().build();
+        final var recordItem = recordItemBuilder.contractCreate().build();
 
         final var contractActionRecord = TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
@@ -404,7 +404,7 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
                 .orElse(null);
         assertThat(contractResult).isNotNull();
         assertThat(contractResult.getGasConsumed()).isNotNull();
-        assertThat(contractResult.getGasConsumed()).isEqualTo(53246L);
+        assertThat(contractResult.getGasConsumed()).isEqualTo(53196L);
     }
 
     @Test
