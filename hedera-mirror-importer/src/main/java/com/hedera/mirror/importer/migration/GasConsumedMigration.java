@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Map;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
@@ -111,7 +112,7 @@ public class GasConsumedMigration extends AbstractJavaMigration {
             byte[] initCodeBytes =
                     jdbcTemplate.queryForObject(SELECT_INIT_CODE_SQL, Map.of("entityId", entityId), byte[].class);
             return initCodeBytes != null ? ByteString.copyFrom(initCodeBytes) : null;
-        } catch (Exception e) {
+        } catch (EmptyResultDataAccessException e) {
             return null;
         }
     }
