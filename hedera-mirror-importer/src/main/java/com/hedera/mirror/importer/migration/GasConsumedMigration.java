@@ -124,7 +124,7 @@ public class GasConsumedMigration extends AbstractJavaMigration {
 
     @Override
     public String getDescription() {
-        return "Add gasConsumed values prior records having sidecars from consensus nodes.";
+        return "Add gasConsumed field to contract_result and populate it with data derived from sidecars associated with contract transactions.";
     }
 
     @Data
