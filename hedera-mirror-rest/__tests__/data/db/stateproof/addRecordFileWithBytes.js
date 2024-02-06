@@ -64,5 +64,5 @@ export default async () => {
     data,
     4085,
   ];
-  await pool.query(query, params);
+  await ownerPool.query(query, params);
 };

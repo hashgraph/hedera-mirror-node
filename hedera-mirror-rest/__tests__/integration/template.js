@@ -167,7 +167,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
       const sqlScriptPath = path.join(getModuleDirname(import.meta), '..', pathPrefix || '', sqlScript);
       const script = fs.readFileSync(sqlScriptPath, 'utf8');
       logger.debug(`loading sql script ${sqlScript}`);
-      await pool.query(script);
+      await ownerPool.query(script);
     }
   };
 

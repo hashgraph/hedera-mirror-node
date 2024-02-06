@@ -15,6 +15,7 @@
     "Atomics": "readonly",
     "SharedArrayBuffer": "readonly",
     "logger": "readonly",
+    "ownerPool": "readonly",
     "pool": "readonly"
   },
   "parserOptions": {
