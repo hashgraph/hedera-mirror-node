@@ -239,7 +239,8 @@ paths:
     get:
       summary: This API is currently not supported.Get non fungible token allowances for an account
       description: |
-        ** This API is currently under development and is not supported yet **
+        **This API is currently under development and is not supported yet**
+
         Returns information for non fungible token allowances for an account.
 
         ## Ordering
