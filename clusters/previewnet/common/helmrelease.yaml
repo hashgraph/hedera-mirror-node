@@ -45,15 +45,13 @@ spec:
               url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
               writeRelabelConfigs:
                 - action: keep
-                  regex: .*(graphql|grpc|importer|monitor|rest|rosetta|traefik|web3)$
+                  regex: .*(graphql|grpc|importer|monitor|rest|restjava|rosetta|traefik|web3)$
                   sourceLabels: [job]
                 - action: drop
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
     traefik:
-      image:
-        tag: v2.10.5
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-previewnet"} } }'
