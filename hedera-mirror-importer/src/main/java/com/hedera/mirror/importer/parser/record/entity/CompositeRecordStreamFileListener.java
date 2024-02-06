@@ -18,11 +18,9 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.StreamFileListener;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import jakarta.inject.Named;
 import java.util.List;
-import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 
@@ -34,25 +32,9 @@ public class CompositeRecordStreamFileListener implements RecordStreamFileListen
     private final List<RecordStreamFileListener> listeners;
 
     @Override
-    public void onStart() throws ImporterException {
-        onEach(StreamFileListener::onStart);
-    }
-
-    @Override
     public void onEnd(RecordFile streamFile) throws ImporterException {
         for (int i = 0; i < listeners.size(); i++) {
             listeners.get(i).onEnd(streamFile);
-        }
-    }
-
-    @Override
-    public void onError() {
-        onEach(StreamFileListener::onError);
-    }
-
-    private void onEach(Consumer<RecordStreamFileListener> consumer) {
-        for (int i = 0; i < listeners.size(); i++) {
-            consumer.accept(listeners.get(i));
         }
     }
 }

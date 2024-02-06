@@ -21,15 +21,5 @@ import com.hedera.mirror.importer.exception.ImporterException;
 
 public interface StreamFileListener<T extends StreamFile<?>> {
 
-    /**
-     * Called when starting to process a new stream file.
-     */
-    default void onStart() throws ImporterException {}
-
-    default void onEnd(T streamFile) throws ImporterException {}
-
-    /**
-     * Called if an error is encountered during processing of stream file.
-     */
-    default void onError() {}
+    void onEnd(T streamFile) throws ImporterException;
 }

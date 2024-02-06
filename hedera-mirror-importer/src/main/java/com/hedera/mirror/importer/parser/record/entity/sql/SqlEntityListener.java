@@ -96,10 +96,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onEnd(RecordFile recordFile) {
-        if (recordFile != null) {
-            context.add(recordFile);
-            context.addAll(recordFile.getSidecars());
-        }
         flush();
     }
 

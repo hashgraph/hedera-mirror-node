@@ -40,8 +40,8 @@ import io.micrometer.core.instrument.Timer;
 import jakarta.inject.Named;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.retry.annotation.Backoff;
@@ -53,9 +53,7 @@ import reactor.core.publisher.Flux;
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     private final ApplicationEventPublisher applicationEventPublisher;
-    private final AtomicReference<RecordFile> last;
     private final RecordItemListener recordItemListener;
-    private final RecordStreamFileListener recordStreamFileListener;
     private final DateRangeCalculator dateRangeCalculator;
     private final ParserContext parserContext;
 
@@ -75,11 +73,9 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             RecordStreamFileListener recordStreamFileListener,
             DateRangeCalculator dateRangeCalculator,
             ParserContext parserContext) {
-        super(meterRegistry, parserProperties, streamFileRepository);
+        super(meterRegistry, parserProperties, recordStreamFileListener, streamFileRepository);
         this.applicationEventPublisher = applicationEventPublisher;
-        this.last = new AtomicReference<>();
         this.recordItemListener = recordItemListener;
-        this.recordStreamFileListener = recordStreamFileListener;
         this.dateRangeCalculator = dateRangeCalculator;
         this.parserContext = parserContext;
 
@@ -127,43 +123,59 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
     @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
     public synchronized void parse(RecordFile recordFile) {
-        super.parse(recordFile);
+        try {
+            super.parse(recordFile);
+        } finally {
+            parserContext.clear();
+        }
+    }
+
+    @Leader
+    @Override
+    @Retryable(
+            backoff =
+                    @Backoff(
+                            delayExpression = "#{@recordParserProperties.getRetry().getMinBackoff().toMillis()}",
+                            maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
+                            multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
+            retryFor = Throwable.class,
+            noRetryFor = OutOfMemoryError.class,
+            maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
+    @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
+    public synchronized void parse(List<RecordFile> recordFiles) {
+        try {
+            super.parse(recordFiles);
+        } finally {
+            parserContext.clear();
+        }
     }
 
     @Override
     protected void doParse(RecordFile recordFile) {
         DateRangeFilter dateRangeFilter = dateRangeCalculator.getFilter(parserProperties.getStreamType());
+        Flux<RecordItem> recordItems = recordFile.getItems();
 
-        try {
-            Flux<RecordItem> recordItems = recordFile.getItems();
-
-            if (log.isDebugEnabled() || log.isTraceEnabled()) {
-                recordItems = recordItems.doOnNext(this::logItem);
-            }
-
-            recordStreamFileListener.onStart();
-            var aggregator = new RecordItemAggregator();
-
-            long count = recordItems
-                    .doOnNext(aggregator::accept)
-                    .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
-                    .doOnNext(recordItemListener::onItem)
-                    .doOnNext(this::recordMetrics)
-                    .count()
-                    .block();
-
-            recordFile.setCount(count);
-            aggregator.update(recordFile);
-            updateIndex(recordFile);
-            recordStreamFileListener.onEnd(recordFile);
-            applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, recordFile.getConsensusEnd()));
-            last.set(recordFile);
-        } catch (Exception ex) {
-            recordStreamFileListener.onError();
-            throw ex;
-        } finally {
-            parserContext.clear();
+        if (log.isDebugEnabled() || log.isTraceEnabled()) {
+            recordItems = recordItems.doOnNext(this::logItem);
         }
+
+        var aggregator = new RecordItemAggregator();
+
+        long count = recordItems
+                .doOnNext(aggregator::accept)
+                .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
+                .doOnNext(recordItemListener::onItem)
+                .doOnNext(this::recordMetrics)
+                .count()
+                .block();
+
+        recordFile.setCount(count);
+        aggregator.update(recordFile);
+        updateIndex(recordFile);
+
+        parserContext.add(recordFile);
+        parserContext.addAll(recordFile.getSidecars());
+        applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, recordFile.getConsensusEnd()));
     }
 
     private void logItem(RecordItem recordItem) {
@@ -190,19 +202,14 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     // Correct v5 block numbers once we receive a v6 block with a canonical number
     private void updateIndex(RecordFile recordFile) {
-        var lastRecordFile = last.get();
-        var recordFileRepository = (RecordFileRepository) streamFileRepository;
-
-        if (lastRecordFile == null) {
-            lastRecordFile = recordFileRepository.findLatest().orElse(null);
-        }
+        var lastRecordFile = getLast();
 
         if (lastRecordFile != null && lastRecordFile.getVersion() < VERSION && recordFile.getVersion() >= VERSION) {
             long offset = recordFile.getIndex() - lastRecordFile.getIndex() - 1;
 
-            if (offset != 0) {
+            if (offset != 0 && streamFileRepository instanceof RecordFileRepository repository) {
                 var stopwatch = Stopwatch.createStarted();
-                int count = recordFileRepository.updateIndex(offset);
+                int count = repository.updateIndex(offset);
                 log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
             }
         }

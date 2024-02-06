@@ -99,7 +99,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         if (parsed) {
             verify(recordItemListener).onItem(recordItem);
             verify(recordStreamFileListener).onEnd(recordFile);
-            verify(recordStreamFileListener, never()).onError();
             // Can't verify the event object since ApplicationEvent has a timestamp field for when the event happened
             verify(applicationEventPublisher)
                     .publishEvent(argThat(e -> e instanceof RecordFileParsedEvent recordFileParsedEvent
@@ -107,9 +106,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         } else {
             if (dbError) {
                 verify(recordStreamFileListener, never()).onEnd(recordFile);
-                verify(recordStreamFileListener).onError();
-            } else {
-                verify(recordStreamFileListener, never()).onStart();
             }
 
             verify(applicationEventPublisher, never()).publishEvent(any());
@@ -171,7 +167,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         parser.parse(recordFile);
 
         // then
-        verify(recordStreamFileListener).onStart();
         if (offset >= 0) {
             verify(recordItemListener).onItem(firstItem);
         }
@@ -217,7 +212,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         assertAll(
                 () -> assertEquals(10000000000L + 100000000000L + 1000000000000L, recordFile.getGasUsed()),
                 () -> assertArrayEquals(expectedLogBloom, recordFile.getLogsBloom()),
-                () -> verify(recordStreamFileListener, times(1)).onStart(),
                 () -> verify(recordStreamFileListener, times(1)).onEnd(recordFile),
                 () -> verify(recordItemListener, times(1)).onItem(recordItem1),
                 () -> verify(recordItemListener, times(1)).onItem(recordItem2),
@@ -238,7 +232,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         parser.parse(recordFile);
 
         // then
-        verify(recordStreamFileListener).onStart();
         if (offset < 0) {
             verify(recordItemListener).onItem(firstItem);
         }

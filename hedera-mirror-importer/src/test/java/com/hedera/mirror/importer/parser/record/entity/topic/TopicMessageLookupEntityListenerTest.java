@@ -225,12 +225,10 @@ class TopicMessageLookupEntityListenerTest extends AbstractTopicMessageLookupInt
 
     private void completeFile(List<TopicMessage> topicMessages, RecordFile recordFile, boolean success) {
         transactionTemplate.executeWithoutResult(s -> {
-            recordStreamFileListener.onStart();
             topicMessages.forEach(entityListener::onTopicMessage);
-            recordStreamFileListener.onEnd(recordFile);
-
-            if (!success) {
-                recordStreamFileListener.onError();
+            if (success) {
+                recordStreamFileListener.onEnd(recordFile);
+            } else {
                 s.setRollbackOnly();
             }
         });
