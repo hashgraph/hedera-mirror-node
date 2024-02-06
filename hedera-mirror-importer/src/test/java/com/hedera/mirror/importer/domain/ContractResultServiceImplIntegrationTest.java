@@ -370,9 +370,12 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         final var contractResult = contractResultRepository
                 .findById(recordItem.getConsensusTimestamp())
                 .orElse(null);
-        assertThat(contractResult).isNotNull();
-        assertThat(contractResult.getGasConsumed()).isNotNull();
-        assertThat(contractResult.getGasConsumed()).isEqualTo(21150L);
+
+        assertThat(contractResult)
+                .isNotNull()
+                .extracting(ContractResult::getGasConsumed)
+                .isNotNull()
+                .isEqualTo(21150L);
     }
 
     @Test
@@ -402,9 +405,12 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         final var contractResult = contractResultRepository
                 .findById(recordItem.getConsensusTimestamp())
                 .orElse(null);
-        assertThat(contractResult).isNotNull();
-        assertThat(contractResult.getGasConsumed()).isNotNull();
-        assertThat(contractResult.getGasConsumed()).isEqualTo(53196L);
+
+        assertThat(contractResult)
+                .isNotNull()
+                .extracting(ContractResult::getGasConsumed)
+                .isNotNull()
+                .isEqualTo(53196L);
     }
 
     @Test
@@ -420,8 +426,11 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         final var contractResult = contractResultRepository
                 .findById(recordItem.getConsensusTimestamp())
                 .orElse(null);
-        assertThat(contractResult).isNotNull();
-        assertThat(contractResult.getGasConsumed()).isNull();
+
+        assertThat(contractResult)
+                .isNotNull()
+                .extracting(ContractResult::getGasConsumed)
+                .isNull();
     }
 
     @Test
