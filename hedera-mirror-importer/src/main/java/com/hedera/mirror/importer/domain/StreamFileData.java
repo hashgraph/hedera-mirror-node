@@ -59,7 +59,7 @@ public class StreamFileData {
             throw new FileOperationException("Unable to read file " + file);
         }
 
-        var bytes = Suppliers.memoize(() -> {
+        Supplier<byte[]> bytes = Suppliers.memoize(() -> {
             try {
                 return FileUtils.readFileToByteArray(file);
             } catch (IOException e) {

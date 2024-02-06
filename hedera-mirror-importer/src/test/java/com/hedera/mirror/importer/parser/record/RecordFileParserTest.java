@@ -59,6 +59,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -286,6 +287,19 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
 
         // then
         assertParsed(streamFile, true, false);
+    }
+
+    @Test
+    void emptyList() {
+        // given
+        when(recordFileRepository.findLatest()).thenReturn(Optional.empty());
+
+        // when
+        parser.parse(List.of());
+
+        // then
+        verify(recordStreamFileListener, never()).onEnd(any());
+        verify(applicationEventPublisher, never()).publishEvent(any());
     }
 
     @Test

@@ -84,6 +84,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     }
 
     @Override
+    @SuppressWarnings("java:S2139")
     public void parse(T streamFile) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean success = true;
@@ -107,7 +108,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                     stopwatch);
             Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-        } catch (Throwable e) {
+        } catch (Exception e) {
             success = false;
             log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
             throw e;
@@ -118,17 +119,19 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     }
 
     @Override
+    @SuppressWarnings("java:S2139")
     public void parse(List<T> streamFiles) {
         long count = 0L;
         var previous = getLast();
         int size = streamFiles.size();
+        var filenames = new ArrayList<String>(size);
         var stopwatch = Stopwatch.createStarted();
         boolean success = true;
-        var filenames = new ArrayList<String>(size);
+        T streamFile = null;
 
         try {
             for (int i = 0; i < size; ++i) {
-                var streamFile = streamFiles.get(i);
+                streamFile = streamFiles.get(i);
 
                 if (!shouldParse(previous, streamFile)) {
                     streamFile.clear();
@@ -142,6 +145,10 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                 filenames.add(streamFile.getName());
             }
 
+            if (previous == null) {
+                return;
+            }
+
             streamFileListener.onEnd(previous);
             last.set(previous);
             previous.clear();
@@ -150,9 +157,9 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
             Instant consensusInstant = Instant.ofEpochSecond(0L, previous.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-        } catch (Throwable e) {
+        } catch (Exception e) {
             success = false;
-            log.error("Error parsing file {} after {}", previous.getName(), stopwatch, e);
+            log.error("Error parsing file {} in {}: {}", streamFile != null ? streamFile.getName() : "", stopwatch, e);
             throw e;
         } finally {
             Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
