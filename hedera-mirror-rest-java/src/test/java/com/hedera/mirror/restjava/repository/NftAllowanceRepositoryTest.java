@@ -28,7 +28,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     private final NftAllowanceRepository nftAllowanceRepository;
 
     @Test
-    void findByOwnerTokeneq() {
+    void findByOwnerTokenEq() {
         var nftAllowance = domainBuilder.nftAllowance().get();
         nftAllowanceRepository.save(nftAllowance);
         assertThat(nftAllowanceRepository
