@@ -7,6 +7,7 @@ create role temporary_admin in role readwrite;
 create user mirror_graphql with login password 'mirror_graphql_pass' in role readonly;
 create user mirror_grpc with login password 'mirror_grpc_pass' in role readonly;
 create user mirror_importer with login password 'mirror_importer_pass' in role readwrite;
+create user mirror_rest with login password 'mirror_rest_pass' in role readonly;
 create user mirror_rest_java with login password 'mirror_rest_java_pass' in role readonly;
 create user mirror_rosetta with login password 'mirror_rosetta_pass' in role readonly;
 create user mirror_web3 with login password 'mirror_web3_pass' in role readonly;

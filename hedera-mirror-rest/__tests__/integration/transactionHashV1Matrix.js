@@ -16,7 +16,7 @@
 
 import {isV2Schema} from '../testutils.js';
 
-const nullifyPayerAccountId = async () => pool.queryQuietly('update transaction_hash set payer_account_id = null');
+const nullifyPayerAccountId = async () => ownerPool.queryQuietly('update transaction_hash set payer_account_id = null');
 
 const applyMatrix = (spec) => {
   if (isV2Schema()) {
