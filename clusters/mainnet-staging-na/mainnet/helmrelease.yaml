@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.97.0-rc1'
+      version: '0.98.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -70,3 +70,7 @@ spec:
                 network: MAINNET
       cucumberTags: "@critical"
       enabled: true
+    web3:
+      env:
+        HEDERA_MIRROR_WEB3_EVM_NETWORK: MAINNET
+
