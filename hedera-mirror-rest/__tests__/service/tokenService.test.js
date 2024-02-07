@@ -16,6 +16,10 @@
 
 import {assertSqlQueryEqual} from '../testutils';
 import {TokenService} from '../../service';
+import integrationDomainOps from '../integrationDomainOps.js';
+import {setupIntegrationTest} from '../integrationUtils.js';
+
+setupIntegrationTest();
 
 describe('getQuery', () => {
   const defaultQuery = {
@@ -102,5 +106,28 @@ describe('getQuery', () => {
       assertSqlQueryEqual(actual.sqlQuery, spec.expected.sqlQuery);
       expect(actual.params).toEqual(spec.expected.params);
     });
+  });
+});
+
+const defaultInputToken = {
+  token_id: '0.0.300',
+  decimals: 3,
+};
+describe('TokenService.getDecimals tests', () => {
+  test('TokenService.getDecimals - No match', async () => {
+    await expect(TokenService.getDecimals(100)).resolves.toBeNull();
+  });
+
+  test('TokenService.getDecimals - getDecimal cache', async () => {
+    await integrationDomainOps.addToken(defaultInputToken);
+    const original = await TokenService.getDecimals(300);
+    const cached = await TokenService.getDecimals(300);
+    expect(cached).toBe(original);
+  });
+
+  test('TokenService.getDecimals - set and get decimal cache', async () => {
+    TokenService.addDecimalsToCache(5000, 5);
+    const cached = await TokenService.getDecimals(5000);
+    expect(cached).toBe(5);
   });
 });

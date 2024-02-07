@@ -14,12 +14,14 @@
         "token_id": "0.0.1500",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
+        "decimals": 10,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.0.2500",
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
+        "decimals": 20,
         "type": "FUNGIBLE_COMMON"
       }
     ],
@@ -58,6 +60,7 @@
         "automatic_association": true,
         "balance": 15,
         "created_timestamp": "1234567890.000000002",
+        "decimals": 10,
         "freeze_status": "UNFROZEN",
         "kyc_status": "GRANTED",
         "token_id": "0.0.1500"
@@ -66,6 +69,7 @@
         "automatic_association": true,
         "balance": 25,
         "created_timestamp": "1234567890.000000006",
+        "decimals": 20,
         "freeze_status": "UNFROZEN",
         "kyc_status": "GRANTED",
         "token_id": "0.0.2500"

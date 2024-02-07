@@ -14,10 +14,17 @@
  * limitations under the License.
  */
 
-import {TokenAccount} from '../model';
+import {Token, TokenAccount} from '../model';
 import BaseService from './baseService';
 import {OrderSpec} from '../sql';
 import _ from 'lodash';
+import quickLru from 'quick-lru';
+import config from '../config.js';
+
+const decimalsCache = new quickLru({
+  maxAge: config.cache.token.decimals.maxAge * 1000, // in millis
+  maxSize: config.cache.token.decimals.maxSize,
+});
 
 /**
  * Token retrieval business logic
@@ -33,6 +40,11 @@ class TokenService extends BaseService {
         from ${TokenAccount.tableName} ${TokenAccount.tableAlias}
         where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1
         and ${TokenAccount.tableAlias}.${TokenAccount.ASSOCIATED} = true `;
+
+  static tokenDecimalsQuery = `
+        select ${Token.DECIMALS} 
+        from ${Token.tableName}
+        where ${Token.TOKEN_ID} = $1`;
 
   /**
    * Gets the full sql query and params to retrieve an account's token relationships
@@ -84,15 +96,50 @@ class TokenService extends BaseService {
   }
 
   /**
-   * Gets the tokens for the query
+   * Gets the token accounts for the query as well as the decimal from the token
+   * table.
    *
    * @param query
-   * @return {Promise<Token[]>}
+   * @return {Promise<TokenAccount[]>}
    */
   async getTokens(query) {
     const {sqlQuery, params} = this.getTokenRelationshipsQuery(query);
     const rows = await super.getRows(sqlQuery, params);
-    return rows.map((ta) => new TokenAccount(ta));
+    const tokenAccounts = rows.map((ta) => new TokenAccount(ta));
+    for (const tokenAccount of tokenAccounts) {
+      tokenAccount.decimals = await this.getDecimals(tokenAccount.tokenId);
+    }
+    return tokenAccounts;
+  }
+
+  /**
+   * Adds the decimals to the cache
+   * @param {BigInt} tokenId
+   * @param {BigInt} decimals
+   */
+  addDecimalsToCache(tokenId, decimals) {
+    decimalsCache.set(tokenId, decimals);
+  }
+
+  /**
+   * Gets the decimals for a token
+   * @param {BigInt} tokenId
+   * @return {Promise<BigInt>}
+   */
+  async getDecimals(tokenId) {
+    let decimals = decimalsCache.get(tokenId);
+    if (decimals) {
+      return decimals;
+    }
+
+    const rows = await super.getRows(TokenService.tokenDecimalsQuery, tokenId);
+    if (_.isEmpty(rows)) {
+      return null;
+    }
+
+    decimals = rows[0].decimals;
+    decimalsCache.set(tokenId, decimals);
+    return decimals;
   }
 }
 
