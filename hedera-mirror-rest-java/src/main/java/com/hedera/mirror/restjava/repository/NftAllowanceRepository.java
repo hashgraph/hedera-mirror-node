@@ -24,13 +24,23 @@ import org.springframework.data.repository.CrudRepository;
 
 public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
 
+    /**
+     * This repository method will query based on the spender and further filter by the owner and token_id, order by owner first and then the token_id
+     * 1. It only covers owner eq and token_id gte scenario.
+     */
     @Query(
-            value = "select * from nft_allowance where owner = ? and token_id = ? order by owner,token_id limit ?",
+            value =
+                    "select * from nft_allowance where spender = ?  and  owner = ? and token_id >= ? order by owner,token_id limit ?",
             nativeQuery = true)
-    List<NftAllowance> findByOwnerAndTokenEq(long owner, long tokenId, int limit);
+    List<NftAllowance> findByOwnerAndTokenEq(long accountId, long owner, long tokenId, int limit);
 
+    /**
+     * This repository method will query based on the owner and further filter by the spender and token_id, order by spender first and then the token_id
+     * 1. It only covers owner eq and token_id eq scenario.
+     */
     @Query(
-            value = "select * from nft_allowance where spender = ? and token_id >= ? order by spender,token_id limit ?",
+            value =
+                    "select * from nft_allowance where owner = ? and spender = ? and token_id = ? order by spender,token_id limit ?",
             nativeQuery = true)
-    List<NftAllowance> findBySpenderAndTokenGte(long spenderId, long tokenId, int limit);
+    List<NftAllowance> findBySpenderAndTokenGte(long accountId, long spenderId, long tokenId, int limit);
 }

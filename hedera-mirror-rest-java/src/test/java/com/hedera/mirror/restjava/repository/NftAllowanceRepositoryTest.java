@@ -28,22 +28,42 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     private final NftAllowanceRepository nftAllowanceRepository;
 
     @Test
-    void findByOwnerTokenEq() {
+    void findBySpenderTokenGte() {
         var nftAllowance = domainBuilder.nftAllowance().get();
         nftAllowanceRepository.save(nftAllowance);
         assertThat(nftAllowanceRepository
-                        .findByOwnerAndTokenEq(nftAllowance.getOwner(), nftAllowance.getTokenId(), 1)
+                        .findByOwnerAndTokenEq(
+                                nftAllowance.getSpender(), nftAllowance.getOwner(), nftAllowance.getTokenId(), 1)
                         .get(0))
                 .isEqualTo(nftAllowance);
     }
 
     @Test
-    void findByOwnerTokenGte() {
+    void findBySpenderTokenGteTokenNotPresent() {
+        var nftAllowance = domainBuilder.nftAllowance().get();
+        nftAllowanceRepository.save(nftAllowance);
+        assertThat(nftAllowanceRepository.findByOwnerAndTokenEq(
+                        nftAllowance.getSpender(), nftAllowance.getOwner(), nftAllowance.getTokenId() + 1, 1))
+                .isEmpty();
+    }
+
+    @Test
+    void findByOwnerTokenEq() {
         var nftAllowance = domainBuilder.nftAllowance().get();
         nftAllowanceRepository.save(nftAllowance);
         assertThat(nftAllowanceRepository
-                        .findBySpenderAndTokenGte(nftAllowance.getSpender(), nftAllowance.getTokenId(), 1)
+                        .findBySpenderAndTokenGte(
+                                nftAllowance.getOwner(), nftAllowance.getSpender(), nftAllowance.getTokenId(), 1)
                         .get(0))
                 .isEqualTo(nftAllowance);
+    }
+
+    @Test
+    void findByOwnerTokenEqOwnerNotPresent() {
+        var nftAllowance = domainBuilder.nftAllowance().get();
+        nftAllowanceRepository.save(nftAllowance);
+        assertThat(nftAllowanceRepository.findBySpenderAndTokenGte(
+                        nftAllowance.getOwner() + 1, nftAllowance.getSpender(), nftAllowance.getTokenId(), 1))
+                .isEmpty();
     }
 }
