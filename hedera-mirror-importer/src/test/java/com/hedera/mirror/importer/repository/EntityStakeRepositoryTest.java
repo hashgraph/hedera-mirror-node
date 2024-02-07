@@ -275,9 +275,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .nodeStake()
                 .customize(ns -> ns.consensusTimestamp(timestamp).epochDay(epochDay))
                 .persist();
-        domainBuilder
-                .entity(STAKING_REWARD_ACCOUNT, timestamp - 5000L)
-                .persist();
+        domainBuilder.entity(STAKING_REWARD_ACCOUNT, timestamp - 5000L).persist();
 
         transactionOperations.executeWithoutResult(s -> {
             // when
