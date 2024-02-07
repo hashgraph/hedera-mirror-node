@@ -54,8 +54,7 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
                 }
 
                 var stopwatch = Stopwatch.createStarted();
-                var lastEndStakePeriod =
-                        entityStakeRepository.getEndStakePeriod().orElse(0L);
+                var lastEndStakePeriod = entityStakeRepository.getEndStakePeriod().orElse(0L);
                 transactionOperations.executeWithoutResult(s -> {
                     entityStakeRepository.lockFromConcurrentUpdates();
                     entityStakeRepository.createEntityStateStart();
