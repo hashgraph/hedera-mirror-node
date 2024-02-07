@@ -389,7 +389,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         ByteString failedInitcode = null;
         final var sidecarRecords = recordItem.getSidecarRecords();
         if (sidecarRecords.isEmpty()) {
-            return new SidecarProcessingResult(null, null, null);
+            return new SidecarProcessingResult(null, null);
         }
 
         var contractBytecodes = new ArrayList<ContractBytecode>();
@@ -436,7 +436,8 @@ public class ContractResultServiceImpl implements ContractResultService {
                     stopwatch);
         }
 
-        return new SidecarProcessingResult(failedInitcode, contractDeploymentByteCode, totalGasUsed);
+        return new SidecarProcessingResult(
+                failedInitcode, totalGasUsed + SidecarProcessingResult.getIntrinsicGas(contractDeploymentByteCode));
     }
 
     /**
@@ -497,16 +498,11 @@ public class ContractResultServiceImpl implements ContractResultService {
      * @param failedInitByteCode The init code of the contract if the contract creation failed
      * @param gasConsumed The gas consumed by the EVM for the transaction.
      */
-    private record SidecarProcessingResult(
-            ByteString failedInitByteCode, ByteString contractByteCode, Long gasConsumed) {
+    private record SidecarProcessingResult(ByteString failedInitByteCode, Long gasConsumed) {
         private static final long TX_DATA_ZERO_COST = 4L;
         private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
         private static final long TX_BASE_COST = 21_000L;
         private static final long TX_CREATE_EXTRA = 32_000L;
-
-        public SidecarProcessingResult {
-            gasConsumed = gasConsumed + getIntrinsicGas(contractByteCode);
-        }
 
         /**
          * Returns the intrinsic gas cost for a contract transaction.
@@ -515,7 +511,7 @@ public class ContractResultServiceImpl implements ContractResultService {
          *
          * @param initByteCode The init code of the contract
          */
-        private static long getIntrinsicGas(final ByteString initByteCode) {
+        static long getIntrinsicGas(final ByteString initByteCode) {
             if (initByteCode == null) {
                 return TX_BASE_COST;
             }
