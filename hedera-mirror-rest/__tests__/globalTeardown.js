@@ -15,7 +15,7 @@
  */
 
 import fs from 'fs';
-import {getDatabase} from './globalSetup.js';
+import {getDatabases} from './globalSetup.js';
 import log4js from 'log4js';
 
 export default async function () {
@@ -24,6 +24,6 @@ export default async function () {
     fs.rmSync(tmpDir, {force: true, recursive: true});
     console.log(`Removed temp directory ${tmpDir}`);
   }
-  await getDatabase().stop();
+  await Promise.all(getDatabases().map((d) => d.stop()));
   log4js.shutdown();
 }
