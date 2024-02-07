@@ -397,7 +397,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         var stopwatch = Stopwatch.createStarted();
 
         long totalGasUsed = 0;
-        ByteString contractDeployment = null;
+        ByteString contractDeploymentByteCode = null;
 
         for (final var sidecarRecord : sidecarRecords) {
             final boolean migration = sidecarRecord.getMigration();
@@ -419,7 +419,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 } else if (!recordItem.isSuccessful()) {
                     failedInitcode = sidecarRecord.getBytecode().getInitcode();
                 } else {
-                    contractDeployment = sidecarRecord.getBytecode().getInitcode();
+                    contractDeploymentByteCode = sidecarRecord.getBytecode().getInitcode();
                 }
             }
             if (migration) {
@@ -436,7 +436,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                     stopwatch);
         }
 
-        return new SidecarProcessingResult(failedInitcode, contractDeployment, totalGasUsed);
+        return new SidecarProcessingResult(failedInitcode, contractDeploymentByteCode, totalGasUsed);
     }
 
     /**
@@ -498,14 +498,14 @@ public class ContractResultServiceImpl implements ContractResultService {
      * @param gasConsumed The gas consumed by the EVM for the transaction.
      */
     private record SidecarProcessingResult(
-            ByteString failedInitByteCode, ByteString contractDeployment, Long gasConsumed) {
+            ByteString failedInitByteCode, ByteString contractByteCode, Long gasConsumed) {
         private static final long TX_DATA_ZERO_COST = 4L;
         private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
         private static final long TX_BASE_COST = 21_000L;
         private static final long TX_CREATE_EXTRA = 32_000L;
 
         public SidecarProcessingResult {
-            gasConsumed = gasConsumed + getIntrinsicGas(contractDeployment);
+            gasConsumed = gasConsumed + getIntrinsicGas(contractByteCode);
         }
 
         /**
@@ -520,13 +520,14 @@ public class ContractResultServiceImpl implements ContractResultService {
                 return TX_BASE_COST;
             }
 
+            byte[] bytes = initByteCode.toByteArray();
             int zeros = 0;
-            for (int i = 0; i < initByteCode.size(); i++) {
-                if (initByteCode.byteAt(i) == 0) {
+            for (byte b : bytes) {
+                if (b == 0) {
                     ++zeros;
                 }
             }
-            final int nonZeros = initByteCode.size() - zeros;
+            final int nonZeros = bytes.length - zeros;
 
             final long costForByteCode =
                     TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
