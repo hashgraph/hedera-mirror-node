@@ -71,8 +71,6 @@
         "token_id": "0.23.55555",
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000005",
-        "decimals": 5,
-        "name": "Hedera Coin",
         "type": "FUNGIBLE_COMMON"
       }
     ],

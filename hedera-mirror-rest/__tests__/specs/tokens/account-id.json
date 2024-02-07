@@ -42,8 +42,6 @@
         "token_id": "0.0.4",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
-        "decimals": 4,
-        "name": "Original",
         "type": "FUNGIBLE_COMMON"
       },
       {

@@ -60,28 +60,24 @@
         "token_id": "0.20.2",
         "symbol": "TOKEN2",
         "created_timestamp": "1234567890000000002",
-        "decimals": 2,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.20.3",
         "symbol": "TOKEN3",
         "created_timestamp": "1234567890000000003",
-        "decimals": 3,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.20.4",
         "symbol": "TOKEN4",
         "created_timestamp": "1234567890000000004",
-        "decimals": 4,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.20.5",
         "symbol": "TOKEN5",
         "created_timestamp": "1234567890000000005",
-        "decimals": 5,
         "type": "FUNGIBLE_COMMON"
       }
     ],
