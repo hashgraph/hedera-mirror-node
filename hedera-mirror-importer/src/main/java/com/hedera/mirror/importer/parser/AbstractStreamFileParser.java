@@ -97,11 +97,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             }
 
             doParse(streamFile);
-
-            streamFileListener.onEnd(streamFile);
             doFlush(streamFile);
-            last.set(streamFile);
-            streamFile.clear();
 
             log.info(
                     "Successfully processed {} items from {} in {}",
@@ -156,10 +152,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                 return;
             }
 
-            streamFileListener.onEnd(previous);
             doFlush(previous);
-            last.set(previous);
-            previous.clear();
             log.info(
                     "Successfully batch processed {} items from {} files in {}: {}", count, size, stopwatch, filenames);
 
@@ -176,7 +169,9 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     }
 
     protected void doFlush(T streamFile) {
-        // Do nothing
+        streamFileListener.onEnd(streamFile);
+        last.set(streamFile);
+        streamFile.clear();
     }
 
     protected abstract void doParse(T streamFile);

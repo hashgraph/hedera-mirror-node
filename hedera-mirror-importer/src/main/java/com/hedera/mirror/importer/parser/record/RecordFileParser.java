@@ -152,6 +152,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
     @Override
     protected void doFlush(RecordFile streamFile) {
+        super.doFlush(streamFile);
         applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, streamFile.getConsensusEnd()));
     }
 
