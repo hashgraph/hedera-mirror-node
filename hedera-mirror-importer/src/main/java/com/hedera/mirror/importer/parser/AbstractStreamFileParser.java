@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implements StreamFileParser<T> {
 
@@ -98,6 +99,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             doParse(streamFile);
 
             streamFileListener.onEnd(streamFile);
+            doFlush(streamFile);
             last.set(streamFile);
             streamFile.clear();
 
@@ -121,8 +123,13 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     @Override
     @SuppressWarnings("java:S2139")
     public void parse(List<T> streamFiles) {
+        if (CollectionUtils.isEmpty(streamFiles)) {
+            return;
+        }
+
         long count = 0L;
-        var previous = getLast();
+        var initial = getLast();
+        var previous = initial;
         int size = streamFiles.size();
         var filenames = new ArrayList<String>(size);
         var stopwatch = Stopwatch.createStarted();
@@ -135,7 +142,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
                 if (!shouldParse(previous, streamFile)) {
                     streamFile.clear();
-                    return;
+                    continue;
                 }
 
                 doParse(streamFile);
@@ -145,11 +152,12 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                 filenames.add(streamFile.getName());
             }
 
-            if (previous == null) {
+            if (initial == previous) {
                 return;
             }
 
             streamFileListener.onEnd(previous);
+            doFlush(previous);
             last.set(previous);
             previous.clear();
             log.info(
@@ -165,6 +173,10 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
             Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
             timer.record(stopwatch.elapsed());
         }
+    }
+
+    protected void doFlush(T streamFile) {
+        // Do nothing
     }
 
     protected abstract void doParse(T streamFile);

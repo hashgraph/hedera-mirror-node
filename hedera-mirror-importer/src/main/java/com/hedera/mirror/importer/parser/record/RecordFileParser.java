@@ -151,6 +151,11 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     }
 
     @Override
+    protected void doFlush(RecordFile streamFile) {
+        applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, streamFile.getConsensusEnd()));
+    }
+
+    @Override
     protected void doParse(RecordFile recordFile) {
         DateRangeFilter dateRangeFilter = dateRangeCalculator.getFilter(parserProperties.getStreamType());
         Flux<RecordItem> recordItems = recordFile.getItems();
@@ -175,7 +180,6 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
         parserContext.add(recordFile);
         parserContext.addAll(recordFile.getSidecars());
-        applicationEventPublisher.publishEvent(new RecordFileParsedEvent(this, recordFile.getConsensusEnd()));
     }
 
     private void logItem(RecordItem recordItem) {

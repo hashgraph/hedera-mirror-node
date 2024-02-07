@@ -33,6 +33,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
@@ -290,19 +291,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     }
 
     @Test
-    void emptyList() {
-        // given
-        when(recordFileRepository.findLatest()).thenReturn(Optional.empty());
-
-        // when
-        parser.parse(List.of());
-
-        // then
-        verify(recordStreamFileListener, never()).onEnd(any());
-        verify(applicationEventPublisher, never()).publishEvent(any());
-    }
-
-    @Test
     void blockNumberMigrationOnStartup() {
         // given
         int offset = 2;
@@ -357,6 +345,78 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         assertParsed(streamFile1, true, false);
         assertParsed(streamFile2, true, false);
         verify(recordFileRepository, never()).updateIndex(anyLong());
+    }
+
+    @Test
+    void parseList() {
+        // given
+        var streamFile1 = getStreamFile();
+        var recordItem1 = recordItem;
+        var streamFile2 = getStreamFile();
+        var recordItem2 = recordItem;
+        streamFile2.setPreviousHash(streamFile1.getHash());
+
+        // when
+        parser.parse(List.of(streamFile1, streamFile2));
+
+        // then
+        verify(recordItemListener).onItem(recordItem1);
+        verify(recordItemListener).onItem(recordItem2);
+        verify(recordStreamFileListener).onEnd(streamFile2);
+        verify(applicationEventPublisher)
+                .publishEvent(argThat(e -> e instanceof RecordFileParsedEvent recordFileParsedEvent
+                        && recordFileParsedEvent.getConsensusEnd() == streamFile2.getConsensusEnd()));
+        assertThat(streamFile2.getBytes()).isNull();
+    }
+
+    @Test
+    void parseListEmpty() {
+        // when
+        parser.parse(List.of());
+
+        // then
+        verifyNoInteractions(recordFileRepository, recordStreamFileListener, applicationEventPublisher);
+    }
+
+    @Test
+    void parseListHashMismatch() {
+        // given
+        var streamFile1 = getStreamFile();
+        var recordItem1 = recordItem;
+        var streamFile2 = getStreamFile();
+
+        // when
+        assertThatThrownBy(() -> parser.parse(List.of(streamFile1, streamFile2)))
+                .isInstanceOf(HashMismatchException.class);
+
+        // then
+        verify(recordItemListener).onItem(recordItem1);
+        verifyNoMoreInteractions(recordItemListener);
+        verifyNoInteractions(recordStreamFileListener);
+    }
+
+    @Test
+    void parseListSkipPartial() {
+        // given
+        var streamFile1 = getStreamFile();
+        var streamFile2 = getStreamFile();
+        streamFile2.setPreviousHash(streamFile1.getHash());
+        var recordItem2 = recordItem;
+        var streamFile3 = getStreamFile();
+        streamFile3.setConsensusEnd(1L); // Should be skipped since it's in the past
+        streamFile3.setConsensusStart(0L);
+        when(recordFileRepository.findLatest()).thenReturn(Optional.of(streamFile1));
+
+        // when
+        parser.parse(List.of(streamFile2, streamFile3));
+
+        // then
+        verify(recordItemListener).onItem(recordItem2);
+        verify(recordStreamFileListener).onEnd(streamFile2);
+        verify(applicationEventPublisher)
+                .publishEvent(argThat(e -> e instanceof RecordFileParsedEvent recordFileParsedEvent
+                        && recordFileParsedEvent.getConsensusEnd() == streamFile2.getConsensusEnd()));
+        assertThat(streamFile2.getBytes()).isNull();
     }
 
     private RecordItem contractCall(
