@@ -28,7 +28,7 @@ const config = {
   globalSetup: './__tests__/globalSetup.js',
   globalTeardown: './__tests__/globalTeardown.js',
   maxWorkers,
-  reporters: ['jest-standard-reporter', 'jest-junit'],
+  reporters: [['github-actions', {silent: false}], 'jest-junit', ['summary', {summaryThreshold: 0}]],
   setupFilesAfterEnv: ['./__tests__/jestSetup.js'],
   testEnvironment: 'node',
   testPathIgnorePatterns: ['/build/', '/node_modules/'],

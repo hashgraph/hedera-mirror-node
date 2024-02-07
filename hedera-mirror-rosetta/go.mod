@@ -6,8 +6,8 @@ require (
 	github.com/Code-Hex/go-generics-cache v1.3.1
 	github.com/coinbase/rosetta-sdk-go v0.8.3
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
-	github.com/cucumber/godog v0.13.0
-	github.com/ethereum/go-ethereum v1.13.10
+	github.com/cucumber/godog v0.14.0
+	github.com/ethereum/go-ethereum v1.13.11
 	github.com/go-playground/validator/v10 v10.17.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20230720072335-ed5726877e99
 	github.com/hashgraph/hedera-sdk-go/v2 v2.34.1
@@ -29,7 +29,7 @@ require (
 	google.golang.org/protobuf v1.32.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.5.4
-	gorm.io/gorm v1.25.5
+	gorm.io/gorm v1.25.6
 )
 
 require (
@@ -93,7 +93,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.1.5 // indirect
+	github.com/opencontainers/runc v1.1.12 // indirect
 	github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect

@@ -18,9 +18,13 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -28,6 +32,8 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class ContractCallEvmCodesTest extends ContractCallTestSetup {
@@ -196,6 +202,57 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        // function getCodeHash with parameter hedera system accounts or accounts that do not exist
+        // expected to revert with INVALID_SOLIDITY_ADDRESS
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000167",
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000168",
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000169",
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000005ee",
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000005e4",
+    })
+    void testSystemContractCodeHashPreVersion38(String input) {
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(input),
+                EVM_CODES_CONTRACT_ADDRESS,
+                ETH_CALL,
+                0L,
+                BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // function getCodeHash with parameter hedera system accounts, expected 0 bytes
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000167, 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000168, 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000002ee, 0x0000000000000000000000000000000000000000000000000000000000000000",
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000002e4, 0x0000000000000000000000000000000000000000000000000000000000000000",
+    })
+    void testSystemContractCodeHash(String input, String expectedOutput) {
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(input), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedOutput);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        // function getCodeHash with parameter contract, expected keccak256 of the contract bytecode
+        "0x81ea440800000000000000000000000000000000000000000000000000000000000004ec, 0x9674ad57ff4dac4fdcf84dcf4053ec4b91481d2f4a3fcd483564898e73ad4228",
+        // function getCodeHash with parameter account, expected  keccak256 of empty string
+        "0x81ea44080000000000000000000000000000000000000000000000000000000000000436, 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+    })
+    void testNonSystemContractCodeHash(String input, String expectedOutput) {
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(input), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedOutput);
+    }
+
     @Test
     void deployAddressThisContract() {
         final var serviceParameters = serviceParametersForAddressThis(
@@ -230,6 +287,31 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
+    }
+
+    @Test
+    void selfDestructCall() {
+        // destroyContract(address)
+        final var destroyContractInput = "0x016a3738000000000000000000000000" + SENDER_ALIAS.toUnprefixedHexString();
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(destroyContractInput), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+    }
+
+    @Test
+    void selfDestructCallWithSystemAccount() {
+        // destroyContract(address)
+        final var destroyContractInput = "0x016a3738000000000000000000000000" + OWNER_ADDRESS.toUnprefixedHexString();
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(destroyContractInput), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .satisfies(ex -> {
+                    MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
+                    assertEquals(exception.getMessage(), INVALID_SOLIDITY_ADDRESS.name());
+                });
     }
 
     private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {

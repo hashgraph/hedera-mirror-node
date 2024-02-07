@@ -4,7 +4,11 @@
     "account 8 has transactions associated to it. When `transactions` is not specified or is `true`",
     "the transactions are included in the response. When the flag `transactions` is `false` they are not included."
   ],
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2009-02-13T23:40:00Z"
+    },
     "accounts": [
       {
         "num": 3
@@ -29,7 +33,6 @@
     ],
     "entityStakes": [
       {
-        "decline_reward_start": false,
         "end_stake_period": 810,
         "id": 8,
         "pending_reward": 123,

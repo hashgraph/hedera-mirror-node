@@ -79,7 +79,7 @@ tasks.test {
     if (System.getenv().containsKey("CI")) {
         retry { maxRetries = 3 }
     }
-    useJUnitPlatform { excludeTags("largedbperf", "performance") }
+    useJUnitPlatform { excludeTags("performance") }
 }
 
 tasks.register<Test>("performanceTest") {

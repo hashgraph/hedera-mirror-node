@@ -1,6 +1,10 @@
 {
   "description": "Transaction api calls for transactions and retrieves tokenwipe transaction with token_transfer_list populated",
+  "matrix": "bindTimestampRangeMatrix.js",
   "setup": {
+    "features": {
+      "fakeTime": "2009-02-13T23:40:00Z"
+    },
     "accounts": [
       {
         "num": 3
@@ -18,7 +22,6 @@
         "num": 98
       }
     ],
-    "balances": [],
     "transactions": [
       {
         "type": "39",

@@ -67,6 +67,9 @@ jobs:
           distribution: "temurin"
           java-version: 21
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Create and Switch to Release Branch
         run: |
           if ! git ls-remote --exit-code --heads --quiet origin refs/heads/${RELEASE_BRANCH}; then
@@ -81,9 +84,7 @@ jobs:
           fi
 
       - name: Gradle Release
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: release -Pversion=${{ env.VERSION }}
+        run: ./gradlew release -Pversion=${{ env.VERSION }}
 
       - name: Close the Milestone
         if: ${{ steps.version_parser.outputs.prerelease == '' }}
@@ -155,18 +156,19 @@ jobs:
           distribution: "temurin"
           java-version: 21
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Reset main to release branch
         run: |
           git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
           git reset --hard $RELEASE_BRANCH
 
       - name: Gradle Release for Next Minor Snapshot
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
+        run: ./gradlew release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           body: ""
           branch: create-pull-request/${{ env.RELEASE_BRANCH }}

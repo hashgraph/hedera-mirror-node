@@ -59,14 +59,14 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -202,7 +202,11 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with function that performs self destruct")
     public void destroyEstimateCall() {
-        validateGasEstimation(encodeData(ESTIMATE_GAS, DESTROY), DESTROY, contractSolidityAddress);
+        validateGasEstimation(
+                encodeData(ESTIMATE_GAS, DESTROY),
+                DESTROY,
+                contractSolidityAddress,
+                Optional.of(contractClient.getClientAddress()));
     }
 
     @Then("I call estimateGas with request body that contains wrong method signature")
@@ -220,13 +224,13 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with non-existing from address in the request body")
     public void wrongFromParameterEstimateCall() {
-        var contractCallRequestBody = ContractCallRequest.builder()
-                .data(encodeData(ESTIMATE_GAS, MESSAGE_SIGNER))
-                .to(contractSolidityAddress)
-                .from(newAccountEvmAddress)
+        var data = encodeData(ESTIMATE_GAS, MESSAGE_SIGNER);
+        var contractCallRequest = ModelBuilder.contractCallRequest()
+                .data(data)
                 .estimate(true)
-                .build();
-        ContractCallResponse msgSignerResponse = mirrorClient.contractsCall(contractCallRequestBody);
+                .from(newAccountEvmAddress)
+                .to(contractSolidityAddress);
+        var msgSignerResponse = callContract(contractCallRequest);
         int estimatedGas = msgSignerResponse.getResultAsNumber().intValue();
 
         assertWithinDeviation(MESSAGE_SIGNER.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
@@ -398,6 +402,23 @@ public class EstimateFeature extends AbstractEstimateFeature {
     public void contractDeployEstimateGas() {
         var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
         validateGasEstimation(bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null);
+    }
+
+    @Then("I call estimateGas with contract deploy with bytecode as data with sender")
+    public void contractDeployEstimateGasWithSender() {
+        var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
+        validateGasEstimation(
+                bytecodeData, DEPLOY_CONTRACT_VIA_BYTECODE_DATA, null, Optional.of(contractClient.getClientAddress()));
+    }
+
+    @Then("I call estimateGas with contract deploy with bytecode as data with invalid sender")
+    public void contractDeployEstimateGasWithInvalidSender() {
+        var bytecodeData = deployedContract.compiledSolidityArtifact().getBytecode();
+        validateGasEstimation(
+                bytecodeData,
+                DEPLOY_CONTRACT_VIA_BYTECODE_DATA,
+                null,
+                Optional.of("0x0000000000000000000000000000000000000167"));
     }
 
     /**

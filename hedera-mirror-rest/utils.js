@@ -30,7 +30,6 @@ import config from './config';
 import ed25519 from './ed25519';
 import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
 import {Entity, FeeSchedule, TransactionResult, TransactionType} from './model';
-import {filterKeys} from './constants';
 
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
@@ -610,26 +609,6 @@ const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
 };
 
 /**
- * Parse the type=[credit | debit] parameter
- */
-const parseCreditDebitParams = (parsedQueryParams, columnName) => {
-  return parseParams(
-    parsedQueryParams[constants.filterKeys.CREDIT_TYPE],
-    (value) => value,
-    (op, value) => {
-      if (value === 'credit') {
-        return [`${columnName} > ?`, [0]];
-      }
-      if (value === 'debit') {
-        return [`${columnName} < ?`, [0]];
-      }
-      return null;
-    },
-    false
-  );
-};
-
-/**
  * Parses the integer string into a Number if it's safe or otherwise a BigInt
  *
  * @param {string} str
@@ -678,24 +657,6 @@ const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
   );
 };
 
-/**
- * Parse the result=[success | fail | all] parameter
- * @param {Request} req HTTP query request object
- * @param {String} columnName Column name for the transaction result
- * @return {String} Value of the resultType parameter
- */
-const parseResultParams = (req, columnName) => {
-  const resultType = req.query.result;
-  let query = '';
-
-  if (resultType === constants.transactionResultFilter.SUCCESS) {
-    query = `${columnName} = ${resultSuccess}`;
-  } else if (resultType === constants.transactionResultFilter.FAIL) {
-    query = `${columnName} != ${resultSuccess}`;
-  }
-  return query;
-};
-
 const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.TIMESTAMP],
@@ -720,7 +681,7 @@ const extractTimestampRangeConditionFilters = (
   const params = [];
 
   filters
-    .filter((filter) => filter.key === filterKeys.TIMESTAMP)
+    .filter((filter) => filter.key === constants.filterKeys.TIMESTAMP)
     .forEach((filter) => {
       const position = `$${params.length + offset + 1}`;
       let condition;
@@ -902,6 +863,8 @@ const mergeParams = (initial, ...params) => {
     return previous;
   }, initial);
 };
+
+const nowInNs = () => BigInt(Date.now()) * constants.NANOSECONDS_PER_MILLISECOND;
 
 /**
  * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
@@ -1351,6 +1314,8 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.TOKEN_TYPE:
         // db requires upper case matching for enum
+        // 'type' is overloaded for both transaction credit / debit type and token type, as a result, the transactions
+        // endpoint need to handle the value in all upper cases
         comparator.value = comparator.value.toUpperCase();
         break;
       case constants.filterKeys.TRANSACTIONS:
@@ -1391,27 +1356,6 @@ const parseTokenBalances = (tokenBalances) => {
     });
 };
 
-const parseTransactionTypeParam = (parsedQueryParams) => {
-  if (_.isNil(parsedQueryParams)) {
-    return '';
-  }
-
-  const transactionType = parsedQueryParams[constants.filterKeys.TRANSACTION_TYPE];
-  if (_.isNil(transactionType)) {
-    return '';
-  }
-
-  const transactionTypes = !_.isArray(transactionType) ? [transactionType] : transactionType;
-  const protoIds = transactionTypes
-    .map((t) => TransactionType.getProtoId(t))
-    .reduce((result, protoId) => {
-      result.add(protoId);
-      return result;
-    }, new Set());
-
-  return `${constants.transactionColumns.TYPE} in (${Array.from(protoIds)})`;
-};
-
 const isTestEnv = () => process.env.NODE_ENV === 'test';
 
 /**
@@ -1425,11 +1369,9 @@ const ipMask = (ip) => {
 
 /**
  * Gets the pool class with queryQuietly
- *
- * @param {boolean} mock
  */
-const getPoolClass = async (mock = false) => {
-  const Pool = mock ? (await import('./__tests__/mockPool')).default : pg.Pool;
+const getPoolClass = () => {
+  const {Pool} = pg;
   Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
     let client;
     let result;
@@ -1500,85 +1442,112 @@ const getStakingPeriod = (stakingPeriod) => {
 
 /**
  * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span
- * beyond a configured limit), or a set of equals operators within the same limit.
+ * beyond a configured limit), or a set of equals operators within the same limit. When there are multiple gt / gte
+ * filters, the largest value is returned as the lower bound. Same applies to lt / lte filters so the smallest values is
+ * returned as the upper bound. For equals and not equals operators, the values are unique.
  *
- * @param {[]}timestampFilters an array of timestamp filters
+ * @param {[]}filters an array of timestamp filters
  * @param filterRequired indicates whether timestamp filters can be empty
  * @param allowNe indicates whether existence of ne filter is error condition
  * @param allowOpenRange indicates if we allow lt or gt to be passed individually
  * @param strictCheckOverride override feature flag to force strict checking
- * @return [range, eqValues, neqValues] - range is null in the case of equals
+ * @param validateRange indicates whether to validate the range is not empty and within the configured limit
+ * @return range is null in the case of equals
  */
-const checkTimestampRange = (
-  timestampFilters,
+const parseTimestampFilters = (
+  filters,
   filterRequired = true,
   allowNe = false,
   allowOpenRange = false,
-  strictCheckOverride = true
+  strictCheckOverride = true,
+  validateRange = true
 ) => {
   const forceStrictChecks = strictCheckOverride || config.strictTimestampParam;
 
-  //No timestamp params provided
-  if (timestampFilters.length === 0) {
+  if (filters.length === 0) {
     if (filterRequired) {
       throw new InvalidArgumentError('No timestamp range or eq operator provided');
     }
 
-    return [null, [], []];
+    return {range: null, neValues: [], eqValues: []};
   }
 
-  const valuesByOp = {};
-  Object.values(opsMap).forEach((k) => (valuesByOp[k] = []));
-  timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(BigInt(filter.value)));
+  let earliest = null;
+  let latest = null;
+  let range = null;
+  const eqValues = new Set();
+  const neValues = new Set();
+  let lowerBoundFilterCount = 0;
+  let upperBoundFilterCount = 0;
 
-  const gtGteLength = valuesByOp[opsMap.gt].length + valuesByOp[opsMap.gte].length;
-  const ltLteLength = valuesByOp[opsMap.lt].length + valuesByOp[opsMap.lte].length;
+  for (const filter of filters) {
+    let value = BigInt(filter.value);
+    switch (filter.operator) {
+      case opsMap.eq:
+        eqValues.add(value);
+        break;
+      case opsMap.ne:
+        neValues.add(value);
+        break;
+      case opsMap.gt:
+        value += 1n;
+      case opsMap.gte:
+        earliest = bigIntMax(earliest ?? 0n, value);
+        lowerBoundFilterCount += 1;
+        break;
+      case opsMap.lt:
+        value -= 1n;
+      case opsMap.lte:
+        latest = bigIntMin(latest ?? constants.MAX_LONG, value);
+        upperBoundFilterCount += 1;
+        break;
+    }
+  }
 
   if (forceStrictChecks) {
-    if (!allowNe && valuesByOp[opsMap.ne].length > 0) {
-      // Don't allow ne
+    if (!allowNe && neValues.size > 0) {
       throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
     }
 
-    if (gtGteLength > 1) {
-      //Don't allow multiple gt/gte
+    if (lowerBoundFilterCount > 1) {
       throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
     }
 
-    if (ltLteLength > 1) {
-      //Don't allow multiple lt/lte
+    if (upperBoundFilterCount > 1) {
       throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
     }
 
-    if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0 || valuesByOp[opsMap.ne].length > 0)) {
-      //Combined eq with other operator
+    if (eqValues.size > 0 && (lowerBoundFilterCount > 0 || upperBoundFilterCount > 0 || neValues.size > 0)) {
       throw new InvalidArgumentError('Cannot combine eq with ne, gt, gte, lt, or lte for timestamp param');
     }
   }
 
-  if (valuesByOp[opsMap.eq].length > 0) {
-    return [null, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
+  if (!allowOpenRange && eqValues.size === 0 && (lowerBoundFilterCount === 0 || upperBoundFilterCount === 0)) {
+    throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte), or eq operator');
   }
 
-  if (!allowOpenRange && (gtGteLength === 0 || ltLteLength === 0)) {
-    //Missing range
-    throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
+  const difference = latest !== null && earliest !== null ? latest - earliest + 1n : null;
+
+  if (validateRange) {
+    const {maxTimestampRange, maxTimestampRangeNs} = config.query;
+
+    // If difference is null, we want to ignore because we allow open ranges and that is known to be true at this point
+    if (difference !== null && (difference > maxTimestampRangeNs || difference <= 0n)) {
+      throw new InvalidArgumentError(
+        `Timestamp range by the lower and upper bounds must be positive and within ${maxTimestampRange}`
+      );
+    }
   }
 
-  // there should be exactly one gt/gte and/or one lt/lte at this point
-  const earliest = valuesByOp[opsMap.gt].length ? valuesByOp[opsMap.gt][0] + 1n : valuesByOp[opsMap.gte][0];
-  const latest = valuesByOp[opsMap.lt].length ? valuesByOp[opsMap.lt][0] - 1n : valuesByOp[opsMap.lte][0];
-
-  const difference = latest !== undefined && earliest !== undefined ? latest - earliest + 1n : undefined;
-  const {maxTimestampRange, maxTimestampRangeNs} = config.query;
-
-  // If difference is undefined, we want to ignore because we allow open ranges and that is known to be true at this point
-  if (difference > maxTimestampRangeNs || difference <= 0n) {
-    throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
+  if (earliest !== null || latest !== null) {
+    // Return an empty range when the latest is less than the earliest. Note Range(1, 0, '[]').isEmpty() is false, so
+    // need to return Range() instead.
+    range = difference !== null && difference <= 0n ? Range() : Range(earliest, latest, '[]');
   }
 
-  const range = earliest >= 0 || latest >= 0 ? Range(earliest ?? null, latest ?? null, '[]') : null;
-  return [range, valuesByOp[opsMap.eq], valuesByOp[opsMap.ne]];
+  // Note that we don't further check if the range and the eq values can result in an empty range, because some
+  // endpoints treat eq operator as lte
+  return {range, eqValues: Array.from(eqValues), neValues: Array.from(neValues)};
 };
 
 /**
@@ -1640,9 +1609,11 @@ const boundToOp = {
   ')': opsMap.lt,
   ']': opsMap.lte,
 };
-const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildAsIn = true) => {
+
+const buildTimestampQuery = (column, timestampRange, buildAsIn = true) => {
   const conditions = [];
   const params = [];
+  const {range, eqValues, neValues} = timestampRange;
 
   if (range) {
     const bounds = [...range.bounds];
@@ -1677,9 +1648,10 @@ const buildTimestampQuery = (range, column, neValues = [], eqValues = [], buildA
   return [conditions.join(' and '), params];
 };
 
-const buildTimestampRangeQuery = (range, column, neValues = [], eqValues = []) => {
+const buildTimestampRangeQuery = (column, timestampRange) => {
   const conditions = [];
   const params = [];
+  const {range, eqValues, neValues} = timestampRange;
 
   if (range) {
     conditions.push(`${column} && ?`);
@@ -1719,7 +1691,7 @@ export {
   buildTimestampRangeQuery,
   buildPgSqlObject,
   calculateExpiryTimestamp,
-  checkTimestampRange,
+  parseTimestampFilters,
   conflictingPathParam,
   convertGasPriceToTinyBars,
   convertMySqlStyleQueryToPostgres,
@@ -1758,23 +1730,21 @@ export {
   isValidValueIgnoreCase,
   ltLte,
   mergeParams,
+  nowInNs,
   nsToSecNs,
   nsToSecNsWithHyphen,
   opsMap,
   parseAccountIdQueryParam,
   parseBalanceQueryParam,
   parseBooleanValue,
-  parseCreditDebitParams,
   parseInteger,
   parseLimitAndOrderParams,
   parseParams,
   parsePublicKey,
   parsePublicKeyQueryParam,
-  parseResultParams,
   parseTimestampParam,
   parseTimestampQueryParam,
   parseTokenBalances,
-  parseTransactionTypeParam,
   randomString,
   resultSuccess,
   toHexString,

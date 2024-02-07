@@ -83,13 +83,13 @@ const generateTopicMessageLookups = async () => {
     return;
   }
 
-  const {rows} = await pool.query('select exists(select * from topic_message_lookup)');
+  const {rows} = await ownerPool.query('select exists(select * from topic_message_lookup)');
   if (rows[0].exists) {
     // Don't generate if the test case has already created topic message lookup entries
     return;
   }
 
-  const {rows: topicMessages} = await pool.query(`select consensus_timestamp, sequence_number, topic_id
+  const {rows: topicMessages} = await ownerPool.query(`select consensus_timestamp, sequence_number, topic_id
     from topic_message
     order by topic_id, sequence_number`);
 
@@ -625,7 +625,6 @@ const addEntity = async (defaults, custom) => {
 const SECONDS_PER_DAY = 86400;
 
 const defaultEntityStake = {
-  decline_reward_start: true,
   end_stake_period: 1,
   id: null,
   pending_reward: 0,
@@ -722,7 +721,7 @@ const addFileData = async (fileDataInput) => {
       ? Buffer.from(fileDataInput.file_data, encoding)
       : Buffer.from(fileData.file_data);
 
-  await pool.query(
+  await ownerPool.query(
     `insert into file_data (file_data, consensus_timestamp, entity_id, transaction_type)
     values ($1, $2, $3, $4)`,
     [fileData.file_data, fileData.consensus_timestamp, fileData.entity_id, fileData.transaction_type]
@@ -753,7 +752,7 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
     '}',
   ].join('');
 
-  await pool.query(
+  await ownerPool.query(
     `insert into assessed_custom_fee
     (amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id, payer_account_id)
     values ($1, $2, $3, $4, $5, $6);`,
@@ -782,7 +781,7 @@ const addCustomFee = async (customFee) => {
   const fractional_fees = customFee.fractional_fees ? JSONStringify(customFee.fractional_fees) : null;
   const royalty_fees = customFee.royalty_fees ? JSONStringify(customFee.royalty_fees) : null;
   const table = getTableName('custom_fee', customFee);
-  await pool.query(
+  await ownerPool.query(
     `insert into ${table} (fixed_fees,
                              fractional_fees,
                              royalty_fees,
@@ -815,7 +814,7 @@ const parseCustomFeeEntityIds = (fee) => {
 const setAccountBalance = async (balance) => {
   balance = {timestamp: 0, id: null, balance: 0, realm_num: 0, ...balance};
   const accountId = EntityId.of(BigInt(config.shard), BigInt(balance.realm_num), BigInt(balance.id)).getEncodedId();
-  await pool.query(
+  await ownerPool.query(
     `insert into account_balance (consensus_timestamp, account_id, balance)
     values ($1, $2, $3);`,
     [balance.timestamp, accountId, balance.balance]
@@ -832,7 +831,7 @@ const setAccountBalance = async (balance) => {
         BigInt(tokenBalance.token_num)
       ).getEncodedId(),
     ]);
-    await pool.query(
+    await ownerPool.query(
       pgformat(
         'insert into token_balance (consensus_timestamp, account_id, balance, token_id) values %L',
         tokenBalances
@@ -926,17 +925,17 @@ const insertTransfers = async (
 ) => {
   if (transfers.length === 0 && hasChargedTransactionFee && payerAccountId) {
     // insert default crypto transfers to node and treasury
-    await pool.query(
+    await ownerPool.query(
       `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
       values ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId, false]
     );
-    await pool.query(
+    await ownerPool.query(
       `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
       values ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_FEE_COLLECTOR_ID, payerAccountId, false]
     );
-    await pool.query(
+    await ownerPool.query(
       `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
       values ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId, false]
@@ -944,7 +943,7 @@ const insertTransfers = async (
   }
 
   for (const transfer of transfers) {
-    await pool.query(
+    await ownerPool.query(
       `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
       values ($1, $2, $3, $4, $5);`,
       [
@@ -974,7 +973,7 @@ const insertTokenTransfers = async (consensusTimestamp, transfers, payerAccountI
     ];
   });
 
-  await pool.query(
+  await ownerPool.query(
     pgformat(
       'insert into token_transfer (consensus_timestamp, token_id, account_id, amount, payer_account_id, is_approval) values %L',
       tokenTransfers
@@ -1270,7 +1269,7 @@ const addSchedule = async (schedule) => {
     ...schedule,
   };
 
-  await pool.query(
+  await ownerPool.query(
     `insert into schedule (consensus_timestamp,
                            creator_account_id,
                            executed_timestamp,
@@ -1320,7 +1319,7 @@ const addStakingRewardTransfer = async (transfer) => {
 };
 
 const addTransactionSignature = async (transactionSignature) => {
-  await pool.query(
+  await ownerPool.query(
     `insert into transaction_signature (consensus_timestamp,
                                         public_key_prefix,
                                         entity_id,
@@ -1413,7 +1412,7 @@ const addTokenAccount = async (tokenAccount) => {
     tokenAccount.timestamp_range = `[${tokenAccount.created_timestamp},)`;
   }
 
-  await pool.query(
+  await ownerPool.query(
     `insert into token_account (account_id, associated, automatic_association, balance, balance_timestamp, created_timestamp, freeze_status,
                                 kyc_status, timestamp_range, token_id)
     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`,
@@ -1464,7 +1463,7 @@ const addTokenBalance = async (tokenBalance) => {
     ...tokenBalance,
   };
 
-  await pool.query(
+  await ownerPool.query(
     `insert into token_balance (consensus_timestamp,account_id, balance, token_id)
     values ($1, $2, $3, $4);`,
     [
@@ -1615,7 +1614,7 @@ const addRecordFile = async (recordFileInput) => {
 
 const insertDomainObject = async (table, fields, obj) => {
   const positions = _.range(1, fields.length + 1).map((position) => `$${position}`);
-  await pool.query(
+  await ownerPool.query(
     `insert into ${table} (${fields})
     values (${positions});`,
     fields.map((f) => obj[f])
@@ -1658,6 +1657,7 @@ export default {
   loadTokenAccounts,
   loadTopicMessageLookups,
   loadTransactions,
+  loadEntityStakes,
   setAccountBalance,
   setup,
 };

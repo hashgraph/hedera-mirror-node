@@ -20,12 +20,12 @@ import os from 'os';
 import path from 'path';
 
 import config from '../config';
-import {getDatabaseName} from './globalSetup';
+import {getOwnerConnectionUri, getDatabaseName, getReadOnlyUser, getReadOnlyPassword} from './globalSetup';
 import {getModuleDirname, isV2Schema} from './testutils';
 import {getPoolClass} from '../utils';
 
 const {db: defaultDbConfig} = config;
-const Pool = await getPoolClass();
+const Pool = getPoolClass();
 
 const cleanupSql = {
   v1: fs.readFileSync(
@@ -69,12 +69,22 @@ const extractDbConnectionParams = (url) => {
 
 const cleanUp = async () => {
   const cleanupSql = await getCleanupSql();
-  await pool.query(cleanupSql);
+  await ownerPool.query(cleanupSql);
 };
 
 const createPool = () => {
   const database = getDatabaseName();
-  const dbConnectionParams = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
+  const connectionUri = getOwnerConnectionUri(process.env.JEST_WORKER_ID);
+
+  const dbConnectionParams = extractDbConnectionParams(connectionUri);
+  global.ownerPool = new Pool({
+    ...dbConnectionParams,
+    database,
+    sslmode: 'DISABLE',
+  });
+
+  dbConnectionParams.user = getReadOnlyUser();
+  dbConnectionParams.password = getReadOnlyPassword();
   global.pool = new Pool({
     ...dbConnectionParams,
     database,
@@ -93,8 +103,8 @@ const flywayMigrate = async () => {
 
   const workerId = process.env.JEST_WORKER_ID;
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
-  const dbConnectionParams = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
-  const apiUsername = `${defaultDbConfig.username}_${workerId}`;
+  const connectionUri = getOwnerConnectionUri(workerId);
+  const dbConnectionParams = extractDbConnectionParams(connectionUri);
   const dbName = getDatabaseName();
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = path.join('.', 'build', 'flyway');
@@ -108,9 +118,10 @@ const flywayMigrate = async () => {
       "locations": "filesystem:${locations}",
       "password": "${dbConnectionParams.password}",
       "placeholders.api-password": "${defaultDbConfig.password}",
-      "placeholders.api-user": "${apiUsername}",
+      "placeholders.api-user": "${defaultDbConfig.user}",
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
+      "placeholders.hashShardCount": 2,
       "placeholders.idPartitionSize": 1000000000000000,
       "placeholders.maxEntityId": 5000000,
       "placeholders.maxEntityIdRatio": 2.0,
@@ -168,7 +179,7 @@ const getCleanupSql = async () => {
   // The query returns the tables without partitions or the parent tables of the partitions. This is to reduce the
   // exact amount of time caused by trying to delete from partitions. The cleanup sql for v2 is generated once for
   // each jest worker, it's done this way because the query to find the correct table names is also slow.
-  const {rows} = await pool.queryQuietly(`
+  const {rows} = await ownerPool.queryQuietly(`
       select table_name
       from information_schema.tables
                left join time_partitions on partition::text = table_name::text

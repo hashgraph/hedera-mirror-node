@@ -17,10 +17,10 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.ALLOWANCE_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.ALLOWANCE_DIRECT_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.BALANCE_OF_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.DECIMALS_SELECTOR;
-import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_APPROVED_SELECTOR;
+import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_APPROVED_DIRECT_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR;
@@ -57,17 +57,17 @@ import com.hedera.hashgraph.sdk.CustomRoyaltyFee;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.mirror.rest.model.AccountInfo;
+import com.hedera.mirror.rest.model.Nft;
+import com.hedera.mirror.rest.model.TokenInfo;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -125,7 +125,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
         var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
-        log.info("Get token info for token {}: {}", TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN, tokenInfo);
+        log.debug("Get token info for token {}: {}", TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN, tokenInfo);
     }
 
     @Given("I successfully create and verify a non fungible token for precompile contract tests")
@@ -293,7 +293,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if fungible token is frozen for evm address")
     public void checkIfTokenIsFrozenForEvmAddress() {
-        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
+        AccountInfo accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
         var data = encodeData(
                 PRECOMPILE,
                 IS_TOKEN_FROZEN_SELECTOR,
@@ -317,7 +317,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @And("check if fungible token is unfrozen for evm address")
     public void checkIfTokenIsUnfrozenForEvmAddress() {
-        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
+        AccountInfo accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
         var data = encodeData(
                 PRECOMPILE,
                 IS_TOKEN_FROZEN_SELECTOR,
@@ -334,7 +334,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyTx(String txId) {
-        MirrorTransactionsResponse txResponse = mirrorClient.getTransactions(txId);
+        TransactionByIdResponse txResponse = mirrorClient.getTransactions(txId);
         assertNotNull(txResponse);
     }
 
@@ -523,7 +523,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyToken(TokenId tokenId) {
-        MirrorTokenResponse mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
+        TokenInfo mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
 
         assertNotNull(mirrorToken);
         assertThat(mirrorToken.getTokenId()).isEqualTo(tokenId.toString());
@@ -534,7 +534,7 @@ public class PrecompileContractFeature extends AbstractFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyNft(TokenId tokenId, Long serialNumber) {
-        MirrorNftResponse mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
+        Nft mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
 
         assertNotNull(mirrorNft);
         assertThat(mirrorNft.getTokenId()).isEqualTo(tokenId.toString());
@@ -578,7 +578,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the allowance by direct call for a fungible token")
     public void getFungibleTokenAllowanceByDirectCall() {
-        var data = encodeData(ALLOWANCE_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
+        var data = encodeData(ALLOWANCE_DIRECT_SELECTOR, asAddress(contractClient), asAddress(ecdsaEaId));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertThat(response.getResultAsNumber()).isZero();
     }
@@ -613,7 +613,7 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @And("the contract call REST API should return the getApproved by direct call for a non fungible token")
     public void getNonFungibleTokenGetApprovedByDirectCall() {
-        var data = encodeData(GET_APPROVED_SELECTOR, new BigInteger("1"));
+        var data = encodeData(GET_APPROVED_DIRECT_SELECTOR, new BigInteger("1"));
         var response = callContract(data, fungibleTokenId.toSolidityAddress());
         assertFalse(response.getResultAsBoolean());
     }
@@ -756,7 +756,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         contractClient.validateAddress(fixedFee.get(4).toString().toLowerCase().replace("0x", ""));
     }
 
-    private Tuple baseGetInformationForTokenChecks(ContractCallResponse response) throws Exception {
+    private Tuple baseGetInformationForTokenChecks(ContractCallResponseWrapper response) throws Exception {
         Tuple result = decodeFunctionResult("getInformationForToken", response);
         assertThat(result).isNotEmpty();
 
@@ -778,7 +778,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         return tokenInfo;
     }
 
-    private void baseExpiryInfoChecks(ContractCallResponse response) throws Exception {
+    private void baseExpiryInfoChecks(ContractCallResponseWrapper response) throws Exception {
         Tuple result = decodeFunctionResult("getExpiryInfoForToken", response);
         assertThat(result).isNotEmpty();
 
@@ -787,7 +787,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(expiryInfo.size()).isEqualTo(3);
     }
 
-    private Tuple decodeFunctionResult(String functionName, ContractCallResponse response) throws Exception {
+    private Tuple decodeFunctionResult(String functionName, ContractCallResponseWrapper response) throws Exception {
         try (var in = getResourceAsStream(PRECOMPILE.getPath())) {
             var abiFunctionAsJsonString = getAbiFunctionAsJsonString(readCompiledArtifact(in), functionName);
             return Function.fromJson(abiFunctionAsJsonString)
@@ -817,9 +817,9 @@ public class PrecompileContractFeature extends AbstractFeature {
         DECIMALS_SELECTOR("decimals()"),
         TOTAL_SUPPLY_SELECTOR("totalSupply()"),
         BALANCE_OF_SELECTOR("balanceOf(address)"),
-        ALLOWANCE_SELECTOR("allowance(address,address)"),
+        ALLOWANCE_DIRECT_SELECTOR("allowance(address,address)"),
         OWNER_OF_SELECTOR("ownerOf(uint256)"),
-        GET_APPROVED_SELECTOR("getApproved(uint256)"),
+        GET_APPROVED_DIRECT_SELECTOR("getApproved(uint256)"),
         IS_APPROVED_FOR_ALL_SELECTOR("isApprovedForAll(address,address)");
         private final String selector;
     }

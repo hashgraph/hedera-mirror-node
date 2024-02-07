@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.contracts.execution;
 
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import jakarta.inject.Named;
 import org.hyperledger.besu.evm.EVM;
@@ -25,7 +24,7 @@ import org.hyperledger.besu.evm.precompile.MainnetPrecompiledContracts;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 
 @Named
-public class MirrorEvmMessageCallProcessorV30 extends HederaEvmMessageCallProcessor {
+public class MirrorEvmMessageCallProcessorV30 extends AbstractEvmMessageCallProcessor {
 
     public MirrorEvmMessageCallProcessorV30(
             @Named("evm030") EVM v30,

@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -88,9 +89,12 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();
-        if (params.isEstimate()) {
-            final var defaultAccount = Account.getDefaultAccount();
-            store.updateAccount(defaultAccount);
+        if (params.isEstimate()
+                && store.getAccount(params.getSender().canonicalAddress(), OnMissing.DONT_THROW)
+                        .isEmptyAccount()) {
+            final var senderAccount =
+                    Account.getDummySenderAccount(params.getSender().canonicalAddress());
+            store.updateAccount(senderAccount);
         }
 
         return super.execute(
@@ -121,10 +125,11 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         } else {
             final var resolvedForEvm = aliasManager.resolveForEvm(to);
             final var code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
+            final var isNotCallingNativePrecompile = !aliasManager.isNativePrecompileAddress(resolvedForEvm);
 
             // If there is no bytecode, it means we have a non-token and non-contract account,
             // hence the code should be null and there must be a value transfer.
-            if (code == null && value <= 0 && !payload.isEmpty()) {
+            if (code == null && value <= 0 && !payload.isEmpty() && isNotCallingNativePrecompile) {
                 throw new MirrorEvmTransactionException(
                         ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
             }

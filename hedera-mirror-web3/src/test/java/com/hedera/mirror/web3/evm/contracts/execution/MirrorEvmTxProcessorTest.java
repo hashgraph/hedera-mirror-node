@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
@@ -44,6 +45,7 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.util.List;
@@ -86,6 +88,8 @@ class MirrorEvmTxProcessorTest {
     private final HederaEvmAccount sender = new HederaEvmAccount(Address.ALTBN128_ADD);
     private final HederaEvmAccount receiver = new HederaEvmAccount(Address.ALTBN128_MUL);
     private final Address receiverAddress = receiver.canonicalAddress();
+    private final Address nativePrecompileAddress = Address.SHA256;
+    private final Address invalidNativePrecompileAddress = Address.BLS12_G1MUL;
 
     @Mock
     private PricesAndFeesProvider pricesAndFeesProvider;
@@ -188,6 +192,10 @@ class MirrorEvmTxProcessorTest {
         when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_34);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
+        if (isEstimate) {
+            given(store.getAccount(sender.canonicalAddress(), OnMissing.DONT_THROW))
+                    .willReturn(Account.getDummySenderAccount(sender.canonicalAddress()));
+        }
         final var params = CallServiceParameters.builder()
                 .sender(sender)
                 .receiver(receiver.canonicalAddress())
@@ -231,7 +239,6 @@ class MirrorEvmTxProcessorTest {
     void assertTransactionSenderAndValue() {
         // setup:
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
-        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         given(hederaEvmContractAliases.isMirror(receiverAddress)).willReturn(true);
         final long GAS_LIMIT = 300_000L;
         final Wei oneWei = Wei.of(1L);
@@ -255,6 +262,70 @@ class MirrorEvmTxProcessorTest {
         // expect:
         assertThat(sender.canonicalAddress()).isEqualTo(buildMessageFrame.getSenderAddress());
         assertThat(oneWei).isEqualTo(buildMessageFrame.getApparentValue());
+    }
+
+    @Test
+    void nativePrecompileCallSucceeds() {
+        final var validPrecompilePayload = Bytes.fromHexString("0xFF");
+        // setup:
+        given(hederaEvmContractAliases.resolveForEvm(nativePrecompileAddress)).willReturn(nativePrecompileAddress);
+        given(hederaEvmContractAliases.isMirror(nativePrecompileAddress)).willReturn(true);
+        given(hederaEvmContractAliases.isNativePrecompileAddress(nativePrecompileAddress))
+                .willReturn(true);
+
+        final long GAS_LIMIT = 300_000L;
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
+                .maxStackSize(MAX_STACK_SIZE)
+                .worldUpdater(mock(WorldUpdater.class))
+                .initialGas(GAS_LIMIT)
+                .originator(sender.canonicalAddress())
+                .gasPrice(Wei.ZERO)
+                .sender(sender.canonicalAddress())
+                .value(Wei.ZERO)
+                .apparentValue(Wei.ZERO)
+                .blockValues(mock(BlockValues.class))
+                .completer(__ -> {})
+                .miningBeneficiary(Address.ZERO)
+                .blockHashLookup(h -> null);
+
+        // when:
+        final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
+                commonInitialFrame, nativePrecompileAddress, validPrecompilePayload, 0L);
+
+        assertThat(sender.canonicalAddress()).isEqualTo(buildMessageFrame.getSenderAddress());
+        assertThat(buildMessageFrame.getApparentValue()).isEqualTo(Wei.ZERO);
+        assertThat(nativePrecompileAddress).isEqualTo(buildMessageFrame.getRecipientAddress());
+    }
+
+    @Test
+    void invalidNativePrecompileCallFails() {
+        final var validPrecompilePayload = Bytes.fromHexString("0xFF");
+        // setup:
+        given(hederaEvmContractAliases.resolveForEvm(invalidNativePrecompileAddress))
+                .willReturn(invalidNativePrecompileAddress);
+        given(hederaEvmContractAliases.isMirror(invalidNativePrecompileAddress)).willReturn(true);
+        given(hederaEvmContractAliases.isNativePrecompileAddress(invalidNativePrecompileAddress))
+                .willReturn(false);
+
+        final long GAS_LIMIT = 300_000L;
+        final MessageFrame.Builder commonInitialFrame = MessageFrame.builder()
+                .maxStackSize(MAX_STACK_SIZE)
+                .worldUpdater(mock(WorldUpdater.class))
+                .initialGas(GAS_LIMIT)
+                .originator(sender.canonicalAddress())
+                .gasPrice(Wei.ZERO)
+                .sender(sender.canonicalAddress())
+                .value(Wei.ZERO)
+                .apparentValue(Wei.ZERO)
+                .blockValues(mock(BlockValues.class))
+                .completer(__ -> {})
+                .miningBeneficiary(Address.ZERO)
+                .blockHashLookup(h -> null);
+
+        // when:
+        assertThatExceptionOfType(MirrorEvmTransactionException.class)
+                .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(
+                        commonInitialFrame, invalidNativePrecompileAddress, validPrecompilePayload, 0L));
     }
 
     private void givenValidMockWithoutGetOrCreate() {

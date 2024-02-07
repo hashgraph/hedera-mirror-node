@@ -312,6 +312,7 @@ public class AccountClient extends AbstractNetworkClient {
         // used in token.feature
         CAROL(false, Key.KeyCase.ED25519),
         DAVE(false, Key.KeyCase.ED25519),
+        DELETABLE(false, KeyCase.ED25519),
         OPERATOR(false, Key.KeyCase.ED25519); // These may not be accurate for operator
 
         private final boolean receiverSigRequired;

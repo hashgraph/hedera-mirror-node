@@ -135,12 +135,6 @@ alter table if exists entity_transaction
 alter table if exists ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
 
--- event_file
-alter table if exists event_file
-    add constraint event_file__pk primary key (consensus_end, node_id);
-create index if not exists event_file__hash
-    on event_file using hash (hash);
-
 -- file_data
 alter table if exists file_data
     add constraint file_data__pk primary key (consensus_timestamp, entity_id);
@@ -250,8 +244,6 @@ create index if not exists token_transfer__account_timestamp
     on token_transfer (account_id, consensus_timestamp desc);
 
 -- topic_message
-alter table if exists topic_message
-    add constraint topic_message__pk primary key (consensus_timestamp, topic_id);
 create index if not exists topic_message__topic_id_timestamp
     on topic_message (topic_id, consensus_timestamp);
 create index if not exists topic_message__topic_id_seqnum

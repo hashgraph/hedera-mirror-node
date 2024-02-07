@@ -29,7 +29,7 @@ paths:
       description: |
         Return the account transactions and balance information given an account alias, an account id, or an evm address. The information will be limited to at most 1000 token balances for the account as outlined in HIP-367.
         When the timestamp parameter is supplied, we will return transactions and account state for the relevant timestamp query. Balance information will be accurate to within 15 minutes of the provided timestamp query.
-        Historical stake and reward information is not currently available so these fields contain current data. Historical ethereum nonce information is also currently not available and may not be the exact value at a provided timestamp.
+        Historical ethereum nonce information is currently not available and may not be the exact value at a provided timestamp.
       operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
@@ -235,10 +235,65 @@ paths:
           $ref: "#/components/responses/NotFoundError"
       tags:
         - accounts
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/nfts:
+    get:
+      summary: This API is currently not supported.Get non fungible token allowances for an account
+      description: |
+        ** This API is currently under development and is not supported yet **
+        Returns information for non fungible token allowances for an account.
+
+        ## Ordering
+        The order is governed by a combination of the account id and the token id values, with account id being the parent column.
+        The token id value governs its order within the given account id.
+
+        Note: The default order for this API is currently ASC. Account id can be the owner or the spender id depending on the owner flag.
+
+        ## Filtering
+        When filtering there are some restrictions enforced to ensure correctness and scalability.
+
+        **The table below defines the restrictions and support for the endpoint**
+
+        | Query Param   | Comparison Operator | Support | Description           | Example |
+        | ------------- | ------------------- | ------- | --------------------- | ------- |
+        | account.id    | eq                  | Y       | Single occurrence only. | ?account.id=X |
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | Single occurrence only. | ?account.id=lte:X |
+        |               | gt(e)               | Y       | Single occurrence only. | ?account.id=gte:X |
+        | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of an **account.id** query | ?account.id=X&token.id=eq:Y |
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** or **eq** **account.id** query | ?account.id=lte:X&token.id=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** or **eq** **account.id** query | ?account.id=gte:X&token.id=gt:Y |
+
+        Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
+
+      operationId: listNftAllowancesByAccountId
+      parameters:
+        - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
+        - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/orderQueryParam"
+        - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/tokenIdQueryParam"
+        - $ref: "#/components/parameters/ownerQueryParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NftAllowancesResponse"
+        400:
+          $ref: "#/components/responses/InvalidParameterError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+      tags:
+        - accounts
   /api/v1/balances:
     get:
       summary: List account balances
-      description: Returns a timestamped list of account balances on the network, limited to at most 50 token balances per account as outlined in HIP-367. This includes both HBAR and token balances for accounts.
+      description:
+        Returns a list of account balances on the network, limited to at most 50 token balances per account as outlined
+        in HIP-367. As such, it's not recommended for general use and we instead recommend using either
+        `/api/v1/accounts/{id}/tokens` or `/api/v1/tokens/{id}/balances` to obtain token balance information.
       operationId: listAccountBalances
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressQueryParam"
@@ -303,9 +358,9 @@ paths:
   /api/v1/contracts/call:
     post:
       summary: Invoke a smart contract
-      description: |
-
-        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed. Currently we support only `latest` block.
+      description:
+        Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If the `estimate` field is set to true gas estimation is executed. However, gas estimation only supports the `latest` block.
+        When `estimate` is false, it can process calls against the `earliest` block and specific historical blocks when a hexadecimal or decimal block number is provided in the `block` field for `eth_call` operations.
         [Link to Supported/Unsupported Operations Table](https://github.com/hashgraph/hedera-mirror-node/blob/main/docs/web3/README.md#supported/unsupported-operations)
 
         The operations types which are not currently supported should return 501 error status.
@@ -1246,7 +1301,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.97.0-SNAPSHOT
+  version: 0.99.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -1310,6 +1365,20 @@ components:
           $ref: "#/components/schemas/EntityId"
         timestamp:
           $ref: "#/components/schemas/TimestampRange"
+    AssessedCustomFee:
+      type: object
+      properties:
+        amount:
+          format: int64
+          type: integer
+        collector_account_id:
+          $ref: "#/components/schemas/EntityId"
+        effective_payer_account_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/EntityId"
+        token_id:
+          $ref: "#/components/schemas/EntityId"
     BalancesResponse:
       type: object
       properties:
@@ -1423,6 +1492,13 @@ components:
           description: The network's total supply of hbars in tinybars
           example: "5000000000000000000"
           type: string
+    NftAllowancesResponse:
+      type: object
+      properties:
+        allowances:
+          $ref: "#/components/schemas/NftAllowances"
+        links:
+          $ref: "#/components/schemas/Links"
     SchedulesResponse:
       type: object
       properties:
@@ -2357,8 +2433,12 @@ components:
         - properties:
             amount:
               description: The amount remaining of the original amount granted in tinybars.
+              type: integer
+              format: int64
             amount_granted:
               description: The granted amount of the spender's allowance in tinybars.
+              type: integer
+              format: int64
     CryptoAllowances:
       type: array
       items:
@@ -2898,6 +2978,40 @@ components:
             $ref: "#/components/schemas/Nft"
         links:
           $ref: "#/components/schemas/Links"
+    NftAllowance:
+      type: object
+      properties:
+        approved_for_all:
+          description: A boolean value indicating if the spender has the allowance to spend all NFTs owned by the given owner
+          example: true
+          type: boolean
+        owner:
+          $ref: "#/components/schemas/EntityId"
+        spender:
+          $ref: "#/components/schemas/EntityId"
+        timestamp:
+          $ref: "#/components/schemas/TimestampRange"
+        token_id:
+          $ref: "#/components/schemas/EntityId"
+      example:
+        approved_for_all: false
+        owner: "0.0.11"
+        payer_account_id: "0.0.10"
+        spender: "0.0.15"
+        timestamp:
+          from: "1651560386.060890949"
+          to: "1651560386.661997287"
+        token_id: "0.0.99"
+      required:
+        - approved_for_all
+        - owner
+        - spender
+        - timestamp
+        - token_id
+    NftAllowances:
+      type: array
+      items:
+        $ref: "#/components/schemas/NftAllowance"
     NftTransactionTransfer:
       type: object
       properties:
@@ -2964,12 +3078,7 @@ components:
           type: integer
           nullable: true
         timestamp:
-          type: object
-          properties:
-            from:
-              $ref: "#/components/schemas/TimestampRange"
-            to:
-              $ref: "#/components/schemas/TimestampRange"
+          $ref: "#/components/schemas/TimestampRange"
       example:
         count: 3
         gas_used: 300000
@@ -3605,19 +3714,7 @@ components:
             assessed_custom_fees:
               type: array
               items:
-                type: object
-                properties:
-                  amount:
-                    format: int64
-                    type: integer
-                  collector_account_id:
-                    $ref: "#/components/schemas/EntityId"
-                  effective_payer_account_ids:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/EntityId"
-                  token_id:
-                    $ref: "#/components/schemas/EntityId"
+                $ref: "#/components/schemas/AssessedCustomFee"
       example:
         assessed_custom_fees:
           - amount: 100
@@ -4182,6 +4279,14 @@ components:
       schema:
         enum: [asc, desc]
         default: desc
+    ownerQueryParam:
+      name: owner
+      description: When the owner value is true or omitted, the accountId path parameter will specify the ID of the owner, and the API will retrieve the allowances that the owner has granted to different spenders. Conversely, when the owner value is false, the accountId path parameter will indicate the ID of the spender who has an allowance, and the API will instead provide the allowances granted to the spender by different owners of those tokens.
+      in: query
+      example: true
+      schema:
+        type: boolean
+        default: true
     publicKeyQueryParam:
       name: publickey
       in: query

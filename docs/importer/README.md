@@ -3,6 +3,23 @@
 The importer component is responsible for downloading stream files uploaded by consensus nodes, verifying them, and
 ingesting the normalized data into the database.
 
+## HAPI Compatibility
+
+The mirror node strives to be both backwards and forwards compatible with consensus nodes. Most of the time, older
+versions of the mirror node should work against the latest version of consensus nodes. However, while it won't fail if
+new fields or transactions are added to [HAPI](https://github.com/hashgraph/hedera-protobufs/tree/main/services), the
+mirror node may fail to capture that extra information until it is updated. The exception to this rule is when the
+stream format itself changes like when Record File v6 was introduced or the balance file was deprecated. The below
+table provides a compatibility matrix of the most recent changes:
+
+| HAPI Version | Mirror Node Version | Breaking Change | HIP                                                                                                                 |
+| ------------ | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
+| v0.37.0      | v0.75.0+            | False           | [HIP-583](https://hips.hedera.com/hip/hip-583): Expand alias support                                                |
+| v0.40.0      | v0.84.0+            | False           | [HIP-729](https://hips.hedera.com/hip/hip-729): Contract account nonce externalization                              |
+| v0.42.0      | v0.88.0+            | True            | [HIP-794](https://hips.hedera.com/hip/hip-794): Sunsetting balance file                                             |
+| v0.43.0      | v0.89.0+            | False           | [HIP-786](https://hips.hedera.com/hip/hip-786): Enriched staking metadata exports                                   |
+| v0.47.0+     | v0.98.0+            | False           | [HIP-844](https://hips.hedera.com/hip/hip-844): Handling and externalisation improvements for account nonce updates |
+
 ## Initialize Entity Balance
 
 The importer tracks up-to-date entity balance by applying balance changes from crypto transfers. This relies on the

@@ -6,7 +6,6 @@ Feature: eth_call Contract Base Coverage Feature
     Given I successfully create Precompile contract
     Given I verify the precompile contract bytecode is deployed
     Given I successfully create EstimateGas contract
-    Given I successfully create EstimateGas contract
     Given I ensure token "FUNGIBLE" has been created
     Given I ensure token "NFT" has been created
     Then I call function with IERC721Metadata token "NFT" name
@@ -23,6 +22,8 @@ Feature: eth_call Contract Base Coverage Feature
     Then I call function with nested deploy using create function
     Then I call function with nested deploy using create2 function
     Then I call function with transfer that returns the balance
+    Then I directly call Ethereum precompile 0x01
+    Then I directly call Ethereum precompile 0x02
     Then I burn FUNGIBLE token and get the total supply and balance
     Given I mint a NFT
     Then the mirror node should return status 200 for the HAPI transaction

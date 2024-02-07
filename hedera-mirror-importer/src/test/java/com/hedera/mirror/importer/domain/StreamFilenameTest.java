@@ -45,8 +45,6 @@ class StreamFilenameTest {
                 + "BALANCE",
         "2020-06-03T16_45_00.1Z_Balances.csv,, csv, DATA, csv, 2020-06-03T16:45:00.1Z, BALANCE",
         "2020-06-03T16_45_00.1Z_Balances.pb.gz, gz, pb, DATA, pb.gz, 2020-06-03T16:45:00.1Z, BALANCE",
-        "2020-06-03T16_45_00.1Z.evts_sig,, evts_sig, SIGNATURE, evts_sig, 2020-06-03T16:45:00.1Z, EVENT",
-        "2020-06-03T16_45_00.1Z.evts,, evts, DATA, evts, 2020-06-03T16:45:00.1Z, EVENT",
         "2020-06-03T16_45_00.1Z.rcd_sig,,  rcd_sig, SIGNATURE, rcd_sig, 2020-06-03T16:45:00.1Z, RECORD",
         "2020-06-03T16_45_00.1Z.rcd,, rcd, DATA, rcd, 2020-06-03T16:45:00.1Z, RECORD",
         // @formatter:on
@@ -105,8 +103,6 @@ class StreamFilenameTest {
     @CsvSource({
         "BALANCE, DATA, 2020-06-03T16:45:00.123Z, 2020-06-03T16_45_00.123Z_Balances.",
         "BALANCE, SIGNATURE, 2020-06-03T16:45:00.123Z, 2020-06-03T16_45_00.123Z_Balances.",
-        "EVENT, DATA, 2020-06-03T16:45:00.123Z, 2020-06-03T16_45_00.123Z.",
-        "EVENT, SIGNATURE, 2020-06-03T16:45:00.123Z, 2020-06-03T16_45_00.123Z.",
         "RECORD, DATA, 2020-06-03T16:45:00.123Z, 2020-06-03T16_45_00.123Z.",
         "RECORD, SIGNATURE, 2020-06-03T16:45:00.123Z, 2020-06-03T16_45_00.123Z."
     })
@@ -129,8 +125,6 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.1Z_Balances.pb_sig, 2020-06-03T16_45_00.1Z_Balances_",
         "2020-06-03T16_45_00.1Z_Balances.csv, 2020-06-03T16_45_00.1Z_Balances_",
         "2020-06-03T16_45_00.1Z_Balances.pb, 2020-06-03T16_45_00.1Z_Balances_",
-        "2020-06-03T16_45_00.1Z.evts_sig, 2020-06-03T16_45_00.1Z_",
-        "2020-06-03T16_45_00.1Z.evts, 2020-06-03T16_45_00.1Z_",
         "2020-06-03T16_45_00.1Z.rcd_sig, 2020-06-03T16_45_00.1Z_",
         "2020-06-03T16_45_00.1Z.rcd, 2020-06-03T16_45_00.1Z_"
     })
@@ -162,8 +156,6 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.100200345Z_Balances.csv_sig, false",
         "2020-06-03T16_45_00.100200345Z_Balances.pb.gz, true",
         "2020-06-03T16_45_00.100200345Z_Balances.pb_sig.gz, true",
-        "2020-06-03T16_45_00.100200345Z.evts, false",
-        "2020-06-03T16_45_00.100200345Z.evts_sig, false",
         "2020-06-03T16_45_00.100200345Z.rcd.gz, true",
         "2020-06-03T16_45_00.100200345Z.rcd, false",
         "2020-06-03T16_45_00.100200345Z.rcd_sig, false",
@@ -178,7 +170,6 @@ class StreamFilenameTest {
         "2020-06-03T16_45_00.100200345Z.rcd.gz, , /, 2020-06-03T16_45_00.100200345Z.rcd.gz",
         "2020-06-03T16_45_00.100200345Z.rcd.gz, some/path, /, some/path/2020-06-03T16_45_00.100200345Z.rcd.gz",
         "2020-06-03T16_45_00.100200345Z.rcd.gz, some\\path, \\, some\\path\\2020-06-03T16_45_00.100200345Z.rcd.gz",
-        "2020-06-03T16_45_00.100200345Z.evts_sig, eventsStreams/events_0.0.9, /, eventsStreams/events_0.0.9/2020-06-03T16_45_00.100200345Z.evts_sig",
         "2020-06-03T16_45_00.100200345Z_02.rcd.gz, mainnet/0/3/record, /, mainnet/0/3/record/sidecar/2020-06-03T16_45_00.100200345Z_02.rcd.gz"
     })
     void getPathProperties(String filename, String path, String pathSeparator, String expectedFilePath) {
@@ -198,7 +189,6 @@ class StreamFilenameTest {
 
     @ParameterizedTest
     @CsvSource({
-        "2020-06-03T16_45_00.100200345Z.evts_sig, some/path, /, 2020-06-03T16_45_00.100200345Z.evts",
         "2020-06-03T16_45_00.100200345Z_Balances.csv_sig, , \\, 2020-06-03T16_45_00.100200345Z_Balances.csv",
         "2020-06-03T16_45_00.100200345Z.rcd_sig, mainnet/0/9/record, /, 2020-06-03T16_45_00.100200345Z.rcd"
     })
@@ -216,10 +206,8 @@ class StreamFilenameTest {
     @CsvSource(
             textBlock =
                     """
-            eventsStreams/events_0.0.3/2020-06-03T16_45_00.100200345Z.evts_sig, false
             accountBalances/balance0.0.3/2020-06-03T16_45_00.100200345Z_Balances.csv_sig, false
             recordstreams/record0.0.5/2020-06-03T16_45_00.100200345Z.rcd_sig, false
-            mainnet/0/0/event/2020-06-03T16_45_00.100200345Z.evts_sig, true
             mainnet/0/0/balance/2020-06-03T16_45_00.100200345Z_Balances.csv_sig, true
             mainnet/0/0/record/2020-06-03T16_45_00.100200345Z.rcd_sig, true""")
     void isNodeId(String filename, boolean nodeId) {

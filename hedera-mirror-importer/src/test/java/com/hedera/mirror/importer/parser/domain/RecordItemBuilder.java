@@ -28,6 +28,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Int32Value;
+import com.google.protobuf.Int64Value;
 import com.google.protobuf.StringValue;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -325,6 +326,10 @@ public class RecordItemBuilder {
                 .setBloom(bytes(256))
                 .setContractCallResult(bytes(16))
                 .setContractID(contractId)
+                .addContractNonces(ContractNonceInfo.newBuilder()
+                        .setContractId(contractId)
+                        .setNonce(1)
+                        .build())
                 .addCreatedContractIDs(contractId())
                 .setErrorMessage(text(10))
                 .setFunctionParameters(bytes(64))
@@ -349,10 +354,7 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .build())
                 .setSenderId(accountId())
-                .addContractNonces(ContractNonceInfo.newBuilder()
-                        .setContractId(contractId)
-                        .setNonce(1)
-                        .build());
+                .setSignerNonce(Int64Value.of(10));
     }
 
     @SuppressWarnings("deprecation")
@@ -530,7 +532,7 @@ public class RecordItemBuilder {
         var functionResult = contractFunctionResult(contractId);
         var builder = new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
                 .record(r -> r.setContractCallResult(functionResult).setEthereumHash(digestedHash))
-                .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
+                .recordItem(r -> r.hapiVersion(new Version(0, 47, 0)))
                 .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
                 .sidecarRecords(r -> r.add(contractActions()));
 
