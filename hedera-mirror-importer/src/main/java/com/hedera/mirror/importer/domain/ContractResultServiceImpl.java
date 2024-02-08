@@ -246,8 +246,10 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setTransactionResult(transaction.getResult());
         transactionHandler.updateContractResult(contractResult, recordItem);
 
-        if (sidecarProcessingResult.failedInitByteCode() != null && contractResult.getFailedInitcode() == null) {
-            contractResult.setFailedInitcode(DomainUtils.toBytes(sidecarProcessingResult.failedInitByteCode()));
+        if (sidecarProcessingResult.initBytecode() != null
+                && !recordItem.isSuccessful()
+                && contractResult.getFailedInitcode() == null) {
+            contractResult.setFailedInitcode(sidecarProcessingResult.initBytecode());
         }
 
         if (isValidContractFunctionResult(functionResult)) {
@@ -264,7 +266,10 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractResult.setErrorMessage(functionResult.getErrorMessage());
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
-            contractResult.setGasConsumed(sidecarProcessingResult.gasConsumed());
+            if (sidecarProcessingResult.totalGasUsed() != null) {
+                contractResult.setGasConsumed(
+                        sidecarProcessingResult.totalGasUsed() + sidecarProcessingResult.getIntrinsicGas());
+            }
 
             if (functionResult.hasSenderId()) {
                 var senderId = EntityId.of(functionResult.getSenderId());
@@ -386,7 +391,6 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     @SuppressWarnings("java:S3776")
     private SidecarProcessingResult processSidecarRecords(final RecordItem recordItem) {
-        ByteString failedInitcode = null;
         final var sidecarRecords = recordItem.getSidecarRecords();
         if (sidecarRecords.isEmpty()) {
             return new SidecarProcessingResult(null, null);
@@ -397,7 +401,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         var stopwatch = Stopwatch.createStarted();
 
         long totalGasUsed = 0;
-        ByteString contractDeploymentByteCode = null;
+        ByteString initByteCode = null;
 
         for (final var sidecarRecord : sidecarRecords) {
             final boolean migration = sidecarRecord.getMigration();
@@ -416,10 +420,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             } else if (sidecarRecord.hasBytecode()) {
                 if (migration) {
                     contractBytecodes.add(sidecarRecord.getBytecode());
-                } else if (!recordItem.isSuccessful()) {
-                    failedInitcode = sidecarRecord.getBytecode().getInitcode();
                 } else {
-                    contractDeploymentByteCode = sidecarRecord.getBytecode().getInitcode();
+                    initByteCode = sidecarRecord.getBytecode().getInitcode();
                 }
             }
             if (migration) {
@@ -436,8 +438,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                     stopwatch);
         }
 
-        return new SidecarProcessingResult(
-                failedInitcode, totalGasUsed + SidecarProcessingResult.getIntrinsicGas(contractDeploymentByteCode));
+        return new SidecarProcessingResult(DomainUtils.toBytes(initByteCode), totalGasUsed == 0 ? null : totalGasUsed);
     }
 
     /**
@@ -495,10 +496,11 @@ public class ContractResultServiceImpl implements ContractResultService {
     /**
      * Record representing the result of processing sidecar records.
      *
-     * @param failedInitByteCode The init code of the contract if the contract creation failed
-     * @param gasConsumed The gas consumed by the EVM for the transaction.
+     * @param initBytecode The init code of the contract if it's a contract create transaction.
+     * @param totalGasUsed The gas used by the contract actions in the sidecar records.
      */
-    private record SidecarProcessingResult(ByteString failedInitByteCode, Long gasConsumed) {
+    @SuppressWarnings("java:S6218")
+    private record SidecarProcessingResult(byte[] initBytecode, Long totalGasUsed) {
         private static final long TX_DATA_ZERO_COST = 4L;
         private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
         private static final long TX_BASE_COST = 21_000L;
@@ -508,22 +510,19 @@ public class ContractResultServiceImpl implements ContractResultService {
          * Returns the intrinsic gas cost for a contract transaction.
          * In case of contract deployment, the init code is used to
          * calculate the intrinsic gas cost. Otherwise, it's fixed at 21_000.
-         *
-         * @param initByteCode The init code of the contract
          */
-        static long getIntrinsicGas(final ByteString initByteCode) {
-            if (initByteCode == null) {
+        long getIntrinsicGas() {
+            if (initBytecode == null) {
                 return TX_BASE_COST;
             }
 
-            byte[] bytes = initByteCode.toByteArray();
             int zeros = 0;
-            for (byte b : bytes) {
+            for (byte b : initBytecode) {
                 if (b == 0) {
                     ++zeros;
                 }
             }
-            final int nonZeros = bytes.length - zeros;
+            final int nonZeros = initBytecode.length - zeros;
 
             final long costForByteCode =
                     TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
