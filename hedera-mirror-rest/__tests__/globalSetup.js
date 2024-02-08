@@ -42,7 +42,6 @@ const createDbContainers = async (maxWorkers) => {
       .withDatabase(dbName)
       .withPassword('mirror_node_pass')
       .withUsername('mirror_node')
-      .withStartupTimeout(100)
       .withWaitStrategy(Wait.forHealthCheck())
       .start();
     console.info(`Started PostgreSQL container for Jest worker ${i} with image ${image}`);
