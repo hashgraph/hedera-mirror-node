@@ -184,7 +184,8 @@ abstract class AbstractStreamFileProviderTest {
         fileCopier.copy();
         dataPath.toFile().setExecutable(false);
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
+        StepVerifier.withVirtualTime(() ->
+                        streamFileProvider.get(node, data.getStreamFilename()).map(StreamFileData::getBytes))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectError(RuntimeException.class)
                 .verify(Duration.ofSeconds(10L));
@@ -268,7 +269,7 @@ abstract class AbstractStreamFileProviderTest {
                     .resolve(streamFilename.getFileType() == SIDECAR ? SIDECAR_FOLDER : "")
                     .resolve(filename);
             var bytes = FileUtils.readFileToByteArray(repoDataPath.toFile());
-            return new StreamFileData(streamFilename, bytes, Instant.now());
+            return new StreamFileData(streamFilename, () -> bytes, Instant.now());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

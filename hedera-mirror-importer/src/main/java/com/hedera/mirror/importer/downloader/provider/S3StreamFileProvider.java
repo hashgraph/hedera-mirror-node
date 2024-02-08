@@ -66,7 +66,9 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         var responseFuture = s3Client.getObject(request, AsyncResponseTransformer.toBytes());
         return Mono.fromFuture(responseFuture)
                 .map(r -> new StreamFileData(
-                        streamFilename, r.asByteArrayUnsafe(), r.response().lastModified()))
+                        streamFilename,
+                        () -> r.asByteArrayUnsafe(),
+                        r.response().lastModified()))
                 .timeout(properties.getTimeout())
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
                 .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));

@@ -36,6 +36,7 @@ import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.downloader.provider.TransientProviderException;
+import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.StreamFileReader;
@@ -382,7 +383,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
                 onVerified(streamFileData, streamFile, node);
                 return true;
-            } catch (HashMismatchException | TransientProviderException e) {
+            } catch (FileOperationException | HashMismatchException | TransientProviderException e) {
                 log.warn(
                         "Failed processing signature from node {} corresponding to {}. Will retry another node: {}",
                         nodeId,

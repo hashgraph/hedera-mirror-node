@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.domain;
 
+import com.google.common.base.Suppliers;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import java.io.ByteArrayInputStream;
@@ -25,6 +26,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.function.Supplier;
 import lombok.CustomLog;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -45,8 +47,7 @@ public class StreamFileData {
     @EqualsAndHashCode.Include
     private final StreamFilename streamFilename;
 
-    @EqualsAndHashCode.Include
-    private final byte[] bytes;
+    private final Supplier<byte[]> bytes;
 
     @Getter(lazy = true)
     private final byte[] decompressedBytes = decompressBytes();
@@ -54,15 +55,20 @@ public class StreamFileData {
     private final Instant lastModified;
 
     private static StreamFileData readStreamFileData(File file, StreamFilename streamFilename) {
-        try {
-            byte[] bytes = FileUtils.readFileToByteArray(file);
-            var lastModified = Instant.ofEpochMilli(file.lastModified());
-            return new StreamFileData(streamFilename, bytes, lastModified);
-        } catch (InvalidStreamFileException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new FileOperationException("Unable to read file to byte array", e);
+        if (!file.exists() || !file.canRead() || !file.isFile()) {
+            throw new FileOperationException("Unable to read file " + file);
         }
+
+        Supplier<byte[]> bytes = Suppliers.memoize(() -> {
+            try {
+                return FileUtils.readFileToByteArray(file);
+            } catch (IOException e) {
+                throw new FileOperationException("Unable to read file to byte array", e);
+            }
+        });
+
+        var lastModified = Instant.ofEpochMilli(file.lastModified());
+        return new StreamFileData(streamFilename, bytes, lastModified);
     }
 
     public static StreamFileData from(@NonNull File file) {
@@ -77,12 +83,16 @@ public class StreamFileData {
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
         return new StreamFileData(
-                StreamFilename.from(filename), contents.getBytes(StandardCharsets.UTF_8), Instant.now());
+                StreamFilename.from(filename), () -> contents.getBytes(StandardCharsets.UTF_8), Instant.now());
     }
 
     // Used for testing with raw bytes
     public static StreamFileData from(@NonNull String filename, byte[] bytes) {
-        return new StreamFileData(StreamFilename.from(filename), bytes, Instant.now());
+        return new StreamFileData(StreamFilename.from(filename), () -> bytes, Instant.now());
+    }
+
+    public byte[] getBytes() {
+        return bytes.get();
     }
 
     public InputStream getInputStream() {
@@ -105,10 +115,10 @@ public class StreamFileData {
     private byte[] decompressBytes() {
         var compressor = streamFilename.getCompressor();
         if (StringUtils.isBlank(compressor)) {
-            return bytes;
+            return getBytes();
         }
 
-        try (var inputStream = new ByteArrayInputStream(bytes);
+        try (var inputStream = new ByteArrayInputStream(getBytes());
                 var compressorInputStream =
                         compressorStreamFactory.createCompressorInputStream(compressor, inputStream)) {
             return compressorInputStream.readAllBytes();

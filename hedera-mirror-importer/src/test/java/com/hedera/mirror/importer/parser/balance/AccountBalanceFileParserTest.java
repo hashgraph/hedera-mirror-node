@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
-import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
@@ -41,7 +40,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
 
     private final AccountBalanceBuilder accountBalanceBuilder;
     private final AccountBalanceFileBuilder accountBalanceFileBuilder;
-    private final StreamFileParser<AccountBalanceFile> accountBalanceFileParser;
+    private final AccountBalanceFileParser accountBalanceFileParser;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
@@ -50,6 +49,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
 
     @BeforeEach
     void setup() {
+        accountBalanceFileParser.clear();
         parserProperties.setEnabled(true);
     }
 

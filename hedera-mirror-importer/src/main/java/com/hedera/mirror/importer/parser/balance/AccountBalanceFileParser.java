@@ -46,7 +46,6 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
 
     private final BatchPersister batchPersister;
     private final DateRangeCalculator dateRangeCalculator;
-    private final BalanceStreamFileListener streamFileListener;
 
     public AccountBalanceFileParser(
             BatchPersister batchPersister,
@@ -55,10 +54,9 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
             DateRangeCalculator dateRangeCalculator,
             BalanceStreamFileListener streamFileListener) {
-        super(meterRegistry, parserProperties, accountBalanceFileRepository);
+        super(meterRegistry, parserProperties, streamFileListener, accountBalanceFileRepository);
         this.batchPersister = batchPersister;
         this.dateRangeCalculator = dateRangeCalculator;
-        this.streamFileListener = streamFileListener;
     }
 
     /**
@@ -119,6 +117,5 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         Instant loadEnd = Instant.now();
         accountBalanceFile.setCount(count);
         accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
-        streamFileListener.onEnd(accountBalanceFile);
     }
 }

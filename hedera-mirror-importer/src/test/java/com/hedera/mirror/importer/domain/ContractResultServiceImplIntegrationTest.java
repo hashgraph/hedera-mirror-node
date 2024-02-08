@@ -827,7 +827,6 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
                             .name(filename))
                     .get();
 
-            recordStreamFileListener.onStart();
             contractResultService.process(recordItem, transaction);
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);

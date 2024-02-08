@@ -30,8 +30,10 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.ReactiveSubscription.Message;
 import org.springframework.data.redis.core.ReactiveRedisOperations;
@@ -48,6 +50,11 @@ class RecordFileParserIntegrationTest extends ImporterIntegrationTest {
     private final RecordFileParser recordFileParser;
     private final RecordFileRepository recordFileRepository;
     private final TransactionRepository transactionRepository;
+
+    @BeforeEach
+    void setup() {
+        recordFileParser.clear();
+    }
 
     @Test
     void parse() {
@@ -69,6 +76,48 @@ class RecordFileParserIntegrationTest extends ImporterIntegrationTest {
         assertThat(cryptoTransferRepository.count()).isEqualTo(2 * 3 * transactions);
         assertThat(entityRepository.count()).isZero(); // Partial entities ignored
         assertThat(transactionRepository.count()).isEqualTo(2 * transactions);
+    }
+
+    @Test
+    void parseList() {
+        // given
+        int transactions = 100;
+        int entities = 50;
+        var recordFileTemplate = recordFileBuilder
+                .recordFile()
+                .recordItems(i -> i.count(transactions).entities(entities).type(TransactionType.CRYPTOTRANSFER));
+        var recordFile1 = recordFileTemplate.build();
+        var recordFile2 = recordFileTemplate.build();
+
+        // when
+        recordFileParser.parse(List.of(recordFile1, recordFile2));
+
+        // then
+        assertRecordFile(recordFile1, recordFile2);
+        assertThat(cryptoTransferRepository.count()).isEqualTo(2 * 3 * transactions);
+        assertThat(transactionRepository.count()).isEqualTo(2 * transactions);
+    }
+
+    @Test
+    void parseSingleThenList() {
+        // given
+        int transactions = 100;
+        int entities = 50;
+        var recordFileTemplate = recordFileBuilder
+                .recordFile()
+                .recordItems(i -> i.count(transactions).entities(entities).type(TransactionType.CRYPTOTRANSFER));
+        var recordFile1 = recordFileTemplate.build();
+        var recordFile2 = recordFileTemplate.build();
+        var recordFile3 = recordFileTemplate.build();
+
+        // when
+        recordFileParser.parse(recordFile1);
+        recordFileParser.parse(List.of(recordFile2, recordFile3));
+
+        // then
+        assertRecordFile(recordFile1, recordFile2, recordFile3);
+        assertThat(cryptoTransferRepository.count()).isEqualTo(3 * 3 * transactions);
+        assertThat(transactionRepository.count()).isEqualTo(3 * transactions);
     }
 
     @Test
