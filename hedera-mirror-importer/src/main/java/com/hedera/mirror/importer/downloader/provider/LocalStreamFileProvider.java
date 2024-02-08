@@ -48,8 +48,10 @@ public class LocalStreamFileProvider implements StreamFileProvider {
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var basePath = properties.getImporterProperties().getStreamPath();
-        return Mono.fromSupplier(() -> StreamFileData.from(basePath, streamFilename))
+        var basePath = properties.getImporterProperties().getStreamPath().toFile();
+        return Mono.fromSupplier(() -> new File(basePath, streamFilename.getFilePath()))
+                .filter(f -> f.length() <= properties.getMaxSize())
+                .map(StreamFileData::from)
                 .timeout(properties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
     }
@@ -62,6 +64,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
         return listFiles(properties.getPathType(), node, lastFilename)
                 .switchIfEmpty(listFiles(NODE_ID, node, lastFilename))
                 .timeout(properties.getTimeout())
+                .filter(r -> r.length() <= properties.getMaxSize())
                 .sort()
                 .take(batchSize)
                 .map(this::toStreamFileData)

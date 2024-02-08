@@ -32,11 +32,14 @@ import javax.annotation.Nullable;
 import lombok.CustomLog;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -48,8 +51,10 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 public final class S3StreamFileProvider implements StreamFileProvider {
 
     public static final String SEPARATOR = "/";
+    private static final String RANGE_PREFIX = "bytes=0-";
     private static final String TEMPLATE_ACCOUNT_ID_PREFIX = "%s/%s%s/";
     private static final String TEMPLATE_NODE_ID_PREFIX = "%s/%d/%d/%s/";
+
     private final CommonDownloaderProperties properties;
     private final Map<PathKey, PathResult> paths = new ConcurrentHashMap<>();
     private final S3AsyncClient s3Client;
@@ -61,10 +66,12 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .bucket(properties.getBucketName())
                 .key(s3Key)
                 .requestPayer(RequestPayer.REQUESTER)
+                .range(RANGE_PREFIX + (properties.getMaxSize() - 1))
                 .build();
 
         var responseFuture = s3Client.getObject(request, AsyncResponseTransformer.toBytes());
         return Mono.fromFuture(responseFuture)
+                .filter(this::isValid)
                 .map(r -> new StreamFileData(
                         streamFilename,
                         () -> r.asByteArrayUnsafe(),
@@ -100,6 +107,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                     log.debug("Returned {} s3 objects", l.contents().size());
                 })
                 .flatMapIterable(ListObjectsV2Response::contents)
+                .filter(r -> r.size() <= properties.getMaxSize())
                 .map(this::toStreamFilename)
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
                 .flatMapSequential(streamFilename -> get(node, streamFilename))
@@ -129,6 +137,17 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             case ACCOUNT_ID, AUTO -> getAccountIdPrefix(key);
             case NODE_ID -> getNodeIdPrefix(key);
         };
+    }
+
+    private boolean isValid(ResponseBytes<GetObjectResponse> responseBytes) {
+        var contentRange = responseBytes.response().contentRange();
+        var contentLength = StringUtils.substringAfterLast(contentRange, '/');
+
+        if (StringUtils.isNotEmpty(contentLength)) {
+            return Long.parseLong(contentLength) <= properties.getMaxSize();
+        }
+
+        return responseBytes.response().contentLength() <= properties.getMaxSize();
     }
 
     private StreamFilename toStreamFilename(S3Object s3Object) {
