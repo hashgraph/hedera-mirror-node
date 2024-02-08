@@ -370,10 +370,12 @@ describe('token formatTokenBalanceRow tests', () => {
     const rowInput = {
       account_id: '193',
       balance: 200,
+      decimals: 5000,
     };
     const expectedOutput = {
       account: '0.0.193',
       balance: 200,
+      decimals: 5000,
     };
 
     expect(tokens.formatTokenBalanceRow(rowInput)).toEqual(expectedOutput);

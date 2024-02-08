@@ -121,6 +121,7 @@ describe('TokenService.getDecimals tests', () => {
   test('TokenService.getDecimals - getDecimal cache', async () => {
     await integrationDomainOps.addToken(defaultInputToken);
     const original = await TokenService.getDecimals(300);
+    expect(original).toBe(3);
     const cached = await TokenService.getDecimals(300);
     expect(cached).toBe(original);
   });
