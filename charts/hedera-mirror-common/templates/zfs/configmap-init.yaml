@@ -193,23 +193,32 @@ data:
           exit 1
       fi
     
-      NVME_DEVICE_ID="${NVME_DEVICE_ID:-}"
-      if [[ -n "${NVME_DEVICE_ID}" ]]; then
-        NVME_DEVICE_PATH="$(readlink -f /dev/disk/by-id/google-local-ssd-block${NVME_DEVICE_ID})"
-        NVME_DEVICE_NAME="$(basename $NVME_DEVICE_PATH)"
-        ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" | grep -E '^\s*cache.*$' -A 1 | grep nvme)"
+      L2_ARC_NVME_DEVICE_ID="${L2_ARC_NVME_DEVICE_ID:-}"
+      ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" |grep -A1 -E '^\s*cache\s*$' | grep -v cache | awk '{print $1;}')"
+      if [[ -n "${L2_ARC_NVME_DEVICE_ID}" ]]; then
+        NVME_DEVICE_PATH="$(readlink -f /dev/disk/by-id/google-local-ssd-block${L2_ARC_NVME_DEVICE_ID})"
         if [[ -z "${ATTACHED_CACHE_DEVICE}" ]]; then
-          echo "Setting up NVME device $NVME_DEVICE_PATH as L2ARC"
+          echo "Setting up NVME device $NVME_DEVICE_PATH as L2 ARC"
           zpool add "${POOL}" cache "$NVME_DEVICE_PATH"
-          ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" | grep -E '^\s*cache.*$' -A 1 | grep "${NVME_DEVICE_NAME}")"
+          ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" |grep -A1 -E '^\s*cache\s*$' | grep -v cache | awk '{print $1;}')"
           if [[ -z "${ATTACHED_CACHE_DEVICE}" ]]; then
-            echo "Unable to attach NVME device $NVME_DEVICE_PATH as L2ARC"
+            echo "Unable to attach NVME device ${NVME_DEVICE_PATH} as L2 ARC"
             exit 1
           else
-            echo "Successfully attached NVME device $NVME_DEVICE_PATH as L2ARC"
+            echo "Successfully attached L2 ARC device ${NVME_DEVICE_PATH} as L2 ARC"
           fi
         else
-            echo "NVME device $NVME_DEVICE_PATH already attached as L2ARC"
+            echo "NVME device ${NVME_DEVICE_PATH} already attached as L2 ARC"
+        fi
+      elif [[ -n "${ATTACHED_CACHE_DEVICE}" ]]; then
+        echo "Previously configured L2 ARC device ${ATTACHED_CACHE_DEVICE}. Is being removed as cache"
+        zpool remove "${POOL}" "${ATTACHED_CACHE_DEVICE}"
+        ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" |grep -A1 -E '^\s*cache\s*$' | grep -v cache | awk '{print $1;}')"
+        if [[ -n "${ATTACHED_CACHE_DEVICE}" ]]; then
+          echo "Unable to remove L2 ARC device ${ATTACHED_CACHE_DEVICE}"
+          exit 1
+        else
+          echo "Successfully removed L2 ARC device ${ATTACHED_CACHE_DEVICE}"
         fi
       else
         echo "No L2 cache device specified. Skipping ..."

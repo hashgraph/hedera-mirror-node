@@ -47,8 +47,8 @@ gcloud beta container --project "${PROJECT}" node-pools create "worker" --cluste
 ```
 
 If you plan to use an nvme attached ssd for an L2 ARC, be sure to add the below options to the creation of the coordinator and worker node pools.
-Note that having an L2ARC requires some memory overhead in the primary ARC and you may need to increase its size in the helm chart (`zfs.init.arcSizeGb`).
-You should also set `zfs.init.nvmeDeviceId` in the helm chart. If only attaching a single local ssd, this value should be `0`. See [here](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/local-ssd-raw#node-pool)
+Note that having an L2 ARC requires some memory overhead in the primary ARC and you may need to increase its size in the helm chart (`zfs.init.arcSizeGb`).
+You should also set `zfs.init.l2ArcNvmeDeviceId` in the helm chart. If only attaching a single local ssd, this value should be `0`. See [here](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/local-ssd-raw#node-pool)
 for more information on the device id.
 
 ```shell

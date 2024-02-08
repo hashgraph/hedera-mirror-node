@@ -41,8 +41,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: NVME_DEVICE_ID
-              value: "{{ .Values.zfs.init.nvmeDeviceId }}"
+            - name: L2_ARC_NVME_DEVICE_ID
+              value: "{{ .Values.zfs.init.l2ArcNvmeDeviceId }}"
           securityContext:
             privileged: true
           volumeMounts:

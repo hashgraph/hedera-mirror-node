@@ -428,7 +428,7 @@ zfs:
       registry: gcr.io
       repository: google.com/cloudsdktool/google-cloud-cli
       tag: slim
-    nvmeDeviceId: ""
+    l2ArcNvmeDeviceId: ""
     serviceAccount:
       name: zfs-service-account
       iAmName: sa-name@project.iam.gserviceaccount.com
