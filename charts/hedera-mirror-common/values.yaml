@@ -434,11 +434,9 @@ zfs:
       iAmName: sa-name@project.iam.gserviceaccount.com
   parameters:
     compression: zstd-6
-    primarycache: metadata
     fstype: zfs
     poolname: zfspv-pool
     recordsize: 32k
-    xattr: sa
   priorityClassName: critical
   worker:
     diskSize: 3200GB
