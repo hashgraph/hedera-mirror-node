@@ -10,6 +10,8 @@ importer:
               entity:
                 persist:
                   transactionHash: true
+                  entityTransactions: true
+                  topicMessageLookups: true
   env:
     SPRING_PROFILES_ACTIVE: v2
 postgresql:

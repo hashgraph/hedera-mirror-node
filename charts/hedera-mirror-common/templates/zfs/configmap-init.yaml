@@ -192,6 +192,33 @@ data:
           echo "Unable to create pool. Manual intervention necessary"
           exit 1
       fi
+    
+      NVME_DEVICE_ID="${NVME_DEVICE_ID:-}"
+      if [[ -n "${NVME_DEVICE_ID}" ]]; then
+        NVME_DEVICE_PATH="$(readlink -f /dev/disk/by-id/google-local-ssd-block${NVME_DEVICE_ID})"
+        NVME_DEVICE_NAME="$(basename $NVME_DEVICE_PATH)"
+        ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" | grep -E '^\s*cache.*$' -A 1 | grep nvme)"
+        if [[ -z "${ATTACHED_CACHE_DEVICE}" ]]; then
+          echo "Setting up NVME device $NVME_DEVICE_PATH as L2ARC"
+          zpool add "${POOL}" cache "$NVME_DEVICE_PATH"
+          ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" | grep -E '^\s*cache.*$' -A 1 | grep "${NVME_DEVICE_NAME}")"
+          if [[ -z "${ATTACHED_CACHE_DEVICE}" ]]; then
+            echo "Unable to attach NVME device $NVME_DEVICE_PATH as L2ARC"
+            exit 1
+          else
+            echo "Successfully attached NVME device $NVME_DEVICE_PATH as L2ARC"
+          fi
+        else
+            echo "NVME device $NVME_DEVICE_PATH already attached as L2ARC"
+        fi
+      else
+        echo "No L2 cache device specified. Skipping ..."
+      fi
+    
+      ARC_SIZE_GB="${ARC_SIZE_GB:-2}"
+      echo "Configuring arc to ${ARC_SIZE_GB}GB"
+      ARC_SIZE="$((ARC_SIZE_GB*1073741824))"
+      echo $ARC_SIZE >> /sys/module/zfs/parameters/zfs_arc_max
 
       zpool set autoexpand=on "${POOL}"
       zpool online -e "${POOL}" /dev/sdb
