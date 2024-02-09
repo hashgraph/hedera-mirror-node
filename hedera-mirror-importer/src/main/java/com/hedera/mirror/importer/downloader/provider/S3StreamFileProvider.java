@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
+import static org.apache.commons.lang3.StringUtils.isNumeric;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
@@ -25,6 +26,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,11 +73,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
         var responseFuture = s3Client.getObject(request, AsyncResponseTransformer.toBytes());
         return Mono.fromFuture(responseFuture)
-                .filter(this::isValid)
-                .map(r -> new StreamFileData(
-                        streamFilename,
-                        () -> r.asByteArrayUnsafe(),
-                        r.response().lastModified()))
+                .map(r -> toStreamFileData(streamFilename, r))
                 .timeout(properties.getTimeout())
                 .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
                 .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
@@ -139,15 +137,16 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         };
     }
 
-    private boolean isValid(ResponseBytes<GetObjectResponse> responseBytes) {
-        var contentRange = responseBytes.response().contentRange();
-        var contentLength = StringUtils.substringAfterLast(contentRange, '/');
+    private StreamFileData toStreamFileData(StreamFilename streamFilename, ResponseBytes<GetObjectResponse> r) {
+        var response = r.response();
+        var contentLength = StringUtils.substringAfterLast(response.contentRange(), '/');
+        long size = isNumeric(contentLength) ? Long.parseLong(contentLength) : response.contentLength();
 
-        if (StringUtils.isNotEmpty(contentLength)) {
-            return Long.parseLong(contentLength) <= properties.getMaxSize();
+        if (size > properties.getMaxSize()) {
+            throw new InvalidDatasetException("Stream file size " + size + " bytes exceeds limit: " + streamFilename);
         }
 
-        return responseBytes.response().contentLength() <= properties.getMaxSize();
+        return new StreamFileData(streamFilename, () -> r.asByteArrayUnsafe(), response.lastModified());
     }
 
     private StreamFilename toStreamFilename(S3Object s3Object) {

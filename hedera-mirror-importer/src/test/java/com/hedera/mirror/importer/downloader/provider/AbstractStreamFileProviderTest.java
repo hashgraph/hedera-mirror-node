@@ -28,6 +28,7 @@ import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -100,7 +101,7 @@ abstract class AbstractStreamFileProviderTest {
 
         StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
                 .thenAwait(Duration.ofSeconds(10L))
-                .expectComplete()
+                .expectError(InvalidDatasetException.class)
                 .verify(Duration.ofSeconds(10L));
     }
 

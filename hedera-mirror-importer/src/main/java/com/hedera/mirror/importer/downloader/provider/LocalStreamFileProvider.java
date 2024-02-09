@@ -26,6 +26,7 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.exception.FileOperationException;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +51,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
         var basePath = properties.getImporterProperties().getStreamPath().toFile();
         return Mono.fromSupplier(() -> new File(basePath, streamFilename.getFilePath()))
-                .filter(f -> f.length() <= properties.getMaxSize())
+                .doOnNext(this::checkSize)
                 .map(StreamFileData::from)
                 .timeout(properties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
@@ -64,7 +65,6 @@ public class LocalStreamFileProvider implements StreamFileProvider {
         return listFiles(properties.getPathType(), node, lastFilename)
                 .switchIfEmpty(listFiles(NODE_ID, node, lastFilename))
                 .timeout(properties.getTimeout())
-                .filter(r -> r.length() <= properties.getMaxSize())
                 .sort()
                 .take(batchSize)
                 .map(this::toStreamFileData)
@@ -135,8 +135,15 @@ public class LocalStreamFileProvider implements StreamFileProvider {
         }
     }
 
+    private void checkSize(File file) {
+        long size = file.length();
+        if (size > properties.getMaxSize()) {
+            throw new InvalidDatasetException("Stream file size " + size + " bytes exceeds limit: " + file);
+        }
+    }
+
     private boolean matches(String lastFilename, File file) {
-        if (!file.isFile() || !file.canRead()) {
+        if (!file.isFile() || !file.canRead() || file.length() > properties.getMaxSize()) {
             return false;
         }
 
