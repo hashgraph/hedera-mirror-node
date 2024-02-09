@@ -143,10 +143,10 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         long size = isNumeric(contentLength) ? Long.parseLong(contentLength) : response.contentLength();
 
         if (size > properties.getMaxSize()) {
-            throw new InvalidDatasetException("Stream file size " + size + " bytes exceeds limit: " + streamFilename);
+            throw new InvalidDatasetException("Stream file " + streamFilename + " size " + size + " exceeds limit");
         }
 
-        return new StreamFileData(streamFilename, () -> r.asByteArrayUnsafe(), response.lastModified());
+        return new StreamFileData(streamFilename, r::asByteArrayUnsafe, response.lastModified());
     }
 
     private StreamFilename toStreamFilename(S3Object s3Object) {

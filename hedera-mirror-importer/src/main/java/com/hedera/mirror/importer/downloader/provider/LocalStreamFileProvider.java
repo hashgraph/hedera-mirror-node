@@ -138,7 +138,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
     private void checkSize(File file) {
         long size = file.length();
         if (size > properties.getMaxSize()) {
-            throw new InvalidDatasetException("Stream file size " + size + " bytes exceeds limit: " + file);
+            throw new InvalidDatasetException("Stream file " + file + " size " + size + " exceeds limit");
         }
     }
 
