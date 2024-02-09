@@ -193,7 +193,6 @@ data:
           exit 1
       fi
     
-      L2_ARC_NVME_DEVICE_ID="${L2_ARC_NVME_DEVICE_ID:-}"
       ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" |grep -A1 -E '^\s*cache\s*$' | grep -v cache | awk '{print $1;}')"
       if [[ -n "${L2_ARC_NVME_DEVICE_ID}" ]]; then
         NVME_DEVICE_PATH="$(readlink -f /dev/disk/by-id/google-local-ssd-block${L2_ARC_NVME_DEVICE_ID})"
