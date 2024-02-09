@@ -95,7 +95,7 @@ const tokenAccountCte = `with ta as (
   where account_id = $1
   order by token_id
 )`;
-const tokensSelectQuery = 'select t.token_id, symbol, name, e.key, t.type, decimals from token t';
+const tokensSelectQuery = 'select t.token_id, symbol, t.name, e.key, t.type, t.decimals from token t';
 const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
 const tokenAccountJoinQuery = 'join ta on ta.token_id = t.token_id';
 
@@ -626,8 +626,10 @@ const getTokenBalances = async (req, res) => {
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length > 0) {
     const balances = [];
+    const decimalsMap = await TokenService.getDecimals([tokenId]);
+    const decimals = decimalsMap.get(tokenId);
     for (const row of rows) {
-      row.decimals = await TokenService.getDecimals(tokenId);
+      row.decimals = decimals;
       balances.push(formatTokenBalanceRow(row));
     }
     response.balances = balances;

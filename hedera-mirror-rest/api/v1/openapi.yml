@@ -3266,7 +3266,7 @@ components:
         type:
           type: string
         decimals:
-          format: int64
+          format: int32
           type: integer
       required:
         - token_id
@@ -3317,7 +3317,7 @@ components:
             format: int64
             type: integer
           decimals:
-            format: int64
+            format: int32
             type: integer
         required:
           - account
@@ -3437,7 +3437,7 @@ components:
         token_id:
           $ref: "#/components/schemas/EntityId"
         decimals:
-          format: int64
+          format: int32
           type: integer
       required:
         - automatic_association

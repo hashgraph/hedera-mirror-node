@@ -61,7 +61,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const filters = [];
 
     const expectedquery =
-      'select t.token_id, symbol, name, e.key, t.type, decimals from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
+      'select t.token_id, symbol, t.name, e.key, t.type, t.decimals from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
     const expectedparams = [defaultLimit];
     const expectedorder = constants.orderFilterValues.ASC;
     const expectedlimit = defaultLimit;
@@ -89,7 +89,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, name, e.key, t.type, decimals
+    const expectedquery = `select t.token_id, symbol, t.name, e.key, t.type, t.decimals
                            from token t
                                   join entity e on e.id = t.token_id
                            where e.public_key = $1
@@ -133,7 +133,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, name, e.key, t.type, decimals
+                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -179,7 +179,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, name, e.key, t.type, decimals
+                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -238,7 +238,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, name, e.key, t.type, decimals
+                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id

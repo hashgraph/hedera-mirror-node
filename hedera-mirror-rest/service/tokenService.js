@@ -22,8 +22,8 @@ import quickLru from 'quick-lru';
 import config from '../config.js';
 
 const decimalsCache = new quickLru({
-  maxAge: config.cache.token.decimals.maxAge * 1000, // in millis
-  maxSize: config.cache.token.decimals.maxSize,
+  maxAge: config.cache.token.maxAge * 1000, // in millis
+  maxSize: config.cache.token.maxSize,
 });
 
 /**
@@ -42,9 +42,8 @@ class TokenService extends BaseService {
         and ${TokenAccount.tableAlias}.${TokenAccount.ASSOCIATED} = true `;
 
   static tokenDecimalsQuery = `
-        select ${Token.DECIMALS} 
-        from ${Token.tableName}
-        where ${Token.TOKEN_ID} = $1`;
+        select ${Token.TOKEN_ID}, ${Token.DECIMALS} 
+        from ${Token.tableName} `;
 
   /**
    * Gets the full sql query and params to retrieve an account's token relationships
@@ -105,10 +104,13 @@ class TokenService extends BaseService {
   async getTokens(query) {
     const {sqlQuery, params} = this.getTokenRelationshipsQuery(query);
     const rows = await super.getRows(sqlQuery, params);
-    const tokenAccounts = rows.map((ta) => new TokenAccount(ta));
-    for (const tokenAccount of tokenAccounts) {
-      tokenAccount.decimals = await this.getDecimals(tokenAccount.tokenId);
-    }
+    const tokenIds = [];
+    const tokenAccounts = rows.map((row) => {
+      tokenIds.push(row[TokenAccount.TOKEN_ID]);
+      return new TokenAccount(row);
+    });
+    const decimalsMap = await this.getDecimals(tokenIds);
+    tokenAccounts.forEach((tokenAccount) => (tokenAccount.decimals = decimalsMap.get(tokenAccount.tokenId)));
     return tokenAccounts;
   }
 
@@ -122,24 +124,36 @@ class TokenService extends BaseService {
   }
 
   /**
-   * Gets the decimals for a token
-   * @param {BigInt} tokenId
-   * @return {Promise<BigInt>}
+   * Gets the decimals for a list of token ids
+   * @param {[BigInt]} tokenIds
+   * @return {Promise<Map<tokenId, decimals>>}
    */
-  async getDecimals(tokenId) {
-    let decimals = decimalsCache.get(tokenId);
-    if (decimals) {
-      return decimals;
+  async getDecimals(tokenIds) {
+    const uncachedTokenIds = [];
+    const cachedDecimals = new Map();
+    for (const tokenId of tokenIds) {
+      const decimals = decimalsCache.get(tokenId);
+      if (decimals) {
+        cachedDecimals.set(tokenId, decimals);
+      } else {
+        uncachedTokenIds.push(tokenId);
+      }
     }
 
-    const rows = await super.getRows(TokenService.tokenDecimalsQuery, tokenId);
-    if (_.isEmpty(rows)) {
-      return null;
+    if (_.isEmpty(uncachedTokenIds)) {
+      return cachedDecimals;
     }
 
-    decimals = rows[0].decimals;
-    decimalsCache.set(tokenId, decimals);
-    return decimals;
+    const whereClause = `where ${Token.TOKEN_ID} in (${uncachedTokenIds})`;
+    const rows = await super.getRows(TokenService.tokenDecimalsQuery.concat(whereClause));
+    rows.forEach((row) => {
+      const tokenId = row[Token.TOKEN_ID];
+      const decimals = row[Token.DECIMALS];
+      this.addDecimalsToCache(tokenId, decimals);
+      cachedDecimals.set(tokenId, decimals);
+    });
+
+    return cachedDecimals;
   }
 }
 
