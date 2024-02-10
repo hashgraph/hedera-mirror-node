@@ -42,12 +42,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
 
 @Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
@@ -159,23 +159,25 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     @Override
     protected void doParse(RecordFile recordFile) {
         DateRangeFilter dateRangeFilter = dateRangeCalculator.getFilter(parserProperties.getStreamType());
-        Flux<RecordItem> recordItems = recordFile.getItems();
-
-        if (log.isDebugEnabled() || log.isTraceEnabled()) {
-            recordItems = recordItems.doOnNext(this::logItem);
-        }
-
         var aggregator = new RecordItemAggregator();
+        var count = new AtomicLong(0L);
+        boolean shouldLog = log.isDebugEnabled() || log.isTraceEnabled();
 
-        long count = recordItems
-                .doOnNext(aggregator::accept)
-                .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
-                .doOnNext(recordItemListener::onItem)
-                .doOnNext(this::recordMetrics)
-                .count()
-                .block();
+        recordFile.getItems().forEach(recordItem -> {
+            if (shouldLog) {
+                logItem(recordItem);
+            }
 
-        recordFile.setCount(count);
+            aggregator.accept(recordItem);
+
+            if (dateRangeFilter.filter(recordItem.getConsensusTimestamp())) {
+                recordItemListener.onItem(recordItem);
+                recordMetrics(recordItem);
+                count.incrementAndGet();
+            }
+        });
+
+        recordFile.setCount(count.get());
         aggregator.update(recordFile);
         updateIndex(recordFile);
 

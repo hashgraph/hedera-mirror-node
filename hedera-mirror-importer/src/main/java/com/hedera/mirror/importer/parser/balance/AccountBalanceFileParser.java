@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,45 +78,56 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
     }
 
     @Override
+    @Leader
+    @Retryable(
+            backoff =
+                    @Backoff(
+                            delayExpression = "#{@balanceParserProperties.getRetry().getMinBackoff().toMillis()}",
+                            maxDelayExpression = "#{@balanceParserProperties.getRetry().getMaxBackoff().toMillis()}",
+                            multiplierExpression = "#{@balanceParserProperties.getRetry().getMultiplier()}"),
+            maxAttemptsExpression = "#{@balanceParserProperties.getRetry().getMaxAttempts()}")
+    @Transactional(timeoutString = "#{@balanceParserProperties.getTransactionTimeout().toSeconds()}")
+    public synchronized void parse(List<AccountBalanceFile> accountBalanceFile) {
+        super.parse(accountBalanceFile);
+    }
+
+    @Override
     protected void doParse(AccountBalanceFile accountBalanceFile) {
         log.info("Starting processing account balances file {}", accountBalanceFile.getName());
         DateRangeFilter filter = dateRangeCalculator.getFilter(StreamType.BALANCE);
         int batchSize = ((BalanceParserProperties) parserProperties).getBatchSize();
-        long count = 0L;
+        var count = new AtomicLong(0L);
 
         if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
             List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
             Map<TokenBalance.Id, TokenBalance> tokenBalances = new HashMap<>(batchSize);
 
-            count = accountBalanceFile
-                    .getItems()
-                    .doOnNext(accountBalance -> {
-                        accountBalances.add(accountBalance);
-                        for (var tokenBalance : accountBalance.getTokenBalances()) {
-                            if (tokenBalances.putIfAbsent(tokenBalance.getId(), tokenBalance) != null) {
-                                log.warn("Skipping duplicate token balance: {}", tokenBalance);
-                            }
-                        }
+            accountBalanceFile.getItems().forEach(accountBalance -> {
+                accountBalances.add(accountBalance);
+                for (var tokenBalance : accountBalance.getTokenBalances()) {
+                    if (tokenBalances.putIfAbsent(tokenBalance.getId(), tokenBalance) != null) {
+                        log.warn("Skipping duplicate token balance: {}", tokenBalance);
+                    }
+                }
 
-                        if (accountBalances.size() >= batchSize) {
-                            batchPersister.persist(accountBalances);
-                            accountBalances.clear();
-                        }
+                if (accountBalances.size() >= batchSize) {
+                    batchPersister.persist(accountBalances);
+                    accountBalances.clear();
+                }
 
-                        if (tokenBalances.size() >= batchSize) {
-                            batchPersister.persist(tokenBalances.values());
-                            tokenBalances.clear();
-                        }
-                    })
-                    .count()
-                    .block();
+                if (tokenBalances.size() >= batchSize) {
+                    batchPersister.persist(tokenBalances.values());
+                    tokenBalances.clear();
+                }
+                count.getAndIncrement();
+            });
 
             batchPersister.persist(accountBalances);
             batchPersister.persist(tokenBalances.values());
         }
 
         Instant loadEnd = Instant.now();
-        accountBalanceFile.setCount(count);
+        accountBalanceFile.setCount(count.get());
         accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
     }
 }

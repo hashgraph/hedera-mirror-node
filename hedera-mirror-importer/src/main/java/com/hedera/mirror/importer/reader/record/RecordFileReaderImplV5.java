@@ -41,7 +41,6 @@ import java.util.List;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
-import reactor.core.publisher.Flux;
 
 @Named
 public class RecordFileReaderImplV5 implements RecordFileReader {
@@ -146,7 +145,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setConsensusStart(consensusStart);
         recordFile.setHash(Hex.encodeHexString(endHashObject.getHash()));
-        recordFile.setItems(Flux.fromIterable(items));
+        recordFile.setItems(items);
         recordFile.setPreviousHash(Hex.encodeHexString(startHashObject.getHash()));
     }
 
