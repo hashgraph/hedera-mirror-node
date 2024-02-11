@@ -26,6 +26,7 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.exception.FileOperationException;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -48,8 +49,10 @@ public class LocalStreamFileProvider implements StreamFileProvider {
 
     @Override
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var basePath = properties.getImporterProperties().getStreamPath();
-        return Mono.fromSupplier(() -> StreamFileData.from(basePath, streamFilename))
+        var basePath = properties.getImporterProperties().getStreamPath().toFile();
+        return Mono.fromSupplier(() -> new File(basePath, streamFilename.getFilePath()))
+                .doOnNext(this::checkSize)
+                .map(StreamFileData::from)
                 .timeout(properties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
     }
@@ -132,8 +135,15 @@ public class LocalStreamFileProvider implements StreamFileProvider {
         }
     }
 
+    private void checkSize(File file) {
+        long size = file.length();
+        if (size > properties.getMaxSize()) {
+            throw new InvalidDatasetException("Stream file " + file + " size " + size + " exceeds limit");
+        }
+    }
+
     private boolean matches(String lastFilename, File file) {
-        if (!file.isFile() || !file.canRead()) {
+        if (!file.isFile() || !file.canRead() || file.length() > properties.getMaxSize()) {
             return false;
         }
 

@@ -390,7 +390,6 @@ class EntityStakeCalculatorIntegrationTest extends ImporterIntegrationTest {
                     .customize(rf ->
                             rf.consensusStart(timestamp).consensusEnd(timestamp).name(filename))
                     .get();
-            recordStreamFileListener.onStart();
             entityRecordItemListener.onItem(recordItem);
             recordStreamFileListener.onEnd(recordFile);
         });

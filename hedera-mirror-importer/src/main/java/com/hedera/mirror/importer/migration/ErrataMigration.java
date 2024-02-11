@@ -113,11 +113,6 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     }
 
     @Override
-    public void onStart() {
-        // Not applicable
-    }
-
-    @Override
     public void onEnd(AccountBalanceFile accountBalanceFile) {
         if (isMainnet()) {
             long consensusTimestamp = accountBalanceFile.getConsensusTimestamp();
@@ -130,11 +125,6 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
             }
             accountBalanceFileRepository.save(accountBalanceFile);
         }
-    }
-
-    @Override
-    public void onError() {
-        // Not applicable
     }
 
     @Override
@@ -223,7 +213,6 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         var resourceResolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resourceResolver.getResources("classpath*:errata/mainnet/missingtransactions/*.bin");
         Arrays.sort(resources, Comparator.comparing(Resource::getFilename));
-        recordStreamFileListener.onStart();
         var dateRangeFilter = new DateRangeFilter(importerProperties.getStartDate(), importerProperties.getEndDate());
 
         for (Resource resource : resources) {
@@ -251,7 +240,6 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
                     log.info("Skipped previously processed errata {}", name);
                 }
             } catch (IOException e) {
-                recordStreamFileListener.onError();
                 throw new FileOperationException("Error parsing errata file " + name, e);
             }
         }

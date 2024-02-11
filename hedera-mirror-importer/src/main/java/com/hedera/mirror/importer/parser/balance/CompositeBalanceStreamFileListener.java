@@ -18,11 +18,9 @@ package com.hedera.mirror.importer.parser.balance;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.StreamFileListener;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import jakarta.inject.Named;
 import java.util.List;
-import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 
@@ -35,26 +33,10 @@ public class CompositeBalanceStreamFileListener implements BalanceStreamFileList
     private final AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Override
-    public void onStart() throws ImporterException {
-        onEach(StreamFileListener::onStart);
-    }
-
-    @Override
     public void onEnd(AccountBalanceFile streamFile) throws ImporterException {
         accountBalanceFileRepository.save(streamFile);
         for (int i = 0; i < listeners.size(); i++) {
             listeners.get(i).onEnd(streamFile);
-        }
-    }
-
-    @Override
-    public void onError() {
-        onEach(StreamFileListener::onError);
-    }
-
-    private void onEach(Consumer<BalanceStreamFileListener> consumer) {
-        for (int i = 0; i < listeners.size(); i++) {
-            consumer.accept(listeners.get(i));
         }
     }
 }

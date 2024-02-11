@@ -233,15 +233,11 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         AccountBalanceFile accountBalanceFile =
                 domainBuilder.accountBalanceFile().get();
         accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP1);
-        errataMigration.onStart(); // Call to increase test coverage of no-op methods
-        errataMigration.onError();
         errataMigration.onEnd(accountBalanceFile);
         assertThat(accountBalanceFile.getTimeOffset()).isEqualTo(-1);
 
         accountBalanceFile = domainBuilder.accountBalanceFile().get();
         accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP_FIXED_OFFSET);
-        errataMigration.onStart(); // Call to increase test coverage of no-op methods
-        errataMigration.onError();
         errataMigration.onEnd(accountBalanceFile);
         assertThat(accountBalanceFile.getTimeOffset()).isEqualTo(53);
     }
@@ -251,8 +247,6 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         importerProperties.setNetwork(ImporterProperties.HederaNetwork.TESTNET);
         AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
         accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP1);
-        errataMigration.onStart(); // Call to increase test coverage of no-op methods
-        errataMigration.onError();
         errataMigration.onEnd(accountBalanceFile);
         assertThat(accountBalanceFile.getTimeOffset()).isZero();
     }
