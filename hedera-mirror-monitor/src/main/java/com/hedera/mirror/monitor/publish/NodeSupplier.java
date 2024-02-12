@@ -75,7 +75,7 @@ public class NodeSupplier {
                                 valid.size()))
                         .repeatWhen(retry -> retry.filter(l -> nodes.isEmpty())
                                 .doOnNext(delay -> log.info("Retrying in {} ms", retryBackoff))
-                                .flatMap(delay -> Mono.delay(Duration.ofMillis(retryBackoff)))))
+                                .flatMap(delay -> Mono.delay(Duration.ofMillis(retryBackoff), scheduler))))
                 .doOnSubscribe(s -> log.info("Starting node validation"))
                 .doOnError(t -> log.error("Exception validating nodes: ", t))
                 .onErrorResume(t -> Mono.empty())
