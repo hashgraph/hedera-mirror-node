@@ -33,9 +33,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         nftAllowanceRepository.save(nftAllowance);
         assertThat(nftAllowanceRepository
                         .findByOwnerAndTokenEq(
-                                nftAllowance.getSpender(), nftAllowance.getOwner(), nftAllowance.getTokenId(), 1)
-                        .get(0))
-                .isEqualTo(nftAllowance);
+                                nftAllowance.getSpender(), nftAllowance.getOwner(), nftAllowance.getTokenId(), 1))
+                .containsExactly(nftAllowance);
     }
 
     @Test
