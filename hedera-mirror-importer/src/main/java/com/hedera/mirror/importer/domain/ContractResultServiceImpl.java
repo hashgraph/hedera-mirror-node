@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.AccountID;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,13 +75,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         var functionResult = transactionRecord.hasContractCreateResult()
                 ? transactionRecord.getContractCreateResult()
                 : transactionRecord.getContractCallResult();
-
         var sidecarFailedInitcode = processSidecarRecords(recordItem);
-
         // handle non create/call transactions
         var contractCallOrCreate = isContractCreateOrCall(transactionBody);
         if (!contractCallOrCreate && !isValidContractFunctionResult(functionResult)) {
-            addDefaultEthereumTransactionContractResult(recordItem, transaction);
+            addDefaultEthereumTransactionContractResult(recordItem, transaction, functionResult);
             // skip any other transaction which is neither a create/call and has no valid ContractFunctionResult
             return;
         }
@@ -107,7 +106,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 recordItem, contractId, functionResult, transaction, transactionHandler, sidecarFailedInitcode);
     }
 
-    private void addDefaultEthereumTransactionContractResult(RecordItem recordItem, Transaction transaction) {
+    private void addDefaultEthereumTransactionContractResult(RecordItem recordItem, Transaction transaction, ContractFunctionResult functionResult) {
         var status = recordItem.getTransactionRecord().getReceipt().getStatus();
         if (recordItem.isSuccessful()
                 || status == ResponseCodeEnum.DUPLICATE_TRANSACTION
@@ -122,7 +121,10 @@ public class ContractResultServiceImpl implements ContractResultService {
         var functionParameters = ethereumTransaction.getCallData() != null
                 ? ethereumTransaction.getCallData()
                 : DomainUtils.EMPTY_BYTE_ARRAY;
+        // we need to set the senderId as the signer in case of transaction coming from the relay
         var payerAccountId = transaction.getPayerAccountId();
+        var senderId = functionResult.hasSenderId() ? EntityId.of(functionResult.getSenderId()) : payerAccountId;
+
         var contractResult = ContractResult.builder()
                 .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
                 .consensusTimestamp(transaction.getConsensusTimestamp())
@@ -131,7 +133,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 .gasLimit(ethereumTransaction.getGasLimit())
                 .gasUsed(0L)
                 .payerAccountId(payerAccountId)
-                .senderId(payerAccountId)
+                .senderId(senderId)
                 .transactionHash(ethereumTransaction.getHash())
                 .transactionIndex(transaction.getIndex())
                 .transactionNonce(transaction.getNonce())
@@ -239,7 +241,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setContractId(contractEntityId.getId());
         contractResult.setPayerAccountId(payerAccountId);
         // senderId defaults to payerAccountId
-        contractResult.setSenderId(payerAccountId);
+        var senderEntityId = functionResult.hasSenderId() ? EntityId.of(functionResult.getSenderId()) : payerAccountId;
+        contractResult.setSenderId(senderEntityId);
         contractResult.setTransactionHash(transactionHash);
         contractResult.setTransactionIndex(transaction.getIndex());
         contractResult.setTransactionNonce(transaction.getNonce());
