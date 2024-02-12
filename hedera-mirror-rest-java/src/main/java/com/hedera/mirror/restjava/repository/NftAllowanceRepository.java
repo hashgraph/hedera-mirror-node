@@ -19,28 +19,32 @@ package com.hedera.mirror.restjava.repository;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
 
     /**
-     * This repository method will query based on the spender and further filter by the owner and token_id, order by owner first and then the token_id
-     * 1. It only covers owner eq and token_id gte scenario.
+     * This repository method will query based on the spender and further filter by the owner and token_id,
+     * order by owner first and then the token_id
+     * 1. This is for owner=false scenario
+     * 2. It only covers owner gt and token_id gt scenario
+     * 3. The limit and order will be provided by the caller of the method
+     * e.g PageRequest.of(pageNumber:0, pageSize:1, Sort.by("owner").ascending().and(Sort.by("token_id").ascending()));
      */
-    @Query(
-            value =
-                    "select * from nft_allowance where spender = ? and owner > ? and token_id > ? order by owner ?, token_id ? limit ?",
-            nativeQuery = true)
-    List<NftAllowance> findByOwnerAndTokenEq(long accountId, long owner, long tokenId, int limit);
+    @Query(value = "select * from nft_allowance where spender = ? and owner > ? and token_id > ?", nativeQuery = true)
+    List<NftAllowance> findBySpenderAndFilterByOwnerAndToken(
+            long accountId, long owner, long tokenId, Pageable pageable);
 
     /**
      * This repository method will query based on the owner and further filter by the spender and token_id, order by spender first and then the token_id
-     * 1. It only covers owner eq and token_id eq scenario.
+     * 1. This is for owner=true scenario
+     * 2. It only covers owner gt and token_id gt scenario.
+     * 3. The limit and order will be provided by the caller of the method
+     * e.g PageRequest.of(pageNumber:0, pageSize:1, Sort.by("owner").ascending().and(Sort.by("token_id").ascending()));
      */
-    @Query(
-            value =
-                    "select * from nft_allowance where owner = ? and spender = ? and token_id = ? order by spender,token_id limit ?",
-            nativeQuery = true)
-    List<NftAllowance> findBySpenderAndTokenGte(long accountId, long spenderId, long tokenId, int limit);
+    @Query(value = "select * from nft_allowance where owner = ? and spender > ? and token_id > ?", nativeQuery = true)
+    List<NftAllowance> findByOwnerAndFilterBySpenderAndToken(
+            long accountId, long spenderId, long tokenId, Pageable pageable);
 }
