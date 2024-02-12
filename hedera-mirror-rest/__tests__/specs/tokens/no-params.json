@@ -26,24 +26,32 @@
         "token_id": "0.0.1",
         "symbol": "FIRSTMOVERLPDJH",
         "created_timestamp": "1234567890000000001",
+        "decimals": 3,
+        "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
+        "decimals": 4,
+        "name": "Original",
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
+        "decimals": 5,
+        "name": "Mirror Token",
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.23.45678",
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
+        "decimals": 6,
+        "name": "Hedera Coin",
         "type": "FUNGIBLE_COMMON"
       }
     ],
@@ -58,24 +66,32 @@
       {
         "token_id": "0.0.1",
         "symbol": "FIRSTMOVERLPDJH",
+        "name": "First Mover",
+        "decimals": 3,
         "admin_key": null,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
+        "name": "Original",
+        "decimals": 4,
         "admin_key": null,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
+        "name": "Mirror Token",
+        "decimals": 5,
         "admin_key": null,
         "type": "FUNGIBLE_COMMON"
       },
       {
         "token_id": "0.23.45678",
         "symbol": "HEDERACOIN",
+        "name": "Hedera Coin",
+        "decimals": 6,
         "admin_key": null,
         "type": "FUNGIBLE_COMMON"
       }

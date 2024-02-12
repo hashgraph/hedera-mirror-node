@@ -3259,20 +3259,29 @@ components:
           $ref: "#/components/schemas/EntityId"
         symbol:
           type: string
+        name:
+          type: string
         admin_key:
           $ref: "#/components/schemas/Key"
         type:
           type: string
+        decimals:
+          format: int64
+          type: integer
       required:
         - token_id
         - symbol
+        - name
         - admin_key
         - type
+        - decimals
       example:
         token_id: 0.0.1
         symbol: FIRSTMOVERLPDJH
+        name: First Mover
         admin_key: null
         type: FUNGIBLE_COMMON
+        decimals: 3
     TokenAllowance:
       allOf:
         - $ref: "#/components/schemas/Allowance"
@@ -3307,12 +3316,17 @@ components:
           balance:
             format: int64
             type: integer
+          decimals:
+            format: int64
+            type: integer
         required:
           - account
           - balance
+          - decimals
       example:
         - account: 0.15.2
           balance: 1000
+          decimals: 3
     TokenInfo:
       type: object
       properties:
@@ -3422,6 +3436,9 @@ components:
           nullable: false
         token_id:
           $ref: "#/components/schemas/EntityId"
+        decimals:
+          format: int64
+          type: integer
       required:
         - automatic_association
         - balance
@@ -3429,6 +3446,7 @@ components:
         - freeze_status
         - kyc_status
         - token_id
+        - decimals
       example:
         automatic_association: true
         balance: 5
@@ -3436,6 +3454,7 @@ components:
         freeze_status: UNFROZEN
         kyc_status: GRANTED
         token_id: 0.0.27335
+        decimals: 3
     LogTopicQueryParam:
       type: array
       items:

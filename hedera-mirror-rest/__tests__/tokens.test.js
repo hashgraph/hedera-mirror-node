@@ -30,6 +30,8 @@ describe('token formatTokenRow tests', () => {
     public_key: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
     symbol: 'YBTJBOAZ',
     token_id: '7',
+    decimals: 10,
+    name: 'Token name',
     type: 'FUNGIBLE_COMMON',
   };
 
@@ -40,6 +42,8 @@ describe('token formatTokenRow tests', () => {
       _type: 'ProtobufEncoded',
       key: '030303',
     },
+    decimals: 10,
+    name: 'Token name',
     type: 'FUNGIBLE_COMMON',
   };
 
@@ -57,7 +61,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const filters = [];
 
     const expectedquery =
-      'select t.token_id, symbol, e.key, t.type from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
+      'select t.token_id, symbol, t.name, e.key, t.type, t.decimals from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
     const expectedparams = [defaultLimit];
     const expectedorder = constants.orderFilterValues.ASC;
     const expectedlimit = defaultLimit;
@@ -85,7 +89,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, e.key, t.type
+    const expectedquery = `select t.token_id, symbol, t.name, e.key, t.type, t.decimals
                            from token t
                                   join entity e on e.id = t.token_id
                            where e.public_key = $1
@@ -129,7 +133,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, e.key, t.type
+                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -175,7 +179,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, e.key, t.type
+                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -234,7 +238,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, e.key, t.type
+                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -366,10 +370,12 @@ describe('token formatTokenBalanceRow tests', () => {
     const rowInput = {
       account_id: '193',
       balance: 200,
+      decimals: 5000,
     };
     const expectedOutput = {
       account: '0.0.193',
       balance: 200,
+      decimals: 5000,
     };
 
     expect(tokens.formatTokenBalanceRow(rowInput)).toEqual(expectedOutput);
