@@ -58,7 +58,7 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("org.bouncycastle:bcprov-jdk15to18:1.77")
         api("com.bucket4j:bucket4j-core:8.7.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.0.1")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.0.2")
         api("com.google.guava:guava:33.0.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
