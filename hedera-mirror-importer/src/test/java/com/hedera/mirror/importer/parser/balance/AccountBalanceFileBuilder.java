@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
-import reactor.core.publisher.Flux;
 
 @Named
 @RequiredArgsConstructor
@@ -74,7 +73,7 @@ public class AccountBalanceFileBuilder {
                     .count((long) accountBalanceList.size())
                     .consensusTimestamp(consensusTimestamp)
                     .fileHash(Hex.encodeHexString(domainBuilder.bytes(48)))
-                    .items(Flux.fromIterable(accountBalanceList))
+                    .items(accountBalanceList)
                     .loadStart(domainBuilder.timestamp())
                     .name(filename)
                     .nodeId(0L)

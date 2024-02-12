@@ -40,7 +40,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
-import reactor.core.publisher.Flux;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -112,7 +111,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
             accountBalanceFile.setCount(count.get());
             accountBalanceFile.setFileHash(DomainUtils.bytesToHex(messageDigest.digest()));
-            accountBalanceFile.setItems(Flux.fromIterable(items));
+            accountBalanceFile.setItems(items);
             return accountBalanceFile;
         } catch (IOException ex) {
             throw new InvalidDatasetException("Error reading account balance file", ex);
