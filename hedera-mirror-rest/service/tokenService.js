@@ -42,7 +42,8 @@ class TokenService extends BaseService {
 
   static tokenDecimalsQuery = `
         select ${Token.TOKEN_ID}, ${Token.DECIMALS} 
-        from ${Token.tableName} `;
+        from ${Token.tableName}
+        where ${Token.TOKEN_ID} = any ($1)`;
 
   /**
    * Gets the full sql query and params to retrieve an account's token relationships
@@ -146,8 +147,7 @@ class TokenService extends BaseService {
       return cachedDecimals;
     }
 
-    const whereClause = `where ${Token.TOKEN_ID} in (${uncachedTokenIds})`;
-    const rows = await super.getRows(TokenService.tokenDecimalsQuery.concat(whereClause));
+    const rows = await super.getRows(TokenService.tokenDecimalsQuery, [uncachedTokenIds]);
     rows.forEach((row) => {
       const tokenId = row[Token.TOKEN_ID];
       const decimals = row[Token.DECIMALS];
