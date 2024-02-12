@@ -42,7 +42,12 @@ const createDbContainers = async (maxWorkers) => {
       .withDatabase(dbName)
       .withPassword('mirror_node_pass')
       .withUsername('mirror_node')
-      .withWaitStrategy(Wait.forHealthCheck())
+      .withLogConsumer((stream) => {
+        stream.on('data', (line) => console.log(line));
+        stream.on('err', (line) => console.error(line));
+        stream.on('end', () => console.log('Stream closed'));
+      })
+      .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections'))
       .start();
     console.info(`Started PostgreSQL container for Jest worker ${i} with image ${image}`);
     setJestEnvironment(dockerDb, i);
