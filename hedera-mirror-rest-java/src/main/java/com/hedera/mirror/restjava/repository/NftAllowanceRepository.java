@@ -30,7 +30,7 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
      */
     @Query(
             value =
-                    "select * from nft_allowance where spender = ?  and  owner = ? and token_id >= ? order by owner,token_id limit ?",
+                    "select * from nft_allowance where spender = ? and owner > ? and token_id > ? order by owner ?, token_id ? limit ?",
             nativeQuery = true)
     List<NftAllowance> findByOwnerAndTokenEq(long accountId, long owner, long tokenId, int limit);
 
