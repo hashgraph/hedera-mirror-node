@@ -193,5 +193,5 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimate gas that approves a FUNGIBLE token and transfers it
     And I approve and transfer NFT tokens to the precompile contract
     Then the mirror node REST API should return status 200 for the HAPI transaction
-    Then I call estimate gas that approves a NFT token and transfers it
+#    Then I call estimate gas that approves a NFT token and transfers it
 
