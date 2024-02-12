@@ -325,7 +325,7 @@ const getTokensRequest = async (req, res) => {
 
   const rows = await getTokens(query, params);
   const tokens = rows.map((r) => {
-    TokenService.addDecimalsToCache(r.token_id, r.decimals);
+    TokenService.putTokenCache(r.token_id, r.decimals);
     return formatTokenRow(r);
   });
 
@@ -626,7 +626,7 @@ const getTokenBalances = async (req, res) => {
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length > 0) {
     const balances = [];
-    const decimalsMap = await TokenService.getDecimals([tokenId]);
+    const decimalsMap = await TokenService.getCachedTokens(new Set([tokenId]));
     const decimals = decimalsMap.get(tokenId);
     for (const row of rows) {
       row.decimals = decimals;

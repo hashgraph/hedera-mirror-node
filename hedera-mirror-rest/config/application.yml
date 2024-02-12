@@ -7,7 +7,6 @@ hedera:
           maxAge: 1800
           maxSize: 100000
         token:
-          maxAge: 1800
           maxSize: 100000
       db:
         host: 127.0.0.1

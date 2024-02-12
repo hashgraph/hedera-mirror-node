@@ -21,8 +21,7 @@ import _ from 'lodash';
 import quickLru from 'quick-lru';
 import config from '../config.js';
 
-const decimalsCache = new quickLru({
-  maxAge: config.cache.token.maxAge * 1000, // in millis
+const tokenCache = new quickLru({
   maxSize: config.cache.token.maxSize,
 });
 
@@ -104,35 +103,38 @@ class TokenService extends BaseService {
   async getTokens(query) {
     const {sqlQuery, params} = this.getTokenRelationshipsQuery(query);
     const rows = await super.getRows(sqlQuery, params);
-    const tokenIds = [];
+    const tokenIds = new Set();
     const tokenAccounts = rows.map((row) => {
-      tokenIds.push(row[TokenAccount.TOKEN_ID]);
+      tokenIds.add(row[TokenAccount.TOKEN_ID]);
       return new TokenAccount(row);
     });
-    const decimalsMap = await this.getDecimals(tokenIds);
-    tokenAccounts.forEach((tokenAccount) => (tokenAccount.decimals = decimalsMap.get(tokenAccount.tokenId)));
+    const tokenCacheMap = await this.getCachedTokens(tokenIds);
+    tokenAccounts.forEach((tokenAccount) => {
+      const decimals = tokenCacheMap.get(tokenAccount.tokenId);
+      tokenAccount.decimals = decimals !== undefined ? decimals : null;
+    });
     return tokenAccounts;
   }
 
   /**
-   * Adds the decimals to the cache
+   * Adds a value to the token cache
    * @param {BigInt} tokenId
    * @param {BigInt} decimals
    */
-  addDecimalsToCache(tokenId, decimals) {
-    decimalsCache.set(tokenId, decimals);
+  putTokenCache(tokenId, decimals) {
+    tokenCache.set(tokenId, decimals);
   }
 
   /**
-   * Gets the decimals for a list of token ids
-   * @param {[BigInt]} tokenIds
+   * Gets the token cache for a list of token ids
+   * @param {Set<BigInt>} tokenIds
    * @return {Promise<Map<tokenId, decimals>>}
    */
-  async getDecimals(tokenIds) {
+  async getCachedTokens(tokenIds) {
     const uncachedTokenIds = [];
     const cachedDecimals = new Map();
     for (const tokenId of tokenIds) {
-      const decimals = decimalsCache.get(tokenId);
+      const decimals = tokenCache.get(tokenId);
       if (decimals) {
         cachedDecimals.set(tokenId, decimals);
       } else {
@@ -149,7 +151,7 @@ class TokenService extends BaseService {
     rows.forEach((row) => {
       const tokenId = row[Token.TOKEN_ID];
       const decimals = row[Token.DECIMALS];
-      this.addDecimalsToCache(tokenId, decimals);
+      this.putTokenCache(tokenId, decimals);
       cachedDecimals.set(tokenId, decimals);
     });
 
