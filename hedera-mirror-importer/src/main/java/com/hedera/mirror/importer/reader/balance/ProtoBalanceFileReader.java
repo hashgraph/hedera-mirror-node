@@ -30,7 +30,6 @@ import jakarta.inject.Named;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.CustomLog;
 import org.apache.commons.codec.digest.DigestUtils;
 
@@ -61,7 +60,7 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
             long consensusTimestamp = DomainUtils.timestampInNanosMax(allAccountBalances.getConsensusTimestamp());
             var items = allAccountBalances.getAllAccountsList().stream()
                     .map(ab -> toAccountBalance(consensusTimestamp, ab))
-                    .collect(Collectors.toList());
+                    .toList();
 
             AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
             accountBalanceFile.setBytes(streamFileData.getBytes());
