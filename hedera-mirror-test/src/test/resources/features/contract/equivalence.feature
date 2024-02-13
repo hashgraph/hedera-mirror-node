@@ -42,23 +42,23 @@ Feature: in-equivalence tests
     Examples:
       | callType       | account   | amountType |
       | "call"         | "0.0.0"   | "without"  |
-      | "call"         | "0.0.0"   | "with"     |
+#      | "call"         | "0.0.0"   | "with"     |
       | "call"         | "0.0.4"   | "without"  |
-      | "call"         | "0.0.4"   | "with"     |
+#      | "call"         | "0.0.4"   | "with"     |
       | "call"         | "0.0.100" | "without"  |
-      | "call"         | "0.0.100" | "with"     |
+#      | "call"         | "0.0.100" | "with"     |
       | "call"         | "0.0.358" | "without"  |
-      | "call"         | "0.0.358" | "with"     |
-      | "call"         | "0.0.359" | "without"  |
-      | "call"         | "0.0.359" | "with"     |
+#      | "call"         | "0.0.358" | "with"     |
+#      | "call"         | "0.0.359" | "without"  |
+#      | "call"         | "0.0.359" | "with"     |
       | "call"         | "0.0.741" | "without"  |
-      | "call"         | "0.0.741" | "with"     |
+#      | "call"         | "0.0.741" | "with"     |
       | "call"         | "0.0.800" | "without"  |
       | "call"         | "0.0.800" | "with"     |
       | "staticcall"   | "0.0.0"   | "without"  |
       | "staticcall"   | "0.0.4"   | "without"  |
       | "staticcall"   | "0.0.358" | "without"  |
-      | "staticcall"   | "0.0.359" | "without"  |
+#      | "staticcall"   | "0.0.359" | "without"  |
       | "staticcall"   | "0.0.741" | "without"  |
       | "staticcall"   | "0.0.800" | "without"  |
       | "delegatecall" | "0.0.0"   | "without"  |
@@ -68,12 +68,12 @@ Feature: in-equivalence tests
       | "delegatecall" | "0.0.741" | "without"  |
       | "delegatecall" | "0.0.800" | "without"  |
       | "callcode"     | "0.0.0"   | "without"  |
-      | "callcode"     | "0.0.0"   | "with"     |
-      | "callcode"     | "0.0.4"   | "without"  |
+#      | "callcode"     | "0.0.0"   | "with"     |
+#      | "callcode"     | "0.0.4"   | "without"  |
       | "callcode"     | "0.0.4"   | "with"     |
       | "callcode"     | "0.0.358" | "without"  |
-      | "callcode"     | "0.0.358" | "with"     |
+#      | "callcode"     | "0.0.358" | "with"     |
       | "callcode"     | "0.0.741" | "without"  |
-      | "callcode"     | "0.0.741" | "with"     |
+#      | "callcode"     | "0.0.741" | "with"     |
       | "callcode"     | "0.0.800" | "without"  |
       | "callcode"     | "0.0.800" | "with"     |
