@@ -16,6 +16,10 @@
 
 import {assertSqlQueryEqual} from '../testutils';
 import {TokenService} from '../../service';
+import integrationDomainOps from '../integrationDomainOps.js';
+import {setupIntegrationTest} from '../integrationUtils.js';
+
+setupIntegrationTest();
 
 describe('getQuery', () => {
   const defaultQuery = {
@@ -102,5 +106,65 @@ describe('getQuery', () => {
       assertSqlQueryEqual(actual.sqlQuery, spec.expected.sqlQuery);
       expect(actual.params).toEqual(spec.expected.params);
     });
+  });
+});
+
+describe('TokenService.getDecimals tests', () => {
+  test('TokenService.getDecimals - No match', async () => {
+    expect(await TokenService.getCachedTokens(new Set([100]))).toBeEmpty();
+  });
+
+  test('TokenService.getDecimals - getDecimal cache', async () => {
+    const token3 = {
+      token_id: '0.0.300',
+      decimals: 3,
+    };
+    const token4 = {
+      token_id: '0.0.400',
+      decimals: 40,
+    };
+    await integrationDomainOps.loadTokens([token3, token4]);
+    const tokenIdSet = new Set([300]);
+
+    const original = await TokenService.getCachedTokens(tokenIdSet);
+    expect(original.get(300)).toBe(3);
+    const cached = await TokenService.getCachedTokens(tokenIdSet);
+    expect(cached.get(300)).toBe(original.get(300));
+
+    tokenIdSet.add(400);
+    const multiToken = await TokenService.getCachedTokens(tokenIdSet);
+    expect(multiToken.get(300)).toBe(3);
+    expect(multiToken.get(400)).toBe(40);
+
+    const multiTokenCached = await TokenService.getCachedTokens(tokenIdSet);
+    expect(multiTokenCached.get(300)).toBe(multiToken.get(300));
+    expect(multiTokenCached.get(400)).toBe(multiToken.get(400));
+  });
+
+  test('TokenService.getDecimals - test where in clause', async () => {
+    const token5 = {
+      token_id: '0.0.500',
+      decimals: 5,
+    };
+    const token6 = {
+      token_id: '0.0.600',
+      decimals: 60,
+    };
+    await integrationDomainOps.loadTokens([token5, token6]);
+    const tokenIdSet = new Set([500, 600]);
+
+    const original = await TokenService.getCachedTokens(tokenIdSet);
+    expect(original.get(500)).toBe(5);
+    expect(original.get(600)).toBe(60);
+
+    const cached = await TokenService.getCachedTokens(tokenIdSet);
+    expect(cached.get(500)).toBe(original.get(500));
+    expect(cached.get(600)).toBe(original.get(600));
+  });
+
+  test('TokenService.getDecimals - set and get decimal cache', async () => {
+    TokenService.putTokenCache(5000, 5);
+    const cached = await TokenService.getCachedTokens(new Set([5000]));
+    expect(cached.get(5000)).toBe(5);
   });
 });

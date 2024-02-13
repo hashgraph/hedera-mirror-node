@@ -37,7 +37,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
-import reactor.core.publisher.Flux;
 
 @RequiredArgsConstructor
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
@@ -146,7 +145,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         recordFile.setCount((long) count);
         recordFile.setFileHash(fileHash);
         recordFile.setHash(fileHash);
-        recordFile.setItems(Flux.fromIterable(items));
+        recordFile.setItems(items);
     }
 
     protected static class RecordFileDigest implements AutoCloseable {

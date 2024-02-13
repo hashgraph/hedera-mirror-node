@@ -756,7 +756,7 @@ public abstract class AbstractDownloaderTest<T extends StreamFile<?>> {
                     .isNotEmpty()
                     .get()
                     .returns(null, StreamFile::getBytes)
-                    .returns(null, StreamFile::getItems)
+                    .returns(List.of(), StreamFile::getItems)
                     .returns(lastFilename, StreamFile::getName);
         } else {
             // Can't reset mockito ArgumentCaptor. So when files is empty, just verify streamFileNotifier.verified is

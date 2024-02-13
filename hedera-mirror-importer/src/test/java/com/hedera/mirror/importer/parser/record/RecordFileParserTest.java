@@ -60,6 +60,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -68,7 +69,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.context.ApplicationEventPublisher;
-import reactor.core.publisher.Flux;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, RecordFileParser> {
 
@@ -133,7 +133,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     protected RecordFile getStreamFile() {
         long id = ++count * 100;
         recordItem = cryptoTransferRecordItem(id);
-        return getStreamFile(Flux.just(recordItem), id);
+        return getStreamFile(List.of(recordItem), id);
     }
 
     @Override
@@ -160,7 +160,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     void endDate(long offset) {
         // given
         RecordFile recordFile = getStreamFile();
-        RecordItem firstItem = recordFile.getItems().blockFirst();
+        RecordItem firstItem = recordFile.getItems().iterator().next();
         long end = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.EPOCH, Instant.ofEpochSecond(0, end));
         doReturn(filter).when(dateRangeCalculator).getFilter(parserProperties.getStreamType());
@@ -194,7 +194,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
 
         RecordItem recordItem5 = cryptoTransferRecordItem(1L);
 
-        var items = Flux.just(recordItem1, recordItem2, recordItem3, recordItem4, recordItem5);
+        var items = List.of(recordItem1, recordItem2, recordItem3, recordItem4, recordItem5);
         var recordFile = spy(getStreamFile(items, timestamp));
         doNothing().when(recordFile).clear();
 
@@ -225,7 +225,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     void startDate(long offset) {
         // given
         RecordFile recordFile = getStreamFile();
-        RecordItem firstItem = recordFile.getItems().blockFirst();
+        RecordItem firstItem = recordFile.getItems().iterator().next();
         long start = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), null);
         doReturn(filter).when(dateRangeCalculator).getFilter(parserProperties.getStreamType());
@@ -483,7 +483,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
                 .build();
     }
 
-    private RecordFile getStreamFile(final Flux<RecordItem> items, final long timestamp) {
+    private RecordFile getStreamFile(final Collection<RecordItem> items, final long timestamp) {
         return domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder

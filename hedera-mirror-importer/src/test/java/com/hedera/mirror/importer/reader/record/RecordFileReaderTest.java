@@ -83,26 +83,23 @@ abstract class RecordFileReaderTest {
                     assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
                     assertThat(actual.getLoadStart()).isNotNull().isPositive();
 
-                    List<Version> hapiVersions = actual.getItems()
+                    List<Version> hapiVersions = actual.getItems().stream()
                             .map(RecordItem::getHapiVersion)
-                            .collectList()
-                            .block();
+                            .collect(Collectors.toList());
                     assertThat(hapiVersions)
                             .isNotEmpty()
                             .allSatisfy(version -> assertEquals(recordFile.getHapiVersion(), version));
 
-                    List<Long> timestamps = actual.getItems()
+                    List<Long> timestamps = actual.getItems().stream()
                             .map(RecordItem::getConsensusTimestamp)
-                            .collectList()
-                            .block();
+                            .collect(Collectors.toList());
                     assertThat(timestamps).first().isEqualTo(recordFile.getConsensusStart());
                     assertThat(timestamps).last().isEqualTo(recordFile.getConsensusEnd());
                     assertThat(timestamps).doesNotHaveDuplicates().isSorted();
 
-                    List<Integer> transactionIndexes = actual.getItems()
+                    List<Integer> transactionIndexes = actual.getItems().stream()
                             .map(RecordItem::getTransactionIndex)
-                            .collectList()
-                            .block();
+                            .collect(Collectors.toList());
                     assertThat(transactionIndexes).first().isEqualTo(0);
                     assertThat(transactionIndexes)
                             .isEqualTo(IntStream.range(0, recordFile.getCount().intValue())
@@ -130,7 +127,7 @@ abstract class RecordFileReaderTest {
 
                     // then
                     RecordItem previousItem = null;
-                    for (var item : actual.getItems().collectList().block()) {
+                    for (var item : actual.getItems()) {
                         // assert previous link points to previous item
                         assertThat(item.getPrevious()).isEqualTo(previousItem);
                         previousItem = item;
