@@ -13,10 +13,10 @@
     "@nomiclabs/hardhat-ethers": "*",
     "@nomiclabs/hardhat-waffle": "*",
     "chai": "*",
-    "mocha": "*",
     "ethereum-waffle": "*",
     "ethers": "*",
-    "hardhat": "*"
+    "hardhat": "^2.19.5",
+    "mocha": "*"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.1",
