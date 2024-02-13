@@ -47,7 +47,7 @@ const createDbContainers = async (maxWorkers) => {
         stream.on('err', (line) => console.error(line));
         stream.on('end', () => console.log('Stream closed'));
       })
-      .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections'))
+      .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections', 2))
       .start();
     console.info(`Started PostgreSQL container for Jest worker ${i} with image ${image}`);
     setJestEnvironment(dockerDb, i);
