@@ -76,6 +76,7 @@ class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest
 
         assertThat(tokenAccount.getValue())
                 .returns(transaction.getEntityId().getId(), TokenAccount::getAccountId)
+                .returns(true, TokenAccount::getAssociated)
                 .returns(TokenKycStatusEnum.GRANTED, TokenAccount::getKycStatus)
                 .returns(Range.atLeast(timestamp), TokenAccount::getTimestampRange)
                 .returns(tokenId.getId(), TokenAccount::getTokenId);

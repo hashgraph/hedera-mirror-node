@@ -295,6 +295,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             var tokenAccount = new TokenAccount();
             var tokenTransferId = tokenTransfer.getId();
             tokenAccount.setAccountId(tokenTransferId.getAccountId().getId());
+            tokenAccount.setAssociated(true);
             tokenAccount.setTokenId(tokenTransferId.getTokenId().getId());
             tokenAccount.setBalance(tokenTransfer.getAmount());
             tokenAccount.setBalanceTimestamp(tokenTransferId.getConsensusTimestamp());
@@ -750,6 +751,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             if (!EntityId.isEmpty(nftTransfer.getSenderAccountId())) {
                 var tokenAccount = new TokenAccount();
                 tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
+                tokenAccount.setAssociated(true);
                 tokenAccount.setTokenId(tokenId);
                 tokenAccount.setBalance(-1);
                 tokenAccount.setBalanceTimestamp(transaction.getConsensusTimestamp());
@@ -759,6 +761,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             if (!EntityId.isEmpty(nftTransfer.getReceiverAccountId())) {
                 var tokenAccount = new TokenAccount();
                 tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
+                tokenAccount.setAssociated(true);
                 tokenAccount.setTokenId(tokenId);
                 tokenAccount.setBalance(1);
                 tokenAccount.setBalanceTimestamp(transaction.getConsensusTimestamp());

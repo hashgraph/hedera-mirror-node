@@ -76,6 +76,7 @@ class TokenFreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(tokenAccount.getValue())
                 .returns(transaction.getEntityId().getId(), TokenAccount::getAccountId)
+                .returns(true, TokenAccount::getAssociated)
                 .returns(TokenFreezeStatusEnum.FROZEN, TokenAccount::getFreezeStatus)
                 .returns(Range.atLeast(timestamp), TokenAccount::getTimestampRange)
                 .returns(tokenId.getId(), TokenAccount::getTokenId);

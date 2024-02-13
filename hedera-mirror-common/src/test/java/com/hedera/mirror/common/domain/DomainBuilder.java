@@ -68,9 +68,7 @@ import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
-import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenHistory;
-import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -863,8 +861,8 @@ public class DomainBuilder {
                 .balance(number())
                 .balanceTimestamp(timestamp)
                 .createdTimestamp(timestamp)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .freezeStatus(null)
+                .kycStatus(null)
                 .timestampRange(Range.atLeast(timestamp))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -880,8 +878,8 @@ public class DomainBuilder {
                 .balance(number())
                 .balanceTimestamp(timestamp)
                 .createdTimestamp(timestamp)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .freezeStatus(null)
+                .kycStatus(null)
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);

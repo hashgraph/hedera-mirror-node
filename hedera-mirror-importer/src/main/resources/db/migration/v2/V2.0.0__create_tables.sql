@@ -570,12 +570,12 @@ create table if not exists token_account
 (
     account_id            bigint    not null,
     associated            boolean   not null default false,
-    automatic_association boolean   not null default false,
+    automatic_association boolean   null,
     balance               bigint    not null default 0,
-    balance_timestamp     bigint    not null,
-    created_timestamp     bigint    not null,
-    freeze_status         smallint  not null default 0,
-    kyc_status            smallint  not null default 0,
+    balance_timestamp     bigint    null,
+    created_timestamp     bigint    null,
+    freeze_status         smallint  null,
+    kyc_status            smallint  null,
     timestamp_range       int8range not null,
     token_id              bigint    not null
 ) partition by range (token_id);

@@ -603,8 +603,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     .getAutomaticTokenAssociationsList()
                     .forEach(tokenAssociation -> {
                         // The accounts and tokens in the associations should have been added to EntityListener when
-                        // inserting
-                        // the corresponding token transfers, so no need to duplicate the logic here
+                        // inserting the corresponding token transfers, so no need to duplicate the logic here
                         EntityId accountId = EntityId.of(tokenAssociation.getAccountId());
                         EntityId tokenId = EntityId.of(tokenAssociation.getTokenId());
                         TokenAccount tokenAccount = new TokenAccount();

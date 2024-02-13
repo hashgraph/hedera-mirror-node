@@ -295,10 +295,7 @@ class BatchUpserterTest extends ImporterIntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
                 .extracting(History::getTimestampLower, TokenAccount::getFreezeStatus)
-                .containsExactlyInAnyOrder(
-                        Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
-                        Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
-                        Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN));
+                .containsExactlyInAnyOrder(Tuple.tuple(5L, null), Tuple.tuple(6L, null), Tuple.tuple(7L, null));
 
         // reverse freeze status
         tokenAccounts.clear();
@@ -315,14 +312,13 @@ class BatchUpserterTest extends ImporterIntegrationTest {
                         TokenAccount::getTimestampLower,
                         TokenAccount::getFreezeStatus)
                 .containsExactlyInAnyOrder(
-                        Tuple.tuple(5L, 5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
+                        Tuple.tuple(5L, 5L, null),
                         Tuple.tuple(6L, 10L, TokenFreezeStatusEnum.UNFROZEN),
                         Tuple.tuple(7L, 11L, TokenFreezeStatusEnum.FROZEN));
 
         assertThat(tokenAccountHistoryRepository.findAll())
                 .extracting(AbstractTokenAccount::getCreatedTimestamp, TokenAccountHistory::getFreezeStatus)
-                .containsExactlyInAnyOrder(
-                        Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN), Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN));
+                .containsExactlyInAnyOrder(Tuple.tuple(6L, null), Tuple.tuple(7L, null));
     }
 
     @Test
@@ -344,9 +340,7 @@ class BatchUpserterTest extends ImporterIntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
                 .extracting(AbstractTokenAccount::getCreatedTimestamp, TokenAccount::getKycStatus)
-                .containsExactlyInAnyOrder(
-                        Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
-                        Tuple.tuple(6L, TokenKycStatusEnum.REVOKED));
+                .containsExactlyInAnyOrder(Tuple.tuple(5L, null), Tuple.tuple(6L, null));
 
         // grant KYC
         tokenAccounts.clear();
@@ -357,9 +351,10 @@ class BatchUpserterTest extends ImporterIntegrationTest {
 
         assertThat(tokenAccountRepository.findAll())
                 .extracting(AbstractTokenAccount::getCreatedTimestamp, TokenAccount::getKycStatus)
-                .containsExactlyInAnyOrder(
-                        Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
-                        Tuple.tuple(6L, TokenKycStatusEnum.GRANTED));
+                .containsExactlyInAnyOrder(Tuple.tuple(5L, null), Tuple.tuple(6L, TokenKycStatusEnum.GRANTED));
+        assertThat(findHistory(TokenAccount.class))
+                .extracting(AbstractTokenAccount::getCreatedTimestamp, AbstractTokenAccount::getKycStatus)
+                .containsExactlyInAnyOrder(Tuple.tuple(6L, null));
     }
 
     @Test
@@ -371,7 +366,7 @@ class BatchUpserterTest extends ImporterIntegrationTest {
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, false, Range.atLeast(4L)));
 
         persist(batchPersister, tokenAccounts);
-        assertThat(tokenAccountRepository.findAll()).isEmpty();
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
     }
 
     @Test

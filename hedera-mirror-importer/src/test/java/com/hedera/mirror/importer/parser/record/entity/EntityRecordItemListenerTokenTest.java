@@ -533,12 +533,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.UNFROZEN,
-                TokenKycStatusEnum.REVOKED,
+                null,
+                null,
                 ASSOCIATE_TIMESTAMP);
     }
 
@@ -556,12 +557,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.UNFROZEN,
-                TokenKycStatusEnum.REVOKED,
+                null,
+                null,
                 ASSOCIATE_TIMESTAMP);
 
         assertContractResult(ASSOCIATE_TIMESTAMP, contractFunctionResultAtomic.get());
@@ -569,11 +571,21 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenAssociateWithMissingToken() {
-        Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
+        var associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
         insertAndParseTransaction(ASSOCIATE_TIMESTAMP, associateTransaction);
 
-        // verify token account was not created
-        assertTokenAccountNotInRepository(TOKEN_ID, PAYER);
+        // verify token account was created
+        assertTokenAccountInRepository(
+                TOKEN_ID,
+                PAYER,
+                false,
+                0,
+                ASSOCIATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
+                true,
+                null,
+                null,
+                ASSOCIATE_TIMESTAMP);
     }
 
     @Test
@@ -603,8 +615,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .automaticAssociation(false)
                 .balanceTimestamp(ASSOCIATE_TIMESTAMP)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(dissociateTimeStamp))
                 .tokenId(tokenId.getId())
                 .build();
@@ -637,12 +647,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 false,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
-                TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
+                null,
                 dissociateTimeStamp);
 
         assertContractResult(dissociateTimeStamp, contractFunctionResultAtomic.get());
@@ -700,8 +711,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .automaticAssociation(false)
                 .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(dissociateTimeStamp))
                 .balance(0)
                 .tokenId(TOKEN_ID.getTokenNum())
@@ -818,8 +827,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .balance(0)
                 .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(dissociateTimeStamp))
                 .tokenId(TOKEN_ID.getTokenNum())
                 .build();
@@ -890,8 +897,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .automaticAssociation(false)
                 .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(dissociateTimeStamp))
                 .balance(0)
                 .tokenId(TOKEN_ID.getTokenNum())
@@ -1403,12 +1408,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.FROZEN,
-                TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
                 freezeTimeStamp);
     }
 
@@ -1433,12 +1439,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.UNFROZEN,
-                TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
                 unfreezeTimeStamp);
     }
 
@@ -1463,11 +1470,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                null,
                 TokenKycStatusEnum.GRANTED,
                 grantTimeStamp);
     }
@@ -1476,12 +1484,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenAccountGrantKycWithMissingTokenAccount() {
         createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true, false);
 
-        Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
+        var transaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
         insertAndParseTransaction(grantTimeStamp, transaction);
 
-        // verify token account was not created when missing
-        assertTokenAccountNotInRepository(TOKEN_ID, PAYER2);
+        // verify minimal token account with kyc granted
+        assertTokenAccountInRepository(
+                TOKEN_ID, PAYER2, null, 0, null, null, true, null, TokenKycStatusEnum.GRANTED, grantTimeStamp);
     }
 
     @Test
@@ -1505,11 +1514,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                null,
                 TokenKycStatusEnum.REVOKED,
                 revokeTimestamp);
     }
@@ -3081,12 +3091,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 999000L,
                 wipeTimestamp,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
-                TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
+                null,
                 ASSOCIATE_TIMESTAMP);
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, CREATE_TIMESTAMP, INITIAL_SUPPLY);
@@ -3211,8 +3222,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .balance(1000L)
                 .balanceTimestamp(TRANSFER_TIMESTAMP)
                 .createdTimestamp(TRANSFER_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(TRANSFER_TIMESTAMP))
                 .tokenId(DOMAIN_TOKEN_ID.getId())
                 .build();
@@ -3553,9 +3562,10 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private void assertTokenAccountInRepository(
             TokenID tokenID,
             AccountID accountId,
+            Boolean automaticAssociation,
             long balance,
-            long balanceTimestamp,
-            long createdTimestamp,
+            Long balanceTimestamp,
+            Long createdTimestamp,
             boolean associated,
             TokenFreezeStatusEnum freezeStatus,
             TokenKycStatusEnum kycStatus,
@@ -3563,7 +3573,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var expected = TokenAccount.builder()
                 .accountId(EntityId.of(accountId).getId())
                 .associated(associated)
-                .automaticAssociation(false)
+                .automaticAssociation(automaticAssociation)
                 .balance(balance)
                 .balanceTimestamp(balanceTimestamp)
                 .createdTimestamp(createdTimestamp)
@@ -3719,18 +3729,19 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 tokenID,
                 accountID,
+                false,
                 0,
                 associateTimestamp,
                 associateTimestamp,
                 true,
-                setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOT_APPLICABLE,
-                setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
+                null,
                 associateTimestamp);
     }
 
-    private void updateTokenFeeSchedule(TokenID tokenID, long consensusTimestamp, List<CustomFee> customFees) {
+    private void updateTokenFeeSchedule(TokenID tokenId, long consensusTimestamp, List<CustomFee> customFees) {
         Transaction transaction = buildTransaction(builder -> builder.getTokenFeeScheduleUpdateBuilder()
-                .setTokenId(tokenID)
+                .setTokenId(tokenId)
                 .addAllCustomFees(convertCustomFees(customFees)));
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord transactionRecord = buildTransactionRecord(
