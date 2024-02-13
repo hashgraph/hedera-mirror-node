@@ -203,5 +203,9 @@ describe('putTokenCache', () => {
     TokenService.putTokenCache(token);
     const expected = new Map([[200, new CachedToken(token)]]);
     await expect(TokenService.getCachedTokens(new Set([200]))).resolves.toStrictEqual(expected);
+
+    // put again, note some fields have different value, to validate the service returns the previous copy
+    TokenService.putTokenCache({...token, decimals: 3});
+    await expect(TokenService.getCachedTokens(new Set([200]))).resolves.toStrictEqual(expected);
   });
 });

@@ -32,6 +32,9 @@
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
         "decimals": 2,
+        "freeze_default": true,
+        "freeze_key": [1, 1],
+        "kyc_key": [1, 1],
         "type": "FUNGIBLE_COMMON"
       }
     ],
@@ -48,10 +51,8 @@
       {
         "token_id": "0.0.45678",
         "account_id": "1001",
-        "balance": 25,
+        "balance": 0,
         "created_timestamp": "1234567890000000006",
-        "freeze_status": 2,
-        "kyc_status": 1,
         "automatic_association": true
       }
     ]
@@ -82,11 +83,11 @@
       },
       {
         "automatic_association": true,
-        "balance": 25,
+        "balance": 0,
         "created_timestamp": "1234567890.000000006",
         "decimals": 2,
-        "freeze_status": "UNFROZEN",
-        "kyc_status": "GRANTED",
+        "freeze_status": "FROZEN",
+        "kyc_status": "REVOKED",
         "token_id": "0.0.45678"
       }
     ],
