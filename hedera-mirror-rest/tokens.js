@@ -29,7 +29,7 @@ import {
 import EntityId from './entityId';
 import {InvalidArgumentError, NotFoundError} from './errors';
 import {CustomFee, Entity, Nft, NftHistory, NftTransfer, Token, Transaction} from './model';
-import {NftService} from './service';
+import {NftService, TokenService} from './service';
 import * as utils from './utils';
 import {CustomFeeViewModel, NftTransactionHistoryViewModel, NftViewModel} from './viewmodel';
 
@@ -95,7 +95,7 @@ const tokenAccountCte = `with ta as (
   where account_id = $1
   order by token_id
 )`;
-const tokensSelectQuery = 'select t.token_id, symbol, e.key, t.type from token t';
+const tokensSelectQuery = 'select t.token_id, symbol, t.name, e.key, t.type, t.decimals from token t';
 const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
 const tokenAccountJoinQuery = 'join ta on ta.token_id = t.token_id';
 
@@ -179,8 +179,10 @@ const formatTokenRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
     symbol: row.symbol,
+    name: row.name,
     token_id: EntityId.parse(row.token_id).toString(),
     type: row.type,
+    decimals: row.decimals,
   };
 };
 
@@ -322,7 +324,10 @@ const getTokensRequest = async (req, res) => {
   );
 
   const rows = await getTokens(query, params);
-  const tokens = rows.map((m) => formatTokenRow(m));
+  const tokens = rows.map((r) => {
+    TokenService.putTokenCache(r.token_id, r.decimals);
+    return formatTokenRow(r);
+  });
 
   // populate next link
   const lastTokenId = tokens.length > 0 ? tokens[tokens.length - 1].token_id : null;
@@ -590,6 +595,7 @@ const formatTokenBalanceRow = (row) => {
   return {
     account: EntityId.parse(row.account_id).toString(),
     balance: row.balance,
+    decimals: row.decimals,
   };
 };
 
@@ -619,8 +625,16 @@ const getTokenBalances = async (req, res) => {
 
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length > 0) {
+    const balances = [];
+    const decimalsMap = await TokenService.getCachedTokens(new Set([tokenId]));
+    const decimals = decimalsMap.get(tokenId);
+    for (const row of rows) {
+      row.decimals = decimals;
+      balances.push(formatTokenBalanceRow(row));
+    }
+    response.balances = balances;
+
     response.timestamp = utils.nsToSecNs(rows[0].consensus_timestamp);
-    response.balances = rows.map(formatTokenBalanceRow);
 
     const anchorAccountId = response.balances[response.balances.length - 1].account;
     response.links.next = utils.getPaginationLink(

@@ -278,8 +278,7 @@ abstract class CsvBalanceFileReaderTest {
                 skipLines--;
             }
 
-            List<AccountBalance> accountBalances =
-                    accountBalanceFile.getItems().collectList().block();
+            var accountBalances = accountBalanceFile.getItems();
             var lineIter = reader.lines().iterator();
             var accountBalanceIter = accountBalances.iterator();
 

@@ -48,7 +48,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.jdbc.core.JdbcTemplate;
-import reactor.core.publisher.Flux;
 
 @EnabledIfV1
 @RequiredArgsConstructor
@@ -65,6 +64,17 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
     private final RecordItemBuilder recordItemBuilder;
 
     private @Getter FixCryptoAllowanceAmountMigration migration;
+
+    private static CryptoAllowance convert(CryptoAllowanceHistory history) {
+        return CryptoAllowance.builder()
+                .amount(history.getAmount())
+                .amountGranted(history.getAmountGranted())
+                .owner(history.getOwner())
+                .payerAccountId(history.getPayerAccountId())
+                .spender(history.getSpender())
+                .timestampRange(history.getTimestampRange())
+                .build();
+    }
 
     @BeforeEach
     void setup() {
@@ -251,7 +261,7 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
                         .setTransactionID(transactionId3))
                 .build();
 
-        recordFile.setItems(Flux.fromIterable(List.of(recordItem1, recordItem2, recordItem3)));
+        recordFile.setItems(List.of(recordItem1, recordItem2, recordItem3));
 
         // when, run the async migration and ingesting the record file concurrently
         runMigration();
@@ -289,16 +299,5 @@ class FixCryptoAllowanceAmountMigrationTest extends AbstractAsyncJavaMigrationTe
     @SneakyThrows
     private void runMigration() {
         migration.doMigrate();
-    }
-
-    private static CryptoAllowance convert(CryptoAllowanceHistory history) {
-        return CryptoAllowance.builder()
-                .amount(history.getAmount())
-                .amountGranted(history.getAmountGranted())
-                .owner(history.getOwner())
-                .payerAccountId(history.getPayerAccountId())
-                .spender(history.getSpender())
-                .timestampRange(history.getTimestampRange())
-                .build();
     }
 }

@@ -277,7 +277,7 @@ stackgres:
       citus.executor_slow_start_interval: "100ms"
       citus.max_cached_conns_per_worker: "4"
       citus.max_shared_pool_size: "380"
-      full_page_writes: "false"
+      full_page_writes: "false"  # Not needed with ZFS
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       maintenance_work_mem: "256MB"
@@ -285,7 +285,9 @@ stackgres:
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
-      shared_buffers: "6GB"
+      shared_buffers: "9GB"
+      wal_init_zero: "off"  # Not needed with ZFS
+      wal_recycle: "off"  # Not needed with ZFS
       work_mem: "32MB"
     instances: 1
     resources:
@@ -315,7 +317,7 @@ stackgres:
     config:
       autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
-      full_page_writes: "false"
+      full_page_writes: "false"  # Not needed with ZFS
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       maintenance_work_mem: "256MB"
@@ -323,7 +325,9 @@ stackgres:
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
-      shared_buffers: "6GB"
+      shared_buffers: "9GB"
+      wal_init_zero: "off"  # Not needed with ZFS
+      wal_recycle: "off"  # Not needed with ZFS
       work_mem: "32MB"
     instances: 1
     replicasPerInstance: 1

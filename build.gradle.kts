@@ -36,11 +36,11 @@ extra.apply {
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.2")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.2")
+    set("vertxVersion", "4.5.3")
 }
 
 // Temporarily override json version until snyk/gradle-plugin has an update with a fix
-configurations["dataFiles"].dependencies.add(dependencies.create("org.json:json:20231013"))
+configurations["dataFiles"].dependencies.add(dependencies.create("org.json:json:20240205"))
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
 // using a dependency
@@ -57,8 +57,8 @@ dependencies {
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("org.bouncycastle:bcprov-jdk15to18:1.77")
-        api("com.bucket4j:bucket4j-core:8.7.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.0.1")
+        api("com.bucket4j:bucket4j-core:8.8.0")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.0.2")
         api("com.google.guava:guava:33.0.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
@@ -66,7 +66,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.46.3")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.47.0")
-        api("com.hedera.hashgraph:sdk:2.29.0")
+        api("com.hedera.hashgraph:sdk:2.29.2")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.4")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
@@ -76,7 +76,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.15.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.1")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.2")
         api("io.projectreactor:reactor-core-micrometer:1.1.2")
         api("io.swagger:swagger-annotations:1.6.13")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -98,9 +98,9 @@ dependencies {
         api("org.msgpack:jackson-dataformat-msgpack:0.9.8")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
-        api("org.testcontainers:junit-jupiter:1.19.4")
+        api("org.testcontainers:junit-jupiter:1.19.5")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.23.17")
+        api("software.amazon.awssdk:bom:2.24.0")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }

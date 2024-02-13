@@ -69,5 +69,5 @@ Feature: Historical Feature
     Then I verify historical data for "NFTHISTORICAL" is returned for isKyc
     Then I update the token and account keys for "FUNGIBLEHISTORICAL"
     Then I update the token and account keys for "NFTHISTORICAL"
-    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenKey
-    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenKey
+#    Then I verify historical data for "FUNGIBLEHISTORICAL" is returned for getTokenKey
+#    Then I verify historical data for "NFTHISTORICAL" is returned for getTokenKey

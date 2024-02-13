@@ -53,8 +53,11 @@ class SidecarFileReaderImplTest {
 
     @Test
     void read() {
-        var expected =
-                TestRecordFiles.getAll().get(RECORD_FILENAME).getSidecars().get(0);
+        var expected = TestRecordFiles.getAll()
+                .get(RECORD_FILENAME)
+                .getSidecars()
+                .iterator()
+                .next();
         // clear the fields SidecarFileReader fills
         var sidecar = expected.toBuilder()
                 .actualHash(null)
