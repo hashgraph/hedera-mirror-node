@@ -18,6 +18,10 @@ import {InvalidArgumentError} from '../errors';
 
 class TokenFreezeStatus {
   static STATUSES = ['NOT_APPLICABLE', 'FROZEN', 'UNFROZEN'];
+  static VALUES = this.STATUSES.reduce((result, status, index) => {
+    result[status] = index;
+    return result;
+  }, {});
 
   constructor(id) {
     this._id = Number(id);

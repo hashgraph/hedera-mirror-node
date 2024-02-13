@@ -95,7 +95,21 @@ const tokenAccountCte = `with ta as (
   where account_id = $1
   order by token_id
 )`;
-const tokensSelectQuery = 'select t.token_id, symbol, t.name, e.key, t.type, t.decimals from token t';
+const tokensSelectQuery = `select
+    t.decimals,
+    case when t.freeze_key is null then 0
+         when t.freeze_default then 1
+         else 2
+    end as freeze_default,
+    e.key,
+    case when t.kyc_key is null then 0
+         else 2
+    end as kyc_default,
+    t.name,
+    t.symbol,
+    t.token_id,
+    t.type
+  from token t`;
 const entityIdJoinQuery = 'join entity e on e.id = t.token_id';
 const tokenAccountJoinQuery = 'join ta on ta.token_id = t.token_id';
 
@@ -178,8 +192,8 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
 const formatTokenRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
-    symbol: row.symbol,
     name: row.name,
+    symbol: row.symbol,
     token_id: EntityId.parse(row.token_id).toString(),
     type: row.type,
     decimals: row.decimals,
@@ -189,7 +203,7 @@ const formatTokenRow = (row) => {
 /**
  * Creates custom fees object from an array of aggregated json objects
  *
- * @param customFees
+ * @param customFee
  * @param tokenType
  * @return {{}|*}
  */
@@ -201,13 +215,11 @@ const createCustomFeeObject = (customFee, tokenType) => {
   const model = new CustomFee(customFee);
   const viewModel = new CustomFeeViewModel(model);
   const nonFixedFeesField = tokenType === Token.TYPE.FUNGIBLE_COMMON ? 'fractional_fees' : 'royalty_fees';
-  const result = {
+  return {
     created_timestamp: utils.nsToSecNs(viewModel.created_timestamp),
     fixed_fees: viewModel.fixed_fees,
     [nonFixedFeesField]: viewModel[nonFixedFeesField],
   };
-
-  return result;
 };
 
 const formatTokenInfoRow = (row) => {
@@ -325,7 +337,7 @@ const getTokensRequest = async (req, res) => {
 
   const rows = await getTokens(query, params);
   const tokens = rows.map((r) => {
-    TokenService.putTokenCache(r.token_id, r.decimals);
+    TokenService.putTokenCache(r);
     return formatTokenRow(r);
   });
 
@@ -456,14 +468,14 @@ const getTokenInfoRequest = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSingleTokenParameters, validateTokenInfoFilter);
   const {query, params} = extractSqlFromTokenInfoRequest(tokenId, filters);
 
-  const row = await getTokenInfo(query, params);
-
-  const tokenInfo = formatTokenInfoRow(row);
-  if (!tokenInfo.custom_fees) {
+  const {rows} = await pool.queryQuietly(query, params);
+  if (rows.length !== 1 || !rows[0].custom_fee) {
     throw new NotFoundError();
   }
 
-  res.locals[responseDataLabel] = tokenInfo;
+  const token = rows[0];
+  TokenService.putTokenCache(token);
+  res.locals[responseDataLabel] = formatTokenInfoRow(token);
 };
 
 const getTokens = async (pgSqlQuery, pgSqlParams) => {
@@ -591,11 +603,11 @@ const extractSqlFromTokenBalancesRequest = async (tokenId, filters) => {
   return utils.buildPgSqlObject(query, params, order, limit);
 };
 
-const formatTokenBalanceRow = (row) => {
+const formatTokenBalanceRow = (row, decimals) => {
   return {
     account: EntityId.parse(row.account_id).toString(),
     balance: row.balance,
-    decimals: row.decimals,
+    decimals,
   };
 };
 
@@ -625,15 +637,9 @@ const getTokenBalances = async (req, res) => {
 
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length > 0) {
-    const balances = [];
-    const decimalsMap = await TokenService.getCachedTokens(new Set([tokenId]));
-    const decimals = decimalsMap.get(tokenId);
-    for (const row of rows) {
-      row.decimals = decimals;
-      balances.push(formatTokenBalanceRow(row));
-    }
-    response.balances = balances;
-
+    const cachedTokens = await TokenService.getCachedTokens(new Set([tokenId]));
+    const decimals = cachedTokens.get(tokenId).decimals ?? null;
+    response.balances = rows.map((row) => formatTokenBalanceRow(row, decimals));
     response.timestamp = utils.nsToSecNs(rows[0].consensus_timestamp);
 
     const anchorAccountId = response.balances[response.balances.length - 1].account;
@@ -784,16 +790,6 @@ const getNftTokenInfoRequest = async (req, res) => {
   logger.debug(`getNftToken info returning single entry`);
   const nftModel = new Nft(rows[0]);
   res.locals[responseDataLabel] = new NftViewModel(nftModel);
-};
-
-const getTokenInfo = async (query, params) => {
-  const {rows} = await pool.queryQuietly(query, params);
-  if (rows.length !== 1) {
-    throw new NotFoundError();
-  }
-
-  logger.debug('getToken returning single entry');
-  return rows[0];
 };
 
 const nftTransactionHistorySelectFields = [

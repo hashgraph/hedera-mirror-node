@@ -25,6 +25,7 @@ class TokenAccount {
     this.automaticAssociation = tokenRelationship.automatic_association;
     this.balance = tokenRelationship.balance;
     this.createdTimestamp = tokenRelationship.created_timestamp;
+    this.decimals = tokenRelationship.decimals ?? null;
     this.freezeStatus = tokenRelationship.freeze_status;
     this.kycStatus = tokenRelationship.kyc_status;
     this.tokenId = tokenRelationship.token_id;
