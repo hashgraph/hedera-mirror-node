@@ -22,7 +22,7 @@ const tokenKycValues = TokenKycStatus.VALUES;
 
 /**
  * Cached token object to store token's decimals, freeze default and kyc default. Note freeze_default is not the same as
- * the freeze_default column in the token table. freeze_default / kyc_default is either copied from the SQL query
+ * the freeze_default column in the token table. freeze_default / kyc_default is either copied from the SQL query result
  * directly or determined based on the freeze_default & freeze_key / kyc_key columns in the token table.
  */
 class CachedToken {

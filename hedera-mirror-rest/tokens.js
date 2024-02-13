@@ -638,7 +638,7 @@ const getTokenBalances = async (req, res) => {
   const {rows} = await pool.queryQuietly(query, params);
   if (rows.length > 0) {
     const cachedTokens = await TokenService.getCachedTokens(new Set([tokenId]));
-    const decimals = cachedTokens.get(tokenId).decimals ?? null;
+    const decimals = cachedTokens.get(tokenId)?.decimals ?? null;
     response.balances = rows.map((row) => formatTokenBalanceRow(row, decimals));
     response.timestamp = utils.nsToSecNs(rows[0].consensus_timestamp);
 
