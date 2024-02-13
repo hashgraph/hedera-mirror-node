@@ -33,8 +33,6 @@ import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import jakarta.inject.Named;
 import java.nio.ByteBuffer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,9 +129,8 @@ public class NetworkAdapter extends EncoderDecoderFacade {
                     .getMaxContractFunctionGas();
 
             final var result = contractClient.executeContract(deployedContract.contractId(), gas, method, data, amount);
-            final var txId =
-                    result.networkTransactionResponse().getTransactionId().toString();
-            final var errorMessage = extractInternalCallErrorMessage(extractTransactionId(txId));
+            final var txId = result.networkTransactionResponse().getTransactionIdStringNoCheckSum();
+            final var errorMessage = extractInternalCallErrorMessage(txId);
             return new GeneralContractExecutionResponse(txId, result.networkTransactionResponse(), errorMessage);
         }
     }
@@ -157,25 +154,20 @@ public class NetworkAdapter extends EncoderDecoderFacade {
     }
 
     private String extractInternalCallErrorMessage(String transactionId) throws IllegalArgumentException {
-        var actions = mirrorClient.getContractActions(transactionId).getActions();
-        if (actions == null || actions.size() < 2) {
-            throw new IllegalArgumentException("The actions list must contain at least two elements.");
+        var transactions = mirrorClient.getTransactions(transactionId).getTransactions();
+        if (transactions == null || transactions.size() < 2) {
+            var actions = mirrorClient.getContractActions(transactionId).getActions();
+            if (actions == null || actions.size() < 2) {
+                throw new IllegalArgumentException("The actions list must contain at least two elements.");
+            }
+            if (!actions.get(1).getResultDataType().equalsIgnoreCase("OUTPUT")) {
+                String hexString = actions.get(1).getResultData();
+                return hexToAscii(hexString.replace("0x", ""));
+            }
+            return null;
         }
 
-        if (!actions.get(1).getResultDataType().equalsIgnoreCase("OUTPUT")) {
-            String hexString = actions.get(1).getResultData();
-            return hexToAscii(hexString.replace("0x", ""));
-        }
-        return null;
-    }
-
-    private static String extractTransactionId(String message) {
-        Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
-        Matcher matcher = pattern.matcher(message);
-        if (matcher.find()) {
-            return matcher.group(1) + "-" + matcher.group(2) + "-" + matcher.group(3);
-        } else {
-            return "Not found";
-        }
+        var resultMessage = transactions.get(1).getResult();
+        return resultMessage.equalsIgnoreCase("success") ? null : resultMessage;
     }
 }
