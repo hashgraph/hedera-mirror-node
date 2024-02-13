@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 
 @RequiredArgsConstructor
 class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
@@ -36,8 +37,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         nftAllowanceRepository.save(nftAllowance);
         nftAllowanceRepository.save(domainBuilder.nftAllowance().get());
         nftAllowanceRepository.save(domainBuilder.nftAllowance().get());
-        Pageable pageable = PageRequest.of(
-                0, 1, Sort.by("owner").ascending().and(Sort.by("token_id").ascending()));
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "owner").and(Sort.by(Direction.ASC, "token_id")));
 
         assertThat(nftAllowanceRepository.findBySpenderAndFilterByOwnerAndToken(
                         nftAllowance.getSpender(),
@@ -53,8 +54,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         nftAllowanceRepository.save(nftAllowance);
         nftAllowanceRepository.save(domainBuilder.nftAllowance().get());
         nftAllowanceRepository.save(domainBuilder.nftAllowance().get());
-        Pageable pageable = PageRequest.of(
-                0, 1, Sort.by("owner").ascending().and(Sort.by("token_id").ascending()));
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "owner").and(Sort.by(Direction.ASC, "token_id")));
 
         assertThat(nftAllowanceRepository.findBySpenderAndFilterByOwnerAndToken(
                         nftAllowance.getSpender(), nftAllowance.getOwner(), nftAllowance.getTokenId(), pageable))
@@ -70,8 +71,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         nftAllowanceRepository.save(nftAllowance1);
         nftAllowanceRepository.save(domainBuilder.nftAllowance().get());
         nftAllowanceRepository.save(domainBuilder.nftAllowance().get());
-        Pageable pageable = PageRequest.of(
-                0, 2, Sort.by("spender").ascending().and(Sort.by("token_id").ascending()));
+        Pageable pageable =
+                PageRequest.of(0, 2, Sort.by(Direction.ASC, "spender").and(Sort.by(Direction.ASC, "token_id")));
 
         assertThat(nftAllowanceRepository.findByOwnerAndFilterBySpenderAndToken(
                         nftAllowance.getOwner(),
@@ -86,8 +87,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         var nftAllowance = domainBuilder.nftAllowance().get();
         nftAllowanceRepository.save(nftAllowance);
         nftAllowanceRepository.save(domainBuilder.nftAllowance().get());
-        Pageable pageable = PageRequest.of(
-                0, 1, Sort.by("spender").ascending().and(Sort.by("token_id").ascending()));
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "spender").and(Sort.by(Direction.ASC, "token_id")));
 
         assertThat(nftAllowanceRepository.findByOwnerAndFilterBySpenderAndToken(
                         nftAllowance.getOwner() + 1, nftAllowance.getSpender(), nftAllowance.getTokenId(), pageable))
