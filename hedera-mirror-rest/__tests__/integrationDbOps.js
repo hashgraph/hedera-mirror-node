@@ -82,6 +82,8 @@ const createPool = () => {
     database,
     sslmode: 'DISABLE',
   });
+  // suppress the error when the jest worker process ends
+  ownerPool.on('error', (error) => {});
 
   dbConnectionParams.user = getReadOnlyUser();
   dbConnectionParams.password = getReadOnlyPassword();
@@ -188,12 +190,7 @@ const getCleanupSql = async () => {
         and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*'
         and partition is null
       order by table_name`);
-  cleanupSql.v2 = rows
-    .map(
-      (row) => `delete
-                from ${row.table_name};`
-    )
-    .join('\n');
+  cleanupSql.v2 = rows.map((row) => `delete from ${row.table_name};`).join('\n');
   return cleanupSql.v2;
 };
 
