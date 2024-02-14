@@ -59,7 +59,7 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                              end
                       end as kyc_status
                     from token_account as ta
-                    left join (select *from token where token_id = :#{#id.tokenId}) as t on true
+                    left join (select * from token where token_id = :#{#id.tokenId}) as t on true
                     where ta.account_id = :#{#id.accountId} and ta.token_id = :#{#id.tokenId}
                     """,
             nativeQuery = true)
