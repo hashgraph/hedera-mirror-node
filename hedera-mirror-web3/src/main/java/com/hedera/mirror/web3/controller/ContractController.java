@@ -28,12 +28,15 @@ import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.exception.ContractDataSizeExceededException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.validation.HexValidator;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -65,6 +68,7 @@ import reactor.core.publisher.Mono;
 class ContractController {
     private final ContractCallService contractCallService;
     private final Bucket bucket;
+    private final MirrorNodeEvmProperties evmProperties;
 
     @CrossOrigin(origins = "*")
     @PostMapping(value = "/call")
@@ -73,6 +77,8 @@ class ContractController {
         if (!bucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
+
+        validateContractDataSize(request);
 
         final var params = constructServiceParameters(request);
         final var result = contractCallService.processCall(params);
@@ -111,6 +117,26 @@ class ContractController {
                 .isEstimate(request.isEstimate())
                 .block(block)
                 .build();
+    }
+
+    /*
+     * Maximum valid contract data size is configured via properties, and which property applies depends on
+     * whether a contract create or update is being performed (based on the presence of a to address).
+     * Therefore, the @Hex annotation cannot be used for this in ContractCallRequest, but the HexValidator
+     * is still utilized to perform the validation of the data field.
+     */
+    private void validateContractDataSize(final ContractCallRequest request) {
+        var maxContractDataSizeBytes = request.hasTo()
+                ? evmProperties.getMaxContractUpdateDataSizeBytes()
+                : evmProperties.getMaxContractCreateDataSizeBytes();
+
+        var contractDataSizeValidator = new HexValidator();
+        // Double max length bytes as two hex digits define a byte.
+        contractDataSizeValidator.initialize(0L, maxContractDataSizeBytes * 2L, false);
+        if (!contractDataSizeValidator.isValid(request.getData(), null)) {
+            throw new ContractDataSizeExceededException("Contract %s data size of %d bytes exceeded"
+                    .formatted(request.hasTo() ? "update" : "create", maxContractDataSizeBytes));
+        }
     }
 
     /** Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence of a precompile for gas estimation.**/

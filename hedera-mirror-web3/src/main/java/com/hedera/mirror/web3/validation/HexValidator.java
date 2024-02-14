@@ -32,9 +32,13 @@ public class HexValidator implements ConstraintValidator<Hex, String> {
 
     @Override
     public void initialize(Hex hex) {
-        maxLength = hex.maxLength();
-        minLength = hex.minLength();
-        allowEmpty = hex.allowEmpty();
+        initialize(hex.minLength(), hex.maxLength(), hex.allowEmpty());
+    }
+
+    public void initialize(long minLength, long maxLength, boolean allowEmpty) {
+        this.minLength = minLength;
+        this.maxLength = maxLength;
+        this.allowEmpty = allowEmpty;
     }
 
     @Override

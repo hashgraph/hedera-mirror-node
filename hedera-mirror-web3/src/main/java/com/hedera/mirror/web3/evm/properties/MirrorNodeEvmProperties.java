@@ -110,6 +110,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private int maxBatchSizeWipe = 10;
 
+    @Getter
+    @Positive
+    private long maxContractCreateDataSizeBytes = 24576; // HAPI caps contract creates at 24KiB
+
+    @Getter
+    @Positive
+    private long maxContractUpdateDataSizeBytes = 6144; // HAPI caps contract updates at 6KiB
+
     private int maxCustomFeesAllowed = 10;
 
     // maximum iteration count for estimate gas' search algorithm

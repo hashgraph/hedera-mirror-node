@@ -37,7 +37,7 @@ public class ContractCallRequest {
     @JsonDeserialize(using = BlockTypeDeserializer.class)
     private BlockType block = BlockType.LATEST;
 
-    @Hex(maxLength = 24576 * 2) // HAPI caps contract creates at 24KiB
+    // Validated in ContractController
     private String data;
 
     private boolean estimate;
@@ -64,7 +64,7 @@ public class ContractCallRequest {
     }
 
     @AssertTrue(message = "must not be empty")
-    private boolean hasTo() {
+    public boolean hasTo() {
         return estimate || StringUtils.isNotEmpty(to);
     }
 
