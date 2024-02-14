@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.downloader.provider;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.SIDECAR_FOLDER;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.FileCopier;
@@ -25,10 +26,12 @@ import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,6 +41,7 @@ import org.bouncycastle.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 abstract class AbstractStreamFileProviderTest {
@@ -131,6 +135,46 @@ abstract class AbstractStreamFileProviderTest {
         var node = node("0.0.3");
         var fileCopier = getFileCopier(node);
         list(fileCopier, node);
+    }
+
+    @Test
+    void listThenGet() {
+        var node = node("0.0.3");
+        var fileCopier = getFileCopier(node);
+        fileCopier.copy();
+        var last = StreamFilename.from("2022-07-13T08_46_08.041986003Z.rcd_sig");
+        var recordFile = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd.gz");
+        var sidecar = streamFileData(node, "2022-07-13T08_46_11.304284003Z_01.rcd.gz");
+
+        var files = streamFileProvider
+                .list(node, last)
+                .map(StreamFileData::getStreamFilename)
+                .map(s -> StreamFileSignature.builder()
+                        .filename(s)
+                        .version(ProtoSignatureFileReader.VERSION)
+                        .build())
+                .map(StreamFileSignature::getDataFilename)
+                .flatMap(s -> streamFileProvider.get(node, s))
+                .collectList()
+                .block();
+        assertThat(files)
+                .hasSize(1)
+                .first()
+                .isEqualTo(recordFile)
+                .extracting(StreamFileData::getDecompressedBytes)
+                .isEqualTo(recordFile.getDecompressedBytes());
+
+        var sidecars = Flux.fromIterable(files)
+                .map(StreamFileData::getStreamFilename)
+                .flatMap(s -> streamFileProvider.get(node, StreamFilename.from(s, s.getSidecarFilename(1))))
+                .collectList()
+                .block();
+        assertThat(sidecars)
+                .hasSize(1)
+                .first()
+                .isEqualTo(sidecar)
+                .extracting(StreamFileData::getDecompressedBytes)
+                .isEqualTo(sidecar.getDecompressedBytes());
     }
 
     @Test
@@ -228,7 +272,9 @@ abstract class AbstractStreamFileProviderTest {
     protected final void getSidecar(FileCopier fileCopier, ConsensusNode node) {
         fileCopier.copy();
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z_01.rcd.gz");
-        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
+        StepVerifier.withVirtualTime(() -> streamFileProvider
+                        .get(node, data.getStreamFilename())
+                        .doOnNext(sfd -> assertThat(sfd.getBytes()).isEqualTo(data.getBytes())))
                 .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data)
                 .expectComplete()
