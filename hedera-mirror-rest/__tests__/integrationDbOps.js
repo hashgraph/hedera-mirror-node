@@ -82,8 +82,6 @@ const createPool = () => {
     database,
     sslmode: 'DISABLE',
   });
-  // suppress the error when the jest worker process ends
-  ownerPool.on('error', (error) => {});
 
   dbConnectionParams.user = getReadOnlyUser();
   dbConnectionParams.password = getReadOnlyPassword();

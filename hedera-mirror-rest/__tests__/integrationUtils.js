@@ -64,7 +64,7 @@ const setupIntegrationTest = () => {
     return integrationDbOps.createPool();
   }, defaultBeforeAllTimeoutMillis);
 
-  afterAll(async () => pool.end());
+  afterAll(async () => Promise.all([ownerPool.end(), pool.end()]));
 
   beforeEach(async () => {
     await integrationDbOps.cleanUp();
