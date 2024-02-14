@@ -44,12 +44,14 @@ with contract_action_gas_usage as (
     select
         cr.consensus_timestamp,
         cr.contract_id,
-        -- Determine if this is a contract create or call transaction
-        (cr.contract_id = any(cr.created_contract_ids)) as is_creation,
-        c.initcode
+        e.created_timestamp,
+        c.initcode,
+        -- Determine if this is a contract create or call transaction based on entity's created_timestamp
+        (cr.consensus_timestamp = e.created_timestamp) as is_creation
     from
         contract_result cr
     left join contract c on cr.contract_id = c.id
+    left join entity e on c.id = e.id
 ), gas_calculation as (
     select
         cti.consensus_timestamp,
