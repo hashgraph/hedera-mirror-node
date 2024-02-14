@@ -16,32 +16,80 @@
 
 package com.hedera.mirror.web3.repository;
 
-import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
-import static com.hedera.mirror.common.domain.token.TokenKycStatusEnum.GRANTED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @RequiredArgsConstructor
 class TokenAccountRepositoryTest extends Web3IntegrationTest {
     private final int accountId = 123;
     private final TokenAccountRepository repository;
 
-    @Test
-    void findById() {
+    @CsvSource(
+            textBlock =
+                    """
+            false, true, true, FROZEN, GRANTED, FROZEN, GRANTED
+            false, true, true, , , UNFROZEN, REVOKED
+            true, true, false, , , FROZEN, NOT_APPLICABLE
+            false, false, false, , , NOT_APPLICABLE, NOT_APPLICABLE
+            """)
+    @ParameterizedTest
+    void findById(
+            boolean freezeDefault,
+            boolean hasFreezeKey,
+            boolean hasKycKey,
+            TokenFreezeStatusEnum freezeStatus,
+            TokenKycStatusEnum kycStatus,
+            TokenFreezeStatusEnum expectedFreezeStatus,
+            TokenKycStatusEnum expectedKycStatus) {
+        final var token = domainBuilder
+                .token()
+                .customize(t -> {
+                    t.freezeDefault(freezeDefault);
+                    if (!hasFreezeKey) {
+                        t.freezeKey(null);
+                    }
+
+                    if (!hasKycKey) {
+                        t.kycKey(null);
+                    }
+                })
+                .persist();
         final var tokenAccount = domainBuilder
                 .tokenAccount()
-                .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED))
+                .customize(
+                        a -> a.freezeStatus(freezeStatus).kycStatus(kycStatus).tokenId(token.getTokenId()))
                 .persist();
 
         assertThat(repository.findById(tokenAccount.getId())).hasValueSatisfying(account -> assertThat(account)
-                .returns(tokenAccount.getFreezeStatus(), TokenAccount::getFreezeStatus)
-                .returns(tokenAccount.getKycStatus(), TokenAccount::getKycStatus)
+                .returns(expectedFreezeStatus, TokenAccount::getFreezeStatus)
+                .returns(expectedKycStatus, TokenAccount::getKycStatus)
+                .returns(tokenAccount.getBalance(), TokenAccount::getBalance));
+    }
+
+    @CsvSource(textBlock = """
+            ,
+            FROZEN, GRANTED
+            """)
+    @ParameterizedTest
+    void findByIdMissingToken(TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus) {
+        final var tokenAccount = domainBuilder
+                .tokenAccount()
+                .customize(a -> a.freezeStatus(freezeStatus).kycStatus(kycStatus))
+                .persist();
+
+        assertThat(repository.findById(tokenAccount.getId())).hasValueSatisfying(account -> assertThat(account)
+                .returns(freezeStatus, TokenAccount::getFreezeStatus)
+                .returns(kycStatus, TokenAccount::getKycStatus)
                 .returns(tokenAccount.getBalance(), TokenAccount::getBalance));
     }
 
@@ -147,18 +195,51 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                 .isEmpty();
     }
 
-    @Test
-    void findByIdAndTimestampHistoricalReturnsLatestEntry() {
-        long tokenId = 1L;
+    @CsvSource(
+            textBlock =
+                    """
+            false, true, true, FROZEN, GRANTED, FROZEN, GRANTED
+            false, true, true, , , UNFROZEN, REVOKED
+            true, true, false, , , FROZEN, NOT_APPLICABLE
+            false, false, false, , , NOT_APPLICABLE, NOT_APPLICABLE
+            """)
+    @ParameterizedTest
+    void findByIdAndTimestampHistoricalReturnsLatestEntry(
+            boolean freezeDefault,
+            boolean hasFreezeKey,
+            boolean hasKycKey,
+            TokenFreezeStatusEnum freezeStatus,
+            TokenKycStatusEnum kycStatus,
+            TokenFreezeStatusEnum expectedFreezeStatus,
+            TokenKycStatusEnum expectedKycStatus) {
         long accountId = 2L;
+        final var token = domainBuilder
+                .token()
+                .customize(t -> {
+                    t.freezeDefault(freezeDefault);
+                    if (!hasFreezeKey) {
+                        t.freezeKey(null);
+                    }
+
+                    if (!hasKycKey) {
+                        t.kycKey(null);
+                    }
+                })
+                .persist();
         final var tokenAccountHistory1 = domainBuilder
                 .tokenAccountHistory()
-                .customize(t -> t.tokenId(tokenId).accountId(accountId))
+                .customize(t -> t.tokenId(token.getTokenId())
+                        .accountId(accountId)
+                        .freezeStatus(freezeStatus)
+                        .kycStatus(kycStatus))
                 .persist();
 
         final var tokenAccountHistory2 = domainBuilder
                 .tokenAccountHistory()
-                .customize(t -> t.tokenId(tokenId).accountId(accountId))
+                .customize(t -> t.tokenId(token.getTokenId())
+                        .accountId(accountId)
+                        .freezeStatus(freezeStatus)
+                        .kycStatus(kycStatus))
                 .persist();
 
         final var latestTimestamp =
@@ -168,8 +249,48 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                         tokenAccountHistory1.getId().getAccountId(),
                         tokenAccountHistory1.getId().getTokenId(),
                         latestTimestamp + 1))
-                .hasValueSatisfying(
-                        actual -> assertThat(actual).returns(latestTimestamp, TokenAccount::getTimestampLower));
+                .get()
+                .returns(latestTimestamp, TokenAccount::getTimestampLower)
+                .returns(expectedFreezeStatus, TokenAccount::getFreezeStatus)
+                .returns(expectedKycStatus, TokenAccount::getKycStatus);
+    }
+
+    @CsvSource(textBlock = """
+            ,
+            FROZEN, GRANTED
+            """)
+    @ParameterizedTest
+    void findByIdAndTimestampHistoricalMissingTokenReturnsLatestEntry(
+            TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus) {
+        long accountId = 2L;
+        long tokenId = 102L;
+        final var tokenAccountHistory1 = domainBuilder
+                .tokenAccountHistory()
+                .customize(t -> t.tokenId(tokenId)
+                        .accountId(accountId)
+                        .freezeStatus(freezeStatus)
+                        .kycStatus(kycStatus))
+                .persist();
+
+        final var tokenAccountHistory2 = domainBuilder
+                .tokenAccountHistory()
+                .customize(t -> t.tokenId(tokenId)
+                        .accountId(accountId)
+                        .freezeStatus(freezeStatus)
+                        .kycStatus(kycStatus))
+                .persist();
+
+        final var latestTimestamp =
+                Math.max(tokenAccountHistory1.getTimestampLower(), tokenAccountHistory2.getTimestampLower());
+
+        assertThat(repository.findByIdAndTimestamp(
+                        tokenAccountHistory1.getId().getAccountId(),
+                        tokenAccountHistory1.getId().getTokenId(),
+                        latestTimestamp + 1))
+                .get()
+                .returns(latestTimestamp, TokenAccount::getTimestampLower)
+                .returns(freezeStatus, TokenAccount::getFreezeStatus)
+                .returns(kycStatus, TokenAccount::getKycStatus);
     }
 
     @Test

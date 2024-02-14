@@ -27,12 +27,43 @@ import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, AbstractTokenAccount.Id> {
 
     @Override
     @Cacheable(cacheNames = CACHE_NAME_TOKEN_ACCOUNT, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    Optional<TokenAccount> findById(AbstractTokenAccount.Id id);
+    @Query(
+            value =
+                    """
+                    select
+                      ta.account_id,
+                      ta.associated,
+                      ta.automatic_association,
+                      ta.balance,
+                      ta.balance_timestamp,
+                      ta.created_timestamp,
+                      ta.timestamp_range,
+                      ta.token_id,
+                      case when freeze_status is not null then freeze_status
+                           when t.token_id is not null then
+                             case when t.freeze_key is null then 0
+                                  when t.freeze_default then 1
+                                  else 2
+                             end
+                      end as freeze_status,
+                      case when kyc_status is not null then kyc_status
+                           when t.token_id is not null then
+                             case when t.kyc_key is null then 0
+                                  else 2
+                             end
+                      end as kyc_status
+                    from token_account as ta
+                    left join (select *from token where token_id = :#{#id.tokenId}) as t on true
+                    where ta.account_id = :#{#id.accountId} and ta.token_id = :#{#id.tokenId}
+                    """,
+            nativeQuery = true)
+    Optional<TokenAccount> findById(@Param("id") AbstractTokenAccount.Id id);
 
     @Query(
             value = "select count(*) as tokenCount, balance>0 as isPositiveBalance from token_account "
@@ -91,15 +122,38 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
     @Query(
             value =
                     """
-                    (
+                    select
+                      ta.account_id,
+                      ta.associated,
+                      ta.automatic_association,
+                      ta.balance,
+                      ta.balance_timestamp,
+                      ta.created_timestamp,
+                      ta.timestamp_range,
+                      ta.token_id,
+                      case when freeze_status is not null then freeze_status
+                           when t.token_id is not null then
+                             case when t.freeze_key is null then 0
+                                  when t.freeze_default then 1
+                                  else 2
+                             end
+                      end as freeze_status,
+                      case when kyc_status is not null then kyc_status
+                           when t.token_id is not null then
+                             case when t.kyc_key is null then 0
+                                  else 2
+                             end
+                      end as kyc_status
+                    from (
+                            (
                         select *
                         from token_account
                         where account_id = :accountId
                             and token_id = :tokenId
                             and lower(timestamp_range) <= :blockTimestamp
-                    )
-                    union all
-                    (
+                            )
+                            union all
+                            (
                         select *
                         from token_account_history
                         where account_id = :accountId
@@ -107,9 +161,11 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                             and lower(timestamp_range) <= :blockTimestamp
                         order by lower(timestamp_range) desc
                         limit 1
-                    )
-                    order by timestamp_range desc
-                    limit 1
+                            )
+                            order by timestamp_range desc
+                            limit 1
+                    ) as ta
+                    left join token as t using (token_id)
                     """,
             nativeQuery = true)
     Optional<TokenAccount> findByIdAndTimestamp(long accountId, long tokenId, long blockTimestamp);

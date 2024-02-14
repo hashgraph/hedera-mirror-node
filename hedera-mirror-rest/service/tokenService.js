@@ -149,7 +149,7 @@ class TokenService extends BaseService {
 
   /**
    * Gets the token cache for a list of token ids
-   * @param {BigInt|Set<BigInt>} tokenIds
+   * @param {Set<BigInt>} tokenIds
    * @return {Promise<Map<BigInt, CachedToken>>}
    */
   async getCachedTokens(tokenIds) {
