@@ -18,6 +18,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {PostgreSqlContainer} from '@testcontainers/postgresql';
+import {Wait} from 'testcontainers';
 
 const dbName = 'mirror_node';
 const dockerNamePrefix = 'INTEGRATION_DATABASE_URL';
@@ -41,6 +42,7 @@ const createDbContainers = async (maxWorkers) => {
       .withDatabase(dbName)
       .withPassword('mirror_node_pass')
       .withUsername('mirror_node')
+      .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections', 2))
       .start();
     console.info(`Started PostgreSQL container for Jest worker ${i} with image ${image}`);
     setJestEnvironment(dockerDb, i);
