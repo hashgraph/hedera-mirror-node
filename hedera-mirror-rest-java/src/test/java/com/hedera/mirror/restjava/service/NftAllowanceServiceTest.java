@@ -39,7 +39,15 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         var nftAllowance2 = saveNftAllowance(accountId, owner);
         saveNftAllowance(accountId, owner);
         saveNftAllowance(accountId, owner);
-        var response = service.getNftAllowances(accountId, 2, Sort.Direction.ASC, owner, 1000L, 1000L);
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .owner(owner)
+                .limit(2)
+                .accountId(accountId)
+                .spenderId(1000L)
+                .tokenId(1000L)
+                .order(Sort.Direction.ASC)
+                .build();
+        var response = service.getNftAllowances(request);
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
     }
 

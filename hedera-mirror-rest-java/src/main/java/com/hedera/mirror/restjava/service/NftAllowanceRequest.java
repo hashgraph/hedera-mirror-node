@@ -16,10 +16,30 @@
 
 package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import java.util.List;
+import lombok.Builder;
+import lombok.Data;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Sort;
 
-public interface NftAllowanceService {
+@Data
+@Builder
+public class NftAllowanceRequest {
 
-    List<NftAllowance> getNftAllowances(NftAllowanceRequest request);
+    @NotNull
+    private Long accountId;
+
+    @Builder.Default
+    private Integer limit = 25;
+
+    @Builder.Default
+    private Sort.Direction order = Sort.Direction.ASC;
+
+    @Builder.Default
+    private Boolean owner = true;
+
+    @Builder.Default
+    private Long tokenId = 0L;
+
+    @Builder.Default
+    private Long spenderId = 0L;
 }
