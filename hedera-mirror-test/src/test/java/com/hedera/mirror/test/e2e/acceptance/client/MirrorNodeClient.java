@@ -166,8 +166,7 @@ public class MirrorNodeClient {
 
     public CryptoAllowancesResponse getAccountCryptoAllowance(String accountId) {
         log.debug("Verify account '{}''s crypto allowance is returned by Mirror Node", accountId);
-        return callRestEndpoint(
-                "/accounts/{accountId}/allowances/crypto", CryptoAllowancesResponse.class, accountId);
+        return callRestEndpoint("/accounts/{accountId}/allowances/crypto", CryptoAllowancesResponse.class, accountId);
     }
 
     public CryptoAllowancesResponse getAccountCryptoAllowanceBySpender(String accountId, String spenderId) {
@@ -211,8 +210,7 @@ public class MirrorNodeClient {
 
     public ContractResult getContractResultByTransactionId(String transactionId) {
         log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
-        return callRestEndpoint(
-                "/contracts/results/{transactionId}", ContractResult.class, transactionId);
+        return callRestEndpoint("/contracts/results/{transactionId}", ContractResult.class, transactionId);
     }
 
     public ContractActionsResponse getContractActions(String transactionId) {
@@ -254,8 +252,7 @@ public class MirrorNodeClient {
 
     public Nft getNftInfo(String tokenId, long serialNumber) {
         log.debug("Verify serial number '{}' for token '{}' is returned by Mirror Node", serialNumber, tokenId);
-        return callRestEndpoint(
-                "/tokens/{tokenId}/nfts/{serialNumber}", Nft.class, tokenId, serialNumber);
+        return callRestEndpoint("/tokens/{tokenId}/nfts/{serialNumber}", Nft.class, tokenId, serialNumber);
     }
 
     public NftTransactionHistory getNftTransactions(TokenId tokenId, Long serialNumber) {
@@ -296,10 +293,7 @@ public class MirrorNodeClient {
                 accountId,
                 tokenId);
         return callRestEndpoint(
-                "/accounts/{accountId}/tokens?token.id={tokenId}",
-                TokenRelationshipResponse.class,
-                accountId,
-                tokenId);
+                "/accounts/{accountId}/tokens?token.id={tokenId}", TokenRelationshipResponse.class, accountId, tokenId);
     }
 
     public AccountBalanceTransactions getAccountDetailsUsingAlias(@NonNull AccountId accountId) {
