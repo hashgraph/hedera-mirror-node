@@ -130,7 +130,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Min(1)
-    private int maxTokenNameUtf8Bytes = 10;
+    private int maxTokenNameUtf8Bytes = 100;
 
     @Getter
     @Min(1)
@@ -138,7 +138,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Min(1)
-    private int maxTokenSymbolUtf8Bytes = 10;
+    private int maxTokenSymbolUtf8Bytes = 100;
 
     @Getter
     @Min(1)
