@@ -201,7 +201,12 @@ public class EquivalenceFeature extends AbstractFeature {
 
     @Given("I successfully create fungible token for internal calls tests")
     public void createFungibleToken() {
-        fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
+        var tokenResponse = tokenClient.getToken(FUNGIBLE);
+        if (tokenResponse.response() != null) {
+            fungibleTokenId = tokenResponse.tokenId();
+            networkTransactionResponse = tokenResponse.response();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+        }
     }
 
     @Then("I make internal {string} to system account {string} {string} amount")
@@ -267,11 +272,15 @@ public class EquivalenceFeature extends AbstractFeature {
         var returnedDataBytes = response.contractCallResponse().getResultAsBytes();
         if (amount == null) {
             // Should succeed
-            assertArrayEquals(new byte[0], returnedDataBytes.toArray());
+            if (accountNumber > 0 && accountNumber <= 9) {
+                assertArrayEquals(functionParameterData, response.contractCallResponse().getResultAsBytes().trimTrailingZeros().toArray());
+            } else {
+                assertArrayEquals(new byte[0], returnedDataBytes.toArray());
+            }
         } else {
             if (shouldSystemAccountWithAmountReturnInvalidFeeSubmitted(accountNumber)) {
                 // Should fail
-                assertArrayEquals(functionParameterData, returnedDataBytes.trimTrailingZeros().toArray());
+                // TODO: add the assert when we know how the error will be returned
             } else {
                 // Should succeed
                 assertArrayEquals(new byte[0], returnedDataBytes.toArray());
