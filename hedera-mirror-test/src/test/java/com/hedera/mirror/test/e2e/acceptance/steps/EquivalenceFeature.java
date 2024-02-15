@@ -19,7 +19,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BIG_INTEGER_TUPLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BYTES_TUPLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.COPY_CODE;
@@ -29,6 +28,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Con
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_SIZE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CURRENT_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,16 +46,19 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.GeneralContractExecutionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
+import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -67,6 +70,11 @@ public class EquivalenceFeature extends AbstractFeature {
     private static final String INVALID_FEE_SUBMITTED = "INVALID_FEE_SUBMITTED";
     private static final String BAD_REQUEST = "400 Bad Request";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
+    private static final TupleType INTERNAL_CALL_RETURN_TYPE = TupleType.parse("(bool,bytes)");
+    // tinycentsToTinybars(uint256)
+    private static final int TO_TINYBARS_SELECTOR = 0x2e3cff6a;
+    // random256BitGenerator(uint256)
+    public static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
 
     private DeployedContract equivalenceDestructContract;
     private DeployedContract equivalenceCallContract;
@@ -107,6 +115,17 @@ public class EquivalenceFeature extends AbstractFeature {
         var response = mirrorClient.getContractInfo(contractAddress);
         Assertions.assertThat(response.getBytecode()).isNotBlank();
         Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
+    }
+
+    @Given("I successfully create tokens")
+    public void createTokens() {
+        fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
+    }
+
+    @And("I associate {token} to contract")
+    public void associateTokenToContract(TokenNameEnum tokenName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        tokenClient.associate(equivalenceCallContract.contractId(), tokenId);
     }
 
     @Then("I execute selfdestruct and set beneficiary to {string} address")
@@ -216,13 +235,15 @@ public class EquivalenceFeature extends AbstractFeature {
         var callType = getMethodName(call, amountType);
         var node = acceptanceTestProperties.getNodeType();
 
-        byte[] functionParameterData = constructFunctionParameterDataForInternalCallToSystemAccount(accountNumber, call, callType);
+        byte[] functionParameterData =
+                constructFunctionParameterDataForInternalCallToSystemAccount(accountNumber, call, callType);
         byte[] data;
         if (functionParameterData == null) {
             callType = getMethodNameForHtsAccount(call, amountType);
             data = encodeDataToByteArray(EQUIVALENCE_CALL, callType, TestUtil.asAddress(fungibleTokenId));
         } else {
-            data = encodeDataToByteArray(EQUIVALENCE_CALL, callType, TestUtil.asAddress(accountId), functionParameterData);
+            data = encodeDataToByteArray(
+                    EQUIVALENCE_CALL, callType, TestUtil.asAddress(accountId), functionParameterData);
         }
 
         Hbar amount = null;
@@ -234,11 +255,206 @@ public class EquivalenceFeature extends AbstractFeature {
         validateResponseFromCallToSystemAccount(accountNumber, call, amount, functionParameterData, response);
     }
 
-    private byte[] constructFunctionParameterDataForInternalCallToSystemAccount(long accountNumber, String call, String callType) {
+    @Then("I execute internal {string} against {string} contract {string} amount")
+    public void executeInternalCallAgainstContract(String call, String payable, String amountType) {
+        var callType = getMethodName(call, amountType);
+        var node = acceptanceTestProperties.getNodeType();
+
+        DeployedContract receiverContract;
+        final var isPayable = payable.equals("payable");
+        if (isPayable) {
+            receiverContract = equivalenceDestructContract;
+        } else {
+            receiverContract = equivalenceCallContract;
+        }
+
+        if (amountType.equals("with")) {
+            final var data = encodeDataToByteArray(
+                    EQUIVALENCE_CALL,
+                    "makeCallWithAmountRevert",
+                    TestUtil.asAddress(receiverContract.contractId().toSolidityAddress()),
+                    new byte[0]);
+            GeneralContractExecutionResponse response;
+            try {
+                response = callContract(
+                        node,
+                        StringUtils.EMPTY,
+                        EQUIVALENCE_CALL,
+                        "makeCallWithAmountRevert",
+                        data,
+                        Hbar.fromTinybars(123L));
+                if (isPayable) {
+                    assertThat(response.errorMessage()).isBlank();
+                }
+            } catch (Exception e) {
+                if (!isPayable) {
+                    assertThat(e.getMessage()).contains(BAD_REQUEST);
+                }
+            }
+        } else {
+            byte[] data = encodeDataToByteArray(
+                    EQUIVALENCE_CALL,
+                    callType,
+                    TestUtil.asAddress(receiverContract.contractId().toSolidityAddress()),
+                    new byte[0]);
+            final var response = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, callType, data, null);
+            assertThat(response.errorMessage()).isBlank();
+        }
+    }
+
+    @Then("I execute internal {string} against Identity precompile")
+    public void executeAllCallsForIdentity(String calltype) {
+        var message = "Encode me!";
+        var messageBytes = message.getBytes(StandardCharsets.UTF_8);
+        var callType = getMethodName(calltype, "without");
+        var node = acceptanceTestProperties.getNodeType();
+        var data = encodeDataToByteArray(
+                EQUIVALENCE_CALL,
+                callType,
+                TestUtil.asAddress("0x0000000000000000000000000000000000000004"),
+                messageBytes);
+
+        final var response = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, callType, data, null);
+
+        var decodedResult = getDecodedInternalCallResult(response);
+        assertEquals(message, new String(decodedResult, StandardCharsets.UTF_8));
+    }
+
+    @Then("I execute internal {string} against Ecrecover precompile")
+    public void executeAllCallsForEcrecover(String calltype) {
+        var messageSignerAddress = "0x05FbA803Be258049A27B820088bab1cAD2058871";
+        var hashedMessage =
+                "0xf950ac8b7f08b2f5ffa0f893d0f85398135301759b768dc20c1e16d9cdba5b53000000000000000000000000000000000000000000000000000000000000001b45e5f9dc145b79479820a9dfa925bb698333e7f17b7d570391e8487c96a39e07675b682b2519f6232152a9f6f4f5923d171dfb7636daceee2c776edecc6c8b64";
+        var callType = getMethodName(calltype, "without");
+        var node = acceptanceTestProperties.getNodeType();
+        var data = encodeDataToByteArray(
+                EQUIVALENCE_CALL,
+                callType,
+                TestUtil.asAddress("0x0000000000000000000000000000000000000001"),
+                Bytes.fromHexString(hashedMessage).toArrayUnsafe());
+        final var response = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, callType, data, null);
+
+        var decodedResult = getDecodedInternalCallResult(response);
+        assertEquals(messageSignerAddress, asAddress(decodedResult).toString());
+    }
+
+    @Then("I execute internal {string} against SHA-256 precompile")
+    public void executeAllCallsForSha256(String calltype) {
+        var message = "Encode me!";
+        var hashedMessage = "68907fbd785a694c3617d35a6ce49477ac5704d75f0e727e353da7bc664aacc2";
+        var callType = getMethodName(calltype, "without");
+        var node = acceptanceTestProperties.getNodeType();
+
+        var data = encodeDataToByteArray(
+                EQUIVALENCE_CALL,
+                callType,
+                TestUtil.asAddress("0x0000000000000000000000000000000000000002"),
+                message.getBytes(StandardCharsets.UTF_8));
+        final var response = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, callType, data, null);
+
+        var decodedResult = getDecodedInternalCallResult(response);
+        assertEquals(hashedMessage, to32BytesString(String.valueOf(Bytes.wrap(decodedResult))));
+    }
+
+    @Then("I execute internal {string} against Ripemd-160 precompile")
+    public void executeAllCallsForRipemd160(String calltype) {
+        var message = "Encode me!";
+        var hashedMessage = "4f0c39893f4c1c805aea87a95b5d359a218920d6";
+        var callType = getMethodName(calltype, "without");
+        var node = acceptanceTestProperties.getNodeType();
+
+        var data = encodeDataToByteArray(
+                EQUIVALENCE_CALL,
+                callType,
+                TestUtil.asAddress("0x0000000000000000000000000000000000000003"),
+                message.getBytes(StandardCharsets.UTF_8));
+        final var response = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, callType, data, null);
+
+        var decodedResult = getDecodedInternalCallResult(response);
+        assertEquals(
+                hashedMessage,
+                String.valueOf(Bytes.wrap(decodedResult).trimLeadingZeros().toUnprefixedHexString()));
+    }
+
+    @Then("I execute internal {string} against PRNG precompile address {string} amount")
+    public void executeInternalCallForPRNG(String call, String amountType) {
+        var prngAddress = "0x0000000000000000000000000000000000000169";
+        var callType = getMethodName(call, amountType);
+        var node = acceptanceTestProperties.getNodeType();
+        var data = encodeDataToByteArray(
+                EQUIVALENCE_CALL,
+                callType,
+                TestUtil.asAddress(prngAddress),
+                getFunctionSelectorBytes(PSEUDORANDOM_SEED_GENERATOR_SELECTOR).toArray());
+
+        Hbar amount = null;
+        if (amountType.equals("with")) {
+            amount = Hbar.fromTinybars(10L);
+        }
+
+        final var response = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, callType, data, amount);
+
+        if (amountType.equals("with")) {
+            // Should fail
+            if (call.equals("callcode")) {
+                assertArrayEquals(new byte[0], response.getMirrorNodeResponseAsBytes());
+            } else {
+                var decodedResult = getDecodedInternalCallResult(response);
+                var isSuccess = getDecodedInternalCallSuccessFlag(response);
+                assertFalse(isSuccess);
+                assertArrayEquals(new byte[0], Bytes.wrap(decodedResult).toArray());
+            }
+        } else {
+            // Should succeed
+            if (call.equals("callcode")) {
+                assertFalse(Arrays.equals(new byte[0], response.getMirrorNodeResponseAsBytes()));
+            } else {
+                var decodedResult = getDecodedInternalCallResult(response);
+                var isSuccess = getDecodedInternalCallSuccessFlag(response);
+                assertTrue(isSuccess);
+                assertFalse(Arrays.equals(new byte[0], Bytes.wrap(decodedResult).toArray()));
+            }
+        }
+    }
+
+    @Then("I execute internal {string} against exchange rate precompile address {string} amount")
+    public void executeInternalCallForExchangeRate(String call, String amountType) {
+        var exchangeRateAddress = "0x0000000000000000000000000000000000000168";
+        var callType = getMethodName(call, amountType);
+        var node = acceptanceTestProperties.getNodeType();
+        var functionParameterData = Bytes.concatenate(
+                        getFunctionSelectorBytes(TO_TINYBARS_SELECTOR), getBigIntegerBytes(new BigInteger("100")))
+                .toArray();
+        var data = encodeDataToByteArray(
+                EQUIVALENCE_CALL, callType, TestUtil.asAddress(exchangeRateAddress), functionParameterData);
+
+        Hbar amount = null;
+        if (amountType.equals("with")) {
+            amount = Hbar.fromTinybars(10L);
+        }
+
+        final var response = callContract(node, StringUtils.EMPTY, EQUIVALENCE_CALL, callType, data, amount);
+
+        if (amountType.equals("with")) {
+            // Should fail
+            var decodedResult = getDecodedInternalCallResult(response);
+            var isSuccess = getDecodedInternalCallSuccessFlag(response);
+            assertFalse(isSuccess);
+            assertArrayEquals(new byte[0], Bytes.wrap(decodedResult).toArray());
+        } else {
+            // Should succeed
+            var decodedResult = getDecodedInternalCallResult(response);
+            var isSuccess = getDecodedInternalCallSuccessFlag(response);
+            assertTrue(isSuccess);
+            assertTrue(Bytes.wrap(decodedResult).toBigInteger().compareTo(BigInteger.ONE) > 0);
+        }
+    }
+
+    private byte[] constructFunctionParameterDataForInternalCallToSystemAccount(
+            long accountNumber, String call, String callType) {
         if (accountNumber == 359) { // HTS precompile
             return null;
-        }
-        else if (call.equals("callcode")) {
+        } else if (call.equals("callcode")) {
             return encodeDataToByteArray(EQUIVALENCE_CALL, GET_CURRENT_ADDRESS.getSelector());
         } else if (accountNumber >= 1 && accountNumber <= 9) {
             return encodeDataToByteArray(EQUIVALENCE_CALL, callType + "ToIdentityPrecompile");
@@ -247,7 +463,12 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    private void validateResponseFromCallToSystemAccount(long accountNumber, String call, Hbar amount, byte[] functionParameterData, GeneralContractExecutionResponse response) {
+    private void validateResponseFromCallToSystemAccount(
+            long accountNumber,
+            String call,
+            Hbar amount,
+            byte[] functionParameterData,
+            GeneralContractExecutionResponse response) {
         var node = acceptanceTestProperties.getNodeType();
         if (node.equals(NodeNameEnum.CONSENSUS)) {
             if (amount == null) {
@@ -261,14 +482,16 @@ public class EquivalenceFeature extends AbstractFeature {
             }
         } else {
             if (call.equals("callcode")) {
-                validateMirrorNodeCallCodeResponseToSystemAccount(accountNumber, amount, functionParameterData, response);
+                validateMirrorNodeCallCodeResponseToSystemAccount(
+                        accountNumber, amount, functionParameterData, response);
             } else {
                 validateMirrorNodeCallResponseToSystemAccount(accountNumber, amount, response);
             }
         }
     }
 
-    private void validateMirrorNodeCallCodeResponseToSystemAccount(long accountNumber, Hbar amount, byte[] functionParameterData, GeneralContractExecutionResponse response) {
+    private void validateMirrorNodeCallCodeResponseToSystemAccount(
+            long accountNumber, Hbar amount, byte[] functionParameterData, GeneralContractExecutionResponse response) {
         var returnedDataBytes = response.contractCallResponse().getResultAsBytes();
         if (amount == null) {
             // Should succeed
@@ -288,7 +511,8 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    private void validateMirrorNodeCallResponseToSystemAccount(long accountNumber, Hbar amount, GeneralContractExecutionResponse response) {
+    private void validateMirrorNodeCallResponseToSystemAccount(
+            long accountNumber, Hbar amount, GeneralContractExecutionResponse response) {
         TupleType tupleType;
         if (accountNumber == 359) {
             tupleType = TupleType.parse("(bool,bool)");
@@ -296,7 +520,7 @@ public class EquivalenceFeature extends AbstractFeature {
             tupleType = TupleType.parse("(bool,bytes)");
         }
         var decodedResult = tupleType.decode(
-                ByteString.fromHex(response.contractCallResponse().getResult().substring(2)).toByteArray());
+                ByteString.fromHex(response.getMirrorNodeResponseAsString()).toByteArray());
         var isSuccess = (boolean) decodedResult.get(0);
 
         if (amount == null) {
@@ -347,19 +571,30 @@ public class EquivalenceFeature extends AbstractFeature {
         return Long.parseLong(parts[parts.length - 1]);
     }
 
-    private boolean shouldSystemAccountWithoutAmountReturnInvalidSolidityAddress(long accountNumber) {
-        return accountNumber == 0
-                || (accountNumber >= 10 && accountNumber <= 358)
-                || (accountNumber >= 362 && accountNumber <= 1000);
-    }
-
-    private boolean shouldSystemAccountWithoutAmountReturnSuccess(long accountNumber) {
-        return (accountNumber >= 1 && accountNumber <= 9)
-                || (accountNumber >= 359 && accountNumber <= 361);
-    }
-
     private boolean shouldSystemAccountWithAmountReturnInvalidFeeSubmitted(long accountNumber) {
         return accountNumber >= 0 && accountNumber <= 750;
+    }
+
+    private byte[] getDecodedInternalCallResult(GeneralContractExecutionResponse response) {
+        return INTERNAL_CALL_RETURN_TYPE
+                .decode(ByteString.fromHex(response.getMirrorNodeResponseAsString())
+                        .toByteArray())
+                .get(1);
+    }
+
+    private boolean getDecodedInternalCallSuccessFlag(GeneralContractExecutionResponse response) {
+        return INTERNAL_CALL_RETURN_TYPE
+                .decode(ByteString.fromHex(response.getMirrorNodeResponseAsString())
+                        .toByteArray())
+                .get(0);
+    }
+
+    private Bytes getFunctionSelectorBytes(int functionSelector) {
+        return Bytes.ofUnsignedInt(functionSelector & 0xffffffffL);
+    }
+
+    private Bytes getBigIntegerBytes(BigInteger number) {
+        return Bytes32.leftPad(Bytes.wrap(number.toByteArray()));
     }
 
     @Getter
@@ -370,7 +605,8 @@ public class EquivalenceFeature extends AbstractFeature {
         COPY_CODE("copyCode"),
         GET_CODE_SIZE("getCodeSize"),
         GET_CODE_HASH("getCodeHash"),
-        GET_CURRENT_ADDRESS("getCurrentAddress");
+        GET_CURRENT_ADDRESS("getCurrentAddress"),
+        IS_TOKEN("isToken(address)");
 
         private final String selector;
     }

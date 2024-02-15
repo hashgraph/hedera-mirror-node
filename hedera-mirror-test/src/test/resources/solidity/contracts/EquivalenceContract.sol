@@ -14,6 +14,13 @@ contract EquivalenceContract {
         (success, returnData) = _to.call{value: msg.value}(_data);
     }
 
+    function makeCallWithAmountRevert(address _to, bytes memory _data) external payable returns (bool success, bytes memory returnData) {
+        (success, returnData) = _to.call{value: msg.value}(_data);
+
+        // Revert if the call was not successful
+        require(success, "Call failed");
+    }
+
     function makeStaticCall(address _to, bytes memory _data) external returns (bool success, bytes memory returnData) {
         (success, returnData) = _to.staticcall(_data);
     }
