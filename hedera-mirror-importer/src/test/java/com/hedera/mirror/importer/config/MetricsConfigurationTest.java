@@ -18,11 +18,13 @@ package com.hedera.mirror.importer.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.EnabledIfV2;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.MetricsConfiguration.TableMetric;
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -30,6 +32,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 class MetricsConfigurationTest extends ImporterIntegrationTest {
 
     private final MeterRegistry meterRegistry;
+    private final MetricsConfiguration metricsConfiguration;
+    private final DomainBuilder domainBuilder;
 
     @EnumSource(TableMetric.class)
     @ParameterizedTest
@@ -46,9 +50,22 @@ class MetricsConfigurationTest extends ImporterIntegrationTest {
         assertThat(search.tag("table", "node_stake").gauges()).hasSize(1);
     }
 
+    @Test
+    public void updatesMetrics() {
+        var metric = TableMetric.TABLE_BYTES;
+        var search = meterRegistry.find(metric.getMetricName());
+        var tag = search.tag("table", "transaction");
+        var currentValue = Double.valueOf(tag.gauge().value());
+
+        domainBuilder.transaction().persist();
+        metricsConfiguration.updateTableMetrics();
+
+        assertThat(tag.gauge().value()).isGreaterThan(currentValue);
+    }
+
+    @EnumSource(TableMetric.class)
     @EnabledIfV2
     @ParameterizedTest
-    @EnumSource(TableMetric.class)
     void distributedPartitionedTable(TableMetric metric) {
         var search = meterRegistry.find(metric.getMetricName());
         assertThat(search.tag("table", "transaction").gauges()).hasSize(1);
