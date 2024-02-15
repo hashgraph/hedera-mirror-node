@@ -59,7 +59,6 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.rest.model.AccountInfo;
 import com.hedera.mirror.rest.model.Nft;
-import com.hedera.mirror.rest.model.TokenInfo;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
@@ -124,8 +123,6 @@ public class PrecompileContractFeature extends AbstractFeature {
             this.networkTransactionResponse = tokenAndResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
-        var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
-        log.debug("Get token info for token {}: {}", TokenNameEnum.FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN, tokenInfo);
     }
 
     @Given("I successfully create and verify a non fungible token for precompile contract tests")
@@ -516,17 +513,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(result).isNotEmpty();
 
         tokenKeyCheck(result);
-    }
-
-    @Retryable(
-            retryFor = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyToken(TokenId tokenId) {
-        TokenInfo mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
-
-        assertNotNull(mirrorToken);
-        assertThat(mirrorToken.getTokenId()).isEqualTo(tokenId.toString());
     }
 
     @Retryable(
