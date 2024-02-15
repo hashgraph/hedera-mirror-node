@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
+
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -127,11 +130,19 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final var code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
             final var isNotCallingNativePrecompile = !aliasManager.isNativePrecompileAddress(resolvedForEvm);
 
-            // If there is no bytecode, it means we have a non-token and non-contract account,
-            // hence the code should be null and there must be a value transfer.
-            if (code == null && value <= 0 && !payload.isEmpty() && isNotCallingNativePrecompile) {
-                throw new MirrorEvmTransactionException(
-                        ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
+            // disable calls to non-existing addresses for
+            // older evm versions or disabled FF or grandfather contract
+            if (!dynamicProperties.allowCallsToNonContractAccounts()
+                    || dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)
+                    || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)
+                    || dynamicProperties.grandfatherContracts().contains(to)) {
+
+                // If there is no bytecode, it means we have a non-token and non-contract account,
+                // hence the code should be null and there must be a value transfer.
+                if (code == null && value <= 0 && !payload.isEmpty() && isNotCallingNativePrecompile) {
+                    throw new MirrorEvmTransactionException(
+                            ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
+                }
             }
 
             return baseInitialFrame

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
@@ -164,7 +165,14 @@ public class HederaEvmStackedWorldStateUpdater
     public byte[] unaliased(final byte[] evmAddress) {
         final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
         if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
-            return NON_CANONICAL_REFERENCE;
+            if (evmProperties.callsToNonExistingEntitiesEnabled(addressOrAlias)
+                    || evmProperties.evmVersion().equals(EVM_VERSION_0_46)) {
+                var ghostAcc = createGhostAccount(addressOrAlias);
+                ghostAcc = ghostAcc.setAutoAssociationMetadata(1);
+                store.updateAccount(ghostAcc);
+            } else {
+                return NON_CANONICAL_REFERENCE;
+            }
         }
         return mirrorEvmContractAliases.resolveForEvm(addressOrAlias).toArrayUnsafe();
     }
@@ -209,5 +217,9 @@ public class HederaEvmStackedWorldStateUpdater
 
     private boolean isTokenRedirect(final Address address) {
         return hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled();
+    }
+
+    private com.hedera.services.store.models.Account createGhostAccount(final Address address) {
+        return com.hedera.services.store.models.Account.getDummySenderAccount(address);
     }
 }
