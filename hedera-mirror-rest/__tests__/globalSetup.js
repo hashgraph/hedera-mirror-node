@@ -25,7 +25,7 @@ const dockerNamePrefix = 'INTEGRATION_DATABASE_URL';
 const v1DatabaseImage = 'postgres:14-alpine';
 const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.1.1';
 
-const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
+const isV2Schema = () => true; //process.env.MIRROR_NODE_SCHEMA === 'v2';
 
 let dockerDbs = [];
 
@@ -36,6 +36,7 @@ const createDbContainers = async (maxWorkers) => {
     source: initSqlPath,
     target: '/docker-entrypoint-initdb.d/init.sql',
   };
+  const dockerContainers = [];
   for (let i = 1; i <= maxWorkers; i++) {
     const dockerDb = await new PostgreSqlContainer(image)
       .withCopyFilesToContainer([initSqlCopy])
@@ -43,11 +44,19 @@ const createDbContainers = async (maxWorkers) => {
       .withPassword('mirror_node_pass')
       .withUsername('mirror_node')
       .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections', 2))
-      .start();
-    console.info(`Started PostgreSQL container for Jest worker ${i} with image ${image}`);
-    setJestEnvironment(dockerDb, i);
-    dockerDbs.push(dockerDb);
+      .withLogConsumer((stream) => {
+        stream.on('data', (line) => console.log(line));
+        stream.on('err', (line) => console.error(line));
+        stream.on('end', () => console.log('Stream closed'));
+      });
+    dockerContainers.push(dockerDb);
   }
+
+  (await Promise.all(dockerContainers.map((db) => db.start()))).forEach((db, i) => {
+    setJestEnvironment(db, i + 1);
+    dockerDbs.push(db);
+  });
+  console.info('All PostgreSQL containers have been started with image ${image}');
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-'));
   process.env.MIGRATION_TMP_DIR = tmpDir;
