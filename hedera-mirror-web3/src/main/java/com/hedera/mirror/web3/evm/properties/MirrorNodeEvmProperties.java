@@ -46,7 +46,10 @@ import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DataSizeUnit;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 import org.springframework.validation.annotation.Validated;
 
 @Setter
@@ -111,12 +114,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxBatchSizeWipe = 10;
 
     @Getter
-    @Positive
-    private long maxContractCreateDataBytes = 24576; // HAPI caps contract creates at 24KiB
-
-    @Getter
-    @Positive
-    private long maxContractUpdateDataBytes = 6144; // HAPI caps contract updates at 6KiB
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize maxDataSize = DataSize.ofKilobytes(24); // HAPI caps contract creates at 24KiB
 
     private int maxCustomFeesAllowed = 10;
 

@@ -29,9 +29,9 @@ import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.exception.ContractDataSizeExceededException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidInputException;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
@@ -120,22 +120,14 @@ class ContractController {
     }
 
     /*
-     * Maximum valid contract data size is configured via properties, and which property applies depends on
-     * whether a contract create or update is being performed (based on the presence of a to address).
-     * Therefore, the @Hex annotation cannot be used for this in ContractCallRequest, but the HexValidator
-     * is still utilized to perform the validation of the data field.
+     * Contract data is represented as hexidecimal digits defined as characters in
+     * a String. So it takes two characters to represent one byte, and the configured max
+     * data size in bytes is doubled for validation of the data length within the request object.
      */
     private void validateContractDataSize(final ContractCallRequest request) {
-        var isCreate = StringUtils.isEmpty(request.getTo());
-        var maxContractDataBytes = isCreate
-                ? evmProperties.getMaxContractCreateDataBytes()
-                : evmProperties.getMaxContractUpdateDataBytes();
-
-        // Double max length bytes as two hex digits define a byte.
-        var contractDataSizeValidator = new HexValidator(0L, maxContractDataBytes * 2L, false);
+        var contractDataSizeValidator = new HexValidator(0L, evmProperties.getMaxDataSize().toBytes() * 2L, false);
         if (!contractDataSizeValidator.isValid(request.getData(), null)) {
-            throw new ContractDataSizeExceededException("Contract %s data size of %d bytes exceeded"
-                    .formatted(isCreate ? "create" : "update", maxContractDataBytes));
+            throw new InvalidParametersException("data field " + HexValidator.MESSAGE);
         }
     }
 

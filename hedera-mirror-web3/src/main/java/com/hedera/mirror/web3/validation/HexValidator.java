@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 public class HexValidator implements ConstraintValidator<Hex, String> {
 
-    public static final String MESSAGE = "invalid hexadecimal string";
+    public static final String MESSAGE = "invalid hexadecimal string or violates length restrictions";
     private static final Pattern HEX_PATTERN = Pattern.compile("^(0x)?[0-9a-fA-F]+$");
     private static final String HEX_PREFIX = "0x";
 

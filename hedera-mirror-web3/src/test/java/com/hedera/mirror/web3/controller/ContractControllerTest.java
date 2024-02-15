@@ -26,6 +26,7 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
@@ -50,6 +51,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.reactive.function.BodyInserters;
 
 @ExtendWith(SpringExtension.class)
@@ -68,9 +70,13 @@ class ContractControllerTest {
     @MockBean
     private Bucket bucket;
 
+    @MockBean
+    private MirrorNodeEvmProperties evmProperties;
+
     @BeforeEach
     void setUp() {
         given(bucket.tryConsume(1)).willReturn(true);
+        given(evmProperties.getMaxDataSize()).willReturn(DataSize.ofKilobytes(24));
     }
 
     @NullAndEmptySource
@@ -230,7 +236,7 @@ class ContractControllerTest {
     @Test
     void exceedingDataCallSizeOnEstimate() {
         final var request = request();
-        request.setData("0x" + BYTES.repeat(4000));
+        request.setData("0x" + BYTES.repeat(20000));
         request.setEstimate(true);
 
         webClient
@@ -242,7 +248,7 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field must not exceed call size limit"));
+                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string or violates length restrictions"));
     }
 
     @Test
@@ -262,7 +268,7 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string"));
+                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string or violates length restrictions"));
     }
 
     @Test
@@ -466,7 +472,7 @@ class ContractControllerTest {
     void callSuccessCors() {
         webClient
                 .options()
-                /**
+                /*
                  * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
                  * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
                  */
