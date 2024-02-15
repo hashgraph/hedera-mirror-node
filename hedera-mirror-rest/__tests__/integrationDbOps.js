@@ -98,6 +98,7 @@ const createPool = () => {
 const flywayMigrate = async () => {
   if (isDbMigrated()) {
     logger.info('Skipping flyway migration since db is already migrated');
+    logger.info(`Migration filename: ${getMigratedFilename()}`);
     return;
   }
 

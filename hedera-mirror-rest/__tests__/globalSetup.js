@@ -56,7 +56,7 @@ const createDbContainers = async (maxWorkers) => {
     setJestEnvironment(db, i + 1);
     dockerDbs.push(db);
   });
-  console.info('All PostgreSQL containers have been started with image ${image}');
+  console.info(`All PostgreSQL containers have been started with image ${image}`);
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-'));
   process.env.MIGRATION_TMP_DIR = tmpDir;
