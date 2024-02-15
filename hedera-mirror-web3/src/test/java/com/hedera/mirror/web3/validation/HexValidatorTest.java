@@ -43,6 +43,7 @@ class HexValidatorTest {
     void valid(int minLength, int maxLength, String value) {
         hexValidator.initialize(hex(minLength, maxLength));
         assertThat(hexValidator.isValid(value, null)).isTrue();
+        assertThat(new HexValidator(minLength, maxLength, false).isValid(value, null)).isTrue();
     }
 
     @ParameterizedTest
@@ -68,6 +69,7 @@ class HexValidatorTest {
     void invalid(int minLength, int maxLength, String value) {
         hexValidator.initialize(hex(minLength, maxLength));
         assertThat(hexValidator.isValid(value, null)).isFalse();
+        assertThat(new HexValidator(minLength, maxLength, false).isValid(value, null)).isFalse();
     }
 
     private Hex hex(int minLength, int maxLength) {
