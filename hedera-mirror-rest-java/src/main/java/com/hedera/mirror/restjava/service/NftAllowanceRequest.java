@@ -18,28 +18,24 @@ package com.hedera.mirror.restjava.service;
 
 import lombok.Builder;
 import lombok.Data;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Sort;
 
 @Data
 @Builder
 public class NftAllowanceRequest {
 
-    @NotNull
-    private Long accountId;
+    private long ownerId;
 
     @Builder.Default
-    private Integer limit = 25;
+    private int limit = 25;
 
     @Builder.Default
     private Sort.Direction order = Sort.Direction.ASC;
 
     @Builder.Default
-    private Boolean owner = true;
+    private boolean isOwner = true;
 
-    @Builder.Default
-    private Long tokenId = 0L;
+    private long tokenId;
 
-    @Builder.Default
-    private Long spenderId = 0L;
+    private long spenderId;
 }

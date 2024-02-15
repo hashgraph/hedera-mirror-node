@@ -32,17 +32,17 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
-    void getNftAllowances(boolean owner) {
-        Long accountId = 1000L;
+    void getNftAllowancesForOrderAsc(boolean owner) {
+        var accountId = 1000L;
 
         var nftAllowance1 = saveNftAllowance(accountId, owner);
         var nftAllowance2 = saveNftAllowance(accountId, owner);
         saveNftAllowance(accountId, owner);
         saveNftAllowance(accountId, owner);
         NftAllowanceRequest request = NftAllowanceRequest.builder()
-                .owner(owner)
+                .isOwner(owner)
                 .limit(2)
-                .accountId(accountId)
+                .ownerId(accountId)
                 .spenderId(1000L)
                 .tokenId(1000L)
                 .order(Sort.Direction.ASC)
@@ -51,7 +51,50 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
     }
 
-    NftAllowance saveNftAllowance(Long accountId, boolean owner) {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void getNftAllowancesForOrderDesc(boolean owner) {
+        var accountId = 1000L;
+        NftAllowance nftAllowance1, nftAllowance2;
+
+        saveNftAllowance(accountId, owner);
+        saveNftAllowance(accountId, owner);
+
+        if (owner) {
+            nftAllowance1 = domainBuilder
+                    .nftAllowance()
+                    .customize(e -> e.owner(accountId).spender(accountId + 100))
+                    .persist();
+            nftAllowance2 = domainBuilder
+                    .nftAllowance()
+                    .customize(e -> e.owner(accountId).spender(accountId + 50))
+                    .persist();
+        } else {
+            nftAllowance1 = domainBuilder
+                    .nftAllowance()
+                    .customize(e -> e.spender(accountId).owner(accountId + 100))
+                    .persist();
+            nftAllowance2 = domainBuilder
+                    .nftAllowance()
+                    .customize(e -> e.spender(accountId).owner(accountId + 50))
+                    .persist();
+        }
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(owner)
+                .limit(2)
+                .ownerId(accountId)
+                .spenderId(1000L)
+                .tokenId(1000L)
+                .order(Sort.Direction.DESC)
+                .build();
+
+        var response = service.getNftAllowances(request);
+
+        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
+    }
+
+    NftAllowance saveNftAllowance(long accountId, boolean owner) {
         if (owner) {
             return domainBuilder
                     .nftAllowance()

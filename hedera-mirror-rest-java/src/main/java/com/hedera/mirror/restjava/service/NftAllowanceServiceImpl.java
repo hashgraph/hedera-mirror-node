@@ -33,7 +33,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
     public List<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
-        var accountId = request.getAccountId();
+        var ownerId = request.getOwnerId();
         var limit = request.getLimit();
         var order = request.getOrder();
         var spenderId = request.getSpenderId();
@@ -41,12 +41,12 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         Pageable pageable;
         // Set the value depending on the owner flag
-        if (request.getOwner()) {
-            pageable = PageRequest.of(0, limit, Sort.by(order, "owner").and(Sort.by(order, "token_id")));
-            return repository.findByOwnerAndFilterBySpenderAndToken(accountId, spenderId, tokenId, pageable);
-        } else {
+        if (request.isOwner()) {
             pageable = PageRequest.of(0, limit, Sort.by(order, "spender").and(Sort.by(order, "token_id")));
-            return repository.findBySpenderAndFilterByOwnerAndToken(spenderId, accountId, tokenId, pageable);
+            return repository.findByOwnerAndFilterBySpenderAndToken(ownerId, spenderId, tokenId, pageable);
+        } else {
+            pageable = PageRequest.of(0, limit, Sort.by(order, "owner").and(Sort.by(order, "token_id")));
+            return repository.findBySpenderAndFilterByOwnerAndToken(spenderId, ownerId, tokenId, pageable);
         }
     }
 }
