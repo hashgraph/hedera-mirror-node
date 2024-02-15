@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.importer.EnabledIfV2;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.MetricsConfiguration.TableMetric;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -34,14 +35,30 @@ class MetricsConfigurationTest extends ImporterIntegrationTest {
     @ParameterizedTest
     void partitionedTable(TableMetric metric) {
         var search = meterRegistry.find(metric.getMetricName());
-        assertThat(search.tag("table", "account_balance").gauges()).hasSize(1);
-        assertThat(search.tag("table", "account_balance_p2020_01").gauges()).isEmpty();
+        assertThat(search.tag("table", "record_file").gauges()).hasSize(1);
+        assertThat(search.tag("table", "record_file_p2020_01").gauges()).isEmpty();
     }
 
     @EnumSource(TableMetric.class)
     @ParameterizedTest
     void regularTable(TableMetric metric) {
         var search = meterRegistry.find(metric.getMetricName());
-        assertThat(search.tag("table", "entity").gauges()).hasSize(1);
+        assertThat(search.tag("table", "node_stake").gauges()).hasSize(1);
+    }
+
+    @EnabledIfV2
+    @ParameterizedTest
+    @EnumSource(TableMetric.class)
+    void distributedPartitionedTable(TableMetric metric) {
+        var search = meterRegistry.find(metric.getMetricName());
+        assertThat(search.tag("table", "transaction").gauges()).hasSize(1);
+    }
+
+    @EnabledIfV2
+    @ParameterizedTest
+    @EnumSource(TableMetric.class)
+    void distributedTable(TableMetric metric) {
+        var search = meterRegistry.find(metric.getMetricName());
+        assertThat(search.tag("table", "transaction_hash").gauges()).hasSize(1);
     }
 }
