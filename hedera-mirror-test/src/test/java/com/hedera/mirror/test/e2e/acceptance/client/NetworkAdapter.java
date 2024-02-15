@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static com.hedera.mirror.rest.model.ContractAction.ResultDataTypeEnum.OUTPUT;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 
@@ -160,7 +161,7 @@ public class NetworkAdapter extends EncoderDecoderFacade {
             if (actions == null || actions.size() < 2) {
                 throw new IllegalArgumentException("The actions list must contain at least two elements.");
             }
-            if (!actions.get(1).getResultDataType().equalsIgnoreCase("OUTPUT")) {
+            if (actions.get(1).getResultDataType() != OUTPUT) {
                 String hexString = actions.get(1).getResultData();
                 return hexToAscii(hexString.replace("0x", ""));
             }
