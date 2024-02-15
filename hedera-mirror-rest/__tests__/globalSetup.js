@@ -25,7 +25,7 @@ const dockerNamePrefix = 'INTEGRATION_DATABASE_URL';
 const v1DatabaseImage = 'postgres:14-alpine';
 const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.1.1';
 
-const isV2Schema = () => true; //process.env.MIRROR_NODE_SCHEMA === 'v2';
+const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
 let dockerDbs = [];
 
