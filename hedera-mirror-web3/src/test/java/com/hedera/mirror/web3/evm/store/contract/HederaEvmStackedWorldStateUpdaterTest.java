@@ -61,6 +61,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     private static final Address sponsor = Address.fromHexString("0xcba");
     private static final long aBalance = 1_000L;
     private static final long aNonce = 1L;
+    private static final String EVM_VERSION_38 = "v0.38";
     private final Address address = Address.fromHexString("0x000000000000000000000000000000000000077e");
     private final UpdateTrackingAccount<Account> updatedHederaEvmAccount = new UpdateTrackingAccount<>(address, null);
 
@@ -267,7 +268,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     }
 
     @Test
-    void usesAliasesForDecodingHelp() {
+    void usesAliasesForDecodingHelpForV38() {
         given(mirrorEvmContractAliases.resolveForEvm(alias)).willReturn(sponsor);
         given(tokenAccessor.canonicalAddress(alias)).willReturn(alias);
 
@@ -276,9 +277,9 @@ class HederaEvmStackedWorldStateUpdaterTest {
     }
 
     @Test
-    void unaliasingFailsWhenNotUsingCanonicalAddress() {
+    void unaliasingFailsWhenNotUsingCanonicalAddressForV38() {
         given(tokenAccessor.canonicalAddress(alias)).willReturn(alias2);
-
+        given(properties.evmVersion()).willReturn(EVM_VERSION_38);
         assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
     }
 

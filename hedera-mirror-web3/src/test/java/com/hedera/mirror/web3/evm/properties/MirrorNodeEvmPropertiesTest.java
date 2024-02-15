@@ -41,7 +41,8 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final String EVM_VERSION_34 = "v0.34";
     private static final String EVM_VERSION_30 = "v0.30";
     private static final String EVM_VERSION_38 = "v0.38";
-    private static final String EVM_VERSION = EVM_VERSION_38;
+    private static final String EVM_VERSION_46 = "v0.46";
+    private static final String EVM_VERSION = EVM_VERSION_46;
     private static final int MAX_REFUND_PERCENT = 100;
     private static final int MAX_CUSTOM_FEES_ALLOWED = 10;
     private static final Address FUNDING_ADDRESS = Address.fromHexString("0x0000000000000000000000000000000000000062");
