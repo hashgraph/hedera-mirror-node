@@ -421,12 +421,14 @@ zfs:
     diskSize: 300GB
   enabled: false
   init:
+    arcSizeGb: 2
     diskPrefix: citus
     image:
       pullPolicy: IfNotPresent
       registry: gcr.io
       repository: google.com/cloudsdktool/google-cloud-cli
       tag: slim
+    l2ArcNvmeDeviceId: ""
     serviceAccount:
       name: zfs-service-account
       iAmName: sa-name@project.iam.gserviceaccount.com

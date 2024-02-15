@@ -33,6 +33,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
@@ -59,6 +60,8 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,7 +69,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.context.ApplicationEventPublisher;
-import reactor.core.publisher.Flux;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, RecordFileParser> {
 
@@ -99,7 +101,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         if (parsed) {
             verify(recordItemListener).onItem(recordItem);
             verify(recordStreamFileListener).onEnd(recordFile);
-            verify(recordStreamFileListener, never()).onError();
             // Can't verify the event object since ApplicationEvent has a timestamp field for when the event happened
             verify(applicationEventPublisher)
                     .publishEvent(argThat(e -> e instanceof RecordFileParsedEvent recordFileParsedEvent
@@ -107,9 +108,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         } else {
             if (dbError) {
                 verify(recordStreamFileListener, never()).onEnd(recordFile);
-                verify(recordStreamFileListener).onError();
-            } else {
-                verify(recordStreamFileListener, never()).onStart();
             }
 
             verify(applicationEventPublisher, never()).publishEvent(any());
@@ -135,7 +133,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     protected RecordFile getStreamFile() {
         long id = ++count * 100;
         recordItem = cryptoTransferRecordItem(id);
-        return getStreamFile(Flux.just(recordItem), id);
+        return getStreamFile(List.of(recordItem), id);
     }
 
     @Override
@@ -162,7 +160,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     void endDate(long offset) {
         // given
         RecordFile recordFile = getStreamFile();
-        RecordItem firstItem = recordFile.getItems().blockFirst();
+        RecordItem firstItem = recordFile.getItems().iterator().next();
         long end = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.EPOCH, Instant.ofEpochSecond(0, end));
         doReturn(filter).when(dateRangeCalculator).getFilter(parserProperties.getStreamType());
@@ -171,7 +169,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         parser.parse(recordFile);
 
         // then
-        verify(recordStreamFileListener).onStart();
         if (offset >= 0) {
             verify(recordItemListener).onItem(firstItem);
         }
@@ -197,7 +194,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
 
         RecordItem recordItem5 = cryptoTransferRecordItem(1L);
 
-        var items = Flux.just(recordItem1, recordItem2, recordItem3, recordItem4, recordItem5);
+        var items = List.of(recordItem1, recordItem2, recordItem3, recordItem4, recordItem5);
         var recordFile = spy(getStreamFile(items, timestamp));
         doNothing().when(recordFile).clear();
 
@@ -217,7 +214,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         assertAll(
                 () -> assertEquals(10000000000L + 100000000000L + 1000000000000L, recordFile.getGasUsed()),
                 () -> assertArrayEquals(expectedLogBloom, recordFile.getLogsBloom()),
-                () -> verify(recordStreamFileListener, times(1)).onStart(),
                 () -> verify(recordStreamFileListener, times(1)).onEnd(recordFile),
                 () -> verify(recordItemListener, times(1)).onItem(recordItem1),
                 () -> verify(recordItemListener, times(1)).onItem(recordItem2),
@@ -229,7 +225,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
     void startDate(long offset) {
         // given
         RecordFile recordFile = getStreamFile();
-        RecordItem firstItem = recordFile.getItems().blockFirst();
+        RecordItem firstItem = recordFile.getItems().iterator().next();
         long start = recordFile.getConsensusStart() + offset;
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), null);
         doReturn(filter).when(dateRangeCalculator).getFilter(parserProperties.getStreamType());
@@ -238,7 +234,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         parser.parse(recordFile);
 
         // then
-        verify(recordStreamFileListener).onStart();
         if (offset < 0) {
             verify(recordItemListener).onItem(firstItem);
         }
@@ -352,6 +347,78 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
         verify(recordFileRepository, never()).updateIndex(anyLong());
     }
 
+    @Test
+    void parseList() {
+        // given
+        var streamFile1 = getStreamFile();
+        var recordItem1 = recordItem;
+        var streamFile2 = getStreamFile();
+        var recordItem2 = recordItem;
+        streamFile2.setPreviousHash(streamFile1.getHash());
+
+        // when
+        parser.parse(List.of(streamFile1, streamFile2));
+
+        // then
+        verify(recordItemListener).onItem(recordItem1);
+        verify(recordItemListener).onItem(recordItem2);
+        verify(recordStreamFileListener).onEnd(streamFile2);
+        verify(applicationEventPublisher)
+                .publishEvent(argThat(e -> e instanceof RecordFileParsedEvent recordFileParsedEvent
+                        && recordFileParsedEvent.getConsensusEnd() == streamFile2.getConsensusEnd()));
+        assertThat(streamFile2.getBytes()).isNull();
+    }
+
+    @Test
+    void parseListEmpty() {
+        // when
+        parser.parse(List.of());
+
+        // then
+        verifyNoInteractions(recordFileRepository, recordStreamFileListener, applicationEventPublisher);
+    }
+
+    @Test
+    void parseListHashMismatch() {
+        // given
+        var streamFile1 = getStreamFile();
+        var recordItem1 = recordItem;
+        var streamFile2 = getStreamFile();
+
+        // when
+        assertThatThrownBy(() -> parser.parse(List.of(streamFile1, streamFile2)))
+                .isInstanceOf(HashMismatchException.class);
+
+        // then
+        verify(recordItemListener).onItem(recordItem1);
+        verifyNoMoreInteractions(recordItemListener);
+        verifyNoInteractions(recordStreamFileListener);
+    }
+
+    @Test
+    void parseListSkipPartial() {
+        // given
+        var streamFile1 = getStreamFile();
+        var streamFile2 = getStreamFile();
+        streamFile2.setPreviousHash(streamFile1.getHash());
+        var recordItem2 = recordItem;
+        var streamFile3 = getStreamFile();
+        streamFile3.setConsensusEnd(1L); // Should be skipped since it's in the past
+        streamFile3.setConsensusStart(0L);
+        when(recordFileRepository.findLatest()).thenReturn(Optional.of(streamFile1));
+
+        // when
+        parser.parse(List.of(streamFile2, streamFile3));
+
+        // then
+        verify(recordItemListener).onItem(recordItem2);
+        verify(recordStreamFileListener).onEnd(streamFile2);
+        verify(applicationEventPublisher)
+                .publishEvent(argThat(e -> e instanceof RecordFileParsedEvent recordFileParsedEvent
+                        && recordFileParsedEvent.getConsensusEnd() == streamFile2.getConsensusEnd()));
+        assertThat(streamFile2.getBytes()).isNull();
+    }
+
     private RecordItem contractCall(
             ContractFunctionResult contractFunctionResult, long timestamp, int transactionIdNonce) {
         return recordItemBuilder
@@ -416,7 +483,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFile, Reco
                 .build();
     }
 
-    private RecordFile getStreamFile(final Flux<RecordItem> items, final long timestamp) {
+    private RecordFile getStreamFile(final Collection<RecordItem> items, final long timestamp) {
         return domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder

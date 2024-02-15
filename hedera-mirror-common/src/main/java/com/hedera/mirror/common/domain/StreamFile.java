@@ -16,14 +16,15 @@
 
 package com.hedera.mirror.common.domain;
 
+import java.util.Collection;
+import java.util.List;
 import lombok.NonNull;
-import reactor.core.publisher.Flux;
 
 public interface StreamFile<T extends StreamItem> {
 
     default void clear() {
         setBytes(null);
-        setItems(null);
+        setItems(List.of());
     }
 
     StreamFile<T> copy();
@@ -57,9 +58,9 @@ public interface StreamFile<T extends StreamItem> {
 
     default void setIndex(Long index) {}
 
-    Flux<T> getItems();
+    Collection<T> getItems();
 
-    void setItems(Flux<T> items);
+    void setItems(Collection<T> items);
 
     Long getLoadEnd();
 

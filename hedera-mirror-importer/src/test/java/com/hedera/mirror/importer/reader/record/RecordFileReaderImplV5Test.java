@@ -60,7 +60,7 @@ class RecordFileReaderImplV5Test extends AbstractRecordFileReaderTest {
                     // then
                     RecordItem previousItem = null;
                     RecordItem lastParentItem = null;
-                    for (var item : actual.getItems().collectList().block()) {
+                    for (var item : actual.getItems()) {
                         // assert previous link points to previous item
                         assertThat(item.getPrevious()).isEqualTo(previousItem);
 

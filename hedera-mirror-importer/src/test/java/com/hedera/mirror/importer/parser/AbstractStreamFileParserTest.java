@@ -119,10 +119,10 @@ public abstract class AbstractStreamFileParserTest<F extends StreamFile<?>, T ex
     protected void assertParsed(F streamFile, boolean parsed, boolean dbError) {
         if (!dbError) {
             assertThat(streamFile.getBytes()).isNull();
-            assertThat(streamFile.getItems()).isNull();
+            assertThat(streamFile.getItems()).isEmpty();
         } else {
             assertThat(streamFile.getBytes()).isNotNull();
-            assertThat(streamFile.getItems()).isNotNull();
+            assertThat(streamFile.getItems()).isNotEmpty();
         }
     }
 }

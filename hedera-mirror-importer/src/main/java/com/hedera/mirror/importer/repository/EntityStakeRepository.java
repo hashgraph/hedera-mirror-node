@@ -23,114 +23,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.transaction.annotation.Transactional;
 
-public interface EntityStakeRepository extends CrudRepository<EntityStake, Long> {
-
-    @Modifying
-    @Query(
-            value =
-                    """
-        create temp table entity_state_start (
-          balance            bigint not null,
-          id                 bigint not null,
-          staked_account_id  bigint not null,
-          staked_node_id     bigint not null,
-          stake_period_start bigint not null
-        ) on commit drop;
-
-        with end_period as (
-          select epoch_day, consensus_timestamp
-          from node_stake
-          where epoch_day >= coalesce(
-            (select end_stake_period + 1 from entity_stake where id = 800),
-            (
-              select epoch_day
-              from node_stake
-              where consensus_timestamp > (
-                select lower(timestamp_range) as timestamp from entity where id = 800
-                union all
-                select lower(timestamp_range) as timestamp from entity_history where id = 800
-                order by timestamp
-                limit 1
-              )
-              order by consensus_timestamp
-              limit 1
-            )
-          )
-          order by epoch_day
-          limit 1
-        ), balance_timestamp as (
-          select ab.consensus_timestamp
-          from account_balance ab, end_period ep
-          where ab.account_id = 2 and
-            ab.consensus_timestamp > (ep.consensus_timestamp - 2678400000000000) and
-            ab.consensus_timestamp <= ep.consensus_timestamp
-          order by ab.consensus_timestamp desc
-          limit 1
-        ), entity_state as (
-          select
-            id,
-            staked_account_id,
-            staked_node_id,
-            stake_period_start
-          from entity, end_period
-          where id = 800 or (
-            deleted is not true and
-            type in ('ACCOUNT', 'CONTRACT') and
-            timestamp_range @> end_period.consensus_timestamp and
-            (staked_account_id <> 0 or (decline_reward is false and staked_node_id <> -1))
-          )
-          union all
-          select *
-          from (
-            select
-              distinct on (id)
-              id,
-              staked_account_id,
-              staked_node_id,
-              stake_period_start
-            from entity_history, end_period
-            where id <> 800 and (
-              deleted is not true and
-              type in ('ACCOUNT', 'CONTRACT') and
-              timestamp_range @> end_period.consensus_timestamp and
-              (staked_account_id <> 0 or (decline_reward is false and staked_node_id <> -1))
-            )
-            order by id, timestamp_range desc
-          ) as latest_history
-        ), balance_snapshot as (
-          select distinct on (account_id) account_id, balance
-          from account_balance ab, balance_timestamp bt
-          where ab.consensus_timestamp > (bt.consensus_timestamp - 2678400000000000) and
-            ab.consensus_timestamp <= bt.consensus_timestamp
-          order by account_id, ab.consensus_timestamp desc
-        )
-        insert into entity_state_start (balance, id, staked_account_id, staked_node_id, stake_period_start)
-        select
-          coalesce(balance, 0) + coalesce(change, 0),
-          id,
-          coalesce(staked_account_id, 0),
-          coalesce(staked_node_id, -1),
-          coalesce(stake_period_start, -1)
-        from entity_state
-        left join balance_snapshot on account_id = id
-        left join (
-          select entity_id, sum(amount) as change
-          from crypto_transfer ct, balance_timestamp bt, end_period ep
-          where ct.consensus_timestamp <= ep.consensus_timestamp
-            and ct.consensus_timestamp > bt.consensus_timestamp
-          group by entity_id
-           order by entity_id
-         ) balance_change on entity_id = id,
-         balance_timestamp bt
-         where bt.consensus_timestamp is not null;
-
-        create index if not exists entity_state_start__id on entity_state_start (id);
-        create index if not exists entity_state_start__staked_account_id
-          on entity_state_start (staked_account_id) where staked_account_id <> 0;
-        """,
-            nativeQuery = true)
-    @Transactional
-    void createEntityStateStart();
+public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>, EntityStakeRepositoryCustom {
 
     @Query(value = "select endStakePeriod from EntityStake where id = 800")
     Optional<Long> getEndStakePeriod();
@@ -150,8 +43,12 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             ), staking_reward_account as (
               select (select id from entity where id = 800) as account_id
             )
-            select account_id is null or epoch_day = -1 or epoch_day = end_stake_period
-            from last_epoch_day, entity_stake_info, staking_reward_account
+            select case when account_id is null then true
+                        when (select epoch_day from last_epoch_day)
+                          in (-1, (select end_stake_period from entity_stake_info)) then true
+                        else false
+                   end
+            from staking_reward_account
             """,
             nativeQuery = true)
     boolean updated();
@@ -185,7 +82,9 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
     @Query(
             value =
                     """
-            create temp table entity_stake_temp (like entity_stake) on commit drop;
+            drop index if exists entity_stake_temp__id;
+            truncate table entity_stake_temp;
+
             with ending_period as (
               select epoch_day, consensus_timestamp
               from node_stake
@@ -220,6 +119,10 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                 from node_stake ns, ending_period
                 where ns.consensus_timestamp = ending_period.consensus_timestamp
               ) node_stake on es.staked_node_id_start = node_id
+            ), forfeited_period as (
+              select node_id, reward_rate
+              from node_stake
+              where epoch_day = (select epoch_day from ending_period) - 365
             ), proxy_staking as (
               select staked_account_id, sum(balance) as staked_to_me
               from entity_state_start
@@ -232,14 +135,13 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
               epoch_day as end_stake_period,
               ess.id,
               (case
-                 when coalesce(staked_node_id_start, -1) = -1
-                      then 0
+                 when coalesce(staked_node_id_start, -1) = -1 then 0
                  when reward_rate is null then pending_reward
                  when ess.stake_period_start > epoch_day - 1 then 0
                  when ess.stake_period_start = epoch_day - 1 then reward_rate * stake_total_start_whole_bar
                  when epoch_day - ess.stake_period_start > 365
                    then pending_reward + reward_rate * stake_total_start_whole_bar
-                     - coalesce((select reward_rate from node_stake where epoch_day = ep.epoch_day - 365 and node_id = staked_node_id_start), 0) * stake_total_start_whole_bar
+                     - coalesce((select reward_rate from forfeited_period where node_id = staked_node_id_start), 0) * stake_total_start_whole_bar
                  else pending_reward + reward_rate * stake_total_start_whole_bar
                 end) as pending_reward,
               ess.staked_node_id as staked_node_id_start,
@@ -252,8 +154,9 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
               left join ending_period_stake_state on entity_id = ess.id
               left join proxy_staking ps on ps.staked_account_id = ess.id,
               ending_period ep
-              where (ess.id = 800 or ess.staked_node_id <> -1);
-            create index on entity_stake_temp (id);
+            where ess.id = 800 or ess.staked_node_id <> -1;
+
+            create index if not exists entity_stake_temp__id on entity_stake_temp (id);
 
             -- history table
             insert into entity_stake_history (
@@ -274,7 +177,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
               e.stake_total_start,
               int8range(lower(e.timestamp_range), lower(t.timestamp_range))
             from entity_stake e
-            join entity_stake_temp t on t.id = e.id;
+            join entity_stake_temp t using (id);
 
             -- current table
             insert into entity_stake (

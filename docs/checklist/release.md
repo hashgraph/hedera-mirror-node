@@ -4,6 +4,7 @@ This checklist verifies a release is rolled out successfully.
 
 ## Preparation
 
+- [ ] Milestone created
 - [ ] Milestone field populated on
       relevant [issues](https://github.com/hashgraph/hedera-mirror-node/issues?q=is%3Aclosed+no%3Amilestone+sort%3Aupdated-desc)
 - [ ] Nothing open
@@ -20,13 +21,14 @@ This checklist verifies a release is rolled out successfully.
 - [ ] Deployed
 - [ ] gRPC API performance tests
 - [ ] Importer performance tests
-- [ ] REST API performance tests
-
-## Previewnet
-
-- [ ] Deployed
 
 ## Staging
+
+- [ ] Deployed
+- [ ] REST API performance tests
+- [ ] Web3 API performance tests
+
+## Previewnet
 
 - [ ] Deployed
 

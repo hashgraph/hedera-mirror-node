@@ -1,5 +1,39 @@
 # Database
 
+## Setup
+
+The mirror node uses [PostgreSQL](https://www.postgresql.org/) to persist the data it receives from consensus nodes.
+Specifically, Hedera uses [Google Cloud SQL for PostgreSQL](https://cloud.google.com/sql/postgresql) for its managed
+mirror nodes, but operators are welcome to use any PostgreSQL compatible cloud or self-managed service. The exact
+hardware configuration will vary based upon the operator's intended use for the mirror node. Below is the hardware
+requirements that the Hedera managed mirror node uses. This is for a database with a full history and intended for use
+by many external clients. If operators store less data or only have a few internal clients then potentially some of
+these requirements can be relaxed.
+
+- PostgreSQL 14+
+- 8 vCPUs
+- 40 GiB memory
+- 1-55 TiB
+
+Note that the disk size highly depends on how much historical data is needed and what transaction filters are
+configured. Below are the recommended settings for `postgresql.conf`:
+
+```
+checkpoint_timeout = 30min
+log_autovacuum_min_duration = 30s
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_lock_waits = on
+maintenance_work_mem = 2GB
+max_connections = 600
+max_parallel_maintenance_workers = 8
+max_wal_size = 24GB
+password_encryption = scram-sha-256
+random_page_cost = 1.1
+work_mem = 50MB
+```
+
 ## Indexes
 
 The table below documents the database indexes with the usage in APIs / services.
@@ -227,8 +261,8 @@ since open access until April 2023.
 
 | Node Type   | Count | vCPU | Memory | Disk Storage |
 | ----------- | ----- | ---- | ------ | ------------ |
-| Coordinator | 3     | 4    | 26 GB  | 256 GB       |
-| Worker      | 3     | 4    | 26 GB  | 5 TB         |
+| Coordinator | 2     | 7    | 24 GB  | 256 GB       |
+| Worker      | 3     | 7    | 24 GB  | 3 TB         |
 
 Following are the prerequisites and steps for migrating V1 data to V2.
 

@@ -44,7 +44,6 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
 
 class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
@@ -92,10 +91,9 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         downloader.download();
 
         super.verifyStreamFiles(List.of(file1, file2), actual -> {
-            var transactionSidecarRecords = actual.getItems()
-                    .flatMap(recordItem -> Flux.fromIterable(recordItem.getSidecarRecords()))
-                    .collectList()
-                    .block();
+            var transactionSidecarRecords = actual.getItems().stream()
+                    .flatMap(r -> r.getSidecarRecords().stream())
+                    .collect(Collectors.toList());
             assertThat(transactionSidecarRecords).isEmpty();
         });
         assertThat(importerProperties.getDataPath()).isEmptyDirectory();
@@ -110,12 +108,10 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         downloader.download();
 
         verifyStreamFiles(List.of(file1, file2), recordFile -> {
-            var sidecarTypes = recordFile
-                    .getItems()
-                    .flatMap(recordItem -> Flux.fromIterable(recordItem.getSidecarRecords()))
+            var sidecarTypes = recordFile.getItems().stream()
+                    .flatMap(r -> r.getSidecarRecords().stream())
                     .map(TransactionSidecarRecord::getSidecarRecordsCase)
-                    .collectList()
-                    .block();
+                    .collect(Collectors.toList());
             if (Objects.equals(recordFile.getName(), RECORD_FILE_WITH_SIDECAR)) {
                 assertThat(sidecarTypes).containsExactly(TransactionSidecarRecord.SidecarRecordsCase.BYTECODE);
             } else {
@@ -202,7 +198,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
     @Override
     protected void verifyStreamFiles(List<String> files, Consumer<RecordFile> extraAssert) {
         Consumer<RecordFile> recordAssert = recordFile -> {
-            var recordItems = recordFile.getItems().collectList().block();
+            var recordItems = recordFile.getItems();
             if (Objects.equals(recordFile.getName(), RECORD_FILE_WITH_SIDECAR)) {
                 assertThat(recordItems)
                         // The record item either has empty transaction sidecar records or all such records consensus

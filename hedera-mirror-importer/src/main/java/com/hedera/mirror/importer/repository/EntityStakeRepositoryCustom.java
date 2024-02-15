@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,9 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.StreamFile;
-import java.util.List;
+interface EntityStakeRepositoryCustom {
 
-public interface StreamFileParser<T extends StreamFile<?>> {
-
-    void parse(T streamFile);
-
-    void parse(List<T> streamFiles);
-
-    ParserProperties getProperties();
+    void createEntityStateStart();
 }

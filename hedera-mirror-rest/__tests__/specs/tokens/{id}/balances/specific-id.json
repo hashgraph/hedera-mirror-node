@@ -17,6 +17,7 @@
         "token_id": "0.0.2007",
         "symbol": "TOKEN1",
         "created_timestamp": "1234567890000000001",
+        "decimals": 7,
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -72,7 +73,8 @@
     "balances": [
       {
         "account": "0.0.8",
-        "balance": 1000
+        "balance": 1000,
+        "decimals": 7
       }
     ],
     "links": {

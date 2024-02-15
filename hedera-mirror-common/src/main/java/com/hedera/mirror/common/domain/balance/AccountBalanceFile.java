@@ -21,6 +21,8 @@ import com.hedera.mirror.common.domain.StreamType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Transient;
+import java.util.Collection;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,7 +30,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import reactor.core.publisher.Flux;
 
 @Builder(toBuilder = true)
 @Data
@@ -54,7 +55,7 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
-    private Flux<AccountBalance> items = Flux.empty();
+    private Collection<AccountBalance> items = List.of();
 
     private Long loadEnd;
 
@@ -79,13 +80,13 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
     }
 
     @Override
-    public Long getConsensusEnd() {
-        return getConsensusStart();
+    public void setConsensusStart(Long timestamp) {
+        consensusTimestamp = timestamp;
     }
 
     @Override
-    public void setConsensusStart(Long timestamp) {
-        consensusTimestamp = timestamp;
+    public Long getConsensusEnd() {
+        return getConsensusStart();
     }
 
     @Override

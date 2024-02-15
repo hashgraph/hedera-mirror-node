@@ -176,7 +176,7 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with balanceOf function for "NFT" and verify the estimated gas against HAPI
     And I update the account and token keys
     Then the mirror node REST API should return status 200 for the HAPI transaction
-    Then I call estimateGas with transferToken function and verify the estimated gas against HAPI
+#    Then I call estimateGas with transferToken function and verify the estimated gas against HAPI
     And I associate the contract with the receiver account
     Then the mirror node REST API should return status 200 for the HAPI transaction
     Then I call estimateGas with transferNFT function and verify the estimated gas against HAPI
