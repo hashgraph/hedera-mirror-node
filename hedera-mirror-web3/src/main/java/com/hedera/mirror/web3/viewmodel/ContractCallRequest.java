@@ -64,19 +64,7 @@ public class ContractCallRequest {
     }
 
     @AssertTrue(message = "must not be empty")
-    public boolean hasTo() {
+    private boolean hasTo() {
         return estimate || StringUtils.isNotEmpty(to);
-    }
-
-    @AssertTrue(message = "must not exceed call size limit")
-    private boolean hasData() {
-        if (data == null) {
-            return true;
-        } else {
-            final var dataSize = data.length();
-
-            // In case of contract calls we should limit requests to 6KiB
-            return to == null || dataSize <= 6144 * 2;
-        }
     }
 }

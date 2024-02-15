@@ -112,11 +112,11 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Positive
-    private long maxContractCreateDataSizeBytes = 24576; // HAPI caps contract creates at 24KiB
+    private long maxContractCreateDataBytes = 24576; // HAPI caps contract creates at 24KiB
 
     @Getter
     @Positive
-    private long maxContractUpdateDataSizeBytes = 6144; // HAPI caps contract updates at 6KiB
+    private long maxContractUpdateDataBytes = 6144; // HAPI caps contract updates at 6KiB
 
     private int maxCustomFeesAllowed = 10;
 

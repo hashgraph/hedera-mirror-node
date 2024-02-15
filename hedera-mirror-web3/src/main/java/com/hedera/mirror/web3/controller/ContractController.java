@@ -126,16 +126,16 @@ class ContractController {
      * is still utilized to perform the validation of the data field.
      */
     private void validateContractDataSize(final ContractCallRequest request) {
-        var maxContractDataSizeBytes = request.hasTo()
-                ? evmProperties.getMaxContractUpdateDataSizeBytes()
-                : evmProperties.getMaxContractCreateDataSizeBytes();
+        var isCreate = StringUtils.isEmpty(request.getTo());
+        var maxContractDataBytes = isCreate
+                ? evmProperties.getMaxContractCreateDataBytes()
+                : evmProperties.getMaxContractUpdateDataBytes();
 
-        var contractDataSizeValidator = new HexValidator();
         // Double max length bytes as two hex digits define a byte.
-        contractDataSizeValidator.initialize(0L, maxContractDataSizeBytes * 2L, false);
+        var contractDataSizeValidator = new HexValidator(0L, maxContractDataBytes * 2L, false);
         if (!contractDataSizeValidator.isValid(request.getData(), null)) {
             throw new ContractDataSizeExceededException("Contract %s data size of %d bytes exceeded"
-                    .formatted(request.hasTo() ? "update" : "create", maxContractDataSizeBytes));
+                    .formatted(isCreate ? "create" : "update", maxContractDataBytes));
         }
     }
 
