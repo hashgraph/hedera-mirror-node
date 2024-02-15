@@ -71,6 +71,9 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
+    @Min(2L)
+    private long maxSize = 50L * 1024L * 1024L; // 50 MiB
+
     @DurationMin(seconds = 1)
     @NotNull
     private Duration pathRefreshInterval = Duration.ofSeconds(10L);

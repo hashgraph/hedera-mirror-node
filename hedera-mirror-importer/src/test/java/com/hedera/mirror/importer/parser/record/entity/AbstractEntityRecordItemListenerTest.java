@@ -215,7 +215,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
             long consensusStart = recordItem.getConsensusTimestamp();
             RecordFile recordFile = recordFile(consensusStart, consensusStart + 1, filename);
 
-            recordStreamFileListener.onStart();
             entityRecordItemListener.onItem(recordItem);
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);
@@ -230,8 +229,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends ImporterInteg
             long consensusStart = recordItems.get(0).getConsensusTimestamp();
             long consensusEnd = recordItems.get(recordItems.size() - 1).getConsensusTimestamp();
             RecordFile recordFile = recordFile(consensusStart, consensusEnd, filename);
-
-            recordStreamFileListener.onStart();
 
             // process each record item
             for (RecordItem recordItem : recordItems) {

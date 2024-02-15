@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 import lombok.CustomLog;
 import org.apache.commons.io.output.NullOutputStream;
 import org.springframework.data.util.Version;
-import reactor.core.publisher.Flux;
 
 @CustomLog
 @Named
@@ -93,7 +92,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .hapiVersionPatch(hapiProtoVersion.getPatch())
                     .hash(DomainUtils.bytesToHex(DomainUtils.getHashBytes(endObjectRunningHash)))
                     .index(recordStreamFile.getBlockNumber())
-                    .items(Flux.fromIterable(items))
+                    .items(items)
                     .loadStart(loadStart)
                     .metadataHash(getMetadataHash(digestAlgorithm, recordStreamFile))
                     .name(filename)

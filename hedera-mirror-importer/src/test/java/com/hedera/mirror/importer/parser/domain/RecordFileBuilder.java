@@ -37,7 +37,6 @@ import java.util.function.Supplier;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
-import reactor.core.publisher.Flux;
 
 /**
  * Generates record files using pre-defined templates for bulk creation of record items.
@@ -68,7 +67,7 @@ public class RecordFileBuilder {
             Assert.notEmpty(itemBuilders, "Must contain at least one record item");
             var recordFile = domainBuilder.recordFile();
             var recordItems = new ArrayList<RecordItem>();
-            recordFile.customize(r -> r.items(Flux.fromIterable(recordItems)));
+            recordFile.customize(r -> r.items(recordItems));
 
             if (previous != null) {
                 recordItemBuilder.reset(Instant.ofEpochSecond(0, previous.getConsensusStart() + CLOSE_INTERVAL));

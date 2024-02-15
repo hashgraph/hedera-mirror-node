@@ -31,6 +31,7 @@ class TokenRelationshipViewModel {
     this.automatic_association = tokenRelationship.automaticAssociation;
     this.balance = tokenRelationship.balance;
     this.created_timestamp = nsToSecNs(tokenRelationship.createdTimestamp);
+    this.decimals = tokenRelationship.decimals;
     this.freeze_status = new TokenFreezeStatus(tokenRelationship.freezeStatus);
     this.kyc_status = new TokenKycStatus(tokenRelationship.kycStatus);
     this.token_id = EntityId.parse(tokenRelationship.tokenId).toString();

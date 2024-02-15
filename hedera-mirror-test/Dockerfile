@@ -8,4 +8,5 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 USER 1000:1000
 
+ENV ENTRYPOINT_COMMAND="java -jar /app/test.jar"
 ENTRYPOINT ["java", "-jar", "/app/test.jar"]

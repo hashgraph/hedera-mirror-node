@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.importer.exception.HashMismatchException;
@@ -24,8 +25,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implements StreamFileParser<T> {
 
@@ -34,8 +39,10 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     protected final Logger log = LoggerFactory.getLogger(getClass());
     protected final MeterRegistry meterRegistry;
     protected final ParserProperties parserProperties;
+    protected final StreamFileListener<T> streamFileListener;
     protected final StreamFileRepository<T, Long> streamFileRepository;
 
+    private final AtomicReference<T> last;
     private final Timer parseDurationMetricFailure;
     private final Timer parseDurationMetricSuccess;
     private final Timer parseLatencyMetric;
@@ -43,9 +50,12 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     protected AbstractStreamFileParser(
             MeterRegistry meterRegistry,
             ParserProperties parserProperties,
+            StreamFileListener<T> streamFileListener,
             StreamFileRepository<T, Long> streamFileRepository) {
+        this.last = new AtomicReference<>();
         this.meterRegistry = meterRegistry;
         this.parserProperties = parserProperties;
+        this.streamFileListener = streamFileListener;
         this.streamFileRepository = streamFileRepository;
 
         // Metrics
@@ -64,33 +74,39 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                 .register(meterRegistry);
     }
 
+    @VisibleForTesting
+    public void clear() {
+        last.set(null);
+    }
+
     @Override
     public ParserProperties getProperties() {
         return parserProperties;
     }
 
     @Override
+    @SuppressWarnings("java:S2139")
     public void parse(T streamFile) {
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean success = true;
 
         try {
-            if (!shouldParse(streamFile)) {
+            if (!shouldParse(getLast(), streamFile)) {
                 streamFile.clear();
                 return;
             }
 
             doParse(streamFile);
+            doFlush(streamFile);
+
             log.info(
                     "Successfully processed {} items from {} in {}",
                     streamFile.getCount(),
                     streamFile.getName(),
                     stopwatch);
-
             Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-            streamFile.clear();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             success = false;
             log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
             throw e;
@@ -100,32 +116,97 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
         }
     }
 
+    @Override
+    @SuppressWarnings("java:S2139")
+    public void parse(List<T> streamFiles) {
+        if (CollectionUtils.isEmpty(streamFiles)) {
+            return;
+        }
+
+        long count = 0L;
+        var initial = getLast();
+        var previous = initial;
+        int size = streamFiles.size();
+        var filenames = new ArrayList<String>(size);
+        var stopwatch = Stopwatch.createStarted();
+        boolean success = true;
+        T streamFile = null;
+
+        try {
+            for (int i = 0; i < size; ++i) {
+                streamFile = streamFiles.get(i);
+
+                if (!shouldParse(previous, streamFile)) {
+                    streamFile.clear();
+                    continue;
+                }
+
+                doParse(streamFile);
+
+                count += streamFile.getCount();
+                previous = streamFile;
+                filenames.add(streamFile.getName());
+            }
+
+            if (initial == previous) {
+                return;
+            }
+
+            doFlush(previous);
+            log.info(
+                    "Successfully batch processed {} items from {} files in {}: {}", count, size, stopwatch, filenames);
+
+            Instant consensusInstant = Instant.ofEpochSecond(0L, previous.getConsensusEnd());
+            parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
+        } catch (Exception e) {
+            success = false;
+            log.error("Error parsing file {} in {}: {}", streamFile != null ? streamFile.getName() : "", stopwatch, e);
+            throw e;
+        } finally {
+            Timer timer = success ? parseDurationMetricSuccess : parseDurationMetricFailure;
+            timer.record(stopwatch.elapsed());
+        }
+    }
+
+    protected void doFlush(T streamFile) {
+        streamFileListener.onEnd(streamFile);
+        last.set(streamFile);
+        streamFile.clear();
+    }
+
     protected abstract void doParse(T streamFile);
 
-    private boolean shouldParse(T streamFile) {
+    protected final T getLast() {
+        var latest = last.get();
+
+        if (latest != null) {
+            return latest;
+        }
+
+        return streamFileRepository.findLatest().orElse(null);
+    }
+
+    private boolean shouldParse(T previous, T current) {
         if (!parserProperties.isEnabled()) {
             return false;
         }
 
-        var last = streamFileRepository.findLatest();
-
-        if (last.isEmpty()) {
+        if (previous == null) {
             return true;
         }
 
-        var lastStreamFile = last.get();
-        var name = streamFile.getName();
+        var name = current.getName();
 
-        if (lastStreamFile.getConsensusEnd() >= streamFile.getConsensusStart()) {
+        if (previous.getConsensusEnd() >= current.getConsensusStart()) {
             log.warn("Skipping existing stream file {}", name);
             return false;
         }
 
-        var actualHash = streamFile.getPreviousHash();
-        var expectedHash = lastStreamFile.getHash();
+        var actualHash = current.getPreviousHash();
+        var expectedHash = previous.getHash();
 
         // Verify hash chain
-        if (streamFile.getType().isChained() && !expectedHash.contentEquals(actualHash)) {
+        if (previous.getType().isChained() && !expectedHash.contentEquals(actualHash)) {
             throw new HashMismatchException(
                     name, expectedHash, actualHash, getClass().getSimpleName());
         }

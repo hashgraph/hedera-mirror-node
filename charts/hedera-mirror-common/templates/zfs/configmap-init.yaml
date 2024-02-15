@@ -192,7 +192,43 @@ data:
           echo "Unable to create pool. Manual intervention necessary"
           exit 1
       fi
+    
+      ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" |grep -A1 -E '^\s*cache\s*$' | grep -v cache | awk '{print $1;}')"
+      if [[ -n "${L2_ARC_NVME_DEVICE_ID}" ]]; then
+        NVME_DEVICE_PATH="$(readlink -f /dev/disk/by-id/google-local-ssd-block${L2_ARC_NVME_DEVICE_ID})"
+        if [[ -z "${ATTACHED_CACHE_DEVICE}" ]]; then
+          echo "Setting up NVME device $NVME_DEVICE_PATH as L2 ARC"
+          zpool add "${POOL}" cache "$NVME_DEVICE_PATH"
+          ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" |grep -A1 -E '^\s*cache\s*$' | grep -v cache | awk '{print $1;}')"
+          if [[ -z "${ATTACHED_CACHE_DEVICE}" ]]; then
+            echo "Unable to attach NVME device ${NVME_DEVICE_PATH} as L2 ARC"
+            exit 1
+          else
+            echo "Successfully attached L2 ARC device ${NVME_DEVICE_PATH} as L2 ARC"
+          fi
+        else
+            echo "NVME device ${NVME_DEVICE_PATH} already attached as L2 ARC"
+        fi
+      elif [[ -n "${ATTACHED_CACHE_DEVICE}" ]]; then
+        echo "Previously configured L2 ARC device ${ATTACHED_CACHE_DEVICE}. Is being removed as cache"
+        zpool remove "${POOL}" "${ATTACHED_CACHE_DEVICE}"
+        ATTACHED_CACHE_DEVICE="$(zpool status "${POOL}" |grep -A1 -E '^\s*cache\s*$' | grep -v cache | awk '{print $1;}')"
+        if [[ -n "${ATTACHED_CACHE_DEVICE}" ]]; then
+          echo "Unable to remove L2 ARC device ${ATTACHED_CACHE_DEVICE}"
+          exit 1
+        else
+          echo "Successfully removed L2 ARC device ${ATTACHED_CACHE_DEVICE}"
+        fi
+      else
+        echo "No L2 cache device specified. Skipping ..."
+      fi
+    
+      ARC_SIZE_GB="${ARC_SIZE_GB:-2}"
+      echo "Configuring arc to ${ARC_SIZE_GB}GB"
+      ARC_SIZE="$((ARC_SIZE_GB*1073741824))"
+      echo $ARC_SIZE >> /sys/module/zfs/parameters/zfs_arc_max
 
+      zfs set primarycache=metadata xattr=sa "${POOL}"
       zpool set autoexpand=on "${POOL}"
       zpool online -e "${POOL}" /dev/sdb
       zfs list

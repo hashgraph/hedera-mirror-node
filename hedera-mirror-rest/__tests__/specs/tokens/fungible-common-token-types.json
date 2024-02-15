@@ -39,6 +39,8 @@
         "token_id": "0.0.1",
         "symbol": "FIRSTMOVERLPDJH",
         "created_timestamp": "1234567890000000001",
+        "decimals": 1,
+        "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -51,6 +53,8 @@
         "token_id": "0.7.25301",
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
+        "decimals": 3,
+        "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -75,6 +79,8 @@
           "_type": "ProtobufEncoded",
           "key": "010101"
         },
+        "decimals": 1,
+        "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -84,6 +90,8 @@
           "_type": "ProtobufEncoded",
           "key": "030303"
         },
+        "decimals": 3,
+        "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       }
     ],
