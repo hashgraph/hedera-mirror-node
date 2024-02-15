@@ -55,7 +55,7 @@ class MetricsConfigurationTest extends ImporterIntegrationTest {
         var metric = TableMetric.TABLE_BYTES;
         var search = meterRegistry.find(metric.getMetricName());
         var tag = search.tag("table", "transaction");
-        var currentValue = Double.valueOf(tag.gauge().value());
+        var currentValue = tag.gauge().value();
 
         domainBuilder.transaction().persist();
         metricsConfiguration.updateTableMetrics();
@@ -63,12 +63,13 @@ class MetricsConfigurationTest extends ImporterIntegrationTest {
         assertThat(tag.gauge().value()).isGreaterThan(currentValue);
     }
 
-    @EnumSource(TableMetric.class)
     @EnabledIfV2
+    @EnumSource(TableMetric.class)
     @ParameterizedTest
     void distributedPartitionedTable(TableMetric metric) {
         var search = meterRegistry.find(metric.getMetricName());
         assertThat(search.tag("table", "transaction").gauges()).hasSize(1);
+        assertThat(search.tag("table", "transaction_p2020_01").gauges()).isEmpty();
     }
 
     @EnabledIfV2
@@ -77,5 +78,13 @@ class MetricsConfigurationTest extends ImporterIntegrationTest {
     void distributedTable(TableMetric metric) {
         var search = meterRegistry.find(metric.getMetricName());
         assertThat(search.tag("table", "transaction_hash").gauges()).hasSize(1);
+    }
+
+    @EnabledIfV2
+    @ParameterizedTest
+    @EnumSource(TableMetric.class)
+    void referenceTable(TableMetric metric) {
+        var search = meterRegistry.find(metric.getMetricName());
+        assertThat(search.tag("table", "account_balance_file").gauges()).hasSize(1);
     }
 }
