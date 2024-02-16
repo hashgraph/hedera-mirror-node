@@ -28,7 +28,7 @@ The following table lists the available properties along with their default valu
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
 | Name                                                                             | Default                                              | Description                                                                                                                                                                                                                                                        |
-| -------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|----------------------------------------------------------------------------------|------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `hedera.mirror.importer.cache.addressBook`                                       | maximumSize=100,expireAfterWrite=5m,recordStats      | The Caffeine cache specification for the address book.                                                                                                                                                                                                             |
 | `hedera.mirror.importer.cache.alias`                                             | maximumSize=100000,expireAfterAccess=30m,recordStats | The Caffeine cache specification for alias or EVM address to entity ID mapping.                                                                                                                                                                                    |
 | `hedera.mirror.importer.cache.enabled`                                           | true                                                 | Whether caching should be enabled at all.                                                                                                                                                                                                                          |
@@ -49,7 +49,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.schema`                                               | public                                               | The name of the custom schema database objects will be created in. This is applicable from v2 of the data schema                                                                                                                                                   |
 | `hedera.mirror.importer.db.username`                                             | mirror_importer                                      | The Importer username the processor uses to connect to the database                                                                                                                                                                                                |
 | `hedera.mirror.importer.db.maintenance.cron`                                     | 0 0 0 \* \* ?                                        | The cron schedule for creating new partitions This is applicable from v2 of the data schema                                                                                                                                                                        |
-| `hedera.mirror.importer.db.metrics.refreshInterval`                              | 300_000L                                             | The interval which we wait to refresh database statistics                                                                                                                                                                                                          |
+| `hedera.mirror.importer.db.metrics.refreshInterval`                              | PT5M (5 minutes)                                     | The interval which we wait to refresh database statistics. Specified as a java duration string                                                                                                                                                                     |
 | `hedera.mirror.importer.downloader.accessKey`                                    | ""                                                   | The cloud storage access key                                                                                                                                                                                                                                       |
 | `hedera.mirror.importer.downloader.allowAnonymousAccess`                         |                                                      | Whether the cloud storage bucket allows for anonymous access.                                                                                                                                                                                                      |
 | `hedera.mirror.importer.downloader.balance.enabled`                              | false                                                | Whether to enable balance file downloads                                                                                                                                                                                                                           |
@@ -256,13 +256,13 @@ hedera:
     importer:
       parser:
         exclude:
-          - entity: [0.0.98]
+          - entity: [ 0.0.98 ]
         include:
-          - transaction: [CRYPTOTRANSFER]
-          - entity: [0.0.1000, 0.0.1001]
-          - entity: [0.0.101, 0.0.102]
-            transaction: [FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE]
-          - transaction: [CONTRACTCREATEINSTANCE]
+          - transaction: [ CRYPTOTRANSFER ]
+          - entity: [ 0.0.1000, 0.0.1001 ]
+          - entity: [ 0.0.101, 0.0.102 ]
+            transaction: [ FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE ]
+          - transaction: [ CONTRACTCREATEINSTANCE ]
             expression: "transactionBody.contractCreateInstance.autoRenewAccountId.accountNum == 2000"
         record:
           entity:
@@ -354,7 +354,7 @@ The following table lists the available properties along with their default valu
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
 | Name                                                        | Default          | Description                                                                                                                      |
-| ----------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+|-------------------------------------------------------------|------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | `hedera.mirror.grpc.addressbook.cacheExpiry`                | 5s               | The amount of time to cache address book entries                                                                                 |
 | `hedera.mirror.grpc.addressbook.cacheSize`                  | 50               | The maximum number of address book pages to cache                                                                                |
 | `hedera.mirror.grpc.addressbook.maxPageDelay`               | 250ms            | The maximum amount of time to sleep between paging for address book entries                                                      |
@@ -406,7 +406,7 @@ See the monitor [documentation](/docs/monitor/README.md) for more general inform
 monitor.
 
 | Name                                                               | Default  | Description                                                                                                                                                                                                 |
-| ------------------------------------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|--------------------------------------------------------------------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `hedera.mirror.monitor.health.release.cacheExpiry`                 | 30s      | The amount of time to cache cluster release health status                                                                                                                                                   |
 | `hedera.mirror.monitor.health.release.enabled`                     | false    | Whether to enable cluster release health check                                                                                                                                                              |
 | `hedera.mirror.monitor.mirrorNode.grpc.host`                       | ""       | The hostname of the mirror node's gRPC API                                                                                                                                                                  |
@@ -489,7 +489,7 @@ The following table lists the available properties along with their default valu
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
 | Name                                                               | Default                 | Description                                                                                                                                                                                   |
-| ------------------------------------------------------------------ | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|--------------------------------------------------------------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `hedera.mirror.rest.cache.entityId.maxAge`                         | 1800                    | The number of seconds until the entityId cache entry expires                                                                                                                                  |
 | `hedera.mirror.rest.cache.entityId.maxSize`                        | 100000                  | The maximum number of entries in the entityId cache                                                                                                                                           |
 | `hedera.mirror.rest.cache.token.maxSize`                           | 100000                  | The maximum number of entries in the token cache                                                                                                                                              |
@@ -580,7 +580,7 @@ The following table lists the available properties along with their default valu
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
 | Name                                         | Default               | Description                                                                              |
-| -------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------- |
+|----------------------------------------------|-----------------------|------------------------------------------------------------------------------------------|
 | `hedera.mirror.restJava.db.host`             | 127.0.0.1             | The IP or hostname used to connect to the database                                       |
 | `hedera.mirror.restJava.db.name`             | mirror_node           | The name of the database                                                                 |
 | `hedera.mirror.restJava.db.password`         | mirror_rest_java_pass | The database password used to connect to the database                                    |
@@ -604,7 +604,7 @@ latter configuration overwriting (technically recursively merged into) the curre
 The following table lists the available properties along with their default values.
 
 | Name                                               | Default             | Description                                                                                         |
-| -------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------- |
+|----------------------------------------------------|---------------------|-----------------------------------------------------------------------------------------------------|
 | `hedera.mirror.rosetta.cache.entity.maxSize`       | 524288              | The max number of entities to cache                                                                 |
 | `hedera.mirror.rosetta.db.host`                    | 127.0.0.1           | The IP or hostname used to connect to the database                                                  |
 | `hedera.mirror.rosetta.db.name`                    | mirror_node         | The name of the database                                                                            |
@@ -639,7 +639,7 @@ The following table lists the available properties along with their default valu
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
 | Name                                                   | Default                                           | Description                                                                                                                                                                                   |
-| ------------------------------------------------------ | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|--------------------------------------------------------|---------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `hedera.mirror.web3.cache.contractState`               | expireAfterWrite=1s,maximumSize=10000,recordStats | Cache configuration for contract state                                                                                                                                                        |
 | `hedera.mirror.web3.cache.entity `                     | expireAfterWrite=1s,maximumSize=10000,recordStats | Cache configuration for entity                                                                                                                                                                |
 | `hedera.mirror.web3.cache.fee`                         | expireAfterWrite=10m,maximumSize=20,recordStats   | Cache configuration for fee related info                                                                                                                                                      |

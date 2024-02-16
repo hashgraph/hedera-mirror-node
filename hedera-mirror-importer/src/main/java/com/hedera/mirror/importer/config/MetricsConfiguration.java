@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.config;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.hedera.mirror.importer.db.DBProperties;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
@@ -24,13 +26,12 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.BaseUnits;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.time.Duration;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.regex.Pattern;
@@ -40,19 +41,19 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.scheduling.annotation.Scheduled;
 
 @CustomLog
 @Configuration
-@RequiredArgsConstructor
 class MetricsConfiguration {
     private static final String METRIC_SQL =
             """
@@ -92,8 +93,18 @@ class MetricsConfiguration {
     private final DataSource dataSource;
     private final DBProperties dbProperties;
     private final @Lazy JdbcOperations jdbcOperations;
-    private final Map<String, TableMetrics> activeMetrics = new ConcurrentHashMap<>();
-    private final List<TableAttributes> tables = new ArrayList<>();
+    private final LoadingCache<String, TableMetrics> activeMetrics;
+    private final Map<String, TableAttributes> tables = new ConcurrentHashMap<>();
+
+    public MetricsConfiguration(DataSource dataSource, DBProperties dbProperties, JdbcOperations jdbcOperations) {
+        this.dataSource = dataSource;
+        this.dbProperties = dbProperties;
+        this.jdbcOperations = jdbcOperations;
+        this.activeMetrics = Caffeine.newBuilder()
+                .refreshAfterWrite(Duration.ofMinutes(2))
+                .executor(Executors.newSingleThreadExecutor())
+                .build(this::getUpdatedMetrics);
+    }
 
     @Bean
     MeterBinder processMemoryMetrics() {
@@ -118,27 +129,30 @@ class MetricsConfiguration {
             matchIfMissing = true)
     MeterBinder tableMetrics(Environment environment) {
         return registry -> {
-            tables.addAll(getTables(environment.acceptsProfiles(Profiles.of("v2"))));
-            tables.forEach(v -> registerTableMetrics(registry, v));
+            tables.putAll(getTables(environment.acceptsProfiles(Profiles.of("v2"))));
+            tables.values().forEach(v -> registerTableMetrics(registry, v));
         };
     }
 
-    @Scheduled(fixedDelayString = "${hedera.mirror.importer.db.metrics.refreshInterval:300000}")
-    public void updateTableMetrics() {
-        for (var table : tables) {
-            var sql = getMetricSql(table);
-            try {
-                var result = jdbcOperations.queryForObject(
-                        sql, DataClassRowMapper.newInstance(TableMetrics.class), table.tableName());
-                activeMetrics.put(table.tableName(), result);
-            } catch (BadSqlGrammarException e) {
-                // ignore as table may have been removed by a migration
-            } catch (Exception e) {
-                log.warn("Unable to get metrics for table {}", table.tableName(), e);
-            }
+    @EventListener(ApplicationReadyEvent.class)
+    public void hydrateMetricsCache() {
+        tables.values().forEach(v -> activeMetrics.put(v.tableName(), getUpdatedMetrics(v.tableName())));
+    }
+
+    public TableMetrics getUpdatedMetrics(String tableName) {
+        log.info("Updating metrics for table {}", tableName);
+        var table = tables.get(tableName);
+        var sql = getMetricSql(table);
+        try {
+            return jdbcOperations.queryForObject(
+                    sql, DataClassRowMapper.newInstance(TableMetrics.class), table.tableName());
+        } catch (BadSqlGrammarException e) {
+            // ignore as table may have been removed by a migration
+        } catch (Exception e) {
+            log.warn("Unable to get metrics for table {}", table.tableName(), e);
         }
 
-        log.info("Updated table metrics");
+        return null;
     }
 
     private Map<String, Boolean> getDistributedTables() {
@@ -150,7 +164,7 @@ class MetricsConfiguration {
     private void registerTableMetrics(MeterRegistry registry, TableAttributes tableAttributes) {
         for (TableMetric tableMetric : TableMetric.values()) {
             ToDoubleFunction<DataSource> func =
-                    ds -> Optional.ofNullable(activeMetrics.get(tableAttributes.tableName()))
+                    ds -> Optional.ofNullable(activeMetrics.getIfPresent(tableAttributes.tableName()))
                             .map(tableMetric.valueFunction)
                             .orElse(0L);
 
@@ -177,7 +191,7 @@ class MetricsConfiguration {
     }
 
     // Get a list of tables and their attributes
-    private Collection<TableAttributes> getTables(boolean isV2) {
+    private Map<String, TableAttributes> getTables(boolean isV2) {
         Map<String, Boolean> distributedTables = isV2 ? getDistributedTables() : new HashMap<>();
         Map<String, TableAttributes> tableMap = new HashMap<>();
         var types = new String[] {"TABLE"};
@@ -208,7 +222,7 @@ class MetricsConfiguration {
 
         log.info("Collecting {} table metrics: {}", tableMap.size(), tableMap.keySet());
 
-        return tableMap.values();
+        return tableMap;
     }
 
     @Getter
