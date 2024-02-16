@@ -29,14 +29,17 @@ import org.springframework.data.domain.Sort;
 @RequiredArgsConstructor
 public class NftAllowanceServiceImpl implements NftAllowanceService {
 
+    public static final String TOKEN_ID = "token_id";
+    public static final String OWNER = "owner";
+    public static final String SPENDER = "spender";
     private static final Sort OWNER_TOKEN_ASC_ORDER =
-            Sort.by(Sort.Direction.ASC, "owner").and(Sort.by(Sort.Direction.ASC, "token_id"));
+            Sort.by(Sort.Direction.ASC, OWNER).and(Sort.by(Sort.Direction.ASC, TOKEN_ID));
     private static final Sort OWNER_TOKEN_DESC_ORDER =
-            Sort.by(Sort.Direction.DESC, "owner").and(Sort.by(Sort.Direction.DESC, "token_id"));
+            Sort.by(Sort.Direction.DESC, OWNER).and(Sort.by(Sort.Direction.DESC, TOKEN_ID));
     private static final Sort SPENDER_TOKEN_ASC_ORDER =
-            Sort.by(Sort.Direction.ASC, "spender").and(Sort.by(Sort.Direction.ASC, "token_id"));
+            Sort.by(Sort.Direction.ASC, SPENDER).and(Sort.by(Sort.Direction.ASC, TOKEN_ID));
     private static final Sort SPENDER_TOKEN_DESC_ORDER =
-            Sort.by(Sort.Direction.DESC, "spender").and(Sort.by(Sort.Direction.DESC, "token_id"));
+            Sort.by(Sort.Direction.DESC, SPENDER).and(Sort.by(Sort.Direction.DESC, TOKEN_ID));
 
     private final NftAllowanceRepository repository;
 
@@ -51,28 +54,29 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         var tokenIdOperator = request.getAccountIdOperator();
 
         //  LT,LTE,EQ,NE are not supported right now. Default is GT.
-        if (tokenIdOperator.equals(RangeOperator.GTE)) {
-            tokenId = tokenId > 0 ? tokenId - 1 : tokenId;
-        }
+        tokenId = getUpdatedEntityId(tokenIdOperator, tokenId);
 
         // Set the value depending on the owner flag   99
         if (request.isOwner()) {
 
-            if (accountIdOperator.equals(RangeOperator.GTE)) {
-                spenderId = spenderId > 0 ? spenderId - 1 : spenderId;
-            }
+            spenderId = getUpdatedEntityId(accountIdOperator, spenderId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
             return repository.findByOwnerAndFilterBySpenderAndToken(ownerId, spenderId, tokenId, pageable);
 
         } else {
 
-            if (accountIdOperator.equals(RangeOperator.GTE)) {
-                ownerId = ownerId > 0 ? ownerId - 1 : ownerId;
-            }
+            ownerId = getUpdatedEntityId(accountIdOperator, ownerId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
             return repository.findBySpenderAndFilterByOwnerAndToken(spenderId, ownerId, tokenId, pageable);
         }
+    }
+
+    private static long getUpdatedEntityId(RangeOperator accountIdOperator, long entityId) {
+        if (accountIdOperator.equals(RangeOperator.GTE)) {
+            entityId = entityId > 0 ? entityId - 1 : entityId;
+        }
+        return entityId;
     }
 }
