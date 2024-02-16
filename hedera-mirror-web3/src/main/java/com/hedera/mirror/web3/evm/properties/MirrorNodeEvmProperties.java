@@ -114,6 +114,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxBatchSizeWipe = 10;
 
     @Getter
+    @NotNull
     @DataSizeUnit(DataUnit.KILOBYTES)
     private DataSize maxDataSize = DataSize.ofKilobytes(24); // HAPI caps contract creates at 24KiB
 
