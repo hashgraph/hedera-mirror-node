@@ -329,14 +329,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
-    void nonExistingInternalFunctionCall() {
-
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString("1ab4f82c"), INTERNAL_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
-    }
-
-    @Test
     void invalidFunctionSig() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ERROR);
 
@@ -641,9 +633,19 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 "0x"),
         CALL_TO_INTERNAL_NON_EXISTING_FUNCTION(
                 "callToInternalNonExistingContract", "callNonExisting", new Object[] {ERC_CONTRACT_ADDRESS}, "0x"),
+        CALL_TO_INTERNAL_WITH_VALUE_TO_NON_EXISTING_FUNCTION(
+                "callToInternalWithValueToNonExistingContract",
+                "callWithValueTo",
+                new Object[] {ERC_CONTRACT_ADDRESS},
+                "0x"),
         SEND_TO_INTERNAL_NON_EXISTING_ACCOUNT(
                 "sendToInternalNonExistingContract",
                 "sendTo",
+                new Object[] {toAddress(EntityId.of(0, 0, 123456789))},
+                "0x"),
+        TRANSFER_TO_INTERNAL_NON_EXISTING_ACCOUNT(
+                "transferToInternalNonExistingContract",
+                "transferTo",
                 new Object[] {toAddress(EntityId.of(0, 0, 123456789))},
                 "0x");
 
