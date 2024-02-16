@@ -17,35 +17,61 @@
 package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
-import java.util.List;
+import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 @Named
 @RequiredArgsConstructor
 public class NftAllowanceServiceImpl implements NftAllowanceService {
 
+    private static final Sort OWNER_TOKEN_ASC_ORDER =
+            Sort.by(Sort.Direction.ASC, "owner").and(Sort.by(Sort.Direction.ASC, "token_id"));
+    private static final Sort OWNER_TOKEN_DESC_ORDER =
+            Sort.by(Sort.Direction.DESC, "owner").and(Sort.by(Sort.Direction.DESC, "token_id"));
+    private static final Sort SPENDER_TOKEN_ASC_ORDER =
+            Sort.by(Sort.Direction.ASC, "spender").and(Sort.by(Sort.Direction.ASC, "token_id"));
+    private static final Sort SPENDER_TOKEN_DESC_ORDER =
+            Sort.by(Sort.Direction.DESC, "spender").and(Sort.by(Sort.Direction.DESC, "token_id"));
+
     private final NftAllowanceRepository repository;
 
-    public List<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
+    public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
+        var accountIdOperator = request.getAccountIdOperator();
         var ownerId = request.getOwnerId();
         var limit = request.getLimit();
         var order = request.getOrder();
         var spenderId = request.getSpenderId();
         var tokenId = request.getTokenId();
+        var tokenIdOperator = request.getAccountIdOperator();
 
-        Pageable pageable;
-        // Set the value depending on the owner flag
+        //  LT,LTE,EQ,NE are not supported right now. Default is GT.
+        if (tokenIdOperator.equals(RangeOperator.GTE)) {
+            tokenId = tokenId > 0 ? tokenId - 1 : tokenId;
+        }
+
+        // Set the value depending on the owner flag   99
         if (request.isOwner()) {
-            pageable = PageRequest.of(0, limit, Sort.by(order, "spender").and(Sort.by(order, "token_id")));
+
+            if (accountIdOperator.equals(RangeOperator.GTE)) {
+                spenderId = spenderId > 0 ? spenderId - 1 : spenderId;
+            }
+            var pageable =
+                    PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
             return repository.findByOwnerAndFilterBySpenderAndToken(ownerId, spenderId, tokenId, pageable);
+
         } else {
-            pageable = PageRequest.of(0, limit, Sort.by(order, "owner").and(Sort.by(order, "token_id")));
+
+            if (accountIdOperator.equals(RangeOperator.GTE)) {
+                ownerId = ownerId > 0 ? ownerId - 1 : ownerId;
+            }
+            var pageable =
+                    PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
             return repository.findBySpenderAndFilterByOwnerAndToken(spenderId, ownerId, tokenId, pageable);
         }
     }

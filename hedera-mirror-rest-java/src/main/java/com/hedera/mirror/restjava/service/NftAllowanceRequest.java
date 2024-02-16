@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.service;
 
+import com.hedera.mirror.restjava.common.RangeOperator;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Sort;
@@ -23,6 +24,9 @@ import org.springframework.data.domain.Sort;
 @Data
 @Builder
 public class NftAllowanceRequest {
+
+    @Builder.Default
+    private RangeOperator accountIdOperator = RangeOperator.GT;
 
     private long ownerId;
 
@@ -35,7 +39,10 @@ public class NftAllowanceRequest {
     @Builder.Default
     private boolean isOwner = true;
 
+    private long spenderId;
+
     private long tokenId;
 
-    private long spenderId;
+    @Builder.Default
+    private RangeOperator tokenIdOperator = RangeOperator.GT;
 }

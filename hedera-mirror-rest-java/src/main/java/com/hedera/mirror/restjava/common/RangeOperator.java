@@ -14,12 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.service;
+package com.hedera.mirror.restjava.common;
 
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import java.util.Collection;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-public interface NftAllowanceService {
+@Getter
+@RequiredArgsConstructor
+public enum RangeOperator {
+    LT("<"),
+    LTE("<="),
+    GT(">"),
+    GTE(">="),
+    EQ("="),
+    NE("!=");
 
-    Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request);
+    private final String operator;
 }
