@@ -16,19 +16,21 @@
 
 package com.hedera.mirror.web3.validation;
 
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.util.regex.Pattern;
 
 public class HexValidator implements ConstraintValidator<Hex, String> {
 
-    public static final String MESSAGE = "invalid hexadecimal string or violates length restrictions";
+    public static final String MESSAGE = "invalid hexadecimal string";
     private static final Pattern HEX_PATTERN = Pattern.compile("^(0x)?[0-9a-fA-F]+$");
     private static final String HEX_PREFIX = "0x";
 
     private long maxLength;
     private long minLength;
     private boolean allowEmpty;
+    private boolean throwOnInvalid = false;
 
     public HexValidator() {}
 
@@ -36,6 +38,7 @@ public class HexValidator implements ConstraintValidator<Hex, String> {
         this.minLength = minLength;
         this.maxLength = maxLength;
         this.allowEmpty = allowEmpty;
+        this.throwOnInvalid = true;
     }
 
     @Override
@@ -52,11 +55,20 @@ public class HexValidator implements ConstraintValidator<Hex, String> {
         }
 
         if (!HEX_PATTERN.matcher(value).matches()) {
+            if (throwOnInvalid) {
+                throw new InvalidParametersException("data field " + MESSAGE);
+            }
             return false;
         }
 
         int prefixLength = value.startsWith(HEX_PREFIX) ? HEX_PREFIX.length() : 0;
         int length = value.length() - prefixLength;
-        return length >= minLength && length <= maxLength;
+        boolean isValidLength = length >= minLength && length <= maxLength;
+
+        if (throwOnInvalid && !isValidLength) {
+            throw new InvalidParametersException("data field length of %d characters violates limits of min %d or max %d"
+                    .formatted(length, minLength, maxLength));
+        }
+        return isValidLength;
     }
 }

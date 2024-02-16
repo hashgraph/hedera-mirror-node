@@ -237,7 +237,8 @@ class ContractControllerTest {
     @Test
     void exceedingDataCallSizeOnEstimate() {
         final var request = request();
-        request.setData("0x" + ONE_BYTE_HEX.repeat((int)MAX_DATA_SIZE.toBytes() + 1));
+        final var dataAsHex = ONE_BYTE_HEX.repeat((int)MAX_DATA_SIZE.toBytes() + 1);
+        request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
         webClient
@@ -249,15 +250,16 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string or violates length restrictions"));
+                .isEqualTo(new GenericErrorResponse("data field length of %d characters violates limits of min 0 or max %d"
+                        .formatted(dataAsHex.length(), MAX_DATA_SIZE.toBytes() * 2L)));
     }
 
     @Test
     void exceedingDataCreateSizeOnEstimate() {
         final var request = request();
-
+        final var dataAsHex = ONE_BYTE_HEX.repeat((int)MAX_DATA_SIZE.toBytes() + 1);
         request.setTo(null);
-        request.setData("0x" + ONE_BYTE_HEX.repeat((int)MAX_DATA_SIZE.toBytes() + 1));
+        request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
         webClient
@@ -269,7 +271,8 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string or violates length restrictions"));
+                .isEqualTo(new GenericErrorResponse("data field length of %d characters violates limits of min 0 or max %d"
+                        .formatted(dataAsHex.length(), MAX_DATA_SIZE.toBytes() *2L)));
     }
 
     @Test

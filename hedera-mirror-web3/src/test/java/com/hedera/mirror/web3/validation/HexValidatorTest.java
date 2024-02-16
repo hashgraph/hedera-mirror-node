@@ -17,7 +17,9 @@
 package com.hedera.mirror.web3.validation;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import jakarta.validation.Payload;
 import java.lang.annotation.Annotation;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -69,7 +71,8 @@ class HexValidatorTest {
     void invalid(int minLength, int maxLength, String value) {
         hexValidator.initialize(hex(minLength, maxLength));
         assertThat(hexValidator.isValid(value, null)).isFalse();
-        assertThat(new HexValidator(minLength, maxLength, false).isValid(value, null)).isFalse();
+        assertThrows(InvalidParametersException.class,
+                () -> new HexValidator(minLength, maxLength, false).isValid(value, null));
     }
 
     private Hex hex(int minLength, int maxLength) {

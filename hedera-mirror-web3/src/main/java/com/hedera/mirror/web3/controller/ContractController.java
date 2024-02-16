@@ -126,9 +126,7 @@ class ContractController {
      */
     private void validateContractDataSize(final ContractCallRequest request) {
         var contractDataSizeValidator = new HexValidator(0L, evmProperties.getMaxDataSize().toBytes() * 2L, false);
-        if (!contractDataSizeValidator.isValid(request.getData(), null)) {
-            throw new InvalidParametersException("data field " + HexValidator.MESSAGE);
-        }
+        contractDataSizeValidator.isValid(request.getData(), null);
     }
 
     /** Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence of a precompile for gas estimation.**/
