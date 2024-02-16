@@ -52,7 +52,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
         var basePath = properties.getImporterProperties().getStreamPath().toFile();
         return Mono.fromSupplier(() -> new File(basePath, streamFilename.getFilePath()))
                 .doOnNext(this::checkSize)
-                .map(StreamFileData::from)
+                .map(file -> StreamFileData.from(file, streamFilename))
                 .timeout(properties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
     }

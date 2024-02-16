@@ -75,6 +75,10 @@ public class StreamFileData {
         return readStreamFileData(file, StreamFilename.from(file.getPath(), File.separator));
     }
 
+    public static StreamFileData from(@NonNull File file, StreamFilename streamFilename) {
+        return readStreamFileData(file, streamFilename);
+    }
+
     public static StreamFileData from(@NonNull Path basePath, @NonNull StreamFilename streamFilename) {
         var streamFile = new File(basePath.toFile(), streamFilename.getFilePath());
         return readStreamFileData(streamFile, streamFilename);
