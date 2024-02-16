@@ -59,7 +59,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
-    private static final String BYTES = "6080";
+    private static final String ONE_BYTE_HEX = "80";
+    private static final DataSize MAX_DATA_SIZE = DataSize.ofKilobytes(24);
 
     @Resource
     private WebTestClient webClient;
@@ -76,7 +77,7 @@ class ContractControllerTest {
     @BeforeEach
     void setUp() {
         given(bucket.tryConsume(1)).willReturn(true);
-        given(evmProperties.getMaxDataSize()).willReturn(DataSize.ofKilobytes(24));
+        given(evmProperties.getMaxDataSize()).willReturn(MAX_DATA_SIZE);
     }
 
     @NullAndEmptySource
@@ -236,7 +237,7 @@ class ContractControllerTest {
     @Test
     void exceedingDataCallSizeOnEstimate() {
         final var request = request();
-        request.setData("0x" + BYTES.repeat(20000));
+        request.setData("0x" + ONE_BYTE_HEX.repeat((int)MAX_DATA_SIZE.toBytes() + 1));
         request.setEstimate(true);
 
         webClient
@@ -256,7 +257,7 @@ class ContractControllerTest {
         final var request = request();
 
         request.setTo(null);
-        request.setData("0x" + BYTES.repeat(20000));
+        request.setData("0x" + ONE_BYTE_HEX.repeat((int)MAX_DATA_SIZE.toBytes() + 1));
         request.setEstimate(true);
 
         webClient
