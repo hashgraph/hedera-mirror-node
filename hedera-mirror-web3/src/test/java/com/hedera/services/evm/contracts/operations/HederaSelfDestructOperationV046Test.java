@@ -39,7 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class HederaSelfDestructOperationV046Test {
+class HederaSelfDestructOperationV046Test {
     static final Address BENEFICIARY = Address.fromHexString("0x0000000000000000000000000000000000000929");
     static final Address BENEFICIARY_SYSTEM_ACCOUNT =
             Address.fromHexString("0x00000000000000000000000000000000000002ED");

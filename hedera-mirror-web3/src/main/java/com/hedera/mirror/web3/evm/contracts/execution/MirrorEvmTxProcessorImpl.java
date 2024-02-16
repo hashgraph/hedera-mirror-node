@@ -130,19 +130,15 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final var code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
             final var isNotCallingNativePrecompile = !aliasManager.isNativePrecompileAddress(resolvedForEvm);
 
-            // disable calls to non-existing addresses for
-            // older evm versions or disabled FF or grandfather contract
-            if (!dynamicProperties.allowCallsToNonContractAccounts()
-                    || dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)
-                    || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)
-                    || dynamicProperties.grandfatherContracts().contains(to)) {
-
-                // If there is no bytecode, it means we have a non-token and non-contract account,
-                // hence the code should be null and there must be a value transfer.
-                if (code == null && value <= 0 && !payload.isEmpty() && isNotCallingNativePrecompile) {
-                    throw new MirrorEvmTransactionException(
-                            ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
-                }
+            // If there is no bytecode, it means we have a non-token and non-contract account,
+            // hence the code should be null and there must be a value transfer.
+            if (disabledCallsToNonExistingAddress(to)
+                    && code == null
+                    && value <= 0
+                    && !payload.isEmpty()
+                    && isNotCallingNativePrecompile) {
+                throw new MirrorEvmTransactionException(
+                        ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
             }
 
             return baseInitialFrame
@@ -153,5 +149,14 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                     .code(code == null ? CodeV0.EMPTY_CODE : code)
                     .build();
         }
+    }
+
+    // disable calls to non-existing addresses for
+    // older evm versions or disabled FF or grandfather contract
+    private boolean disabledCallsToNonExistingAddress(Address to) {
+        return !dynamicProperties.allowCallsToNonContractAccounts()
+                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)
+                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)
+                || dynamicProperties.grandfatherContracts().contains(to);
     }
 }
