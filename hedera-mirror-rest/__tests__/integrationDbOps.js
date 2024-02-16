@@ -156,8 +156,9 @@ const flywayMigrate = async () => {
 
   while (retries-- > 0) {
     try {
+      logger.info(`Running flyway migrate #${maxRetries - retries} for ${workerId}`);
       execSync(`node ${exePath} -c ${flywayConfigPath} migrate`);
-      logger.info('Successfully executed all Flyway migrations');
+      logger.info(`Successfully executed all Flyway migrations for ${workerId}`);
       markDbMigrated();
       break;
     } catch (e) {
