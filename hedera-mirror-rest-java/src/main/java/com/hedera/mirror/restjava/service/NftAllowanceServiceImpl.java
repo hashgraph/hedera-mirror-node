@@ -32,8 +32,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
     public static final String TOKEN_ID = "token_id";
     public static final String OWNER = "owner";
     public static final String SPENDER = "spender";
-    private static final Sort OWNER_TOKEN_ASC_ORDER =
-            Sort.by(Sort.Direction.ASC, OWNER).and(Sort.by(Sort.Direction.ASC, TOKEN_ID));
+    private static final Sort OWNER_TOKEN_ASC_ORDER = sort(ASC, OWNER, TOKEN_ID);
     private static final Sort OWNER_TOKEN_DESC_ORDER =
             Sort.by(Sort.Direction.DESC, OWNER).and(Sort.by(Sort.Direction.DESC, TOKEN_ID));
     private static final Sort SPENDER_TOKEN_ASC_ORDER =
