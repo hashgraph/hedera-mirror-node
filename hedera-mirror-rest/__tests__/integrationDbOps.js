@@ -75,8 +75,10 @@ const cleanUp = async () => {
 const createPool = () => {
   const database = getDatabaseName();
   const connectionUri = getOwnerConnectionUri(process.env.JEST_WORKER_ID);
+  logger.info(`Create Pool connectionUri for ${process.env.JEST_WORKER_ID}: ${connectionUri}`);
 
   const dbConnectionParams = extractDbConnectionParams(connectionUri);
+  logger.info(`Owner Pool dbConnectionParams for ${process.env.JEST_WORKER_ID}: ${JSON.stringify(dbConnectionParams)}`);
   global.ownerPool = new Pool({
     ...dbConnectionParams,
     database,
@@ -105,7 +107,9 @@ const flywayMigrate = async () => {
   const workerId = process.env.JEST_WORKER_ID;
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
   const connectionUri = getOwnerConnectionUri(workerId);
+  logger.info(`connectionUri for ${workerId}: ${connectionUri}`);
   const dbConnectionParams = extractDbConnectionParams(connectionUri);
+  logger.info(`dbConnectionParams for ${workerId}: ${JSON.stringify(dbConnectionParams)}`);
   const dbName = getDatabaseName();
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = path.join('.', 'build', 'flyway');
@@ -148,12 +152,13 @@ const flywayMigrate = async () => {
 
   const maxRetries = 10;
   let retries = maxRetries;
-  const retryMsDelay = 2000;
+  const retryMsDelay = 5000;
 
   while (retries-- > 0) {
     try {
       execSync(`node ${exePath} -c ${flywayConfigPath} migrate`);
       logger.info('Successfully executed all Flyway migrations');
+      markDbMigrated();
       break;
     } catch (e) {
       logger.warn(`Error running flyway during attempt #${maxRetries - retries}: ${e}`);
@@ -164,8 +169,6 @@ const flywayMigrate = async () => {
   if (isV2Schema()) {
     fs.rmSync(locations, {force: true, recursive: true});
   }
-
-  markDbMigrated();
 };
 
 const getCleanupSql = async () => {
