@@ -55,7 +55,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         //  LT,LTE,EQ,NE are not supported right now. Default is GT.
         tokenId = getUpdatedEntityId(tokenIdOperator, tokenId);
 
-        // Set the value depending on the owner flag   99
+        // Set the value depending on the owner flag
         if (request.isOwner()) {
 
             spenderId = getUpdatedEntityId(accountIdOperator, spenderId);
