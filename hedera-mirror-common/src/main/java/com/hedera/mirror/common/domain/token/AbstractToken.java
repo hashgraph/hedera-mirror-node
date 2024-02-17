@@ -57,6 +57,7 @@ public class AbstractToken implements History {
     private byte[] freezeKey;
 
     @Enumerated(EnumType.ORDINAL)
+    @Column(updatable = false)
     private TokenFreezeStatusEnum freezeStatus;
 
     @Column(updatable = false)
@@ -66,6 +67,7 @@ public class AbstractToken implements History {
     private byte[] kycKey;
 
     @Enumerated(EnumType.ORDINAL)
+    @Column(updatable = false)
     private TokenKycStatusEnum kycStatus;
 
     @Column(updatable = false)
