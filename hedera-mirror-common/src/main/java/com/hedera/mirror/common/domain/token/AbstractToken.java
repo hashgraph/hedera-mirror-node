@@ -56,11 +56,17 @@ public class AbstractToken implements History {
     @ToString.Exclude
     private byte[] freezeKey;
 
+    @Enumerated(EnumType.ORDINAL)
+    private TokenFreezeStatusEnum freezeStatus;
+
     @Column(updatable = false)
     private Long initialSupply;
 
     @ToString.Exclude
     private byte[] kycKey;
+
+    @Enumerated(EnumType.ORDINAL)
+    private TokenKycStatusEnum kycStatus;
 
     @Column(updatable = false)
     private long maxSupply;

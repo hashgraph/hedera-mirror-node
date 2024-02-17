@@ -45,13 +45,8 @@ class TokenService extends BaseService {
   static tokenCacheQuery = `
     select
       decimals,
-      case when freeze_key is null then 0
-           when freeze_default then 1
-           else 2
-      end as freeze_default,
-      case when kyc_key is null then 0
-           else 2
-      end as kyc_default,
+      freeze_status,
+      kyc_status,
       token_id
     from token
     where token_id = any ($1)`;
@@ -125,8 +120,8 @@ class TokenService extends BaseService {
       const cachedToken = cachedTokens.get(row.token_id);
       if (cachedToken) {
         row.decimals = cachedToken.decimals;
-        row.freeze_status = row.freeze_status ?? cachedToken.freezeDefault;
-        row.kyc_status = row.kyc_status ?? cachedToken.kycDefault;
+        row.freeze_status = row.freeze_status ?? cachedToken.freezeStatus;
+        row.kyc_status = row.kyc_status ?? cachedToken.kycStatus;
       }
 
       return new TokenAccount(row);

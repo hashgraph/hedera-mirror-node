@@ -34,7 +34,9 @@
         "decimals": 2,
         "freeze_default": true,
         "freeze_key": [1, 1],
+        "freeze_status": 1,
         "kyc_key": [1, 1],
+        "kyc_status": 2,
         "type": "FUNGIBLE_COMMON"
       }
     ],

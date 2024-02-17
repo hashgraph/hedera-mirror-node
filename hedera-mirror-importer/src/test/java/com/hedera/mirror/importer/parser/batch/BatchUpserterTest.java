@@ -709,6 +709,7 @@ class BatchUpserterTest extends ImporterIntegrationTest {
         token.setFreezeKey(freezeKey != null ? freezeKey.toByteArray() : null);
         token.setInitialSupply(1_000_000_000L);
         token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
+        token.setKycStatus(kycKey != null ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOT_APPLICABLE);
         token.setPauseKey(pauseKey != null ? pauseKey.toByteArray() : null);
         token.setPauseStatus(pauseKey != null ? TokenPauseStatusEnum.UNPAUSED : TokenPauseStatusEnum.NOT_APPLICABLE);
         token.setMaxSupply(1_000_000_000L);
@@ -722,6 +723,13 @@ class BatchUpserterTest extends ImporterIntegrationTest {
         token.setTreasuryAccountId(EntityId.of(treasuryAccountId));
         token.setType(TokenTypeEnum.FUNGIBLE_COMMON);
         token.setWipeKey(hexKey);
+
+        var freezeStatus = TokenFreezeStatusEnum.NOT_APPLICABLE;
+        if (freezeKey != null) {
+            freezeStatus = freezeDefault ? TokenFreezeStatusEnum.FROZEN : TokenFreezeStatusEnum.UNFROZEN;
+        }
+        token.setFreezeStatus(freezeStatus);
+
         return token;
     }
 

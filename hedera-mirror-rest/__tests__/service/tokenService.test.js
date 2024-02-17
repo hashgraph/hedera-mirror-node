@@ -121,13 +121,16 @@ describe('getCachedTokens', () => {
       {
         decimals: 4,
         freeze_key: [1, 1],
+        freeze_status: 2, // UNFROZEN
         kyc_key: [1, 1],
+        kyc_status: 2, // REVOKED
         token_id: 400,
       },
       {
         decimals: 5,
         freeze_default: true,
         freeze_key: [1, 1],
+        freeze_status: 1, // FROZEN
         token_id: 500,
       },
     ];
@@ -144,8 +147,8 @@ describe('getCachedTokens', () => {
         300,
         new CachedToken({
           decimals: 3,
-          freeze_default: 0, // not applicable
-          kyc_default: 0, // not applicable
+          freeze_status: 0, // not applicable
+          kyc_status: 0, // not applicable
           token_id: 300,
         }),
       ],
@@ -163,8 +166,8 @@ describe('getCachedTokens', () => {
         300,
         new CachedToken({
           decimals: 3,
-          freeze_default: 0, // not applicable
-          kyc_default: 0, // not applicable
+          freeze_status: 0, // NOT_APPLICABLE
+          kyc_status: 0, // NOT_APPLICABLE
           token_id: 300,
         }),
       ],
@@ -172,8 +175,8 @@ describe('getCachedTokens', () => {
         400,
         new CachedToken({
           decimals: 4,
-          freeze_default: 2, // unfrozen
-          kyc_default: 2, // revoked
+          freeze_status: 2, // UNFROZEN
+          kyc_status: 2, // REVOKED
           token_id: 400,
         }),
       ],
@@ -181,8 +184,8 @@ describe('getCachedTokens', () => {
         500,
         new CachedToken({
           decimals: 5,
-          freeze_default: 1, // frozen
-          kyc_default: 0, // not applicable
+          freeze_status: 1, // FROZEN
+          kyc_status: 0, // NOT_APPLICABLE
           token_id: 500,
         }),
       ],
@@ -196,8 +199,8 @@ describe('putTokenCache', () => {
   test('put then get', async () => {
     const token = {
       decimals: 2,
-      freeze_default: 0,
-      kyc_default: 0,
+      freeze_status: 0,
+      kyc_status: 0,
       token_id: 200,
     };
     TokenService.putTokenCache(token);

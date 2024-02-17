@@ -607,7 +607,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         current.setCreatedTimestamp(previous.getCreatedTimestamp());
         current.setDecimals(previous.getDecimals());
         current.setFreezeDefault(previous.getFreezeDefault());
+        current.setFreezeStatus(previous.getFreezeStatus());
         current.setInitialSupply(previous.getInitialSupply());
+        current.setKycStatus(previous.getKycStatus());
         current.setMaxSupply(previous.getMaxSupply());
         current.setSupplyType(previous.getSupplyType());
         current.setType(previous.getType());

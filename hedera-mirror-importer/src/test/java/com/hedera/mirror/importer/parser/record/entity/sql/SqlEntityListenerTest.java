@@ -1978,25 +1978,18 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var tokenCreate = domainBuilder.token().get();
         sqlEntityListener.onToken(tokenCreate);
 
-        var tokenUpdate = domainBuilder
-                .token()
-                .customize(t -> t.freezeDefault(true)
-                        .pauseStatus(TokenPauseStatusEnum.PAUSED)
-                        .tokenId(tokenCreate.getTokenId())
-                        .totalSupply(null))
-                .get();
+        var tokenUpdate = Token.builder()
+                .pauseStatus(TokenPauseStatusEnum.PAUSED)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .tokenId(tokenCreate.getTokenId())
+                .build();
         sqlEntityListener.onToken(tokenUpdate);
         completeFileAndCommit();
 
         // then
-        var tokenMerged = TestUtils.clone(tokenUpdate);
-        tokenMerged.setCreatedTimestamp(tokenCreate.getCreatedTimestamp());
-        tokenMerged.setDecimals(tokenCreate.getDecimals());
-        tokenMerged.setFreezeDefault(tokenCreate.getFreezeDefault());
-        tokenMerged.setInitialSupply(tokenCreate.getInitialSupply());
-        tokenMerged.setMaxSupply(tokenCreate.getMaxSupply());
-        tokenMerged.setSupplyType(tokenCreate.getSupplyType());
-        tokenMerged.setType(tokenCreate.getType());
+        var tokenMerged = TestUtils.clone(tokenCreate);
+        tokenMerged.setPauseStatus(tokenUpdate.getPauseStatus());
+        tokenMerged.setTimestampRange(tokenUpdate.getTimestampRange());
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
 
         var tokenHistory = TestUtils.clone(tokenCreate);
@@ -2959,8 +2952,10 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
                 1000,
                 false,
                 hexKey,
+                TokenFreezeStatusEnum.UNFROZEN,
                 1_000_000_000L,
                 hexKey,
+                TokenKycStatusEnum.REVOKED,
                 "FOO COIN TOKEN",
                 hexKey,
                 "FOOTOK",
@@ -2977,8 +2972,10 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
             Integer decimals,
             Boolean freezeDefault,
             Key freezeKey,
+            TokenFreezeStatusEnum freezeStatus,
             Long initialSupply,
             Key kycKey,
+            TokenKycStatusEnum kycStatus,
             String name,
             Key supplyKey,
             String symbol,
@@ -2990,8 +2987,10 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         token.setDecimals(decimals);
         token.setFreezeDefault(freezeDefault);
         token.setFreezeKey(freezeKey != null ? freezeKey.toByteArray() : null);
+        token.setFreezeStatus(freezeStatus);
         token.setInitialSupply(initialSupply);
         token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
+        token.setKycStatus(kycStatus);
         token.setMaxSupply(0L);
         token.setName(name);
         token.setPauseKey(pauseKey != null ? pauseKey.toByteArray() : null);

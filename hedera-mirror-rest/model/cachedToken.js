@@ -14,38 +14,14 @@
  * limitations under the License.
  */
 
-import TokenFreezeStatus from './tokenFreezeStatus';
-import TokenKycStatus from './tokenKycStatus';
-
-const tokenFreezeValues = TokenFreezeStatus.VALUES;
-const tokenKycValues = TokenKycStatus.VALUES;
-
 /**
- * Cached token object to store token's decimals, freeze default and kyc default. Note freeze_default is not the same as
- * the freeze_default column in the token table. freeze_default / kyc_default is either copied from the SQL query result
- * directly or determined based on the freeze_default & freeze_key / kyc_key columns in the token table.
+ * Cached token object to store token's decimals, freeze status and kyc status
  */
 class CachedToken {
   constructor(token) {
     this.decimals = token.decimals;
-
-    if (token.freeze_key !== undefined) {
-      if (token.freeze_key !== null) {
-        this.freezeDefault = token.freeze_default ? tokenFreezeValues['FROZEN'] : tokenFreezeValues['UNFROZEN'];
-      } else {
-        this.freezeDefault = tokenFreezeValues['NOT_APPLICABLE'];
-      }
-    } else {
-      this.freezeDefault = token.freeze_default;
-    }
-
-    if (token.kyc_key !== undefined) {
-      this.kycDefault = token.kyc_key ? tokenKycValues['REVOKED'] : tokenKycValues['NOT_APPLICABLE'];
-    } else {
-      this.kycDefault = token.kyc_default;
-    }
-
-    this.tokenId = token.token_id;
+    this.freezeStatus = token.freeze_status;
+    this.kycStatus = token.kyc_status;
   }
 }
 

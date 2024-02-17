@@ -23,6 +23,7 @@
         "created_timestamp": "1234567890000000004",
         "decimals": 2,
         "freeze_key": [1, 1],
+        "freeze_status": 2,
         "type": "FUNGIBLE_COMMON"
       }
     ],

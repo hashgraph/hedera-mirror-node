@@ -37,32 +37,22 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     @CsvSource(
             textBlock =
                     """
-            false, true, true, FROZEN, GRANTED, FROZEN, GRANTED
-            false, true, true, , , UNFROZEN, REVOKED
-            true, true, false, , , FROZEN, NOT_APPLICABLE
-            false, false, false, , , NOT_APPLICABLE, NOT_APPLICABLE
+            UNFROZEN, REVOKED, FROZEN, GRANTED, FROZEN, GRANTED
+            UNFROZEN, REVOKED, , , UNFROZEN, REVOKED
+            FROZEN, NOT_APPLICABLE, , , FROZEN, NOT_APPLICABLE
+            NOT_APPLICABLE, NOT_APPLICABLE, , , NOT_APPLICABLE, NOT_APPLICABLE
             """)
     @ParameterizedTest
     void findById(
-            boolean freezeDefault,
-            boolean hasFreezeKey,
-            boolean hasKycKey,
+            TokenFreezeStatusEnum tokenFreezeStatus,
+            TokenKycStatusEnum tokenKycStatus,
             TokenFreezeStatusEnum freezeStatus,
             TokenKycStatusEnum kycStatus,
             TokenFreezeStatusEnum expectedFreezeStatus,
             TokenKycStatusEnum expectedKycStatus) {
         final var token = domainBuilder
                 .token()
-                .customize(t -> {
-                    t.freezeDefault(freezeDefault);
-                    if (!hasFreezeKey) {
-                        t.freezeKey(null);
-                    }
-
-                    if (!hasKycKey) {
-                        t.kycKey(null);
-                    }
-                })
+                .customize(t -> t.freezeStatus(tokenFreezeStatus).kycStatus(tokenKycStatus))
                 .persist();
         final var tokenAccount = domainBuilder
                 .tokenAccount()
@@ -198,16 +188,15 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     @CsvSource(
             textBlock =
                     """
-            false, true, true, FROZEN, GRANTED, FROZEN, GRANTED
-            false, true, true, , , UNFROZEN, REVOKED
-            true, true, false, , , FROZEN, NOT_APPLICABLE
-            false, false, false, , , NOT_APPLICABLE, NOT_APPLICABLE
+            UNFROZEN, REVOKED, FROZEN, GRANTED, FROZEN, GRANTED
+            UNFROZEN, REVOKED, , , UNFROZEN, REVOKED
+            FROZEN, NOT_APPLICABLE, , , FROZEN, NOT_APPLICABLE
+            NOT_APPLICABLE, NOT_APPLICABLE, , , NOT_APPLICABLE, NOT_APPLICABLE
             """)
     @ParameterizedTest
     void findByIdAndTimestampHistoricalReturnsLatestEntry(
-            boolean freezeDefault,
-            boolean hasFreezeKey,
-            boolean hasKycKey,
+            TokenFreezeStatusEnum tokenFreezeStatus,
+            TokenKycStatusEnum tokenKycStatus,
             TokenFreezeStatusEnum freezeStatus,
             TokenKycStatusEnum kycStatus,
             TokenFreezeStatusEnum expectedFreezeStatus,
@@ -215,16 +204,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
         long accountId = 2L;
         final var token = domainBuilder
                 .token()
-                .customize(t -> {
-                    t.freezeDefault(freezeDefault);
-                    if (!hasFreezeKey) {
-                        t.freezeKey(null);
-                    }
-
-                    if (!hasKycKey) {
-                        t.kycKey(null);
-                    }
-                })
+                .customize(t -> t.freezeStatus(tokenFreezeStatus).kycStatus(tokenKycStatus))
                 .persist();
         final var tokenAccountHistory1 = domainBuilder
                 .tokenAccountHistory()

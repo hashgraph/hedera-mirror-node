@@ -1341,8 +1341,10 @@ const tokenDefaults = {
   fee_schedule_key: null,
   freeze_default: false,
   freeze_key: null,
+  freeze_status: 0,
   initial_supply: 1000000,
   kyc_key: null,
+  kyc_status: 0,
   max_supply: '9223372036854775807', // max long, cast to string to avoid error from JavaScript Number cast
   name: 'Token name',
   pause_key: null,

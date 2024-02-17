@@ -97,14 +97,9 @@ const tokenAccountCte = `with ta as (
 )`;
 const tokensSelectQuery = `select
     t.decimals,
-    case when t.freeze_key is null then 0
-         when t.freeze_default then 1
-         else 2
-    end as freeze_default,
+    t.freeze_status,
     e.key,
-    case when t.kyc_key is null then 0
-         else 2
-    end as kyc_default,
+    t.kyc_status,
     t.name,
     t.symbol,
     t.token_id,
@@ -124,9 +119,11 @@ const tokenInfoSelectFields = [
   'fee_schedule_key',
   'freeze_default',
   'freeze_key',
+  'freeze_status',
   'initial_supply',
   'e.key',
   'kyc_key',
+  'kyc_status',
   'max_supply',
   'e.memo',
   'lower(t.timestamp_range) as modified_timestamp',

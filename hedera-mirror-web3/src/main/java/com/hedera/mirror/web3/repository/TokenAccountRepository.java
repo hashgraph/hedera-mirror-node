@@ -43,21 +43,10 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                       ta.balance,
                       ta.balance_timestamp,
                       ta.created_timestamp,
+                      coalesce(ta.freeze_status, t.freeze_status) as freeze_status,
+                      coalesce(ta.kyc_status, t.kyc_status) as kyc_status,
                       ta.timestamp_range,
-                      ta.token_id,
-                      case when freeze_status is not null then freeze_status
-                           when t.token_id is not null then
-                             case when t.freeze_key is null then 0
-                                  when t.freeze_default then 1
-                                  else 2
-                             end
-                      end as freeze_status,
-                      case when kyc_status is not null then kyc_status
-                           when t.token_id is not null then
-                             case when t.kyc_key is null then 0
-                                  else 2
-                             end
-                      end as kyc_status
+                      ta.token_id
                     from token_account as ta
                     left join (select * from token where token_id = :#{#id.tokenId}) as t on true
                     where ta.account_id = :#{#id.accountId} and ta.token_id = :#{#id.tokenId}
@@ -129,21 +118,10 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                       ta.balance,
                       ta.balance_timestamp,
                       ta.created_timestamp,
+                      coalesce(ta.freeze_status, t.freeze_status) as freeze_status,
+                      coalesce(ta.kyc_status, t.kyc_status) as kyc_status,
                       ta.timestamp_range,
-                      ta.token_id,
-                      case when freeze_status is not null then freeze_status
-                           when t.token_id is not null then
-                             case when t.freeze_key is null then 0
-                                  when t.freeze_default then 1
-                                  else 2
-                             end
-                      end as freeze_status,
-                      case when kyc_status is not null then kyc_status
-                           when t.token_id is not null then
-                             case when t.kyc_key is null then 0
-                                  else 2
-                             end
-                      end as kyc_status
+                      ta.token_id
                     from (
                             (
                         select *

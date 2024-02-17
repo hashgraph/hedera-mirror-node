@@ -68,7 +68,9 @@ import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenHistory;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -810,8 +812,10 @@ public class DomainBuilder {
                 .feeScheduleKey(key())
                 .freezeDefault(false)
                 .freezeKey(key())
+                .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                 .initialSupply(1_000_000_000L + number())
                 .kycKey(key())
+                .kycStatus(TokenKycStatusEnum.REVOKED)
                 .name(text(8))
                 .pauseKey(key())
                 .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
@@ -835,8 +839,10 @@ public class DomainBuilder {
                 .feeScheduleKey(key())
                 .freezeDefault(false)
                 .freezeKey(key())
+                .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                 .initialSupply(1_000_000_000L + number())
                 .kycKey(key())
+                .kycStatus(TokenKycStatusEnum.REVOKED)
                 .name(text(8))
                 .pauseKey(key())
                 .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
