@@ -97,6 +97,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
     }
 
     @Override
+    @SuppressWarnings("java:S3776")
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
