@@ -16,6 +16,11 @@
 
 package com.hedera.mirror.restjava.service;
 
+import static com.hedera.mirror.restjava.common.Utils.OWNER_TOKEN_ASC_ORDER;
+import static com.hedera.mirror.restjava.common.Utils.OWNER_TOKEN_DESC_ORDER;
+import static com.hedera.mirror.restjava.common.Utils.SPENDER_TOKEN_ASC_ORDER;
+import static com.hedera.mirror.restjava.common.Utils.SPENDER_TOKEN_DESC_ORDER;
+
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
@@ -23,22 +28,10 @@ import jakarta.inject.Named;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 
 @Named
 @RequiredArgsConstructor
 public class NftAllowanceServiceImpl implements NftAllowanceService {
-
-    public static final String TOKEN_ID = "token_id";
-    public static final String OWNER = "owner";
-    public static final String SPENDER = "spender";
-    private static final Sort OWNER_TOKEN_ASC_ORDER = sort(ASC, OWNER, TOKEN_ID);
-    private static final Sort OWNER_TOKEN_DESC_ORDER =
-            Sort.by(Sort.Direction.DESC, OWNER).and(Sort.by(Sort.Direction.DESC, TOKEN_ID));
-    private static final Sort SPENDER_TOKEN_ASC_ORDER =
-            Sort.by(Sort.Direction.ASC, SPENDER).and(Sort.by(Sort.Direction.ASC, TOKEN_ID));
-    private static final Sort SPENDER_TOKEN_DESC_ORDER =
-            Sort.by(Sort.Direction.DESC, SPENDER).and(Sort.by(Sort.Direction.DESC, TOKEN_ID));
 
     private final NftAllowanceRepository repository;
 
