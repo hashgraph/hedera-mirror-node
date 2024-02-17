@@ -419,6 +419,8 @@ zfs:
     enabled: false
   coordinator:
     diskSize: 300GB
+  crd:
+    volumeSnapshot: false
   enabled: false
   init:
     arcSizeGb: 2
@@ -481,4 +483,4 @@ zfs:
       registry: gcr.io/
       repository: mirrornode/zfs-driver
       pullPolicy: IfNotPresent
-      tag: 2.3.1-HEDERA
+      tag: 2.4.1-HEDERA

@@ -21,6 +21,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 
 @RequiredArgsConstructor
 class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
@@ -28,9 +32,62 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     private final NftAllowanceRepository nftAllowanceRepository;
 
     @Test
-    void save() {
-        var nftAllowance = domainBuilder.nftAllowance().get();
-        nftAllowanceRepository.save(nftAllowance);
-        assertThat(nftAllowanceRepository.findById(nftAllowance.getId())).get().isEqualTo(nftAllowance);
+    void findBySpenderAndFilterByOwnerGtAndTokenGt() {
+        var nftAllowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "owner").and(Sort.by(Direction.ASC, "token_id")));
+
+        assertThat(nftAllowanceRepository.findBySpenderAndFilterByOwnerAndToken(
+                        nftAllowance.getSpender(),
+                        nftAllowance.getOwner() - 1,
+                        nftAllowance.getTokenId() - 1,
+                        pageable))
+                .containsExactly(nftAllowance);
+    }
+
+    @Test
+    void findBySpenderAndFilterByOwnerGtAndTokenGtTokenNotPresent() {
+        var nftAllowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "owner").and(Sort.by(Direction.ASC, "token_id")));
+
+        assertThat(nftAllowanceRepository.findBySpenderAndFilterByOwnerAndToken(
+                        nftAllowance.getSpender(), nftAllowance.getOwner(), nftAllowance.getTokenId(), pageable))
+                .isEmpty();
+    }
+
+    @Test
+    void findByOwnerAndFilterBySpenderGtAndTokenGt() {
+        var nftAllowance = domainBuilder.nftAllowance().persist();
+        var nftAllowance1 = domainBuilder.nftAllowance().get();
+        nftAllowance1.setOwner(nftAllowance.getOwner());
+        nftAllowanceRepository.save(nftAllowance1);
+        domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        Pageable pageable =
+                PageRequest.of(0, 2, Sort.by(Direction.ASC, "spender").and(Sort.by(Direction.ASC, "token_id")));
+
+        assertThat(nftAllowanceRepository.findByOwnerAndFilterBySpenderAndToken(
+                        nftAllowance.getOwner(),
+                        nftAllowance.getSpender() - 2,
+                        nftAllowance.getTokenId() - 2,
+                        pageable))
+                .containsExactlyInAnyOrder(nftAllowance, nftAllowance1);
+    }
+
+    @Test
+    void findByOwnerAndFilterBySpenderGtAndTokenGtOwnerNotPresent() {
+        var nftAllowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "spender").and(Sort.by(Direction.ASC, "token_id")));
+
+        assertThat(nftAllowanceRepository.findByOwnerAndFilterBySpenderAndToken(
+                        nftAllowance.getOwner() + 1, nftAllowance.getSpender(), nftAllowance.getTokenId(), pageable))
+                .isEmpty();
     }
 }

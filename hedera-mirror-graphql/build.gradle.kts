@@ -27,7 +27,9 @@ plugins {
 dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    compileOnly("com.graphql-java-generator:graphql-java-client-runtime")
+    compileOnly("com.graphql-java-generator:graphql-java-client-runtime") {
+        exclude(group = "org.springframework.security")
+    }
     implementation(project(":common"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation("com.graphql-java:graphql-java-extended-scalars")
