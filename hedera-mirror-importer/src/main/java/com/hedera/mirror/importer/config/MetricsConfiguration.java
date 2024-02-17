@@ -200,7 +200,7 @@ class MetricsConfiguration {
         return String.format(metricSql, dbProperties.getName(), tableClause);
     }
 
-    // Get a list of tables and their attributes
+    // Get a map of table names to their attributes
     private Map<String, TableAttributes> getTables(boolean isV2) {
         Map<String, Boolean> distributedTables = isV2 ? getDistributedTables() : new HashMap<>();
         Map<String, TableAttributes> tableMap = new HashMap<>();
