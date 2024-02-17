@@ -58,7 +58,7 @@ class MetricsConfigurationTest extends ImporterIntegrationTest {
         var currentValue = tag.gauge().value();
 
         domainBuilder.transaction().persist();
-        metricsConfiguration.updateTableMetrics();
+        metricsConfiguration.hydrateMetricsCache();
 
         assertThat(tag.gauge().value()).isGreaterThan(currentValue);
     }

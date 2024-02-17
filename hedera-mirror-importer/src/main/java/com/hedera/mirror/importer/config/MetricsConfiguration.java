@@ -26,7 +26,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.BaseUnits;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -60,7 +59,7 @@ class MetricsConfiguration {
      *  variable replacement.
      *
      *  All inputs come from our config or current db values.
-    */
+     */
     private static final String METRIC_SQL =
             """
                     select
@@ -74,6 +73,7 @@ class MetricsConfiguration {
                     where pd.datname = '%s' and %s
                     group by pi.inhparent
                     """;
+
     private static final String DISTRIBUTED_METRIC_SQL =
             """
                     with shard_data as (
@@ -107,7 +107,7 @@ class MetricsConfiguration {
         this.dbProperties = dbProperties;
         this.jdbcOperations = jdbcOperations;
         this.activeMetrics = Caffeine.newBuilder()
-                .refreshAfterWrite(Duration.ofMinutes(2))
+                .refreshAfterWrite(dbProperties.getMetricRefreshInterval())
                 .executor(Executors.newSingleThreadExecutor())
                 .build(this::getUpdatedMetrics);
     }
@@ -146,7 +146,6 @@ class MetricsConfiguration {
     }
 
     public TableMetrics getUpdatedMetrics(String tableName) {
-        log.info("Updating metrics for table {}", tableName);
         var table = tables.get(tableName);
         var sql = getMetricSql(table);
         try {

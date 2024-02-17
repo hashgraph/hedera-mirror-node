@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.db;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import java.time.Duration;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -62,4 +63,6 @@ public class DBProperties {
 
     @NotBlank
     private String username = "";
+
+    private Duration metricRefreshInterval = Duration.ofMinutes(5L);
 }
