@@ -296,6 +296,7 @@ public class DomainBuilder {
                 .errorMessage("")
                 .functionParameters(bytes(64))
                 .functionResult(bytes(128))
+                .gasConsumed(80L)
                 .gasLimit(200L)
                 .gasUsed(100L)
                 .payerAccountId(entityId())

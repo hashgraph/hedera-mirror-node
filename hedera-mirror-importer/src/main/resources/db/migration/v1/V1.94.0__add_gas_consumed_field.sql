@@ -1,5 +1,5 @@
-alter table contract_result
-add column if not exists gas_consumed bigint null;
+alter table if exists contract_result
+    add column if not exists gas_consumed bigint null;
 
 -- Function for counting zero and non-zero bytes
 create or replace function bytes_gas_calculation(bytea) returns bigint as $$

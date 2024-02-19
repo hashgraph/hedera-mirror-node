@@ -23,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.WRONG_NONCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -32,9 +31,11 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
+import com.hedera.mirror.importer.migration.GasConsumedMigrationTest.MigrationContractResult;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.nio.charset.StandardCharsets;
+import java.sql.Array;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -72,10 +73,25 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
     void migrate() {
         // given
         var ethTx1 = domainBuilder.ethereumTransaction(true).persist();
-        var contractResult1 = domainBuilder
-                .contractResult()
-                .customize(cr -> cr.consensusTimestamp(ethTx1.getConsensusTimestamp()))
-                .persist();
+        var migrationContractResult = MigrationContractResult.builder()
+                .callResult(domainBuilder.bytes(512))
+                .consensusTimestamp(ethTx1.getConsensusTimestamp())
+                .contractId(domainBuilder.entityId().getId())
+                .createdContractIds(List.of(domainBuilder.entityId().getId()))
+                .errorMessage("")
+                .functionParameters(domainBuilder.bytes(64))
+                .functionResult(domainBuilder.bytes(128))
+                .gasLimit(200L)
+                .gasUsed(100L)
+                .payerAccountId(domainBuilder.entityId())
+                .transactionHash(domainBuilder.bytes(32))
+                .transactionIndex(1)
+                .transactionNonce(0)
+                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE)
+                .build();
+
+        persistMigrationContractResult(migrationContractResult);
+
         var transaction1 = transaction(ethTx1.getConsensusTimestamp(), SUCCESS, ethTx1.getPayerAccountId(), 0, 0);
         var ethTx2 = domainBuilder.ethereumTransaction(false).persist();
         var transaction2 =
@@ -94,18 +110,18 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
         runMigration();
 
         // then
-        var expectedContractResult4 = toContractResult(DomainUtils.EMPTY_BYTE_ARRAY, ethTx4, transaction4);
-        var expectedContractResult5 = toContractResult(ethTx5.getCallData(), ethTx5, transaction5);
-        assertThat(contractResultRepository.findAll())
-                .containsExactlyInAnyOrder(contractResult1, expectedContractResult4, expectedContractResult5);
+        var expectedContractResult4 = toMigrationContractResult(DomainUtils.EMPTY_BYTE_ARRAY, ethTx4, transaction4);
+        var expectedContractResult5 = toMigrationContractResult(ethTx5.getCallData(), ethTx5, transaction5);
+        assertThat(findAllContractResults())
+                .containsExactlyInAnyOrder(migrationContractResult, expectedContractResult4, expectedContractResult5);
     }
 
-    private ContractResult toContractResult(
+    private MigrationContractResult toMigrationContractResult(
             byte[] callData, EthereumTransaction ethereumTransaction, Transaction transaction) {
-        return ContractResult.builder()
+        return MigrationContractResult.builder()
+                .consensusTimestamp(ethereumTransaction.getConsensusTimestamp())
                 .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
                 .contractId(0)
-                .consensusTimestamp(ethereumTransaction.getConsensusTimestamp())
                 .createdContractIds(null)
                 .functionParameters(callData)
                 .gasLimit(ethereumTransaction.getGasLimit())
@@ -147,6 +163,70 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
                     ps.setLong(5, transaction.getResult());
                     ps.setShort(6, transaction.getType().shortValue());
                     ps.setLong(7, transaction.getValidStartNs());
+                });
+    }
+
+    public void persistMigrationContractResult(final MigrationContractResult result) {
+        final String sql =
+                """
+                insert into contract_result
+                (consensus_timestamp, call_result, contract_id, created_contract_ids,
+                error_message, function_parameters, function_result, gas_limit, gas_used,
+                payer_account_id, transaction_hash, transaction_index, transaction_nonce,
+                transaction_result) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        jdbcTemplate.update(sql, ps -> {
+            ps.setLong(1, result.getConsensusTimestamp());
+            ps.setBytes(2, result.getCallResult());
+            ps.setLong(3, result.getContractId());
+            final Long[] createdContractIdsArray =
+                    result.getCreatedContractIds().toArray(new Long[0]);
+            final Array createdContractIdsSqlArray =
+                    ps.getConnection().createArrayOf("bigint", createdContractIdsArray);
+            ps.setArray(4, createdContractIdsSqlArray);
+            ps.setString(5, result.getErrorMessage());
+            ps.setBytes(6, result.getFunctionParameters());
+            ps.setBytes(7, result.getFunctionResult());
+            ps.setLong(8, result.getGasLimit());
+            ps.setLong(9, result.getGasUsed());
+            ps.setObject(10, result.getPayerAccountId().getId());
+            ps.setBytes(11, result.getTransactionHash());
+            ps.setInt(12, result.getTransactionIndex());
+            ps.setInt(13, result.getTransactionNonce());
+            ps.setInt(14, result.getTransactionResult());
+        });
+    }
+
+    private List<MigrationContractResult> findAllContractResults() {
+        return jdbcTemplate.query(
+                """
+                        select consensus_timestamp, call_result, contract_id, created_contract_ids, error_message,
+                        function_result, function_parameters, gas_limit, gas_used, payer_account_id,
+                        transaction_hash, transaction_index, transaction_nonce,
+                        transaction_result from contract_result
+                        """,
+                (rs, rowNum) -> {
+                    long payerAccountId = rs.getLong("payer_account_id");
+                    Array createdContractIds = rs.getArray("created_contract_ids");
+
+                    return MigrationContractResult.builder()
+                            .consensusTimestamp(rs.getLong("consensus_timestamp"))
+                            .callResult(rs.getBytes("call_result"))
+                            .contractId(rs.getLong("contract_id"))
+                            .createdContractIds(
+                                    createdContractIds == null ? null : List.of((Long[]) createdContractIds.getArray()))
+                            .errorMessage(rs.getString("error_message"))
+                            .functionParameters(rs.getBytes("function_parameters"))
+                            .functionResult(rs.getBytes("function_result"))
+                            .gasLimit(rs.getLong("gas_limit"))
+                            .gasUsed(rs.getLong("gas_used"))
+                            .payerAccountId(EntityId.of(0L, 0L, payerAccountId))
+                            .transactionHash(rs.getBytes("transaction_hash"))
+                            .transactionIndex(rs.getInt("transaction_index"))
+                            .transactionNonce(rs.getInt("transaction_nonce"))
+                            .transactionResult(rs.getInt("transaction_result"))
+                            .build();
                 });
     }
 
