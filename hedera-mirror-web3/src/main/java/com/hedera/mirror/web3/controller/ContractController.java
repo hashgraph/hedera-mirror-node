@@ -36,7 +36,6 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.validation.HexValidator;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -78,7 +77,7 @@ class ContractController {
             throw new RateLimitException("Rate limit exceeded.");
         }
 
-        validateContractDataSize(request);
+        validateContractData(request);
 
         final var params = constructServiceParameters(request);
         final var result = contractCallService.processCall(params);
@@ -121,12 +120,14 @@ class ContractController {
 
     /*
      * Contract data is represented as hexidecimal digits defined as characters in
-     * a String. So it takes two characters to represent one byte, and the configured max
+     * a String. So, it takes two characters to represent one byte, and the configured max
      * data size in bytes is doubled for validation of the data length within the request object.
      */
-    private void validateContractDataSize(final ContractCallRequest request) {
-        var contractDataSizeValidator = new HexValidator(0L, evmProperties.getMaxDataSize().toBytes() * 2L, false);
-        contractDataSizeValidator.isValid(request.getData(), null);
+    private void validateContractData(final ContractCallRequest request) {
+        if (!evmProperties.getDataValidatorPattern().matcher(request.getData()).find()) {
+            throw new InvalidParametersException("data field invalid hexadecimal string or contains more than %d digits"
+                    .formatted(evmProperties.getMaxDataSize().toBytes() * 2L));
+        }
     }
 
     /** Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence of a precompile for gas estimation.**/

@@ -46,12 +46,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.util.unit.DataSize;
 import org.springframework.web.reactive.function.BodyInserters;
 
 @ExtendWith(SpringExtension.class)
@@ -60,7 +62,6 @@ class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
     private static final String ONE_BYTE_HEX = "80";
-    private static final DataSize MAX_DATA_SIZE = DataSize.ofKilobytes(24);
 
     @Resource
     private WebTestClient webClient;
@@ -71,13 +72,20 @@ class ContractControllerTest {
     @MockBean
     private Bucket bucket;
 
-    @MockBean
+    @Autowired
     private MirrorNodeEvmProperties evmProperties;
+
+    @TestConfiguration
+    public static class TestConfig {
+        @Bean
+        public MirrorNodeEvmProperties evmProperties() {
+            return new MirrorNodeEvmProperties();
+        }
+    }
 
     @BeforeEach
     void setUp() {
         given(bucket.tryConsume(1)).willReturn(true);
-        given(evmProperties.getMaxDataSize()).willReturn(MAX_DATA_SIZE);
     }
 
     @NullAndEmptySource
@@ -237,7 +245,7 @@ class ContractControllerTest {
     @Test
     void exceedingDataCallSizeOnEstimate() {
         final var request = request();
-        final var dataAsHex = ONE_BYTE_HEX.repeat((int)MAX_DATA_SIZE.toBytes() + 1);
+        final var dataAsHex = ONE_BYTE_HEX.repeat((int)evmProperties.getMaxDataSize().toBytes() + 1);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
@@ -250,14 +258,14 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field length of %d characters violates limits of min 0 or max %d"
-                        .formatted(dataAsHex.length(), MAX_DATA_SIZE.toBytes() * 2L)));
+                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string or contains more than %d digits"
+                        .formatted(evmProperties.getMaxDataSize().toBytes() * 2L)));
     }
 
     @Test
     void exceedingDataCreateSizeOnEstimate() {
         final var request = request();
-        final var dataAsHex = ONE_BYTE_HEX.repeat((int)MAX_DATA_SIZE.toBytes() + 1);
+        final var dataAsHex = ONE_BYTE_HEX.repeat((int)evmProperties.getMaxDataSize().toBytes() + 1);
         request.setTo(null);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
@@ -271,8 +279,8 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field length of %d characters violates limits of min 0 or max %d"
-                        .formatted(dataAsHex.length(), MAX_DATA_SIZE.toBytes() *2L)));
+                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string or contains more than %d digits"
+                        .formatted(evmProperties.getMaxDataSize().toBytes() *2L)));
     }
 
     @Test
