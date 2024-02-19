@@ -18,6 +18,7 @@ class Token {
   static tableAlias = 'token';
   static tableName = this.tableAlias;
   static TOKEN_ID = `token_id`;
+  static DECIMALS = 'decimals';
   static TYPE = {
     FUNGIBLE_COMMON: 'FUNGIBLE_COMMON',
     NON_FUNGIBLE_UNIQUE: 'NON_FUNGIBLE_UNIQUE',

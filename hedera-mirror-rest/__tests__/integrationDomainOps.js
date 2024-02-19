@@ -1654,6 +1654,7 @@ export default {
   loadNodeStakes,
   loadRecordFiles,
   loadStakingRewardTransfers,
+  loadTokens,
   loadTokenAccounts,
   loadTopicMessageLookups,
   loadTransactions,

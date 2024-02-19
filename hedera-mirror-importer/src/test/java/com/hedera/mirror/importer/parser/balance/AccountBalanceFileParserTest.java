@@ -24,12 +24,10 @@ import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
-import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +39,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
 
     private final AccountBalanceBuilder accountBalanceBuilder;
     private final AccountBalanceFileBuilder accountBalanceFileBuilder;
-    private final StreamFileParser<AccountBalanceFile> accountBalanceFileParser;
+    private final AccountBalanceFileParser accountBalanceFileParser;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
@@ -50,6 +48,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
 
     @BeforeEach
     void setup() {
+        accountBalanceFileParser.clear();
         parserProperties.setEnabled(true);
     }
 
@@ -70,7 +69,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
     void success() {
         // given
         var accountBalanceFile = accountBalanceFile(1);
-        var items = accountBalanceFile.getItems().collectList().block();
+        var items = accountBalanceFile.getItems();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
@@ -86,7 +85,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
         int batchSize = parserProperties.getBatchSize();
         parserProperties.setBatchSize(2);
         var accountBalanceFile = accountBalanceFile(1);
-        var items = accountBalanceFile.getItems().collectList().block();
+        var items = accountBalanceFile.getItems();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
@@ -101,7 +100,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
         // given
         var accountBalanceFile = accountBalanceFile(1);
         var duplicate = accountBalanceFile(1);
-        var items = accountBalanceFile.getItems().collectList().block();
+        var items = accountBalanceFile.getItems();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
@@ -130,7 +129,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
         var network = importerProperties.getNetwork();
         importerProperties.setNetwork(ImporterProperties.HederaNetwork.MAINNET);
         AccountBalanceFile accountBalanceFile = accountBalanceFile(BAD_TIMESTAMP1);
-        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+        var items = accountBalanceFile.getItems();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
@@ -141,14 +140,14 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
         importerProperties.setNetwork(network);
     }
 
-    void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, List<AccountBalance> accountBalances) {
+    void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, Collection<AccountBalance> accountBalances) {
         Map<TokenBalance.Id, TokenBalance> tokenBalances = accountBalances.stream()
                 .map(AccountBalance::getTokenBalances)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(TokenBalance::getId, t -> t, (previous, current) -> previous));
 
         assertThat(accountBalanceFile.getBytes()).isNull();
-        assertThat(accountBalanceFile.getItems()).isNull();
+        assertThat(accountBalanceFile.getItems()).isEmpty();
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(accountBalances);
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenBalances.values());
 
@@ -165,7 +164,7 @@ class AccountBalanceFileParserTest extends ImporterIntegrationTest {
 
     void assertAccountBalanceFileWhenSkipped(AccountBalanceFile accountBalanceFile) {
         assertThat(accountBalanceFile.getBytes()).isNull();
-        assertThat(accountBalanceFile.getItems()).isNull();
+        assertThat(accountBalanceFile.getItems()).isEmpty();
         assertThat(accountBalanceRepository.count()).isZero();
         assertThat(tokenBalanceRepository.count()).isZero();
 

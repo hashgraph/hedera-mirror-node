@@ -167,7 +167,6 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         entityProperties.getPersist().setEntityHistory(true);
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
-        sqlEntityListener.onStart();
     }
 
     @AfterEach
@@ -723,21 +722,6 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         nonEmptyCustomFee.setTimestampUpper(emptyCustomFee.getTimestampLower());
         assertThat(customFeeRepository.findAll()).containsExactly(emptyCustomFee);
         assertThat(findHistory(CustomFee.class)).containsExactly(nonEmptyCustomFee);
-    }
-
-    @Test
-    void onEnd() {
-        var recordFile = domainBuilder.recordFile().get();
-        sqlEntityListener.onEnd(recordFile);
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
-        assertThat(sidecarFileRepository.findAll()).containsExactlyInAnyOrderElementsOf(recordFile.getSidecars());
-    }
-
-    @Test
-    void onEndNull() {
-        sqlEntityListener.onEnd(null);
-        assertThat(recordFileRepository.count()).isZero();
-        assertThat(sidecarFileRepository.count()).isZero();
     }
 
     @ParameterizedTest
@@ -3018,8 +3002,6 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
                 domainBuilder.recordFile().customize(r -> r.sidecars(List.of())).get();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
         parserContext.clear();
-
-        assertThat(recordFileRepository.findAll()).contains(recordFile);
     }
 
     private ContractState getContractState(ContractStateChange contractStateChange, long createdTimestamp) {

@@ -129,15 +129,12 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
                         ArrayListMultimap::create))
                 .block();
 
-        recordFile
-                .getItems()
-                .doOnNext(recordItem -> {
-                    var timestamp = recordItem.getTransactionRecord().getConsensusTimestamp();
-                    if (records.containsKey(timestamp)) {
-                        recordItem.setSidecarRecords(records.get(timestamp));
-                    }
-                })
-                .blockLast();
+        recordFile.getItems().forEach(recordItem -> {
+            var timestamp = recordItem.getTransactionRecord().getConsensusTimestamp();
+            if (records.containsKey(timestamp)) {
+                recordItem.setSidecarRecords(records.get(timestamp));
+            }
+        });
     }
 
     private Mono<SidecarFile> getSidecar(ConsensusNode node, StreamFilename recordFilename, SidecarFile sidecar) {

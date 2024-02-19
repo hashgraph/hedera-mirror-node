@@ -6,6 +6,8 @@ hedera:
         entityId:
           maxAge: 1800
           maxSize: 100000
+        token:
+          maxSize: 100000
       db:
         host: 127.0.0.1
         name: mirror_node

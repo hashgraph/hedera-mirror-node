@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.reader.balance;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.protobuf.UnknownFieldSet;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
@@ -41,7 +41,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import reactor.core.publisher.Flux;
 
 class ProtoBalanceFileReaderTest {
 
@@ -63,14 +62,12 @@ class ProtoBalanceFileReaderTest {
     }
 
     @Test
-    void readGzippedProtoBalanceFile() {
+    void readGzip() {
         AccountBalanceFile actual = protoBalanceFileReader.read(streamFileData);
         assertThat(actual)
                 .usingRecursiveComparison()
-                .ignoringFields("loadStart", "nodeAccountId", "items")
+                .ignoringFields("loadStart", "nodeAccountId")
                 .isEqualTo(expected);
-        assertThat(expected.getItems().collectList().block())
-                .isEqualTo(actual.getItems().collectList().block());
         assertThat(actual.getLoadStart()).isNotNull().isPositive();
     }
 
@@ -106,7 +103,7 @@ class ProtoBalanceFileReaderTest {
         StreamFileData streamFileData = StreamFileData.from(TIMESTAMP + "_Balances.pb", bytes);
         AccountBalanceFile accountBalanceFile = protoBalanceFileReader.read(streamFileData);
         assertThat(accountBalanceFile).isNotNull();
-        assertThat(accountBalanceFile.getItems().count().block()).isEqualTo(1L);
+        assertThat(accountBalanceFile.getItems()).hasSize(1);
     }
 
     @Test
@@ -150,9 +147,9 @@ class ProtoBalanceFileReaderTest {
                     EntityId accountId = EntityId.of(0, 0, accountNum + i);
                     List<TokenBalance> tokenBalances = IntStream.range(0, 5)
                             .mapToObj(j -> {
-                                EntityId tokenId = EntityId.of(0, 0, tokenNum + i * 5 + j);
+                                EntityId tokenId = EntityId.of(0, 0, tokenNum + i * 5L + j);
                                 return new TokenBalance(
-                                        tokenBalance + i * 5 + j,
+                                        tokenBalance + i * 5L + j,
                                         new TokenBalance.Id(consensusTimestamp, accountId, tokenId));
                             })
                             .collect(Collectors.toList());
@@ -165,7 +162,7 @@ class ProtoBalanceFileReaderTest {
                 .consensusTimestamp(consensusTimestamp)
                 .fileHash(
                         "67c2fd054621366dd5a37b6ee36a51bc590361379d539fdac2265af08cb8097729218c7d9ff1f1e354c85b820c5b8cf8")
-                .items(Flux.fromIterable(accountBalances))
+                .items(accountBalances)
                 .name(streamFileData.getFilename())
                 .build();
     }

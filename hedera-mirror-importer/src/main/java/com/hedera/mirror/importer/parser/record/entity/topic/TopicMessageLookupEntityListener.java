@@ -19,47 +19,31 @@ package com.hedera.mirror.importer.parser.record.entity.topic;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.db.TimePartitionService;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.parser.batch.BatchPersister;
-import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import jakarta.inject.Named;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;
 
-@CustomLog
 @Named
 @Order(3)
 @ConditionOnEntityRecordParser
-public class TopicMessageLookupEntityListener implements EntityListener, RecordStreamFileListener {
+@RequiredArgsConstructor
+public class TopicMessageLookupEntityListener implements EntityListener {
 
     private static final long FILE_CLOSE_INTERVAL_SECS =
             StreamType.RECORD.getFileCloseInterval().toSeconds();
     private static final String TOPIC_MESSAGE_TABLE_NAME = "topic_message";
 
-    private final BatchPersister batchPersister;
     private final EntityProperties entityProperties;
-    private final Map<TopicMessageLookup.Id, TopicMessageLookup> topicMessageLookups;
+    private final ParserContext parserContext;
     private final TimePartitionService timePartitionService;
-
-    public TopicMessageLookupEntityListener(
-            BatchPersister batchPersister,
-            EntityProperties entityProperties,
-            TimePartitionService timePartitionService) {
-        this.batchPersister = batchPersister;
-        this.entityProperties = entityProperties;
-        this.timePartitionService = timePartitionService;
-
-        topicMessageLookups = new HashMap<>();
-    }
 
     @Override
     public boolean isEnabled() {
@@ -86,51 +70,15 @@ public class TopicMessageLookupEntityListener implements EntityListener, RecordS
         for (var partition : partitions) {
             if (partition.getTimestampRange().contains(topicMessage.getConsensusTimestamp())) {
                 var topicMessageLookup = TopicMessageLookup.from(partition.getName(), topicMessage);
-                topicMessageLookups.merge(
-                        topicMessageLookup.getId(), topicMessageLookup, this::mergeTopicMessageLookup);
+                parserContext.merge(topicMessageLookup.getId(), topicMessageLookup, this::mergeTopicMessageLookup);
                 break;
             }
         }
-    }
-
-    @Override
-    public void onStart() throws ImporterException {
-        cleanup();
-    }
-
-    @Override
-    public void onEnd(RecordFile recordFile) throws ImporterException {
-        try {
-            if (!isEnabled() || recordFile == null) {
-                return;
-            }
-
-            persistTopicMessageLookups();
-        } finally {
-            cleanup();
-        }
-    }
-
-    @Override
-    public void onError() {
-        cleanup();
-    }
-
-    private void cleanup() {
-        topicMessageLookups.clear();
     }
 
     private TopicMessageLookup mergeTopicMessageLookup(TopicMessageLookup cached, TopicMessageLookup newValue) {
         cached.setSequenceNumberRange(cached.getSequenceNumberRange().span(newValue.getSequenceNumberRange()));
         cached.setTimestampRange(cached.getTimestampRange().span(newValue.getTimestampRange()));
         return cached;
-    }
-
-    private void persistTopicMessageLookups() {
-        if (topicMessageLookups.isEmpty()) {
-            return;
-        }
-
-        batchPersister.persist(topicMessageLookups.values());
     }
 }

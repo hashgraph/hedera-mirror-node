@@ -26,7 +26,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Transient;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,7 +36,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.data.util.Version;
-import reactor.core.publisher.Flux;
 
 @Builder(toBuilder = true)
 @Data
@@ -88,7 +87,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @JsonIgnore
     @ToString.Exclude
     @Transient
-    private Flux<RecordItem> items = Flux.empty();
+    private Collection<RecordItem> items = List.of();
 
     private Long loadEnd;
 
@@ -118,7 +117,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @JsonIgnore
     @ToString.Exclude
     @Transient
-    private List<SidecarFile> sidecars = Collections.emptyList();
+    private Collection<SidecarFile> sidecars = List.of();
 
     private Integer size;
 
@@ -128,7 +127,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     public void clear() {
         StreamFile.super.clear();
         setLogsBloom(null);
-        setSidecars(Collections.emptyList());
+        setSidecars(List.of());
     }
 
     @Override
