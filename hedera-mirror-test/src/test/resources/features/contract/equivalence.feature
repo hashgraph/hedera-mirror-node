@@ -117,3 +117,39 @@ Feature: in-equivalence tests
 #    Then I execute internal "call" against exchange rate precompile address "with" amount - success but should fail
     Then I execute internal "staticcall" against exchange rate precompile address "without" amount
     Then I execute internal "delegatecall" against exchange rate precompile address "without" amount
+
+  Scenario Outline: Validate in-equivalence tests for HTS Transfers
+    Given I successfully create estimate precompile contract
+    Then the mirror node REST API should return status 200 for the contracts creation
+    Given I successfully create tokens
+    Given I mint a new nft
+    Then the mirror node REST API should return status 200 for the HAPI transactions
+    Then I call precompile with transfer "FUNGIBLE" token to a <account> address
+    Then I call precompile with transfer "NFT" token to a <account> address
+    Then I call precompile with transferFrom "FUNGIBLE" token to a <account> address
+    Then I call precompile with transferFrom "NFT" token to a <account> address
+
+    Examples:
+      | account     |
+#      | "0.0.0" |  INVALID_ALIAS_KEY
+      | "0.0.1"     |
+      | "0.0.2"     |
+      | "0.0.3"     |
+      | "0.0.4"     |
+      | "0.0.5"     |
+      | "0.0.6"     |
+      | "0.0.7"     |
+      | "0.0.8"     |
+      | "0.0.9"     |
+      | "0.0.10"    |
+      | "0.0.11"    |
+#      | "0.0.350" |  INVALID_ALIAS_KEY
+#      | "0.0.356" |  INVALID_ALIAS_KEY
+#      | "0.0.357" |  INVALID_ALIAS_KEY
+#      | "0.0.358" |  INVALID_ALIAS_KEY
+#      | "0.0.359" |  INVALID_ALIAS_KEY
+#      | "0.0.360" |  INVALID_ALIAS_KEY
+#      | "0.0.361" |  INVALID_ALIAS_KEY
+      | "0.0.750"   |
+      | "0.0.800"   |
+      | "0.0.10010" |
