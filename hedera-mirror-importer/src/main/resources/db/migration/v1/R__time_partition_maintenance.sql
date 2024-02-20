@@ -1,5 +1,5 @@
 -- empty procedure
-create or replace procedure create_mirror_node_range_partitions() language sql as $$$$;
+drop procedure if exists create_mirror_node_range_partitions();
 
 create or replace procedure create_time_partition_for_table(table_name regclass) language plpgsql as
 $$

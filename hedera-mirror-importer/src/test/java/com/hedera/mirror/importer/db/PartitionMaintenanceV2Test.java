@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.db;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.EnabledIfV2;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
@@ -44,17 +43,14 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
                            tp.partition,
                            tp.from_value::bigint as current_from,
                            tp.to_value::bigint as current_to,
-                           (greatest(0, case when tp.partition_column::varchar ~ '^(.*_timestamp|consensus_end)$' then
-                                             extract(epoch from (to_timestamp(tp.from_value::bigint / 1000000000.0) - ?::interval))::bigint * 1000000000
-                                             else tp.from_value::bigint - ? end)) as previous_from,
-                           tp.partition_column::varchar ~ '^(.*_timestamp|consensus_end)$' as time_partition,
-                           (select coalesce(max(id), 1) from entity)             as max_entity_id
+                           (greatest(0, extract(
+                             epoch from (to_timestamp(tp.from_value::bigint / 1000000000.0) - ?::interval))::bigint * 1000000000)
+                           ) as previous_from
                     from time_partitions tp
                     order by tp.parent_table, tp.from_value::bigint desc
             """;
     private final @Owner JdbcTemplate jdbcTemplate;
     private final PartitionMaintenance partitionMaintenance;
-    private final DomainBuilder domainBuilder;
     private final FlywayProperties flywayProperties;
 
     private List<PartitionInfo> latestPartitions = new ArrayList<>();
@@ -74,7 +70,6 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
     @Test
     void createsTimePartitions() {
         String dropLatestTimePartitions = latestPartitions.stream()
-                .filter(PartitionInfo::isTimePartition)
                 .map(partitionInfo -> "drop table " + partitionInfo.partition)
                 .collect(Collectors.joining(";\n"));
         jdbcTemplate.execute(dropLatestTimePartitions);
@@ -87,12 +82,8 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
         for (var i = 0; i < latestPartitions.size(); i++) {
             var actual = newLatestPartitions.get(i);
             var expected = latestPartitions.get(i);
-            if (actual.timePartition) {
-                assertThat(actual.currentTo).isEqualTo(expected.currentFrom);
-                assertThat(actual.currentFrom).isEqualTo(expected.previousFrom);
-            } else {
-                assertThat(actual).isEqualTo(expected);
-            }
+            assertThat(actual.currentTo).isEqualTo(expected.currentFrom);
+            assertThat(actual.currentFrom).isEqualTo(expected.previousFrom);
         }
         partitionMaintenance.runMaintenance();
 
@@ -100,41 +91,12 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
         assertThat(getCurrentPartitions()).isEqualTo(latestPartitions);
     }
 
-    @Test
-    void createsIdPartitions() {
-        var entityIdPartition = latestPartitions.stream()
-                .filter(partitionInfo -> !partitionInfo.timePartition)
-                .findFirst()
-                .orElseThrow();
-        var newEntityId = entityIdPartition.getCurrentTo() - 1;
-        domainBuilder.entity().customize(builder -> builder.id(newEntityId)).persist();
-        partitionMaintenance.runMaintenance();
-        var partitionSize = Long.parseLong(flywayProperties.getPlaceholders().get("idPartitionSize"));
-        var expected = latestPartitions.stream()
-                .peek(partitionInfo -> {
-                    if (!partitionInfo.isTimePartition()) {
-                        var newFrom = partitionInfo.currentTo;
-                        var partitionCount = newFrom / partitionSize;
-                        var newTo = partitionInfo.currentTo + partitionSize;
-                        partitionInfo.setPartition(partitionInfo.parentTable + "_p" + partitionCount);
-                        partitionInfo.setPreviousFrom(partitionInfo.currentFrom);
-                        partitionInfo.setCurrentFrom(newFrom);
-                        partitionInfo.setCurrentTo(newTo);
-                    }
-                    partitionInfo.setMaxEntityId(newEntityId);
-                })
-                .collect(Collectors.toList());
-
-        assertThat(getCurrentPartitions()).isEqualTo(expected);
-    }
-
     @NotNull
     private List<PartitionInfo> getCurrentPartitions() {
         return jdbcTemplate.query(
                 GET_LATEST_PARTITIONS,
                 new DataClassRowMapper<>(PartitionInfo.class),
-                flywayProperties.getPlaceholders().get("partitionTimeInterval"),
-                Long.parseLong(flywayProperties.getPlaceholders().get("idPartitionSize")));
+                flywayProperties.getPlaceholders().get("partitionTimeInterval"));
     }
 
     @Data
@@ -145,7 +107,5 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
         private long currentFrom;
         private long previousFrom;
         private long currentTo;
-        private long maxEntityId;
-        private boolean timePartition;
     }
 }
