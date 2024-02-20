@@ -99,7 +99,7 @@ const createPool = () => {
  */
 const flywayMigrate = async () => {
   if (isDbMigrated()) {
-    logger.info('Skipping flyway migration since db is already migrated');
+    logger.info(`Skipping flyway migration for Jest worker ${process.env.JEST_WORKER_ID} since db is already migrated`);
     logger.info(`Migration filename: ${getMigratedFilename()}`);
     return;
   }
