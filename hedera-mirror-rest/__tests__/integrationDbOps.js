@@ -27,6 +27,8 @@ import {getPoolClass} from '../utils';
 const {db: defaultDbConfig} = config;
 const Pool = getPoolClass();
 
+let migrationInProgress = false;
+
 const cleanupSql = {
   v1: fs.readFileSync(
     path.join(
@@ -104,6 +106,13 @@ const flywayMigrate = async () => {
     return;
   }
 
+  if (migrationInProgress) {
+    logger.info(`Migration in progress, not migrating for Jest worker ${process.env.JEST_WORKER_ID}`);
+    return;
+  }
+
+  migrationInProgress = true;
+
   const workerId = process.env.JEST_WORKER_ID;
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
   const connectionUri = getOwnerConnectionUri(workerId);
@@ -170,6 +179,8 @@ const flywayMigrate = async () => {
   if (isV2Schema()) {
     fs.rmSync(locations, {force: true, recursive: true});
   }
+
+  migrationInProgress = false;
 };
 
 const getCleanupSql = async () => {
