@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class MaxGasValidatorTest {
+class GasLimitValidatorTest {
 
     private static final long MAX_GAS = 50_000L;
 
@@ -45,11 +45,11 @@ class MaxGasValidatorTest {
     @Mock
     private ConstraintValidatorContext context;
 
-    private MaxGasValidator maxGasValidator;
+    private GasLimitValidator gasLimitValidator;
 
     @BeforeEach
     void setMaxGasValidator() {
-        maxGasValidator = new MaxGasValidator(mirrorNodeEvmProperties);
+        gasLimitValidator = new GasLimitValidator(mirrorNodeEvmProperties);
     }
 
     private static Stream<Arguments> provideValidGasValuesForValidation() {
@@ -59,13 +59,13 @@ class MaxGasValidatorTest {
     @ParameterizedTest
     @MethodSource("provideValidGasValuesForValidation")
     void testValidMaxGas(Long gasValue) {
-        when(mirrorNodeEvmProperties.getMaxGas()).thenReturn(MAX_GAS);
-        assertThat(maxGasValidator.isValid(gasValue, null)).isTrue();
+        when(mirrorNodeEvmProperties.getMaxGasLimit()).thenReturn(MAX_GAS);
+        assertThat(gasLimitValidator.isValid(gasValue, null)).isTrue();
     }
 
     @Test
     void testInvalidMaxGas() {
-        when(mirrorNodeEvmProperties.getMaxGas()).thenReturn(MAX_GAS);
+        when(mirrorNodeEvmProperties.getMaxGasLimit()).thenReturn(MAX_GAS);
         doNothing().when(context).disableDefaultConstraintViolation();
 
         ConstraintValidatorContext.ConstraintViolationBuilder violationBuilder =
@@ -73,11 +73,11 @@ class MaxGasValidatorTest {
         when(context.buildConstraintViolationWithTemplate(any())).thenReturn(violationBuilder);
         when(violationBuilder.addConstraintViolation()).thenReturn(context);
 
-        assertThat(maxGasValidator.isValid(MAX_GAS + 1, context)).isFalse();
+        assertThat(gasLimitValidator.isValid(MAX_GAS + 1, context)).isFalse();
     }
 
     @Test
     void testWithEmptyGas() {
-        assertThat(maxGasValidator.isValid(null, null)).isTrue();
+        assertThat(gasLimitValidator.isValid(null, null)).isTrue();
     }
 }

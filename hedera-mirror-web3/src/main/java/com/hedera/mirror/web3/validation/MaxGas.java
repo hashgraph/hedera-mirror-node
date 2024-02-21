@@ -25,7 +25,7 @@ import java.lang.annotation.Target;
 
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = MaxGasValidator.class)
+@Constraint(validatedBy = GasLimitValidator.class)
 public @interface MaxGas {
 
     String message() default "The gas value is out of the allowed range.";

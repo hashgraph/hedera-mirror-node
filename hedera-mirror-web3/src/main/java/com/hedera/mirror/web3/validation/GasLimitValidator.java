@@ -22,19 +22,19 @@ import jakarta.validation.ConstraintValidatorContext;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public class MaxGasValidator implements ConstraintValidator<MaxGas, Long> {
+public class GasLimitValidator implements ConstraintValidator<MaxGas, Long> {
 
     private static final String MAX_GAS_MESSAGE = "must be less than or equal to ";
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Override
-    public boolean isValid(Long value, ConstraintValidatorContext context) {
-        if (value == null || value <= mirrorNodeEvmProperties.getMaxGas()) {
+    public boolean isValid(Long gasLimit, ConstraintValidatorContext context) {
+        if (gasLimit == null || gasLimit <= mirrorNodeEvmProperties.getMaxGasLimit()) {
             return true;
         } else {
             context.disableDefaultConstraintViolation();
-            context.buildConstraintViolationWithTemplate(MAX_GAS_MESSAGE + mirrorNodeEvmProperties.getMaxGas())
+            context.buildConstraintViolationWithTemplate(MAX_GAS_MESSAGE + mirrorNodeEvmProperties.getMaxGasLimit())
                     .addConstraintViolation();
             return false;
         }
