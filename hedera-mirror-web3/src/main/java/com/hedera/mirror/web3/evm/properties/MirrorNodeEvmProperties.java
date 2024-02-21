@@ -112,6 +112,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     private int maxCustomFeesAllowed = 10;
 
+    @Getter
+    private long maxGas = 50_000_000L;
+
     // maximum iteration count for estimate gas' search algorithm
     @Getter
     private int maxGasEstimateRetriesCount = 20;

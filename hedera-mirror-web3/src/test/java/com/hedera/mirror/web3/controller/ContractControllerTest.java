@@ -26,6 +26,7 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
@@ -46,7 +47,9 @@ import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -67,6 +70,14 @@ class ContractControllerTest {
 
     @MockBean
     private Bucket bucket;
+
+    @TestConfiguration
+    public static class TestConfig {
+        @Bean
+        public MirrorNodeEvmProperties evmProperties() {
+            return new MirrorNodeEvmProperties();
+        }
+    }
 
     @BeforeEach
     void setUp() {
@@ -95,7 +106,7 @@ class ContractControllerTest {
     void estimateGasWithInvalidGasParameter(long gas) {
         final var errorString = gas < 21000L
                 ? numberErrorString("gas", "greater", 21000L)
-                : numberErrorString("gas", "less", 15_000_000L);
+                : numberErrorString("gas", "less", 50_000_000L);
         final var request = request();
         request.setEstimate(true);
         request.setGas(gas);
