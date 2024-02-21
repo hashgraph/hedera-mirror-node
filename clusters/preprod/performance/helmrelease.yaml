@@ -51,6 +51,9 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    rest:
+      monitor:
+        enabled: false
     test:
       enabled: true
       config:
