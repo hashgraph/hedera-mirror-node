@@ -70,4 +70,4 @@ from gas_calculation gc
 where cr.consensus_timestamp = gc.consensus_timestamp;
 
 drop function if exists bytes_gas_calculation(bytea);
-drop function if exists get_intrinsic_gas(bytea);
+drop function if exists get_intrinsic_gas(bytea, boolean);

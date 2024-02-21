@@ -16,20 +16,17 @@
 
 package com.hedera.mirror.importer.migration;
 
+import static com.hedera.mirror.importer.migration.GasConsumedMigrationTest.createMigrationContractResult;
+import static com.hedera.mirror.importer.migration.GasConsumedMigrationTest.persistMigrationContractResult;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenTransfer.Id;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
-import com.hedera.mirror.importer.migration.GasConsumedMigrationTest.MigrationContractResult;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.sql.Array;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Tag;
@@ -83,8 +80,9 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                         .payerAccountId(owner1))
                 .persist();
 
-        var migrationContractResult1 = createMigrationContractResult(transferTimestamp1, spender1, domainBuilder);
-        persistMigrationContractResult(migrationContractResult1);
+        var migrationContractResult1 = createMigrationContractResult(
+                transferTimestamp1, spender1, domainBuilder.entityId().getId(), domainBuilder);
+        persistMigrationContractResult(migrationContractResult1, jdbcTemplate);
 
         // Token1 allowances granted by owner1, note the first token allowance's amount didn't change while the
         // self grant has a negative balance both due to the bug
@@ -114,8 +112,9 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                         .payerAccountId(owner1))
                 .persist();
 
-        var migrationContractResult2 = createMigrationContractResult(transferTimestamp2, spender1, domainBuilder);
-        persistMigrationContractResult(migrationContractResult2);
+        var migrationContractResult2 = createMigrationContractResult(
+                transferTimestamp2, spender1, domainBuilder.entityId().getId(), domainBuilder);
+        persistMigrationContractResult(migrationContractResult2, jdbcTemplate);
 
         // Token2 allowance granted by owner1 to spender2
         var tokenAllowance3 = domainBuilder
@@ -135,8 +134,9 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                         .payerAccountId(owner1))
                 .persist();
 
-        var migrationContractResult3 = createMigrationContractResult(transferTimestamp3, spender2, domainBuilder);
-        persistMigrationContractResult(migrationContractResult3);
+        var migrationContractResult3 = createMigrationContractResult(
+                transferTimestamp3, spender2, domainBuilder.entityId().getId(), domainBuilder);
+        persistMigrationContractResult(migrationContractResult3, jdbcTemplate);
         // A normal token transfer using token allowance, note due to the inaccuracy in how we mark a transfer as
         // is_approval, the aggregated spent amount is 1000 + 4100 > granted amount 5000, the migration should have a
         // safeguard to set remaining amount to 0
@@ -174,64 +174,6 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
         tokenAllowance3.setAmount(0);
         assertThat(tokenAllowanceRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAllowance1, tokenAllowance2, tokenAllowance3, tokenAllowance4);
-    }
-
-    private static MigrationContractResult createMigrationContractResult(
-            long timestamp, EntityId senderId, DomainBuilder domainBuilder) {
-        return MigrationContractResult.builder()
-                .amount(1000L)
-                .bloom(domainBuilder.bytes(256))
-                .callResult(domainBuilder.bytes(512))
-                .consensusTimestamp(timestamp)
-                .contractId(domainBuilder.entityId().getId())
-                .createdContractIds(List.of(domainBuilder.entityId().getId()))
-                .errorMessage("")
-                .functionParameters(domainBuilder.bytes(64))
-                .functionResult(domainBuilder.bytes(128))
-                .gasLimit(200L)
-                .gasUsed(100L)
-                .payerAccountId(domainBuilder.entityId())
-                .senderId(senderId)
-                .transactionHash(domainBuilder.bytes(32))
-                .transactionIndex(1)
-                .transactionNonce(0)
-                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE)
-                .build();
-    }
-
-    public void persistMigrationContractResult(final MigrationContractResult result) {
-        final String sql =
-                """
-                insert into contract_result
-                (consensus_timestamp, amount, bloom, call_result, contract_id, created_contract_ids,
-                error_message, function_parameters, function_result, gas_limit, gas_used,
-                payer_account_id, sender_id, transaction_hash, transaction_index, transaction_nonce,
-                transaction_result) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-        jdbcTemplate.update(sql, ps -> {
-            ps.setLong(1, result.getConsensusTimestamp());
-            ps.setLong(2, result.getAmount());
-            ps.setBytes(3, result.getBloom());
-            ps.setBytes(4, result.getCallResult());
-            ps.setLong(5, result.getContractId());
-            final Long[] createdContractIdsArray =
-                    result.getCreatedContractIds().toArray(new Long[0]);
-            final Array createdContractIdsSqlArray =
-                    ps.getConnection().createArrayOf("bigint", createdContractIdsArray);
-            ps.setArray(6, createdContractIdsSqlArray);
-            ps.setString(7, result.getErrorMessage());
-            ps.setBytes(8, result.getFunctionParameters());
-            ps.setBytes(9, result.getFunctionResult());
-            ps.setLong(10, result.getGasLimit());
-            ps.setLong(11, result.getGasUsed());
-            ps.setObject(12, result.getPayerAccountId().getId());
-            ps.setObject(13, result.getSenderId().getId());
-            ps.setBytes(14, result.getTransactionHash());
-            ps.setInt(15, result.getTransactionIndex());
-            ps.setInt(16, result.getTransactionNonce());
-            ps.setInt(17, result.getTransactionResult());
-        });
     }
 
     @SneakyThrows

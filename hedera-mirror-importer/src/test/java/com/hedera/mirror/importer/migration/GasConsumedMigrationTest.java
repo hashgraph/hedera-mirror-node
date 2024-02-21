@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -27,13 +28,16 @@ import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.sql.Array;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,8 +52,13 @@ import org.springframework.util.StreamUtils;
 @Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.94.0")
+@TestPropertySource(properties = "spring.flyway.target=1.93.2")
 public class GasConsumedMigrationTest extends ImporterIntegrationTest {
+
+    private static final String REVERT_DDL =
+            """
+        alter table contract_result drop column gas_consumed;
+        """;
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -62,6 +71,11 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
     private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
     private final EntityRepository entityRepository;
+
+    @AfterEach
+    void teardown() {
+        jdbcOperations.update(REVERT_DDL);
+    }
 
     @Test
     void empty() {
@@ -78,10 +92,13 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
         final var ethTxCreate = domainBuilder.ethereumTransaction(true).persist();
         final var ethTxCall = domainBuilder.ethereumTransaction(true).persist();
 
+        // run migration to create gas_consumed column
+        runMigration();
+
         persistData(ethTxCreate, true);
         persistData(ethTxCall, false);
 
-        // when
+        // run migration to populate gas_consumed column
         runMigration();
 
         // then
@@ -101,11 +118,9 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
                         topLevelCreate ? ethTx.getConsensusTimestamp() : ethTx.getConsensusTimestamp() + 1))
                 .customize(e -> e.id(contract.getId()))
                 .persist();
-        domainBuilder
-                .contractResult()
-                .customize(cr -> cr.consensusTimestamp(ethTx.getConsensusTimestamp()))
-                .customize(cr -> cr.contractId(contract.getId()))
-                .persist();
+        var migrateContractResult = createMigrationContractResult(
+                ethTx.getConsensusTimestamp(), domainBuilder.entityId(), contract.getId(), domainBuilder);
+        persistMigrationContractResult(migrateContractResult, jdbcTemplate);
         domainBuilder
                 .contractAction()
                 .customize(ca -> ca.consensusTimestamp(ethTx.getConsensusTimestamp()))
@@ -132,10 +147,10 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
     @Data
     @Builder
     public static class MigrationContractResult {
-        private Long consensusTimestamp;
         private Long amount;
         private byte[] bloom;
         private byte[] callResult;
+        private Long consensusTimestamp;
         private long contractId;
         private List<Long> createdContractIds;
         private String errorMessage;
@@ -149,5 +164,63 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
         private Integer transactionIndex;
         private int transactionNonce;
         private Integer transactionResult;
+    }
+
+    public static MigrationContractResult createMigrationContractResult(
+            long timestamp, EntityId senderId, long contractId, DomainBuilder domainBuilder) {
+        return MigrationContractResult.builder()
+                .amount(1000L)
+                .bloom(domainBuilder.bytes(256))
+                .callResult(domainBuilder.bytes(512))
+                .consensusTimestamp(timestamp)
+                .contractId(contractId)
+                .createdContractIds(List.of(domainBuilder.entityId().getId()))
+                .errorMessage("")
+                .functionParameters(domainBuilder.bytes(64))
+                .functionResult(domainBuilder.bytes(128))
+                .gasLimit(200L)
+                .gasUsed(100L)
+                .payerAccountId(domainBuilder.entityId())
+                .senderId(senderId)
+                .transactionHash(domainBuilder.bytes(32))
+                .transactionIndex(1)
+                .transactionNonce(0)
+                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE)
+                .build();
+    }
+
+    public static void persistMigrationContractResult(final MigrationContractResult result, JdbcTemplate jdbcTemplate) {
+        final String sql =
+                """
+                insert into contract_result
+                (consensus_timestamp, amount, bloom, call_result, contract_id, created_contract_ids,
+                error_message, function_parameters, function_result, gas_limit, gas_used,
+                payer_account_id, sender_id, transaction_hash, transaction_index, transaction_nonce,
+                transaction_result) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        jdbcTemplate.update(sql, ps -> {
+            ps.setLong(1, result.getConsensusTimestamp());
+            ps.setLong(2, result.getAmount());
+            ps.setBytes(3, result.getBloom());
+            ps.setBytes(4, result.getCallResult());
+            ps.setLong(5, result.getContractId());
+            final Long[] createdContractIdsArray =
+                    result.getCreatedContractIds().toArray(new Long[0]);
+            final Array createdContractIdsSqlArray =
+                    ps.getConnection().createArrayOf("bigint", createdContractIdsArray);
+            ps.setArray(6, createdContractIdsSqlArray);
+            ps.setString(7, result.getErrorMessage());
+            ps.setBytes(8, result.getFunctionParameters());
+            ps.setBytes(9, result.getFunctionResult());
+            ps.setLong(10, result.getGasLimit());
+            ps.setLong(11, result.getGasUsed());
+            ps.setObject(12, result.getPayerAccountId().getId());
+            ps.setObject(13, result.getSenderId().getId());
+            ps.setBytes(14, result.getTransactionHash());
+            ps.setInt(15, result.getTransactionIndex());
+            ps.setInt(16, result.getTransactionNonce());
+            ps.setInt(17, result.getTransactionResult());
+        });
     }
 }
