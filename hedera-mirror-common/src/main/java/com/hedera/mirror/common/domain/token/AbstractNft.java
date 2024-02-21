@@ -52,7 +52,6 @@ public abstract class AbstractNft implements History {
 
     private Boolean deleted;
 
-    @Column(updatable = false)
     @ToString.Exclude
     private byte[] metadata;
 
