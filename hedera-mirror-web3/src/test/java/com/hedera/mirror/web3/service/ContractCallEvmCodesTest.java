@@ -325,7 +325,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .value(0L)
                 .receiver(EVM_CODES_CONTRACT_ADDRESS)
                 .callData(callData)
-                .gas(15_000_000L)
+                .gas(50_000_000L)
                 .isStatic(true)
                 .callType(ETH_CALL)
                 .block(BlockType.LATEST)
@@ -345,7 +345,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .callData(callData)
                 .callType(ETH_ESTIMATE_GAS)
                 .block(BlockType.LATEST)
-                .gas(15_000_000L)
+                .gas(50_000_000L)
                 .isStatic(false)
                 .isEstimate(true)
                 .build();
