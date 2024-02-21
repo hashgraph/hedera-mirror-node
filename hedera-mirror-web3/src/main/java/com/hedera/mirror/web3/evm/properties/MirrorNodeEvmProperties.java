@@ -38,6 +38,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -46,7 +47,10 @@ import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DataSizeUnit;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 import org.springframework.validation.annotation.Validated;
 
 @Setter
@@ -109,6 +113,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @Min(1)
     private int maxBatchSizeWipe = 10;
+
+    @Getter
+    @NotNull
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize maxDataSize = DataSize.ofKilobytes(24); // HAPI caps contract creates at 24KiB
+
+    @Getter(lazy = true)
+    private final Pattern dataValidatorPattern = Pattern.compile("^(0x)?[0-9a-fA-F]{0,%d}$".formatted(maxDataSize.toBytes() * 2L));
 
     private int maxCustomFeesAllowed = 10;
 
