@@ -262,7 +262,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         final var result = contractCallService.processCall(serviceParameters);
-        assertThat(Long.parseLong(result.substring(2), 16)).isGreaterThan(0);
+        assertThat(Long.parseLong(result.substring(2), 16)).isNotZero();
     }
 
     @Test
