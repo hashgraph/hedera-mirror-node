@@ -182,7 +182,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return evmVersion.equals(EVM_VERSION_0_46);
+        return (!evmVersion.equals(EVM_VERSION_0_30)
+                && !evmVersion.equals(EVM_VERSION_0_34)
+                && !evmVersion.equals(EVM_VERSION_0_38));
     }
 
     @Override
