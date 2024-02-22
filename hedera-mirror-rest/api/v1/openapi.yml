@@ -1302,7 +1302,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.99.0-SNAPSHOT
+  version: 0.100.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -2485,10 +2485,10 @@ components:
           pattern: "^((0x)?[0-9a-fA-F]+|(earliest|pending|latest))$"
           type: string
         data:
-          description: Hexadecimal method signature and encoded parameters.
+          description: Hexadecimal method signature and encoded parameters. Up to 24656 bytes as at most 49152 hexidecimal digits plus optional leading 0x.
           example: "0x47f1aae7"
           format: binary
-          maxLength: 12288
+          maxLength: 49154
           nullable: true
           pattern: "^(0x)?[0-9a-fA-F]+$"
           type: string
