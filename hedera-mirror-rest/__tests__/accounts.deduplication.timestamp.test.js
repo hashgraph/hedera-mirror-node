@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-import {setupIntegrationTest} from './integrationUtils.js';
-import integrationDomainOps from './integrationDomainOps.js';
-import * as utils from '../utils.js';
+import {setupIntegrationTest} from './integrationUtils';
+import integrationDomainOps from './integrationDomainOps';
+import * as utils from '../utils';
 import request from 'supertest';
-import server from '../server.js';
-import * as constants from '../constants.js';
-import {nsToSecNsWithHyphen} from '../utils.js';
+import server from '../server';
+import * as constants from '../constants';
 
 setupIntegrationTest();
 
