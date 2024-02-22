@@ -124,7 +124,11 @@ class ContractController {
      * data size in bytes is doubled for validation of the data length within the request object.
      */
     private void validateContractData(final ContractCallRequest request) {
-        if (!evmProperties.getDataValidatorPattern().matcher(request.getData()).find()) {
+        if (request.getData() != null
+                && !evmProperties
+                        .getDataValidatorPattern()
+                        .matcher(request.getData())
+                        .find()) {
             throw new InvalidParametersException("data field invalid hexadecimal string or contains more than %d digits"
                     .formatted(evmProperties.getMaxDataSize().toBytes() * 2L));
         }
