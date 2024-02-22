@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.migration;
 
+import static com.hedera.mirror.importer.migration.GasConsumedMigrationTest.createMigrationContractResult;
+import static com.hedera.mirror.importer.migration.GasConsumedMigrationTest.persistMigrationContractResult;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONSENSUS_GAS_EXHAUSTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.DUPLICATE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
@@ -73,24 +75,14 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
     void migrate() {
         // given
         var ethTx1 = domainBuilder.ethereumTransaction(true).persist();
-        var migrationContractResult = MigrationContractResult.builder()
-                .callResult(domainBuilder.bytes(512))
-                .consensusTimestamp(ethTx1.getConsensusTimestamp())
-                .contractId(domainBuilder.entityId().getId())
-                .createdContractIds(List.of(domainBuilder.entityId().getId()))
-                .errorMessage("")
-                .functionParameters(domainBuilder.bytes(64))
-                .functionResult(domainBuilder.bytes(128))
-                .gasLimit(200L)
-                .gasUsed(100L)
-                .payerAccountId(domainBuilder.entityId())
-                .transactionHash(domainBuilder.bytes(32))
-                .transactionIndex(1)
-                .transactionNonce(0)
-                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE)
-                .build();
 
-        persistMigrationContractResult(migrationContractResult);
+        var migrationContractResult = createMigrationContractResult(
+                ethTx1.getConsensusTimestamp(),
+                domainBuilder.entityId(),
+                domainBuilder.entityId().getId(),
+                domainBuilder);
+        persistMigrationContractResult(migrationContractResult, jdbcTemplate);
+        ;
 
         var transaction1 = transaction(ethTx1.getConsensusTimestamp(), SUCCESS, ethTx1.getPayerAccountId(), 0, 0);
         var ethTx2 = domainBuilder.ethereumTransaction(false).persist();
@@ -166,43 +158,11 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
                 });
     }
 
-    public void persistMigrationContractResult(final MigrationContractResult result) {
-        final String sql =
-                """
-                insert into contract_result
-                (consensus_timestamp, call_result, contract_id, created_contract_ids,
-                error_message, function_parameters, function_result, gas_limit, gas_used,
-                payer_account_id, transaction_hash, transaction_index, transaction_nonce,
-                transaction_result) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """;
-
-        jdbcTemplate.update(sql, ps -> {
-            ps.setLong(1, result.getConsensusTimestamp());
-            ps.setBytes(2, result.getCallResult());
-            ps.setLong(3, result.getContractId());
-            final Long[] createdContractIdsArray =
-                    result.getCreatedContractIds().toArray(new Long[0]);
-            final Array createdContractIdsSqlArray =
-                    ps.getConnection().createArrayOf("bigint", createdContractIdsArray);
-            ps.setArray(4, createdContractIdsSqlArray);
-            ps.setString(5, result.getErrorMessage());
-            ps.setBytes(6, result.getFunctionParameters());
-            ps.setBytes(7, result.getFunctionResult());
-            ps.setLong(8, result.getGasLimit());
-            ps.setLong(9, result.getGasUsed());
-            ps.setObject(10, result.getPayerAccountId().getId());
-            ps.setBytes(11, result.getTransactionHash());
-            ps.setInt(12, result.getTransactionIndex());
-            ps.setInt(13, result.getTransactionNonce());
-            ps.setInt(14, result.getTransactionResult());
-        });
-    }
-
     private List<MigrationContractResult> findAllContractResults() {
         return jdbcTemplate.query(
                 """
-                        select consensus_timestamp, call_result, contract_id, created_contract_ids, error_message,
-                        function_result, function_parameters, gas_limit, gas_used, payer_account_id,
+                        select amount, bloom, call_result, consensus_timestamp, contract_id, created_contract_ids, error_message,
+                        function_parameters, function_result, gas_limit, gas_used, payer_account_id, sender_id,
                         transaction_hash, transaction_index, transaction_nonce,
                         transaction_result from contract_result
                         """,
@@ -211,8 +171,10 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
                     Array createdContractIds = rs.getArray("created_contract_ids");
 
                     return MigrationContractResult.builder()
-                            .consensusTimestamp(rs.getLong("consensus_timestamp"))
+                            .amount(rs.getLong("amount") == 0 ? null : rs.getLong("amount"))
+                            .bloom(rs.getBytes("bloom"))
                             .callResult(rs.getBytes("call_result"))
+                            .consensusTimestamp(rs.getLong("consensus_timestamp"))
                             .contractId(rs.getLong("contract_id"))
                             .createdContractIds(
                                     createdContractIds == null ? null : List.of((Long[]) createdContractIds.getArray()))
@@ -221,7 +183,8 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
                             .functionResult(rs.getBytes("function_result"))
                             .gasLimit(rs.getLong("gas_limit"))
                             .gasUsed(rs.getLong("gas_used"))
-                            .payerAccountId(EntityId.of(0L, 0L, payerAccountId))
+                            .payerAccountId(EntityId.of(payerAccountId))
+                            .senderId(rs.getLong("sender_id") == 0 ? null : EntityId.of(rs.getLong("sender_id")))
                             .transactionHash(rs.getBytes("transaction_hash"))
                             .transactionIndex(rs.getInt("transaction_index"))
                             .transactionNonce(rs.getInt("transaction_nonce"))

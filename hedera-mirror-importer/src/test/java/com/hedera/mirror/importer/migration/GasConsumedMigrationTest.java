@@ -193,17 +193,17 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
         final String sql =
                 """
                 insert into contract_result
-                (consensus_timestamp, amount, bloom, call_result, contract_id, created_contract_ids,
+                (amount, bloom, call_result, consensus_timestamp, contract_id, created_contract_ids,
                 error_message, function_parameters, function_result, gas_limit, gas_used,
                 payer_account_id, sender_id, transaction_hash, transaction_index, transaction_nonce,
                 transaction_result) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         jdbcTemplate.update(sql, ps -> {
-            ps.setLong(1, result.getConsensusTimestamp());
-            ps.setLong(2, result.getAmount());
-            ps.setBytes(3, result.getBloom());
-            ps.setBytes(4, result.getCallResult());
+            ps.setLong(1, result.getAmount());
+            ps.setBytes(2, result.getBloom());
+            ps.setBytes(3, result.getCallResult());
+            ps.setLong(4, result.getConsensusTimestamp());
             ps.setLong(5, result.getContractId());
             final Long[] createdContractIdsArray =
                     result.getCreatedContractIds().toArray(new Long[0]);
