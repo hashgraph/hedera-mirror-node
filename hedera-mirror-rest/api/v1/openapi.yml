@@ -2507,8 +2507,8 @@ components:
           pattern: "^(0x)?[A-Fa-f0-9]{40}$"
           type: string
         gas:
-          description: Gas provided for the transaction execution. Defaults to 50000000.
-          example: 50000000
+          description: Gas provided for the transaction execution. Defaults to 15000000.
+          example: 15000000
           format: int64
           minimum: 0
           nullable: true

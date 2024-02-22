@@ -47,7 +47,7 @@ public class ContractCallRequest {
 
     @Min(21_000)
     @MaxGas
-    private long gas = 50_000_000L;
+    private long gas = 15_000_000L;
 
     @Min(0)
     private long gasPrice;

@@ -26,7 +26,7 @@ public class ModelBuilder {
 
     private static final String DEFAULT_CONTRACT_CALL_BLOCK = "latest";
     private static final Boolean DEFAULT_CONTRACT_CALL_ESTIMATE = Boolean.FALSE;
-    private static final Long DEFAULT_CONTRACT_CALL_GAS = 50_000_000L;
+    private static final Long DEFAULT_CONTRACT_CALL_GAS = 15_000_000L;
     private static final Long DEFAULT_CONTRACT_CALL_GAS_PRICE = 100_000_000L;
     private static final Long DEFAULT_CONTRACT_CALL_VALUE = 0L;
 

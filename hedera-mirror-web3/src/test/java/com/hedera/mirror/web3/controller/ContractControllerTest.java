@@ -106,7 +106,7 @@ class ContractControllerTest {
     void estimateGasWithInvalidGasParameter(long gas) {
         final var errorString = gas < 21000L
                 ? numberErrorString("gas", "greater", 21000L)
-                : numberErrorString("gas", "less", 50_000_000L);
+                : numberErrorString("gas", "less", 15_000_000L);
         final var request = request();
         request.setEstimate(true);
         request.setGas(gas);

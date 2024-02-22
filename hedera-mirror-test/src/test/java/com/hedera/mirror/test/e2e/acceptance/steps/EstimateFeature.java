@@ -448,7 +448,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         MESSAGE_SIGNER("msgSig", 21252),
         MESSAGE_VALUE("msgValue", 21234),
         MULTIPLY_NUMBERS("pureMultiply", 21227),
-        NESTED_CALLS_LIMITED("nestedCalls", 672535),
+        NESTED_CALLS_LIMITED("nestedCalls", 550093),
         NESTED_CALLS_POSITIVE("nestedCalls", 35975),
         REENTRANCY_CALL_ATTACK("reentrancyWithCall", 55818),
         STATIC_CALL_TO_CONTRACT("staticCallToContract", 25146),
