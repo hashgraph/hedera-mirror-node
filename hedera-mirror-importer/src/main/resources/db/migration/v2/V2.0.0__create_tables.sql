@@ -541,8 +541,10 @@ create table if not exists token
     fee_schedule_key    bytea,
     freeze_default      boolean                not null default false,
     freeze_key          bytea,
+    freeze_status       smallint               not null,
     initial_supply      bigint                 not null,
     kyc_key             bytea,
+    kyc_status          smallint               not null,
     max_supply          bigint                 not null default 9223372036854775807, -- max long
     name                character varying(100) not null,
     pause_key           bytea                  null,
@@ -551,7 +553,7 @@ create table if not exists token
     supply_type         token_supply_type      not null default 'INFINITE',
     symbol              character varying(100) not null,
     timestamp_range     int8range              not null,
-    token_id            bigint,
+    token_id            bigint                 not null,
     total_supply        bigint                 not null default 0,
     treasury_account_id bigint                 not null,
     type                token_type             not null default 'FUNGIBLE_COMMON',
@@ -570,12 +572,12 @@ create table if not exists token_account
 (
     account_id            bigint    not null,
     associated            boolean   not null default false,
-    automatic_association boolean   not null default false,
+    automatic_association boolean   null,
     balance               bigint    not null default 0,
-    balance_timestamp     bigint    not null,
-    created_timestamp     bigint    not null,
-    freeze_status         smallint  not null default 0,
-    kyc_status            smallint  not null default 0,
+    balance_timestamp     bigint    null,
+    created_timestamp     bigint    null,
+    freeze_status         smallint  null,
+    kyc_status            smallint  null,
     timestamp_range       int8range not null,
     token_id              bigint    not null
 );

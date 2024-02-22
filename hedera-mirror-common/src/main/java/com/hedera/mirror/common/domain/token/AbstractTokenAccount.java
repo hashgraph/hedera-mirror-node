@@ -19,6 +19,7 @@ package com.hedera.mirror.common.domain.token;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.History;
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -45,6 +46,13 @@ public class AbstractTokenAccount implements History {
 
     private Boolean automaticAssociation;
 
+    @UpsertColumn(
+            coalesce =
+                    """
+            case when created_timestamp is not null then {0}
+                 else coalesce(e_{0}, 0) + coalesce({0}, 0)
+            end
+            """)
     private long balance;
 
     private Long balanceTimestamp;
@@ -52,9 +60,23 @@ public class AbstractTokenAccount implements History {
     private Long createdTimestamp;
 
     @Enumerated(EnumType.ORDINAL)
+    @UpsertColumn(
+            coalesce =
+                    """
+            case when created_timestamp is not null then {0}
+                 else coalesce({0}, e_{0})
+            end
+            """)
     private TokenFreezeStatusEnum freezeStatus;
 
     @Enumerated(EnumType.ORDINAL)
+    @UpsertColumn(
+            coalesce =
+                    """
+            case when created_timestamp is not null then {0}
+                 else coalesce({0}, e_{0})
+            end
+            """)
     private TokenKycStatusEnum kycStatus;
 
     private Range<Long> timestampRange;

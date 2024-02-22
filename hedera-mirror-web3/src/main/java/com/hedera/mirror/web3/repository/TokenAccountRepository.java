@@ -27,12 +27,32 @@ import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, AbstractTokenAccount.Id> {
 
     @Override
     @Cacheable(cacheNames = CACHE_NAME_TOKEN_ACCOUNT, cacheManager = CACHE_MANAGER_TOKEN, unless = "#result == null")
-    Optional<TokenAccount> findById(AbstractTokenAccount.Id id);
+    @Query(
+            value =
+                    """
+                    select
+                      ta.account_id,
+                      ta.associated,
+                      ta.automatic_association,
+                      ta.balance,
+                      ta.balance_timestamp,
+                      ta.created_timestamp,
+                      coalesce(ta.freeze_status, t.freeze_status) as freeze_status,
+                      coalesce(ta.kyc_status, t.kyc_status) as kyc_status,
+                      ta.timestamp_range,
+                      ta.token_id
+                    from token_account as ta
+                    left join (select * from token where token_id = :#{#id.tokenId}) as t on true
+                    where ta.account_id = :#{#id.accountId} and ta.token_id = :#{#id.tokenId}
+                    """,
+            nativeQuery = true)
+    Optional<TokenAccount> findById(@Param("id") AbstractTokenAccount.Id id);
 
     @Query(
             value = "select count(*) as tokenCount, balance>0 as isPositiveBalance from token_account "
@@ -91,15 +111,27 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
     @Query(
             value =
                     """
-                    (
+                    select
+                      ta.account_id,
+                      ta.associated,
+                      ta.automatic_association,
+                      ta.balance,
+                      ta.balance_timestamp,
+                      ta.created_timestamp,
+                      coalesce(ta.freeze_status, t.freeze_status) as freeze_status,
+                      coalesce(ta.kyc_status, t.kyc_status) as kyc_status,
+                      ta.timestamp_range,
+                      ta.token_id
+                    from (
+                            (
                         select *
                         from token_account
                         where account_id = :accountId
                             and token_id = :tokenId
                             and lower(timestamp_range) <= :blockTimestamp
-                    )
-                    union all
-                    (
+                            )
+                            union all
+                            (
                         select *
                         from token_account_history
                         where account_id = :accountId
@@ -107,9 +139,11 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
                             and lower(timestamp_range) <= :blockTimestamp
                         order by lower(timestamp_range) desc
                         limit 1
-                    )
-                    order by timestamp_range desc
-                    limit 1
+                            )
+                            order by timestamp_range desc
+                            limit 1
+                    ) as ta
+                    left join token as t using (token_id)
                     """,
             nativeQuery = true)
     Optional<TokenAccount> findByIdAndTimestamp(long accountId, long tokenId, long blockTimestamp);
