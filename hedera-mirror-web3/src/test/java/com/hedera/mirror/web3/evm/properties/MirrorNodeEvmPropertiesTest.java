@@ -16,10 +16,10 @@
 
 package com.hedera.mirror.web3.evm.properties;
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -42,7 +42,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
-    private static final String EVM_VERSION = EVM_VERSION_0_46;
     private static final int MAX_REFUND_PERCENT = 100;
     private static final int MAX_CUSTOM_FEES_ALLOWED = 10;
     private static final Address FUNDING_ADDRESS = Address.fromHexString("0x0000000000000000000000000000000000000062");
