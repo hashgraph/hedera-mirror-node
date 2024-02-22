@@ -469,26 +469,11 @@ class ContractControllerTest {
                 .isEqualTo(OK);
     }
 
-    @Test
-    void callSuccessWithNullData() {
+    @NullAndEmptySource
+    @ParameterizedTest
+    void callSuccessWithNullAndEmptyData(String data) {
         final var request = request();
-        request.setData(null);
-        request.setValue(0);
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(OK);
-    }
-
-    @Test
-    void callSuccessWithEmptyData() {
-        final var request = request();
-        request.setData("");
+        request.setData(data);
         request.setValue(0);
 
         webClient
