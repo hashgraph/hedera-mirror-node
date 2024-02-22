@@ -62,7 +62,7 @@ const assertCustomConfig = (actual, customConfig) => {
   expect(actual.response.compression).toBe(customConfig.hedera.mirror.rest.response.compression);
 };
 
-const loadConfig = async () => (await import('../config.js')).default;
+const loadConfig = async () => (await import('../config')).default;
 
 const loadCustomConfig = async (customConfig, filename = 'application.yml') => {
   fs.writeFileSync(path.join(tempDir, filename), yaml.dump(customConfig));

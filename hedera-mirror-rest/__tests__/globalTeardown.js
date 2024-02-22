@@ -15,7 +15,7 @@
  */
 
 import fs from 'fs';
-import {getDatabases} from './globalSetup.js';
+import {getDatabases} from './globalSetup';
 import log4js from 'log4js';
 
 export default async function () {
