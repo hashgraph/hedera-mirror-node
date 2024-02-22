@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import {isV2Schema} from '../testutils.js';
+import {isV2Schema} from '../testutils';
 
 const nullifyPayerAccountId = async () => ownerPool.queryQuietly('update transaction_hash set payer_account_id = null');
 
