@@ -82,7 +82,6 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
                 domainBuilder.entityId().getId(),
                 domainBuilder);
         persistMigrationContractResult(migrationContractResult, jdbcTemplate);
-        ;
 
         var transaction1 = transaction(ethTx1.getConsensusTimestamp(), SUCCESS, ethTx1.getPayerAccountId(), 0, 0);
         var ethTx2 = domainBuilder.ethereumTransaction(false).persist();
@@ -161,9 +160,9 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
     private List<MigrationContractResult> findAllContractResults() {
         return jdbcTemplate.query(
                 """
-                        select amount, bloom, call_result, consensus_timestamp, contract_id, created_contract_ids, error_message,
-                        function_parameters, function_result, gas_limit, gas_used, payer_account_id, sender_id,
-                        transaction_hash, transaction_index, transaction_nonce,
+                        select amount, bloom, call_result, consensus_timestamp, contract_id, created_contract_ids,
+                        error_message, function_parameters, function_result, gas_limit, gas_used, payer_account_id,
+                        sender_id, transaction_hash, transaction_index, transaction_nonce,
                         transaction_result from contract_result
                         """,
                 (rs, rowNum) -> {
