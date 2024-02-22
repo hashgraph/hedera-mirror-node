@@ -79,22 +79,15 @@ class HederaSelfDestructOperationV046Test {
 
     @Test
     void delegatesToSuperWhenValid() {
-        givenRubberstampValidator();
-
         given(frame.getStackItem(0)).willReturn(BENEFICIARY);
-        given(frame.popStackItem()).willReturn(BENEFICIARY);
         given(frame.getRecipientAddress()).willReturn(EIP_1014_ETH_ADDRESS);
 
-        given(worldUpdater.get(any())).willReturn(account);
-        given(worldUpdater.getAccount(any())).willReturn(account);
-        given(account.getBalance()).willReturn(Wei.ONE);
         given(frame.isStatic()).willReturn(true);
-        given(gasCalculator.getColdAccountAccessCost()).willReturn(1L);
 
         final var opResult = subject.execute(frame, evm);
 
         assertEquals(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE, opResult.getHaltReason());
-        assertEquals(3L, opResult.getGasCost());
+        assertEquals(2L, opResult.getGasCost());
     }
 
     @Test

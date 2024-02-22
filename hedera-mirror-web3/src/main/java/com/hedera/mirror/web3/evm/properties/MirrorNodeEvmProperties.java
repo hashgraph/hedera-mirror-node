@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaEvmOperationsUtilV038.EVM_VERSION_0_46;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -181,7 +182,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return true;
+        return evmVersion.equals(EVM_VERSION_0_46);
     }
 
     @Override
@@ -191,7 +192,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean callsToNonExistingEntitiesEnabled(Address target) {
-        return true;
+        return !(!evmVersion.equals(EVM_VERSION_0_46)
+                || !allowCallsToNonContractAccounts()
+                || grandfatherContracts().contains(target));
     }
 
     @Override
@@ -248,6 +251,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             evmVersionsMap.put(0L, EVM_VERSION_0_30);
             evmVersionsMap.put(44029066L, EVM_VERSION_0_34);
             evmVersionsMap.put(49117794L, EVM_VERSION_0_38);
+            evmVersionsMap.put(51824432L, EVM_VERSION_0_46);
             return Collections.unmodifiableNavigableMap(evmVersionsMap);
         }
     }
