@@ -119,9 +119,9 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
     private MigrationContractResult toMigrationContractResult(
             byte[] callData, EthereumTransaction ethereumTransaction, Transaction transaction) {
         return MigrationContractResult.builder()
-                .consensusTimestamp(ethereumTransaction.getConsensusTimestamp())
                 .callResult(DomainUtils.EMPTY_BYTE_ARRAY)
                 .contractId(0)
+                .consensusTimestamp(ethereumTransaction.getConsensusTimestamp())
                 .createdContractIds(null)
                 .functionParameters(callData)
                 .gasLimit(ethereumTransaction.getGasLimit())
