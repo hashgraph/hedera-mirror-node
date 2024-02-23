@@ -32,9 +32,7 @@ plugins {
 extra.apply {
     set("grpcVersion", "1.61.1")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("json-path.version", "2.9.0") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
-    set("postgresql.version", "42.7.2") // Temporary until next Spring Boot version
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.3")
@@ -65,7 +63,7 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
-        api("com.hedera.evm:hedera-evm:0.46.3")
+        api("com.hedera.evm:hedera-evm:0.47.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.47.0")
         api("com.hedera.hashgraph:sdk:2.29.2")
         api("com.ongres.scram:client:2.1")

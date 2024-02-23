@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import FixedFee from './fixedFee.js';
-import FractionalFee from './fractionalFee.js';
-import RoyaltyFee from './royaltyFee.js';
+import FixedFee from './fixedFee';
+import FractionalFee from './fractionalFee';
+import RoyaltyFee from './royaltyFee';
 
 class CustomFee {
   /**

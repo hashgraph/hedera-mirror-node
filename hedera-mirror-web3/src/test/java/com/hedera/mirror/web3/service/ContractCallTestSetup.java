@@ -83,9 +83,11 @@ import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.function.ToLongFunction;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -635,7 +637,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 "TFT",
                 EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
                 "test",
-                true,
+                false,
                 BigInteger.valueOf(0L),
                 BigInteger.valueOf(0L),
                 0L,
@@ -667,7 +669,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
     }
 
-    private static TokenCreateWrapper getFungibleToken(Address ownerAddress) {
+    protected static TokenCreateWrapper getFungibleToken(Address ownerAddress) {
         return new TokenCreateWrapper(
                 true,
                 "Test",
@@ -699,20 +701,164 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
     }
 
-    private static TokenCreateWrapper getNonFungibleToken(Address ownerAddress) {
+    protected TokenCreateWrapper getFungibleTokenInvalidMemo(Address ownerAddress) {
+        var random = new Random();
+        var bytes = new byte[mirrorNodeEvmProperties.getMaxMemoUtf8Bytes() + 1];
+        random.nextBytes(bytes);
+
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                new String(bytes, StandardCharsets.UTF_8),
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+    }
+
+    protected TokenCreateWrapper getFungibleTokenInvalidName(Address ownerAddress) {
+        var random = new Random();
+        var bytes = new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1];
+        random.nextBytes(bytes);
+
+        return new TokenCreateWrapper(
+                true,
+                new String(bytes, StandardCharsets.UTF_8),
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+    }
+
+    protected TokenCreateWrapper getFungibleTokenInvalidSymbol(Address ownerAddress) {
+        var random = new Random();
+        var bytes = new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1];
+        random.nextBytes(bytes);
+
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                new String(bytes, StandardCharsets.UTF_8),
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+    }
+
+    protected static TokenCreateWrapper getNonFungibleToken(Address ownerAddress) {
+        final var keyValue = new KeyValueWrapper(
+                false,
+                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                new byte[] {},
+                new byte[] {},
+                null);
         return new TokenCreateWrapper(
                 false,
                 "TestNFT",
                 "TFT",
                 EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
                 "test",
-                true,
+                false,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(new TokenKeyWrapper(0b1111101, keyValue)),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+    }
+
+    protected static TokenCreateWrapper getNonFungibleTokenInfinite(Address ownerAddress) {
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                "test",
+                false,
                 BigInteger.valueOf(0L),
                 BigInteger.valueOf(0L),
                 0L,
                 false,
                 List.of(),
                 new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+    }
+
+    protected static TokenCreateWrapper getNonFungibleTokenNoTreasury(Address ownerAddress) {
+        final var keyValue =
+                new KeyValueWrapper(false, null, new byte[0], Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length), null);
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                null,
+                "test",
+                false,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(new TokenKeyWrapper(0b1111111, keyValue)),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+    }
+
+    protected static TokenCreateWrapper getNonFungibleTokenFreezeDefaultNoKey(Address ownerAddress) {
+        final var keyValue = new KeyValueWrapper(
+                false,
+                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                new byte[] {},
+                new byte[] {},
+                null);
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                "test",
+                false,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                true,
+                List.of(new TokenKeyWrapper(0b0010000, keyValue)),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+    }
+
+    protected static TokenCreateWrapper getNonFungibleTokenInvalidAutoRenewPeriod(Address ownerAddress) {
+        final var keyValue = new KeyValueWrapper(
+                false,
+                contractIdFromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe()),
+                new byte[] {},
+                new byte[] {},
+                null);
+        return new TokenCreateWrapper(
+                false,
+                "TestNFT",
+                "TFT",
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                "test",
+                false,
+                BigInteger.valueOf(0L),
+                BigInteger.valueOf(0L),
+                0L,
+                false,
+                List.of(new TokenKeyWrapper(0b1111111, keyValue)),
+                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10L));
     }
 
     private static TokenCreateWrapper getFungibleHbarsTokenWrapper(
@@ -791,7 +937,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 "TFT",
                 EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS),
                 "test",
-                true,
+                false,
                 BigInteger.valueOf(0L),
                 BigInteger.valueOf(0L),
                 0L,

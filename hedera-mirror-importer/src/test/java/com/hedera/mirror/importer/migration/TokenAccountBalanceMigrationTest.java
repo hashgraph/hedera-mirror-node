@@ -265,7 +265,7 @@ class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
         disassociatedTokenAccount5.setBalance(30L);
         assertThat(tokenAccountRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorIgnoringFields(
-                        "associated", "createdTimestamp", "timestampRange")
+                        "associated", "automaticAssociation", "createdTimestamp", "timestampRange")
                 .containsExactlyInAnyOrder(
                         tokenAccount,
                         tokenAccount2,
@@ -274,6 +274,7 @@ class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
                         disassociatedTokenAccount5)
                 .allSatisfy(t -> assertThat(t)
                         .returns(true, TokenAccount::getAssociated)
+                        .returns(null, TokenAccount::getAutomaticAssociation)
                         .returns(0L, TokenAccount::getCreatedTimestamp)
                         .returns(Range.atLeast(0L), TokenAccount::getTimestampRange));
         assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
