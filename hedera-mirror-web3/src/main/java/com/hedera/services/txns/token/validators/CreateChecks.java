@@ -44,37 +44,17 @@ public class CreateChecks {
         return txnBody -> {
             final TokenCreateTransactionBody op = txnBody.getTokenCreation();
 
-            var validity = validator.memoCheck(op.getMemo());
+            var validity = validateTokenFields(op);
             if (validity != OK) {
                 return validity;
             }
 
-            validity = validator.tokenSymbolCheck(op.getSymbol());
+            validity = validateTokenTypes(op);
             if (validity != OK) {
                 return validity;
             }
 
-            validity = validator.tokenNameCheck(op.getName());
-            if (validity != OK) {
-                return validity;
-            }
-
-            validity = typeCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals());
-            if (validity != OK) {
-                return validity;
-            }
-
-            validity = supplyTypeCheck(op.getSupplyType(), op.getMaxSupply());
-            if (validity != OK) {
-                return validity;
-            }
-
-            validity = suppliesCheck(op.getInitialSupply(), op.getMaxSupply());
-            if (validity != OK) {
-                return validity;
-            }
-
-            validity = nftSupplyKeyCheck(op.getTokenType(), op.hasSupplyKey());
+            validity = validateTokenSupplies(op);
             if (validity != OK) {
                 return validity;
             }
@@ -100,6 +80,38 @@ public class CreateChecks {
             }
             return validateAutoRenewAccount(op, validator);
         };
+    }
+
+    private ResponseCodeEnum validateTokenFields(final TokenCreateTransactionBody op) {
+        var validity = validator.memoCheck(op.getMemo());
+        if (validity != OK) {
+            return validity;
+        }
+
+        validity = validator.tokenSymbolCheck(op.getSymbol());
+        if (validity != OK) {
+            return validity;
+        }
+
+        return validator.tokenNameCheck(op.getName());
+    }
+
+    private ResponseCodeEnum validateTokenTypes(final TokenCreateTransactionBody op) {
+        var validity = typeCheck(op.getTokenType(), op.getInitialSupply(), op.getDecimals());
+        if (validity != OK) {
+            return validity;
+        }
+
+        return supplyTypeCheck(op.getSupplyType(), op.getMaxSupply());
+    }
+
+    private ResponseCodeEnum validateTokenSupplies(final TokenCreateTransactionBody op) {
+        var validity = suppliesCheck(op.getInitialSupply(), op.getMaxSupply());
+        if (validity != OK) {
+            return validity;
+        }
+
+        return nftSupplyKeyCheck(op.getTokenType(), op.hasSupplyKey());
     }
 
     private ResponseCodeEnum validateAutoRenewAccount(

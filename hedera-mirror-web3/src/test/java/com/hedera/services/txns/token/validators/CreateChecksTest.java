@@ -50,7 +50,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CreateChecksTest {
+class CreateChecksTest {
 
     @Mock
     private OptionValidator validator;
