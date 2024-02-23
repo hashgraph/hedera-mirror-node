@@ -28,8 +28,10 @@ import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidInputException;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
@@ -65,6 +67,7 @@ import reactor.core.publisher.Mono;
 class ContractController {
     private final ContractCallService contractCallService;
     private final Bucket bucket;
+    private final MirrorNodeEvmProperties evmProperties;
 
     @CrossOrigin(origins = "*")
     @PostMapping(value = "/call")
@@ -73,6 +76,8 @@ class ContractController {
         if (!bucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
+
+        validateContractData(request);
 
         final var params = constructServiceParameters(request);
         final var result = contractCallService.processCall(params);
@@ -113,7 +118,27 @@ class ContractController {
                 .build();
     }
 
-    /** Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence of a precompile for gas estimation.**/
+    /*
+     * Contract data is represented as hexadecimal digits defined as characters in
+     * a String. So, it takes two characters to represent one byte, and the configured max
+     * data size in bytes is doubled for validation of the data length within the request object.
+     */
+    private void validateContractData(final ContractCallRequest request) {
+        var data = request.getData();
+        if (data != null
+                && !evmProperties.getDataValidatorPattern().matcher(data).find()) {
+            throw new InvalidParametersException(
+                    "data field of size %d contains invalid hexadecimal characters or exceeds %d characters"
+                            .formatted(
+                                    data.length(),
+                                    evmProperties.getMaxDataSize().toBytes() * 2L));
+        }
+    }
+
+    /**
+     * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
+     * of a precompile for gas estimation.
+     **/
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(final UnsupportedOperationException e) {

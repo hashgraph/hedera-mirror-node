@@ -20,8 +20,8 @@ import BaseService from './baseService';
 import {orderFilterValues} from '../constants';
 import {EthereumTransaction, Transaction} from '../model';
 import {OrderSpec} from '../sql';
-import TransactionId from '../transactionId.js';
-import config from '../config.js';
+import TransactionId from '../transactionId';
+import config from '../config';
 
 const {maxTransactionConsensusTimestampRangeNs} = config.query;
 /**

@@ -34,8 +34,8 @@ import {
   RecordFile,
   EthereumTransaction,
 } from '../model';
-import ContractTransaction from '../model/contractTransaction.js';
-import {RecordFileService} from './index.js';
+import ContractTransaction from '../model/contractTransaction';
+import {RecordFileService} from './index';
 
 const {default: defaultLimit} = getResponseLimit();
 const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOOM)},

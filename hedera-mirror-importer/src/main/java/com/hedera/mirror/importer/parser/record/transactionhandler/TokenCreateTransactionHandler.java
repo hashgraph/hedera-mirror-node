@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.NOT_APPLICABLE;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.UNFROZEN;
 
@@ -96,6 +97,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
     }
 
     @Override
+    @SuppressWarnings("java:S3776")
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
             return;
@@ -107,9 +109,10 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         var treasury = EntityId.of(transactionBody.getTreasury());
 
         var token = new Token();
+        boolean freezeDefault = transactionBody.getFreezeDefault();
         token.setCreatedTimestamp(consensusTimestamp);
         token.setDecimals(transactionBody.getDecimals());
-        token.setFreezeDefault(transactionBody.getFreezeDefault());
+        token.setFreezeDefault(freezeDefault);
         token.setInitialSupply(transactionBody.getInitialSupply());
         token.setMaxSupply(transactionBody.getMaxSupply());
         token.setName(transactionBody.getName());
@@ -127,10 +130,16 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
 
         if (transactionBody.hasFreezeKey()) {
             token.setFreezeKey(transactionBody.getFreezeKey().toByteArray());
+            token.setFreezeStatus(freezeDefault ? FROZEN : UNFROZEN);
+        } else {
+            token.setFreezeStatus(NOT_APPLICABLE);
         }
 
         if (transactionBody.hasKycKey()) {
             token.setKycKey(transactionBody.getKycKey().toByteArray());
+            token.setKycStatus(TokenKycStatusEnum.REVOKED);
+        } else {
+            token.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         }
 
         if (transactionBody.hasPauseKey()) {

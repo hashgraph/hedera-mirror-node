@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import BaseAllowanceViewModel from './baseAllowanceViewModel.js';
-import EntityId from '../entityId.js';
+import BaseAllowanceViewModel from './baseAllowanceViewModel';
+import EntityId from '../entityId';
 
 /**
  * TokenAllowance view model

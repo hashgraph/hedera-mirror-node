@@ -19,6 +19,7 @@ import {exec} from 'child_process';
 
 import integrationDbOps from './integrationDbOps';
 import transactions from '../transactions';
+import {TokenService} from '../service';
 
 // set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
 // it's 12 minutes for CI to workaround possible DockerHub rate limit.
@@ -63,10 +64,11 @@ const setupIntegrationTest = () => {
     return integrationDbOps.createPool();
   }, defaultBeforeAllTimeoutMillis);
 
-  afterAll(async () => pool.end());
+  afterAll(async () => Promise.all([ownerPool.end(), pool.end()]));
 
   beforeEach(async () => {
     await integrationDbOps.cleanUp();
+    TokenService.clearTokenCache();
     transactions.getFirstTransactionTimestamp.reset();
   });
 };

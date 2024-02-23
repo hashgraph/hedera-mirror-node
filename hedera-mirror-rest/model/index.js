@@ -19,9 +19,10 @@ import AddressBook from './addressBook';
 import AddressBookEntry from './addressBookEntry';
 import AddressBookServiceEndpoint from './addressBookServiceEndpoint';
 import AssessedCustomFee from './assessedCustomFee';
+import CachedToken from './cachedToken';
 import Contract from './contract';
 import CryptoAllowance from './cryptoAllowance';
-import ContractAction from './contractAction.js';
+import ContractAction from './contractAction';
 import ContractLog from './contractLog';
 import ContractResult from './contractResult';
 import ContractStateChange from './contractStateChange';
@@ -65,6 +66,7 @@ export {
   AddressBookEntry,
   AddressBookServiceEndpoint,
   AssessedCustomFee,
+  CachedToken,
   Contract,
   CryptoAllowance,
   ContractAction,

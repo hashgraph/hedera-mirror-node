@@ -22,6 +22,8 @@
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
         "decimals": 2,
+        "freeze_key": [1, 1],
+        "freeze_status": 2,
         "type": "FUNGIBLE_COMMON"
       }
     ],
@@ -29,11 +31,18 @@
       {
         "account_id": "1001",
         "associated": true,
+        "automatic_association": null,
+        "created_timestamp": null,
+        "kyc_status": 1,
+        "timestamp_range": "[1234555666,)",
+        "token_id": "0.0.1130"
+      },
+      {
+        "account_id": "1001",
+        "associated": true,
         "automatic_association": true,
         "balance": "15",
         "created_timestamp": "1234567890000000002",
-        "freeze_status": 2,
-        "kyc_status": 1,
         "token_id": "0.0.1135"
       },
       {
@@ -42,41 +51,61 @@
         "automatic_association": true,
         "balance": "9007199254740992",
         "created_timestamp": "1234567890000000006",
-        "freeze_status": 2,
-        "kyc_status": 1,
         "token_id": "0.0.45678"
+      },
+      {
+        "account_id": "1001",
+        "associated": true,
+        "automatic_association": false,
+        "balance": 0,
+        "created_timestamp": "1234567890000000006",
+        "token_id": "0.0.45679"
       }
     ]
   },
-  "tests": [
-    {
-      "url": "/api/v1/accounts/0.0.1001/tokens?token.id=gte:1135&order=asc&limit=2",
-      "responseStatus": 200,
-      "responseJson": {
-        "tokens": [
-          {
-            "automatic_association": true,
-            "balance": 15,
-            "created_timestamp": "1234567890.000000002",
-            "decimals": 1,
-            "freeze_status": "UNFROZEN",
-            "kyc_status": "GRANTED",
-            "token_id": "0.0.1135"
-          },
-          {
-            "automatic_association": true,
-            "balance": 9007199254740992,
-            "created_timestamp": "1234567890.000000006",
-            "decimals": 2,
-            "freeze_status": "UNFROZEN",
-            "kyc_status": "GRANTED",
-            "token_id": "0.0.45678"
-          }
-        ],
-        "links": {
-          "next": "/api/v1/accounts/0.0.1001/tokens?order=asc&limit=2&token.id=gt:0.0.45678"
-        }
+  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=gte:1130&order=asc&limit=4",
+  "responseStatus": 200,
+  "responseJson": {
+    "tokens": [
+      {
+        "automatic_association": null,
+        "balance": 0,
+        "created_timestamp": null,
+        "decimals": null,
+        "freeze_status": null,
+        "kyc_status": "GRANTED",
+        "token_id": "0.0.1130"
+      },
+      {
+        "automatic_association": true,
+        "balance": 15,
+        "created_timestamp": "1234567890.000000002",
+        "decimals": 1,
+        "freeze_status": "NOT_APPLICABLE",
+        "kyc_status": "NOT_APPLICABLE",
+        "token_id": "0.0.1135"
+      },
+      {
+        "automatic_association": true,
+        "balance": 9007199254740992,
+        "created_timestamp": "1234567890.000000006",
+        "decimals": 2,
+        "freeze_status": "UNFROZEN",
+        "kyc_status": "NOT_APPLICABLE",
+        "token_id": "0.0.45678"
+      },
+      {
+        "automatic_association": false,
+        "balance": 0,
+        "created_timestamp": "1234567890.000000006",
+        "decimals": null,
+        "freeze_status": null,
+        "kyc_status": null,
+        "token_id": "0.0.45679"
       }
+    ],
+    "links": {
+      "next": "/api/v1/accounts/0.0.1001/tokens?order=asc&limit=4&token.id=gt:0.0.45679"
     }
-  ]
+  }
 }

@@ -38,6 +38,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
@@ -46,7 +47,10 @@ import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.convert.DataSizeUnit;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 import org.springframework.validation.annotation.Validated;
 
 @Setter
@@ -109,6 +113,15 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @Min(1)
     private int maxBatchSizeWipe = 10;
+
+    @Getter
+    @NotNull
+    @DataSizeUnit(DataUnit.KILOBYTES)
+    private DataSize maxDataSize = DataSize.ofKilobytes(25);
+
+    @Getter(lazy = true)
+    private final Pattern dataValidatorPattern =
+            Pattern.compile("^(0x)?[0-9a-fA-F]{0,%d}$".formatted(maxDataSize.toBytes() * 2L));
 
     private int maxCustomFeesAllowed = 10;
 
@@ -231,6 +244,47 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         return exchangeRateGasReq;
     }
 
+    /**
+     * Returns the most appropriate mapping of EVM versions The method operates in a hierarchical manner: 1. It
+     * initially attempts to use EVM versions defined in a YAML configuration. 2. If no YAML configuration is available,
+     * it defaults to using EVM versions specified in the HederaNetwork enum. 3. If no versions are defined in
+     * HederaNetwork, it falls back to a default map with an entry (0L, EVM_VERSION).
+     *
+     * @return A NavigableMap<Long, String> representing the EVM versions. The key is the block number, and the value is
+     * the EVM version.
+     */
+    public NavigableMap<Long, String> getEvmVersions() {
+        if (!CollectionUtils.isEmpty(evmVersions)) {
+            return evmVersions;
+        }
+
+        if (!CollectionUtils.isEmpty(network.evmVersions)) {
+            return network.evmVersions;
+        }
+
+        return new TreeMap<>(Map.of(0L, EVM_VERSION));
+    }
+
+    /**
+     * Determines the most suitable EVM version for a given block number. This method finds the highest EVM version
+     * whose block number is less than or equal to the specified block number. The determination is based on the
+     * available EVM versions which are fetched using the getEvmVersions() method. If no specific version matches the
+     * block number, it returns a default EVM version. Note: This method relies on the hierarchical logic implemented in
+     * getEvmVersions() for fetching the EVM versions.
+     *
+     * @param blockNumber The block number for which the EVM version needs to be determined.
+     * @return The most suitable EVM version for the given block number, or a default version if no specific match is
+     * found.
+     */
+    String getEvmVersionForBlock(long blockNumber) {
+        Entry<Long, String> evmEntry = getEvmVersions().floorEntry(blockNumber);
+        if (evmEntry != null) {
+            return evmEntry.getValue();
+        } else {
+            return EVM_VERSION; // Return default version if no entry matches the block number
+        }
+    }
+
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
@@ -249,45 +303,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
             evmVersionsMap.put(44029066L, EVM_VERSION_0_34);
             evmVersionsMap.put(49117794L, EVM_VERSION_0_38);
             return Collections.unmodifiableNavigableMap(evmVersionsMap);
-        }
-    }
-
-    /**
-     * Returns the most appropriate mapping of EVM versions
-     * The method operates in a hierarchical manner:
-     * 1. It initially attempts to use EVM versions defined in a YAML configuration.
-     * 2. If no YAML configuration is available, it defaults to using EVM versions specified in the HederaNetwork enum.
-     * 3. If no versions are defined in HederaNetwork, it falls back to a default map with an entry (0L, EVM_VERSION).
-     * @return A NavigableMap<Long, String> representing the EVM versions. The key is the block number, and the value is the EVM version.
-     */
-    public NavigableMap<Long, String> getEvmVersions() {
-        if (!CollectionUtils.isEmpty(evmVersions)) {
-            return evmVersions;
-        }
-
-        if (!CollectionUtils.isEmpty(network.evmVersions)) {
-            return network.evmVersions;
-        }
-
-        return new TreeMap<>(Map.of(0L, EVM_VERSION));
-    }
-
-    /**
-     * Determines the most suitable EVM version for a given block number. This method
-     * finds the highest EVM version whose block number is less than or equal to the specified block number. The determination
-     * is based on the available EVM versions which are fetched using the getEvmVersions() method. If no specific version
-     * matches the block number, it returns a default EVM version.
-     * Note: This method relies on the hierarchical logic implemented in getEvmVersions() for fetching the EVM versions.
-     *
-     * @param blockNumber The block number for which the EVM version needs to be determined.
-     * @return The most suitable EVM version for the given block number, or a default version if no specific match is found.
-     */
-    String getEvmVersionForBlock(long blockNumber) {
-        Entry<Long, String> evmEntry = getEvmVersions().floorEntry(blockNumber);
-        if (evmEntry != null) {
-            return evmEntry.getValue();
-        } else {
-            return EVM_VERSION; // Return default version if no entry matches the block number
         }
     }
 }
