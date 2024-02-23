@@ -78,6 +78,7 @@ class ContractController {
         }
 
         validateContractData(request);
+        validateContractMaxGasLimit(request);
 
         final var params = constructServiceParameters(request);
         final var result = contractCallService.processCall(params);
@@ -119,7 +120,7 @@ class ContractController {
     }
 
     /*
-     * Contract data is represented as hexidecimal digits defined as characters in
+     * Contract data is represented as hexadecimal digits defined as characters in
      * a String. So, it takes two characters to represent one byte, and the configured max
      * data size in bytes is doubled for validation of the data length within the request object.
      */
@@ -127,6 +128,13 @@ class ContractController {
         if (!evmProperties.getDataValidatorPattern().matcher(request.getData()).find()) {
             throw new InvalidParametersException("data field invalid hexadecimal string or contains more than %d digits"
                     .formatted(evmProperties.getMaxDataSize().toBytes() * 2L));
+        }
+    }
+
+    private void validateContractMaxGasLimit(ContractCallRequest request) {
+        if (request.getGas() > evmProperties.getMaxGasLimit()) {
+            throw new InvalidParametersException("gas field must be less than or equal to %d"
+                    .formatted(evmProperties.getMaxGasLimit()));
         }
     }
 

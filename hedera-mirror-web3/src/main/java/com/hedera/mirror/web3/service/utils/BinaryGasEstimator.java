@@ -48,7 +48,7 @@ public class BinaryGasEstimator {
         // threshold.
         // This value might be adapted or removed in the future, when we have the support of more precompiles and adjust
         // the binary search algorithm accordingly.
-        final long estimateIterationThreshold = (long) (lo * 0.10);
+        final long estimateIterationThreshold = (long) (lo * properties.getEstimateGasIterationThresholdPercent());
 
         ContractCallContext contractCallContext = ContractCallContext.get();
         while (lo + 1 < hi && iterationsMade < properties.getMaxGasEstimateRetriesCount()) {

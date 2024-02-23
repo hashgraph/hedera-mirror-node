@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
 import com.hedera.mirror.web3.convert.BlockTypeSerializer;
 import com.hedera.mirror.web3.validation.Hex;
-import com.hedera.mirror.web3.validation.MaxGas;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -46,7 +45,6 @@ public class ContractCallRequest {
     private String from;
 
     @Min(21_000)
-    @MaxGas
     private long gas = 15_000_000L;
 
     @Min(0)

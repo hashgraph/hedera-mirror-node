@@ -66,7 +66,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Positive
-    private long estimateGasIterationThreshold = 7300L;
+    private double estimateGasIterationThresholdPercent = 0.10d;
 
     private boolean directTokenCall = true;
 
@@ -125,6 +125,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private int maxCustomFeesAllowed = 10;
 
     @Getter
+    @Min(21_000L)
     private long maxGasLimit = 15_000_000L;
 
     // maximum iteration count for estimate gas' search algorithm
