@@ -55,6 +55,7 @@ class TokenFreezeTransactionHandler extends AbstractTransactionHandler {
 
         var tokenAccount = new TokenAccount();
         tokenAccount.setAccountId(transaction.getEntityId().getId());
+        tokenAccount.setAssociated(true);
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
         tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());
         tokenAccount.setTokenId(tokenId.getId());

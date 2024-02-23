@@ -85,7 +85,7 @@ class TokenController extends BaseController {
     }
     const filters = utils.buildAndValidateFilters(req.query, acceptedTokenParameters);
     const query = this.extractTokensRelationshipQuery(filters, accountId);
-    const tokenRelationships = await TokenService.getTokens(query);
+    const tokenRelationships = await TokenService.getTokenAccounts(query);
     const tokens = tokenRelationships.map((token) => new TokenRelationshipViewModel(token));
 
     let nextLink = null;

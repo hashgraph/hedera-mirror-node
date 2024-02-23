@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,15 @@
  * limitations under the License.
  */
 
-import EntityId from '../entityId';
-import {nsToSecNs} from '../utils';
-
 /**
- * Staking Reward Transfer view model
+ * Cached token object to store token's decimals, freeze status and kyc status
  */
-class StakingRewardTransferViewModel {
-  constructor(stakingRewardTransferModel) {
-    this.account_id = EntityId.parse(stakingRewardTransferModel.accountId).toString();
-    this.amount = stakingRewardTransferModel.amount;
-    this.timestamp = nsToSecNs(stakingRewardTransferModel.consensusTimestamp);
+class CachedToken {
+  constructor(token) {
+    this.decimals = token.decimals;
+    this.freezeStatus = token.freeze_status;
+    this.kycStatus = token.kyc_status;
   }
 }
 
-export default StakingRewardTransferViewModel;
+export default CachedToken;

@@ -55,6 +55,7 @@ class TokenRevokeKycTransactionHandler extends AbstractTransactionHandler {
 
         var tokenAccount = new TokenAccount();
         tokenAccount.setAccountId(transaction.getEntityId().getId());
+        tokenAccount.setAssociated(true);
         tokenAccount.setKycStatus(TokenKycStatusEnum.REVOKED);
         tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());
         tokenAccount.setTokenId(tokenId.getId());

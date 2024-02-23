@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import {Token, TokenAccount} from '../model';
-import BaseService from './baseService';
-import {OrderSpec} from '../sql';
 import _ from 'lodash';
 import quickLru from 'quick-lru';
-import config from '../config.js';
+
+import BaseService from './baseService';
+import config from '../config';
+import {CachedToken, TokenAccount} from '../model';
+import {OrderSpec} from '../sql';
+import {isTestEnv} from '../utils';
 
 const tokenCache = new quickLru({
   maxSize: config.cache.token.maxSize,
@@ -40,10 +42,14 @@ class TokenService extends BaseService {
         where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1
         and ${TokenAccount.tableAlias}.${TokenAccount.ASSOCIATED} = true `;
 
-  static tokenDecimalsQuery = `
-        select ${Token.TOKEN_ID}, ${Token.DECIMALS} 
-        from ${Token.tableName}
-        where ${Token.TOKEN_ID} = any ($1)`;
+  static tokenCacheQuery = `
+    select
+      decimals,
+      freeze_status,
+      kyc_status,
+      token_id
+    from token
+    where token_id = any ($1)`;
 
   /**
    * Gets the full sql query and params to retrieve an account's token relationships
@@ -101,62 +107,76 @@ class TokenService extends BaseService {
    * @param query
    * @return {Promise<TokenAccount[]>}
    */
-  async getTokens(query) {
+  async getTokenAccounts(query) {
     const {sqlQuery, params} = this.getTokenRelationshipsQuery(query);
     const rows = await super.getRows(sqlQuery, params);
-    const tokenIds = new Set();
-    const tokenAccounts = rows.map((row) => {
-      tokenIds.add(row[TokenAccount.TOKEN_ID]);
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const tokenIds = rows.reduce((result, row) => result.add(row.token_id), new Set());
+    const cachedTokens = await this.getCachedTokens(tokenIds);
+    return rows.map((row) => {
+      const cachedToken = cachedTokens.get(row.token_id);
+      if (cachedToken) {
+        row.decimals = cachedToken.decimals;
+        row.freeze_status = row.freeze_status ?? cachedToken.freezeStatus;
+        row.kyc_status = row.kyc_status ?? cachedToken.kycStatus;
+      }
+
       return new TokenAccount(row);
     });
-    const tokenCacheMap = await this.getCachedTokens(tokenIds);
-    tokenAccounts.forEach((tokenAccount) => {
-      const decimals = tokenCacheMap.get(tokenAccount.tokenId);
-      tokenAccount.decimals = decimals !== undefined ? decimals : null;
-    });
-    return tokenAccounts;
   }
 
   /**
-   * Adds a value to the token cache
-   * @param {BigInt} tokenId
-   * @param {BigInt} decimals
+   * Adds a value to the token cache if not exists
+   * @param {Object} token - token object returned from SQL query
    */
-  putTokenCache(tokenId, decimals) {
-    tokenCache.set(tokenId, decimals);
+  putTokenCache(token) {
+    const tokenId = token.token_id;
+    if (tokenCache.has(tokenId)) {
+      return;
+    }
+
+    const cachedToken = new CachedToken(token);
+    tokenCache.set(tokenId, cachedToken);
   }
 
   /**
    * Gets the token cache for a list of token ids
    * @param {Set<BigInt>} tokenIds
-   * @return {Promise<Map<tokenId, decimals>>}
+   * @return {Promise<Map<BigInt, CachedToken>>}
    */
   async getCachedTokens(tokenIds) {
+    const cachedTokens = new Map();
     const uncachedTokenIds = [];
-    const cachedDecimals = new Map();
-    for (const tokenId of tokenIds) {
-      const decimals = tokenCache.get(tokenId);
-      if (decimals) {
-        cachedDecimals.set(tokenId, decimals);
+    tokenIds.forEach((tokenId) => {
+      const cachedToken = tokenCache.get(tokenId);
+      if (cachedToken) {
+        cachedTokens.set(tokenId, cachedToken);
       } else {
         uncachedTokenIds.push(tokenId);
       }
-    }
-
-    if (_.isEmpty(uncachedTokenIds)) {
-      return cachedDecimals;
-    }
-
-    const rows = await super.getRows(TokenService.tokenDecimalsQuery, [uncachedTokenIds]);
-    rows.forEach((row) => {
-      const tokenId = row[Token.TOKEN_ID];
-      const decimals = row[Token.DECIMALS];
-      this.putTokenCache(tokenId, decimals);
-      cachedDecimals.set(tokenId, decimals);
     });
 
-    return cachedDecimals;
+    if (uncachedTokenIds.length === 0) {
+      return cachedTokens;
+    }
+
+    const rows = await super.getRows(TokenService.tokenCacheQuery, [uncachedTokenIds]);
+    rows.forEach((row) => {
+      const tokenId = row.token_id;
+      const cachedToken = new CachedToken(row);
+      tokenCache.set(tokenId, cachedToken);
+      cachedTokens.set(tokenId, cachedToken);
+    });
+
+    return cachedTokens;
   }
+}
+
+if (isTestEnv()) {
+  TokenService.prototype.clearTokenCache = () => tokenCache.clear();
 }
 
 export default new TokenService();

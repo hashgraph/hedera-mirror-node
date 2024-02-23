@@ -75,14 +75,6 @@ class ContractControllerTest {
     @Autowired
     private MirrorNodeEvmProperties evmProperties;
 
-    @TestConfiguration
-    public static class TestConfig {
-        @Bean
-        public MirrorNodeEvmProperties evmProperties() {
-            return new MirrorNodeEvmProperties();
-        }
-    }
-
     @BeforeEach
     void setUp() {
         given(bucket.tryConsume(1)).willReturn(true);
@@ -245,7 +237,8 @@ class ContractControllerTest {
     @Test
     void exceedingDataCallSizeOnEstimate() {
         final var request = request();
-        final var dataAsHex = ONE_BYTE_HEX.repeat((int)evmProperties.getMaxDataSize().toBytes() + 1);
+        final var dataAsHex =
+                ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
@@ -258,14 +251,16 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string or contains more than %d digits"
-                        .formatted(evmProperties.getMaxDataSize().toBytes() * 2L)));
+                .isEqualTo(
+                        new GenericErrorResponse(
+                                "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters"));
     }
 
     @Test
     void exceedingDataCreateSizeOnEstimate() {
         final var request = request();
-        final var dataAsHex = ONE_BYTE_HEX.repeat((int)evmProperties.getMaxDataSize().toBytes() + 1);
+        final var dataAsHex =
+                ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
         request.setTo(null);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
@@ -279,8 +274,9 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string or contains more than %d digits"
-                        .formatted(evmProperties.getMaxDataSize().toBytes() *2L)));
+                .isEqualTo(
+                        new GenericErrorResponse(
+                                "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters"));
     }
 
     @Test
@@ -465,6 +461,23 @@ class ContractControllerTest {
                 .isEqualTo(OK);
     }
 
+    @NullAndEmptySource
+    @ParameterizedTest
+    void callSuccessWithNullAndEmptyData(String data) {
+        final var request = request();
+        request.setData(data);
+        request.setValue(0);
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(OK);
+    }
+
     @Test
     void transferSuccess() {
         final var request = request();
@@ -512,5 +525,13 @@ class ContractControllerTest {
 
     private String numberErrorString(String field, String direction, long num) {
         return String.format("%s field must be %s than or equal to %d", field, direction, num);
+    }
+
+    @TestConfiguration
+    public static class TestConfig {
+        @Bean
+        public MirrorNodeEvmProperties evmProperties() {
+            return new MirrorNodeEvmProperties();
+        }
     }
 }

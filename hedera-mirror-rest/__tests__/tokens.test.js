@@ -60,21 +60,33 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const initialParams = [];
     const filters = [];
 
-    const expectedquery =
-      'select t.token_id, symbol, t.name, e.key, t.type, t.decimals from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
-    const expectedparams = [defaultLimit];
-    const expectedorder = constants.orderFilterValues.ASC;
-    const expectedlimit = defaultLimit;
+    const expectedQuery = `
+      select
+        t.decimals,
+        t.freeze_status,
+        e.key,
+        t.kyc_status,
+        t.name,
+        t.symbol,
+        t.token_id,
+        t.type
+      from token t
+      join entity e on e.id = t.token_id
+      order by t.token_id asc
+      limit $1`;
+    const expectedParams = [defaultLimit];
+    const expectedOrder = constants.orderFilterValues.ASC;
+    const expectedLimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
       filters,
       null,
-      expectedquery,
-      expectedparams,
-      expectedorder,
-      expectedlimit
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
     );
   });
 
@@ -89,25 +101,34 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `select t.token_id, symbol, t.name, e.key, t.type, t.decimals
-                           from token t
-                                  join entity e on e.id = t.token_id
-                           where e.public_key = $1
-                           order by t.token_id asc
-                           limit $2`;
-    const expectedparams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', defaultLimit];
-    const expectedorder = constants.orderFilterValues.ASC;
-    const expectedlimit = defaultLimit;
+    const expectedQuery = `
+      select
+        t.decimals,
+        t.freeze_status,
+        e.key,
+        t.kyc_status,
+        t.name,
+        t.symbol,
+        t.token_id,
+        t.type
+      from token t
+             join entity e on e.id = t.token_id
+      where e.public_key = $1
+      order by t.token_id asc
+      limit $2`;
+    const expectedParams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', defaultLimit];
+    const expectedOrder = constants.orderFilterValues.ASC;
+    const expectedLimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
       filters,
       undefined,
-      expectedquery,
-      expectedparams,
-      expectedorder,
-      expectedlimit
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
     );
   });
 
@@ -127,32 +148,40 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `with ta as (
+    const expectedQuery = `with ta as (
                              select *
                              from token_account
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
+                           select
+                             t.decimals,
+                             t.freeze_status,
+                             e.key,
+                             t.kyc_status,
+                             t.name,
+                             t.symbol,
+                             t.token_id,
+                             t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
                            where ta.associated is true
                            order by t.token_id asc
                            limit $2`;
-    const expectedparams = [5, defaultLimit];
-    const expectedorder = constants.orderFilterValues.ASC;
-    const expectedlimit = defaultLimit;
+    const expectedParams = [5, defaultLimit];
+    const expectedOrder = constants.orderFilterValues.ASC;
+    const expectedLimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
       filters,
       [accountQueryCondition],
-      expectedquery,
-      expectedparams,
-      expectedorder,
-      expectedlimit
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
     );
   });
 
@@ -173,32 +202,40 @@ describe('token extractSqlFromTokenRequest tests', () => {
       },
     ];
 
-    const expectedquery = `with ta as (
+    const expectedQuery = `with ta as (
                              select *
                              from token_account
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
+                           select
+                             t.decimals,
+                             t.freeze_status,
+                             e.key,
+                             t.kyc_status,
+                             t.name,
+                             t.symbol,
+                             t.token_id,
+                             t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
                            where ta.associated is true and t.type = $2
                            order by t.token_id asc
                            limit $3`;
-    const expectedparams = [5, tokenType, defaultLimit];
-    const expectedorder = constants.orderFilterValues.ASC;
-    const expectedlimit = defaultLimit;
+    const expectedParams = [5, tokenType, defaultLimit];
+    const expectedOrder = constants.orderFilterValues.ASC;
+    const expectedLimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
       filters,
       [accountQueryCondition],
-      expectedquery,
-      expectedparams,
-      expectedorder,
-      expectedlimit
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
     );
   });
 
@@ -232,13 +269,21 @@ describe('token extractSqlFromTokenRequest tests', () => {
       {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
     ];
 
-    const expectedquery = `with ta as (
+    const expectedQuery = `with ta as (
                              select *
                              from token_account
                              where account_id = $1
                              order by token_id
                            )
-                           select t.token_id, symbol, t.name, e.key, t.type, t.decimals
+                           select
+                             t.decimals,
+                             t.freeze_status,
+                             e.key,
+                             t.kyc_status,
+                             t.name,
+                             t.symbol,
+                             t.token_id,
+                             t.type
                            from token t
                                   join ta on ta.token_id = t.token_id
                                   join entity e on e.id = t.token_id
@@ -248,19 +293,19 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              and t.type = $4
                            order by t.token_id desc
                            limit $5`;
-    const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', tokenType, '3'];
-    const expectedorder = constants.orderFilterValues.DESC;
-    const expectedlimit = 3;
+    const expectedParams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', tokenType, '3'];
+    const expectedOrder = constants.orderFilterValues.DESC;
+    const expectedLimit = 3;
 
     verifyExtractSqlFromTokenRequest(
       initialQuery,
       initialParams,
       filters,
       [accountQueryCondition],
-      expectedquery,
-      expectedparams,
-      expectedorder,
-      expectedlimit
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
     );
   });
 });
@@ -270,10 +315,10 @@ const verifyExtractSqlFromTokenRequest = (
   pgSqlParams,
   filters,
   extraConditions,
-  expectedquery,
-  expectedparams,
-  expectedorder,
-  expectedlimit
+  expectedQuery,
+  expectedParams,
+  expectedOrder,
+  expectedLimit
 ) => {
   const {query, params, order, limit} = tokens.extractSqlFromTokenRequest(
     pgSqlQuery,
@@ -282,10 +327,10 @@ const verifyExtractSqlFromTokenRequest = (
     extraConditions
   );
 
-  assertSqlQueryEqual(query, expectedquery);
-  expect(params).toStrictEqual(expectedparams);
-  expect(order).toStrictEqual(expectedorder);
-  expect(limit).toStrictEqual(expectedlimit);
+  assertSqlQueryEqual(query, expectedQuery);
+  expect(params).toStrictEqual(expectedParams);
+  expect(order).toStrictEqual(expectedOrder);
+  expect(limit).toStrictEqual(expectedLimit);
 };
 
 describe('token formatNftHistoryRow', () => {
@@ -370,7 +415,6 @@ describe('token formatTokenBalanceRow tests', () => {
     const rowInput = {
       account_id: '193',
       balance: 200,
-      decimals: 5000,
     };
     const expectedOutput = {
       account: '0.0.193',
@@ -378,7 +422,7 @@ describe('token formatTokenBalanceRow tests', () => {
       decimals: 5000,
     };
 
-    expect(tokens.formatTokenBalanceRow(rowInput)).toEqual(expectedOutput);
+    expect(tokens.formatTokenBalanceRow(rowInput, 5000)).toEqual(expectedOutput);
   });
 });
 
@@ -1313,9 +1357,11 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    fee_schedule_key,
                    freeze_default,
                    freeze_key,
+                   freeze_status,
                    initial_supply,
                    e.key,
                    kyc_key,
+                   kyc_status,
                    max_supply,
                    e.memo,
                    lower(t.timestamp_range) as modified_timestamp,

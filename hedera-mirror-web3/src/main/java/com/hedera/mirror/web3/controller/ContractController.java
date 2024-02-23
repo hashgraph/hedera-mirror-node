@@ -119,18 +119,26 @@ class ContractController {
     }
 
     /*
-     * Contract data is represented as hexidecimal digits defined as characters in
+     * Contract data is represented as hexadecimal digits defined as characters in
      * a String. So, it takes two characters to represent one byte, and the configured max
      * data size in bytes is doubled for validation of the data length within the request object.
      */
     private void validateContractData(final ContractCallRequest request) {
-        if (!evmProperties.getDataValidatorPattern().matcher(request.getData()).find()) {
-            throw new InvalidParametersException("data field invalid hexadecimal string or contains more than %d digits"
-                    .formatted(evmProperties.getMaxDataSize().toBytes() * 2L));
+        var data = request.getData();
+        if (data != null
+                && !evmProperties.getDataValidatorPattern().matcher(data).find()) {
+            throw new InvalidParametersException(
+                    "data field of size %d contains invalid hexadecimal characters or exceeds %d characters"
+                            .formatted(
+                                    data.length(),
+                                    evmProperties.getMaxDataSize().toBytes() * 2L));
         }
     }
 
-    /** Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence of a precompile for gas estimation.**/
+    /**
+     * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
+     * of a precompile for gas estimation.
+     **/
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(final UnsupportedOperationException e) {
