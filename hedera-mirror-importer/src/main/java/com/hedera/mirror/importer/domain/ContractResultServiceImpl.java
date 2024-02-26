@@ -405,6 +405,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         long topLevelActionSidecarGasUsed = 0;
         ByteString payloadBytes = null;
+        boolean isContractCreation = true;
 
         for (final var sidecarRecord : sidecarRecords) {
             final boolean migration = sidecarRecord.getMigration();
@@ -446,12 +447,13 @@ public class ContractResultServiceImpl implements ContractResultService {
         // If the payloadBytes is not set, yet
         // it is a contract call transaction, and we should use the function parameters
         if (payloadBytes == null) {
+            isContractCreation = false;
             payloadBytes = transactionBody.getContractCall().getFunctionParameters();
         }
 
         return new SidecarProcessingResult(
                 DomainUtils.toBytes(payloadBytes),
-                transactionBody.hasContractCreateInstance(),
+                isContractCreation,
                 topLevelActionSidecarGasUsed == 0 ? null : topLevelActionSidecarGasUsed);
     }
 
