@@ -30,20 +30,20 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
-import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -52,12 +52,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Tag("migration")
 class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
 
-    private static final String DELETE_TOKEN_BALANCE_SQL = "delete from token_balance where consensus_timestamp <= ?";
+    private static final String DELETE_TOKEN_BALANCE_SQL =
+            "delete from token_balance where consensus_timestamp <= :consensusTimestamp";
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final RecordFileRepository recordFileRepository;
 
-    private final @Owner JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+    private final TransactionTemplate transactionTemplate;
+
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenTransferRepository tokenTransferRepository;
@@ -78,7 +81,11 @@ class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
     void beforeEach() {
         timestamp = new AtomicLong(domainBuilder.timestamp());
         tokenAccountBalanceMigration = new TokenAccountBalanceMigration(
-                jdbcOperations, importerProperties, accountBalanceFileRepository, recordFileRepository);
+                accountBalanceFileRepository,
+                importerProperties,
+                namedParameterJdbcTemplate,
+                recordFileRepository,
+                transactionTemplate);
     }
 
     @Test
@@ -209,7 +216,8 @@ class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
     void migrateWhenNoTokenBalance() {
         // given
         setup();
-        jdbcTemplate.update(DELETE_TOKEN_BALANCE_SQL, accountBalanceFile2.getConsensusTimestamp());
+        namedParameterJdbcTemplate.update(
+                DELETE_TOKEN_BALANCE_SQL, Map.of("consensusTimestamp", accountBalanceFile2.getConsensusTimestamp()));
 
         // when
         tokenAccountBalanceMigration.doMigrate();
@@ -305,7 +313,8 @@ class TokenAccountBalanceMigrationTest extends ImporterIntegrationTest {
     @Transactional
     void onEndEarlyReturn() {
         // given
-        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(jdbcTemplate.getDataSource()));
+        var transactionManager = new DataSourceTransactionManager(Objects.requireNonNull(
+                namedParameterJdbcTemplate.getJdbcTemplate().getDataSource()));
         var transactionTemplate = new TransactionTemplate(transactionManager);
         setup();
         accountBalanceFileRepository.deleteById(accountBalanceFile2.getConsensusTimestamp());
