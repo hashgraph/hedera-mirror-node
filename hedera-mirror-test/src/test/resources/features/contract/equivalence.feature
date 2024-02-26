@@ -76,3 +76,24 @@ Feature: in-equivalence tests
 #      | "callcode"     | "0.0.741" | "with"     | fails
       | "callcode"     | "0.0.800" | "without"  |
       | "callcode"     | "0.0.800" | "with"     |
+
+
+  Scenario Outline: Validate direct calls
+    Given I successfully create selfdestruct contract
+    Given I successfully deploy estimate precompile contract
+    Given I successfully create equivalence call contract
+    Then I verify the equivalence contract bytecode is deployed
+    Given I create admin account
+    Then I execute directCall to range <accounts> addresses without amount
+    Then I execute directCall to range <accounts> addresses with amount 10000
+    Then I execute directCall to contract "with" amount
+    Then I execute directCall to contract "without" amount
+    Then I execute directCall to address with non-payable contract with amount
+    Examples:
+      | accounts  |
+      | "0.0.0"   |
+      | "0.0.1"   |
+      | "0.0.358" |
+#      | "0.0.359" | - disabled due to bug 7811
+      | "0.0.741" |
+      | "0.0.800" |
