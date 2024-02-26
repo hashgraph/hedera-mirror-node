@@ -104,7 +104,7 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
         // then
         assertThat(contractResultRepository.findAll())
                 .extracting(ContractResult::getGasConsumed)
-                .containsExactly(53196L, 21100L);
+                .containsExactly(53146L, 22074L);
     }
 
     private void persistData(EthereumTransaction ethTx, boolean topLevelCreate) {

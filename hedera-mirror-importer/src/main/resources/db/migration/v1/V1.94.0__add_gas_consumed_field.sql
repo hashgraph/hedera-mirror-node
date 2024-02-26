@@ -20,32 +20,39 @@ end;
 $$ language plpgsql immutable;
 
 -- Function to get intrinsic gas for contract creation
-create or replace function get_intrinsic_gas(initcode bytea, is_creation boolean) returns bigint as $$
+create or replace function get_intrinsic_gas(payload bytea, is_creation boolean) returns bigint as $$
 begin
   -- Always include the base base cost of 21000 gas
   if is_creation then
-    return 21000 + 32000 + bytes_gas_calculation(initcode); -- Calculate extra gas cost for contract creation
+    -- For contract creation, `payload` represents the `initcode`.
+    return 21000 + 32000 + bytes_gas_calculation(payload); -- Contract creation
   else
-    return 21000;
+    -- For contract call, `payload` represents the `function_parameters`.
+    return 21000 + bytes_gas_calculation(payload); -- Contract call
   end if;
 end;
 $$ language plpgsql immutable;
 
--- Update contract_result with gas_consumed values only if there are corresponding entries in contract_action
+-- Update contract_result with gas_consumed values.
+-- Use the contract_action with call_depth = 0, as this is the top-level action, and add intrinsic gas to it.
 with contract_action_gas_usage as (
     select
         consensus_timestamp,
-        sum(gas_used) as total_gas_used
+        gas_used
     from
         contract_action
-    group by
-        consensus_timestamp
+    where
+        call_depth = 0
 ), contract_transaction_info as (
     select
         cr.consensus_timestamp,
         cr.contract_id,
         e.created_timestamp,
-        c.initcode,
+        -- Correctly assign `payload` based on whether it's a contract creation or call.
+        case
+            when cr.consensus_timestamp = e.created_timestamp then c.initcode
+            else cr.function_parameters
+        end as payload,
         -- Determine if this is a contract create or call transaction based on entity's created_timestamp
         (cr.consensus_timestamp = e.created_timestamp) as is_creation
     from
@@ -56,16 +63,16 @@ with contract_action_gas_usage as (
     select
         cti.consensus_timestamp,
         cti.is_creation,
-        cti.initcode,
-        cagu.total_gas_used
+        cti.payload,
+        cagu.gas_used
     from
         contract_transaction_info cti
     -- Filter out only contract transactions with contract actions sidecars
     join contract_action_gas_usage cagu on cti.consensus_timestamp = cagu.consensus_timestamp
 )
 update contract_result cr
-set gas_consumed = gc.total_gas_used +
-                   get_intrinsic_gas(gc.initcode, gc.is_creation)
+set gas_consumed = gc.gas_used +
+                   get_intrinsic_gas(gc.payload, gc.is_creation)
 from gas_calculation gc
 where cr.consensus_timestamp = gc.consensus_timestamp;
 

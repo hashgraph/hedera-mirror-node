@@ -375,7 +375,7 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
                 .isNotNull()
                 .extracting(ContractResult::getGasConsumed)
                 .isNotNull()
-                .isEqualTo(21150L);
+                .isEqualTo(22074L);
     }
 
     @Test
@@ -386,9 +386,9 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         final var contractActionRecord = TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
                         .addContractActions(
-                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L))
+                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L))
                         .addContractActions(
-                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L)))
+                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L)))
                 .build();
 
         final var bytecodeRecord = TransactionSidecarRecord.newBuilder()
@@ -410,7 +410,7 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
                 .isNotNull()
                 .extracting(ContractResult::getGasConsumed)
                 .isNotNull()
-                .isEqualTo(53196L);
+                .isEqualTo(53146L);
     }
 
     @Test
