@@ -26,6 +26,7 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
@@ -45,8 +46,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -57,7 +61,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
-    private static final String BYTES = "6080";
+    private static final String ONE_BYTE_HEX = "80";
 
     @Resource
     private WebTestClient webClient;
@@ -67,6 +71,9 @@ class ContractControllerTest {
 
     @MockBean
     private Bucket bucket;
+
+    @Autowired
+    private MirrorNodeEvmProperties evmProperties;
 
     @BeforeEach
     void setUp() {
@@ -230,7 +237,9 @@ class ContractControllerTest {
     @Test
     void exceedingDataCallSizeOnEstimate() {
         final var request = request();
-        request.setData("0x" + BYTES.repeat(4000));
+        final var dataAsHex =
+                ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
+        request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
         webClient
@@ -242,15 +251,18 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field must not exceed call size limit"));
+                .isEqualTo(
+                        new GenericErrorResponse(
+                                "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters"));
     }
 
     @Test
     void exceedingDataCreateSizeOnEstimate() {
         final var request = request();
-
+        final var dataAsHex =
+                ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
         request.setTo(null);
-        request.setData("0x" + BYTES.repeat(20000));
+        request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
         webClient
@@ -262,7 +274,9 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("data field invalid hexadecimal string"));
+                .isEqualTo(
+                        new GenericErrorResponse(
+                                "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters"));
     }
 
     @Test
@@ -447,6 +461,23 @@ class ContractControllerTest {
                 .isEqualTo(OK);
     }
 
+    @NullAndEmptySource
+    @ParameterizedTest
+    void callSuccessWithNullAndEmptyData(String data) {
+        final var request = request();
+        request.setData(data);
+        request.setValue(0);
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(OK);
+    }
+
     @Test
     void transferSuccess() {
         final var request = request();
@@ -466,7 +497,7 @@ class ContractControllerTest {
     void callSuccessCors() {
         webClient
                 .options()
-                /**
+                /*
                  * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
                  * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
                  */
@@ -494,5 +525,13 @@ class ContractControllerTest {
 
     private String numberErrorString(String field, String direction, long num) {
         return String.format("%s field must be %s than or equal to %d", field, direction, num);
+    }
+
+    @TestConfiguration
+    public static class TestConfig {
+        @Bean
+        public MirrorNodeEvmProperties evmProperties() {
+            return new MirrorNodeEvmProperties();
+        }
     }
 }

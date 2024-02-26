@@ -88,7 +88,7 @@ create table if not exists contract
     id               bigint not null,
     initcode         bytea  null,
     runtime_bytecode bytea  null
-) partition by range (id);
+);
 comment on table contract is 'Contract entity';
 
 --contract_action
@@ -166,7 +166,7 @@ create table if not exists contract_state
     modified_timestamp bigint not null,
     slot               bytea  not null,
     value              bytea  null
-) partition by range (contract_id);
+);
 comment on table contract_state is 'Current contract state';
 
 create table if not exists contract_state_change
@@ -208,13 +208,13 @@ create table if not exists crypto_allowance
     payer_account_id bigint    not null,
     spender          bigint    not null,
     timestamp_range  int8range not null
-) partition by range (owner);
+);
 comment on table crypto_allowance is 'Hbar allowances delegated by owner to spender';
 
 create table if not exists crypto_allowance_history
 (
     like crypto_allowance including defaults
-) partition by range (owner);
+);
 comment on table crypto_allowance_history is 'History of hbar allowances delegated by payer to spender';
 
 -- crypto_transfer
@@ -237,13 +237,13 @@ create table if not exists custom_fee
     royalty_fees      jsonb,
     timestamp_range   int8range not null,
     token_id          bigint    not null
-) partition by range (token_id);
+);
 comment on table custom_fee is 'HTS Custom fees';
 
 create table if not exists custom_fee_history
 (
     like custom_fee including defaults
-) partition by range (token_id);
+);
 comment on table custom_fee_history is 'HTS Custom fees history state';
 
 -- entity
@@ -278,13 +278,13 @@ create table if not exists entity
     submit_key                       bytea                 null,
     timestamp_range                  int8range             not null,
     type                             entity_type           not null default 'UNKNOWN'
-) partition by range (id);
+);
 comment on table entity is 'Network entity with state';
 
 create table if not exists entity_history
 (
     like entity including defaults
-) partition by range (id);
+);
 comment on table entity_history is 'Network entity historical state';
 
 create table if not exists entity_stake
@@ -296,13 +296,13 @@ create table if not exists entity_stake
     staked_to_me         bigint    not null,
     stake_total_start    bigint    not null,
     timestamp_range      int8range not null
-) partition by range (id);
+);
 comment on table entity_stake is 'Network entity stake state';
 
 create table if not exists entity_stake_history
 (
     like entity_stake including defaults
-) partition by range (id);
+);
 comment on table entity_stake_history is 'Network entity stake historical state';
 
 create table if not exists entity_transaction
@@ -405,13 +405,13 @@ create table if not exists nft
     spender            bigint  default null,
     timestamp_range    int8range not null,
     token_id           bigint    not null
-) partition by range (token_id);
+);
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
 create table if not exists nft_history
 (
     like nft including defaults
-) partition by range (token_id);
+);
 comment on table nft_history is 'Non-Fungible Tokens (NFTs) history state';
 
 create table if not exists nft_allowance
@@ -422,13 +422,13 @@ create table if not exists nft_allowance
     spender          bigint    not null,
     timestamp_range  int8range not null,
     token_id         bigint    not null
-) partition by range (owner);
+);
 comment on table nft_allowance is 'NFT allowances delegated by owner to spender';
 
 create table if not exists nft_allowance_history
 (
     like nft_allowance including defaults
-) partition by range (owner);
+);
 comment on table nft_allowance_history is 'History of NFT allowances delegated by payer to spender';
 
 create table if not exists node_stake
@@ -506,7 +506,7 @@ create table if not exists schedule
     schedule_id         bigint  not null,
     transaction_body    bytea   not null,
     wait_for_expiry     boolean not null default false
-) partition by range (schedule_id);
+);
 comment on table schedule is 'Schedule entity entries';
 
 -- sidecar file
@@ -542,8 +542,10 @@ create table if not exists token
     fee_schedule_key    bytea,
     freeze_default      boolean                not null default false,
     freeze_key          bytea,
+    freeze_status       smallint               not null,
     initial_supply      bigint                 not null,
     kyc_key             bytea,
+    kyc_status          smallint               not null,
     max_supply          bigint                 not null default 9223372036854775807, -- max long
     name                character varying(100) not null,
     pause_key           bytea                  null,
@@ -552,18 +554,18 @@ create table if not exists token
     supply_type         token_supply_type      not null default 'INFINITE',
     symbol              character varying(100) not null,
     timestamp_range     int8range              not null,
-    token_id            bigint,
+    token_id            bigint                 not null,
     total_supply        bigint                 not null default 0,
     treasury_account_id bigint                 not null,
     type                token_type             not null default 'FUNGIBLE_COMMON',
     wipe_key            bytea
-) partition by range (token_id);
+);
 comment on table token is 'Token entity';
 
 create table token_history
 (
     like token including defaults
-) partition by range (token_id);
+);
 comment on table token_history is 'Token entity history';
 
 --- token_account
@@ -571,22 +573,22 @@ create table if not exists token_account
 (
     account_id            bigint    not null,
     associated            boolean   not null default false,
-    automatic_association boolean   not null default false,
+    automatic_association boolean   null,
     balance               bigint    not null default 0,
-    balance_timestamp     bigint    not null,
-    created_timestamp     bigint    not null,
-    freeze_status         smallint  not null default 0,
-    kyc_status            smallint  not null default 0,
+    balance_timestamp     bigint    null,
+    created_timestamp     bigint    null,
+    freeze_status         smallint  null,
+    kyc_status            smallint  null,
     timestamp_range       int8range not null,
     token_id              bigint    not null
-) partition by range (token_id);
+);
 comment on table token_account is 'Token account entity';
 
 --- token_account_history
 create table if not exists token_account_history
 (
     like token_account including defaults
-) partition by range (token_id);
+);
 comment on table token_account_history is 'History of token_account';
 
 create table if not exists token_allowance
@@ -598,13 +600,13 @@ create table if not exists token_allowance
     spender          bigint    not null,
     timestamp_range  int8range not null,
     token_id         bigint    not null
-) partition by range (owner);
+);
 comment on table token_allowance is 'Token allowances delegated by owner to spender';
 
 create table if not exists token_allowance_history
 (
     like token_allowance including defaults
-) partition by range (owner);
+);
 comment on table token_allowance_history is 'History of token allowances delegated by payer to spender';
 
 --- token_balance
@@ -701,5 +703,5 @@ create table if not exists transaction_signature
     public_key_prefix   bytea  not null,
     signature           bytea  not null,
     type                smallint
-) partition by range (entity_id);
+);
 comment on table transaction_signature is 'Transaction signatories';

@@ -15,7 +15,7 @@
  */
 
 import Fee from './fee';
-import FixedFee from './fixedFee.js';
+import FixedFee from './fixedFee';
 
 class RoyaltyFee extends Fee {
   /**

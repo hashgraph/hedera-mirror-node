@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import EntityId from '../entityId.js';
-import {nsToSecNs} from '../utils.js';
+import EntityId from '../entityId';
+import {nsToSecNs} from '../utils';
 
 /**
  * Staking Reward Transfer view model

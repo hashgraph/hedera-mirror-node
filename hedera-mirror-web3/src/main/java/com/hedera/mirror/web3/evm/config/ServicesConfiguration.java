@@ -112,6 +112,7 @@ import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
 import com.hedera.services.txns.crypto.validators.ApproveAllowanceChecks;
 import com.hedera.services.txns.crypto.validators.DeleteAllowanceChecks;
 import com.hedera.services.txns.span.ExpandHandleSpanMapAccessor;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.util.PrngLogic;
 import com.hedera.services.txns.validation.ContextOptionValidator;
 import com.hedera.services.txns.validation.OptionValidator;
@@ -565,9 +566,16 @@ public class ServicesConfiguration {
             final SyntheticTxnFactory syntheticTxnFactory,
             final OptionValidator validator,
             final CreateLogic createLogic,
-            final FeeCalculator feeCalculator) {
+            final FeeCalculator feeCalculator,
+            final CreateChecks createChecks) {
         return new TokenCreatePrecompile(
-                precompilePricingUtils, encodingFacade, syntheticTxnFactory, validator, createLogic, feeCalculator);
+                precompilePricingUtils,
+                encodingFacade,
+                syntheticTxnFactory,
+                validator,
+                createLogic,
+                feeCalculator,
+                createChecks);
     }
 
     @Bean
@@ -782,5 +790,10 @@ public class ServicesConfiguration {
         // from the perspective of the EVM when executing ExtCode operations
         return address -> address.numberOfLeadingZeroBytes() >= 18
                 && Integer.compareUnsigned(address.getInt(16), STRICT_SYSTEM_ACCOUNT_BOUNDARY) <= 0;
+    }
+
+    @Bean
+    CreateChecks createChecks(final OptionValidator optionValidator) {
+        return new CreateChecks(optionValidator);
     }
 }

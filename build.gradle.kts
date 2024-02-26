@@ -32,9 +32,8 @@ plugins {
 extra.apply {
     set("grpcVersion", "1.61.1")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("json-path.version", "2.9.0") // Temporary until next Spring Boot version
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.25.2")
+    set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.3")
 }
@@ -58,13 +57,13 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.4")
         api("org.bouncycastle:bcprov-jdk15to18:1.77")
         api("com.bucket4j:bucket4j-core:8.8.0")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.0.2")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.0.3")
         api("com.google.guava:guava:33.0.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
-        api("com.hedera.evm:hedera-evm:0.46.3")
+        api("com.hedera.evm:hedera-evm:0.47.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.47.0")
         api("com.hedera.hashgraph:sdk:2.29.2")
         api("com.ongres.scram:client:2.1")
@@ -76,7 +75,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.15.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.2")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
         api("io.projectreactor:reactor-core-micrometer:1.1.2")
         api("io.swagger:swagger-annotations:1.6.13")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -84,7 +83,7 @@ dependencies {
         api("jakarta.inject:jakarta.inject-api:2.0.1")
         api("net.devh:grpc-spring-boot-starter:2.15.0.RELEASE")
         api("net.java.dev.jna:jna:5.14.0")
-        api("org.apache.commons:commons-compress:1.25.0")
+        api("org.apache.commons:commons-compress:1.26.0")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
@@ -100,7 +99,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
         api("org.testcontainers:junit-jupiter:1.19.5")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.24.0")
+        api("software.amazon.awssdk:bom:2.24.5")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }
