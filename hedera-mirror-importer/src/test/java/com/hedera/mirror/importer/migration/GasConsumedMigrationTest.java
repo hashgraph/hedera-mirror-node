@@ -52,7 +52,7 @@ import org.springframework.util.StreamUtils;
 @Import(DisablePartitionMaintenanceConfiguration.class)
 @RequiredArgsConstructor
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.93.2")
+@TestPropertySource(properties = "spring.flyway.target=1.94.0")
 public class GasConsumedMigrationTest extends ImporterIntegrationTest {
 
     private static final String REVERT_DDL =
@@ -62,7 +62,7 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:db/migration/v1/V1.94.0__add_gas_consumed_field.sql")
+    @Value("classpath:db/migration/v1/V1.95.0__add_gas_consumed_field.sql")
     private final Resource sql;
 
     private final TransactionTemplate transactionTemplate;
