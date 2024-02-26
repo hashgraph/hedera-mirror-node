@@ -143,7 +143,6 @@ class ContractController {
         }
     }
 
-    /** Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence of a precompile for gas estimation.**/
     /**
      * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
      * of a precompile for gas estimation.
