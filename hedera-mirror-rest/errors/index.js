@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import DbError from './dbError.js';
-import FileDecodeError from './fileDecodeError.js';
-import FileDownloadError from './fileDownloadError.js';
-import InvalidArgumentError from './invalidArgumentError.js';
-import InvalidClauseError from './invalidClauseError.js';
-import InvalidConfigError from './invalidConfigError.js';
-import NotFoundError from './notFoundError.js';
+import DbError from './dbError';
+import FileDecodeError from './fileDecodeError';
+import FileDownloadError from './fileDownloadError';
+import InvalidArgumentError from './invalidArgumentError';
+import InvalidClauseError from './invalidClauseError';
+import InvalidConfigError from './invalidConfigError';
+import NotFoundError from './notFoundError';
 
 export {
   DbError,

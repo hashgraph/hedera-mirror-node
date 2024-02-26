@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import AccountAlias from './accountAlias.js';
+import AccountAlias from './accountAlias';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
-import {EntityService} from './service/index.js';
+import {EntityService} from './service/index';
 import {EvmAddressType} from './constants';
-import {InvalidArgumentError} from './errors/index.js';
+import {InvalidArgumentError} from './errors/index';
 import * as utils from './utils';
 
 const {tokenBalance: tokenBalanceLimit} = getResponseLimit();

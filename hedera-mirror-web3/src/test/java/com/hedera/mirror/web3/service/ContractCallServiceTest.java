@@ -244,8 +244,33 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
+    void balanceCallToSystemAccountReturnsZero() {
+        // getAccountBalance(address)
+        final var balanceCall = "0x93423e9c000000000000000000000000" + SENDER_ADDRESS.toUnprefixedHexString();
+        final var expectedBalance = "0x0000000000000000000000000000000000000000000000000000000000000000";
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        final var result = contractCallService.processCall(serviceParameters);
+        assertThat(result).isEqualTo(expectedBalance);
+    }
+
+    @Test
+    void balanceCallToNonSystemAccountReturnsBalance() {
+        // getAccountBalance(address)
+        final var balanceCall =
+                "0x93423e9c000000000000000000000000" + EVM_CODES_CONTRACT_ADDRESS.toUnprefixedHexString();
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        final var result = contractCallService.processCall(serviceParameters);
+        assertThat(Long.parseLong(result.substring(2), 16)).isNotZero();
+    }
+
+    @Test
     void estimateGasForBalanceCall() {
-        final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
+        final var balanceCall =
+                "0x93423e9c000000000000000000000000" + EVM_CODES_CONTRACT_ADDRESS.toUnprefixedHexString();
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 

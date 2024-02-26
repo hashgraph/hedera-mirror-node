@@ -30,14 +30,14 @@ dependencies {
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.4")
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.5.1")
-    implementation("io.freefair.gradle:lombok-plugin:8.4")
+    implementation("io.freefair.gradle:lombok-plugin:8.6")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.4")
-    implementation("org.apache.commons:commons-compress:1.25.0")
+    implementation("org.apache.commons:commons-compress:1.26.0")
     implementation("org.gradle:test-retry-gradle-plugin:1.5.8")
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.1.0")
     implementation("org.owasp:dependency-check-gradle:8.4.3")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.1.3373")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.2")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.3")
 }
 
 val gitHook =

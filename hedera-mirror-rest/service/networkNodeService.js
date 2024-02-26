@@ -15,7 +15,7 @@
  */
 
 import BaseService from './baseService';
-import config from '../config.js';
+import config from '../config';
 import {
   AddressBook,
   AddressBookEntry,
@@ -25,7 +25,7 @@ import {
   NodeStake,
 } from '../model';
 import {OrderSpec} from '../sql';
-import entityId from '../entityId.js';
+import entityId from '../entityId';
 
 /**
  * Network node business model

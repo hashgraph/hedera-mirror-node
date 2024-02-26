@@ -30,6 +30,7 @@ import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -255,6 +256,47 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "callNotExistingPrecompile", MODIFICATION_CONTRACT_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TokenCreateNegativeCases.class)
+    void invalidTokenCreateCases(final TokenCreateNegativeCases tokenCreateNegativeCase) {
+        long supply = 10L;
+        int decimals = 10;
+        TokenCreateWrapper tokenNegative = getFungibleToken(OWNER_ADDRESS);
+        String functionName = "createFungibleTokenExternal";
+        switch (tokenCreateNegativeCase) {
+            case INVALID_MEMO -> tokenNegative = getFungibleTokenInvalidMemo(OWNER_ADDRESS);
+            case INVALID_NAME -> tokenNegative = getFungibleTokenInvalidName(OWNER_ADDRESS);
+            case INVALID_SYMBOL -> tokenNegative = getFungibleTokenInvalidSymbol(OWNER_ADDRESS);
+            case INVALID_DECIMALS -> decimals = -1;
+            case INVALID_INITIAL_SUPPLY -> supply = -1;
+            case INITIAL_SUPPLY_GREATER_THAN_MAX_SUPPLY -> supply = 10_000_001L;
+            case NFT_NO_SUPPLY_KEY -> {
+                tokenNegative = getNonFungibleTokenInfinite(OWNER_ADDRESS);
+                functionName = "createNonFungibleTokenExternal";
+            }
+            case NFT_NO_TREASURY -> {
+                tokenNegative = getNonFungibleTokenNoTreasury(OWNER_ADDRESS);
+                functionName = "createNonFungibleTokenExternal";
+            }
+            case NFT_FREEZE_DEFAULT_NO_KEY -> {
+                tokenNegative = getNonFungibleTokenFreezeDefaultNoKey(OWNER_ADDRESS);
+                functionName = "createNonFungibleTokenExternal";
+            }
+            case NFT_INVALID_AUTORENEW_ACCOUNT -> {
+                tokenNegative = getNonFungibleTokenInvalidAutoRenewPeriod(OWNER_ADDRESS_HISTORICAL);
+                functionName = "createNonFungibleTokenExternal";
+            }
+        }
+
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                functionName, MODIFICATION_CONTRACT_ABI_PATH, tokenNegative, supply, decimals);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 10000 * 100_000_000L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
@@ -705,6 +747,20 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
+    }
+
+    @RequiredArgsConstructor
+    enum TokenCreateNegativeCases {
+        INVALID_NAME,
+        INVALID_MEMO,
+        INVALID_SYMBOL,
+        INVALID_DECIMALS,
+        INVALID_INITIAL_SUPPLY,
+        INITIAL_SUPPLY_GREATER_THAN_MAX_SUPPLY,
+        NFT_NO_SUPPLY_KEY,
+        NFT_NO_TREASURY,
+        NFT_FREEZE_DEFAULT_NO_KEY,
+        NFT_INVALID_AUTORENEW_ACCOUNT
     }
 
     @RequiredArgsConstructor

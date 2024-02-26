@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import EntityId from '../entityId.js';
-import {encodeBase64, nsToSecNs} from '../utils.js';
+import EntityId from '../entityId';
+import {encodeBase64, nsToSecNs} from '../utils';
 
 /**
  * NFT view model

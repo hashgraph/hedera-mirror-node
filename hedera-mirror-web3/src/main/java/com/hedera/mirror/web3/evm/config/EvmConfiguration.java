@@ -27,6 +27,7 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperationV038;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmChainIdOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmCreate2Operation;
@@ -58,6 +59,7 @@ import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.operation.BalanceOperation;
 import org.hyperledger.besu.evm.operation.ExtCodeHashOperation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
@@ -235,7 +237,8 @@ public class EvmConfiguration {
     @Bean
     EVM evm030(
             final HederaPrngSeedOperation prngSeedOperation,
-            final HederaSelfDestructOperation hederaSelfDestructOperation) {
+            final HederaSelfDestructOperation hederaSelfDestructOperation,
+            final HederaBalanceOperation hederaBalanceOperation) {
         return evm(
                 gasCalculator,
                 mirrorNodeEvmProperties,
@@ -243,6 +246,7 @@ public class EvmConfiguration {
                 hederaBlockHashOperation,
                 hederaExtCodeHashOperation,
                 hederaSelfDestructOperation,
+                hederaBalanceOperation,
                 EvmSpecVersion.LONDON,
                 MainnetEVMs::registerLondonOperations);
     }
@@ -250,7 +254,8 @@ public class EvmConfiguration {
     @Bean
     EVM evm034(
             final HederaPrngSeedOperation prngSeedOperation,
-            final HederaSelfDestructOperation hederaSelfDestructOperation) {
+            final HederaSelfDestructOperation hederaSelfDestructOperation,
+            final HederaBalanceOperation hederaBalanceOperation) {
         return evm(
                 gasCalculator,
                 mirrorNodeEvmProperties,
@@ -258,6 +263,7 @@ public class EvmConfiguration {
                 hederaBlockHashOperation,
                 hederaExtCodeHashOperation,
                 hederaSelfDestructOperation,
+                hederaBalanceOperation,
                 EvmSpecVersion.PARIS,
                 MainnetEVMs::registerParisOperations);
     }
@@ -265,7 +271,8 @@ public class EvmConfiguration {
     @Bean
     EVM evm038(
             final HederaPrngSeedOperation prngSeedOperation,
-            final HederaSelfDestructOperationV038 hederaSelfDestructOperationV038) {
+            final HederaSelfDestructOperationV038 hederaSelfDestructOperationV038,
+            final HederaBalanceOperationV038 hederaBalanceOperationV038) {
         return evm(
                 gasCalculator,
                 mirrorNodeEvmProperties,
@@ -273,6 +280,7 @@ public class EvmConfiguration {
                 hederaBlockHashOperation,
                 hederaExtCodeHashOperationV038,
                 hederaSelfDestructOperationV038,
+                hederaBalanceOperationV038,
                 EvmSpecVersion.SHANGHAI,
                 MainnetEVMs::registerShanghaiOperations);
     }
@@ -280,7 +288,8 @@ public class EvmConfiguration {
     @Bean
     EVM evm046(
             final HederaPrngSeedOperation prngSeedOperation,
-            final HederaSelfDestructOperationV046 hederaSelfDestructOperationV046) {
+            final HederaSelfDestructOperationV046 hederaSelfDestructOperationV046,
+            final HederaBalanceOperationV038 hederaBalanceOperationV038) {
         return evm(
                 gasCalculator,
                 mirrorNodeEvmProperties,
@@ -288,6 +297,7 @@ public class EvmConfiguration {
                 hederaBlockHashOperation,
                 hederaExtCodeHashOperationV038,
                 hederaSelfDestructOperationV046,
+                hederaBalanceOperationV038,
                 EvmSpecVersion.SHANGHAI,
                 MainnetEVMs::registerShanghaiOperations);
     }
@@ -305,6 +315,17 @@ public class EvmConfiguration {
     @Bean
     HederaSelfDestructOperationV038 hederaSelfDestructOperationV038(final GasCalculator gasCalculator) {
         return new HederaSelfDestructOperationV038(gasCalculator, addressValidator, systemAccountDetector);
+    }
+
+    @Bean
+    HederaBalanceOperation hederaBalanceOperation(final GasCalculator gasCalculator) {
+        return new HederaBalanceOperation(gasCalculator, addressValidator);
+    }
+
+    @Bean
+    HederaBalanceOperationV038 hederaBalanceOperationV038(final GasCalculator gasCalculator) {
+        return new HederaBalanceOperationV038(
+                gasCalculator, addressValidator, systemAccountDetector, mirrorNodeEvmProperties);
     }
 
     @Bean
@@ -360,6 +381,7 @@ public class EvmConfiguration {
             final HederaBlockHashOperation hederaBlockHashOperation,
             final ExtCodeHashOperation extCodeHashOperation,
             final SelfDestructOperation selfDestructOperation,
+            final BalanceOperation hederaBalanceOperation,
             EvmSpecVersion specVersion,
             OperationRegistryCallback callback) {
         final var operationRegistry = new OperationRegistry();
@@ -382,7 +404,8 @@ public class EvmConfiguration {
                         prngSeedOperation,
                         hederaBlockHashOperation,
                         extCodeHashOperation,
-                        selfDestructOperation)
+                        selfDestructOperation,
+                        hederaBalanceOperation)
                 .forEach(operationRegistry::put);
 
         return new EVM(operationRegistry, gasCalculator, provideEvmConfiguration(), specVersion);

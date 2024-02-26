@@ -20,29 +20,32 @@ import os from 'os';
 import path from 'path';
 
 import config from '../config';
-import {getOwnerConnectionUri, getDatabaseName, getReadOnlyUser, getReadOnlyPassword} from './globalSetup';
+import {
+  getOwnerConnectionUri,
+  getDatabaseName,
+  getReadOnlyUser,
+  getReadOnlyPassword,
+  getDatabases,
+} from './globalSetup';
 import {getModuleDirname, isV2Schema} from './testutils';
 import {getPoolClass} from '../utils';
 
 const {db: defaultDbConfig} = config;
 const Pool = getPoolClass();
 
-const cleanupSql = {
-  v1: fs.readFileSync(
-    path.join(
-      getModuleDirname(import.meta),
-      '..',
-      '..',
-      'hedera-mirror-common',
-      'src',
-      'test',
-      'resources',
-      'cleanup.sql'
-    ),
-    'utf8'
+const cleanupSql = fs.readFileSync(
+  path.join(
+    getModuleDirname(import.meta),
+    '..',
+    '..',
+    'hedera-mirror-common',
+    'src',
+    'test',
+    'resources',
+    'cleanup.sql'
   ),
-  v2: null,
-};
+  'utf8'
+);
 
 const v1SchemaConfigs = {
   baselineVersion: '0',
@@ -68,27 +71,22 @@ const extractDbConnectionParams = (url) => {
 };
 
 const cleanUp = async () => {
-  const cleanupSql = await getCleanupSql();
   await ownerPool.query(cleanupSql);
 };
 
 const createPool = () => {
-  const database = getDatabaseName();
   const connectionUri = getOwnerConnectionUri(process.env.JEST_WORKER_ID);
-
-  const dbConnectionParams = extractDbConnectionParams(connectionUri);
-  global.ownerPool = new Pool({
-    ...dbConnectionParams,
-    database,
+  const dbConnectionParams = {
+    ...extractDbConnectionParams(connectionUri),
+    database: getDatabaseName(),
     sslmode: 'DISABLE',
-  });
+  };
 
-  dbConnectionParams.user = getReadOnlyUser();
-  dbConnectionParams.password = getReadOnlyPassword();
+  global.ownerPool = new Pool(dbConnectionParams);
   global.pool = new Pool({
     ...dbConnectionParams,
-    database,
-    sslmode: 'DISABLE',
+    password: getReadOnlyPassword(),
+    user: getReadOnlyUser(),
   });
 };
 
@@ -122,9 +120,6 @@ const flywayMigrate = async () => {
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
       "placeholders.hashShardCount": 2,
-      "placeholders.idPartitionSize": 1000000000000000,
-      "placeholders.maxEntityId": 5000000,
-      "placeholders.maxEntityIdRatio": 2.0,
       "placeholders.partitionStartDate": "'1970-01-01'",
       "placeholders.partitionTimeInterval": "'10 years'",
       "placeholders.topicRunningHashV2AddedTimestamp": 0,
@@ -165,36 +160,6 @@ const flywayMigrate = async () => {
   }
 
   markDbMigrated();
-};
-
-const getCleanupSql = async () => {
-  if (!isV2Schema()) {
-    return cleanupSql.v1;
-  }
-
-  if (cleanupSql.v2) {
-    return cleanupSql.v2;
-  }
-
-  // The query returns the tables without partitions or the parent tables of the partitions. This is to reduce the
-  // exact amount of time caused by trying to delete from partitions. The cleanup sql for v2 is generated once for
-  // each jest worker, it's done this way because the query to find the correct table names is also slow.
-  const {rows} = await ownerPool.queryQuietly(`
-      select table_name
-      from information_schema.tables
-               left join time_partitions on partition::text = table_name::text
-      where table_schema = 'public'
-        and table_type <> 'VIEW'
-        and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*'
-        and partition is null
-      order by table_name`);
-  cleanupSql.v2 = rows
-    .map(
-      (row) => `delete
-                from ${row.table_name};`
-    )
-    .join('\n');
-  return cleanupSql.v2;
 };
 
 const getMigratedFilename = () => path.join(process.env.MIGRATION_TMP_DIR, `.${process.env.JEST_WORKER_ID}.migrated`);

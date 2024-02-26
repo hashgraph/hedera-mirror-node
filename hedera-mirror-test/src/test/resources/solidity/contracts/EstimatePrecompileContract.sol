@@ -134,7 +134,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         keys[4] = getSingleKey(KeyType.SUPPLY, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
-            0, treasury, 8000000
+            0, treasury, 10000
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
@@ -158,7 +158,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         keys[4] = getSingleKey(KeyType.WIPE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
-            0, treasury, 8000000
+            0, treasury, 10000
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
@@ -178,7 +178,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         keys[0] = getSingleKey(KeyType.ADMIN, KeyType.ADMIN, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
-            0, treasury, 8000000
+            0, treasury, 10000
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
@@ -208,7 +208,7 @@ contract EstimatePrecompileContract is HederaTokenService, ExpiryHelper, KeyHelp
         keys[4] = getSingleKey(KeyType.WIPE, KeyValueType.INHERIT_ACCOUNT_KEY, bytes(""));
 
         IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
-            0, treasury, 8000000
+            0, treasury, 10000
         );
 
         IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(

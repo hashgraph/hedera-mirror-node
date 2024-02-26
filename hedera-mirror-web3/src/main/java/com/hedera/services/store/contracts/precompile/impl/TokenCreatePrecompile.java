@@ -43,6 +43,7 @@ import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
@@ -66,6 +67,7 @@ import com.hedera.services.store.contracts.precompile.codec.TokenCreateResult;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.txn.token.CreateLogic;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -215,6 +217,7 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
     private final OptionValidator validator;
     private final CreateLogic createLogic;
     private final FeeCalculator feeCalculator;
+    private final CreateChecks createChecks;
 
     public TokenCreatePrecompile(
             final PrecompilePricingUtils pricingUtils,
@@ -222,12 +225,14 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
             final SyntheticTxnFactory syntheticTxnFactory,
             final OptionValidator validator,
             final CreateLogic createLogic,
-            final FeeCalculator feeCalculator) {
+            final FeeCalculator feeCalculator,
+            final CreateChecks createChecks) {
         super(pricingUtils, syntheticTxnFactory);
         this.encoder = encoder;
         this.createLogic = createLogic;
         this.validator = validator;
         this.feeCalculator = feeCalculator;
+        this.createChecks = createChecks;
     }
 
     @Override
@@ -284,6 +289,9 @@ public class TokenCreatePrecompile extends AbstractWritePrecompile {
         final var tokenCreateOp = transactionBody.getTokenCreation();
         final var senderAddress = unalias(frame.getSenderAddress(), updater);
         Objects.requireNonNull(tokenCreateOp, "`body` method should be called before `run`");
+
+        final var result = createChecks.validate().apply(transactionBody);
+        validateTrue(result == OK, result);
 
         /* --- Execute the transaction and capture its results --- */
         createLogic.create(Instant.now().getEpochSecond(), senderAddress, validator, store, tokenCreateOp);
