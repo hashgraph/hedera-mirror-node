@@ -62,7 +62,7 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
               select entity_id, sum(amount) as amount
               from crypto_transfer
               where consensus_timestamp > :fromTimestamp and consensus_timestamp <= :toTimestamp and
-                errata is null or errata <> 'DELETE'
+                (errata is null or errata <> 'DELETE')
               group by entity_id
             ), state as (
               select
