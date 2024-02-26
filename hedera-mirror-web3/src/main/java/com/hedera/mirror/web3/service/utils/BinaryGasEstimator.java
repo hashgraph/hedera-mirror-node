@@ -42,12 +42,8 @@ public class BinaryGasEstimator {
         // it does not take into account the minimum threshold of 5% higher estimate than the actual gas used.
         // The default value is working with some calls but that is not the case for precompile calls which have higher
         // gas consumption.
-        // Thus, we need to increase the iteration threshold for precompile calls by comparing the minimum possible
-        // threshold with the default threshold value and use the higher one.
-        // A little tolerance of 8% over 5% is used, since the algorithm fails when using 5%, producing too narrow
-        // threshold.
-        // This value might be adapted or removed in the future, when we have the support of more precompiles and adjust
-        // the binary search algorithm accordingly.
+        // Configurable tolerance of 10% over 5% is used, since the algorithm fails when using 5%, producing too narrow
+        // threshold. Adjust via estimateGasIterationThresholdPercent value.
         final long estimateIterationThreshold = (long) (lo * properties.getEstimateGasIterationThresholdPercent());
 
         ContractCallContext contractCallContext = ContractCallContext.get();
