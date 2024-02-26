@@ -354,11 +354,11 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         final var contractActionRecord = TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
                         .addContractActions(
-                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L))
+                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L, 0))
                         .addContractActions(
-                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L))
+                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L, 1))
                         .addContractActions(contractAction(
-                                3004L, CallOperationType.OP_DELEGATECALL, ContractActionType.CALL, 3005L)))
+                                3004L, CallOperationType.OP_DELEGATECALL, ContractActionType.CALL, 3005L, 2)))
                 .build();
 
         recordItem.setSidecarRecords(List.of(contractActionRecord));
@@ -386,9 +386,9 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         final var contractActionRecord = TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
                         .addContractActions(
-                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L))
+                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L, 0))
                         .addContractActions(
-                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L)))
+                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L, 1)))
                 .build();
 
         final var bytecodeRecord = TransactionSidecarRecord.newBuilder()
@@ -684,11 +684,11 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         var contractActionRecord = TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
                         .addContractActions(
-                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L))
+                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L, 0))
                         .addContractActions(
-                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L))
+                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L, 1))
                         .addContractActions(contractAction(
-                                3004L, CallOperationType.OP_DELEGATECALL, ContractActionType.CALL, 3005L)))
+                                3004L, CallOperationType.OP_DELEGATECALL, ContractActionType.CALL, 3005L, 2)))
                 .build();
 
         recordItem.setSidecarRecords(List.of(
@@ -947,9 +947,10 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
             Long callingContractNum,
             CallOperationType callOperationType,
             ContractActionType contractActionType,
-            Long recipientContractNum) {
+            Long recipientContractNum,
+            int callDepth) {
         return com.hedera.services.stream.proto.ContractAction.newBuilder()
-                .setCallDepth(1)
+                .setCallDepth(callDepth)
                 .setCallingContract(ContractID.newBuilder().setContractNum(callingContractNum))
                 .setCallOperationType(callOperationType)
                 .setCallType(contractActionType)

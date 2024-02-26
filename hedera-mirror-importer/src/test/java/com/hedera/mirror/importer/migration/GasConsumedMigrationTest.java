@@ -104,7 +104,7 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
         // then
         assertThat(contractResultRepository.findAll())
                 .extracting(ContractResult::getGasConsumed)
-                .containsExactly(53146L, 22074L);
+                .containsExactly(53296L, 22224L);
     }
 
     private void persistData(EthereumTransaction ethTx, boolean topLevelCreate) {
@@ -124,10 +124,13 @@ public class GasConsumedMigrationTest extends ImporterIntegrationTest {
         domainBuilder
                 .contractAction()
                 .customize(ca -> ca.consensusTimestamp(ethTx.getConsensusTimestamp()))
+                .customize(ca -> ca.gasUsed(200L))
+                .customize(ca -> ca.callDepth(0))
                 .persist();
         domainBuilder
                 .contractAction()
                 .customize(ca -> ca.consensusTimestamp(ethTx.getConsensusTimestamp()))
+                .customize(ca -> ca.callDepth(1))
                 .persist();
     }
 
