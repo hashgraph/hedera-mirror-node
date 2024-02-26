@@ -80,6 +80,12 @@ public class DissociateTokenTransferUpsertQueryGenerator implements UpsertQueryG
             TEMP_TABLE_NAME, FINAL_TABLE_NAME);
 
     @Override
+    public String getCreateTempIndexQuery() {
+        return MessageFormat.format(
+                "create index if not exists {0}_idx on {0} (token_id, account_id)", TEMP_TABLE_NAME);
+    }
+
+    @Override
     public String getFinalTableName() {
         return FINAL_TABLE_NAME;
     }
