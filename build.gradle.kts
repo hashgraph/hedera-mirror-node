@@ -81,7 +81,7 @@ dependencies {
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
-        api("net.devh:grpc-spring-boot-starter:2.15.0.RELEASE")
+        api("net.devh:grpc-spring-boot-starter:3.0.0.RELEASE")
         api("net.java.dev.jna:jna:5.14.0")
         api("org.apache.commons:commons-compress:1.26.0")
         api("org.apache.commons:commons-math3:3.6.1")
