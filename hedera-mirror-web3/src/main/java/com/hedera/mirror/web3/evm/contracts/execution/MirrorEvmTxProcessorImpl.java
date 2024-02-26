@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
-
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -36,6 +33,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldStat
 import com.hedera.services.store.models.Account;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.common.utility.SemanticVersion;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Map;
@@ -64,8 +62,8 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final PricesAndFeesProvider pricesAndFeesProvider,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps,
+            final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
@@ -132,7 +130,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
             // If there is no bytecode, it means we have a non-token and non-contract account,
             // hence the code should be null and there must be a value transfer.
-            if (disabledCallsToNonExistingAddress(to)
+            if (!dynamicProperties.callsToNonExistingEntitiesEnabled(to)
                     && code == null
                     && value <= 0
                     && !payload.isEmpty()
@@ -149,14 +147,5 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                     .code(code == null ? CodeV0.EMPTY_CODE : code)
                     .build();
         }
-    }
-
-    // disable calls to non-existing addresses for
-    // older evm versions or disabled FF or grandfather contract
-    private boolean disabledCallsToNonExistingAddress(Address to) {
-        return !dynamicProperties.allowCallsToNonContractAccounts()
-                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_30)
-                || dynamicProperties.evmVersion().equals(EVM_VERSION_0_34)
-                || dynamicProperties.grandfatherContracts().contains(to);
     }
 }

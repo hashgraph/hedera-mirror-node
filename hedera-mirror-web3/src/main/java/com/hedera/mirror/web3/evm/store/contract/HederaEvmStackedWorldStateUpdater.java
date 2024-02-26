@@ -16,9 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
@@ -36,6 +34,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
+import com.swirlds.common.utility.SemanticVersion;
 import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -168,9 +167,7 @@ public class HederaEvmStackedWorldStateUpdater
         final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
         if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
             if (evmProperties.callsToNonExistingEntitiesEnabled(addressOrAlias)
-                    || (!evmProperties.evmVersion().equals(EVM_VERSION_0_30)
-                            && !evmProperties.evmVersion().equals(EVM_VERSION_0_34)
-                            && !evmProperties.evmVersion().equals(EVM_VERSION_0_38))) {
+                    || (SemanticVersion.parse(evmProperties.evmVersion()).compareTo(EVM_VERSION_0_46) >= 0)) {
                 var ghostAcc = createGhostAccount(addressOrAlias);
                 ghostAcc = ghostAcc.setAutoAssociationMetadata(1);
                 store.updateAccount(ghostAcc);

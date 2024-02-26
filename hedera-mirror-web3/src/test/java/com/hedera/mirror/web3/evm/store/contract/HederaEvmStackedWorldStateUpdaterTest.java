@@ -279,7 +279,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void unaliasingFailsWhenNotUsingCanonicalAddressForV38() {
         given(tokenAccessor.canonicalAddress(alias)).willReturn(alias2);
-        given(properties.evmVersion()).willReturn(EvmConfiguration.EVM_VERSION_0_38);
+        given(properties.evmVersion()).willReturn(EvmConfiguration.EVM_VERSION_0_38.toString());
         assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
     }
 

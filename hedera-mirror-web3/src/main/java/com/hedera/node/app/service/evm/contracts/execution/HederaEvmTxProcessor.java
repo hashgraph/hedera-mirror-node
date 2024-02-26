@@ -23,6 +23,7 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEv
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.swirlds.common.utility.SemanticVersion;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Provider;
@@ -53,8 +54,8 @@ public class HederaEvmTxProcessor {
     protected final GasCalculator gasCalculator;
     // FEATURE WORK to be covered by #3949
     protected final PricesAndFeesProvider livePricesSource;
-    protected final Map<String, Provider<MessageCallProcessor>> mcps;
-    protected final Map<String, Provider<ContractCreationProcessor>> ccps;
+    protected final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps;
+    protected final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps;
     protected final HederaEvmOperationTracer tracer;
     protected final EvmProperties dynamicProperties;
 
@@ -64,8 +65,8 @@ public class HederaEvmTxProcessor {
             final PricesAndFeesProvider livePricesSource,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps,
+            final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final HederaEvmOperationTracer tracer) {
         this.worldState = worldState;
@@ -142,9 +143,9 @@ public class HederaEvmTxProcessor {
         tracer.init(initialFrame);
 
         final String evmVersion = dynamicProperties.evmVersion();
-
+        final var semanticVersion = SemanticVersion.parse(evmVersion);
         while (!messageFrameStack.isEmpty()) {
-            process(messageFrameStack.peekFirst(), tracer, evmVersion);
+            process(messageFrameStack.peekFirst(), tracer, semanticVersion);
         }
 
         final var gasUsed = calculateGasUsedByTX(gasLimit, initialFrame);
@@ -196,12 +197,14 @@ public class HederaEvmTxProcessor {
         return MessageFrame.builder().build();
     }
 
-    protected void process(final MessageFrame frame, final OperationTracer operationTracer, final String evmVersion) {
+    protected void process(
+            final MessageFrame frame, final OperationTracer operationTracer, final SemanticVersion evmVersion) {
         final AbstractMessageProcessor executor = getMessageProcessor(frame.getType(), evmVersion);
         executor.process(frame, operationTracer);
     }
 
-    private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type, String evmVersion) {
+    private AbstractMessageProcessor getMessageProcessor(
+            final MessageFrame.Type type, final SemanticVersion evmVersion) {
         return switch (type) {
             case MESSAGE_CALL -> mcps.get(evmVersion).get();
             case CONTRACT_CREATION -> ccps.get(evmVersion).get();

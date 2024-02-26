@@ -103,6 +103,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     // The block numbers lower than EVM v0.34 are considered part of EVM v0.30 which includes all precompiles
     protected static final long EVM_V_34_BLOCK = 50L;
     protected static final long EVM_V_38_BLOCK = 100L;
+    protected static final long EVM_V_46_BLOCK = 150L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 
     // Exchange rates from local node.
@@ -483,7 +484,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static RecordFile recordFileBeforeEvm34;
     protected static RecordFile recordFileAfterEvm34;
     protected static RecordFile recordFileEvm38;
-    protected static RecordFile recordFileEvm38Latest;
+    protected static RecordFile recordFileEvm46;
+    protected static RecordFile recordFileEvm46Latest;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -1302,7 +1304,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .recordFile()
                 .customize(f -> f.index(EVM_V_38_BLOCK))
                 .persist();
-        recordFileEvm38Latest = domainBuilder.recordFile().persist();
+        recordFileEvm46 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_46_BLOCK))
+                .persist();
+        recordFileEvm46Latest = domainBuilder.recordFile().persist();
     }
 
     private void historicalDataPersist() {

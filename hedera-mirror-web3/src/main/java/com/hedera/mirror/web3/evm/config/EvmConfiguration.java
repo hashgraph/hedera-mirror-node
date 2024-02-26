@@ -44,6 +44,7 @@ import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV
 import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV046;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
+import com.swirlds.common.utility.SemanticVersion;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -96,11 +97,11 @@ public class EvmConfiguration {
     public static final String CACHE_NAME_TOKEN = "token";
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
-    public static final String EVM_VERSION_0_30 = "v0.30";
-    public static final String EVM_VERSION_0_34 = "v0.34";
-    public static final String EVM_VERSION_0_38 = "v0.38";
-    public static final String EVM_VERSION_0_46 = "v0.46";
-    public static final String EVM_VERSION = EVM_VERSION_0_46;
+    public static final SemanticVersion EVM_VERSION_0_30 = SemanticVersion.parse("0.30.0");
+    public static final SemanticVersion EVM_VERSION_0_34 = SemanticVersion.parse("0.34.0");
+    public static final SemanticVersion EVM_VERSION_0_38 = SemanticVersion.parse("0.38.0");
+    public static final SemanticVersion EVM_VERSION_0_46 = SemanticVersion.parse("0.46.0");
+    public static final SemanticVersion EVM_VERSION = EVM_VERSION_0_46;
     private final CacheProperties cacheProperties;
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final GasCalculatorHederaV22 gasCalculator;
@@ -185,12 +186,12 @@ public class EvmConfiguration {
     }
 
     @Bean
-    Map<String, Provider<ContractCreationProcessor>> contractCreationProcessorProvider(
+    Map<SemanticVersion, Provider<ContractCreationProcessor>> contractCreationProcessorProvider(
             final ContractCreationProcessor contractCreationProcessor30,
             final ContractCreationProcessor contractCreationProcessor34,
             final ContractCreationProcessor contractCreationProcessor38,
             final ContractCreationProcessor contractCreationProcessor46) {
-        Map<String, Provider<ContractCreationProcessor>> processorsMap = new HashMap<>();
+        Map<SemanticVersion, Provider<ContractCreationProcessor>> processorsMap = new HashMap<>();
         processorsMap.put(EVM_VERSION_0_30, () -> contractCreationProcessor30);
         processorsMap.put(EVM_VERSION_0_34, () -> contractCreationProcessor34);
         processorsMap.put(EVM_VERSION_0_38, () -> contractCreationProcessor38);
@@ -199,12 +200,12 @@ public class EvmConfiguration {
     }
 
     @Bean
-    Map<String, Provider<MessageCallProcessor>> messageCallProcessors(
+    Map<SemanticVersion, Provider<MessageCallProcessor>> messageCallProcessors(
             MirrorEvmMessageCallProcessorV30 mirrorEvmMessageCallProcessor30,
             MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor34,
             MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor38,
             MirrorEvmMessageCallProcessor mirrorEvmMessageCallProcessor46) {
-        Map<String, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
+        Map<SemanticVersion, Provider<MessageCallProcessor>> processorsMap = new HashMap<>();
         processorsMap.put(EVM_VERSION_0_30, () -> mirrorEvmMessageCallProcessor30);
         processorsMap.put(EVM_VERSION_0_34, () -> mirrorEvmMessageCallProcessor34);
         processorsMap.put(EVM_VERSION_0_38, () -> mirrorEvmMessageCallProcessor38);
@@ -392,7 +393,6 @@ public class EvmConfiguration {
                 gasCalculator,
                 mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
         Set.of(
-                        new HederaBalanceOperation(gasCalculator, validator),
                         new HederaDelegateCallOperation(gasCalculator, validator),
                         new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
                         new HederaEvmCreate2Operation(

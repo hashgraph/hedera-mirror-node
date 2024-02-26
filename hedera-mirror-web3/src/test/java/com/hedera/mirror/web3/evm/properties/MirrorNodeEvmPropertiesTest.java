@@ -23,7 +23,9 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_3
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.evm.config.EvmConfiguration;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaNetwork;
+import com.swirlds.common.utility.SemanticVersion;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -65,7 +67,7 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
 
     @Test
     void correctPropertiesEvaluation() {
-        assertThat(properties.evmVersion()).isEqualTo(EVM_VERSION);
+        assertThat(properties.evmVersion()).isEqualTo(EVM_VERSION.toString());
         assertThat(properties.dynamicEvmVersion()).isTrue();
         assertThat(properties.maxGasRefundPercentage()).isEqualTo(MAX_REFUND_PERCENT);
         assertThat(properties.fundingAccountAddress()).isEqualTo(FUNDING_ADDRESS);
@@ -82,37 +84,39 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
 
     @ParameterizedTest
     @MethodSource("blockNumberToEvmVersionProviderMainnet")
-    void getEvmVersionForBlockFromHederaNetwork(Long blockNumber, String expectedEvmVersion) {
+    void getEvmVersionForBlockFromHederaNetwork(Long blockNumber, SemanticVersion expectedEvmVersion) {
         // given
         properties.setNetwork(HederaNetwork.MAINNET);
 
         String result = properties.getEvmVersionForBlock(blockNumber);
-        assertThat(result).isEqualTo(expectedEvmVersion);
+        assertThat(result).isEqualTo(expectedEvmVersion.toString());
     }
 
     @ParameterizedTest
     @MethodSource("blockNumberToEvmVersionProviderCustom")
-    void getEvmVersionForBlockFromConfig(Long blockNumber, String expectedEvmVersion) {
+    void getEvmVersionForBlockFromConfig(Long blockNumber, SemanticVersion expectedEvmVersion) {
         // given
         properties.setEvmVersions(createEvmVersionsMapCustom());
 
         String result = properties.getEvmVersionForBlock(blockNumber);
-        assertThat(result).isEqualTo(expectedEvmVersion);
+        assertThat(result).isEqualTo(expectedEvmVersion.toString());
     }
 
-    private static NavigableMap<Long, String> createEvmVersionsMapCustom() {
-        NavigableMap<Long, String> evmVersions = new TreeMap<>();
+    private static NavigableMap<Long, SemanticVersion> createEvmVersionsMapCustom() {
+        NavigableMap<Long, SemanticVersion> evmVersions = new TreeMap<>();
         evmVersions.put(0L, EVM_VERSION_0_30);
         evmVersions.put(50L, EVM_VERSION_0_34);
         evmVersions.put(100L, EVM_VERSION_0_38);
+        evmVersions.put(150L, EvmConfiguration.EVM_VERSION_0_46);
         return Collections.unmodifiableNavigableMap(evmVersions);
     }
 
-    private static NavigableMap<Long, String> createEvmVersionsMapMainnet() {
-        NavigableMap<Long, String> evmVersions = new TreeMap<>();
+    private static NavigableMap<Long, SemanticVersion> createEvmVersionsMapMainnet() {
+        NavigableMap<Long, SemanticVersion> evmVersions = new TreeMap<>();
         evmVersions.put(0L, EVM_VERSION_0_30);
         evmVersions.put(44029066L, EVM_VERSION_0_34);
         evmVersions.put(49117794L, EVM_VERSION_0_38);
+        evmVersions.put(60258042L, EvmConfiguration.EVM_VERSION_0_46);
         return Collections.unmodifiableNavigableMap(evmVersions);
     }
 
@@ -124,19 +128,19 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         return blockNumberToEvmVersionProvider(createEvmVersionsMapMainnet());
     }
 
-    private static Stream<Arguments> blockNumberToEvmVersionProvider(NavigableMap<Long, String> evmVersions) {
+    private static Stream<Arguments> blockNumberToEvmVersionProvider(NavigableMap<Long, SemanticVersion> evmVersions) {
         Stream.Builder<Arguments> argumentsBuilder = Stream.builder();
 
         Long firstKey = evmVersions.firstKey();
         // return default EVM version for key - 1 since none will be found
         argumentsBuilder.add(Arguments.of(firstKey - 1, EVM_VERSION));
 
-        for (Map.Entry<Long, String> entry : evmVersions.entrySet()) {
+        for (Map.Entry<Long, SemanticVersion> entry : evmVersions.entrySet()) {
             Long key = entry.getKey();
-            String currentValue = entry.getValue();
+            var currentValue = entry.getValue();
             // Test the block number just before the key (key - 1) if it's not the first key
             if (!key.equals(firstKey)) {
-                String lowerValue = evmVersions.lowerEntry(key).getValue();
+                var lowerValue = evmVersions.lowerEntry(key).getValue();
                 argumentsBuilder.add(Arguments.of(key - 1, lowerValue));
             }
 
