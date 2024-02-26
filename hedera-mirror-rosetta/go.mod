@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/Code-Hex/go-generics-cache v1.3.1
-	github.com/coinbase/rosetta-sdk-go v0.8.3
+	github.com/coinbase/rosetta-sdk-go v0.8.4
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
 	github.com/cucumber/godog v0.14.0
 	github.com/ethereum/go-ethereum v1.13.13
