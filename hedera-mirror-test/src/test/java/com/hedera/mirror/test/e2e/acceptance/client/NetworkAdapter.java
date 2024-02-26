@@ -23,6 +23,7 @@ import static org.apache.commons.lang3.ObjectUtils.isNotEmpty;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Strings;
 import com.hedera.hashgraph.sdk.ContractFunctionResult;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.mirror.rest.model.ContractCallResponse;
@@ -34,6 +35,8 @@ import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import jakarta.inject.Named;
 import java.nio.ByteBuffer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -108,31 +111,44 @@ public class NetworkAdapter extends EncoderDecoderFacade {
             final NodeNameEnum node,
             boolean isEstimate,
             final String from,
+            final ContractId to,
             final DeployedContract deployedContract,
             final String method,
             final byte[] data,
             final Hbar amount) {
         if (NodeNameEnum.MIRROR.equals(node)) {
-            var contractCallRequestBody = ModelBuilder.contractCallRequest()
-                    .data(Strings.encode(ByteBuffer.wrap(data)))
-                    .to(deployedContract.contractId().toSolidityAddress())
-                    .from(from.isEmpty() ? contractClient.getClientAddress() : from)
-                    .estimate(isEstimate)
-                    .value(amount != null ? amount.toTinybars() : 0);
+            try {
+                var contractCallRequestBody = ModelBuilder.contractCallRequest()
+                        .data(Strings.encode(ByteBuffer.wrap(data)))
+                        .to(
+                                to != null
+                                        ? to.toSolidityAddress()
+                                        : deployedContract.contractId().toSolidityAddress())
+                        .from(from.isEmpty() ? contractClient.getClientAddress() : from)
+                        .estimate(isEstimate)
+                        .value(amount != null ? amount.toTinybars() : 0);
 
-            var response = mirrorClient.contractsCall(contractCallRequestBody);
-            return new GeneralContractExecutionResponse(ContractCallResponseWrapper.of(response));
+                var response = mirrorClient.contractsCall(contractCallRequestBody);
+                return new GeneralContractExecutionResponse(ContractCallResponseWrapper.of(response));
+            } catch (Exception e) {
+                return new GeneralContractExecutionResponse(e.getMessage());
+            }
         } else {
-            final var gas = contractClient
-                    .getSdkClient()
-                    .getAcceptanceTestProperties()
-                    .getFeatureProperties()
-                    .getMaxContractFunctionGas();
+            try {
+                final var gas = contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
+                        .getMaxContractFunctionGas();
 
-            final var result = contractClient.executeContract(deployedContract.contractId(), gas, method, data, amount);
-            final var txId = result.networkTransactionResponse().getTransactionIdStringNoCheckSum();
-            final var errorMessage = extractInternalCallErrorMessage(txId);
-            return new GeneralContractExecutionResponse(txId, result.networkTransactionResponse(), errorMessage);
+                var contractId = to != null ? to : deployedContract.contractId();
+                final var result = contractClient.executeContract(contractId, gas, method, data, amount);
+                final var txId = result.networkTransactionResponse().getTransactionIdStringNoCheckSum();
+                final var errorMessage = extractInternalCallErrorMessage(txId);
+                return new GeneralContractExecutionResponse(txId, result.networkTransactionResponse(), errorMessage);
+            } catch (Exception e) {
+                return new GeneralContractExecutionResponse(extractTransactionId(e.getMessage()), e.getMessage());
+            }
         }
     }
 
@@ -170,5 +186,15 @@ public class NetworkAdapter extends EncoderDecoderFacade {
 
         var resultMessage = transactions.get(1).getResult();
         return resultMessage.equalsIgnoreCase("success") ? null : resultMessage;
+    }
+
+    private static String extractTransactionId(String message) {
+        Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
+        Matcher matcher = pattern.matcher(message);
+        if (matcher.find()) {
+            return matcher.group(1) + "-" + matcher.group(2) + "-" + matcher.group(3);
+        } else {
+            return "Not found";
+        }
     }
 }

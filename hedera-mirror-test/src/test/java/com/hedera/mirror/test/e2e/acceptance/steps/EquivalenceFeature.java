@@ -19,9 +19,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BIG_INTEGER_TUPLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BYTES_TUPLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.COPY_CODE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.DESTROY_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_BALANCE;
@@ -38,24 +38,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.GeneralContractExecutionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import java.io.IOException;
 import java.math.BigInteger;
-import java.util.Arrays;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
@@ -67,15 +67,18 @@ public class EquivalenceFeature extends AbstractFeature {
     private static final String INVALID_FEE_SUBMITTED = "INVALID_FEE_SUBMITTED";
     private static final String BAD_REQUEST = "400 Bad Request";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
+    private static final String SUCCESS = "SUCCESS";
 
     private DeployedContract equivalenceDestructContract;
     private DeployedContract equivalenceCallContract;
-
+    private DeployedContract deployedEstimatePrecompileContract;
     private String equivalenceDestructContractSolidityAddress;
     private String equivalenceCallContractSolidityAddress;
+    private String estimatePrecompileContractSolidityAddress;
     private TokenId fungibleTokenId;
 
     private final TokenClient tokenClient;
+    private ExpandedAccountId admin;
 
     @Given("I successfully create selfdestruct contract")
     public void createNewSelfDestructContract() {
@@ -89,6 +92,18 @@ public class EquivalenceFeature extends AbstractFeature {
         equivalenceCallContract = getContract(EQUIVALENCE_CALL);
         equivalenceCallContractSolidityAddress =
                 equivalenceCallContract.contractId().toSolidityAddress();
+    }
+
+    @Given("I successfully deploy estimate precompile contract")
+    public void createNewEstimatePrecompileContract() throws IOException {
+        deployedEstimatePrecompileContract = getContract(ESTIMATE_PRECOMPILE);
+        estimatePrecompileContractSolidityAddress =
+                deployedEstimatePrecompileContract.contractId().toSolidityAddress();
+    }
+
+    @Given("I create admin account")
+    public void createAccounts() {
+        admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
     }
 
     @RetryAsserts
@@ -216,13 +231,15 @@ public class EquivalenceFeature extends AbstractFeature {
         var callType = getMethodName(call, amountType);
         var node = acceptanceTestProperties.getNodeType();
 
-        byte[] functionParameterData = constructFunctionParameterDataForInternalCallToSystemAccount(accountNumber, call, callType);
+        byte[] functionParameterData =
+                constructFunctionParameterDataForInternalCallToSystemAccount(accountNumber, call, callType);
         byte[] data;
         if (functionParameterData == null) {
             callType = getMethodNameForHtsAccount(call, amountType);
             data = encodeDataToByteArray(EQUIVALENCE_CALL, callType, TestUtil.asAddress(fungibleTokenId));
         } else {
-            data = encodeDataToByteArray(EQUIVALENCE_CALL, callType, TestUtil.asAddress(accountId), functionParameterData);
+            data = encodeDataToByteArray(
+                    EQUIVALENCE_CALL, callType, TestUtil.asAddress(accountId), functionParameterData);
         }
 
         Hbar amount = null;
@@ -234,11 +251,55 @@ public class EquivalenceFeature extends AbstractFeature {
         validateResponseFromCallToSystemAccount(accountNumber, call, amount, functionParameterData, response);
     }
 
-    private byte[] constructFunctionParameterDataForInternalCallToSystemAccount(long accountNumber, String call, String callType) {
+    @Then("I execute directCall to range {string} addresses without amount")
+    public void directCallToRangeAddressesWithoutAmount(String address) {
+        var node = acceptanceTestProperties.getNodeType();
+        var accountId = new ContractId(extractAccountNumber(address));
+        var result = callContract(node, admin.getAccountId().toSolidityAddress(), accountId, null);
+        assertThat(result.contractCallResponse().getResult()).isEqualTo("0x");
+    }
+
+    @Then("I execute directCall to range {string} addresses with amount {int}")
+    public void directCallToRangeAddressesWithoutAmount(String address, int amount) {
+        var node = acceptanceTestProperties.getNodeType();
+        var accountId = new ContractId(extractAccountNumber(address));
+        var result = callContract(node, admin.getAccountId().toSolidityAddress(), accountId, Hbar.fromTinybars(amount));
+
+        if (extractAccountNumber(address) > 751) {
+            assertThat(result.contractCallResponse().getResult()).isEqualTo("0x");
+        } else {
+            // mirror node assert should be added after we fix #7621
+            // assertThat(result.contractCallResponse().getResult()).isEqualTo("0x");
+        }
+    }
+
+    @Then("I execute directCall to contract {string} amount")
+    public void directCallToAddressWithAmount(String amountType) {
+        var node = acceptanceTestProperties.getNodeType();
+        var contractId = equivalenceDestructContract.contractId();
+        var from = admin.getAccountId().toSolidityAddress();
+        Hbar amount = null;
+        if (amountType.equals("with")) {
+            amount = Hbar.fromTinybars(10);
+        }
+        var result = callContract(node, from, contractId, amount);
+        assertThat(result.contractCallResponse().getResult()).isEqualTo("0x");
+    }
+
+    @Then("I execute directCall to address with non-payable contract with amount")
+    public void directCallToAddressWithAmountNonPayable() {
+        var node = acceptanceTestProperties.getNodeType();
+        var contractId = deployedEstimatePrecompileContract.contractId();
+        var from = admin.getAccountId().toSolidityAddress();
+        var result = callContract(node, from, contractId, Hbar.fromTinybars(500));
+        assertThat(result.errorMessage()).startsWith(BAD_REQUEST);
+    }
+
+    private byte[] constructFunctionParameterDataForInternalCallToSystemAccount(
+            long accountNumber, String call, String callType) {
         if (accountNumber == 359) { // HTS precompile
             return null;
-        }
-        else if (call.equals("callcode")) {
+        } else if (call.equals("callcode")) {
             return encodeDataToByteArray(EQUIVALENCE_CALL, GET_CURRENT_ADDRESS.getSelector());
         } else if (accountNumber >= 1 && accountNumber <= 9) {
             return encodeDataToByteArray(EQUIVALENCE_CALL, callType + "ToIdentityPrecompile");
@@ -247,7 +308,12 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    private void validateResponseFromCallToSystemAccount(long accountNumber, String call, Hbar amount, byte[] functionParameterData, GeneralContractExecutionResponse response) {
+    private void validateResponseFromCallToSystemAccount(
+            long accountNumber,
+            String call,
+            Hbar amount,
+            byte[] functionParameterData,
+            GeneralContractExecutionResponse response) {
         var node = acceptanceTestProperties.getNodeType();
         if (node.equals(NodeNameEnum.CONSENSUS)) {
             if (amount == null) {
@@ -261,19 +327,26 @@ public class EquivalenceFeature extends AbstractFeature {
             }
         } else {
             if (call.equals("callcode")) {
-                validateMirrorNodeCallCodeResponseToSystemAccount(accountNumber, amount, functionParameterData, response);
+                validateMirrorNodeCallCodeResponseToSystemAccount(
+                        accountNumber, amount, functionParameterData, response);
             } else {
                 validateMirrorNodeCallResponseToSystemAccount(accountNumber, amount, response);
             }
         }
     }
 
-    private void validateMirrorNodeCallCodeResponseToSystemAccount(long accountNumber, Hbar amount, byte[] functionParameterData, GeneralContractExecutionResponse response) {
+    private void validateMirrorNodeCallCodeResponseToSystemAccount(
+            long accountNumber, Hbar amount, byte[] functionParameterData, GeneralContractExecutionResponse response) {
         var returnedDataBytes = response.contractCallResponse().getResultAsBytes();
         if (amount == null) {
             // Should succeed
             if (accountNumber > 0 && accountNumber <= 9) {
-                assertArrayEquals(functionParameterData, response.contractCallResponse().getResultAsBytes().trimTrailingZeros().toArray());
+                assertArrayEquals(
+                        functionParameterData,
+                        response.contractCallResponse()
+                                .getResultAsBytes()
+                                .trimTrailingZeros()
+                                .toArray());
             } else {
                 assertArrayEquals(new byte[0], returnedDataBytes.toArray());
             }
@@ -288,7 +361,8 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    private void validateMirrorNodeCallResponseToSystemAccount(long accountNumber, Hbar amount, GeneralContractExecutionResponse response) {
+    private void validateMirrorNodeCallResponseToSystemAccount(
+            long accountNumber, Hbar amount, GeneralContractExecutionResponse response) {
         TupleType tupleType;
         if (accountNumber == 359) {
             tupleType = TupleType.parse("(bool,bool)");
@@ -296,7 +370,8 @@ public class EquivalenceFeature extends AbstractFeature {
             tupleType = TupleType.parse("(bool,bytes)");
         }
         var decodedResult = tupleType.decode(
-                ByteString.fromHex(response.contractCallResponse().getResult().substring(2)).toByteArray());
+                ByteString.fromHex(response.contractCallResponse().getResult().substring(2))
+                        .toByteArray());
         var isSuccess = (boolean) decodedResult.get(0);
 
         if (amount == null) {
@@ -354,8 +429,7 @@ public class EquivalenceFeature extends AbstractFeature {
     }
 
     private boolean shouldSystemAccountWithoutAmountReturnSuccess(long accountNumber) {
-        return (accountNumber >= 1 && accountNumber <= 9)
-                || (accountNumber >= 359 && accountNumber <= 361);
+        return (accountNumber >= 1 && accountNumber <= 9) || (accountNumber >= 359 && accountNumber <= 361);
     }
 
     private boolean shouldSystemAccountWithAmountReturnInvalidFeeSubmitted(long accountNumber) {

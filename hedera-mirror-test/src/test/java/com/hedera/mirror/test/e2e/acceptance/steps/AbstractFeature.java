@@ -49,6 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
@@ -197,13 +198,19 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
     }
 
     protected GeneralContractExecutionResponse callContract(
+            final NodeNameEnum node, final String from, final ContractId to, final Hbar amount) {
+        return networkAdapter.contractsCall(node, false, from, to, null, "", Bytes.EMPTY.toArrayUnsafe(), amount);
+    }
+
+    protected GeneralContractExecutionResponse callContract(
             final NodeNameEnum node,
             final String from,
             final ContractResource contractResource,
             final String method,
             final byte[] data,
             final Hbar amount) {
-        return networkAdapter.contractsCall(node, false, from, getContract(contractResource), method, data, amount);
+        return networkAdapter.contractsCall(
+                node, false, from, null, getContract(contractResource), method, data, amount);
     }
 
     protected ContractCallResponseWrapper estimateContract(String data, String contractAddress) {
