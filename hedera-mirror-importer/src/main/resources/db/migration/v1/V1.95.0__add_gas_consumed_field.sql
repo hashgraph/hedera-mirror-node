@@ -1,7 +1,7 @@
 alter table if exists contract_result
     add column if not exists gas_consumed bigint null;
 
--- Function to get intrinsic gas for contract creation
+-- Function to get intrinsic gas for contract operation
 create or replace function get_intrinsic_gas(payload bytea, is_creation boolean) returns bigint as $$
 declare
   zero_count bigint := 0;
