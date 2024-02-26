@@ -1,34 +1,24 @@
 alter table if exists contract_result
     add column if not exists gas_consumed bigint null;
 
--- Function for counting zero and non-zero bytes
-create or replace function bytes_gas_calculation(bytea) returns bigint as $$
+-- Function to get intrinsic gas for contract creation
+create or replace function get_intrinsic_gas(payload bytea, is_creation boolean) returns bigint as $$
 declare
   zero_count bigint := 0;
   non_zero_count bigint := 0;
   i int;
 begin
-  for i in 1..octet_length($1) loop
-    if get_byte($1, i-1) = 0 then
+  for i in 1..octet_length(payload) loop
+    if get_byte(payload, i-1) = 0 then
       zero_count := zero_count + 1;
     else
       non_zero_count := non_zero_count + 1;
     end if;
   end loop;
-  return zero_count * 4 + non_zero_count * 16; -- 4 gas per zero byte, 16 gas per non-zero byte
-end;
-$$ language plpgsql immutable;
-
--- Function to get intrinsic gas for contract creation
-create or replace function get_intrinsic_gas(payload bytea, is_creation boolean) returns bigint as $$
-begin
-  -- Always include the base base cost of 21000 gas
   if is_creation then
-    -- For contract creation, `payload` represents the `initcode`.
-    return 21000 + 32000 + bytes_gas_calculation(payload); -- Contract creation
+    return 21000 + 32000 + zero_count * 4 + non_zero_count * 16; -- contract creation cost calculation
   else
-    -- For contract call, `payload` represents the `function_parameters`.
-    return 21000 + bytes_gas_calculation(payload); -- Contract call
+    return 21000 + zero_count * 4 + non_zero_count * 16; -- contract call cost calculation
   end if;
 end;
 $$ language plpgsql immutable;
