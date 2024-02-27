@@ -53,6 +53,7 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
         "77777, 77778, 1",
         "1_000_000, 1_000_000_000, 20",
         "21000, 15_000_000, 14",
+        "21000, 50_000_000, 15",
         "1_000_000, 1_000_000_000, 20"
     })
     void binarySearch(final long low, final long high, final int iterationLimit) {
@@ -76,6 +77,7 @@ class BinaryGasEstimatorTest extends Web3IntegrationTest {
         "35000, 15_000_000, 35913",
         "1_000_000, 1_000_000_000, 1000952",
         "21000, 15_000_000, 21914",
+        "21000, 50_000_000, 21914",
         "1_000_000, 1_000_000_000, 1000952"
     })
     void binarySearchWithFailingCalls(final long low, final long high, final int regularCallGasUsage) {

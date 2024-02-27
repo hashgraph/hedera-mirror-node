@@ -16,9 +16,17 @@
 
 package com.hedera.mirror.importer.repository.upsert;
 
+import java.text.MessageFormat;
+
 public interface UpsertQueryGenerator {
 
     String TEMP_SUFFIX = "_temp";
+
+    String getCreateTempIndexQuery();
+
+    default String getCleanupTempIndexQuery() {
+        return MessageFormat.format("drop index if exists {0}_idx", getTemporaryTableName());
+    }
 
     String getFinalTableName();
 
