@@ -403,7 +403,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         int migrationCount = 0;
         var stopwatch = Stopwatch.createStarted();
 
-        long topLevelActionSidecarGasUsed = 0;
+        Long topLevelActionSidecarGasUsed = null;
         ByteString payloadBytes = null;
         boolean isContractCreation = true;
 
@@ -452,9 +452,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         return new SidecarProcessingResult(
-                DomainUtils.toBytes(payloadBytes),
-                isContractCreation,
-                topLevelActionSidecarGasUsed == 0 ? null : topLevelActionSidecarGasUsed);
+                DomainUtils.toBytes(payloadBytes), isContractCreation, topLevelActionSidecarGasUsed);
     }
 
     /**

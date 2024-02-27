@@ -62,7 +62,7 @@ with contract_action_gas_usage as (
 )
 update contract_result cr
 set gas_consumed = gc.gas_used +
-                   get_intrinsic_gas(gc.payload, gc.is_creation)
+                   get_intrinsic_gas(coalesce(gc.payload, ''::bytea), gc.is_creation)
 from gas_calculation gc
 where cr.consensus_timestamp = gc.consensus_timestamp;
 
