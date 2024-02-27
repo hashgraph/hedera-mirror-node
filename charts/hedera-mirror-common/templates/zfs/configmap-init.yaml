@@ -33,7 +33,6 @@ data:
     DEFAULT_DISK_SIZE_COORDINATOR="${DEFAULT_DISK_SIZE_COORDINATOR:-75GB}"
     DEFAULT_DISK_SIZE_WORKER="${DEFAULT_DISK_SIZE_WORKER:-152GB}"
     K8S_NAMESPACE="${K8S_NAMESPACE:-common}"
-    RESIZE_THRESHOLD_PCT="${RESIZE_THRESHOLD_PCT:-25}"
     ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/node}"
 
     echo "Installing dependencies"
@@ -62,13 +61,11 @@ data:
       NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.[$NODE_ID_LABEL]')"
     done
     # Ensure node status config map is created
-    CONFIG_MAP="$(kubectl get configmap -o json -n ${K8S_NAMESPACE} ${CONFIG_MAP_NAME})"
-    COMMAND_STATUS=$?
-    until [[ ${COMMAND_STATUS} -eq 0 ]]; do
+    until (kubectl get configmap -o json -n "${K8S_NAMESPACE}" "${CONFIG_MAP_NAME}" &> /dev/null)
+    do
       echo "Creating config map ${CONFIG_MAP_NAME}"
-      kubectl create configmap "${CONFIG_MAP_NAME}" -n "${K8S_NAMESPACE}" --from-literal="${CONFIG_MAP_KEY}={}"
-      CONFIG_MAP="$(kubectl get configmap -o json -n ${K8S_NAMESPACE} ${CONFIG_MAP_NAME})"
-      COMMAND_STATUS=$?
+      kubectl create configmap "${CONFIG_MAP_NAME}" -n "${K8S_NAMESPACE}" --from-literal="${CONFIG_MAP_KEY}={}" || true
+      sleep 1
     done
     COMMAND_STATUS=1
     until [[ ${COMMAND_STATUS} -eq 0 ]]; do
