@@ -234,7 +234,7 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             return Optional.empty();
         }
 
-        log.info("Updated {} synthetic transfer approvals", count);
+        log.info("Updated {} synthetic transfer approvals in timestamp range ({}, {}]", count, lowerBound, upperBound);
         migrationErrors.forEach(log::error);
         return upperBound == UPPER_BOUND_TIMESTAMP ? Optional.empty() : Optional.of(upperBound);
     }
