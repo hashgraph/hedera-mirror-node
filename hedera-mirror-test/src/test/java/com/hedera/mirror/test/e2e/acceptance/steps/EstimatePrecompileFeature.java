@@ -1911,9 +1911,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 .to(estimatePrecompileContractSolidityAddress);
         contractCallRequest.value(value);
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
-        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult())
-                .toBigInteger()
-                .intValue();
+        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();
         assertWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation);
     }
 

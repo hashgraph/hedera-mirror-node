@@ -138,8 +138,8 @@ class ContractController {
 
     private void validateContractMaxGasLimit(ContractCallRequest request) {
         if (request.getGas() > evmProperties.getMaxGasLimit()) {
-            throw new InvalidParametersException(
-                    "gas field must be less than or equal to %d".formatted(evmProperties.getMaxGasLimit()));
+            throw new InvalidParametersException("gas field must be less than or equal to %d"
+                    .formatted(evmProperties.getMaxGasLimit()));
         }
     }
 
