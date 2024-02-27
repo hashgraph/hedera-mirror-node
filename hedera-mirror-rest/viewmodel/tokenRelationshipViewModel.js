@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import EntityId from '../entityId.js';
+import EntityId from '../entityId';
 import {TokenFreezeStatus, TokenKycStatus} from '../model';
 import {nsToSecNs} from '../utils';
 
@@ -32,9 +32,11 @@ class TokenRelationshipViewModel {
     this.balance = tokenRelationship.balance;
     this.created_timestamp = nsToSecNs(tokenRelationship.createdTimestamp);
     this.decimals = tokenRelationship.decimals;
-    this.freeze_status = new TokenFreezeStatus(tokenRelationship.freezeStatus);
-    this.kyc_status = new TokenKycStatus(tokenRelationship.kycStatus);
     this.token_id = EntityId.parse(tokenRelationship.tokenId).toString();
+
+    const {freezeStatus, kycStatus} = tokenRelationship;
+    this.freeze_status = freezeStatus !== null ? new TokenFreezeStatus(freezeStatus) : null;
+    this.kyc_status = kycStatus !== null ? new TokenKycStatus(kycStatus) : null;
   }
 }
 

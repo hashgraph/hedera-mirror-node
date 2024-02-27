@@ -38,6 +38,7 @@ import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePre
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV2;
 import static com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile.decodeNonFungibleCreateWithFeesV3;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static java.util.function.UnaryOperator.identity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -75,6 +76,7 @@ import com.hedera.services.store.contracts.precompile.impl.TokenCreatePrecompile
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txn.token.CreateLogic;
+import com.hedera.services.txns.token.validators.CreateChecks;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hedera.services.utils.accessors.AccessorFactory;
@@ -96,6 +98,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
@@ -219,6 +222,12 @@ class TokenCreatePrecompileTest {
     @Mock
     private PrecompileContext precompileContext;
 
+    @Mock
+    private CreateChecks createChecks;
+
+    @Mock
+    private Function<TransactionBody, ResponseCodeEnum> createChecksValidateFunction;
+
     private TokenCreatePrecompile tokenCreatePrecompile;
     private MockedStatic<TokenCreatePrecompile> staticTokenCreatePrecompile;
 
@@ -238,7 +247,13 @@ class TokenCreatePrecompileTest {
                 new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
         final var syntheticTxnFactory = new SyntheticTxnFactory();
         tokenCreatePrecompile = new TokenCreatePrecompile(
-                precompilePricingUtils, encoder, syntheticTxnFactory, validator, createLogic, feeCalculator);
+                precompilePricingUtils,
+                encoder,
+                syntheticTxnFactory,
+                validator,
+                createLogic,
+                feeCalculator,
+                createChecks);
         final var precompileMapper = new PrecompileMapper(Set.of(tokenCreatePrecompile));
 
         subject = new HTSPrecompiledContract(
@@ -664,6 +679,8 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
                 new TokenKeyWrapper(
                         1,
@@ -696,6 +713,8 @@ class TokenCreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper =
                 HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                         1,
@@ -725,7 +744,8 @@ class TokenCreatePrecompileTest {
         given(precompileContext.getPrecompile()).willReturn(tokenCreatePrecompile);
         given(precompileContext.getSenderAddress()).willReturn(senderAddress);
         given(precompileContext.getTransactionBody()).willReturn(transactionBody);
-
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1,
                 new KeyValueWrapper(
@@ -751,6 +771,8 @@ class TokenCreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
                 List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
@@ -769,6 +791,8 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
                 new TokenKeyWrapper(
                         1,
@@ -800,6 +824,8 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(
                 new TokenKeyWrapper(
                         1,
@@ -831,6 +857,8 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1,
                 new KeyValueWrapper(
@@ -855,6 +883,8 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                 1,
                 new KeyValueWrapper(
@@ -880,6 +910,8 @@ class TokenCreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper =
                 HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                         1,
@@ -904,6 +936,8 @@ class TokenCreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper =
                 HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(List.of(new TokenKeyWrapper(
                         1,
@@ -928,6 +962,8 @@ class TokenCreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
                 List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
@@ -947,6 +983,8 @@ class TokenCreatePrecompileTest {
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
         given(senderAccount.getId()).willReturn(new Id(0, 0, 2));
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createNonFungibleTokenCreateWrapperWithKeys(
                 List.of(new TokenKeyWrapper(1, new KeyValueWrapper(false, null, ED25519_KEY, new byte[] {}, null))));
         tokenCreateWrapper.setFixedFees(List.of(HTSTestsUtil.fixedFee));
@@ -996,6 +1034,8 @@ class TokenCreatePrecompileTest {
                 .willAnswer(invocationOnMock -> invocationOnMock.getArgument(0));
         given(frame.getSenderAddress()).willReturn(HTSTestsUtil.senderAddress);
         given(store.getAccount(frame.getSenderAddress(), OnMissing.DONT_THROW)).willReturn(senderAccount);
+        given(createChecks.validate()).willReturn(createChecksValidateFunction);
+        given(createChecksValidateFunction.apply(any())).willReturn(OK);
         final var tokenCreateWrapper = HTSTestsUtil.createTokenCreateWrapperWithKeys(
                 List.of(new TokenKeyWrapper(2, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))));
         staticTokenCreatePrecompile

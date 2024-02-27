@@ -34,7 +34,6 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
-import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
@@ -83,7 +82,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -265,6 +263,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
+                        .expectedFreezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .freezeKey(true)
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                         .tokenId(DOMAIN_TOKEN_ID)
@@ -276,6 +275,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
+                        .expectedFreezeStatus(TokenFreezeStatusEnum.FROZEN)
                         .freezeDefault(true)
                         .freezeKey(true)
                         .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
@@ -288,6 +288,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
+                        .expectedKycstatus(TokenKycStatusEnum.REVOKED)
                         .kycKey(true)
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .tokenId(DOMAIN_TOKEN_ID)
@@ -308,6 +309,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(List.of(nonEmptyCustomFee))
                         .customFeesDescription("non-empty custom fees")
+                        .expectedPauseStatus(TokenPauseStatusEnum.UNPAUSED)
                         .pauseKey(true)
                         .tokenId(DOMAIN_TOKEN_ID)
                         .build()
@@ -437,12 +439,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             boolean freezeKey,
             boolean kycKey,
             boolean pauseKey,
+            TokenFreezeStatusEnum expectedFreezeStatus,
+            TokenKycStatusEnum expectedKycStatus,
+            TokenPauseStatusEnum expectedPauseStatus,
             List<TokenAccount> expectedTokenAccounts) {
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
                 .map(t -> EntityId.of(t.getAccountId()))
                 .collect(Collectors.toList());
         tokenCreate(
-                customFees, freezeDefault, freezeKey, kycKey, pauseKey, expectedTokenAccounts, autoAssociatedAccounts);
+                customFees,
+                freezeDefault,
+                freezeKey,
+                kycKey,
+                pauseKey,
+                expectedFreezeStatus,
+                expectedKycStatus,
+                expectedPauseStatus,
+                expectedTokenAccounts,
+                autoAssociatedAccounts);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -454,9 +468,21 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             boolean freezeKey,
             boolean kycKey,
             boolean pauseKey,
+            TokenFreezeStatusEnum expectedFreezeStatus,
+            TokenKycStatusEnum expectedKycStatus,
+            TokenPauseStatusEnum expectedPauseStatus,
             List<TokenAccount> expectedTokenAccounts) {
         tokenCreate(
-                customFees, freezeDefault, freezeKey, kycKey, pauseKey, expectedTokenAccounts, Collections.emptyList());
+                customFees,
+                freezeDefault,
+                freezeKey,
+                kycKey,
+                pauseKey,
+                expectedFreezeStatus,
+                expectedKycStatus,
+                expectedPauseStatus,
+                expectedTokenAccounts,
+                Collections.emptyList());
     }
 
     @Test
@@ -465,7 +491,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, false, false);
 
-        assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+        assertThat(tokenRepository.findAll()).isEmpty();
         assertThat(tokenTransferRepository.count()).isZero();
         assertCustomFeesInDb(Collections.emptyList(), Collections.emptyList());
     }
@@ -479,9 +505,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             boolean freezeKey,
             boolean kycKey,
             boolean pauseKey,
+            TokenFreezeStatusEnum expectedFreezeStatus,
+            TokenKycStatusEnum expectedKycStatus,
+            TokenPauseStatusEnum expectedPauseStatus,
             List<TokenAccount> expectedTokenAccounts) {
         // given
-        Entity expected = createEntity(
+        var expected = createEntity(
                 DOMAIN_TOKEN_ID,
                 TOKEN,
                 TOKEN_REF_KEY,
@@ -493,7 +522,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 null,
                 CREATE_TIMESTAMP,
                 CREATE_TIMESTAMP);
-        List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
+        var autoAssociatedAccounts = expectedTokenAccounts.stream()
                 .map(t -> EntityId.of(t.getAccountId()))
                 .collect(Collectors.toList());
 
@@ -515,9 +544,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertEntity(expected);
 
         // verify token
-        TokenPauseStatusEnum pauseStatus =
-                pauseKey ? TokenPauseStatusEnum.UNPAUSED : TokenPauseStatusEnum.NOT_APPLICABLE;
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 0, pauseStatus);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(expectedFreezeStatus, Token::getFreezeStatus)
+                .returns(expectedKycStatus, Token::getKycStatus)
+                .returns(expectedPauseStatus, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(0L, Token::getTotalSupply);
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
         assertCustomFeesInDb(customFees, Collections.emptyList());
         assertThat(tokenTransferRepository.count()).isZero();
@@ -533,12 +567,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.UNFROZEN,
-                TokenKycStatusEnum.REVOKED,
+                null,
+                null,
                 ASSOCIATE_TIMESTAMP);
     }
 
@@ -556,12 +591,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.UNFROZEN,
-                TokenKycStatusEnum.REVOKED,
+                null,
+                null,
                 ASSOCIATE_TIMESTAMP);
 
         assertContractResult(ASSOCIATE_TIMESTAMP, contractFunctionResultAtomic.get());
@@ -569,11 +605,21 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenAssociateWithMissingToken() {
-        Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
+        var associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
         insertAndParseTransaction(ASSOCIATE_TIMESTAMP, associateTransaction);
 
-        // verify token account was not created
-        assertTokenAccountNotInRepository(TOKEN_ID, PAYER);
+        // verify token account was created
+        assertTokenAccountInRepository(
+                TOKEN_ID,
+                PAYER,
+                false,
+                0,
+                ASSOCIATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
+                true,
+                null,
+                null,
+                ASSOCIATE_TIMESTAMP);
     }
 
     @Test
@@ -588,6 +634,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER2);
@@ -603,13 +652,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .automaticAssociation(false)
                 .balanceTimestamp(ASSOCIATE_TIMESTAMP)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(dissociateTimeStamp))
                 .tokenId(tokenId.getId())
                 .build();
 
-        assertThat(tokenAccountRepository.findById(expected.getId())).get().isEqualTo(expected);
+        assertThat(tokenAccountRepository.findById(expected.getId())).hasValue(expected);
     }
 
     @Test
@@ -624,6 +671,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER2);
@@ -637,12 +687,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 false,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
-                TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
+                null,
                 dissociateTimeStamp);
 
         assertContractResult(dissociateTimeStamp, contractFunctionResultAtomic.get());
@@ -661,6 +712,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         long amount = 10;
@@ -685,14 +739,21 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 builder -> builder.addTokenTransferLists(dissociateTransfer));
 
         // then
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY - amount);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY - amount, Token::getTotalSupply);
         var tokenTransferId = new TokenTransfer.Id(dissociateTimeStamp, EntityId.of(TOKEN_ID), EntityId.of(PAYER2));
         var expectedDissociateTransfer = domainBuilder
                 .tokenTransfer()
                 .customize(t ->
                         t.amount(-amount).id(tokenTransferId).isApproval(false).payerAccountId(PAYER_ACCOUNT_ID))
                 .get();
-        assertThat(tokenTransferRepository.findById(tokenTransferId)).get().isEqualTo(expectedDissociateTransfer);
+        assertThat(tokenTransferRepository.findById(tokenTransferId)).hasValue(expectedDissociateTransfer);
 
         var expectedTokenAccount = TokenAccount.builder()
                 .accountId(PAYER2.getAccountNum())
@@ -700,8 +761,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .automaticAssociation(false)
                 .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(dissociateTimeStamp))
                 .balance(0)
                 .tokenId(TOKEN_ID.getTokenNum())
@@ -726,6 +785,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         // mint
@@ -799,7 +861,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
         assertThat(findHistory(Nft.class)).containsExactlyInAnyOrderElementsOf(nftHistory);
 
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 0);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(0L, Token::getTotalSupply);
         assertNftTransferInRepository(
                 mintTimestamp,
                 domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_1, TOKEN_ID),
@@ -818,8 +887,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .balance(0)
                 .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(dissociateTimeStamp))
                 .tokenId(TOKEN_ID.getTokenNum())
                 .build();
@@ -842,6 +909,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         long amount = 10;
@@ -864,7 +934,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 builder -> builder.addTokenTransferLists(dissociateTransfers));
 
         // then
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY, Token::getTotalSupply);
         var expectedDissociateTransfers = List.of(
                 domainBuilder
                         .tokenTransfer()
@@ -890,8 +967,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .automaticAssociation(false)
                 .balanceTimestamp(dissociateTimeStamp)
                 .createdTimestamp(ASSOCIATE_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(dissociateTimeStamp))
                 .balance(0)
                 .tokenId(TOKEN_ID.getTokenNum())
@@ -913,6 +988,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         // delete token
@@ -935,7 +1013,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertEquals(1L, entityRepository.count());
         assertEntity(expected);
 
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY, Token::getTotalSupply);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -970,7 +1055,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // then
         assertEntity(expectedEntity);
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(expectedSupply, Token::getTotalSupply);
         initialCustomFee.setTimestampRange(Range.closedOpen(CREATE_TIMESTAMP, updateTimestamp));
         assertCustomFeesInDb(List.of(secondCustomFee), List.of(initialCustomFee));
 
@@ -980,7 +1072,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // then
         assertEntity(expectedEntity);
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, expectedSupply);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(expectedSupply, Token::getTotalSupply);
 
         secondCustomFee.setTimestampUpper(updateTimestamp);
         var lastCustomFee = emptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID);
@@ -1000,6 +1099,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         String newSymbol = "NEWSYMBOL";
@@ -1023,19 +1125,20 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertEquals(1L, entityRepository.count());
         assertEntity(expected);
 
-        assertTokenInRepository(
-                TOKEN_ID,
-                true,
-                CREATE_TIMESTAMP,
-                newSymbol,
-                INITIAL_SUPPLY,
-                TOKEN_UPDATE_REF_KEY.toByteArray(),
-                TokenPauseStatusEnum.NOT_APPLICABLE,
-                "feeScheduleKey",
-                "freezeKey",
-                "kycKey",
-                "supplyKey",
-                "wipeKey");
+        var keyBytes = TOKEN_UPDATE_REF_KEY.toByteArray();
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(keyBytes, Token::getFeeScheduleKey)
+                .returns(keyBytes, Token::getFreezeKey)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(keyBytes, Token::getKycKey)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(keyBytes, Token::getSupplyKey)
+                .returns(newSymbol, Token::getSymbol)
+                .returns(INITIAL_SUPPLY, Token::getTotalSupply)
+                .returns(keyBytes, Token::getWipeKey);
         // History row should not be created
         assertThat(tokenHistoryRepository.count()).isEqualTo(1L);
     }
@@ -1053,7 +1156,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         insertAndParseTransaction(10L, transaction);
 
         // verify token was not created when missing
-        assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+        assertThat(tokenRepository.findAll()).isEmpty();
     }
 
     @Test
@@ -1068,12 +1171,22 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 true,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.UNPAUSED,
                 INITIAL_SUPPLY);
 
         Transaction transaction = tokenPauseTransaction(TOKEN_ID, true);
         long pauseTimeStamp = 15L;
         insertAndParseTransaction(pauseTimeStamp, transaction);
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY, TokenPauseStatusEnum.PAUSED);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.PAUSED, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY, Token::getTotalSupply);
     }
 
     @Test
@@ -1088,6 +1201,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 true,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.UNPAUSED,
                 INITIAL_SUPPLY);
 
         Transaction transaction = tokenPauseTransaction(TOKEN_ID, true);
@@ -1097,8 +1213,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long unpauseTimeStamp = 20L;
         insertAndParseTransaction(unpauseTimeStamp, transaction);
 
-        assertTokenInRepository(
-                TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY, TokenPauseStatusEnum.UNPAUSED);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.UNPAUSED, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY, Token::getTotalSupply);
     }
 
     @ParameterizedTest
@@ -1115,6 +1237,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         var metadata = recordItemBuilder.bytes(12);
@@ -1156,7 +1281,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 mintTimestamp, domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_1, TOKEN_ID));
         assertNftTransferInRepository(
                 updateTimestamp, domainNftTransfer(PAYER2, PAYER, WILDCARD_SERIAL_NUMBER, TOKEN_ID));
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 1, TokenPauseStatusEnum.NOT_APPLICABLE);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(1L, Token::getTotalSupply);
 
         var expectedNft = Nft.builder()
                 .accountId(EntityId.of(PAYER2))
@@ -1394,6 +1526,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 true,
                 false,
                 false,
+                TokenFreezeStatusEnum.UNFROZEN,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         Transaction transaction = tokenFreezeTransaction(TOKEN_ID, true);
@@ -1403,12 +1538,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.FROZEN,
-                TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
                 freezeTimeStamp);
     }
 
@@ -1433,12 +1569,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
                 TokenFreezeStatusEnum.UNFROZEN,
-                TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
                 unfreezeTimeStamp);
     }
 
@@ -1454,6 +1591,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 true,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.REVOKED,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
@@ -1463,11 +1603,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                null,
                 TokenKycStatusEnum.GRANTED,
                 grantTimeStamp);
     }
@@ -1476,12 +1617,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenAccountGrantKycWithMissingTokenAccount() {
         createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, false, true, false);
 
-        Transaction transaction = tokenKycTransaction(TOKEN_ID, true);
+        var transaction = tokenKycTransaction(TOKEN_ID, true);
         long grantTimeStamp = 10L;
         insertAndParseTransaction(grantTimeStamp, transaction);
 
-        // verify token account was not created when missing
-        assertTokenAccountNotInRepository(TOKEN_ID, PAYER2);
+        // verify minimal token account with kyc granted
+        assertTokenAccountInRepository(
+                TOKEN_ID, PAYER2, null, 0, null, null, true, null, TokenKycStatusEnum.GRANTED, grantTimeStamp);
     }
 
     @Test
@@ -1505,11 +1647,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 0,
                 ASSOCIATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                null,
                 TokenKycStatusEnum.REVOKED,
                 revokeTimestamp);
     }
@@ -1527,6 +1670,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         long amount = -1000;
@@ -1547,7 +1693,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenHistoryRepository.count()).isZero();
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, burnTimestamp, amount);
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY - amount);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY - amount, Token::getTotalSupply);
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(burnTimestamp, 0)))
                 .get()
@@ -1583,6 +1736,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0L);
 
         long mintTimestamp = 10L;
@@ -1618,7 +1774,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .timestampRange(Range.atLeast(approveAllowanceTimestamp))
                 .tokenId(DOMAIN_TOKEN_ID.getId())
                 .build();
-        assertThat(nftRepository.findById(expectedNft1.getId())).get().isEqualTo(expectedNft1);
+        assertThat(nftRepository.findById(expectedNft1.getId())).hasValue(expectedNft1);
 
         long burnTimestamp = 15L;
         TokenTransferList burnTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, PAYER, List.of(SERIAL_NUMBER_1));
@@ -1652,7 +1808,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 burnTimestamp, domainNftTransfer(DEFAULT_ACCOUNT_ID, PAYER, SERIAL_NUMBER_1, TOKEN_ID));
 
         assertThat(tokenTransferRepository.findAll()).isEmpty();
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 1);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(1L, Token::getTotalSupply);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(burnTimestamp, 0)))
@@ -1689,6 +1852,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0L);
 
         long mintTimestamp = 10L;
@@ -1718,7 +1884,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftTransferInRepository(
                 burnTimestamp, domainNftTransfer(DEFAULT_ACCOUNT_ID, PAYER, SERIAL_NUMBER_1, TOKEN_ID));
 
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 1);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(1L, Token::getTotalSupply);
         var nft1 = Nft.builder()
                 .deleted(true)
                 .serialNumber(SERIAL_NUMBER_1)
@@ -1749,6 +1922,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         long amount = 1000;
@@ -1764,7 +1940,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, mintTimestamp, amount);
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY + amount);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY + amount, Token::getTotalSupply);
         // History row should not be created
         assertThat(tokenHistoryRepository.count()).isZero();
 
@@ -1811,6 +1994,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         long amount = 1000;
@@ -1829,7 +2015,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, mintTimestamp, amount);
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY + amount);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY + amount, Token::getTotalSupply);
 
         assertContractResult(mintTimestamp, contractFunctionResultAtomic.get());
     }
@@ -1847,6 +2040,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         long mintTimestamp = 10L;
@@ -1866,7 +2062,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 mintTimestamp,
                 domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_1, TOKEN_ID),
                 domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_2, TOKEN_ID));
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 2);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(2L, Token::getTotalSupply);
 
         var nft1 = Nft.builder()
                 .accountId(PAYER_ACCOUNT_ID)
@@ -1962,6 +2165,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
@@ -1983,7 +2189,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 timestamp,
                 domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_1, TOKEN_ID),
                 domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_2, TOKEN_ID));
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 2);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(2L, Token::getTotalSupply);
 
         var nft1 = Nft.builder()
                 .accountId(PAYER_ACCOUNT_ID)
@@ -2019,7 +2232,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 mintTimestamp,
                 domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_1, TOKEN_ID),
                 domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_2, TOKEN_ID));
-        assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, SYMBOL, 1);
+        assertThat(tokenRepository.findAll()).isEmpty();
         var nft1 = Nft.builder()
                 .accountId(PAYER_ACCOUNT_ID)
                 .createdTimestamp(mintTimestamp)
@@ -2075,6 +2288,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         // mint
@@ -2139,7 +2355,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // then
         assertNftTransferInRepository(mintTimestamp, domainNftTransfer(PAYER, DEFAULT_ACCOUNT_ID, 1, TOKEN_ID));
         assertNftTransferInRepository(transferTimestamp, domainNftTransfer(RECEIVER, PAYER, 1, TOKEN_ID, true));
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 1);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(1L, Token::getTotalSupply);
 
         var nft = Nft.builder()
                 .accountId(EntityId.of(RECEIVER))
@@ -2179,6 +2402,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         long mintTimestamp = 20;
@@ -2261,7 +2487,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 domainNftTransfer(PAYER2, PAYER, 1, TOKEN_ID),
                 domainNftTransfer(PAYER2, PAYER, 2, TOKEN_ID),
                 domainNftTransfer(PAYER2, PAYER, 2, TOKEN_ID));
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 2);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(2L, Token::getTotalSupply);
 
         var nft1 = Nft.builder()
                 .accountId(EntityId.of(PAYER2))
@@ -2299,6 +2532,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         long mintTimestamp = 20;
@@ -2356,7 +2592,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 transferTimestamp,
                 domainNftTransfer(PAYER2, PAYER, SERIAL_NUMBER_1, TOKEN_ID),
                 domainNftTransfer(RECEIVER, PAYER2, SERIAL_NUMBER_1, TOKEN_ID));
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 1);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(1L, Token::getTotalSupply);
 
         var nft1 = Nft.builder()
                 .accountId(EntityId.of(RECEIVER))
@@ -2386,6 +2629,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
         long mintTimestamp1 = 20L;
         var mintTransfer1 = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, List.of(SERIAL_NUMBER_1));
@@ -2417,7 +2663,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .timestampRange(Range.atLeast(approveAllowanceTimestamp))
                 .tokenId(DOMAIN_TOKEN_ID.getId())
                 .build();
-        assertThat(nftRepository.findById(expectedNft1.getId())).get().isEqualTo(expectedNft1);
+        assertThat(nftRepository.findById(expectedNft1.getId())).hasValue(expectedNft1);
 
         long mintTimestamp2 = 30L;
         TokenTransferList mintTransfer2 = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, List.of(SERIAL_NUMBER_2));
@@ -2528,6 +2774,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         // mint transfer / transaction 1
@@ -2651,6 +2900,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         // token transfer
@@ -2708,6 +2960,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         // approve allowance for fungible token
@@ -2805,6 +3060,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         // approve allowance for fungible token
@@ -2861,6 +3119,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
 
         long transferAmount = -1000L;
@@ -2874,7 +3135,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         // Verify
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY - wipeAmount);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY - wipeAmount, Token::getTotalSupply);
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, wipeTimestamp, transferAmount);
@@ -2915,6 +3183,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         long mintTimestamp = 10L;
@@ -2948,7 +3219,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .timestampRange(Range.atLeast(approveAllowanceTimestamp))
                 .tokenId(DOMAIN_TOKEN_ID.getId())
                 .build();
-        assertThat(nftRepository.findById(expectedNft1.getId())).get().isEqualTo(expectedNft1);
+        assertThat(nftRepository.findById(expectedNft1.getId())).hasValue(expectedNft1);
 
         long wipeTimestamp = 15L;
         TokenTransferList wipeTransfer = nftTransfer(TOKEN_ID, DEFAULT_ACCOUNT_ID, PAYER2, List.of(SERIAL_NUMBER_1));
@@ -2979,7 +3250,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftTransferInRepository(
                 wipeTimestamp, domainNftTransfer(DEFAULT_ACCOUNT_ID, PAYER2, SERIAL_NUMBER_1, TOKEN_ID));
 
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 1);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(1L, Token::getTotalSupply);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
         assertThat(contractLogRepository.findById(new ContractLog.Id(wipeTimestamp, 0)))
@@ -3009,7 +3287,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         Transaction transaction = tokenWipeTransaction(TOKEN_ID, FUNGIBLE_COMMON, 100L, null);
         insertAndParseTransaction(10L, transaction);
 
-        assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY);
+        assertThat(tokenRepository.findAll()).isEmpty();
     }
 
     @Test
@@ -3024,6 +3302,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 0);
 
         long wipeTimestamp = 15L;
@@ -3034,7 +3315,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         // Verify
         assertNftTransferInRepository(
                 wipeTimestamp, domainNftTransfer(DEFAULT_ACCOUNT_ID, RECEIVER, SERIAL_NUMBER_1, TOKEN_ID));
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, 0);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(0L, Token::getTotalSupply);
 
         var expected = Nft.builder()
                 .deleted(true)
@@ -3077,16 +3365,24 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         parseRecordItemsAndCommit(List.of(createTokenRecordItem, associateRecordItem, wipeRecordItem));
 
         // Verify token, tokenAccount and tokenTransfer
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, newTotalSupply);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, Token::getFreezeStatus)
+                .returns(TokenKycStatusEnum.NOT_APPLICABLE, Token::getKycStatus)
+                .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(newTotalSupply, Token::getTotalSupply);
         assertTokenAccountInRepository(
                 TOKEN_ID,
                 PAYER2,
+                false,
                 999000L,
                 wipeTimestamp,
                 ASSOCIATE_TIMESTAMP,
                 true,
-                TokenFreezeStatusEnum.NOT_APPLICABLE,
-                TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
+                null,
                 ASSOCIATE_TIMESTAMP);
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, CREATE_TIMESTAMP, INITIAL_SUPPLY);
@@ -3099,6 +3395,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             boolean freezeKey,
             boolean kycKey,
             boolean pauseKey,
+            TokenFreezeStatusEnum expectedFreezeStatus,
+            TokenKycStatusEnum expectedKycStatus,
+            TokenPauseStatusEnum expectedPauseStatus,
             List<TokenAccount> expectedTokenAccounts,
             List<EntityId> autoAssociatedAccounts) {
         // given
@@ -3133,9 +3432,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertEntity(expected);
 
         // verify token
-        TokenPauseStatusEnum pauseStatus =
-                pauseKey ? TokenPauseStatusEnum.UNPAUSED : TokenPauseStatusEnum.NOT_APPLICABLE;
-        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, SYMBOL, INITIAL_SUPPLY, pauseStatus);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(expectedFreezeStatus, Token::getFreezeStatus)
+                .returns(expectedKycStatus, Token::getKycStatus)
+                .returns(expectedPauseStatus, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(INITIAL_SUPPLY, Token::getTotalSupply);
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertCustomFeesInDb(customFees, Collections.emptyList());
@@ -3158,6 +3462,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 false,
                 false,
                 false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
                 INITIAL_SUPPLY);
         TokenID tokenId2 = TokenID.newBuilder().setTokenNum(7).build();
         String symbol2 = "MIRROR";
@@ -3211,8 +3518,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .balance(1000L)
                 .balanceTimestamp(TRANSFER_TIMESTAMP)
                 .createdTimestamp(TRANSFER_TIMESTAMP)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.atLeast(TRANSFER_TIMESTAMP))
                 .tokenId(DOMAIN_TOKEN_ID.getId())
                 .build();
@@ -3375,7 +3680,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private Transaction tokenUpdateTransaction(
-            TokenID tokenID, String symbol, String memo, Key newKey, AccountID autoRenewAccount, AccountID treasury) {
+            TokenID tokenId, String symbol, String memo, Key newKey, AccountID autoRenewAccount, AccountID treasury) {
         return buildTransaction(builder -> {
             builder.getTokenUpdateBuilder()
                     .setAdminKey(newKey)
@@ -3389,7 +3694,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     .setPauseKey(newKey)
                     .setSupplyKey(newKey)
                     .setSymbol(symbol)
-                    .setToken(tokenID)
+                    .setToken(tokenId)
                     .setTreasury(treasury)
                     .setWipeKey(newKey);
             if (autoRenewAccount != null) {
@@ -3438,25 +3743,25 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         return transaction;
     }
 
-    private Transaction tokenKycTransaction(TokenID tokenID, boolean kyc) {
+    private Transaction tokenKycTransaction(TokenID tokenId, boolean kyc) {
         Transaction transaction;
         if (kyc) {
             transaction = buildTransaction(builder ->
-                    builder.getTokenGrantKycBuilder().setToken(tokenID).setAccount(PAYER2));
+                    builder.getTokenGrantKycBuilder().setToken(tokenId).setAccount(PAYER2));
         } else {
             transaction = buildTransaction(builder ->
-                    builder.getTokenRevokeKycBuilder().setToken(tokenID).setAccount(PAYER2));
+                    builder.getTokenRevokeKycBuilder().setToken(tokenId).setAccount(PAYER2));
         }
 
         return transaction;
     }
 
     private Transaction tokenSupplyTransaction(
-            TokenID tokenID, TokenType tokenType, boolean mint, long amount, List<Long> serialNumbers) {
+            TokenID tokenId, TokenType tokenType, boolean mint, long amount, List<Long> serialNumbers) {
         Transaction transaction;
         if (mint) {
             transaction = buildTransaction(builder -> {
-                builder.getTokenMintBuilder().setToken(tokenID);
+                builder.getTokenMintBuilder().setToken(tokenId);
 
                 if (tokenType == FUNGIBLE_COMMON) {
                     builder.getTokenMintBuilder().setAmount(amount);
@@ -3467,7 +3772,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             });
         } else {
             transaction = buildTransaction(builder -> {
-                builder.getTokenBurnBuilder().setToken(tokenID);
+                builder.getTokenBurnBuilder().setToken(tokenId);
                 if (tokenType == FUNGIBLE_COMMON) {
                     builder.getTokenBurnBuilder().setAmount(amount);
                 } else {
@@ -3495,52 +3800,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         return buildTransaction(TransactionBody.Builder::getCryptoTransferBuilder);
     }
 
-    private void assertTokenInRepository(
-            TokenID tokenID,
-            boolean present,
-            long createdTimestamp,
-            String symbol,
-            long totalSupply,
-            byte[] keyData,
-            TokenPauseStatusEnum pauseStatus,
-            String... keyFields) {
-        Optional<Token> tokenOptional =
-                tokenRepository.findById(EntityId.of(tokenID).getId());
-        if (present) {
-            assertThat(tokenOptional)
-                    .get()
-                    .returns(createdTimestamp, from(Token::getCreatedTimestamp))
-                    .returns(symbol, from(Token::getSymbol))
-                    .returns(pauseStatus, from(Token::getPauseStatus))
-                    .returns(totalSupply, from(Token::getTotalSupply));
-            if (keyFields.length != 0) {
-                assertThat(tokenOptional)
-                        .get()
-                        .extracting(keyFields)
-                        .containsExactlyElementsOf(
-                                Arrays.stream(keyFields).map((v) -> keyData).collect(Collectors.toList()));
-            }
-        } else {
-            assertThat(tokenOptional).isNotPresent();
-        }
-    }
-
-    private void assertTokenInRepository(
-            TokenID tokenID, boolean present, long createdTimestamp, String symbol, long totalSupply) {
-        assertTokenInRepository(
-                tokenID, present, createdTimestamp, symbol, totalSupply, null, TokenPauseStatusEnum.NOT_APPLICABLE);
-    }
-
-    private void assertTokenInRepository(
-            TokenID tokenID,
-            boolean present,
-            long createdTimestamp,
-            String symbol,
-            long totalSupply,
-            TokenPauseStatusEnum pauseStatus) {
-        assertTokenInRepository(tokenID, present, createdTimestamp, symbol, totalSupply, null, pauseStatus);
-    }
-
     private void assertNftTransferInRepository(
             long consensusTimestamp, com.hedera.mirror.common.domain.token.NftTransfer... nftTransfers) {
         assertThat(transactionRepository.findById(consensusTimestamp))
@@ -3553,9 +3812,10 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private void assertTokenAccountInRepository(
             TokenID tokenID,
             AccountID accountId,
+            Boolean automaticAssociation,
             long balance,
-            long balanceTimestamp,
-            long createdTimestamp,
+            Long balanceTimestamp,
+            Long createdTimestamp,
             boolean associated,
             TokenFreezeStatusEnum freezeStatus,
             TokenKycStatusEnum kycStatus,
@@ -3563,7 +3823,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var expected = TokenAccount.builder()
                 .accountId(EntityId.of(accountId).getId())
                 .associated(associated)
-                .automaticAssociation(false)
+                .automaticAssociation(automaticAssociation)
                 .balance(balance)
                 .balanceTimestamp(balanceTimestamp)
                 .createdTimestamp(createdTimestamp)
@@ -3573,14 +3833,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .tokenId(EntityId.of(tokenID).getId())
                 .build();
 
-        assertThat(tokenAccountRepository.findById(expected.getId())).get().isEqualTo(expected);
-    }
-
-    private void assertTokenAccountNotInRepository(TokenID tokenId, AccountID accountId) {
-        var id = new AbstractTokenAccount.Id();
-        id.setAccountId(EntityId.of(accountId).getId());
-        id.setTokenId(EntityId.of(tokenId).getId());
-        assertThat(tokenAccountRepository.findById(id)).isNotPresent();
+        assertThat(tokenAccountRepository.findById(expected.getId())).hasValue(expected);
     }
 
     private void assertTokenTransferInRepository(
@@ -3694,43 +3947,48 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void createAndAssociateToken(
-            TokenID tokenID,
+            TokenID tokenId,
             TokenType tokenType,
             String symbol,
             long createTimestamp,
             long associateTimestamp,
-            AccountID accountID,
+            AccountID accountId,
             boolean setFreezeKey,
             boolean setKycKey,
             boolean setPauseKey,
+            TokenFreezeStatusEnum expectedFreezeStatus,
+            TokenKycStatusEnum expectedKycStatus,
+            TokenPauseStatusEnum expectedPauseStatus,
             long initialSupply) {
-        createTokenEntity(tokenID, tokenType, symbol, createTimestamp, setFreezeKey, setKycKey, setPauseKey);
-        assertTokenInRepository(
-                tokenID,
-                true,
-                createTimestamp,
-                symbol,
-                initialSupply,
-                setPauseKey ? TokenPauseStatusEnum.UNPAUSED : TokenPauseStatusEnum.NOT_APPLICABLE);
+        createTokenEntity(tokenId, tokenType, symbol, createTimestamp, setFreezeKey, setKycKey, setPauseKey);
+        assertThat(tokenRepository.findById(DOMAIN_TOKEN_ID.getId()))
+                .get()
+                .returns(CREATE_TIMESTAMP, Token::getCreatedTimestamp)
+                .returns(expectedFreezeStatus, Token::getFreezeStatus)
+                .returns(expectedKycStatus, Token::getKycStatus)
+                .returns(expectedPauseStatus, Token::getPauseStatus)
+                .returns(SYMBOL, Token::getSymbol)
+                .returns(initialSupply, Token::getTotalSupply);
 
-        Transaction associateTransaction = tokenAssociate(List.of(tokenID), accountID);
+        Transaction associateTransaction = tokenAssociate(List.of(tokenId), accountId);
         insertAndParseTransaction(associateTimestamp, associateTransaction);
 
         assertTokenAccountInRepository(
-                tokenID,
-                accountID,
+                tokenId,
+                accountId,
+                false,
                 0,
                 associateTimestamp,
                 associateTimestamp,
                 true,
-                setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOT_APPLICABLE,
-                setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOT_APPLICABLE,
+                null,
+                null,
                 associateTimestamp);
     }
 
-    private void updateTokenFeeSchedule(TokenID tokenID, long consensusTimestamp, List<CustomFee> customFees) {
+    private void updateTokenFeeSchedule(TokenID tokenId, long consensusTimestamp, List<CustomFee> customFees) {
         Transaction transaction = buildTransaction(builder -> builder.getTokenFeeScheduleUpdateBuilder()
-                .setTokenId(tokenID)
+                .setTokenId(tokenId)
                 .addAllCustomFees(convertCustomFees(customFees)));
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord transactionRecord = buildTransactionRecord(
@@ -3853,6 +4111,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long createdTimestamp;
         List<CustomFee> customFees;
         String customFeesDescription;
+
+        @Builder.Default
+        TokenFreezeStatusEnum expectedFreezeStatus = TokenFreezeStatusEnum.NOT_APPLICABLE;
+
+        @Builder.Default
+        TokenKycStatusEnum expectedKycstatus = TokenKycStatusEnum.NOT_APPLICABLE;
+
+        @Builder.Default
+        TokenPauseStatusEnum expectedPauseStatus = TokenPauseStatusEnum.NOT_APPLICABLE;
+
         boolean freezeDefault;
         boolean freezeKey;
 
@@ -3892,7 +4160,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 tokenAccounts.get(i).setBalance(balances.get(i));
             }
 
-            return Arguments.of(description, customFees, freezeDefault, freezeKey, kycKey, pauseKey, tokenAccounts);
+            return Arguments.of(
+                    description,
+                    customFees,
+                    freezeDefault,
+                    freezeKey,
+                    kycKey,
+                    pauseKey,
+                    expectedFreezeStatus,
+                    expectedKycstatus,
+                    expectedPauseStatus,
+                    tokenAccounts);
         }
     }
 }

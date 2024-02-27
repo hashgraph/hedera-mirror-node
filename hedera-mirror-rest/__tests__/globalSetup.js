@@ -18,6 +18,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import {PostgreSqlContainer} from '@testcontainers/postgresql';
+import {Wait} from 'testcontainers';
 
 const dbName = 'mirror_node';
 const dockerNamePrefix = 'INTEGRATION_DATABASE_URL';
@@ -35,17 +36,24 @@ const createDbContainers = async (maxWorkers) => {
     source: initSqlPath,
     target: '/docker-entrypoint-initdb.d/init.sql',
   };
-  for (let i = 1; i <= maxWorkers; i++) {
-    const dockerDb = await new PostgreSqlContainer(image)
-      .withCopyFilesToContainer([initSqlCopy])
-      .withDatabase(dbName)
-      .withPassword('mirror_node_pass')
-      .withUsername('mirror_node')
-      .start();
-    console.info(`Started PostgreSQL container for Jest worker ${i} with image ${image}`);
-    setJestEnvironment(dockerDb, i);
-    dockerDbs.push(dockerDb);
-  }
+
+  console.info('Creating PostgreSQL containers for integration tests');
+  dockerDbs = await Promise.all(
+    Array(maxWorkers)
+      .fill()
+      .map(() =>
+        new PostgreSqlContainer(image)
+          .withCopyFilesToContainer([initSqlCopy])
+          .withDatabase(dbName)
+          .withPassword('mirror_node_pass')
+          .withUsername('mirror_node')
+          .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections', 2))
+          .start()
+      )
+  );
+
+  dockerDbs.forEach((dockerDb, index) => setJestEnvironment(dockerDb, index + 1));
+  console.info(`Started ${maxWorkers} PostgreSQL containers with image ${image}, one for each Jest worker`);
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-'));
   process.env.MIGRATION_TMP_DIR = tmpDir;

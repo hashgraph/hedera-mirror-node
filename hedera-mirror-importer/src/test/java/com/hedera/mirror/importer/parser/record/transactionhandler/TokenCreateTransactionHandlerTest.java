@@ -44,6 +44,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord.Builder;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 
@@ -74,10 +76,35 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         return EntityType.TOKEN;
     }
 
-    @Test
-    void updateTransaction() {
+    @CsvSource(
+            textBlock =
+                    """
+            true, true, true, FROZEN, REVOKED, UNFROZEN, GRANTED
+            false, true, false, UNFROZEN, NOT_APPLICABLE, UNFROZEN, NOT_APPLICABLE
+            false, false, false, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE
+            """)
+    @ParameterizedTest
+    void updateTransaction(
+            boolean freezeDefault,
+            boolean hasFreezeKey,
+            boolean hasKycKey,
+            TokenFreezeStatusEnum expectedTokenFreezeStatus,
+            TokenKycStatusEnum expectedTokenKycStatus,
+            TokenFreezeStatusEnum expectedTokenAccountFreezeStatus,
+            TokenKycStatusEnum expectedTokenAccountKycStatus) {
         // Given
-        var recordItem = recordItemBuilder.tokenCreate().build();
+        var recordItem = recordItemBuilder
+                .tokenCreate()
+                .transactionBody(b -> {
+                    b.setFreezeDefault(freezeDefault);
+                    if (!hasFreezeKey) {
+                        b.clearFreezeKey();
+                    }
+                    if (!hasKycKey) {
+                        b.clearKycKey();
+                    }
+                })
+                .build();
         long timestamp = recordItem.getConsensusTimestamp();
         var tokenId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getTokenID());
         var transaction = domainBuilder
@@ -103,6 +130,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
+        var expectedFreezeKey = hasFreezeKey ? transactionBody.getFreezeKey().toByteArray() : null;
+        var expectedKycKey = hasKycKey ? transactionBody.getKycKey().toByteArray() : null;
         verify(entityListener).onToken(token.capture());
         verify(entityListener).onCustomFee(customFee.capture());
         verify(entityListener).onTokenAccount(tokenAccount.capture());
@@ -110,10 +139,12 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(timestamp, Token::getCreatedTimestamp)
                 .returns(transactionBody.getDecimals(), Token::getDecimals)
                 .returns(transactionBody.getFeeScheduleKey().toByteArray(), Token::getFeeScheduleKey)
-                .returns(transactionBody.getFreezeKey().toByteArray(), Token::getFreezeKey)
                 .returns(transactionBody.getFreezeDefault(), Token::getFreezeDefault)
+                .returns(expectedFreezeKey, Token::getFreezeKey)
+                .returns(expectedTokenFreezeStatus, Token::getFreezeStatus)
                 .returns(transactionBody.getInitialSupply(), Token::getInitialSupply)
-                .returns(transactionBody.getKycKey().toByteArray(), Token::getKycKey)
+                .returns(expectedKycKey, Token::getKycKey)
+                .returns(expectedTokenKycStatus, Token::getKycStatus)
                 .returns(transactionBody.getMaxSupply(), Token::getMaxSupply)
                 .returns(Range.atLeast(timestamp), Token::getTimestampRange)
                 .returns(transactionBody.getName(), Token::getName)
@@ -154,8 +185,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(true, TokenAccount::getAssociated)
                 .returns(false, TokenAccount::getAutomaticAssociation)
                 .returns(timestamp, TokenAccount::getCreatedTimestamp)
-                .returns(TokenFreezeStatusEnum.UNFROZEN, TokenAccount::getFreezeStatus)
-                .returns(TokenKycStatusEnum.GRANTED, TokenAccount::getKycStatus)
+                .returns(expectedTokenAccountFreezeStatus, TokenAccount::getFreezeStatus)
+                .returns(expectedTokenAccountKycStatus, TokenAccount::getKycStatus)
                 .returns(Range.atLeast(timestamp), TokenAccount::getTimestampRange)
                 .returns(transaction.getEntityId().getId(), TokenAccount::getTokenId);
 

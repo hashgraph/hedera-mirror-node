@@ -1911,7 +1911,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 .to(estimatePrecompileContractSolidityAddress);
         contractCallRequest.value(value);
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
-        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();
+        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult())
+                .toBigInteger()
+                .intValue();
         assertWithinDeviation(actualGasUsed, estimatedGas, lowerDeviation, upperDeviation);
     }
 
@@ -1966,12 +1968,12 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         FREEZE_TOKEN("freezeTokenExternal", 39339),
         GET_APPROVED("getApprovedExternal", 25192),
         GET_APPROVED_ERC("getApproved", 27393),
-        GET_FUNGIBLE_TOKEN_INFO("getInformationForFungibleToken", 58190),
+        GET_FUNGIBLE_TOKEN_INFO("getInformationForFungibleToken", 56456),
         GET_NON_FUNGIBLE_TOKEN_INFO("getInformationForNonFungibleToken", 59159),
         GET_TOKEN_DEFAULT_FREEZE_STATUS("getTokenDefaultFreeze", 25191),
         GET_TOKEN_DEFAULT_KYC_STATUS("getTokenDefaultKyc", 25267),
         GET_TOKEN_EXPIRY_INFO("getTokenExpiryInfoExternal", 25617),
-        GET_TOKEN_INFO("getInformationForToken", 57612),
+        GET_TOKEN_INFO("getInformationForToken", 55815),
         GET_TOKEN_INFO_NFT("getInformationForToken", 56523),
         GET_TOKEN_KEY("getTokenKeyExternal", 27024),
         GET_TOKEN_TYPE("getType", 25223),

@@ -239,7 +239,8 @@ paths:
     get:
       summary: This API is currently not supported.Get non fungible token allowances for an account
       description: |
-        ** This API is currently under development and is not supported yet **
+        **This API is currently under development and is not supported yet**
+
         Returns information for non fungible token allowances for an account.
 
         ## Ordering
@@ -1301,7 +1302,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.99.0-SNAPSHOT
+  version: 0.100.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -2484,10 +2485,10 @@ components:
           pattern: "^((0x)?[0-9a-fA-F]+|(earliest|pending|latest))$"
           type: string
         data:
-          description: Hexadecimal method signature and encoded parameters.
+          description: Hexadecimal method signature and encoded parameters. Up to 24656 bytes as at most 49152 hexidecimal digits plus optional leading 0x.
           example: "0x47f1aae7"
           format: binary
-          maxLength: 12288
+          maxLength: 49154
           nullable: true
           pattern: "^(0x)?[0-9a-fA-F]+$"
           type: string
@@ -3255,33 +3256,33 @@ components:
     Token:
       type: object
       properties:
-        token_id:
-          $ref: "#/components/schemas/EntityId"
-        symbol:
-          type: string
-        name:
-          type: string
         admin_key:
           $ref: "#/components/schemas/Key"
-        type:
-          type: string
         decimals:
           format: int64
           type: integer
+        name:
+          type: string
+        symbol:
+          type: string
+        token_id:
+          $ref: "#/components/schemas/EntityId"
+        type:
+          type: string
       required:
-        - token_id
-        - symbol
-        - name
         - admin_key
-        - type
         - decimals
+        - name
+        - symbol
+        - token_id
+        - type
       example:
-        token_id: 0.0.1
-        symbol: FIRSTMOVERLPDJH
-        name: First Mover
         admin_key: null
-        type: FUNGIBLE_COMMON
         decimals: 3
+        name: First Mover
+        symbol: FIRSTMOVERLPDJH
+        token_id: 0.0.1
+        type: FUNGIBLE_COMMON
     TokenAllowance:
       allOf:
         - $ref: "#/components/schemas/Allowance"
@@ -3413,7 +3414,6 @@ components:
           type: boolean
           description: Specifies if the relationship is implicitly/explicitly associated.
           example: true
-          nullable: false
         balance:
           format: int64
           type: integer
@@ -3422,39 +3422,37 @@ components:
           nullable: false
         created_timestamp:
           $ref: "#/components/schemas/Timestamp"
+        decimals:
+          format: int64
+          type: integer
         freeze_status:
           type: string
           description: The Freeze status of the account.
           example: UNFROZEN
           enum: [NOT_APPLICABLE, FROZEN, UNFROZEN]
-          nullable: false
         kyc_status:
           type: string
           description: The KYC status of the account.
           example: GRANTED
           enum: [NOT_APPLICABLE, GRANTED, REVOKED]
-          nullable: false
         token_id:
           $ref: "#/components/schemas/EntityId"
-        decimals:
-          format: int64
-          type: integer
       required:
         - automatic_association
         - balance
         - created_timestamp
+        - decimals
         - freeze_status
         - kyc_status
         - token_id
-        - decimals
       example:
         automatic_association: true
         balance: 5
         created_timestamp: "123456789.000000001"
+        decimals: 3
         freeze_status: UNFROZEN
         kyc_status: GRANTED
         token_id: 0.0.27335
-        decimals: 3
     LogTopicQueryParam:
       type: array
       items:

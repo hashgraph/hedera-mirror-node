@@ -812,8 +812,10 @@ public class DomainBuilder {
                 .feeScheduleKey(key())
                 .freezeDefault(false)
                 .freezeKey(key())
+                .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                 .initialSupply(1_000_000_000L + number())
                 .kycKey(key())
+                .kycStatus(TokenKycStatusEnum.REVOKED)
                 .name(text(8))
                 .pauseKey(key())
                 .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
@@ -837,8 +839,10 @@ public class DomainBuilder {
                 .feeScheduleKey(key())
                 .freezeDefault(false)
                 .freezeKey(key())
+                .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                 .initialSupply(1_000_000_000L + number())
                 .kycKey(key())
+                .kycStatus(TokenKycStatusEnum.REVOKED)
                 .name(text(8))
                 .pauseKey(key())
                 .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
@@ -863,8 +867,8 @@ public class DomainBuilder {
                 .balance(number())
                 .balanceTimestamp(timestamp)
                 .createdTimestamp(timestamp)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .freezeStatus(null)
+                .kycStatus(null)
                 .timestampRange(Range.atLeast(timestamp))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -880,8 +884,8 @@ public class DomainBuilder {
                 .balance(number())
                 .balanceTimestamp(timestamp)
                 .createdTimestamp(timestamp)
-                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
-                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .freezeStatus(null)
+                .kycStatus(null)
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
