@@ -354,7 +354,6 @@ public class EvmConfiguration {
                 gasCalculator,
                 mirrorNodeEvmProperties.chainIdBytes32().toBigInteger());
         Set.of(
-                        new HederaBalanceOperation(gasCalculator, validator),
                         new HederaDelegateCallOperation(gasCalculator, validator),
                         new HederaEvmChainIdOperation(gasCalculator, mirrorNodeEvmProperties),
                         new HederaEvmCreate2Operation(
