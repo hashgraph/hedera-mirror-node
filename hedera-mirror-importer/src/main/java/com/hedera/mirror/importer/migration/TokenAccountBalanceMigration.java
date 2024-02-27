@@ -21,31 +21,13 @@ import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.DataClassRowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Named
-public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration {
-
-    private static final String GET_TIMESTAMP_INFO_SQL =
-            """
-            select consensus_timestamp as snapshot_timestamp,
-                consensus_timestamp + time_offset as from_timestamp,
-                consensus_end as to_timestamp
-            from account_balance_file
-            join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
-              on consensus_timestamp + time_offset <= consensus_end
-            where synthetic is false
-            order by consensus_timestamp desc
-            limit 1
-            """;
+public class TokenAccountBalanceMigration extends AbstractTimestampInfoMigration {
 
     private static final String UPDATE_TOKEN_ACCOUNT_SQL =
             """
@@ -80,10 +62,6 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
               balance_timestamp = excluded.balance_timestamp;
             """;
 
-    private final NamedParameterJdbcTemplate jdbcTemplate;
-
-    private final TransactionTemplate transactionTemplate;
-
     @Lazy
     public TokenAccountBalanceMigration(
             AccountBalanceFileRepository accountBalanceFileRepository,
@@ -91,9 +69,12 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
             NamedParameterJdbcTemplate jdbcTemplate,
             RecordFileRepository recordFileRepository,
             TransactionTemplate transactionTemplate) {
-        super(importerProperties.getMigration(), accountBalanceFileRepository, recordFileRepository);
-        this.jdbcTemplate = jdbcTemplate;
-        this.transactionTemplate = transactionTemplate;
+        super(
+                accountBalanceFileRepository,
+                importerProperties.getMigration(),
+                jdbcTemplate,
+                recordFileRepository,
+                transactionTemplate);
     }
 
     @Override
@@ -108,24 +89,8 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
 
     @Override
     protected void doMigrate() {
-        var count = new AtomicInteger();
         var stopwatch = Stopwatch.createStarted();
-        transactionTemplate.executeWithoutResult(s -> {
-            try {
-                var timestampInfo = jdbcTemplate.queryForObject(
-                        GET_TIMESTAMP_INFO_SQL, Collections.emptyMap(), new DataClassRowMapper<>(TimestampInfo.class));
-
-                var params = new MapSqlParameterSource()
-                        .addValue("snapshotTimestamp", timestampInfo.snapshotTimestamp())
-                        .addValue("fromTimestamp", timestampInfo.fromTimestamp())
-                        .addValue("toTimestamp", timestampInfo.toTimestamp());
-                count.set(jdbcTemplate.update(UPDATE_TOKEN_ACCOUNT_SQL, params));
-            } catch (EmptyResultDataAccessException e) {
-                // GET_TIMESTAMP_INFO_SQL returns empty result
-            }
-        });
+        var count = doMigrate(UPDATE_TOKEN_ACCOUNT_SQL);
         log.info("Migrated {} token account balances in {}", count, stopwatch);
     }
-
-    private record TimestampInfo(long snapshotTimestamp, long fromTimestamp, long toTimestamp) {}
 }

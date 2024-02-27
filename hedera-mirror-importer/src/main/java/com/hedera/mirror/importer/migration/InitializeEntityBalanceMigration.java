@@ -21,36 +21,14 @@ import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
-import java.util.Collections;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.DataClassRowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Named
-public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigration {
+public class InitializeEntityBalanceMigration extends AbstractTimestampInfoMigration {
 
-    private static final String GET_TIMESTAMP_INFO_SQL =
-            """
-            with last_record_file as (
-              select consensus_end
-              from record_file
-              order by consensus_end desc
-              limit 1
-            )
-            select
-              consensus_timestamp as snapshot_timestamp,
-              consensus_timestamp + time_offset as from_timestamp,
-              consensus_end as to_timestamp
-            from account_balance_file, last_record_file
-            where synthetic is false and consensus_timestamp + time_offset <= consensus_end
-            order by consensus_timestamp desc
-            limit 1
-            """;
     private static final String INITIALIZE_ENTITY_BALANCE_SQL =
             """
             with snapshot as (
@@ -81,9 +59,6 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
                 balance_timestamp = coalesce(entity.balance_timestamp, excluded.balance_timestamp)
             """;
 
-    private final NamedParameterJdbcTemplate jdbcTemplate;
-    private final TransactionTemplate transactionTemplate;
-
     @Lazy
     public InitializeEntityBalanceMigration(
             AccountBalanceFileRepository accountBalanceFileRepository,
@@ -91,9 +66,12 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
             NamedParameterJdbcTemplate jdbcTemplate,
             RecordFileRepository recordFileRepository,
             TransactionTemplate transactionTemplate) {
-        super(importerProperties.getMigration(), accountBalanceFileRepository, recordFileRepository);
-        this.jdbcTemplate = jdbcTemplate;
-        this.transactionTemplate = transactionTemplate;
+        super(
+                accountBalanceFileRepository,
+                importerProperties.getMigration(),
+                jdbcTemplate,
+                recordFileRepository,
+                transactionTemplate);
     }
 
     @Override
@@ -108,24 +86,8 @@ public class InitializeEntityBalanceMigration extends TimeSensitiveBalanceMigrat
 
     @Override
     protected void doMigrate() {
-        var count = new AtomicInteger();
         var stopwatch = Stopwatch.createStarted();
-        transactionTemplate.executeWithoutResult(s -> {
-            try {
-                var timestampInfo = jdbcTemplate.queryForObject(
-                        GET_TIMESTAMP_INFO_SQL, Collections.emptyMap(), new DataClassRowMapper<>(TimestampInfo.class));
-                var params = new MapSqlParameterSource()
-                        .addValue("snapshotTimestamp", timestampInfo.snapshotTimestamp())
-                        .addValue("fromTimestamp", timestampInfo.fromTimestamp())
-                        .addValue("toTimestamp", timestampInfo.toTimestamp());
-                count.set(jdbcTemplate.update(INITIALIZE_ENTITY_BALANCE_SQL, params));
-            } catch (EmptyResultDataAccessException e) {
-                // GET_TIMESTAMP_INFO_SQL returns empty result
-            }
-        });
-
+        var count = doMigrate(INITIALIZE_ENTITY_BALANCE_SQL);
         log.info("Initialized {} entities balance in {}", count.get(), stopwatch);
     }
-
-    private record TimestampInfo(long snapshotTimestamp, long fromTimestamp, long toTimestamp) {}
 }
