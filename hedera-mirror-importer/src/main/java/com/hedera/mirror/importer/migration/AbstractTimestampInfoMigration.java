@@ -29,7 +29,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 abstract class AbstractTimestampInfoMigration extends TimeSensitiveBalanceMigration {
 
-    static final String GET_TIMESTAMP_INFO_SQL =
+    private static final String GET_TIMESTAMP_INFO_SQL =
             """
             with last_record_file as (
               select consensus_end
@@ -47,8 +47,8 @@ abstract class AbstractTimestampInfoMigration extends TimeSensitiveBalanceMigrat
             limit 1
             """;
 
-    protected final NamedParameterJdbcTemplate jdbcTemplate;
-    protected final TransactionTemplate transactionTemplate;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+    private final TransactionTemplate transactionTemplate;
 
     protected AbstractTimestampInfoMigration(
             AccountBalanceFileRepository accountBalanceFileRepository,
@@ -80,5 +80,5 @@ abstract class AbstractTimestampInfoMigration extends TimeSensitiveBalanceMigrat
         return count;
     }
 
-    protected record TimestampInfo(long snapshotTimestamp, long fromTimestamp, long toTimestamp) {}
+    private record TimestampInfo(long snapshotTimestamp, long fromTimestamp, long toTimestamp) {}
 }
