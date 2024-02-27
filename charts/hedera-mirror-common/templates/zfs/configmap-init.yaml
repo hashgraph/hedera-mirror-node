@@ -28,6 +28,7 @@ data:
     
     # Configurable environment variables
     CONFIG_MAP_NAME="{{ include "hedera-mirror-common.fullname" . }}-zfs-node-status"
+    CONFIG_MAP_KEY="zfs-node-status.json"
     DISK_PREFIX="${DISK_PREFIX:-citus}"
     DEFAULT_DISK_SIZE_COORDINATOR="${DEFAULT_DISK_SIZE_COORDINATOR:-75GB}"
     DEFAULT_DISK_SIZE_WORKER="${DEFAULT_DISK_SIZE_WORKER:-152GB}"
@@ -60,12 +61,20 @@ data:
       CITUS_ROLE="$(echo "${NODE_LABELS}" | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.[$ROLE_LABEL]')"
       NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.[$NODE_ID_LABEL]')"
     done
-    # Determine correct config for zone
+    # Ensure node status config map is created
+    CONFIG_MAP="$(kubectl get configmap -o json -n ${K8S_NAMESPACE} ${CONFIG_MAP_NAME})"
+    COMMAND_STATUS=$?
+    until [[ ${COMMAND_STATUS} -eq 0 ]]; do
+      echo "Creating config map ${CONFIG_MAP_NAME}"
+      kubectl create configmap "${CONFIG_MAP_NAME}" -n "${K8S_NAMESPACE}" --from-literal="${CONFIG_MAP_KEY}={}"
+      CONFIG_MAP="$(kubectl get configmap -o json -n ${K8S_NAMESPACE} ${CONFIG_MAP_NAME})"
+      COMMAND_STATUS=$?
+    done
     COMMAND_STATUS=1
     until [[ ${COMMAND_STATUS} -eq 0 ]]; do
       CONFIG_MAP="$(kubectl get configmap -o json -n ${K8S_NAMESPACE} ${CONFIG_MAP_NAME})"
-      MODIFIED_CONFIG_MAP="$(echo "${CONFIG_MAP}" |jq '{metadata: {resourceVersion: (.metadata.resourceVersion)}, data: {"zfs-node-status.json": (.data["zfs-node-status.json"]|fromjson)}}')"
-      ZONE_CONFIG="$(echo "${MODIFIED_CONFIG_MAP}" |jq  --arg ZONE "${ZONE}" --arg CITUS_ROLE "${CITUS_ROLE}" '.data["zfs-node-status.json"][$CITUS_ROLE][$ZONE] // []')"
+      MODIFIED_CONFIG_MAP="$(echo "${CONFIG_MAP}" |jq --arg KEY "${CONFIG_MAP_KEY}" '{metadata: {resourceVersion: (.metadata.resourceVersion)}, data: {($KEY): (.data[$KEY]|fromjson)}}')"
+      ZONE_CONFIG="$(echo "${MODIFIED_CONFIG_MAP}" |jq --arg KEY "${CONFIG_MAP_KEY}"  --arg ZONE "${ZONE}" --arg CITUS_ROLE "${CITUS_ROLE}" '.data[$KEY][$CITUS_ROLE][$ZONE] // []')"
       NODE_LIST="$(kubectl get nodes -o jsonpath='{.items[*].metadata.labels}' -lcsi-type=zfs,topology.kubernetes.io/zone=${ZONE},${ROLE_LABEL}=${CITUS_ROLE} | jq -s)"
       NODE_NAMES="$(echo "${NODE_LIST}" | jq '. | map({(.["kubernetes.io/hostname"]): {isUpgrade: (.["operation.gke.io/type"] == "drain")}}) | add')"
       
@@ -132,8 +141,8 @@ data:
         MERGED_ZONE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" | jq --arg INDEX $INDEX --arg THIS_NODE_CONFIG "${THIS_NODE_CONFIG}"  '.[$INDEX |tonumber] = ($THIS_NODE_CONFIG|fromjson)')"
       fi
         
-      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg CITUS_ROLE "${CITUS_ROLE}"  --arg ZONE "${ZONE}" --arg ZONE_CONFIG "${MERGED_ZONE_CONFIG}" '.data["zfs-node-status.json"][$CITUS_ROLE][$ZONE]=($ZONE_CONFIG|fromjson)')"
-      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq '.data["zfs-node-status.json"]=(.data["zfs-node-status.json"]|tojson)')"
+      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg KEY "${CONFIG_MAP_KEY}" --arg CITUS_ROLE "${CITUS_ROLE}"  --arg ZONE "${ZONE}" --arg ZONE_CONFIG "${MERGED_ZONE_CONFIG}" '.data[$KEY][$CITUS_ROLE][$ZONE]=($ZONE_CONFIG|fromjson)')"
+      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg KEY "${CONFIG_MAP_KEY}" '.data[$KEY]=(.data[$KEY]|tojson)')"
     
       echo "patching $CONFIG_MAP_NAME with $MODIFIED_CONFIG_MAP"
       kubectl patch configmap $CONFIG_MAP_NAME \
