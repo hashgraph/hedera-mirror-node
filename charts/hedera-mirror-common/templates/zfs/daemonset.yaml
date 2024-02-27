@@ -33,14 +33,16 @@ spec:
               value: /node
             - name: DISK_PREFIX
               value: {{ .Values.zfs.init.diskPrefix }}
-            - name: DISK_SIZE_COORDINATOR
-              value: {{ .Values.zfs.coordinator.diskSize }}
-            - name: DISK_SIZE_WORKER
-              value: {{ .Values.zfs.worker.diskSize }}
+            - name: DEFAULT_DISK_SIZE_COORDINATOR
+              value: {{ .Values.zfs.coordinator.initialDiskSize }}
+            - name: DEFAULT_DISK_SIZE_WORKER
+              value: {{ .Values.zfs.worker.initialDiskSize }}
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: DEPLOY_TRIGGER
+              value: {{ now | quote }} # Trigger a deploy on every chart upgrade
             - name: L2_ARC_NVME_DEVICE_ID
               value: "{{ .Values.zfs.init.l2ArcNvmeDeviceId }}"
           securityContext:
