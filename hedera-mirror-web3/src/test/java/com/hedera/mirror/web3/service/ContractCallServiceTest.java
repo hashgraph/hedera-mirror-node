@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -277,6 +278,48 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
+    }
+
+    @Test
+    void callHtsPrecompileWithEmptyData() {
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.EMPTY,
+                Address.fromHexString("0000000000000000000000000000000000000167"),
+                ETH_CALL,
+                0L,
+                BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
+    }
+
+    @Test
+    void callExchangeRatePrecompileWithEmptyData() {
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.EMPTY,
+                Address.fromHexString("0000000000000000000000000000000000000168"),
+                ETH_CALL,
+                0L,
+                BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
+    }
+
+    @Test
+    void callPrngPrecompileWithEmptyData() {
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.EMPTY,
+                Address.fromHexString("0000000000000000000000000000000000000169"),
+                ETH_CALL,
+                0L,
+                BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
     }
 
     @Test

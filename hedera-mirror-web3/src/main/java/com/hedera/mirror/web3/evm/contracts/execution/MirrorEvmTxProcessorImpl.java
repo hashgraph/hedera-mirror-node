@@ -126,10 +126,15 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final var resolvedForEvm = aliasManager.resolveForEvm(to);
             final var code = aliasManager.isMirror(resolvedForEvm) ? codeCache.getIfPresent(resolvedForEvm) : null;
             final var isNotCallingNativePrecompile = !aliasManager.isNativePrecompileAddress(resolvedForEvm);
+            final var isNotCallingHederaPrecompile = !aliasManager.isHederaPrecompileAddress(resolvedForEvm);
 
             // If there is no bytecode, it means we have a non-token and non-contract account,
             // hence the code should be null and there must be a value transfer.
-            if (code == null && value <= 0 && !payload.isEmpty() && isNotCallingNativePrecompile) {
+            if (code == null
+                    && value <= 0
+                    && !payload.isEmpty()
+                    && isNotCallingNativePrecompile
+                    && isNotCallingHederaPrecompile) {
                 throw new MirrorEvmTransactionException(
                         ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
             }

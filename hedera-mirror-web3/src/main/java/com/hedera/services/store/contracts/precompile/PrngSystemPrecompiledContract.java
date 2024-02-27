@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.contracts.execution.LivePricesSource;
@@ -89,6 +90,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     public Pair<PrecompileContractResult, ResponseCodeEnum> computePrngResult(
             final long gasNeeded, final Bytes input, final MessageFrame frame) {
         try {
+            validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
             validateTrue(frame.getRemainingGas() >= gasNeeded, INSUFFICIENT_GAS);
             final var randomNum = generatePseudoRandomData(input);
             return Pair.of(PrecompiledContract.PrecompileContractResult.success(randomNum), null);
