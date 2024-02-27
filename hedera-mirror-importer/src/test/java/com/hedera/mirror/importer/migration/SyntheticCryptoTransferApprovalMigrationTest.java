@@ -43,13 +43,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,9 +64,9 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
     private static final long START_TIMESTAMP = 1568415600193620000L;
     private static final long END_TIMESTAMP = 1568528100472477002L;
     private static final AtomicLong count = new AtomicLong(100000);
-    private static final EntityId contractId = EntityId.of("0.0.2119900");
-    private static final EntityId contractId2 = EntityId.of("0.0.2119901");
-    private static final EntityId priorContractId = EntityId.of("0.0.2119899");
+    private static final EntityId contractId = EntityId.of("0.0.2119901");
+    private static final EntityId contractId2 = EntityId.of("0.0.2119902");
+    private static final EntityId priorContractId = EntityId.of("0.0.2119900");
     private static final RecordFile RECORD_FILE = RecordFile.builder()
             .consensusStart(START_TIMESTAMP)
             .consensusEnd(END_TIMESTAMP)
@@ -79,13 +79,14 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
     private final TransactionRepository transactionRepository;
     private final TokenTransferRepository tokenTransferRepository;
     private final ImporterProperties importerProperties;
+
     private Entity currentKeyUnaffectedEntity;
     private Entity currentKeyAffectedEntity;
     private Entity noKeyEntity;
+    private EntityId payerAccountId;
     private Entity thresholdTwoKeyEntity;
 
     @BeforeEach
-    @SneakyThrows
     void setup() {
         importerProperties.setNetwork(MAINNET);
         migration.setExecuted(false);
@@ -114,7 +115,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
     void migrate() {
         // given
         entitySetup();
-        Pair<List<CryptoTransfer>, List<CryptoTransfer>> cryptoTransfersPair = getCryptoTransfersPair(
+        var cryptoTransfersPair = getCryptoTransfersPair(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -122,8 +123,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 currentKeyAffectedEntity,
                 noKeyEntity,
                 thresholdTwoKeyEntity);
-
-        Pair<List<NftTransfer>, List<NftTransfer>> nftTransfersTransactionPair = getNftTransfersTransactionPair(
+        var nftTransfersTransactionPair = getNftTransfersTransactionPair(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -131,8 +131,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 currentKeyAffectedEntity,
                 noKeyEntity,
                 thresholdTwoKeyEntity);
-
-        Pair<List<TokenTransfer>, List<TokenTransfer>> tokenTransfersPair = getTokenTransfersPair(
+        var tokenTransfersPair = getTokenTransfersPair(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -274,13 +273,13 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
         assertThat(cryptoTransferRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(
                         Stream.of(cryptoTransfersPair.getLeft(), cryptoTransfersPair.getRight())
-                                .flatMap(x -> x.stream())
+                                .flatMap(Collection::stream)
                                 .collect(Collectors.toList()));
 
         assertThat(tokenTransferRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(
                         Stream.of(tokenTransfersPair.getLeft(), tokenTransfersPair.getRight())
-                                .flatMap(x -> x.stream())
+                                .flatMap(Collection::stream)
                                 .collect(Collectors.toList()));
 
         var repositoryNftTransfers = new ArrayList<NftTransfer>();
@@ -288,7 +287,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
         assertThat(repositoryNftTransfers)
                 .containsExactlyInAnyOrderElementsOf(
                         Stream.of(nftTransfersTransactionPair.getLeft(), nftTransfersTransactionPair.getRight())
-                                .flatMap(x -> x.stream())
+                                .flatMap(Collection::stream)
                                 .collect(Collectors.toList()));
     }
 
@@ -319,6 +318,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
         currentKeyUnaffectedEntity = entityCurrentKey(contractId.getNum());
         currentKeyAffectedEntity = entityCurrentKey(contractId2.getNum());
         noKeyEntity = entityWithNoKey();
+        payerAccountId = domainBuilder.entityId();
         thresholdTwoKeyEntity = domainBuilder
                 .entity()
                 .customize(e -> e.key(getThresholdTwoKey(contractId.getNum()))
@@ -341,7 +341,6 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
 
         return setupCryptoTransfers(
                 contractId,
-                contractId2,
                 priorContractId,
                 currentKeyUnaffectedEntity,
                 currentKeyAffectedEntity,
@@ -398,7 +397,6 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
 
     private Pair<List<CryptoTransfer>, List<CryptoTransfer>> setupCryptoTransfers(
             EntityId contractId,
-            EntityId contractId2,
             EntityId priorGrandfatheredContractId,
             Entity currentKeyUnaffectedEntity,
             Entity currentKeyAffectedEntity,
@@ -411,8 +409,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
 
         // crypto transfer with current threshold key matching the contract result sender id should not have isApproval
         // set to true
-        var cryptoMatchingThreshold =
-                persistCryptoTransfer(currentKeyUnaffectedEntity.getId(), contractId, null, false);
+        var cryptoMatchingThreshold = persistCryptoTransfer(currentKeyUnaffectedEntity.getId(), null, false);
         // corresponding contract result for the synthetic crypto transfer
         persistContractResult(contractId, cryptoMatchingThreshold.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(cryptoMatchingThreshold);
@@ -420,42 +417,39 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
         // crypto transfer with past threshold key matching the contract result sender id should not have isApproval set
         // to true
         var pastCryptoMatchingThreshold = persistCryptoTransfer(
-                pastKeyUnaffectedEntity.getId(), contractId, pastKeyUnaffectedEntity.getTimestampLower(), false);
+                pastKeyUnaffectedEntity.getId(), pastKeyUnaffectedEntity.getTimestampLower(), false);
         // corresponding contract result for the synthetic crypto transfer
         persistContractResult(contractId, pastCryptoMatchingThreshold.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(pastCryptoMatchingThreshold);
 
         // crypto transfer with current threshold key not matching the contract result sender id should have isApproval
         // set to true
-        var cryptoNotMatchingThreshold =
-                persistCryptoTransfer(currentKeyAffectedEntity.getId(), contractId2, null, false);
+        var cryptoNotMatchingThreshold = persistCryptoTransfer(currentKeyAffectedEntity.getId(), null, false);
         persistContractResult(contractId, cryptoNotMatchingThreshold.getConsensusTimestamp());
         approvalTrueCryptoTransfers.add(cryptoNotMatchingThreshold);
 
         // crypto transfer with past threshold key not matching the contract result sender id should have isApproval set
         // to true
-        var pastCryptoNotMatchingThreshold = persistCryptoTransfer(
-                pastKeyAffectedEntity.getId(), contractId2, pastKeyAffectedEntity.getTimestampLower(), false);
+        var pastCryptoNotMatchingThreshold =
+                persistCryptoTransfer(pastKeyAffectedEntity.getId(), pastKeyAffectedEntity.getTimestampLower(), false);
         persistContractResult(contractId, pastCryptoNotMatchingThreshold.getConsensusTimestamp());
         approvalTrueCryptoTransfers.add(pastCryptoNotMatchingThreshold);
 
         // crypto transfer with threshold key matching the contract result sender, but is outside the lower boundary,
         // isApproval
         // should not be affected
-        var lowerBoundTransfer =
-                persistCryptoTransfer(currentKeyAffectedEntity.getId(), contractId2, LOWER_BOUND_TIMESTAMP, false);
+        var lowerBoundTransfer = persistCryptoTransfer(currentKeyAffectedEntity.getId(), LOWER_BOUND_TIMESTAMP, false);
         persistContractResult(contractId, lowerBoundTransfer.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(lowerBoundTransfer);
 
         // crypto transfer with current threshold key not matching the contract result sender id but prior to the
         // grandfathered id. Should not have isApproval set to true
-        var priorGrandfatheredTransfer =
-                persistCryptoTransfer(currentKeyAffectedEntity.getId(), contractId2, null, false);
+        var priorGrandfatheredTransfer = persistCryptoTransfer(currentKeyAffectedEntity.getId(), null, false);
         persistContractResult(priorGrandfatheredContractId, priorGrandfatheredTransfer.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(priorGrandfatheredTransfer);
 
         // crypto transfer with no threshold key should not have isApproval set to true
-        var noKeyCryptoTransfer = persistCryptoTransfer(noKeyEntity.getId(), noKeyEntity.toEntityId(), null, false);
+        var noKeyCryptoTransfer = persistCryptoTransfer(noKeyEntity.getId(), null, false);
         persistContractResult(contractId, noKeyCryptoTransfer.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(noKeyCryptoTransfer);
 
@@ -463,21 +457,20 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
         unaffectedCryptoTransfers.add(domainBuilder.cryptoTransfer().persist());
 
         // crypto transfer with approved set to true, it should not be affected by the migration
-        var cryptoNotMatchingThresholdApproved =
-                persistCryptoTransfer(currentKeyAffectedEntity.getId(), contractId2, null, true);
+        var cryptoNotMatchingThresholdApproved = persistCryptoTransfer(currentKeyAffectedEntity.getId(), null, true);
         persistContractResult(contractId, cryptoNotMatchingThresholdApproved.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(cryptoNotMatchingThresholdApproved);
 
         // crypto transfer with threshold set to 2. A threshold over 1 should have isApproval set to
         // true
-        var thresholdTwoTransfer = persistCryptoTransfer(thresholdTwoKeyEntity.getId(), contractId2, null, false);
+        var thresholdTwoTransfer = persistCryptoTransfer(thresholdTwoKeyEntity.getId(), null, false);
         persistContractResult(contractId, thresholdTwoTransfer.getConsensusTimestamp());
         approvalTrueCryptoTransfers.add(thresholdTwoTransfer);
 
         // transfer that would have isApproval set to true, but the contract result consensus timestamp is outside the
         // upper bound
         var outsideUpperBoundTransfer =
-                persistCryptoTransfer(currentKeyAffectedEntity.getId(), contractId2, UPPER_BOUND_TIMESTAMP + 1, false);
+                persistCryptoTransfer(currentKeyAffectedEntity.getId(), UPPER_BOUND_TIMESTAMP + 1, false);
         persistContractResult(contractId, outsideUpperBoundTransfer.getConsensusTimestamp());
         unaffectedCryptoTransfers.add(outsideUpperBoundTransfer);
 
@@ -602,50 +595,47 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
 
         // token transfer with threshold key matching the contract result sender id should not have isApproval set to
         // true
-        var tokenMatchingThreshold =
-                persistTokenTransfer(currentKeyUnaffectedEntity.toEntityId(), contractId, null, false);
+        var tokenMatchingThreshold = persistTokenTransfer(currentKeyUnaffectedEntity.toEntityId(), null, false);
         persistContractResult(contractId, tokenMatchingThreshold.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(tokenMatchingThreshold);
 
         // token transfer with past threshold key matching the contract result sender id should not have isApproval set
         // to true
         var pastTokenMatchingThreshold = persistTokenTransfer(
-                pastKeyUnaffectedEntity.toEntityId(), contractId, pastKeyUnaffectedEntity.getTimestampLower(), false);
+                pastKeyUnaffectedEntity.toEntityId(), pastKeyUnaffectedEntity.getTimestampLower(), false);
         persistContractResult(contractId, pastTokenMatchingThreshold.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(pastTokenMatchingThreshold);
 
         // token transfer with threshold key not matching the contract result sender id should have isApproval set to
         // true
-        var tokenNotMatchingThreshold =
-                persistTokenTransfer(currentKeyAffectedEntity.toEntityId(), contractId2, null, false);
+        var tokenNotMatchingThreshold = persistTokenTransfer(currentKeyAffectedEntity.toEntityId(), null, false);
         persistContractResult(contractId, tokenNotMatchingThreshold.getId().getConsensusTimestamp());
         approvalTrueTokenTransfers.add(tokenNotMatchingThreshold);
 
         // token transfer with past threshold key not matching the contract result sender id should have isApproval set
         // to true
         var pastTokenNotMatchingThreshold = persistTokenTransfer(
-                pastKeyAffectedEntity.toEntityId(), contractId2, pastKeyAffectedEntity.getTimestampLower(), false);
+                pastKeyAffectedEntity.toEntityId(), pastKeyAffectedEntity.getTimestampLower(), false);
         persistContractResult(contractId, pastTokenNotMatchingThreshold.getId().getConsensusTimestamp());
         approvalTrueTokenTransfers.add(pastTokenNotMatchingThreshold);
 
         // token transfer with threshold key matching the contract result sender but outside the lower boundary,
         // isApproval
         // should not be affected
-        var lowerBoundTokenTransfer = persistTokenTransfer(
-                currentKeyAffectedEntity.toEntityId(), contractId2, LOWER_BOUND_TIMESTAMP - 2, false);
+        var lowerBoundTokenTransfer =
+                persistTokenTransfer(currentKeyAffectedEntity.toEntityId(), LOWER_BOUND_TIMESTAMP - 2, false);
         persistContractResult(contractId, lowerBoundTokenTransfer.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(lowerBoundTokenTransfer);
 
         // token transfer with threshold key not matching the contract result sender id but prior to the grandfathered
         // id, should not have isApproval set to true
-        var tokenPriorGrandfathered =
-                persistTokenTransfer(currentKeyAffectedEntity.toEntityId(), contractId2, null, false);
+        var tokenPriorGrandfathered = persistTokenTransfer(currentKeyAffectedEntity.toEntityId(), null, false);
         persistContractResult(
                 priorGrandfatheredContractId, tokenPriorGrandfathered.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(tokenPriorGrandfathered);
 
         // token transfer with no key should not have isApproval set to true
-        var noKeyTokenTransfer = persistTokenTransfer(noKeyEntity.toEntityId(), noKeyEntity.toEntityId(), null, false);
+        var noKeyTokenTransfer = persistTokenTransfer(noKeyEntity.toEntityId(), null, false);
         persistContractResult(contractId, noKeyTokenTransfer.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(noKeyTokenTransfer);
 
@@ -653,21 +643,20 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
         unaffectedTokenTransfers.add(domainBuilder.tokenTransfer().persist());
 
         // token transfer with the problem already fixed, it should not be affected by the migration
-        var tokenNotMatchingThresholdFixed =
-                persistTokenTransfer(currentKeyAffectedEntity.toEntityId(), contractId2, null, true);
+        var tokenNotMatchingThresholdFixed = persistTokenTransfer(currentKeyAffectedEntity.toEntityId(), null, true);
         persistContractResult(contractId, tokenNotMatchingThresholdFixed.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(tokenNotMatchingThresholdFixed);
 
         // token transfer with threshold set to 2. A threshold over 1 should have isApproval set to true
-        var thresholdTwoTransfer = persistTokenTransfer(thresholdTwoKeyEntity.toEntityId(), contractId2, null, false);
+        var thresholdTwoTransfer = persistTokenTransfer(thresholdTwoKeyEntity.toEntityId(), null, false);
         persistContractResult(contractId, thresholdTwoTransfer.getId().getConsensusTimestamp());
         approvalTrueTokenTransfers.add(thresholdTwoTransfer);
 
         // token transfer with threshold key matching the contract result sender but outside the upper boundary,
         // isApproval
         // should not be affected
-        var upperBoundTokenTransfer = persistTokenTransfer(
-                currentKeyAffectedEntity.toEntityId(), contractId2, UPPER_BOUND_TIMESTAMP + 3, false);
+        var upperBoundTokenTransfer =
+                persistTokenTransfer(currentKeyAffectedEntity.toEntityId(), UPPER_BOUND_TIMESTAMP + 3, false);
         persistContractResult(contractId, upperBoundTokenTransfer.getId().getConsensusTimestamp());
         unaffectedTokenTransfers.add(upperBoundTokenTransfer);
 
@@ -708,12 +697,13 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
     private void persistContractResult(EntityId contractId, long consensusTimestamp) {
         domainBuilder
                 .contractResult()
-                .customize(c -> c.contractId(contractId.getId()).consensusTimestamp(consensusTimestamp))
+                .customize(c -> c.contractId(contractId.getId())
+                        .consensusTimestamp(consensusTimestamp)
+                        .payerAccountId(payerAccountId))
                 .persist();
     }
 
-    private CryptoTransfer persistCryptoTransfer(
-            long entityId, EntityId payerAccountId, Long consensusTimestamp, boolean isApproval) {
+    private CryptoTransfer persistCryptoTransfer(long entityId, Long consensusTimestamp, boolean isApproval) {
         long consensus = consensusTimestamp == null ? getTimestampWithinBoundary() : consensusTimestamp;
         return domainBuilder
                 .cryptoTransfer()
@@ -774,12 +764,12 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 .transaction()
                 .customize(t -> t.consensusTimestamp(consensus)
                         .nftTransfer(nftTransfers)
-                        .itemizedTransfer(null))
+                        .itemizedTransfer(null)
+                        .payerAccountId(payerAccountId))
                 .persist();
     }
 
-    private TokenTransfer persistTokenTransfer(
-            EntityId entityId, EntityId payerAccountId, Long consensusTimestamp, boolean isApproval) {
+    private TokenTransfer persistTokenTransfer(EntityId entityId, Long consensusTimestamp, boolean isApproval) {
         long consensus = consensusTimestamp == null ? getTimestampWithinBoundary() : consensusTimestamp;
         var id = TokenTransfer.Id.builder()
                 .accountId(entityId)
