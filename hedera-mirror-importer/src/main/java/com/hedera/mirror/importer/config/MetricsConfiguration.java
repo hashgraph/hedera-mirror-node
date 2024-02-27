@@ -147,20 +147,20 @@ class MetricsConfiguration {
     }
 
     public TableMetrics getUpdatedMetrics(String tableName) {
-        var table = tables.get(tableName);
-        var sql = getMetricSql(table);
         try {
-            return jdbcOperations.queryForObject(
-                    sql, DataClassRowMapper.newInstance(TableMetrics.class), table.tableName());
+            var table = tables.get(tableName);
+            if (table != null) {
+                var sql = getMetricSql(table);
+                return jdbcOperations.queryForObject(
+                        sql, DataClassRowMapper.newInstance(TableMetrics.class), table.tableName());
+            }
         } catch (BadSqlGrammarException | EmptyResultDataAccessException e) {
-            // ignore as table may have been removed by a migration
+            // No longer need to query metrics for this table
+            tables.remove(tableName);
+            log.info("Removing {} and will stop querying metrics for this table", tableName);
         } catch (Exception e) {
-            log.warn("Error trying to get metrics for table {}", table.tableName(), e);
+            log.warn("Error trying to get metrics for table {}", tableName, e);
         }
-
-        log.info("Evicting {} from cache and will stop querying metrics for this table", tableName);
-        activeMetrics.invalidate(tableName);
-        tables.remove(tableName);
 
         return new TableMetrics(0L, 0L, 0L);
     }
