@@ -73,10 +73,11 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             ), cryptotransfers as (
               select
                 ct.consensus_timestamp,
-                cast(null as int) as index,
-                entity_id as sender,
                 cr.contract_id,
-                cast(null as bigint) as token_id,
+                null::int as index,
+                ct.payer_account_id,
+                entity_id as sender,
+                null::bigint as token_id,
                 'CRYPTO_TRANSFER' as transfer_type
               from crypto_transfer ct
               join contractresults cr using (consensus_timestamp, payer_account_id)
@@ -89,9 +90,10 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             ), tokentransfers as (
               select
                 t.consensus_timestamp,
-                cast(null as int) as index,
-                account_id as sender,
                 cr.contract_id,
+                null::int as index,
+                t.payer_account_id,
+                account_id as sender,
                 token_id,
                 'TOKEN_TRANSFER' as transfer_type
               from token_transfer t
@@ -105,10 +107,11 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             ), nfttransfers as (
               select
                 t.consensus_timestamp,
-                arr.index - 1 as index,
-                (arr.item->>'sender_account_id')::bigint as sender,
                 cr.contract_id,
-                cast(null as bigint) as token_id,
+                arr.index - 1 as index,
+                t.payer_account_id,
+                (arr.item->>'sender_account_id')::bigint as sender,
+                null::bigint as token_id,
                 'NFT_TRANSFER' as transfer_type
               from transaction t
               join contractresults cr using (consensus_timestamp, payer_account_id),
@@ -141,19 +144,24 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
             """
             update crypto_transfer
             set is_approval = true
-            where consensus_timestamp = :consensus_timestamp and entity_id = :sender
+            where consensus_timestamp = :consensus_timestamp and
+              payer_account_id = :payer_account_id and
+              entity_id = :sender
             """;
     private static final String UPDATE_NFT_TRANSFER_SQL =
             """
             update transaction
             set nft_transfer = jsonb_set(nft_transfer, array[:index::text, 'is_approval'], 'true', false)
-            where consensus_timestamp = :consensus_timestamp
+            where consensus_timestamp = :consensus_timestamp and payer_account_id = :payer_account_id
             """;
     private static final String UPDATE_TOKEN_TRANSFER_SQL =
             """
             update token_transfer
             set is_approval = true
-            where consensus_timestamp = :consensus_timestamp and token_id = :token_id and account_id = :sender
+            where account_id = :sender and
+              consensus_timestamp = :consensus_timestamp and
+              payer_account_id = :payer_account_id and
+              token_id = :token_id
             """;
 
     private final AtomicBoolean executed = new AtomicBoolean(false);
@@ -212,8 +220,9 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
                 if (!isAuthorizedByContractKey(transfer, migrationErrors)) {
                     // set is_approval to true
                     String updateSql;
-                    var updateParams =
-                            new MapSqlParameterSource().addValue("consensus_timestamp", transfer.consensusTimestamp);
+                    var updateParams = new MapSqlParameterSource()
+                            .addValue("consensus_timestamp", transfer.consensusTimestamp)
+                            .addValue("payer_account_id", transfer.payerAccountId);
                     if (transfer.transferType == TRANSFER_TYPE.CRYPTO_TRANSFER) {
                         updateSql = UPDATE_CRYPTO_TRANSFER_SQL;
                         updateParams.addValue("sender", transfer.sender);
@@ -303,11 +312,12 @@ public class SyntheticCryptoTransferApprovalMigration extends AsyncJavaMigration
 
     @Data
     static class ApprovalTransfer {
-        private Long consensusTimestamp;
-        private Long contractId;
+        private long consensusTimestamp;
+        private long contractId;
         private Integer index;
         private byte[] key;
-        private Long sender;
+        private long payerAccountId;
+        private long sender;
         private Long tokenId;
         private TRANSFER_TYPE transferType;
     }

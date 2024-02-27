@@ -191,7 +191,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 .persist();
 
         entitySetup();
-        Pair<List<CryptoTransfer>, List<CryptoTransfer>> cryptoTransfersPair = getCryptoTransfersPair(
+        var cryptoTransfersPair = getCryptoTransfersPair(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -200,7 +200,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 noKeyEntity,
                 thresholdTwoKeyEntity);
 
-        Pair<List<NftTransfer>, List<NftTransfer>> nftTransfersTransactionPair = getNftTransfersTransactionPair(
+        var nftTransfersTransactionPair = getNftTransfersTransactionPair(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -209,7 +209,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 noKeyEntity,
                 thresholdTwoKeyEntity);
 
-        Pair<List<TokenTransfer>, List<TokenTransfer>> tokenTransfersPair = getTokenTransfersPair(
+        var tokenTransfersPair = getTokenTransfersPair(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -238,7 +238,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 .persist();
 
         entitySetup();
-        Pair<List<CryptoTransfer>, List<CryptoTransfer>> cryptoTransfersPair = getCryptoTransfersPair(
+        var cryptoTransfersPair = getCryptoTransfersPair(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -247,7 +247,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 noKeyEntity,
                 thresholdTwoKeyEntity);
 
-        Pair<List<NftTransfer>, List<NftTransfer>> nftTransfersTransactionPair = getNftTransfersTransactionPair(
+        var nftTransfersTransactionPair = getNftTransfersTransactionPair(
                 contractId,
                 contractId2,
                 priorContractId,
@@ -256,7 +256,7 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 noKeyEntity,
                 thresholdTwoKeyEntity);
 
-        Pair<List<TokenTransfer>, List<TokenTransfer>> tokenTransfersPair = getTokenTransfersPair(
+        var tokenTransfersPair = getTokenTransfersPair(
                 contractId,
                 contractId2,
                 priorContractId,
