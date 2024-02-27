@@ -37,6 +37,7 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActionType;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -405,7 +406,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         Long topLevelActionSidecarGasUsed = null;
         ByteString payloadBytes = null;
-        boolean isContractCreation = true;
+        boolean isContractCreation = false;
 
         for (final var sidecarRecord : sidecarRecords) {
             final boolean migration = sidecarRecord.getMigration();
@@ -420,6 +421,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                     final var action = actions.getContractActions(actionIndex);
                     if (action.getCallDepth() == 0) {
                         topLevelActionSidecarGasUsed = action.getGasUsed();
+                        isContractCreation = action.getCallType().equals(ContractActionType.CREATE);
                     }
                     processContractAction(action, actionIndex, recordItem);
                 }
@@ -444,11 +446,16 @@ public class ContractResultServiceImpl implements ContractResultService {
                     stopwatch);
         }
 
-        // If the payloadBytes is not set, yet
-        // it is a contract call transaction, and we should use the function parameters
-        if (payloadBytes == null) {
-            isContractCreation = false;
-            payloadBytes = transactionBody.getContractCall().getFunctionParameters();
+        // For a contract call we need to use the function parameters from the transaction body
+        if (payloadBytes == null && !isContractCreation) {
+            if (transactionBody.hasEthereumTransaction()) {
+                payloadBytes = recordItem
+                        .getTransactionRecord()
+                        .getContractCallResult()
+                        .getFunctionParameters();
+            } else {
+                payloadBytes = transactionBody.getContractCall().getFunctionParameters();
+            }
         }
 
         return new SidecarProcessingResult(
