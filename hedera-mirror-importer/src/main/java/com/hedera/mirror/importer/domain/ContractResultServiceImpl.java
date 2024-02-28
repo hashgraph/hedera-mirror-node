@@ -430,6 +430,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                     contractBytecodes.add(sidecarRecord.getBytecode());
                 } else {
                     payloadBytes = sidecarRecord.getBytecode().getInitcode();
+                    isContractCreation = true;
                 }
             }
             if (migration) {
@@ -448,13 +449,13 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // For a contract call we need to use the function parameters from the transaction body
         if (payloadBytes == null && !isContractCreation) {
-            if (transactionBody.hasEthereumTransaction()) {
+            if (transactionBody.hasContractCall()) {
+                payloadBytes = transactionBody.getContractCall().getFunctionParameters();
+            } else {
                 payloadBytes = recordItem
                         .getTransactionRecord()
                         .getContractCallResult()
                         .getFunctionParameters();
-            } else {
-                payloadBytes = transactionBody.getContractCall().getFunctionParameters();
             }
         }
 
