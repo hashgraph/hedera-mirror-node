@@ -112,6 +112,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         token.setFreezeDefault(transactionBody.getFreezeDefault());
         token.setInitialSupply(transactionBody.getInitialSupply());
         token.setMaxSupply(transactionBody.getMaxSupply());
+        token.setMetadata(transactionBody.getMetadata().toByteArray());
         token.setName(transactionBody.getName());
         token.setSupplyType(TokenSupplyTypeEnum.fromId(transactionBody.getSupplyTypeValue()));
         token.setSymbol(transactionBody.getSymbol());
@@ -131,6 +132,10 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
 
         if (transactionBody.hasKycKey()) {
             token.setKycKey(transactionBody.getKycKey().toByteArray());
+        }
+
+        if (transactionBody.hasMetadataKey()) {
+            token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
         }
 
         if (transactionBody.hasPauseKey()) {

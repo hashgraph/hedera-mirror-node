@@ -94,6 +94,7 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         var token = new Token();
         token.setTimestampLower(recordItem.getConsensusTimestamp());
         token.setTokenId(entity.getId());
+        token.setMetadata(transactionBody.getMetadata().toByteArray());
 
         if (transactionBody.hasFeeScheduleKey()) {
             token.setFeeScheduleKey(transactionBody.getFeeScheduleKey().toByteArray());
@@ -105,6 +106,10 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
 
         if (transactionBody.hasKycKey()) {
             token.setKycKey(transactionBody.getKycKey().toByteArray());
+        }
+
+        if (transactionBody.hasMetadataKey()) {
+            token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
         }
 
         if (!transactionBody.getName().isEmpty()) {
