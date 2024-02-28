@@ -347,6 +347,93 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
     }
 
     @Test
+    void processGasConsumedCalculationContractCall() {
+        // Given RecordItem with 3 contract actions
+        final var recordItem = recordItemBuilder.contractCall().build();
+
+        final var contractActionRecord = TransactionSidecarRecord.newBuilder()
+                .setActions(ContractActions.newBuilder()
+                        .addContractActions(
+                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L, 0))
+                        .addContractActions(
+                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L, 1))
+                        .addContractActions(contractAction(
+                                3004L, CallOperationType.OP_DELEGATECALL, ContractActionType.CALL, 3005L, 2)))
+                .build();
+
+        recordItem.setSidecarRecords(List.of(contractActionRecord));
+
+        // When
+        process(recordItem);
+
+        // Then
+        final var contractResult = contractResultRepository
+                .findById(recordItem.getConsensusTimestamp())
+                .orElse(null);
+
+        assertThat(contractResult)
+                .isNotNull()
+                .extracting(ContractResult::getGasConsumed)
+                .isNotNull()
+                .isEqualTo(22074L);
+    }
+
+    @Test
+    void processGasConsumedCalculationContractCreate() {
+        // Given RecordItem with 2 contract actions and bytecode sidecar record
+        final var recordItem = recordItemBuilder.contractCreate().build();
+
+        final var contractActionRecord = TransactionSidecarRecord.newBuilder()
+                .setActions(ContractActions.newBuilder()
+                        .addContractActions(
+                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L, 0))
+                        .addContractActions(
+                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L, 1)))
+                .build();
+
+        final var bytecodeRecord = TransactionSidecarRecord.newBuilder()
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setInitcode(ByteString.copyFrom(new byte[] {1, 0, 0, 0, 0, 1, 1, 1, 1})))
+                .build();
+
+        recordItem.setSidecarRecords(List.of(contractActionRecord, bytecodeRecord));
+
+        // When
+        process(recordItem);
+
+        // Then
+        final var contractResult = contractResultRepository
+                .findById(recordItem.getConsensusTimestamp())
+                .orElse(null);
+
+        assertThat(contractResult)
+                .isNotNull()
+                .extracting(ContractResult::getGasConsumed)
+                .isNotNull()
+                .isEqualTo(53146L);
+    }
+
+    @Test
+    void processGasConsumedCalculationNullCase() {
+        // Given
+        final var recordItem = recordItemBuilder.contractCall().build();
+        recordItem.setSidecarRecords(List.of());
+
+        // When
+        process(recordItem);
+
+        // Then
+        final var contractResult = contractResultRepository
+                .findById(recordItem.getConsensusTimestamp())
+                .orElse(null);
+
+        assertThat(contractResult)
+                .isNotNull()
+                .extracting(ContractResult::getGasConsumed)
+                .isNull();
+    }
+
+    @Test
     void processContractActionInvalidRecipient() {
         var recordItem = recordItemBuilder
                 .contractCall()
@@ -597,11 +684,11 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         var contractActionRecord = TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
                         .addContractActions(
-                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L))
+                                contractAction(3001L, CallOperationType.OP_CALL, ContractActionType.CALL, 3002L, 0))
                         .addContractActions(
-                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L))
+                                contractAction(3003L, CallOperationType.OP_CREATE, ContractActionType.CREATE, 3004L, 1))
                         .addContractActions(contractAction(
-                                3004L, CallOperationType.OP_DELEGATECALL, ContractActionType.CALL, 3005L)))
+                                3004L, CallOperationType.OP_DELEGATECALL, ContractActionType.CALL, 3005L, 2)))
                 .build();
 
         recordItem.setSidecarRecords(List.of(
@@ -860,9 +947,10 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
             Long callingContractNum,
             CallOperationType callOperationType,
             ContractActionType contractActionType,
-            Long recipientContractNum) {
+            Long recipientContractNum,
+            int callDepth) {
         return com.hedera.services.stream.proto.ContractAction.newBuilder()
-                .setCallDepth(1)
+                .setCallDepth(callDepth)
                 .setCallingContract(ContractID.newBuilder().setContractNum(callingContractNum))
                 .setCallOperationType(callOperationType)
                 .setCallType(contractActionType)

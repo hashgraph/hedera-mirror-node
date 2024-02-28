@@ -2141,6 +2141,12 @@ components:
           example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
           nullable: true
           type: string
+        gas_consumed:
+          description: The units of consumed gas by the EVM to execute contract
+          example: 35000
+          format: int64
+          nullable: true
+          type: integer
         gas_limit:
           description: The maximum units of gas allowed for contract execution
           example: 100000
@@ -2153,7 +2159,7 @@ components:
           example: "0x4a817c800"
         gas_used:
           description: The units of gas used to execute contract
-          example: 1000
+          example: 80000
           format: int64
           nullable: true
           type: integer

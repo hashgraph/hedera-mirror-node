@@ -43,6 +43,7 @@
         "gas_limit": 1234556,
         "gas_used": 987,
         "sender_id": 5999,
+        "gas_consumed": 1000,
         "payer_account_id": 5000,
         "transaction_hash": "0x160502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "transaction_nonce": 0
@@ -59,6 +60,7 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
+        "gas_consumed": 1000,
         "sender_id": 8001,
         "payer_account_id": 5000,
         "transaction_hash": "0x170502030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
@@ -145,6 +147,7 @@
         "timestamp": "1676540001.234390005",
         "to": "0x0000000000000000000000000000000000001389",
         "transaction_index": 1,
+        "gas_consumed": 1000,
         "type": 2,
         "v": 1
       }

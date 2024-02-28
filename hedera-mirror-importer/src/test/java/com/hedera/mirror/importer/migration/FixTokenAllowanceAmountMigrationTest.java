@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.migration;
 
+import static com.hedera.mirror.importer.migration.GasConsumedMigrationTest.createMigrationContractResult;
+import static com.hedera.mirror.importer.migration.GasConsumedMigrationTest.persistMigrationContractResult;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -77,10 +79,10 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                         .isApproval(true)
                         .payerAccountId(owner1))
                 .persist();
-        domainBuilder
-                .contractResult()
-                .customize(cr -> cr.consensusTimestamp(transferTimestamp1).senderId(spender1))
-                .persist();
+
+        var migrationContractResult1 = createMigrationContractResult(
+                transferTimestamp1, spender1, domainBuilder.entityId().getId(), domainBuilder);
+        persistMigrationContractResult(migrationContractResult1, jdbcTemplate);
 
         // Token1 allowances granted by owner1, note the first token allowance's amount didn't change while the
         // self grant has a negative balance both due to the bug
@@ -109,10 +111,10 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                         .isApproval(true)
                         .payerAccountId(owner1))
                 .persist();
-        domainBuilder
-                .contractResult()
-                .customize(cr -> cr.consensusTimestamp(transferTimestamp2).senderId(spender1))
-                .persist();
+
+        var migrationContractResult2 = createMigrationContractResult(
+                transferTimestamp2, spender1, domainBuilder.entityId().getId(), domainBuilder);
+        persistMigrationContractResult(migrationContractResult2, jdbcTemplate);
 
         // Token2 allowance granted by owner1 to spender2
         var tokenAllowance3 = domainBuilder
@@ -131,10 +133,10 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                         .isApproval(true)
                         .payerAccountId(owner1))
                 .persist();
-        domainBuilder
-                .contractResult()
-                .customize(cr -> cr.consensusTimestamp(transferTimestamp3).senderId(spender2))
-                .persist();
+
+        var migrationContractResult3 = createMigrationContractResult(
+                transferTimestamp3, spender2, domainBuilder.entityId().getId(), domainBuilder);
+        persistMigrationContractResult(migrationContractResult3, jdbcTemplate);
         // A normal token transfer using token allowance, note due to the inaccuracy in how we mark a transfer as
         // is_approval, the aggregated spent amount is 1000 + 4100 > granted amount 5000, the migration should have a
         // safeguard to set remaining amount to 0
