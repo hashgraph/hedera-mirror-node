@@ -195,7 +195,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return SemanticVersion.parse(evmVersion()).compareTo(EVM_VERSION_0_46) >= 0;
+        return getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) >= 0;
     }
 
     @Override
@@ -205,7 +205,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean callsToNonExistingEntitiesEnabled(Address target) {
-        return !(SemanticVersion.parse(evmVersion()).compareTo(EVM_VERSION_0_46) < 0
+        return !(getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) < 0
                 || !allowCallsToNonContractAccounts()
                 || grandfatherContracts().contains(target));
     }
@@ -224,9 +224,17 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     public String evmVersion() {
         var context = ContractCallContext.get();
         if (context.useHistorical()) {
-            return getEvmVersionForBlock(context.getRecordFile().getIndex());
+            return getEvmVersionForBlock(context.getRecordFile().getIndex()).toString();
         }
         return evmVersion.toString();
+    }
+
+    public SemanticVersion getSemanticEvmVersion() {
+        var context = ContractCallContext.get();
+        if (context.useHistorical()) {
+            return getEvmVersionForBlock(context.getRecordFile().getIndex());
+        }
+        return evmVersion;
     }
 
     @Override
@@ -279,12 +287,12 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      * @return The most suitable EVM version for the given block number, or a default version if no specific match is
      * found.
      */
-    String getEvmVersionForBlock(long blockNumber) {
+    SemanticVersion getEvmVersionForBlock(long blockNumber) {
         Entry<Long, SemanticVersion> evmEntry = getEvmVersions().floorEntry(blockNumber);
         if (evmEntry != null) {
-            return evmEntry.getValue().toString();
+            return evmEntry.getValue();
         } else {
-            return EVM_VERSION.toString(); // Return default version if no entry matches the block number
+            return EVM_VERSION; // Return default version if no entry matches the block number
         }
     }
 

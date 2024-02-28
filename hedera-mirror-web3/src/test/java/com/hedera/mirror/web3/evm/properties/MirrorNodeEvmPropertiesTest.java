@@ -88,8 +88,8 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         // given
         properties.setNetwork(HederaNetwork.MAINNET);
 
-        String result = properties.getEvmVersionForBlock(blockNumber);
-        assertThat(result).isEqualTo(expectedEvmVersion.toString());
+        var result = properties.getEvmVersionForBlock(blockNumber);
+        assertThat(result).isEqualByComparingTo(expectedEvmVersion);
     }
 
     @ParameterizedTest
@@ -98,8 +98,8 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         // given
         properties.setEvmVersions(createEvmVersionsMapCustom());
 
-        String result = properties.getEvmVersionForBlock(blockNumber);
-        assertThat(result).isEqualTo(expectedEvmVersion.toString());
+        var result = properties.getEvmVersionForBlock(blockNumber);
+        assertThat(result).isEqualByComparingTo(expectedEvmVersion);
     }
 
     private static NavigableMap<Long, SemanticVersion> createEvmVersionsMapCustom() {

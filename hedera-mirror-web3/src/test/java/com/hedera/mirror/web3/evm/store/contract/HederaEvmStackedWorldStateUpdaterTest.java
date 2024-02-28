@@ -29,7 +29,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.config.EvmConfiguration;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -279,7 +278,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Test
     void unaliasingFailsWhenNotUsingCanonicalAddressForV38() {
         given(tokenAccessor.canonicalAddress(alias)).willReturn(alias2);
-        given(properties.evmVersion()).willReturn(EvmConfiguration.EVM_VERSION_0_38.toString());
+
         assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
     }
 

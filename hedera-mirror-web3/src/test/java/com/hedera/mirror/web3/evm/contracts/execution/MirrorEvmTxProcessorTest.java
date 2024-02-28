@@ -135,7 +135,7 @@ class MirrorEvmTxProcessorTest {
     private Pair<ResponseCodeEnum, Long> result;
 
     private SemanticVersion mcpVersion;
-    private String ccpVersion;
+    private SemanticVersion ccpVersion;
     private static final String FUNCTION_HASH = "0x8070450f";
 
     @BeforeEach
@@ -189,7 +189,7 @@ class MirrorEvmTxProcessorTest {
     @MethodSource("provideIsEstimateParameters")
     void assertSuccessExecution(boolean isEstimate) {
         givenValidMockWithoutGetOrCreate();
-        when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_34.toString());
+        when(evmProperties.getSemanticEvmVersion()).thenReturn(EVM_VERSION_0_34);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
         if (isEstimate) {

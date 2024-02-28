@@ -19,6 +19,7 @@ package com.hedera.node.app.service.evm.contracts.execution;
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 
 import com.hedera.mirror.web3.common.PrecompileContext;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -142,10 +143,9 @@ public class HederaEvmTxProcessor {
 
         tracer.init(initialFrame);
 
-        final String evmVersion = dynamicProperties.evmVersion();
-        final var semanticVersion = SemanticVersion.parse(evmVersion);
+        final var evmVersion = ((MirrorNodeEvmProperties) dynamicProperties).getSemanticEvmVersion();
         while (!messageFrameStack.isEmpty()) {
-            process(messageFrameStack.peekFirst(), tracer, semanticVersion);
+            process(messageFrameStack.peekFirst(), tracer, evmVersion);
         }
 
         final var gasUsed = calculateGasUsedByTX(gasLimit, initialFrame);

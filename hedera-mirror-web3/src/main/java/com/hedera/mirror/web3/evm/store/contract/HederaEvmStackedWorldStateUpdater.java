@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
@@ -34,7 +33,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
-import com.swirlds.common.utility.SemanticVersion;
 import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -74,7 +72,12 @@ public class HederaEvmStackedWorldStateUpdater
     @Override
     public MutableAccount getOrCreate(Address address) {
         final MutableAccount account = getAccount(address);
-        return account == null ? createAccount(address) : account;
+        // if the account exists, return it
+        if (account != null) {
+            return account;
+        }
+        // if account is not present we create a ghost account that will not be persisted
+        return createGhostAccount(address);
     }
 
     @Override
@@ -165,15 +168,9 @@ public class HederaEvmStackedWorldStateUpdater
      */
     public byte[] unaliased(final byte[] evmAddress) {
         final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
-        if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
-            if (evmProperties.callsToNonExistingEntitiesEnabled(addressOrAlias)
-                    || (SemanticVersion.parse(evmProperties.evmVersion()).compareTo(EVM_VERSION_0_46) >= 0)) {
-                var ghostAcc = createGhostAccount(addressOrAlias);
-                ghostAcc = ghostAcc.setAutoAssociationMetadata(1);
-                store.updateAccount(ghostAcc);
-            } else {
-                return NON_CANONICAL_REFERENCE;
-            }
+        if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))
+                && !evmProperties.callsToNonExistingEntitiesEnabled(addressOrAlias)) {
+            return NON_CANONICAL_REFERENCE;
         }
         return mirrorEvmContractAliases.resolveForEvm(addressOrAlias).toArrayUnsafe();
     }
@@ -220,7 +217,10 @@ public class HederaEvmStackedWorldStateUpdater
         return hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled();
     }
 
-    private com.hedera.services.store.models.Account createGhostAccount(final Address address) {
-        return com.hedera.services.store.models.Account.getDummySenderAccount(address);
+    private MutableAccount createGhostAccount(Address address) {
+        var ghostAcc = com.hedera.services.store.models.Account.getDummySenderAccount(address);
+        ghostAcc = ghostAcc.setAutoAssociationMetadata(1);
+        store.updateAccount(ghostAcc);
+        return createAccount(address, 0, Wei.ZERO);
     }
 }
