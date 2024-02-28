@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.properties;
+package com.hedera.mirror.web3.convert;
 
 import com.swirlds.common.utility.SemanticVersion;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import jakarta.inject.Named;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.stereotype.Component;
 
-@Component
+@Named
 @ConfigurationPropertiesBinding
-public class EvmVersionPropertyConversion implements Converter<String, SemanticVersion> {
+public class SemanticVersionConversion implements Converter<String, SemanticVersion> {
     @Override
-    @NonNull
-    public SemanticVersion convert(@NonNull String source) {
+    public SemanticVersion convert(String source) {
         return SemanticVersion.parse(source);
     }
 }
