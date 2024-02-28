@@ -4,6 +4,7 @@ metadata:
   name: mirror
   namespace: staging-lg
 spec:
+  suspend: true
   chart:
     spec:
       chart: hedera-mirror

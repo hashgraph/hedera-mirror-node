@@ -4,6 +4,7 @@ metadata:
   name: mirror
   namespace: dev
 spec:
+  suspend: true
   chart:
     spec:
       chart: hedera-mirror
