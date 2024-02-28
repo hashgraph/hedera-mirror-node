@@ -23,7 +23,7 @@ import org.springframework.core.convert.converter.Converter;
 
 @Named
 @ConfigurationPropertiesBinding
-public class SemanticVersionConversion implements Converter<String, SemanticVersion> {
+public class SemanticVersionConvertor implements Converter<String, SemanticVersion> {
     @Override
     public SemanticVersion convert(String source) {
         return SemanticVersion.parse(source);
