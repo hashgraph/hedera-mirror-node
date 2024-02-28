@@ -1,28 +1,6 @@
 alter table if exists contract_result
     add column if not exists gas_consumed bigint null;
 
--- Function to get intrinsic gas for contract operation
-create or replace function get_intrinsic_gas(payload bytea, is_creation boolean) returns bigint as $$
-declare
-  zero_count bigint := 0;
-  non_zero_count bigint := 0;
-  i int;
-begin
-  for i in 1..octet_length(payload) loop
-    if get_byte(payload, i-1) = 0 then
-      zero_count := zero_count + 1;
-    else
-      non_zero_count := non_zero_count + 1;
-    end if;
-  end loop;
-  if is_creation then
-    return 21000 + 32000 + zero_count * 4 + non_zero_count * 16; -- contract creation cost calculation
-  else
-    return 21000 + zero_count * 4 + non_zero_count * 16; -- contract call cost calculation
-  end if;
-end;
-$$ language plpgsql immutable;
-
 -- Update contract_result with gas_consumed values.
 -- Use the contract_action with call_depth = 0, as this is the top-level action, and add intrinsic gas to it.
 with contract_action_gas_usage as (
@@ -39,12 +17,13 @@ with contract_action_gas_usage as (
         cr.contract_id,
         e.created_timestamp,
         -- Correctly assign `payload` based on whether it's a contract creation or call.
+        coalesce(
         case
             when cr.consensus_timestamp = e.created_timestamp then c.initcode
             else cr.function_parameters
-        end as payload,
-        -- Determine if this is a contract create or call transaction based on entity's created_timestamp
-        (cr.consensus_timestamp = e.created_timestamp) as is_creation
+        end, ''::bytea) as payload,
+        -- Contract creation has an extra cost of 32000
+        case when cr.consensus_timestamp = e.created_timestamp then 32000 else 0 end as creation_cost
     from
         contract_result cr
     left join contract c on cr.contract_id = c.id
@@ -52,19 +31,18 @@ with contract_action_gas_usage as (
 ), gas_calculation as (
     select
         cti.consensus_timestamp,
-        cti.is_creation,
-        cti.payload,
-        cagu.gas_used
+        length(payload) as count,
+        creation_cost,
+        cagu.gas_used,
+        case when length(payload) = 0 then 0
+             else cardinality(string_to_array(encode(payload, 'escape'),'\000')) - 1
+        end as zero_acount
     from
         contract_transaction_info cti
     -- Filter out only contract transactions with contract actions sidecars
     join contract_action_gas_usage cagu on cti.consensus_timestamp = cagu.consensus_timestamp
 )
 update contract_result cr
-set gas_consumed = gc.gas_used +
-                   get_intrinsic_gas(coalesce(gc.payload, ''::bytea), gc.is_creation)
+set gas_consumed = gc.gas_used + creation_cost + 21000 + zero_acount * 4 + (count - zero_acount) * 16
 from gas_calculation gc
 where cr.consensus_timestamp = gc.consensus_timestamp;
-
-drop function if exists bytes_gas_calculation(bytea);
-drop function if exists get_intrinsic_gas(bytea, boolean);

@@ -53,12 +53,9 @@ import org.springframework.util.StreamUtils;
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.94.0")
-public class GasConsumedMigrationTest extends ImporterIntegrationTest {
+class GasConsumedMigrationTest extends ImporterIntegrationTest {
 
-    private static final String REVERT_DDL =
-            """
-        alter table contract_result drop column gas_consumed;
-        """;
+    private static final String REVERT_DDL = "alter table contract_result drop column gas_consumed";
 
     private final JdbcTemplate jdbcTemplate;
 
