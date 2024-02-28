@@ -64,6 +64,8 @@ public class ContractResult implements Persistable<Long> {
 
     private byte[] functionResult; // Temporary field until we can confirm the migration captured everything
 
+    private Long gasConsumed;
+
     private Long gasLimit;
 
     private Long gasUsed;

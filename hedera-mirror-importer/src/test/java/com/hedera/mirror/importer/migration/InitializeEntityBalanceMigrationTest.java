@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.migration;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
+import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -25,7 +26,6 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -63,11 +64,15 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     private final AccountBalanceRepository accountBalanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
-    private final @Owner JdbcTemplate jdbcTemplate;
     private final ImporterProperties importerProperties;
+    private final @Owner JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
     private final RecordFileRepository recordFileRepository;
+    private final TransactionTemplate transactionTemplate;
+
     private InitializeEntityBalanceMigration migration;
     private Entity account;
+    private Entity account2;
     private AccountBalanceFile accountBalanceFile1;
     private AccountBalanceFile accountBalanceFile2;
     private Entity accountDeleted;
@@ -80,7 +85,11 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     void beforeEach() {
         timestamp = new AtomicLong(0L);
         migration = new InitializeEntityBalanceMigration(
-                jdbcOperations, importerProperties, accountBalanceFileRepository, recordFileRepository);
+                accountBalanceFileRepository,
+                importerProperties,
+                namedParameterJdbcTemplate,
+                recordFileRepository,
+                transactionTemplate);
     }
 
     @Test
@@ -117,7 +126,8 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
 
         // then
         setExpectedBalance();
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+        assertThat(entityRepository.findAll())
+                .containsExactlyInAnyOrder(account, account2, accountDeleted, contract, topic);
     }
 
     @Test
@@ -137,7 +147,8 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
 
         // then
         setExpectedBalance();
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+        assertThat(entityRepository.findAll())
+                .containsExactlyInAnyOrder(account, account2, accountDeleted, contract, topic);
     }
 
     @Test
@@ -199,10 +210,10 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
         assertThat(entityRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields(
                         "balance", "deleted", "id", "num", "realm", "shard")
-                .containsExactlyInAnyOrder(account, accountDeleted, contract)
+                .containsExactlyInAnyOrder(account, account2, accountDeleted, contract)
                 .allSatisfy(e -> assertThat(e)
                         .returns(Range.atLeast(0L), Entity::getTimestampRange)
-                        .returns(EntityType.UNKNOWN, Entity::getType));
+                        .returns(UNKNOWN, Entity::getType));
     }
 
     @Test
@@ -229,7 +240,8 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
         transactionTemplate.executeWithoutResult(s -> migration.onEnd(accountBalanceFile1));
 
         // then
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+        assertThat(entityRepository.findAll())
+                .containsExactlyInAnyOrder(account, account2, accountDeleted, contract, topic);
 
         // given
         long accountBalanceTimestamp3 = timestamp(Duration.ofMinutes(10));
@@ -241,7 +253,8 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
         migration.onEnd(accountBalanceFile3);
 
         // then
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+        assertThat(entityRepository.findAll())
+                .containsExactlyInAnyOrder(account, account2, accountDeleted, contract, topic);
     }
 
     @Test
@@ -269,7 +282,8 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
         migration.onEnd(accountBalanceFile1);
 
         // then
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
+        assertThat(entityRepository.findAll())
+                .containsExactlyInAnyOrder(account, account2, accountDeleted, contract, topic);
     }
 
     private void persistAccountBalance(long balance, EntityId entityId, long timestamp) {
@@ -311,6 +325,7 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
         persistCryptoTransfer(25L, contract.getId(), null, consensusStart + 10L);
         persistCryptoTransfer(10L, contract.getId(), ErrataType.DELETE, consensusStart + 10L);
         persistCryptoTransfer(20L, accountDeleted.getId(), null, consensusStart + 15L);
+        account2.setBalanceTimestamp(recordFile2.getConsensusEnd());
 
         // Second account balance file
         long accountBalanceTimestamp2 = timestamp(Duration.ofMinutes(2));
@@ -323,6 +338,26 @@ class InitializeEntityBalanceMigrationTest extends ImporterIntegrationTest {
     }
 
     private void setupForFirstAccountBalanceFile() {
+        // account2 not in db, its balance information is deduped and its account balance timestamp is before
+        // accountBalanceFile1
+        long id = domainBuilder.id();
+        account2 = Entity.builder()
+                .balance(2L)
+                .declineReward(false)
+                .deleted(false)
+                .ethereumNonce(0L)
+                .id(id)
+                .memo("")
+                .num(id)
+                .realm(0L)
+                .shard(0L)
+                .stakedNodeId(-1L)
+                .stakePeriodStart(-1L)
+                .timestampRange(Range.atLeast(0L))
+                .type(UNKNOWN)
+                .build(); // not in db
+        persistAccountBalance(account2.getBalance(), account2.toEntityId(), timestamp(Duration.ZERO));
+
         account = domainBuilder
                 .entity()
                 .customize(e -> e.balance(0L)

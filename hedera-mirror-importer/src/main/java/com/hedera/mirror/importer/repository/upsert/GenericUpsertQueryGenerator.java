@@ -17,6 +17,7 @@
 package com.hedera.mirror.importer.repository.upsert;
 
 import java.io.StringWriter;
+import java.text.MessageFormat;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.velocity.Template;
@@ -33,6 +34,13 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
     private static final String UPSERT_HISTORY_TEMPLATE = "/db/template/upsert_history.vm";
 
     private final EntityMetadata metadata;
+
+    @Override
+    public String getCreateTempIndexQuery() {
+        String columns = metadata.columns(ColumnMetadata::isId, "{0}");
+        return MessageFormat.format(
+                "create index if not exists {0}_idx on {0} ({1})", getTemporaryTableName(), columns);
+    }
 
     @Override
     public String getFinalTableName() {

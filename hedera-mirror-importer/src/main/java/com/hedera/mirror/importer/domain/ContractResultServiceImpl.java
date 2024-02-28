@@ -37,6 +37,7 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActionType;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -75,7 +76,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 ? transactionRecord.getContractCreateResult()
                 : transactionRecord.getContractCallResult();
 
-        var sidecarFailedInitcode = processSidecarRecords(recordItem);
+        final var sidecarProcessingResult = processSidecarRecords(recordItem, transactionBody);
 
         // handle non create/call transactions
         var contractCallOrCreate = isContractCreateOrCall(transactionBody);
@@ -104,7 +105,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         recordItem.addEntityId(contractId);
 
         processContractResult(
-                recordItem, contractId, functionResult, transaction, transactionHandler, sidecarFailedInitcode);
+                recordItem, contractId, functionResult, transaction, transactionHandler, sidecarProcessingResult);
     }
 
     private void addDefaultEthereumTransactionContractResult(RecordItem recordItem, Transaction transaction) {
@@ -216,12 +217,12 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processContractResult(
-            RecordItem recordItem,
-            EntityId contractEntityId,
-            ContractFunctionResult functionResult,
-            Transaction transaction,
-            TransactionHandler transactionHandler,
-            ByteString sidecarFailedInitcode) {
+            final RecordItem recordItem,
+            final EntityId contractEntityId,
+            final ContractFunctionResult functionResult,
+            final Transaction transaction,
+            final TransactionHandler transactionHandler,
+            final SidecarProcessingResult sidecarProcessingResult) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
         processContractNonce(functionResult);
@@ -246,8 +247,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setTransactionResult(transaction.getResult());
         transactionHandler.updateContractResult(contractResult, recordItem);
 
-        if (sidecarFailedInitcode != null && contractResult.getFailedInitcode() == null) {
-            contractResult.setFailedInitcode(DomainUtils.toBytes(sidecarFailedInitcode));
+        if (sidecarProcessingResult.payload() != null
+                && !recordItem.isSuccessful()
+                && contractResult.getFailedInitcode() == null
+                && sidecarProcessingResult.isContractCreation()) {
+            contractResult.setFailedInitcode(sidecarProcessingResult.payload());
         }
 
         if (isValidContractFunctionResult(functionResult)) {
@@ -264,6 +268,11 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractResult.setErrorMessage(functionResult.getErrorMessage());
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
+
+            if (sidecarProcessingResult.totalGasUsed() != null) {
+                contractResult.setGasConsumed(
+                        sidecarProcessingResult.totalGasUsed() + sidecarProcessingResult.getIntrinsicGas());
+            }
 
             if (functionResult.hasSenderId()) {
                 var senderId = EntityId.of(functionResult.getSenderId());
@@ -384,19 +393,23 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     @SuppressWarnings("java:S3776")
-    private ByteString processSidecarRecords(RecordItem recordItem) {
-        ByteString failedInitcode = null;
-        var sidecarRecords = recordItem.getSidecarRecords();
+    private SidecarProcessingResult processSidecarRecords(
+            final RecordItem recordItem, final TransactionBody transactionBody) {
+        final var sidecarRecords = recordItem.getSidecarRecords();
         if (sidecarRecords.isEmpty()) {
-            return failedInitcode;
+            return new SidecarProcessingResult(null, false, null);
         }
 
         var contractBytecodes = new ArrayList<ContractBytecode>();
         int migrationCount = 0;
         var stopwatch = Stopwatch.createStarted();
 
-        for (var sidecarRecord : sidecarRecords) {
-            boolean migration = sidecarRecord.getMigration();
+        Long topLevelActionSidecarGasUsed = null;
+        ByteString payloadBytes = null;
+        boolean isContractCreation = false;
+
+        for (final var sidecarRecord : sidecarRecords) {
+            final boolean migration = sidecarRecord.getMigration();
             if (sidecarRecord.hasStateChanges()) {
                 var stateChanges = sidecarRecord.getStateChanges();
                 for (var stateChange : stateChanges.getContractStateChangesList()) {
@@ -405,13 +418,19 @@ public class ContractResultServiceImpl implements ContractResultService {
             } else if (sidecarRecord.hasActions()) {
                 var actions = sidecarRecord.getActions();
                 for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
-                    processContractAction(actions.getContractActions(actionIndex), actionIndex, recordItem);
+                    final var action = actions.getContractActions(actionIndex);
+                    if (action.getCallDepth() == 0) {
+                        topLevelActionSidecarGasUsed = action.getGasUsed();
+                        isContractCreation = action.getCallType().equals(ContractActionType.CREATE);
+                    }
+                    processContractAction(action, actionIndex, recordItem);
                 }
             } else if (sidecarRecord.hasBytecode()) {
                 if (migration) {
                     contractBytecodes.add(sidecarRecord.getBytecode());
-                } else if (!recordItem.isSuccessful()) {
-                    failedInitcode = sidecarRecord.getBytecode().getInitcode();
+                } else {
+                    payloadBytes = sidecarRecord.getBytecode().getInitcode();
+                    isContractCreation = true;
                 }
             }
             if (migration) {
@@ -428,7 +447,20 @@ public class ContractResultServiceImpl implements ContractResultService {
                     stopwatch);
         }
 
-        return failedInitcode;
+        // For a contract call we need to use the function parameters from the transaction body
+        if (payloadBytes == null && !isContractCreation) {
+            if (transactionBody.hasContractCall()) {
+                payloadBytes = transactionBody.getContractCall().getFunctionParameters();
+            } else {
+                payloadBytes = recordItem
+                        .getTransactionRecord()
+                        .getContractCallResult()
+                        .getFunctionParameters();
+            }
+        }
+
+        return new SidecarProcessingResult(
+                DomainUtils.toBytes(payloadBytes), isContractCreation, topLevelActionSidecarGasUsed);
     }
 
     /**
@@ -481,5 +513,37 @@ public class ContractResultServiceImpl implements ContractResultService {
         return recordItem.isSuccessful()
                 && entityProperties.getPersist().isContracts()
                 && recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
+    }
+
+    /**
+     * Record representing the result of processing sidecar records.
+     *
+     * @param payload The payload of the contract transaction.
+     * @param isContractCreation Whether the transaction is a contract creation.
+     * @param totalGasUsed The gas used by the contract actions in the sidecar records.
+     */
+    @SuppressWarnings("java:S6218")
+    private record SidecarProcessingResult(byte[] payload, boolean isContractCreation, Long totalGasUsed) {
+        private static final long TX_DATA_ZERO_COST = 4L;
+        private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
+        private static final long TX_BASE_COST = 21_000L;
+        private static final long TX_CREATE_EXTRA = 32_000L;
+
+        /**
+         * Returns the intrinsic gas cost for a contract transaction.
+         */
+        long getIntrinsicGas() {
+            int zeros = 0;
+            for (byte b : payload) {
+                if (b == 0) {
+                    ++zeros;
+                }
+            }
+            final int nonZeros = payload.length - zeros;
+
+            long cost = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
+
+            return isContractCreation ? (cost + TX_CREATE_EXTRA) : cost;
+        }
     }
 }

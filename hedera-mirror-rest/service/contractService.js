@@ -34,8 +34,8 @@ import {
   RecordFile,
   EthereumTransaction,
 } from '../model';
-import ContractTransaction from '../model/contractTransaction.js';
-import {RecordFileService} from './index.js';
+import ContractTransaction from '../model/contractTransaction';
+import {RecordFileService} from './index';
 
 const {default: defaultLimit} = getResponseLimit();
 const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOOM)},
@@ -61,6 +61,7 @@ ${ContractResult.getFullName(ContractResult.CREATED_CONTRACT_IDS)},
 ${ContractResult.getFullName(ContractResult.ERROR_MESSAGE)},
 ${ContractResult.getFullName(ContractResult.FAILED_INITCODE)},
 ${ContractResult.getFullName(ContractResult.FUNCTION_PARAMETERS)},
+${ContractResult.getFullName(ContractResult.GAS_CONSUMED)},
 ${ContractResult.getFullName(ContractResult.GAS_LIMIT)},
 ${ContractResult.getFullName(ContractResult.GAS_USED)},
 ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)},

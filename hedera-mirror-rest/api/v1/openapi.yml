@@ -240,7 +240,7 @@ paths:
       summary: This API is currently not supported.Get non fungible token allowances for an account
       description: |
         **This API is currently under development and is not supported yet**
-        
+
         Returns information for non fungible token allowances for an account.
 
         ## Ordering
@@ -2141,6 +2141,12 @@ components:
           example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
           nullable: true
           type: string
+        gas_consumed:
+          description: The units of consumed gas by the EVM to execute contract
+          example: 35000
+          format: int64
+          nullable: true
+          type: integer
         gas_limit:
           description: The maximum units of gas allowed for contract execution
           example: 100000
@@ -2153,7 +2159,7 @@ components:
           example: "0x4a817c800"
         gas_used:
           description: The units of gas used to execute contract
-          example: 1000
+          example: 80000
           format: int64
           nullable: true
           type: integer
@@ -3256,33 +3262,33 @@ components:
     Token:
       type: object
       properties:
-        token_id:
-          $ref: "#/components/schemas/EntityId"
-        symbol:
-          type: string
-        name:
-          type: string
         admin_key:
           $ref: "#/components/schemas/Key"
-        type:
-          type: string
         decimals:
           format: int64
           type: integer
+        name:
+          type: string
+        symbol:
+          type: string
+        token_id:
+          $ref: "#/components/schemas/EntityId"
+        type:
+          type: string
       required:
-        - token_id
-        - symbol
-        - name
         - admin_key
-        - type
         - decimals
+        - name
+        - symbol
+        - token_id
+        - type
       example:
-        token_id: 0.0.1
-        symbol: FIRSTMOVERLPDJH
-        name: First Mover
         admin_key: null
-        type: FUNGIBLE_COMMON
         decimals: 3
+        name: First Mover
+        symbol: FIRSTMOVERLPDJH
+        token_id: 0.0.1
+        type: FUNGIBLE_COMMON
     TokenAllowance:
       allOf:
         - $ref: "#/components/schemas/Allowance"
@@ -3414,7 +3420,6 @@ components:
           type: boolean
           description: Specifies if the relationship is implicitly/explicitly associated.
           example: true
-          nullable: false
         balance:
           format: int64
           type: integer
@@ -3423,39 +3428,37 @@ components:
           nullable: false
         created_timestamp:
           $ref: "#/components/schemas/Timestamp"
+        decimals:
+          format: int64
+          type: integer
         freeze_status:
           type: string
           description: The Freeze status of the account.
           example: UNFROZEN
           enum: [NOT_APPLICABLE, FROZEN, UNFROZEN]
-          nullable: false
         kyc_status:
           type: string
           description: The KYC status of the account.
           example: GRANTED
           enum: [NOT_APPLICABLE, GRANTED, REVOKED]
-          nullable: false
         token_id:
           $ref: "#/components/schemas/EntityId"
-        decimals:
-          format: int64
-          type: integer
       required:
         - automatic_association
         - balance
         - created_timestamp
+        - decimals
         - freeze_status
         - kyc_status
         - token_id
-        - decimals
       example:
         automatic_association: true
         balance: 5
         created_timestamp: "123456789.000000001"
+        decimals: 3
         freeze_status: UNFROZEN
         kyc_status: GRANTED
         token_id: 0.0.27335
-        decimals: 3
     LogTopicQueryParam:
       type: array
       items:

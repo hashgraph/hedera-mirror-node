@@ -20,15 +20,20 @@ data:
     
     set -uxo pipefail
     
-    ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/node}"
-    DISK_SIZE_COORDINATOR="${DISK_SIZE_COORDINATOR:-75GB}"
-    DISK_SIZE_WORKER="${DISK_SIZE_WORKER:-152GB}"
-    K8S_NAMESPACE="${K8S_NAMESPACE:-common}"
-    DISK_PREFIX="${DISK_PREFIX:-citus}"
-    CONFIG_MAP_NAME="{{ include "hedera-mirror-common.fullname" . }}-zfs-node-status"
-    
+    # Constants
     NODE_ID_LABEL="openebs.io/nodeid"
+    DISK_SIZE_LABEL="pool-disk-size"
     ROLE_LABEL="citus-role"
+    ENV_FILE="${ROOT_MOUNT_DIR}/etc/environment"
+    
+    # Configurable environment variables
+    CONFIG_MAP_NAME="{{ include "hedera-mirror-common.fullname" . }}-zfs-node-status"
+    CONFIG_MAP_KEY="zfs-node-status.json"
+    DISK_PREFIX="${DISK_PREFIX:-citus}"
+    DEFAULT_DISK_SIZE_COORDINATOR="${DEFAULT_DISK_SIZE_COORDINATOR:-75GB}"
+    DEFAULT_DISK_SIZE_WORKER="${DEFAULT_DISK_SIZE_WORKER:-152GB}"
+    K8S_NAMESPACE="${K8S_NAMESPACE:-common}"
+    ROOT_MOUNT_DIR="${ROOT_MOUNT_DIR:-/node}"
 
     echo "Installing dependencies"
     apt-get update
@@ -55,12 +60,18 @@ data:
       CITUS_ROLE="$(echo "${NODE_LABELS}" | jq --arg ROLE_LABEL "${ROLE_LABEL}" -r '.[$ROLE_LABEL]')"
       NODE_ID="$(echo "${NODE_LABELS}" | jq --arg NODE_ID_LABEL "${NODE_ID_LABEL}" -r '.[$NODE_ID_LABEL]')"
     done
-    # Determine correct config for zone
+    # Ensure node status config map is created
+    until (kubectl get configmap -o json -n "${K8S_NAMESPACE}" "${CONFIG_MAP_NAME}" &> /dev/null)
+    do
+      echo "Creating config map ${CONFIG_MAP_NAME}"
+      kubectl create configmap "${CONFIG_MAP_NAME}" -n "${K8S_NAMESPACE}" --from-literal="${CONFIG_MAP_KEY}={}" || true
+      sleep 1
+    done
     COMMAND_STATUS=1
     until [[ ${COMMAND_STATUS} -eq 0 ]]; do
       CONFIG_MAP="$(kubectl get configmap -o json -n ${K8S_NAMESPACE} ${CONFIG_MAP_NAME})"
-      MODIFIED_CONFIG_MAP="$(echo "${CONFIG_MAP}" |jq '{metadata: {resourceVersion: (.metadata.resourceVersion)}, data: {"zfs-node-status.json": (.data["zfs-node-status.json"]|fromjson)}}')"
-      ZONE_CONFIG="$(echo "${MODIFIED_CONFIG_MAP}" |jq  --arg ZONE "${ZONE}" --arg CITUS_ROLE "${CITUS_ROLE}" '.data["zfs-node-status.json"][$CITUS_ROLE][$ZONE] // []')"
+      MODIFIED_CONFIG_MAP="$(echo "${CONFIG_MAP}" |jq --arg KEY "${CONFIG_MAP_KEY}" '{metadata: {resourceVersion: (.metadata.resourceVersion)}, data: {($KEY): (.data[$KEY]|fromjson)}}')"
+      ZONE_CONFIG="$(echo "${MODIFIED_CONFIG_MAP}" |jq --arg KEY "${CONFIG_MAP_KEY}"  --arg ZONE "${ZONE}" --arg CITUS_ROLE "${CITUS_ROLE}" '.data[$KEY][$CITUS_ROLE][$ZONE] // []')"
       NODE_LIST="$(kubectl get nodes -o jsonpath='{.items[*].metadata.labels}' -lcsi-type=zfs,topology.kubernetes.io/zone=${ZONE},${ROLE_LABEL}=${CITUS_ROLE} | jq -s)"
       NODE_NAMES="$(echo "${NODE_LIST}" | jq '. | map({(.["kubernetes.io/hostname"]): {isUpgrade: (.["operation.gke.io/type"] == "drain")}}) | add')"
       
@@ -68,10 +79,12 @@ data:
       ## and generate its own version of the config map configuration to 
       ZFS_ZONE_NODES=$(echo "${NODE_LIST}" | jq \
                       --arg NODE_ID_LABEL "${NODE_ID_LABEL}" \
+                      --arg DISK_SIZE_LABEL "${DISK_SIZE_LABEL}" \
                       '. | map(select(.["generated-node-id"] == "true")) |
                            map({
                                  "nodeName": (.["kubernetes.io/hostname"]), 
-                                 "nodeId": (.[$NODE_ID_LABEL]), 
+                                 "nodeId": (.[$NODE_ID_LABEL]),
+                                 "diskSize": (.[$DISK_SIZE_LABEL]),
                                  "index": (.[$NODE_ID_LABEL] | match("\\d*$").string | tonumber)
                                }) | 
                             sort_by(.index) |
@@ -81,13 +94,13 @@ data:
                                   . as $i |
                                   if ([$nodes[]|contains( { index: $i })]|any )
                                      then 
-                                     ($nodes|map(select( .index  == $i )))|map(. | {nodeName, nodeId})|.[0] 
+                                     ($nodes|map(select( .index  == $i )))|map(. | {nodeName, nodeId, diskSize})|.[0] 
                                   else 
                                      null
                                   end  
                               ]')
       # Check if the config map matches the view from the nodes. If it finds entries
-      # in the config map for nodes that don't exist or are currrently being drained, they are set to null to become 
+      # in the config map for nodes that don't exist or are currently being drained, they are set to null to become 
       # available slots for future nodes that may replace it
       MERGED_ZONE_CONFIG=$(echo -e "${NODE_NAMES}\n${ZFS_ZONE_NODES}\n${ZONE_CONFIG}" | jq -s \
                       '.[0] as $node_names|
@@ -111,17 +124,22 @@ data:
                             if (. != null and $node_names[.nodeName].isUpgrade) then null else . end
                         ]')
       THIS_NODE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" |jq  --arg NODE_NAME "${NODE_NAME}" --arg ZONE "${ZONE}" '.[]?|select(.nodeName == $NODE_NAME)')"
-      # IF this node config is empty create it
+      # If there is no entry in the config map, and the node wasn't previously labeled, it is a new node. Create the config.
       if [[ ! $THIS_NODE_CONFIG ]]
-      then
+      then                                                                                                                                            
+        if [[ "$CITUS_ROLE" == *"worker"* ]]; then
+          DISK_SIZE="${DEFAULT_DISK_SIZE_WORKER}"
+        else
+          DISK_SIZE="${DEFAULT_DISK_SIZE_COORDINATOR}"
+        fi
         INDEX="$(echo "${MERGED_ZONE_CONFIG}" | jq '. | map(. == null) |index(true) // . | length')"
         NODE_ID="${CITUS_ROLE}-${ZONE}-${INDEX}"
-        THIS_NODE_CONFIG="{\"nodeName\": \"$NODE_NAME\", \"nodeId\": \"$NODE_ID\"}"
+        THIS_NODE_CONFIG="{\"nodeName\": \"$NODE_NAME\", \"nodeId\": \"$NODE_ID\", \"diskSize\": \"$DISK_SIZE\"}"
         MERGED_ZONE_CONFIG="$(echo "${MERGED_ZONE_CONFIG}" | jq --arg INDEX $INDEX --arg THIS_NODE_CONFIG "${THIS_NODE_CONFIG}"  '.[$INDEX |tonumber] = ($THIS_NODE_CONFIG|fromjson)')"
       fi
         
-      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg CITUS_ROLE "${CITUS_ROLE}"  --arg ZONE "${ZONE}" --arg ZONE_CONFIG "${MERGED_ZONE_CONFIG}" '.data["zfs-node-status.json"][$CITUS_ROLE][$ZONE]=($ZONE_CONFIG|fromjson)')"
-      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq '.data["zfs-node-status.json"]=(.data["zfs-node-status.json"]|tojson)')"
+      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg KEY "${CONFIG_MAP_KEY}" --arg CITUS_ROLE "${CITUS_ROLE}"  --arg ZONE "${ZONE}" --arg ZONE_CONFIG "${MERGED_ZONE_CONFIG}" '.data[$KEY][$CITUS_ROLE][$ZONE]=($ZONE_CONFIG|fromjson)')"
+      MODIFIED_CONFIG_MAP="$(echo "${MODIFIED_CONFIG_MAP}" | jq --arg KEY "${CONFIG_MAP_KEY}" '.data[$KEY]=(.data[$KEY]|tojson)')"
     
       echo "patching $CONFIG_MAP_NAME with $MODIFIED_CONFIG_MAP"
       kubectl patch configmap $CONFIG_MAP_NAME \
@@ -132,12 +150,8 @@ data:
     done
     
     DISK_NAME="${DISK_PREFIX}-${NODE_ID}-zfs"
-    echo "Setting up disk ${DISK_NAME} for ${CITUS_ROLE} on zfs node ${NODE_ID}"
-    if [[ "$CITUS_ROLE" == *"worker"* ]]; then
-        DISK_SIZE="${DISK_SIZE_WORKER}"
-    else
-        DISK_SIZE="${DISK_SIZE_COORDINATOR}"
-    fi
+    DISK_SIZE="$(echo "${THIS_NODE_CONFIG}" | jq -r '.diskSize')"
+    echo "Setting up disk ${DISK_NAME} for ${CITUS_ROLE} on zfs node ${NODE_ID} with size ${DISK_SIZE}"
     
     ACTUAL_SIZE=$(gcloud compute disks list --filter="name:${DISK_NAME}" --format="value(sizeGb)")
     if [[ -z "${ACTUAL_SIZE}" ]]; then
@@ -147,7 +161,7 @@ data:
         echo "${DISK_NAME} already exists for ${CITUS_ROLE}"
     fi
 
-    if [[ "${ACTUAL_SIZE}" -lt "${DISK_SIZE%GB}" ]]; then
+    if [[ -n $ACTUAL_SIZE && "${ACTUAL_SIZE}" -lt "${DISK_SIZE%GB}" ]]; then
         echo "Increasing disk size from ${ACTUAL_SIZE} to ${DISK_SIZE}"
         gcloud compute disks resize "${DISK_NAME}" --size="${DISK_SIZE}" --zone="${ZONE}" --quiet
     fi
@@ -241,10 +255,17 @@ data:
       kubectl label node "${NODE_NAME}" "${NODE_ID_LABEL}=${NODE_ID}" generated-node-id=true --overwrite
     fi
     
-    source "${ROOT_MOUNT_DIR}/etc/environment"
+    CURRENT_DISK_SIZE="$(echo "${NODE_LABELS}" | jq --arg DISK_SIZE_LABEL "${DISK_SIZE_LABEL}" -r '.[$DISK_SIZE_LABEL]')"                                                                                                                                          
+    if [[ "${CURRENT_DISK_SIZE}" != "${DISK_SIZE}" || -z "${ACTUAL_SIZE}" ]];
+    then
+      echo "Labeling node ${NODE_NAME} with ${DISK_SIZE_LABEL}=${DISK_SIZE}"
+      kubectl label node "${NODE_NAME}" "${DISK_SIZE_LABEL}=${DISK_SIZE}" --overwrite
+    fi
+    
+    source "${ENV_FILE}"
     ZFS_INITIALIZED="${ZFS_INITIALIZED:-}"
     if [[ "${ZFS_INITIALIZED}" == "" ]]; then
-      echo "ZFS_INITIALIZED=\"true\"" > "${ROOT_MOUNT_DIR}/etc/environment"  
+      echo "ZFS_INITIALIZED=\"true\"" > "${ENV_FILE}"  
     fi
 
 {{- end -}}

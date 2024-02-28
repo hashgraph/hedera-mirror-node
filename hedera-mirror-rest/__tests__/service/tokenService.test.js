@@ -16,8 +16,10 @@
 
 import {assertSqlQueryEqual} from '../testutils';
 import {TokenService} from '../../service';
-import integrationDomainOps from '../integrationDomainOps.js';
-import {setupIntegrationTest} from '../integrationUtils.js';
+import integrationDomainOps from '../integrationDomainOps';
+import {setupIntegrationTest} from '../integrationUtils';
+import integrationDbOps from '../integrationDbOps';
+import {CachedToken} from '../../model';
 
 setupIntegrationTest();
 
@@ -109,62 +111,104 @@ describe('getQuery', () => {
   });
 });
 
-describe('TokenService.getDecimals tests', () => {
-  test('TokenService.getDecimals - No match', async () => {
+describe('getCachedTokens', () => {
+  beforeEach(async () => {
+    const tokens = [
+      {
+        decimals: 3,
+        token_id: 300,
+      },
+      {
+        decimals: 4,
+        freeze_key: [1, 1],
+        freeze_status: 2, // UNFROZEN
+        kyc_key: [1, 1],
+        kyc_status: 2, // REVOKED
+        token_id: 400,
+      },
+      {
+        decimals: 5,
+        freeze_default: true,
+        freeze_key: [1, 1],
+        freeze_status: 1, // FROZEN
+        token_id: 500,
+      },
+    ];
+    await integrationDomainOps.loadTokens(tokens);
+  });
+
+  test('no match', async () => {
     expect(await TokenService.getCachedTokens(new Set([100]))).toBeEmpty();
   });
 
-  test('TokenService.getDecimals - getDecimal cache', async () => {
-    const token3 = {
-      token_id: '0.0.300',
-      decimals: 3,
-    };
-    const token4 = {
-      token_id: '0.0.400',
-      decimals: 40,
-    };
-    await integrationDomainOps.loadTokens([token3, token4]);
-    const tokenIdSet = new Set([300]);
+  test('single', async () => {
+    const expected = new Map([
+      [
+        300,
+        new CachedToken({
+          decimals: 3,
+          freeze_status: 0, // not applicable
+          kyc_status: 0, // not applicable
+          token_id: 300,
+        }),
+      ],
+    ]);
+    await expect(TokenService.getCachedTokens(new Set([300]))).resolves.toStrictEqual(expected);
 
-    const original = await TokenService.getCachedTokens(tokenIdSet);
-    expect(original.get(300)).toBe(3);
-    const cached = await TokenService.getCachedTokens(tokenIdSet);
-    expect(cached.get(300)).toBe(original.get(300));
-
-    tokenIdSet.add(400);
-    const multiToken = await TokenService.getCachedTokens(tokenIdSet);
-    expect(multiToken.get(300)).toBe(3);
-    expect(multiToken.get(400)).toBe(40);
-
-    const multiTokenCached = await TokenService.getCachedTokens(tokenIdSet);
-    expect(multiTokenCached.get(300)).toBe(multiToken.get(300));
-    expect(multiTokenCached.get(400)).toBe(multiToken.get(400));
+    // cache hit
+    await integrationDbOps.cleanUp();
+    await expect(TokenService.getCachedTokens(new Set([300]))).resolves.toStrictEqual(expected);
   });
 
-  test('TokenService.getDecimals - test where in clause', async () => {
-    const token5 = {
-      token_id: '0.0.500',
-      decimals: 5,
-    };
-    const token6 = {
-      token_id: '0.0.600',
-      decimals: 60,
-    };
-    await integrationDomainOps.loadTokens([token5, token6]);
-    const tokenIdSet = new Set([500, 600]);
+  test('multiple', async () => {
+    const expected = new Map([
+      [
+        300,
+        new CachedToken({
+          decimals: 3,
+          freeze_status: 0, // NOT_APPLICABLE
+          kyc_status: 0, // NOT_APPLICABLE
+          token_id: 300,
+        }),
+      ],
+      [
+        400,
+        new CachedToken({
+          decimals: 4,
+          freeze_status: 2, // UNFROZEN
+          kyc_status: 2, // REVOKED
+          token_id: 400,
+        }),
+      ],
+      [
+        500,
+        new CachedToken({
+          decimals: 5,
+          freeze_status: 1, // FROZEN
+          kyc_status: 0, // NOT_APPLICABLE
+          token_id: 500,
+        }),
+      ],
+    ]);
 
-    const original = await TokenService.getCachedTokens(tokenIdSet);
-    expect(original.get(500)).toBe(5);
-    expect(original.get(600)).toBe(60);
-
-    const cached = await TokenService.getCachedTokens(tokenIdSet);
-    expect(cached.get(500)).toBe(original.get(500));
-    expect(cached.get(600)).toBe(original.get(600));
+    await expect(TokenService.getCachedTokens(new Set([300, 400, 500]))).resolves.toStrictEqual(expected);
   });
+});
 
-  test('TokenService.getDecimals - set and get decimal cache', async () => {
-    TokenService.putTokenCache(5000, 5);
-    const cached = await TokenService.getCachedTokens(new Set([5000]));
-    expect(cached.get(5000)).toBe(5);
+describe('putTokenCache', () => {
+  test('put then get', async () => {
+    const token = {
+      decimals: 2,
+      freeze_status: 0,
+      kyc_status: 0,
+      token_id: 200,
+    };
+    TokenService.putTokenCache(token);
+    const expected = new Map([[200, new CachedToken(token)]]);
+    await expect(TokenService.getCachedTokens(new Set([200]))).resolves.toStrictEqual(expected);
+
+    // put again, note some fields have different value, to validate the service returns the previous copy
+    TokenService.putTokenCache({...token, decimals: 3});
+    await expect(TokenService.getCachedTokens(new Set([200]))).resolves.toStrictEqual(expected);
   });
 });

@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import lombok.CustomLog;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -38,6 +39,7 @@ public class BatchUpserter extends BatchInserter {
 
     private final String finalTableName;
     private final String tempTableCleanupSql;
+    private final String createIndexSql;
     private final String upsertSql;
     private final Timer upsertMetric;
 
@@ -48,9 +50,12 @@ public class BatchUpserter extends BatchInserter {
             CommonParserProperties properties,
             UpsertQueryGenerator upsertQueryGenerator) {
         super(entityClass, dataSource, meterRegistry, properties, upsertQueryGenerator.getTemporaryTableName());
-        tempTableCleanupSql = String.format("truncate table %s restart identity cascade", tableName);
+        var truncateSql = String.format("truncate table %s restart identity cascade", tableName);
+        var dropIndexSql = upsertQueryGenerator.getCleanupTempIndexQuery();
+        tempTableCleanupSql = StringUtils.joinWith(";\n", truncateSql, dropIndexSql);
         finalTableName = upsertQueryGenerator.getFinalTableName();
         upsertSql = upsertQueryGenerator.getUpsertQuery();
+        createIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
         log.trace("Table: {}, Entity: {}, upsertSql:\n{}", finalTableName, entityClass, upsertSql);
         upsertMetric = Timer.builder(LATENCY_METRIC)
                 .description("The time it took to batch insert rows")
@@ -72,6 +77,9 @@ public class BatchUpserter extends BatchInserter {
             // copy items to temp table
             super.persistItems(items, connection);
 
+            // create index on temp table
+            createTempTableIndex(connection);
+
             // Upsert items from the temporary table to the final table
             upsert(connection);
         } catch (Exception e) {
@@ -86,6 +94,12 @@ public class BatchUpserter extends BatchInserter {
         }
 
         log.trace("Cleaned temp table {}", tableName);
+    }
+
+    private void createTempTableIndex(Connection connection) throws SQLException {
+        try (var preparedStatement = connection.prepareStatement(createIndexSql)) {
+            preparedStatement.execute();
+        }
     }
 
     private void upsert(Connection connection) throws SQLException {

@@ -33,10 +33,10 @@ spec:
               value: /node
             - name: DISK_PREFIX
               value: {{ .Values.zfs.init.diskPrefix }}
-            - name: DISK_SIZE_COORDINATOR
-              value: {{ .Values.zfs.coordinator.diskSize }}
-            - name: DISK_SIZE_WORKER
-              value: {{ .Values.zfs.worker.diskSize }}
+            - name: DEFAULT_DISK_SIZE_COORDINATOR
+              value: {{ .Values.zfs.coordinator.initialDiskSize }}
+            - name: DEFAULT_DISK_SIZE_WORKER
+              value: {{ .Values.zfs.worker.initialDiskSize }}
             - name: K8S_NAMESPACE
               valueFrom:
                 fieldRef:
