@@ -23,15 +23,15 @@ import config from '../config';
 import {getModuleDirname} from './testutils';
 import {getPoolClass} from '../utils';
 import {PostgreSqlContainer} from '@testcontainers/postgresql';
-import {Wait} from 'testcontainers';
 
 const {db: defaultDbConfig} = config;
 const Pool = getPoolClass();
 
+const containerTempFile = path.join(process.env.CONTAINER_TEMP_DIR, `tempContainerIds`);
 const dbName = 'mirror_node';
-const dockerContainerIds = [];
 const readOnlyUser = 'mirror_rest';
 const readOnlyPassword = 'mirror_rest_pass';
+const workerId = process.env.JEST_WORKER_ID;
 const v1DatabaseImage = 'postgres:14-alpine';
 const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.1.1';
 
@@ -89,14 +89,14 @@ const createDbContainer = async () => {
   const dockerDb = await new PostgreSqlContainer(image)
     .withCopyFilesToContainer([initSqlCopy])
     .withDatabase(dbName)
+    .withLabels({workerId: workerId})
     .withPassword('mirror_node_pass')
+    .withReuse()
     .withUsername('mirror_node')
-    .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections', 2))
-    //.withReuse()
     .start();
-  console.info(`Started PostgreSQL container with image ${image}`);
+  logger.info(`Started PostgreSQL container with image ${image}`);
 
-  dockerContainerIds.push(dockerDb.getId());
+  fs.appendFileSync(containerTempFile, dockerDb.getId() + '\n');
   return dockerDb.getConnectionUri();
 };
 
@@ -121,7 +121,6 @@ const createPool = async () => {
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
  */
 const flywayMigrate = async (connectionUri) => {
-  const workerId = process.env.JEST_WORKER_ID;
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
   const dbConnectionParams = extractDbConnectionParams(connectionUri);
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
@@ -175,9 +174,7 @@ const flywayMigrate = async (connectionUri) => {
     }
   }
 
-  if (isV2Schema()) {
-    fs.rmSync(locations, {force: true, recursive: true});
-  }
+  fs.rmSync(locations, {force: true, recursive: true});
 };
 
 const getMigrationScriptLocation = (locations) => {
@@ -196,10 +193,7 @@ const getMigrationScriptLocation = (locations) => {
   return dest;
 };
 
-const stopDockerContainers = async () => await Promise.all(dockerContainerIds.map((d) => d.stop()));
-
 export default {
   cleanUp,
   createPool,
-  stopDockerContainers,
 };
