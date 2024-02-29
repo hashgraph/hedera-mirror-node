@@ -84,12 +84,6 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
                 && addressOrAlias.compareTo(Address.KZG_POINT_EVAL) < 0;
     }
 
-    public boolean isHederaPrecompileAddress(Address addressOrAlias) {
-        return addressOrAlias != null
-                && addressOrAlias.compareTo(Address.fromHexString("0x166")) > 0
-                && addressOrAlias.compareTo(Address.fromHexString("0x170")) < 0;
-    }
-
     public boolean isInUse(final Address address) {
         return store.exists(address);
     }
