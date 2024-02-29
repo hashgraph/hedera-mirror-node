@@ -92,7 +92,7 @@ const createDbContainer = async () => {
     .withPassword('mirror_node_pass')
     .withUsername('mirror_node')
     .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections', 2))
-    .withReuse()
+    //.withReuse()
     .start();
   console.info(`Started PostgreSQL container with image ${image}`);
 
