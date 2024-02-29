@@ -117,6 +117,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         token.setFreezeDefault(freezeDefault);
         token.setInitialSupply(transactionBody.getInitialSupply());
         token.setMaxSupply(transactionBody.getMaxSupply());
+        // Never null. Services PBJ sets EMPTY when no metadata defined on create
         if (!ByteString.EMPTY.equals(metadata)) {
             token.setMetadata(metadata.toByteArray());
         }

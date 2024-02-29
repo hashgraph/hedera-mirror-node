@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,6 +63,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         .setExpiry(Timestamp.newBuilder().setSeconds(360))
                         .setKycKey(DEFAULT_KEY)
                         .setFreezeKey(DEFAULT_KEY)
+                        .setMetadataKey(DEFAULT_KEY)
                         .setSymbol("SYMBOL")
                         .setTreasury(AccountID.newBuilder().setAccountNum(1))
                         .setAutoRenewAccount(AccountID.newBuilder().setAccountNum(DEFAULT_AUTO_RENEW_ACCOUNT_NUM))
@@ -101,6 +103,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(body.getKycKey().toByteArray(), Token::getKycKey)
                 .returns(Range.atLeast(timestamp), Token::getTimestampRange)
                 .returns(body.getName(), Token::getName)
+                .returns(body.getMetadata().toByteArray(), Token::getMetadata)
+                .returns(body.getMetadataKey().toByteArray(), Token::getMetadataKey)
                 .returns(body.getPauseKey().toByteArray(), Token::getPauseKey)
                 .returns(body.getSupplyKey().toByteArray(), Token::getSupplyKey)
                 .returns(body.getSymbol(), Token::getSymbol)
@@ -122,6 +126,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         .clearFeeScheduleKey()
                         .clearFreezeKey()
                         .clearKycKey()
+                        .clearMetadata()
+                        .clearMetadataKey()
                         .clearName()
                         .clearPauseKey()
                         .clearSupplyKey()
@@ -145,6 +151,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(null, Token::getFeeScheduleKey)
                 .returns(null, Token::getFreezeKey)
                 .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
+                .returns(EMPTY_BYTE_ARRAY, Token::getMetadata)
+                .returns(EMPTY_BYTE_ARRAY, Token::getMetadataKey)
                 .returns(null, Token::getName)
                 .returns(null, Token::getPauseKey)
                 .returns(null, Token::getSupplyKey)

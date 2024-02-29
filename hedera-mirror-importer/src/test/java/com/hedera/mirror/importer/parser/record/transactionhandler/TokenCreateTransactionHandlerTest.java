@@ -79,15 +79,17 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @CsvSource(
             textBlock =
                     """
-            true, true, true, FROZEN, REVOKED, UNFROZEN, GRANTED
-            false, true, false, UNFROZEN, NOT_APPLICABLE, UNFROZEN, NOT_APPLICABLE
-            false, false, false, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE
-            """)
+                            true, true, true, true, true, FROZEN, REVOKED, UNFROZEN, GRANTED
+                            false, true, false, false, true, UNFROZEN, NOT_APPLICABLE, UNFROZEN, NOT_APPLICABLE
+                            false, false, false, false, false, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE
+                            """)
     @ParameterizedTest
     void updateTransaction(
             boolean freezeDefault,
             boolean hasFreezeKey,
             boolean hasKycKey,
+            boolean hasMetadata,
+            boolean hasMetadataKey,
             TokenFreezeStatusEnum expectedTokenFreezeStatus,
             TokenKycStatusEnum expectedTokenKycStatus,
             TokenFreezeStatusEnum expectedTokenAccountFreezeStatus,
@@ -102,6 +104,12 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                     }
                     if (!hasKycKey) {
                         b.clearKycKey();
+                    }
+                    if (!hasMetadata) {
+                        b.clearMetadata();
+                    }
+                    if (!hasMetadataKey) {
+                        b.clearMetadataKey();
                     }
                 })
                 .build();
@@ -132,6 +140,9 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // Then
         var expectedFreezeKey = hasFreezeKey ? transactionBody.getFreezeKey().toByteArray() : null;
         var expectedKycKey = hasKycKey ? transactionBody.getKycKey().toByteArray() : null;
+        var expectedMetadata = hasMetadata ? transactionBody.getMetadata().toByteArray() : null;
+        var expectedMetadataKey =
+                hasMetadataKey ? transactionBody.getMetadataKey().toByteArray() : null;
         verify(entityListener).onToken(token.capture());
         verify(entityListener).onCustomFee(customFee.capture());
         verify(entityListener).onTokenAccount(tokenAccount.capture());
@@ -146,6 +157,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(expectedKycKey, Token::getKycKey)
                 .returns(expectedTokenKycStatus, Token::getKycStatus)
                 .returns(transactionBody.getMaxSupply(), Token::getMaxSupply)
+                .returns(expectedMetadata, Token::getMetadata)
+                .returns(expectedMetadataKey, Token::getMetadataKey)
                 .returns(Range.atLeast(timestamp), Token::getTimestampRange)
                 .returns(transactionBody.getName(), Token::getName)
                 .returns(transactionBody.getPauseKey().toByteArray(), Token::getPauseKey)
@@ -207,6 +220,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         .clearFreezeKey()
                         .clearKycKey()
                         .clearMemo()
+                        .clearMetadata()
+                        .clearMetadataKey()
                         .clearPauseKey()
                         .clearSupplyKey()
                         .clearWipeKey())
@@ -242,6 +257,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(null, Token::getFeeScheduleKey)
                 .returns(null, Token::getFreezeKey)
                 .returns(null, Token::getKycKey)
+                .returns(null, Token::getMetadata)
+                .returns(null, Token::getMetadataKey)
                 .returns(null, Token::getPauseKey)
                 .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
                 .returns(null, Token::getSupplyKey)
