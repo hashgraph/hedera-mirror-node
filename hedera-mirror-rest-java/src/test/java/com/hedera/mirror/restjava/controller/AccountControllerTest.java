@@ -16,45 +16,71 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import jakarta.annotation.Resource;
+import com.hedera.mirror.rest.model.NftAllowancesResponse;
+import com.hedera.mirror.restjava.RestJavaIntegrationTest;
+import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
+import java.util.List;
+import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.http.MediaType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.test.web.servlet.MockMvc;
 
 @ExtendWith(SpringExtension.class)
-@WebMvcTest(controllers = DummyController.class)
-class AccountControllerTest {
+@RequiredArgsConstructor
+class AccountControllerTest extends RestJavaIntegrationTest {
 
-    private static final String CALL_URI = "/api/v1/accounts";
+    private final AccountController accountController;
+    private final NftAllowanceMapper mapper;
 
-    @Resource
-    private WebTestClient webClient;
-
-    @Resource
-    private MockMvc mockMvc;
-
-    @Test
     @SneakyThrows
-    void success() {
-        String extended_uri = "/2411/allowances/nfts";
-        mockMvc.perform(get(CALL_URI + extended_uri).accept(MediaType.TEXT_PLAIN))
-                .andExpect(status().isOk())
-                .andExpect(content().string("Hello world"));
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void testWithNoQueryParams(boolean owner) {
+        var allowance = domainBuilder.nftAllowance().persist();
+        var ownerId = String.valueOf(allowance.getOwner());
+        var spenderId = String.valueOf(allowance.getSpender());
+        NftAllowancesResponse response;
+
+        if (owner) {
+            response = accountController.getNftAllowancesByAccountId(
+                    ownerId, Optional.empty(), Optional.of(owner), Optional.empty(), Optional.of(2), Optional.empty());
+        } else {
+            response = accountController.getNftAllowancesByAccountId(
+                    spenderId,
+                    Optional.empty(),
+                    Optional.of(owner),
+                    Optional.empty(),
+                    Optional.of(2),
+                    Optional.empty());
+        }
+        assertThat(response.getAllowances()).containsExactlyInAnyOrderElementsOf(mapper.map(List.of(allowance)));
     }
 
-    @Test
     @SneakyThrows
-    void methodNotAllowed() {
-        mockMvc.perform(post(CALL_URI)).andExpect(status().isMethodNotAllowed());
+    @ParameterizedTest
+    @ValueSource(strings = {"gte", "gt"})
+    void testWithSpenderAndTokenQueryParam(String operator) {
+        var allowance = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.owner(allowance.getOwner()))
+                .persist();
+        Optional<String> accountIdQueryParam = Optional.of(operator + ":" + (allowance.getSpender() - 1));
+        Optional<String> tokenIdQueryParam = Optional.of(operator + ":" + (allowance.getTokenId() - 1));
+
+        var response = accountController.getNftAllowancesByAccountId(
+                String.valueOf(allowance.getOwner()),
+                accountIdQueryParam,
+                Optional.of(true),
+                tokenIdQueryParam,
+                Optional.of(2),
+                Optional.empty());
+        assertThat(response.getAllowances())
+                .containsExactlyInAnyOrderElementsOf(mapper.map(List.of(allowance, allowance1)));
     }
 }

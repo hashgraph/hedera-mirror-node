@@ -18,24 +18,27 @@ package com.hedera.mirror.restjava.common;
 
 import static com.hedera.mirror.restjava.common.EntityIdUtils.parseIdFromString;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class RestUtils {
 
     public static final Integer MAX_LIMIT = 100;
     public static final Integer DEFAULT_LIMIT = 25;
 
-    public static Filter getFilter(String paramName, String accountIdQueryParam) {
+    public static Filter getFilter(String paramName, String queryParam) {
 
-        String[] splitVal = accountIdQueryParam != null ? accountIdQueryParam.split(":") : null;
-
-        if (splitVal != null) {
-            if (splitVal.length == 1) {
-                // No operator specified. Just use "eq:"
-                return new Filter(paramName, RangeOperator.EQ, splitVal[0]);
-            }
-            return new Filter(paramName, RangeOperator.valueOf(splitVal[0].toUpperCase()), splitVal[1]);
-        } else {
+        if (paramName == null || queryParam == null) {
             return null;
         }
+
+        String[] splitVal = queryParam.split(":");
+
+        if (splitVal.length == 1) {
+            // No operator specified. Just use "eq:"
+            return new Filter(paramName, RangeOperator.EQ, splitVal[0]);
+        }
+        return new Filter(paramName, RangeOperator.valueOf(splitVal[0].toUpperCase()), splitVal[1]);
     }
 
     public static Long getAccountNum(Filter filter) {

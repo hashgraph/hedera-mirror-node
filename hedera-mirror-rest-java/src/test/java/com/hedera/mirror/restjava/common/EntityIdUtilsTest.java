@@ -16,16 +16,17 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.experimental.UtilityClass;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@UtilityClass
-public class EntityIdUtils {
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-    public static Long[] parseIdFromString(String id) {
-        var parts = id.split("\\.");
-        if (parts.length == 1) {
-            return new Long[] {0L, 0L, Long.parseLong(id)};
-        }
-        return new Long[] {Long.parseLong(parts[0]), Long.parseLong(parts[1]), Long.parseLong(parts[2])};
+class EntityIdUtilsTest {
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0.0.1000", "1000"})
+    void testParseIdFromString(String id) {
+        var expected = EntityIdUtils.parseIdFromString(id);
+        assertThat(expected[2]).isEqualTo(1000);
     }
 }
