@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.entity.sql;
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
+
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -557,8 +559,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setDeleted(src.getDeleted());
         }
 
+        /*
+         * For metadata, a value of EMPTY_BYTE_ARRAY is an indicator from TokenUpdateNftsTransactionHandler that
+         * the metadata has been cleared in the update. Replace the value with null in dest so that it is reflected
+         * as a null column value in the database on upsert.
+         */
         if (dest.getMetadata() == null) {
             dest.setMetadata(src.getMetadata());
+        } else if (dest.getMetadata() == EMPTY_BYTE_ARRAY) {
+            dest.setMetadata(null);
         }
 
         if (dest.getTimestampLower() > src.getTimestampLower()) {
@@ -624,6 +633,31 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (current.getKycKey() == null) {
             current.setKycKey(previous.getKycKey());
+        }
+
+        /*
+         * There are a number of ways for a Token instance to be provided to onToken(). For token metadata and
+         * metadataKey, if current has a null value, then the current instance was not provided by
+         * TokenUpdateTransactionHandler and the previous value needs to be carried forward.
+         *
+         * A value of EMPTY_BYTE_ARRAY is set by TokenUpdateTransactionHandler to indicate the transaction body did
+         * not define value, meaning any previous value has been cleared, such as the removal of the metadata and/or
+         * metadata key. In this case the current instance value is set to null so that the database column(s) are
+         * set to null on upsert to indicate no value present.
+         *
+         * For a value other than null or EMPTY_BYTE_ARRAY then the updated field value is present in the current
+         * instance and is to be carried forward.
+         */
+        if (current.getMetadata() == null) {
+            current.setMetadata(previous.getMetadata());
+        } else if (current.getMetadata() == EMPTY_BYTE_ARRAY) {
+            current.setMetadata(null);
+        }
+
+        if (current.getMetadataKey() == null) {
+            current.setMetadataKey(previous.getMetadataKey());
+        } else if (current.getMetadataKey() == EMPTY_BYTE_ARRAY) {
+            current.setMetadataKey(null);
         }
 
         if (current.getName() == null) {

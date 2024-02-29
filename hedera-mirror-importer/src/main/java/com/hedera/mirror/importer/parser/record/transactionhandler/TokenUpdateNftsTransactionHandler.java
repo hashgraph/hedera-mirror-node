@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 
 import com.google.common.collect.Range;
@@ -57,10 +58,12 @@ class TokenUpdateNftsTransactionHandler extends AbstractTransactionHandler {
         var transactionBody = recordItem.getTransactionBody().getTokenUpdateNfts();
         var tokenId = transaction.getEntityId();
         var consensusTimestamp = recordItem.getConsensusTimestamp();
+        var metadata = transactionBody.hasMetadata()
+                ? toBytes(transactionBody.getMetadata().toByteString())
+                : EMPTY_BYTE_ARRAY;
 
-        // Apply the same metadata to all indicated NFTs
         var nftBuilder = Nft.builder()
-                .metadata(toBytes(transactionBody.getMetadata().toByteString()))
+                .metadata(metadata)
                 .timestampRange(Range.atLeast(consensusTimestamp))
                 .tokenId(tokenId.getId());
 

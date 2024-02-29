@@ -20,6 +20,7 @@ import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.NOT_APPLICABLE;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.UNFROZEN;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -104,18 +105,21 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         var transactionBody = recordItem.getTransactionBody().getTokenCreation();
-        long consensusTimestamp = transaction.getConsensusTimestamp();
+        var consensusTimestamp = transaction.getConsensusTimestamp();
+        var freezeDefault = transactionBody.getFreezeDefault();
+        var metadata = transactionBody.getMetadata();
         var tokenId = transaction.getEntityId();
         var treasury = EntityId.of(transactionBody.getTreasury());
 
         var token = new Token();
-        boolean freezeDefault = transactionBody.getFreezeDefault();
         token.setCreatedTimestamp(consensusTimestamp);
         token.setDecimals(transactionBody.getDecimals());
         token.setFreezeDefault(freezeDefault);
         token.setInitialSupply(transactionBody.getInitialSupply());
         token.setMaxSupply(transactionBody.getMaxSupply());
-        token.setMetadata(transactionBody.getMetadata().toByteArray());
+        if (!ByteString.EMPTY.equals(metadata)) {
+            token.setMetadata(metadata.toByteArray());
+        }
         token.setName(transactionBody.getName());
         token.setSupplyType(TokenSupplyTypeEnum.fromId(transactionBody.getSupplyTypeValue()));
         token.setSymbol(transactionBody.getSymbol());

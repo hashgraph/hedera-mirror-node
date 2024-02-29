@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
+
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -94,7 +96,6 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         var token = new Token();
         token.setTimestampLower(recordItem.getConsensusTimestamp());
         token.setTokenId(entity.getId());
-        token.setMetadata(transactionBody.getMetadata().toByteArray());
 
         if (transactionBody.hasFeeScheduleKey()) {
             token.setFeeScheduleKey(transactionBody.getFeeScheduleKey().toByteArray());
@@ -108,9 +109,14 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
             token.setKycKey(transactionBody.getKycKey().toByteArray());
         }
 
-        if (transactionBody.hasMetadataKey()) {
-            token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
-        }
+        var metadata =
+                transactionBody.hasMetadata() ? transactionBody.getMetadata().toByteArray() : EMPTY_BYTE_ARRAY;
+        token.setMetadata(metadata);
+
+        var metadataKey = transactionBody.hasMetadataKey()
+                ? transactionBody.getMetadataKey().toByteArray()
+                : EMPTY_BYTE_ARRAY;
+        token.setMetadataKey(metadataKey);
 
         if (!transactionBody.getName().isEmpty()) {
             token.setName(transactionBody.getName());
