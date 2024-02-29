@@ -17,6 +17,7 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
 import static com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isTokenProxyRedirect;
 import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.isViewFunction;
@@ -35,7 +36,6 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
@@ -134,7 +134,8 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
             final MessageFrame frame,
             final ViewGasCalculator viewGasCalculator,
             final TokenAccessor tokenAccessor) {
-        if (frame.isStatic()) {
+
+        if (frame.isStatic() && input.size() >= 4) {
             if (!isTokenProxyRedirect(input) && !isViewFunction(input)) {
                 frame.setRevertReason(STATIC_CALL_REVERT_REASON);
                 return Pair.of(defaultGas(), null);
@@ -146,7 +147,9 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
         /* Workaround allowing execution of read only precompile methods in a dynamic context (non pure/view).
         This is done by calling ViewExecutor/RedirectViewExecutor logic instead of Precompile classes.*/
 
-        if ((isTokenProxyRedirect(input) || isViewFunction(input)) && !isNestedFunctionSelectorForWrite(input)) {
+        if (input.size() >= 4
+                && (isTokenProxyRedirect(input) || isViewFunction(input))
+                && !isNestedFunctionSelectorForWrite(input)) {
             return handleReadsFromDynamicContext(input, frame);
         }
 
@@ -177,9 +180,15 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
             prepareComputation(
                     input, ((HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater())::unaliased, precompileContext);
         } catch (final NoSuchElementException e) {
-            final var haltReason = HederaExceptionalHaltReason.ERROR_DECODING_PRECOMPILE_INPUT;
+            final var haltReason = ERROR_DECODING_PRECOMPILE_INPUT;
             frame.setExceptionalHaltReason(Optional.of(haltReason));
             return PrecompileContractResult.halt(null, Optional.of(haltReason));
+        }
+
+        if (precompileContext.getPrecompile() == null || precompileContext.getTransactionBody() == null) {
+            final var haltReason = Optional.of(ERROR_DECODING_PRECOMPILE_INPUT);
+            frame.setExceptionalHaltReason(haltReason);
+            return PrecompileContractResult.halt(null, haltReason);
         }
 
         final var now = frame.getBlockValues().getTimestamp();
@@ -270,8 +279,10 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
 
     void prepareComputation(
             Bytes input, final UnaryOperator<byte[]> aliasResolver, final PrecompileContext precompileContext) {
+        if (input.size() < 4) {
+            return;
+        }
         final int functionId = input.getInt(0);
-
         var senderAddress = precompileContext.getSenderAddress();
         Precompile precompile;
         TransactionBody.Builder transactionBodyBuilder = TransactionBody.newBuilder();
