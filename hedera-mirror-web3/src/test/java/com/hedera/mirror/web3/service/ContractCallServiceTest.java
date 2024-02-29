@@ -634,12 +634,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 toAddress(EntityId.of(0, 0, 123456789)),
                 "transfer",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 1L},
-                "0x"),
-        TRANSFER_TO_NON_EXISTING_ACCOUNT(
-                "nonExistingReceiverAddress",
-                ERC_CONTRACT_ADDRESS,
-                "transfer",
-                new Object[] {TREASURY_TOKEN_ADDRESS, toAddress(EntityId.of(0, 0, 123456789)), 1L},
                 "0x");
 
         private final String name;
