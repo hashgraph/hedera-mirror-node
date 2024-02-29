@@ -60,7 +60,6 @@ import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
-import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
@@ -212,7 +211,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         networkTransactionResponse =
                 accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
-        var initialResponse = callContract(data, estimateContractSolidityAddress).getResultAsNumber();
+        var initialResponse =
+                callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         var initialBlockNumber = getLastBlockNumber();
         waitForNextBlock();
         networkTransactionResponse =
@@ -248,7 +248,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
-        var responseFromType = callContract(blockType, data, estimateContractSolidityAddress).getResultAsNumber();
+        var responseFromType =
+                callContract(blockType, data, estimateContractSolidityAddress).getResultAsNumber();
         var responseFromLatest =
                 callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         assertThat(responseFromLatest).isEqualTo(responseFromType);
@@ -865,7 +866,10 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                     .atMost(3, TimeUnit.SECONDS)
                     .pollInterval(1, TimeUnit.SECONDS)
                     .ignoreExceptions()
-                    .until(() -> mirrorClient.getAccountDetailsUsingEvmAddress(accountId).getEvmAddress() != null);
+                    .until(() -> mirrorClient
+                                    .getAccountDetailsUsingEvmAddress(accountId)
+                                    .getEvmAddress()
+                            != null);
         } catch (ConditionTimeoutException e) {
             log.info("The account could not be imported in the mirror node for 3 seconds.");
         }

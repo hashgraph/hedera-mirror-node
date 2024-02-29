@@ -478,6 +478,23 @@ class ContractControllerTest {
                 .isEqualTo(OK);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"1", "1aa"})
+    void callBadRequestWithInvalidHexData(String data) {
+        final var request = request();
+        request.setData(data);
+        request.setValue(0);
+
+        webClient
+                .post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST);
+    }
+
     @Test
     void transferSuccess() {
         final var request = request();
