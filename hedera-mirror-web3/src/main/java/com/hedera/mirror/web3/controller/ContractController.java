@@ -78,6 +78,7 @@ class ContractController {
         }
 
         validateContractData(request);
+        validateContractMaxGasLimit(request);
 
         final var params = constructServiceParameters(request);
         final var result = contractCallService.processCall(params);
@@ -137,6 +138,13 @@ class ContractController {
                             .formatted(
                                     data.length(),
                                     evmProperties.getMaxDataSize().toBytes() * 2L));
+        }
+    }
+
+    private void validateContractMaxGasLimit(ContractCallRequest request) {
+        if (request.getGas() > evmProperties.getMaxGasLimit()) {
+            throw new InvalidParametersException(
+                    "gas field must be less than or equal to %d".formatted(evmProperties.getMaxGasLimit()));
         }
     }
 

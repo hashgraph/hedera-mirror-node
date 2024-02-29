@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -281,48 +282,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
-    void callHtsPrecompileWithEmptyData() {
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.EMPTY,
-                Address.fromHexString("0000000000000000000000000000000000000167"),
-                ETH_CALL,
-                0L,
-                BlockType.LATEST);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
-    }
-
-    @Test
-    void callExchangeRatePrecompileWithEmptyData() {
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.EMPTY,
-                Address.fromHexString("0000000000000000000000000000000000000168"),
-                ETH_CALL,
-                0L,
-                BlockType.LATEST);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
-    }
-
-    @Test
-    void callPrngPrecompileWithEmptyData() {
-        final var serviceParameters = serviceParametersForExecution(
-                Bytes.EMPTY,
-                Address.fromHexString("0000000000000000000000000000000000000169"),
-                ETH_CALL,
-                0L,
-                BlockType.LATEST);
-
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
-    }
-
-    @Test
     void testRevertDetailMessage() {
         final var revertFunctionSignature = "0xa26388bb";
         final var serviceParameters = serviceParametersForExecution(
@@ -547,6 +506,22 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .isTrue();
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "0000000000000000000000000000000000000167",
+        "0000000000000000000000000000000000000168",
+        "0000000000000000000000000000000000000169"
+    })
+    void callSystemPrecompileWithEmptyData(String addressHex) {
+        final var address = Address.fromHexString(addressHex);
+        final var serviceParameters =
+                serviceParametersForExecution(Bytes.EMPTY, address, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
     }
 
     private double getGasUsedBeforeExecution(final CallType callType) {

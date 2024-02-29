@@ -89,6 +89,7 @@ create table if not exists contract_result
   error_message        text               null,
   function_parameters  bytea              not null,
   function_result      bytea              null,
+  gas_consumed         bigint             null,
   gas_limit            bigint             not null,
   gas_used             bigint             not null,
   payer_account_id     bigint             not null,
@@ -268,8 +269,9 @@ Optional filters
       "error_message": "",
       "from": "0x0000000000000000000000000000000000001001",
       "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
-      "gas_limit": 2500,
-      "gas_used": 1000,
+      "gas_consumed": 3000,
+      "gas_limit": 10000,
+      "gas_used": 8000,
       "timestamp": "12345.10001",
       "to": "0x0000000000000000000000000000000000001002"
     }
@@ -320,8 +322,9 @@ Optional filters
   "error_message": "",
   "from": "0x0000000000000000000000000000000000001001",
   "function_parameters": "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b",
-  "gas_limit": 2500,
-  "gas_used": 1000,
+  "gas_consumed": 3000,
+  "gas_limit": 10000,
+  "gas_used": 8000,
   "hash": "0x5b2e3c1a49352f1ca9fb5dfe74b7ffbbb6d70e23a12693444e26058d8a8e6296",
   "logs": [
     {

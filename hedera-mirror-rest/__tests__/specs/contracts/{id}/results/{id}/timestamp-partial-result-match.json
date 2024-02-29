@@ -77,6 +77,7 @@
     "failed_initcode": null,
     "from": "0x0000000000000000000000000000000000001f41",
     "function_parameters": "0x010102020303",
+    "gas_consumed": null,
     "gas_limit": 1000,
     "gas_price": null,
     "gas_used": null,

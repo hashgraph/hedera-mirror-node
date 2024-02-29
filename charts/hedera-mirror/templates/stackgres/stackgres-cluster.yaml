@@ -49,6 +49,7 @@ spec:
     managedSql:
       scripts:
         - sgScript: {{ include "hedera-mirror.stackgres" . }}-worker
+    overrides: {{ .Values.stackgres.worker.overrides | toYaml | nindent 6 }}
     pods:
       disableMetricsExporter: true
       disablePostgresUtil: true

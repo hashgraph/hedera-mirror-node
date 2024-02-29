@@ -418,7 +418,7 @@ zfs:
   analytics:
     enabled: false
   coordinator:
-    diskSize: 300GB
+    initialDiskSize: 300GB
   crd:
     volumeSnapshot: false
   enabled: false
@@ -441,7 +441,7 @@ zfs:
     recordsize: 32k
   priorityClassName: critical
   worker:
-    diskSize: 3200GB
+    initialDiskSize: 3200GB
   zfsController:
     priorityClass:
       create: true
