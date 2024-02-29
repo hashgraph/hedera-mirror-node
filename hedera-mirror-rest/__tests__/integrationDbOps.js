@@ -20,18 +20,20 @@ import os from 'os';
 import path from 'path';
 
 import config from '../config';
-import {
-  getOwnerConnectionUri,
-  getDatabaseName,
-  getReadOnlyUser,
-  getReadOnlyPassword,
-  getDatabases,
-} from './globalSetup';
-import {getModuleDirname, isV2Schema} from './testutils';
+import {getModuleDirname} from './testutils';
 import {getPoolClass} from '../utils';
+import {PostgreSqlContainer} from '@testcontainers/postgresql';
+import {Wait} from 'testcontainers';
 
 const {db: defaultDbConfig} = config;
 const Pool = getPoolClass();
+
+const dbName = 'mirror_node';
+const dockerContainerIds = [];
+const readOnlyUser = 'mirror_rest';
+const readOnlyPassword = 'mirror_rest_pass';
+const v1DatabaseImage = 'postgres:14-alpine';
+const v2DatabaseImage = 'gcr.io/mirrornode/citus:12.1.1';
 
 const cleanupSql = fs.readFileSync(
   path.join(
@@ -56,6 +58,8 @@ const v2SchemaConfigs = {
   locations: '../hedera-mirror-importer/src/main/resources/db/migration/v2',
 };
 
+const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
+
 const schemaConfigs = isV2Schema() ? v2SchemaConfigs : v1SchemaConfigs;
 
 const dbUrlRegex = /^postgres:\/\/(.*):(.*)@(.*):(\d+)/;
@@ -74,36 +78,52 @@ const cleanUp = async () => {
   await ownerPool.query(cleanupSql);
 };
 
-const createPool = () => {
-  const connectionUri = getOwnerConnectionUri(process.env.JEST_WORKER_ID);
+const createDbContainer = async () => {
+  const image = isV2Schema() ? v2DatabaseImage : v1DatabaseImage;
+  const initSqlPath = path.join('..', 'hedera-mirror-common', 'src', 'test', 'resources', 'init.sql');
+  const initSqlCopy = {
+    source: initSqlPath,
+    target: '/docker-entrypoint-initdb.d/init.sql',
+  };
+
+  const dockerDb = await new PostgreSqlContainer(image)
+    .withCopyFilesToContainer([initSqlCopy])
+    .withDatabase(dbName)
+    .withPassword('mirror_node_pass')
+    .withUsername('mirror_node')
+    .withWaitStrategy(Wait.forLogMessage('database system is ready to accept connections', 2))
+    .withReuse()
+    .start();
+  console.info(`Started PostgreSQL container with image ${image}`);
+
+  dockerContainerIds.push(dockerDb.getId());
+  return dockerDb.getConnectionUri();
+};
+
+const createPool = async () => {
+  const connectionUri = await createDbContainer();
+  await flywayMigrate(connectionUri);
   const dbConnectionParams = {
     ...extractDbConnectionParams(connectionUri),
-    database: getDatabaseName(),
+    database: dbName,
     sslmode: 'DISABLE',
   };
 
   global.ownerPool = new Pool(dbConnectionParams);
   global.pool = new Pool({
     ...dbConnectionParams,
-    password: getReadOnlyPassword(),
-    user: getReadOnlyUser(),
+    password: readOnlyPassword,
+    user: readOnlyUser,
   });
 };
 
 /**
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
  */
-const flywayMigrate = async () => {
-  if (isDbMigrated()) {
-    logger.info('Skipping flyway migration since db is already migrated');
-    return;
-  }
-
+const flywayMigrate = async (connectionUri) => {
   const workerId = process.env.JEST_WORKER_ID;
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
-  const connectionUri = getOwnerConnectionUri(workerId);
   const dbConnectionParams = extractDbConnectionParams(connectionUri);
-  const dbName = getDatabaseName();
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = path.join('.', 'build', 'flyway');
   const flywayConfigPath = path.join(os.tmpdir(), `config_worker_${workerId}.json`); // store configs in temp dir
@@ -158,11 +178,7 @@ const flywayMigrate = async () => {
   if (isV2Schema()) {
     fs.rmSync(locations, {force: true, recursive: true});
   }
-
-  markDbMigrated();
 };
-
-const getMigratedFilename = () => path.join(process.env.MIGRATION_TMP_DIR, `.${process.env.JEST_WORKER_ID}.migrated`);
 
 const getMigrationScriptLocation = (locations) => {
   // Creating a temp directory for v2, without the repeatable partitioning file.
@@ -180,12 +196,10 @@ const getMigrationScriptLocation = (locations) => {
   return dest;
 };
 
-const isDbMigrated = () => fs.existsSync(getMigratedFilename());
-
-const markDbMigrated = () => fs.closeSync(fs.openSync(getMigratedFilename(), 'w'));
+const stopDockerContainers = async () => await Promise.all(dockerContainerIds.map((d) => d.stop()));
 
 export default {
   cleanUp,
   createPool,
-  flywayMigrate,
+  stopDockerContainers,
 };

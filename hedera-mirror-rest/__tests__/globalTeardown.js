@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import {getDatabases} from './globalSetup';
+import integrationDbOps from './integrationDbOps';
 import log4js from 'log4js';
 
 export default async function () {
-  const tmpDir = process.env.MIGRATION_TMP_DIR;
-  if (tmpDir) {
-    fs.rmSync(tmpDir, {force: true, recursive: true});
-    console.log(`Removed temp directory ${tmpDir}`);
-  }
-  await Promise.all(getDatabases().map((d) => d.stop()));
+  await integrationDbOps.stopDockerContainers();
   log4js.shutdown();
 }
