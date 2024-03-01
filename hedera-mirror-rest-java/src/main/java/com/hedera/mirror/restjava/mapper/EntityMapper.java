@@ -25,6 +25,6 @@ import org.mapstruct.Mapping;
 @MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
 public interface EntityMapper<T extends NftAllowance> {
 
-    @Mapping(source = "timestampRange", target = "timestamp", qualifiedByName = "mapRange")
+    @Mapping(source = "timestampRange", target = "timestamp")
     T map(com.hedera.mirror.common.domain.entity.NftAllowance source);
 }
