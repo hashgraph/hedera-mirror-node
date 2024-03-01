@@ -20,14 +20,13 @@ import os from 'os';
 import path from 'path';
 
 import config from '../config';
-import {getModuleDirname} from './testutils';
+import {getModuleDirname, isV2Schema} from './testutils';
 import {getPoolClass} from '../utils';
 import {PostgreSqlContainer} from '@testcontainers/postgresql';
 
 const {db: defaultDbConfig} = config;
 const Pool = getPoolClass();
 
-const containerTempFile = path.join(process.env.CONTAINER_TEMP_DIR, `tempContainerIds`);
 const dbName = 'mirror_node';
 const readOnlyUser = 'mirror_rest';
 const readOnlyPassword = 'mirror_rest_pass';
@@ -57,8 +56,6 @@ const v2SchemaConfigs = {
   baselineVersion: '1.999.999',
   locations: '../hedera-mirror-importer/src/main/resources/db/migration/v2',
 };
-
-const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
 const schemaConfigs = isV2Schema() ? v2SchemaConfigs : v1SchemaConfigs;
 
@@ -96,7 +93,7 @@ const createDbContainer = async () => {
     .start();
   logger.info(`Started PostgreSQL container with image ${image}`);
 
-  fs.appendFileSync(containerTempFile, dockerDb.getId() + '\n');
+  fs.closeSync(fs.openSync(path.join(process.env.CONTAINER_TEMP_DIR, dockerDb.getId()), 'w'));
   return dockerDb.getConnectionUri();
 };
 

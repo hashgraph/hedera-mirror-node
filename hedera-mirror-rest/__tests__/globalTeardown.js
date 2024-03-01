@@ -16,23 +16,18 @@
 
 import fs from 'fs';
 import log4js from 'log4js';
-import path from 'path';
 import {getContainerRuntimeClient} from 'testcontainers';
 
 export default async function () {
-  const containerIdFile = path.join(process.env.CONTAINER_TEMP_DIR, 'tempContainerIds');
-  if (containerIdFile) {
-    const client = await getContainerRuntimeClient();
-    const fileContent = fs.readFileSync(containerIdFile, 'utf-8');
-    const containerIds = new Set(fileContent.split('\n').filter(Boolean));
-    for (const id of containerIds) {
-      const container = client.container.getById(id);
-      await client.container.stop(container);
-      await client.container.remove(container);
-    }
-
-    fs.rmSync(process.env.CONTAINER_TEMP_DIR, {force: true, recursive: true});
-    console.info(`Removed temp directory ${process.env.CONTAINER_TEMP_DIR}`);
+  const containerIds = fs.readdirSync(process.env.CONTAINER_TEMP_DIR);
+  const client = await getContainerRuntimeClient();
+  for (const id of containerIds) {
+    const container = client.container.getById(id);
+    await client.container.stop(container);
+    await client.container.remove(container);
   }
+
+  fs.rmSync(process.env.CONTAINER_TEMP_DIR, {force: true, recursive: true});
+  console.info(`Removed temp directory ${process.env.CONTAINER_TEMP_DIR}`);
   log4js.shutdown();
 }
