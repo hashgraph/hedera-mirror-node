@@ -51,8 +51,7 @@ public class AccountController {
             @RequestParam("limit") @Valid Optional<Integer> limit,
             @RequestParam("order") @Valid Optional<String> order) {
 
-        // validate accountId and check for what to pass here
-        // get filters
+        
         Filter filter = getFilter(FilterKey.ACCOUNT_ID, accountIdQueryParam.orElse(null));
         Filter tokenIdFilter = getFilter(FilterKey.TOKEN_ID, tokenId.orElse(null));
         Long accountPathParam = parseIdFromString(accountId)[2];
