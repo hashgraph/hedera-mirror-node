@@ -1001,7 +1001,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .value(value)
                 .receiver(contractAddress)
                 .callData(callData)
-                .gas(50_000_000L)
+                .gas(15_000_000L)
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
