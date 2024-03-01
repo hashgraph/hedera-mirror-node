@@ -21,11 +21,6 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class EntityIdUtils {
 
-    // without and with 0x prefix
-    public static boolean isValidEvmAddressLength(int len) {
-        return len == 40 || len == 42;
-    }
-
     public static Long[] parseIdFromString(String id) {
         var parts = id.split("\\.");
         if (parts.length == 1) {

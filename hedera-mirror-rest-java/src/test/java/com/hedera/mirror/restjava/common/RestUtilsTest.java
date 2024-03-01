@@ -57,4 +57,10 @@ class RestUtilsTest {
         Filter filter = new Filter(FilterKey.ACCOUNT_ID, RangeOperator.EQ, "1000");
         assertThat(RestUtils.getAccountNum(filter)).isEqualTo(1000);
     }
+
+    @Test
+    void testValidateLimit() {
+        assertThat(RestUtils.validateLimit(5)).isEqualTo(5);
+        assertThat(RestUtils.validateLimit(105)).isEqualTo(100);
+    }
 }
