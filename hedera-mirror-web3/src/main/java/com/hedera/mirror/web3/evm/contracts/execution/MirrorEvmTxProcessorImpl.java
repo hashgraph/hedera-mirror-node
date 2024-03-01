@@ -33,6 +33,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldStat
 import com.hedera.services.store.models.Account;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.common.utility.SemanticVersion;
 import jakarta.inject.Named;
 import java.time.Instant;
 import java.util.Map;
@@ -61,8 +62,8 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final PricesAndFeesProvider pricesAndFeesProvider,
             final EvmProperties dynamicProperties,
             final GasCalculator gasCalculator,
-            final Map<String, Provider<MessageCallProcessor>> mcps,
-            final Map<String, Provider<ContractCreationProcessor>> ccps,
+            final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps,
+            final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
@@ -129,7 +130,11 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
             // If there is no bytecode, it means we have a non-token and non-contract account,
             // hence the code should be null and there must be a value transfer.
-            if (code == null && value <= 0 && !payload.isEmpty() && isNotCallingNativePrecompile) {
+            if (!dynamicProperties.callsToNonExistingEntitiesEnabled(to)
+                    && code == null
+                    && value <= 0
+                    && !payload.isEmpty()
+                    && isNotCallingNativePrecompile) {
                 throw new MirrorEvmTransactionException(
                         ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
             }

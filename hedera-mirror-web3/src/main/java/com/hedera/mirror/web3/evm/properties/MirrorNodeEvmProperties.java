@@ -20,11 +20,13 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.swirlds.common.utility.SemanticVersion;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -75,10 +77,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private long exchangeRateGasReq = 100;
 
-    @NotBlank
-    private String evmVersion = EVM_VERSION;
+    private SemanticVersion evmVersion = EVM_VERSION;
 
-    private NavigableMap<Long, String> evmVersions = new TreeMap<>();
+    private NavigableMap<Long, SemanticVersion> evmVersions = new TreeMap<>();
 
     @Getter
     @NotNull
@@ -198,17 +199,19 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public boolean allowCallsToNonContractAccounts() {
-        return false;
+        return getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) >= 0;
     }
 
     @Override
     public Set<Address> grandfatherContracts() {
-        return new HashSet<>();
+        return Set.of();
     }
 
     @Override
     public boolean callsToNonExistingEntitiesEnabled(Address target) {
-        return false;
+        return !(getSemanticEvmVersion().compareTo(EVM_VERSION_0_46) < 0
+                || !allowCallsToNonContractAccounts()
+                || grandfatherContracts().contains(target));
     }
 
     @Override
@@ -223,6 +226,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public String evmVersion() {
+        var context = ContractCallContext.get();
+        if (context.useHistorical()) {
+            return getEvmVersionForBlock(context.getRecordFile().getIndex()).toString();
+        }
+        return evmVersion.toString();
+    }
+
+    public SemanticVersion getSemanticEvmVersion() {
         var context = ContractCallContext.get();
         if (context.useHistorical()) {
             return getEvmVersionForBlock(context.getRecordFile().getIndex());
@@ -257,7 +268,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      * @return A NavigableMap<Long, String> representing the EVM versions. The key is the block number, and the value is
      * the EVM version.
      */
-    public NavigableMap<Long, String> getEvmVersions() {
+    public NavigableMap<Long, SemanticVersion> getEvmVersions() {
         if (!CollectionUtils.isEmpty(evmVersions)) {
             return evmVersions;
         }
@@ -280,8 +291,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
      * @return The most suitable EVM version for the given block number, or a default version if no specific match is
      * found.
      */
-    String getEvmVersionForBlock(long blockNumber) {
-        Entry<Long, String> evmEntry = getEvmVersions().floorEntry(blockNumber);
+    SemanticVersion getEvmVersionForBlock(long blockNumber) {
+        Entry<Long, SemanticVersion> evmEntry = getEvmVersions().floorEntry(blockNumber);
         if (evmEntry != null) {
             return evmEntry.getValue();
         } else {
@@ -299,13 +310,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
         private final byte[] ledgerId;
         private final Bytes32 chainId;
-        private final NavigableMap<Long, String> evmVersions;
+        private final NavigableMap<Long, SemanticVersion> evmVersions;
 
-        private static NavigableMap<Long, String> mainnetEvmVersionsMap() {
-            NavigableMap<Long, String> evmVersionsMap = new TreeMap<>();
+        private static NavigableMap<Long, SemanticVersion> mainnetEvmVersionsMap() {
+            NavigableMap<Long, SemanticVersion> evmVersionsMap = new TreeMap<>();
             evmVersionsMap.put(0L, EVM_VERSION_0_30);
             evmVersionsMap.put(44029066L, EVM_VERSION_0_34);
             evmVersionsMap.put(49117794L, EVM_VERSION_0_38);
+            evmVersionsMap.put(60258042L, EVM_VERSION_0_46);
             return Collections.unmodifiableNavigableMap(evmVersionsMap);
         }
     }

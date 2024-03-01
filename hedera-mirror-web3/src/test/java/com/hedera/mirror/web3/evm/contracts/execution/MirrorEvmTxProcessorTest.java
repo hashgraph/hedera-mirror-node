@@ -47,6 +47,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.swirlds.common.utility.SemanticVersion;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
@@ -133,8 +134,8 @@ class MirrorEvmTxProcessorTest {
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
 
-    private String mcpVersion;
-    private String ccpVersion;
+    private SemanticVersion mcpVersion;
+    private SemanticVersion ccpVersion;
     private static final String FUNCTION_HASH = "0x8070450f";
 
     @BeforeEach
@@ -143,11 +144,10 @@ class MirrorEvmTxProcessorTest {
         final var operationRegistry = new OperationRegistry();
         MainnetEVMs.registerShanghaiOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
         operations.forEach(operationRegistry::put);
-        final String EVM_VERSION_0_34 = "v0.34";
         final var v30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
         final var v34 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
         final var v38 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.SHANGHAI);
-        final Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
+        final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps = Map.of(
                 EVM_VERSION_0_30,
                 () -> {
                     mcpVersion = EVM_VERSION_0_30;
@@ -163,7 +163,7 @@ class MirrorEvmTxProcessorTest {
                     mcpVersion = EVM_VERSION_0_38;
                     return new MessageCallProcessor(v38, new PrecompileContractRegistry());
                 });
-        Map<String, Provider<ContractCreationProcessor>> processorsMap = Map.of(
+        Map<SemanticVersion, Provider<ContractCreationProcessor>> processorsMap = Map.of(
                 EVM_VERSION_0_30, () -> new ContractCreationProcessor(gasCalculator, v30, true, List.of(), 1),
                 EVM_VERSION_0_34, () -> new ContractCreationProcessor(gasCalculator, v34, true, List.of(), 1),
                 EVM_VERSION_0_38, () -> new ContractCreationProcessor(gasCalculator, v38, true, List.of(), 1));
@@ -189,7 +189,7 @@ class MirrorEvmTxProcessorTest {
     @MethodSource("provideIsEstimateParameters")
     void assertSuccessExecution(boolean isEstimate) {
         givenValidMockWithoutGetOrCreate();
-        when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_34);
+        when(evmProperties.getSemanticEvmVersion()).thenReturn(EVM_VERSION_0_34);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
         if (isEstimate) {
