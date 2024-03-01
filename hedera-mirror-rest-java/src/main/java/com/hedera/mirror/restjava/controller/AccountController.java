@@ -43,7 +43,6 @@ public class AccountController {
     private final NftAllowanceMapper accountMapper;
 
     @GetMapping(value = "/{accountId}/allowances/nfts")
-    @ResponseBody
     NftAllowancesResponse getNftAllowancesByAccountId(
             @PathVariable("accountId") @Valid String accountId,
             @RequestParam("account.id") @Valid Optional<String> accountIdQueryParam,
@@ -72,7 +71,7 @@ public class AccountController {
         }
 
         // Owner value decides if owner or spender should be set to the accountId.
-        if (isOwner) {
+        if (isOwner != null) {
             requestBuilder.ownerId(accountPathParam);
         } else {
             requestBuilder.spenderId(accountPathParam);
