@@ -100,7 +100,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Min(1)
-    private long maxAutoRenewDuration = 10000L;
+    private long maxAutoRenewDuration = 8000001L;
 
     @Getter
     @Min(1)
@@ -159,7 +159,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @Min(1)
-    private long minAutoRenewDuration = 1000L;
+    private long minAutoRenewDuration = 2592000L;
 
     @Getter
     @NotNull
