@@ -267,7 +267,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     }
 
     @Test
-    void usesAliasesForDecodingHelp() {
+    void usesAliasesForDecodingHelpForV38() {
         given(mirrorEvmContractAliases.resolveForEvm(alias)).willReturn(sponsor);
         given(tokenAccessor.canonicalAddress(alias)).willReturn(alias);
 
@@ -276,7 +276,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
     }
 
     @Test
-    void unaliasingFailsWhenNotUsingCanonicalAddress() {
+    void unaliasingFailsWhenNotUsingCanonicalAddressForV38() {
         given(tokenAccessor.canonicalAddress(alias)).willReturn(alias2);
 
         assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));

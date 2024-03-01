@@ -35,6 +35,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
     private static final List<BlockType> BLOCK_NUMBERS_FOR_EVM_VERSION = List.of(
+            BlockType.of(String.valueOf(EVM_V_46_BLOCK)),
             BlockType.of(String.valueOf(EVM_V_38_BLOCK)),
             BlockType.of(String.valueOf(EVM_V_34_BLOCK)),
             BlockType.of(String.valueOf(EVM_V_34_BLOCK - 1)));

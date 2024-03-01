@@ -103,6 +103,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     // The block numbers lower than EVM v0.34 are considered part of EVM v0.30 which includes all precompiles
     protected static final long EVM_V_34_BLOCK = 50L;
     protected static final long EVM_V_38_BLOCK = 100L;
+    protected static final long EVM_V_46_BLOCK = 150L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
 
     // Exchange rates from local node.
@@ -140,6 +141,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address REDIRECT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1265));
     protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1266));
     protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1269));
+    protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1270));
 
     // Account addresses
     protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
@@ -482,7 +484,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static RecordFile recordFileBeforeEvm34;
     protected static RecordFile recordFileAfterEvm34;
     protected static RecordFile recordFileEvm38;
-    protected static RecordFile recordFileEvm38Latest;
+    protected static RecordFile recordFileEvm46;
+    protected static RecordFile recordFileEvm46Latest;
 
     @Autowired
     protected MirrorEvmTxProcessor processor;
@@ -579,6 +582,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @Value("classpath:contracts/TestContractAddress/TestNestedAddressThis.bin")
     protected Path NESTED_ADDRESS_THIS_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/InternalCaller/InternalCaller.bin")
+    protected Path INTERNAL_CALLER_CONTRACT_BYTES_PATH;
+
+    @Value("classpath:contracts/InternalCaller/InternalCaller.json")
+    protected Path INTERNAL_CALLER_CONTRACT_ABI_PATH;
 
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
@@ -1034,6 +1043,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         stateContractPersist();
         precompileContractPersist();
         systemExchangeRateContractPersist();
+        internalCallerContractPersist();
         pseudoRandomNumberGeneratorContractPersist();
         addressThisContractPersist();
         final var modificationContract = modificationContractPersist();
@@ -1294,7 +1304,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .recordFile()
                 .customize(f -> f.index(EVM_V_38_BLOCK))
                 .persist();
-        recordFileEvm38Latest = domainBuilder.recordFile().persist();
+        recordFileEvm46 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_46_BLOCK))
+                .persist();
+        recordFileEvm46Latest = domainBuilder.recordFile().persist();
     }
 
     private void historicalDataPersist() {
@@ -2708,5 +2722,44 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(exchangeRateContractBytes))
                 .persist();
         return exchangeRateContractEntityId;
+    }
+
+    private EntityId internalCallerContractPersist() {
+        final var internalCallerContractBytes =
+                functionEncodeDecoder.getContractBytes(INTERNAL_CALLER_CONTRACT_BYTES_PATH);
+        final var internalCallerContractEntityId = fromEvmAddress(INTERNAL_CALLS_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var internalCallerContractEvmAddress = toEvmAddress(internalCallerContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(internalCallerContractEntityId.getId())
+                        .num(internalCallerContractEntityId.getNum())
+                        .evmAddress(internalCallerContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(
+                        c -> c.id(internalCallerContractEntityId.getId()).runtimeBytecode(internalCallerContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(internalCallerContractEntityId.getId())
+                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe()))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(internalCallerContractBytes))
+                .persist();
+        return internalCallerContractEntityId;
     }
 }
