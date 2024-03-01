@@ -100,8 +100,13 @@ class ContractController {
         } else {
             receiver = Address.fromHexString(request.getTo());
         }
-
-        final var data = request.getData() != null ? Bytes.fromHexString(request.getData()) : EMPTY;
+        Bytes data;
+        try {
+            data = request.getData() != null ? Bytes.fromHexString(request.getData()) : EMPTY;
+        } catch (Exception e) {
+            throw new InvalidParametersException(
+                    "data field '%s' contains invalid odd length characters".formatted(request.getData()));
+        }
         final var isStaticCall = false;
         final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
         final var block = request.getBlock();
@@ -138,8 +143,8 @@ class ContractController {
 
     private void validateContractMaxGasLimit(ContractCallRequest request) {
         if (request.getGas() > evmProperties.getMaxGasLimit()) {
-            throw new InvalidParametersException("gas field must be less than or equal to %d"
-                    .formatted(evmProperties.getMaxGasLimit()));
+            throw new InvalidParametersException(
+                    "gas field must be less than or equal to %d".formatted(evmProperties.getMaxGasLimit()));
         }
     }
 

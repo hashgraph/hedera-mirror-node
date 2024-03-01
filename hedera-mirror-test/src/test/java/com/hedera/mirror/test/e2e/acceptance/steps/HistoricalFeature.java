@@ -48,6 +48,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeat
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.CustomFee;
@@ -210,7 +211,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         networkTransactionResponse =
                 accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
-        var initialResponse = callContract(data, estimateContractSolidityAddress).getResultAsNumber();
+        var initialResponse =
+                callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         var initialBlockNumber = getLastBlockNumber();
         waitForNextBlock();
         networkTransactionResponse =
@@ -246,12 +248,14 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
-        var responseFromType = callContract(blockType, data, estimateContractSolidityAddress).getResultAsNumber();
+        var responseFromType =
+                callContract(blockType, data, estimateContractSolidityAddress).getResultAsNumber();
         var responseFromLatest =
                 callContract(data, estimateContractSolidityAddress).getResultAsNumber();
         assertThat(responseFromLatest).isEqualTo(responseFromType);
     }
 
+    @RetryAsserts
     @Then("I verify the response from non existing account")
     public void getHistoricalDataForNonExistingAccount() {
         deletableAccountId = accountClient.getAccount(AccountNameEnum.DELETABLE);
@@ -259,6 +263,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(deletableAccountId.getAccountId().toSolidityAddress()));
+
+        waitUntilAccountIsImported(deletableAccountId.getAccountId());
+
         var initialResponse = callContract(data, estimateContractSolidityAddress);
         var initialBlock = getLastBlockNumber();
 
@@ -850,6 +857,21 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                     .until(() -> Integer.parseInt(getLastBlockNumber()) > currentBlockNumber);
         } catch (ConditionTimeoutException e) {
             log.info("No new block found within 3 seconds");
+        }
+    }
+
+    private void waitUntilAccountIsImported(AccountId accountId) {
+        try {
+            Awaitility.await()
+                    .atMost(3, TimeUnit.SECONDS)
+                    .pollInterval(1, TimeUnit.SECONDS)
+                    .ignoreExceptions()
+                    .until(() -> mirrorClient
+                                    .getAccountDetailsUsingEvmAddress(accountId)
+                                    .getEvmAddress()
+                            != null);
+        } catch (ConditionTimeoutException e) {
+            log.info("The account could not be imported in the mirror node for 3 seconds.");
         }
     }
 

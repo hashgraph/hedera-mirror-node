@@ -23,33 +23,24 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Named
-public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration {
+public class TokenAccountBalanceMigration extends AbstractTimestampInfoMigration {
 
     private static final String UPDATE_TOKEN_ACCOUNT_SQL =
             """
-             with timestamp_range as (
-                select consensus_timestamp as snapshot_timestamp,
-                    consensus_timestamp + time_offset as from_timestamp,
-                    consensus_end as to_timestamp
-                from account_balance_file
-                join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
-                  on consensus_timestamp + time_offset <= consensus_end
-                where synthetic is false
-                order by consensus_timestamp desc
-                limit 1
-            ),
-            token_balance_latest as (
-                select *
-                from token_balance
-                join timestamp_range on snapshot_timestamp = consensus_timestamp
+            with token_balance_snapshot as (
+              select distinct on (account_id, token_id) *
+              from token_balance
+              where consensus_timestamp <= :snapshotTimestamp and consensus_timestamp > :snapshotTimestamp - 2592000000000000
+              order by account_id, token_id, consensus_timestamp desc
             ),
             token_transfer as (
                 select account_id, token_id, sum(amount) as amount
                 from token_transfer tt
-                join timestamp_range on consensus_timestamp > from_timestamp and consensus_timestamp <= to_timestamp
+                where consensus_timestamp > :fromTimestamp and consensus_timestamp <= :toTimestamp
                 group by account_id, token_id
             ),
             initial_balance as (
@@ -58,8 +49,8 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
                     when ta.associated is false then 0
                     else coalesce(tt.amount + tb.balance, tb.balance, 0)
                 end as balance,
-                to_timestamp as balance_timestamp
-              from token_balance_latest tb
+                :toTimestamp as balance_timestamp
+              from token_balance_snapshot tb
               left join token_account ta on ta.account_id = tb.account_id and ta.token_id = tb.token_id
               left join token_transfer tt on tt.token_id = tb.token_id and tt.account_id = tb.account_id
             )
@@ -71,16 +62,19 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
               balance_timestamp = excluded.balance_timestamp;
             """;
 
-    private final JdbcOperations jdbcOperations;
-
     @Lazy
     public TokenAccountBalanceMigration(
-            JdbcOperations jdbcOperations,
-            ImporterProperties importerProperties,
             AccountBalanceFileRepository accountBalanceFileRepository,
-            RecordFileRepository recordFileRepository) {
-        super(importerProperties.getMigration(), accountBalanceFileRepository, recordFileRepository);
-        this.jdbcOperations = jdbcOperations;
+            ImporterProperties importerProperties,
+            NamedParameterJdbcTemplate jdbcTemplate,
+            RecordFileRepository recordFileRepository,
+            TransactionTemplate transactionTemplate) {
+        super(
+                accountBalanceFileRepository,
+                importerProperties.getMigration(),
+                jdbcTemplate,
+                recordFileRepository,
+                transactionTemplate);
     }
 
     @Override
@@ -90,13 +84,13 @@ public class TokenAccountBalanceMigration extends TimeSensitiveBalanceMigration 
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.87.2");
+        return MigrationVersion.fromVersion("1.89.2"); // The version which deduplicates balance tables
     }
 
     @Override
     protected void doMigrate() {
         var stopwatch = Stopwatch.createStarted();
-        int count = jdbcOperations.update(UPDATE_TOKEN_ACCOUNT_SQL);
+        var count = doMigrate(UPDATE_TOKEN_ACCOUNT_SQL);
         log.info("Migrated {} token account balances in {}", count, stopwatch);
     }
 }

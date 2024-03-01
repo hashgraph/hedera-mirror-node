@@ -40,6 +40,7 @@ class ContractResult {
   static FAILED_INITCODE = 'failed_initcode';
   static FUNCTION_PARAMETERS = 'function_parameters';
   static FUNCTION_RESULT = 'function_result';
+  static GAS_CONSUMED = 'gas_consumed';
   static GAS_LIMIT = 'gas_limit';
   static GAS_USED = 'gas_used';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
