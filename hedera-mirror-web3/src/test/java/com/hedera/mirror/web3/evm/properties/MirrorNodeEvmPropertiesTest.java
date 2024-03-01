@@ -20,10 +20,14 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_46;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mockStatic;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import com.hedera.mirror.web3.evm.config.EvmConfiguration;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaNetwork;
 import com.swirlds.common.utility.SemanticVersion;
 import java.util.Collections;
@@ -40,6 +44,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -50,6 +56,10 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     private static final Bytes32 CHAIN_ID = Bytes32.fromHexString("0x0128");
 
     private final MirrorNodeEvmProperties properties;
+    private MockedStatic<ContractCallContext> staticMock;
+
+    @Mock
+    private ContractCallContext contractCallContext;
 
     @BeforeEach
     void setup() {
@@ -63,6 +73,9 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         // would not affect other tests since MirrorNodeEvmProperties
         // is a singleton bean
         properties.setEvmVersions(createEvmVersionsMapCustom());
+        if (staticMock != null) {
+            staticMock.close();
+        }
     }
 
     @Test
@@ -80,6 +93,19 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         assertThat(properties.shouldAutoRenewContracts()).isFalse();
         assertThat(properties.shouldAutoRenewSomeEntityType()).isFalse();
         assertThat(properties.maxCustomFeesAllowed()).isEqualTo(MAX_CUSTOM_FEES_ALLOWED);
+    }
+
+    @ParameterizedTest
+    @MethodSource("blockNumberToEvmVersionProviderCustom")
+    void correctHistoricalEvmVersion(Long blockNumber, SemanticVersion expectedEvmVersion) {
+        staticMock = mockStatic(ContractCallContext.class);
+        staticMock.when(ContractCallContext::get).thenReturn(contractCallContext);
+        given(contractCallContext.useHistorical()).willReturn(true);
+        var recordFile = new RecordFile();
+        recordFile.setIndex(blockNumber);
+        given(contractCallContext.getRecordFile()).willReturn(recordFile);
+        properties.setEvmVersions(createEvmVersionsMapCustom());
+        assertThat(properties.evmVersion()).isEqualTo(expectedEvmVersion.toString());
     }
 
     @ParameterizedTest
@@ -107,7 +133,7 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         evmVersions.put(0L, EVM_VERSION_0_30);
         evmVersions.put(50L, EVM_VERSION_0_34);
         evmVersions.put(100L, EVM_VERSION_0_38);
-        evmVersions.put(150L, EvmConfiguration.EVM_VERSION_0_46);
+        evmVersions.put(150L, EVM_VERSION_0_46);
         return Collections.unmodifiableNavigableMap(evmVersions);
     }
 
@@ -116,7 +142,7 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
         evmVersions.put(0L, EVM_VERSION_0_30);
         evmVersions.put(44029066L, EVM_VERSION_0_34);
         evmVersions.put(49117794L, EVM_VERSION_0_38);
-        evmVersions.put(60258042L, EvmConfiguration.EVM_VERSION_0_46);
+        evmVersions.put(60258042L, EVM_VERSION_0_46);
         return Collections.unmodifiableNavigableMap(evmVersions);
     }
 
