@@ -86,14 +86,18 @@ const createDbContainer = async () => {
   const dockerDb = await new PostgreSqlContainer(image)
     .withCopyFilesToContainer([initSqlCopy])
     .withDatabase(dbName)
-    .withLabels({workerId: workerId})
+    .withLabels({
+      // used to differentiate between containers so that Jest workers do not use a container that is already in use by another worker.
+      workerId: workerId,
+      // used to remove the containers after the tests have completed.
+      tearDownProcessId: process.env.TEARDOWN_PROCESS_ID,
+    })
     .withPassword('mirror_node_pass')
     .withReuse()
     .withUsername('mirror_node')
     .start();
   logger.info(`Started PostgreSQL container with image ${image}`);
 
-  fs.closeSync(fs.openSync(path.join(process.env.CONTAINER_TEMP_DIR, dockerDb.getId()), 'w'));
   return dockerDb.getConnectionUri();
 };
 

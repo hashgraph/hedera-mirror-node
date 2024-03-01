@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
 import log4js from 'log4js';
 import {getContainerRuntimeClient} from 'testcontainers';
 
 export default async function () {
-  const containerIds = fs.readdirSync(process.env.CONTAINER_TEMP_DIR);
   const client = await getContainerRuntimeClient();
-  for (const id of containerIds) {
-    const container = client.container.getById(id);
+  while (true) {
+    const container = await client.container.fetchByLabel('tearDownProcessId', process.env.TEARDOWN_PROCESS_ID);
+    if (!container) {
+      break;
+    }
+
     await client.container.stop(container);
     await client.container.remove(container);
   }
 
-  fs.rmSync(process.env.CONTAINER_TEMP_DIR, {force: true, recursive: true});
-  console.info(`Removed temp directory ${process.env.CONTAINER_TEMP_DIR}`);
   log4js.shutdown();
 }

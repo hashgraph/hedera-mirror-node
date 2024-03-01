@@ -14,12 +14,6 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-
 export default async function () {
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'containerIds-'));
-  process.env.CONTAINER_TEMP_DIR = tmpDir;
-  console.info(`Created temp directory ${tmpDir} for container id file`);
+  process.env.TEARDOWN_PROCESS_ID = process.pid.toString();
 }
