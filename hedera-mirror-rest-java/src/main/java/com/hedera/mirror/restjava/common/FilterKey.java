@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.restjava.common;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class FilterKey {
 
     public static final String ACCOUNT_ID = "account.id";

@@ -71,7 +71,7 @@ public class AccountController {
         }
 
         // Owner value decides if owner or spender should be set to the accountId.
-        if (isOwner != null) {
+        if (isOwner) {
             requestBuilder.ownerId(accountPathParam);
         } else {
             requestBuilder.spenderId(accountPathParam);
