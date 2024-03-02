@@ -25,7 +25,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
@@ -127,14 +126,17 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
         var initial = getLast();
         var previous = initial;
         int size = streamFiles.size();
-        var filenames = new ArrayList<String>(size);
         var stopwatch = Stopwatch.createStarted();
         boolean success = true;
         T streamFile = null;
+        String first = null;
 
         try {
             for (int i = 0; i < size; ++i) {
                 streamFile = streamFiles.get(i);
+                if (first == null) {
+                    first = streamFile.getName();
+                }
 
                 if (!shouldParse(previous, streamFile)) {
                     streamFile.clear();
@@ -145,7 +147,6 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
                 count += streamFile.getCount();
                 previous = streamFile;
-                filenames.add(streamFile.getName());
             }
 
             if (initial == previous) {
@@ -154,7 +155,12 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
             doFlush(previous);
             log.info(
-                    "Successfully batch processed {} items from {} files in {}: {}", count, size, stopwatch, filenames);
+                    "Successfully batch processed {} items from {} files in {}: [{}, {}]",
+                    count,
+                    size,
+                    stopwatch,
+                    first,
+                    previous.getName());
 
             Instant consensusInstant = Instant.ofEpochSecond(0L, previous.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));

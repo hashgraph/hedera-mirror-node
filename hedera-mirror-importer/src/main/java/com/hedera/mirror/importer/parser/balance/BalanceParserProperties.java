@@ -31,17 +31,17 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.importer.parser.balance")
 public class BalanceParserProperties extends AbstractParserProperties {
 
-    public BalanceParserProperties() {
-        queueCapacity = 0;
-        retry.setMaxAttempts(3);
-        transactionTimeout = Duration.ofSeconds(300);
-    }
-
     @Min(1)
     private int batchSize = 200_000;
 
     @Min(1)
     private int fileBufferSize = 200_000;
+
+    public BalanceParserProperties() {
+        batch.setMaxItems(batchSize * 5L);
+        retry.setMaxAttempts(3);
+        transactionTimeout = Duration.ofMinutes(5L);
+    }
 
     @Override
     public StreamType getStreamType() {

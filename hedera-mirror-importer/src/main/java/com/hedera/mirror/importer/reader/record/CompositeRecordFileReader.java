@@ -75,7 +75,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
         } catch (IOException e) {
             throw new StreamFileReaderException("Error reading record file " + filename, e);
         } finally {
-            log.info(
+            log.debug(
                     "Read {} items {}successfully from v{} record file {} in {}",
                     count,
                     count != 0 ? "" : "un",
