@@ -3226,10 +3226,12 @@ components:
       items:
         $ref: "#/components/schemas/StakingRewardTransfer"
     Timestamp:
+      description: A Unix timestamp in seconds.nanoseconds format
       type: string
       example: "1586567700.453054000"
       pattern: '^\d{1,10}(\.\d{1,9})?$'
     TimestampNullable:
+      description: A Unix timestamp in seconds.nanoseconds format
       type: string
       example: "1586567700.453054000"
       pattern: '^\d{1,10}(\.\d{1,9})?$'
@@ -4424,7 +4426,7 @@ components:
         type: string
         pattern: ^((eq|gt|gte|lt|lte):)?\d{1,19}?$
     timestampQueryParam:
-      description: The consensus timestamp in seconds.nanoseconds format with an optional comparison operator
+      description: The consensus timestamp as a Unix timestamp in seconds.nanoseconds format with an optional comparison operator
       name: timestamp
       in: query
       explode: true
@@ -4482,14 +4484,14 @@ components:
     timestampPathParam:
       name: timestamp
       in: path
-      description: The timestamp at which the associated transaction reached consensus
+      description: The Unix timestamp in seconds.nanoseconds format, the timestamp at which the associated transaction reached consensus
       required: true
       example: 1234567890.000000700
       schema:
         type: string
         pattern: ^\d{1,10}(.\d{1,9})?$
     stateTimestampQueryParam:
-      description: The consensus timestamp of the contract state in seconds.nanoseconds format with an optional comparison operator
+      description: The consensus timestamp of the contract state as a Unix timestamp in seconds.nanoseconds format with an optional comparison operator
       name: timestamp
       in: query
       explode: true
@@ -4539,6 +4541,7 @@ components:
           type: string
           pattern: ^((eq|gt|gte|lt|lte):)?\d{1,10}(.\d{1,9})?$
     tokenInfoTimestampQueryParam:
+      description: The Unix timestamp in seconds.nanoseconds format
       name: timestamp
       in: query
       explode: true
