@@ -67,6 +67,7 @@ import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -564,9 +565,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
          * the metadata has been cleared in the update. Replace the value with null in dest so that it is reflected
          * as a null column value in the database on upsert.
          */
-        if (dest.getMetadata() == null) {
+        var destMetadata = dest.getMetadata();
+        if (destMetadata == null) {
             dest.setMetadata(src.getMetadata());
-        } else if (dest.getMetadata() == EMPTY_BYTE_ARRAY) {
+        } else if (Arrays.equals(EMPTY_BYTE_ARRAY, destMetadata)) {
             dest.setMetadata(null);
         }
 
@@ -648,9 +650,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
          * For a value other than null or EMPTY_BYTE_ARRAY then the updated field value is present in the current
          * instance and is to be carried forward.
          */
-        if (current.getMetadata() == null) {
+        var currentMetadata = current.getMetadata();
+        if (currentMetadata == null) {
             current.setMetadata(previous.getMetadata());
-        } else if (current.getMetadata() == EMPTY_BYTE_ARRAY) {
+        } else if (Arrays.equals(EMPTY_BYTE_ARRAY, currentMetadata)) {
             current.setMetadata(null);
         }
 
