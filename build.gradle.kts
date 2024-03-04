@@ -39,7 +39,7 @@ extra.apply {
 }
 
 // Temporarily override json version until snyk/gradle-plugin has an update with a fix
-configurations["dataFiles"].dependencies.add(dependencies.create("org.json:json:20240205"))
+configurations["dataFiles"].dependencies.add(dependencies.create("org.json:json:20240303"))
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
 // using a dependency
