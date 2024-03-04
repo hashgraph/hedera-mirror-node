@@ -657,9 +657,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setMetadata(null);
         }
 
-        if (current.getMetadataKey() == null) {
+        var currentMetadataKey = current.getMetadataKey();
+        if (currentMetadataKey == null) {
             current.setMetadataKey(previous.getMetadataKey());
-        } else if (current.getMetadataKey() == EMPTY_BYTE_ARRAY) {
+        } else if (Arrays.equals(EMPTY_BYTE_ARRAY, currentMetadataKey)) {
             current.setMetadataKey(null);
         }
 
