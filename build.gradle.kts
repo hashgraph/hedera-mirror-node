@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.61.1")
+    set("grpcVersion", "1.62.2")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.3")
