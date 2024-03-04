@@ -60,8 +60,7 @@ const setupIntegrationTest = () => {
   jest.setTimeout(40000);
 
   beforeAll(async () => {
-    await integrationDbOps.flywayMigrate();
-    return integrationDbOps.createPool();
+    return await integrationDbOps.createPool();
   }, defaultBeforeAllTimeoutMillis);
 
   afterAll(async () => Promise.all([ownerPool.end(), pool.end()]));
