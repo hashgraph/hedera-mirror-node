@@ -63,7 +63,7 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
-        api("com.hedera.evm:hedera-evm:0.47.0")
+        api("com.hedera.evm:hedera-evm:0.47.1")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.48.0-alpha.0-SNAPSHOT")
         api("com.hedera.hashgraph:sdk:2.29.2")
         api("com.ongres.scram:client:2.1")
@@ -99,7 +99,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
         api("org.testcontainers:junit-jupiter:1.19.6")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.24.10")
+        api("software.amazon.awssdk:bom:2.25.1")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }
