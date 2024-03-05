@@ -90,6 +90,57 @@ describe('token extractSqlFromTokenRequest tests', () => {
     );
   });
 
+  test('Verify multiple token ids query', () => {
+    const initialQuery = tokens.tokensSelectQuery;
+    const initialParams = [];
+    const filters = [
+      {
+        key: constants.filterKeys.TOKEN_ID,
+        operator: ' = ',
+        value: '111',
+      },
+      {
+        key: constants.filterKeys.TOKEN_ID,
+        operator: ' = ',
+        value: '222',
+      },
+      {
+        key: constants.filterKeys.TOKEN_ID,
+        operator: ' = ',
+        value: '333',
+      },
+    ];
+
+    const expectedQuery = `
+        select
+            t.decimals,
+            t.freeze_status,
+            e.key,
+            t.kyc_status,
+            t.name,
+            t.symbol,
+            t.token_id,
+            t.type
+        from token t
+        where t.token_id in ($1, $2, $3)
+        order by t.token_id asc
+            limit $4`;
+    const expectedParams = ['111', '222', '333', defaultLimit];
+    const expectedOrder = constants.orderFilterValues.ASC;
+    const expectedLimit = defaultLimit;
+
+    verifyExtractSqlFromTokenRequest(
+      initialQuery,
+      initialParams,
+      filters,
+      undefined,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+
   test('Verify public key filter', () => {
     const initialQuery = [tokens.tokensSelectQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [];
