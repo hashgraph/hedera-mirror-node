@@ -149,6 +149,7 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
   // add filters
   let limit = defaultLimit;
   let order = orderFilterValues.ASC;
+  const inClause = [];
   conditions = conditions || [];
   for (const filter of filters) {
     if (filter.key === filterKeys.LIMIT) {
@@ -172,7 +173,16 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
       continue;
     }
 
+    if (columnKey === sqlQueryColumns.TOKEN_ID && filter.operator === utils.opsMap.eq) {
+      inClause.push(`$${params.push(filter.value)}`);
+      continue;
+    }
+
     conditions.push(`${filterColumnMap[filter.key]}${filter.operator}$${params.push(filter.value)}`);
+  }
+
+  if (inClause.length > 0) {
+    conditions.push(`${sqlQueryColumns.TOKEN_ID} in (${inClause})`);
   }
 
   const whereQuery = conditions.length !== 0 ? `where ${conditions.join(' and ')}` : '';
@@ -301,6 +311,13 @@ const validateTokenQueryFilter = (param, op, val) => {
   }
 
   return ret;
+};
+
+const toQueryObject = (queryAndParams) => {
+  return {
+    query: queryAndParams[0],
+    params: queryAndParams[1],
+  };
 };
 
 const getTokensRequest = async (req, res) => {
