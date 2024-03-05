@@ -32,6 +32,7 @@ plugins {
 extra.apply {
     set("grpcVersion", "1.61.1")
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
+    set("jooq.version", "3.19.5")
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
