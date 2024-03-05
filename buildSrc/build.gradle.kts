@@ -25,8 +25,7 @@ dependencies {
     val dockerJavaVersion = "3.3.5"
 
     // Add docker-java dependencies before gradle-docker-plugin to avoid the docker-java jars
-    // embedded in the plugin
-    // being used by testcontainers-postgresql
+    // embedded in the plugin being used by testcontainers-postgresql
     implementation("com.github.docker-java:docker-java-api:$dockerJavaVersion")
     implementation("com.github.docker-java:docker-java-core:$dockerJavaVersion")
 
