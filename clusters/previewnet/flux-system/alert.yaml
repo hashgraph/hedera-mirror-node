@@ -1,0 +1,21 @@
+apiVersion: notification.toolkit.fluxcd.io/v1beta1
+kind: Alert
+metadata:
+  name: mirror
+  namespace: flux-system
+spec:
+  eventSeverity: info
+  eventSources:
+    - kind: HelmRelease
+      name: '*'
+      namespace: common
+    - kind: HelmRelease
+      name: '*'
+      namespace: previewnet
+    - kind: Kustomization
+      name: '*'
+      namespace: flux-system
+  providerRef:
+    name: slack
+  summary: "previewnet cluster"
+
