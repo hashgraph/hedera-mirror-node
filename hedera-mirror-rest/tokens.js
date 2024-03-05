@@ -174,7 +174,7 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
     }
 
     if (columnKey === sqlQueryColumns.TOKEN_ID && filter.operator === utils.opsMap.eq) {
-      inClause.push(`$${params.push(filter.value)}`);
+      inClause.push(filter.value);
       continue;
     }
 
@@ -182,7 +182,7 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
   }
 
   if (inClause.length > 0) {
-    conditions.push(`${sqlQueryColumns.TOKEN_ID} in (${inClause})`);
+    conditions.push(`${sqlQueryColumns.TOKEN_ID} = any($${params.push(inClause)})`);
   }
 
   const whereQuery = conditions.length !== 0 ? `where ${conditions.join(' and ')}` : '';

@@ -122,10 +122,10 @@ describe('token extractSqlFromTokenRequest tests', () => {
             t.token_id,
             t.type
         from token t
-        where t.token_id in ($1, $2, $3)
+        where t.token_id = any($1)
         order by t.token_id asc
-            limit $4`;
-    const expectedParams = ['111', '222', '333', defaultLimit];
+            limit $2`;
+    const expectedParams = [['111', '222', '333'], defaultLimit];
     const expectedOrder = constants.orderFilterValues.ASC;
     const expectedLimit = defaultLimit;
 
@@ -345,18 +345,17 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              and e.public_key = $2
                              and t.token_id > $3
                              and t.token_id =< $4
-                             and t.type = $7
-                             and t.token_id in ($5, $6)
+                             and t.type = $5
+                             and t.token_id = any($6)
                            order by t.token_id desc
-                           limit $8`;
+                           limit $7`;
     const expectedParams = [
       5,
       '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       '2',
       '98',
-      '3',
-      '100',
       tokenType,
+      ['3', '100'],
       '3',
     ];
     const expectedOrder = constants.orderFilterValues.DESC;
