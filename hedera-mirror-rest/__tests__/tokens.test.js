@@ -311,6 +311,9 @@ describe('token extractSqlFromTokenRequest tests', () => {
         value: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       },
       {key: constants.filterKeys.TOKEN_ID, operator: ' > ', value: '2'},
+      {key: constants.filterKeys.TOKEN_ID, operator: ' =< ', value: '98'},
+      {key: constants.filterKeys.TOKEN_ID, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.TOKEN_ID, operator: ' = ', value: '100'},
       {
         key: constants.filterKeys.TOKEN_TYPE,
         operator: ' = ',
@@ -341,10 +344,21 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            where ta.associated is true
                              and e.public_key = $2
                              and t.token_id > $3
-                             and t.type = $4
+                             and t.token_id =< $4
+                             and t.type = $7
+                             and t.token_id in ($5, $6)
                            order by t.token_id desc
-                           limit $5`;
-    const expectedParams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', tokenType, '3'];
+                           limit $8`;
+    const expectedParams = [
+      5,
+      '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
+      '2',
+      '98',
+      '3',
+      '100',
+      tokenType,
+      '3',
+    ];
     const expectedOrder = constants.orderFilterValues.DESC;
     const expectedLimit = 3;
 

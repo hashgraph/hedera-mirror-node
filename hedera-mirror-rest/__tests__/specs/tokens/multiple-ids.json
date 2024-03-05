@@ -52,29 +52,59 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens?token.id=0.0.1135&token.id=0.7.25301"],
-  "responseStatus": 200,
-  "responseJson": {
-    "tokens": [
-      {
-        "token_id": "0.0.1135",
-        "symbol": "ORIGINALRDKSE",
-        "admin_key": null,
-        "decimals": 2,
-        "name": "Original",
-        "type": "FUNGIBLE_COMMON"
-      },
-      {
-        "token_id": "0.7.25301",
-        "symbol": "MIRRORTOKEN",
-        "admin_key": null,
-        "decimals": 3,
-        "name": "Mirror",
-        "type": "FUNGIBLE_COMMON"
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/tokens?token.id=0.0.1135&token.id=0.7.25301",
+        "/api/v1/tokens?token.id=0.0.1135&token.id=eq:0.7.25301",
+        "/api/v1/tokens?token.id=0.0.1135&token.id=eq:0.7.25301&token.id=gt:1134&token.id=lte:0.7.25301",
+        "/api/v1/tokens?token.id=0.0.1135&token.id=eq:0.7.25301&token.id=gte:1135&token.id=lt:0.7.25302"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "tokens": [
+          {
+            "token_id": "0.0.1135",
+            "symbol": "ORIGINALRDKSE",
+            "admin_key": null,
+            "decimals": 2,
+            "name": "Original",
+            "type": "FUNGIBLE_COMMON"
+          },
+          {
+            "token_id": "0.7.25301",
+            "symbol": "MIRRORTOKEN",
+            "admin_key": null,
+            "decimals": 3,
+            "name": "Mirror",
+            "type": "FUNGIBLE_COMMON"
+          }
+        ],
+        "links": {
+          "next": null
+        }
       }
-    ],
-    "links": {
-      "next": null
+    },
+    {
+      "urls": [
+        "/api/v1/tokens?token.id=0.0.1135&token.id=0.7.25301&token.id=gt:1134&token.id=lt:0.7.25301"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "tokens": [
+          {
+            "token_id": "0.0.1135",
+            "symbol": "ORIGINALRDKSE",
+            "admin_key": null,
+            "decimals": 2,
+            "name": "Original",
+            "type": "FUNGIBLE_COMMON"
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }
