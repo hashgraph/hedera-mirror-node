@@ -313,13 +313,6 @@ const validateTokenQueryFilter = (param, op, val) => {
   return ret;
 };
 
-const toQueryObject = (queryAndParams) => {
-  return {
-    query: queryAndParams[0],
-    params: queryAndParams[1],
-  };
-};
-
 const getTokensRequest = async (req, res) => {
   // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle
   // per resource unique param names

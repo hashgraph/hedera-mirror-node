@@ -1,5 +1,5 @@
 {
-  "description": "Token api call for all tokens within a given token id range",
+  "description": "Token api call with multiple token id query parameters",
   "setup": {
     "entities": [
       {
