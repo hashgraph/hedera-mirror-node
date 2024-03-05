@@ -379,8 +379,7 @@ const getTransferDistinctTimestampsQuery = (
   const joinClause =
     (resultTypeQuery || transactionTypeQuery) &&
     `join ${Transaction.tableName} as ${Transaction.tableAlias}
-      on ${fullTimestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} and
-        ${fullPayerAccountIdColumn} = ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}`;
+      using (${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID})`;
   const whereClause = buildWhereClause(
     accountQuery,
     transferTimestampQuery,
@@ -390,8 +389,8 @@ const getTransferDistinctTimestampsQuery = (
   );
 
   return `
-    select
-      distinct ${fullTimestampColumn} as consensus_timestamp,
+    select distinct on (${fullTimestampColumn})
+      ${fullTimestampColumn} as consensus_timestamp,
       ${fullPayerAccountIdColumn} as payer_account_id
     from ${tableName} as ${tableAlias}
     ${joinClause}

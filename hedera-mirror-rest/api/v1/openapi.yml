@@ -240,7 +240,7 @@ paths:
       summary: This API is currently not supported.Get non fungible token allowances for an account
       description: |
         **This API is currently under development and is not supported yet**
-        
+
         Returns information for non fungible token allowances for an account.
 
         ## Ordering
@@ -1302,7 +1302,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.100.0-SNAPSHOT
+  version: 0.101.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -2141,6 +2141,12 @@ components:
           example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
           nullable: true
           type: string
+        gas_consumed:
+          description: The units of consumed gas by the EVM to execute contract
+          example: 35000
+          format: int64
+          nullable: true
+          type: integer
         gas_limit:
           description: The maximum units of gas allowed for contract execution
           example: 100000
@@ -2153,7 +2159,7 @@ components:
           example: "0x4a817c800"
         gas_used:
           description: The units of gas used to execute contract
-          example: 1000
+          example: 80000
           format: int64
           nullable: true
           type: integer
@@ -3220,10 +3226,12 @@ components:
       items:
         $ref: "#/components/schemas/StakingRewardTransfer"
     Timestamp:
+      description: A Unix timestamp in seconds.nanoseconds format
       type: string
       example: "1586567700.453054000"
       pattern: '^\d{1,10}(\.\d{1,9})?$'
     TimestampNullable:
+      description: A Unix timestamp in seconds.nanoseconds format
       type: string
       example: "1586567700.453054000"
       pattern: '^\d{1,10}(\.\d{1,9})?$'
@@ -4418,7 +4426,7 @@ components:
         type: string
         pattern: ^((eq|gt|gte|lt|lte):)?\d{1,19}?$
     timestampQueryParam:
-      description: The consensus timestamp in seconds.nanoseconds format with an optional comparison operator
+      description: The consensus timestamp as a Unix timestamp in seconds.nanoseconds format with an optional comparison operator. See [unixtimestamp.com](https://www.unixtimestamp.com/) for a simple way to convert a date to the 'seconds' part of the Unix time.
       name: timestamp
       in: query
       explode: true
@@ -4476,14 +4484,14 @@ components:
     timestampPathParam:
       name: timestamp
       in: path
-      description: The timestamp at which the associated transaction reached consensus
+      description: The Unix timestamp in seconds.nanoseconds format, the timestamp at which the associated transaction reached consensus. See [unixtimestamp.com](https://www.unixtimestamp.com/) for a simple way to convert a date to the 'seconds' part of the Unix time.
       required: true
       example: 1234567890.000000700
       schema:
         type: string
         pattern: ^\d{1,10}(.\d{1,9})?$
     stateTimestampQueryParam:
-      description: The consensus timestamp of the contract state in seconds.nanoseconds format with an optional comparison operator
+      description: The consensus timestamp of the contract state as a Unix timestamp in seconds.nanoseconds format with an optional comparison operator. See [unixtimestamp.com](https://www.unixtimestamp.com/) for a simple way to convert a date to the 'seconds' part of the Unix time.
       name: timestamp
       in: query
       explode: true
@@ -4533,6 +4541,7 @@ components:
           type: string
           pattern: ^((eq|gt|gte|lt|lte):)?\d{1,10}(.\d{1,9})?$
     tokenInfoTimestampQueryParam:
+      description: The Unix timestamp in seconds.nanoseconds format. See [unixtimestamp.com](https://www.unixtimestamp.com/) for a simple way to convert a date to the 'seconds' part of the Unix time.
       name: timestamp
       in: query
       explode: true

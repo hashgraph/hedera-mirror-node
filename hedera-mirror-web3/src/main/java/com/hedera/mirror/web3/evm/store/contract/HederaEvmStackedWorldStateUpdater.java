@@ -72,7 +72,12 @@ public class HederaEvmStackedWorldStateUpdater
     @Override
     public MutableAccount getOrCreate(Address address) {
         final MutableAccount account = getAccount(address);
-        return account == null ? createAccount(address) : account;
+        // if the account exists, return it
+        if (account != null) {
+            return account;
+        }
+        // if account is not present we create a ghost account that will not be persisted
+        return createGhostAccount(address);
     }
 
     @Override
@@ -163,7 +168,8 @@ public class HederaEvmStackedWorldStateUpdater
      */
     public byte[] unaliased(final byte[] evmAddress) {
         final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
-        if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))) {
+        if (!addressOrAlias.equals(tokenAccessor.canonicalAddress(addressOrAlias))
+                && !evmProperties.callsToNonExistingEntitiesEnabled(addressOrAlias)) {
             return NON_CANONICAL_REFERENCE;
         }
         return mirrorEvmContractAliases.resolveForEvm(addressOrAlias).toArrayUnsafe();
@@ -209,5 +215,12 @@ public class HederaEvmStackedWorldStateUpdater
 
     private boolean isTokenRedirect(final Address address) {
         return hederaEvmEntityAccess.isTokenAccount(address) && evmProperties.isRedirectTokenCallsEnabled();
+    }
+
+    private MutableAccount createGhostAccount(Address address) {
+        var ghostAcc = com.hedera.services.store.models.Account.getDummySenderAccount(address);
+        ghostAcc = ghostAcc.setAutoAssociationMetadata(1);
+        store.updateAccount(ghostAcc);
+        return createAccount(address, 0, Wei.ZERO);
     }
 }

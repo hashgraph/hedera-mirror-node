@@ -40,6 +40,7 @@ class ContractResultViewModel {
     this.error_message = _.isEmpty(contractResult.errorMessage) ? null : contractResult.errorMessage;
     this.from = EntityId.parse(contractResult.senderId).toEvmAddress();
     this.function_parameters = toHexString(contractResult.functionParameters, true);
+    this.gas_consumed = contractResult.gasConsumed;
     this.gas_limit = contractResult.gasLimit;
     this.gas_used = contractResult.gasUsed;
     this.timestamp = nsToSecNs(contractResult.consensusTimestamp);

@@ -16,15 +16,18 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -38,6 +41,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -315,6 +319,42 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .hasFieldOrPropertyWithValue("data", revertFunctions.errorData);
     }
 
+    @ParameterizedTest
+    @EnumSource(EVM46ValidationCalls.class)
+    void testEVM46ValidationCalls(final EVM46ValidationCalls evm46ValidationCalls) {
+        final var functionHash = !evm46ValidationCalls.function.isEmpty()
+                ? functionEncodeDecoder.functionHashFor(
+                        evm46ValidationCalls.function, ERC_ABI_PATH, evm46ValidationCalls.functionParams)
+                : Bytes.EMPTY;
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, evm46ValidationCalls.contractAddress, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
+    }
+
+    @ParameterizedTest
+    @EnumSource(EVM46ValidationInternalCalls.class)
+    void testEVM46ValidationInternalCalls(final EVM46ValidationInternalCalls evm46ValidationCalls) {
+        final var functionHash = !evm46ValidationCalls.function.isEmpty()
+                ? functionEncodeDecoder.functionHashFor(
+                        evm46ValidationCalls.function,
+                        INTERNAL_CALLER_CONTRACT_ABI_PATH,
+                        evm46ValidationCalls.functionParams)
+                : Bytes.EMPTY;
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, INTERNAL_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
+    }
+
+    @Test
+    void nonExistingFunctionCall() {
+
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString("1ab4f82c"), ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+    }
+
     @Test
     void invalidFunctionSig() {
         final var gasUsedBeforeExecution = getGasUsedBeforeExecution(ERROR);
@@ -506,6 +546,22 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+        "0000000000000000000000000000000000000167",
+        "0000000000000000000000000000000000000168",
+        "0000000000000000000000000000000000000169"
+    })
+    void callSystemPrecompileWithEmptyData(String addressHex) {
+        final var address = Address.fromHexString(addressHex);
+        final var serviceParameters =
+                serviceParametersForExecution(Bytes.EMPTY, address, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
+    }
+
     private double getGasUsedBeforeExecution(final CallType callType) {
         final var callCounter = meterRegistry.find(GAS_METRICS).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
@@ -585,6 +641,55 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         private final String functionSignature;
         private final String errorDetail;
         private final String errorData;
+    }
+
+    @RequiredArgsConstructor
+    private enum EVM46ValidationCalls {
+        CALL_TO_NON_EXISTING_CONTRACT(
+                "callToNonExistingContract", toAddress(EntityId.of(0, 0, 123456789)), "", new Object[] {0}, "0x"),
+        TRANSFER_TO_NON_EXISTING_CONTRACT(
+                "transferToNonExistingContractName",
+                toAddress(EntityId.of(0, 0, 123456789)),
+                "transfer",
+                new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 1L},
+                "0x");
+
+        private final String name;
+        private final Address contractAddress;
+        private final String function;
+        private final Object[] functionParams;
+        private final String data;
+    }
+
+    @RequiredArgsConstructor
+    private enum EVM46ValidationInternalCalls {
+        CALL_TO_INTERNAL_NON_EXISTING_CONTRACT(
+                "callToInternalNonExistingContract",
+                "callNonExisting",
+                new Object[] {toAddress(EntityId.of(0, 0, 123456789))},
+                "0x"),
+        CALL_TO_INTERNAL_NON_EXISTING_FUNCTION(
+                "callToInternalNonExistingContract", "callNonExisting", new Object[] {ERC_CONTRACT_ADDRESS}, "0x"),
+        CALL_TO_INTERNAL_WITH_VALUE_TO_NON_EXISTING_FUNCTION(
+                "callToInternalWithValueToNonExistingContract",
+                "callWithValueTo",
+                new Object[] {ERC_CONTRACT_ADDRESS},
+                "0x"),
+        SEND_TO_INTERNAL_NON_EXISTING_ACCOUNT(
+                "sendToInternalNonExistingContract",
+                "sendTo",
+                new Object[] {toAddress(EntityId.of(0, 0, 123456789))},
+                "0x"),
+        TRANSFER_TO_INTERNAL_NON_EXISTING_ACCOUNT(
+                "transferToInternalNonExistingContract",
+                "transferTo",
+                new Object[] {toAddress(EntityId.of(0, 0, 123456789))},
+                "0x");
+
+        private final String name;
+        private final String function;
+        private final Object[] functionParams;
+        private final String data;
     }
 
     static Stream<BlockType> provideBlockTypes() {

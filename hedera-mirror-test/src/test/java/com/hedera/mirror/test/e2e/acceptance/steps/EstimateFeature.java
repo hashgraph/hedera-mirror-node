@@ -147,7 +147,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @RetryAsserts
     @Then("I call estimateGas with function balance of address")
     public void addressBalanceEstimateCall() {
-        var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, asAddress(RANDOM_ADDRESS));
+        var data = encodeData(ESTIMATE_GAS, ADDRESS_BALANCE, asAddress(contractSolidityAddress));
         validateGasEstimation(data, ADDRESS_BALANCE, contractSolidityAddress);
     }
 
@@ -428,39 +428,39 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Getter
     @RequiredArgsConstructor
     enum ContractMethods implements ContractMethodInterface {
-        ADDRESS_BALANCE("addressBalance", 24041),
+        ADDRESS_BALANCE("addressBalance", 21735),
         CALL_CODE_TO_CONTRACT("callCodeToContract", 25128),
         CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("callExternalFunctionNTimes", 26100),
-        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("delegatecallExternalViewFunctionNTimes", 22272),
-        CALL_CODE_TO_INVALID_CONTRACT("callCodeToInvalidContract", 24031),
-        CALL_TO_INVALID_CONTRACT("callToInvalidContract", 24374),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("delegatecallExternalViewFunctionNTimes", 22628),
+        CALL_CODE_TO_INVALID_CONTRACT("callCodeToInvalidContract", 24486),
+        CALL_TO_INVALID_CONTRACT("callToInvalidContract", 24807),
         DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("delegatecallExternalFunctionNTimes", 24712),
         DELEGATE_CALL_TO_CONTRACT("delegateCallToContract", 25124),
-        DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24350),
-        DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53477),
-        DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55693),
-        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 254007),
-        DESTROY("destroy", 26171),
-        GET_GAS_LEFT("getGasLeft", 21326),
+        DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24803),
+        DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53631),
+        DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55786),
+        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 255366),
+        DESTROY("destroy", 26300),
+        GET_GAS_LEFT("getGasLeft", 21313),
         GET_MOCK_ADDRESS("getMockContractAddress", 0),
-        LOGS("logs", 28757),
-        MESSAGE_SENDER("msgSender", 21290),
-        MESSAGE_SIGNER("msgSig", 21252),
-        MESSAGE_VALUE("msgValue", 21234),
-        MULTIPLY_NUMBERS("pureMultiply", 21227),
+        LOGS("logs", 28822),
+        MESSAGE_SENDER("msgSender", 21365),
+        MESSAGE_SIGNER("msgSig", 21361),
+        MESSAGE_VALUE("msgValue", 21265),
+        MULTIPLY_NUMBERS("pureMultiply", 21281),
         NESTED_CALLS_LIMITED("nestedCalls", 550093),
         NESTED_CALLS_POSITIVE("nestedCalls", 35975),
-        REENTRANCY_CALL_ATTACK("reentrancyWithCall", 55818),
+        REENTRANCY_CALL_ATTACK("reentrancyWithCall", 56426),
         STATIC_CALL_TO_CONTRACT("staticCallToContract", 25146),
-        STATIC_CALL_TO_INVALID_CONTRACT("staticCallToInvalidContract", 24394),
-        STATE_UPDATE_OF_CONTRACT("updateStateNTimes", 30500),
-        TX_ORIGIN("txOrigin", 21289),
-        UPDATE_COUNTER("updateCounter", 26335),
+        STATIC_CALL_TO_INVALID_CONTRACT("staticCallToInvalidContract", 24826),
+        STATE_UPDATE_OF_CONTRACT("updateStateNTimes", 28847),
+        TX_ORIGIN("txOrigin", 21342),
+        UPDATE_COUNTER("updateCounter", 26539),
         WRONG_METHOD_SIGNATURE("ffffffff()", 0),
-        IERC20_TOKEN_TRANSFER("transfer(address,uint256)", 37837),
-        IERC20_TOKEN_APPROVE("approve(address,uint256)", 727978),
-        IERC20_TOKEN_ASSOCIATE("associate()", 727972),
-        IERC20_TOKEN_DISSOCIATE("dissociate()", 727972);
+        IERC20_TOKEN_TRANSFER("transfer(address,uint256)", 38193),
+        IERC20_TOKEN_APPROVE("approve(address,uint256)", 728550),
+        IERC20_TOKEN_ASSOCIATE("associate()", 728033),
+        IERC20_TOKEN_DISSOCIATE("dissociate()", 728033);
 
         private final String selector;
         private final int actualGas;

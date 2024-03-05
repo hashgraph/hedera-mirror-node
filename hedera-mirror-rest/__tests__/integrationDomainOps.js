@@ -1074,6 +1074,7 @@ const contractResultDefaults = {
   failed_initcode: null,
   function_parameters: '0x010102020303',
   function_result: null,
+  gas_consumed: null,
   gas_limit: 1000,
   gas_used: null,
   payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
