@@ -101,11 +101,11 @@ public class TokenFeature extends AbstractFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
         var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
-        assertNotNull(tokenInfo.getDecimals());
+        assertThat(tokenInfo.getDecimals()).isNotNull();
         if (tokenName.getTokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
             assertThat(tokenInfo.getDecimals()).isEqualTo("0");
         }
-        assertNotNull(tokenInfo.getName());
+        assertThat(tokenInfo.getName()).isNotNull();
         log.debug("Get token info for token {}: {}", tokenName, tokenInfo);
     }
 
@@ -485,7 +485,7 @@ public class TokenFeature extends AbstractFeature {
         assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
         assertThat(token.getFreezeStatus()).isEqualTo(FreezeStatusEnum.UNFROZEN);
         assertThat(token.getKycStatus()).isEqualTo(KycStatusEnum.REVOKED);
-        assertNotNull(token.getDecimals());
+        assertThat(token.getDecimals()).isNotNull();
     }
 
     @Then("the mirror node REST API should return the token relationship for nft")
