@@ -30,6 +30,7 @@ import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
@@ -100,6 +101,11 @@ public class TokenFeature extends AbstractFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
         var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
+        assertNotNull(tokenInfo.getDecimals());
+        if (tokenName.getTokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
+            assertThat(tokenInfo.getDecimals()).isEqualTo("0");
+        }
+        assertNotNull(tokenInfo.getName());
         log.debug("Get token info for token {}: {}", tokenName, tokenInfo);
     }
 
@@ -479,6 +485,7 @@ public class TokenFeature extends AbstractFeature {
         assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
         assertThat(token.getFreezeStatus()).isEqualTo(FreezeStatusEnum.UNFROZEN);
         assertThat(token.getKycStatus()).isEqualTo(KycStatusEnum.REVOKED);
+        assertNotNull(token.getDecimals());
     }
 
     @Then("the mirror node REST API should return the token relationship for nft")
