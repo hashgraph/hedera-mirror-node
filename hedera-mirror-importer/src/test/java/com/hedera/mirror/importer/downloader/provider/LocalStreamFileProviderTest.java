@@ -142,7 +142,6 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
         sigs.forEach(
                 sig -> streamFileProvider.get(node, sig.getStreamFilename()).block());
         assertThat(Files.walk(dataPath)
-                        .peek(f -> System.out.println("File: " + f))
                         .filter(p ->
                                 p.toString().contains(node.getNodeAccountId().toString()))
                         .filter(p -> !p.toString().contains("sidecar"))

@@ -16,15 +16,10 @@
 
 package com.hedera.mirror.importer.downloader;
 
-import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_STREAM;
-
 import com.hedera.mirror.common.domain.StreamFile;
-import jakarta.inject.Named;
-import org.springframework.integration.annotation.MessagingGateway;
+import jakarta.annotation.Nonnull;
 
-@Named
-@MessagingGateway(defaultRequestChannel = CHANNEL_STREAM)
 public interface StreamFileNotifier {
 
-    void verified(StreamFile<?> streamFile);
+    void verified(@Nonnull StreamFile<?> streamFile);
 }
