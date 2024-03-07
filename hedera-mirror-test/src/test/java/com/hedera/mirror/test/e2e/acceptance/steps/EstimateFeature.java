@@ -18,6 +18,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_GAS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.ADDRESS_BALANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.CALL_CODE_TO_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION;
@@ -27,9 +28,13 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.Contra
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DELEGATE_CALL_TO_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DELEGATE_CALL_TO_INVALID_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_AND_CALL_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_AND_DESTROY;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_BYTECODE_DATA;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_DUMMY_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_NEW_INSTANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DESTROY;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.GET_GAS_LEFT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.GET_MOCK_ADDRESS;
@@ -44,21 +49,33 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.Contra
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.MULTIPLY_NUMBERS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.NESTED_CALLS_LIMITED;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.NESTED_CALLS_POSITIVE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.RECURSE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.REENTRANCY_CALL_ATTACK;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.STATE_UPDATE_OF_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.STATIC_CALL_TO_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.STATIC_CALL_TO_INVALID_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.TX_ORIGIN;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.UPDATE_COUNTER;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.UPDATE_TYPE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.WRONG_METHOD_SIGNATURE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.IS_TOKEN_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.rest.model.ContractAction;
+import com.hedera.mirror.rest.model.ContractActionsResponse;
+import com.hedera.mirror.rest.model.ContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
@@ -66,10 +83,15 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
 
 @CustomLog
@@ -80,7 +102,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
     private final TokenClient tokenClient;
     private final AccountClient accountClient;
     private DeployedContract deployedContract;
+    private DeployedContract deployedPrecompileContract;
     private String contractSolidityAddress;
+    private String precompileSolidityAddress;
     private String mockAddress;
     byte[] addressSelector;
     private TokenId fungibleTokenId;
@@ -93,7 +117,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         contractSolidityAddress = deployedContract.contractId().toSolidityAddress();
         newAccountEvmAddress =
                 PrivateKey.generateECDSA().getPublicKey().toEvmAddress().toString();
-        receiverAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.BOB);
+        receiverAccountId = accountClient.getAccount(AccountNameEnum.BOB);
     }
 
     @Given("I successfully create fungible token")
@@ -104,6 +128,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
             networkTransactionResponse = tokenResponse.response();
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
+    }
+
+    @Given("I successfully create Precompile contract from contract bytes")
+    public void createNewPrecompileContract() {
+        deployedPrecompileContract = getContract(PRECOMPILE);
+        precompileSolidityAddress = deployedPrecompileContract.contractId().toSolidityAddress();
     }
 
     @Then("the mirror node REST API should return status {int} for the estimate contract creation")
@@ -421,6 +451,263 @@ public class EstimateFeature extends AbstractEstimateFeature {
                 Optional.of("0x0000000000000000000000000000000000000167"));
     }
 
+    @Then("I execute contractCall for function that changes the contract slot and verify gasConsumed")
+    public void updateContractSlotGasConsumed() throws DecoderException {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_COUNTER, new BigInteger("5"));
+        var txId = executeContractTransaction(deployedContract, UPDATE_COUNTER, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I trigger fallback function with transfer and verify gasConsumed")
+    public void triggerFallbackAndTransferFundsToContract() {
+        var data = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
+        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, data, Hbar.fromTinybars(100));
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I trigger fallback function with send and verify gasConsumed")
+    public void triggerFallbackAndSendFundsToContract() {
+        var initialData = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_TYPE, new BigInteger("2"));
+        executeContractTransaction(deployedContract, UPDATE_TYPE, initialData, null);
+
+        var data = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
+        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, data, Hbar.fromTinybars(100));
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I trigger fallback function with call and verify gasConsumed")
+    public void triggerFallWithCallToContract() {
+        var initialData = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_TYPE, new BigInteger("3"));
+        executeContractTransaction(deployedContract, UPDATE_TYPE, initialData, null);
+
+        var data = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
+        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, data, Hbar.fromTinybars(100));
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for nested function and verify gasConsumed")
+    public void nestedCalls() {
+        var data = encodeDataToByteArray(
+                ESTIMATE_GAS,
+                CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
+                new BigInteger("1"),
+                asAddress(contractSolidityAddress));
+        var txId = executeContractTransaction(deployedContract, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for 1024 nested functions and verify gasConsumed")
+    public void manyNestedCalls() {
+        var data = encodeDataToByteArray(
+                ESTIMATE_GAS,
+                CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
+                new BigInteger("1024"),
+                asAddress(contractSolidityAddress));
+        var txId = executeContractTransaction(deployedContract, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for nested functions with lower gas limit and verify gasConsumed")
+    public void manyNestedLowerGasLimitCalls() {
+        var data = encodeDataToByteArray(
+                ESTIMATE_GAS,
+                CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
+                new BigInteger("20"),
+                asAddress(contractSolidityAddress));
+        var txId = executeContractTransaction(
+                deployedContract, 50000L, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for failing nested functions and verify gasConsumed")
+    public void failingNestedFunction() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, CALL_TO_INVALID_CONTRACT, asAddress(mockAddress));
+        var txId = executeContractTransaction(deployedContract, CALL_TO_INVALID_CONTRACT, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for failing precompile function and verify gasConsumed")
+    public void failingPrecompileFunction() {
+        var data = encodeDataToByteArray(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var txId = executeContractTransaction(deployedPrecompileContract, 25400L, IS_TOKEN_SELECTOR, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for 1025 nested functions and verify gasConsumed")
+    public void manyNestedCallsOutOfGas() {
+        var data = encodeDataToByteArray(
+                ESTIMATE_GAS,
+                RECURSE,
+                new BigInteger("1020"));
+        var txId = executeContractTransaction(deployedContract,12000000L, RECURSE, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for contract deploy function via create and verify gasConsumed")
+    public void deployContractViaCreate() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_OPCODE);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_CONTRACT_VIA_CREATE_OPCODE, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for contract deploy function via create2 and verify gasConsumed")
+    public void deployContractViaCreateTwo() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall for complex contract deploy and verify gasConsumed")
+    public void deployComplexContract() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_NEW_INSTANCE);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_NEW_INSTANCE, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall failing to deploy contract due to low gas and verify gasConsumed")
+    public void failDeployComplexContract() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_NEW_INSTANCE);
+        var txId = executeContractTransaction(deployedContract,40000L, DEPLOY_NEW_INSTANCE, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute contractCall with nested contract deploy that fails and verify gasConsumed")
+    public void failNestedDeployContract() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_DUMMY_CONTRACT);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_DUMMY_CONTRACT, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute deploy and call contract and verify gasConsumed")
+    public void deployAndCallContract() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_CALL_CONTRACT, new BigInteger("5"));
+        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_CALL_CONTRACT, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute deploy and call contract that fails and verify gasConsumed")
+    public void deployAndCallFailContract() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_CALL_CONTRACT, new BigInteger("11"));
+        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_CALL_CONTRACT, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute deploy and selfdestruct and verify gasConsumed")
+    public void deployAndSelfDestructContract() {
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_DESTROY);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_DESTROY, data, null);
+        verifyGasConsumed(txId, data);
+    }
+
+    @Then("I execute deploy contract")
+    public void deployContract() {
+        var txId = createContractAndReturnTransactionId("classpath:solidity/artifacts/contracts/EstimateGasContract.sol/DummyContract.json");
+        byte[] data = {};
+        verifyGasConsumed(txId, data);
+    }
+
+    private void verifyGasConsumed(String txId, byte[] data) {
+        var gasConsumed = getGasConsumedByTransactionId(txId);
+        var gasUsed = getGasFromActions(txId);
+        assertThat(gasConsumed).isEqualTo(gasUsed + 21000 + calculateIntrinsicValue(data));
+    }
+
+    private String executeContractTransaction(
+            DeployedContract deployedContract, SelectorInterface contractMethods, byte[] parameters, Hbar amount) {
+
+        return executeContractTransaction(
+                deployedContract,
+                contractClient
+                        .getSdkClient()
+                        .getAcceptanceTestProperties()
+                        .getFeatureProperties()
+                        .getMaxContractFunctionGas(),
+                contractMethods,
+                parameters,
+                amount);
+    }
+
+    private String executeContractTransaction(
+            DeployedContract deployedContract,
+            Long gas,
+            SelectorInterface contractMethods,
+            byte[] parameters,
+            Hbar amount) {
+
+        try {
+            ExecuteContractResult executeContractResult = contractClient.executeContract(
+                    deployedContract.contractId(), gas, contractMethods.getSelector(), parameters, amount);
+
+            networkTransactionResponse = executeContractResult.networkTransactionResponse();
+            verifyMirrorTransactionsResponse(mirrorClient, 200);
+            return networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        } catch (Exception e) {
+            // Log the stack trace to the console or to a logger
+            return extractTransactionId(e.getMessage());
+        }
+    }
+
+    private String createContractAndReturnTransactionId(String resourcePath) {
+        var resource = resourceLoader.getResource(resourcePath);
+        try (var in = resource.getInputStream()) {
+            CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
+            var fileId = persistContractBytes(
+                    compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
+            try{
+                networkTransactionResponse = contractClient.createContract(
+                        fileId,
+                        contractClient
+                                .getSdkClient()
+                                .getAcceptanceTestProperties()
+                                .getFeatureProperties()
+                                .getMaxContractFunctionGas(),
+                        Hbar.fromTinybars(0),
+                        null);
+                return networkTransactionResponse.getTransactionIdStringNoCheckSum();}
+            catch(Exception e){
+                return extractTransactionId(e.getMessage());
+            }
+        } catch (IOException e) {
+            log.warn("ex: {}", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static String extractTransactionId(String message) {
+        Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
+        Matcher matcher = pattern.matcher(message);
+        if (matcher.find()) {
+            return matcher.group(1) + "-" + matcher.group(2) + "-" + matcher.group(3);
+        } else {
+            return "Not found";
+        }
+    }
+
+    private Long getGasConsumedByTransactionId(String transactionId) {
+        ContractResult contractResult = mirrorClient.getContractResultByTransactionId(transactionId);
+        return contractResult.getGasConsumed();
+    }
+
+    private long getGasFromActions(String transactionId) {
+        return Optional.ofNullable(mirrorClient.getContractResultActionsByTransactionId(transactionId))
+                .map(ContractActionsResponse::getActions)
+                .filter(actions -> !actions.isEmpty())
+                .map(List::getFirst)
+                .map(ContractAction::getGasUsed)
+                .orElse(0L); // Provide a default value in case any step results in null
+    }
+
+    /**
+     * Calculates the intrinsic value by adding 4 for each 0 value and 16 for non-zero values.
+     */
+    public static int calculateIntrinsicValue(byte[] values) {
+        int total = 0;
+        for (byte value : values) {
+            total += (value == 0) ? 4 : 16;
+        }
+        return total;
+    }
+
     /**
      * Estimate gas values are hardcoded at this moment until we get better solution such as actual gas used returned
      * from the consensus node. It will be changed in future PR when actualGasUsed field is added to the protobufs.
@@ -440,6 +727,10 @@ public class EstimateFeature extends AbstractEstimateFeature {
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53631),
         DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55786),
         DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 255366),
+        DEPLOY_NEW_INSTANCE("deployNewInstance", 0),
+        DEPLOY_AND_CALL_CONTRACT("deployAndCallContract",0),
+        DEPLOY_DUMMY_CONTRACT("deployContract", 0),
+        DEPLOY_AND_DESTROY("deployDestroy",0),
         DESTROY("destroy", 26300),
         GET_GAS_LEFT("getGasLeft", 21313),
         GET_MOCK_ADDRESS("getMockContractAddress", 0),
@@ -450,12 +741,14 @@ public class EstimateFeature extends AbstractEstimateFeature {
         MULTIPLY_NUMBERS("pureMultiply", 21281),
         NESTED_CALLS_LIMITED("nestedCalls", 550093),
         NESTED_CALLS_POSITIVE("nestedCalls", 35975),
+        RECURSE("recurse", 0),
         REENTRANCY_CALL_ATTACK("reentrancyWithCall", 56426),
         STATIC_CALL_TO_CONTRACT("staticCallToContract", 25146),
         STATIC_CALL_TO_INVALID_CONTRACT("staticCallToInvalidContract", 24826),
         STATE_UPDATE_OF_CONTRACT("updateStateNTimes", 28847),
         TX_ORIGIN("txOrigin", 21342),
         UPDATE_COUNTER("updateCounter", 26539),
+        UPDATE_TYPE("updateType", 0),
         WRONG_METHOD_SIGNATURE("ffffffff()", 0),
         IERC20_TOKEN_TRANSFER("transfer(address,uint256)", 38193),
         IERC20_TOKEN_APPROVE("approve(address,uint256)", 728550),

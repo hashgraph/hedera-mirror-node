@@ -26,6 +26,7 @@ import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.rest.model.AccountBalanceTransactions;
 import com.hedera.mirror.rest.model.AccountInfo;
 import com.hedera.mirror.rest.model.BlocksResponse;
+import com.hedera.mirror.rest.model.ContractActionsResponse;
 import com.hedera.mirror.rest.model.ContractCallRequest;
 import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.rest.model.ContractResponse;
@@ -212,6 +213,12 @@ public class MirrorNodeClient {
     public ContractResult getContractResultByTransactionId(String transactionId) {
         log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
         return callRestEndpoint("/contracts/results/{transactionId}", ContractResult.class, transactionId);
+    }
+
+    public ContractActionsResponse getContractResultActionsByTransactionId(String transactionId) {
+        log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
+        String createdUri = "/contracts/results/" + transactionId + "/actions";
+        return callRestEndpoint(createdUri, ContractActionsResponse.class);
     }
 
     public NetworkExchangeRateSetResponse getExchangeRates() {
