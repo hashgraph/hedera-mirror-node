@@ -269,10 +269,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
 
-            if (sidecarProcessingResult.totalGasUsed() != null) {
-                contractResult.setGasConsumed(
-                        sidecarProcessingResult.getIntrinsicGas(contractResult.getFunctionParameters()));
-            }
+            sidecarProcessingResult.updateGasConsumed(contractResult);
 
             if (functionResult.hasSenderId()) {
                 var senderId = EntityId.of(functionResult.getSenderId());
@@ -517,29 +514,33 @@ public class ContractResultServiceImpl implements ContractResultService {
         private static final long TX_CREATE_EXTRA = 32_000L;
 
         /**
-         * Returns the intrinsic gas cost for a contract transaction.
+         * Update the gas consumed for a contract transaction.
          */
-        long getIntrinsicGas(byte[] functionParameters) {
+        void updateGasConsumed(ContractResult contractResult) {
+            if (totalGasUsed == null) {
+                return;
+            }
+
+            int nonZeros = 0;
             var payload = initcode;
             int zeros = 0;
 
             if (payload == null) {
-                payload = functionParameters;
+                payload = contractResult.getFunctionParameters();
             }
 
-            if (payload == null) {
-                return isContractCreation ? (TX_BASE_COST + TX_CREATE_EXTRA) : TX_BASE_COST;
-            }
-
-            for (byte b : payload) {
-                if (b == 0) {
-                    ++zeros;
+            if (payload != null) {
+                for (byte b : payload) {
+                    if (b == 0) {
+                        ++zeros;
+                    }
                 }
+                nonZeros = payload.length - zeros;
             }
 
-            final int nonZeros = payload.length - zeros;
             long cost = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
-            return totalGasUsed + (isContractCreation ? (cost + TX_CREATE_EXTRA) : cost);
+            long intrinsicGas = isContractCreation ? (cost + TX_CREATE_EXTRA) : cost;
+            contractResult.setGasConsumed(totalGasUsed + intrinsicGas);
         }
     }
 }
