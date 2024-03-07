@@ -213,10 +213,28 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void processEthereumTransaction() {
+    void processEthereumTransactionCall() {
         var ethereumTransaction = domainBuilder.ethereumTransaction(true).get();
         var recordItem = recordItemBuilder
-                .ethereumTransaction()
+                .ethereumTransaction(false)
+                .recordItem(r -> r.ethereumTransaction(ethereumTransaction))
+                .build();
+
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+    }
+
+    @Test
+    void processEthereumTransactionCreate() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(true).get();
+        var recordItem = recordItemBuilder
+                .ethereumTransaction(true)
                 .recordItem(r -> r.ethereumTransaction(ethereumTransaction))
                 .build();
 

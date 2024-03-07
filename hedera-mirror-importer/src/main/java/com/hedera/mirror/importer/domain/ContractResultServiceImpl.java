@@ -247,11 +247,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setTransactionResult(transaction.getResult());
         transactionHandler.updateContractResult(contractResult, recordItem);
 
-        if (sidecarProcessingResult.payload() != null
+        if (sidecarProcessingResult.initcode() != null
                 && !recordItem.isSuccessful()
                 && contractResult.getFailedInitcode() == null
                 && sidecarProcessingResult.isContractCreation()) {
-            contractResult.setFailedInitcode(sidecarProcessingResult.payload());
+            contractResult.setFailedInitcode(sidecarProcessingResult.initcode());
         }
 
         if (isValidContractFunctionResult(functionResult)) {
@@ -271,7 +271,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
             if (sidecarProcessingResult.totalGasUsed() != null) {
                 contractResult.setGasConsumed(
-                        sidecarProcessingResult.totalGasUsed() + sidecarProcessingResult.getIntrinsicGas());
+                        sidecarProcessingResult.getIntrinsicGas(contractResult.getFunctionParameters()));
             }
 
             if (functionResult.hasSenderId()) {
@@ -447,18 +447,6 @@ public class ContractResultServiceImpl implements ContractResultService {
                     stopwatch);
         }
 
-        // For a contract call we need to use the function parameters from the transaction body
-        if (payloadBytes == null && !isContractCreation) {
-            if (transactionBody.hasContractCall()) {
-                payloadBytes = transactionBody.getContractCall().getFunctionParameters();
-            } else {
-                payloadBytes = recordItem
-                        .getTransactionRecord()
-                        .getContractCallResult()
-                        .getFunctionParameters();
-            }
-        }
-
         return new SidecarProcessingResult(
                 DomainUtils.toBytes(payloadBytes), isContractCreation, topLevelActionSidecarGasUsed);
     }
@@ -518,12 +506,12 @@ public class ContractResultServiceImpl implements ContractResultService {
     /**
      * Record representing the result of processing sidecar records.
      *
-     * @param payload The payload of the contract transaction.
+     * @param initcode           The payload of the contract transaction.
      * @param isContractCreation Whether the transaction is a contract creation.
-     * @param totalGasUsed The gas used by the contract actions in the sidecar records.
+     * @param totalGasUsed       The gas used by the contract actions in the sidecar records.
      */
     @SuppressWarnings("java:S6218")
-    private record SidecarProcessingResult(byte[] payload, boolean isContractCreation, Long totalGasUsed) {
+    private record SidecarProcessingResult(byte[] initcode, boolean isContractCreation, Long totalGasUsed) {
         private static final long TX_DATA_ZERO_COST = 4L;
         private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
         private static final long TX_BASE_COST = 21_000L;
@@ -532,18 +520,27 @@ public class ContractResultServiceImpl implements ContractResultService {
         /**
          * Returns the intrinsic gas cost for a contract transaction.
          */
-        long getIntrinsicGas() {
+        long getIntrinsicGas(byte[] functionParameters) {
+            var payload = initcode;
             int zeros = 0;
+
+            if (payload == null) {
+                payload = functionParameters;
+            }
+
+            if (payload == null) {
+                return 0L;
+            }
+
             for (byte b : payload) {
                 if (b == 0) {
                     ++zeros;
                 }
             }
+
             final int nonZeros = payload.length - zeros;
-
             long cost = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
-
-            return isContractCreation ? (cost + TX_CREATE_EXTRA) : cost;
+            return totalGasUsed + (isContractCreation ? (cost + TX_CREATE_EXTRA) : cost);
         }
     }
 }
