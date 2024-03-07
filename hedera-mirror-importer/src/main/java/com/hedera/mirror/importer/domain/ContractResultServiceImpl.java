@@ -76,7 +76,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 ? transactionRecord.getContractCreateResult()
                 : transactionRecord.getContractCallResult();
 
-        final var sidecarProcessingResult = processSidecarRecords(recordItem, transactionBody);
+        final var sidecarProcessingResult = processSidecarRecords(recordItem);
 
         // handle non create/call transactions
         var contractCallOrCreate = isContractCreateOrCall(transactionBody);
@@ -393,8 +393,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     @SuppressWarnings("java:S3776")
-    private SidecarProcessingResult processSidecarRecords(
-            final RecordItem recordItem, final TransactionBody transactionBody) {
+    private SidecarProcessingResult processSidecarRecords(final RecordItem recordItem) {
         final var sidecarRecords = recordItem.getSidecarRecords();
         if (sidecarRecords.isEmpty()) {
             return new SidecarProcessingResult(null, false, null);
@@ -529,7 +528,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
 
             if (payload == null) {
-                return 0L;
+                return isContractCreation ? (TX_BASE_COST + TX_CREATE_EXTRA) : TX_BASE_COST;
             }
 
             for (byte b : payload) {
