@@ -4,7 +4,6 @@ metadata:
   name: mirror
   namespace: integration
 spec:
-  suspend: true
   chart:
     spec:
       chart: charts/hedera-mirror
