@@ -538,6 +538,11 @@ public class RecordItemBuilder {
 
         if (create) {
             transactionBody.setCallData(fileId());
+            builder.sidecarRecords
+                    .get(1)
+                    .getActionsBuilder()
+                    .getContractActionsBuilder(0)
+                    .setCallType(ContractActionType.CREATE);
             builder.record(r -> r.setContractCreateResult(functionResult));
         }
 
@@ -859,13 +864,16 @@ public class RecordItemBuilder {
     private TransactionSidecarRecord.Builder contractActions() {
         return TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
-                        .addContractActions(contractAction())
+                        .addContractActions(contractAction().setCallDepth(0))
                         .addContractActions(contractAction()
+                                .setCallDepth(1)
                                 .setCallingAccount(accountId())
                                 .setError(bytes(10))
                                 .setRecipientAccount(accountId()))
-                        .addContractActions(
-                                contractAction().setTargetedAddress(bytes(20)).setRevertReason(bytes(10))));
+                        .addContractActions(contractAction()
+                                .setCallDepth(2)
+                                .setTargetedAddress(bytes(20))
+                                .setRevertReason(bytes(10))));
     }
 
     private ContractAction.Builder contractAction() {
