@@ -59,7 +59,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:db/migration/v1/V1.94.1__add_gas_consumed_field.sql")
+    @Value("classpath:db/migration/v1/V1.94.1.1__add_gas_consumed_field.sql")
     private final Resource sql;
 
     private final TransactionTemplate transactionTemplate;
