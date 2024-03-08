@@ -81,7 +81,7 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                 .persist();
 
         var migrationContractResult1 = createMigrationContractResult(
-                transferTimestamp1, spender1, domainBuilder.entityId().getId(), domainBuilder);
+                transferTimestamp1, spender1, domainBuilder.entityId().getId(), null, domainBuilder);
         persistMigrationContractResult(migrationContractResult1, jdbcTemplate);
 
         // Token1 allowances granted by owner1, note the first token allowance's amount didn't change while the
@@ -113,7 +113,7 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                 .persist();
 
         var migrationContractResult2 = createMigrationContractResult(
-                transferTimestamp2, spender1, domainBuilder.entityId().getId(), domainBuilder);
+                transferTimestamp2, spender1, domainBuilder.entityId().getId(), null, domainBuilder);
         persistMigrationContractResult(migrationContractResult2, jdbcTemplate);
 
         // Token2 allowance granted by owner1 to spender2
@@ -135,7 +135,7 @@ class FixTokenAllowanceAmountMigrationTest extends ImporterIntegrationTest {
                 .persist();
 
         var migrationContractResult3 = createMigrationContractResult(
-                transferTimestamp3, spender2, domainBuilder.entityId().getId(), domainBuilder);
+                transferTimestamp3, spender2, domainBuilder.entityId().getId(), null, domainBuilder);
         persistMigrationContractResult(migrationContractResult3, jdbcTemplate);
         // A normal token transfer using token allowance, note due to the inaccuracy in how we mark a transfer as
         // is_approval, the aggregated spent amount is 1000 + 4100 > granted amount 5000, the migration should have a
