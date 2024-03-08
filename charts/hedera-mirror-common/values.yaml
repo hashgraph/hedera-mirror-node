@@ -279,6 +279,11 @@ prometheus:
   prometheus-node-exporter:
     hostNetwork: false
     priorityClassName: critical
+    prometheus:
+      monitor:
+        relabelings:
+          - sourceLabels: [ __meta_kubernetes_endpoint_node_name ]
+            targetLabel: node
     resources:
       limits:
         cpu: 100m
