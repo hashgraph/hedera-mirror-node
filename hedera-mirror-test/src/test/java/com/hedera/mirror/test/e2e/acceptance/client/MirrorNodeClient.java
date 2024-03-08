@@ -215,7 +215,8 @@ public class MirrorNodeClient {
 
     public ContractActionsResponse getContractActions(String transactionId) {
         log.debug("Verify contract actions '{}' is returned by Mirror Node", transactionId);
-        return callRestEndpoint("/contracts/results/{contractId}/actions", ContractActionsResponse.class, transactionId);
+        return callRestEndpoint(
+                "/contracts/results/{contractId}/actions", ContractActionsResponse.class, transactionId);
     }
 
     public NetworkExchangeRateSetResponse getExchangeRates() {

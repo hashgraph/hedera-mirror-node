@@ -16,11 +16,21 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.INVALID_ALIAS_KEY;
+import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE;
+import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
+import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
+import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+import static com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum.ALICE;
+import static com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum.BOB;
 import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BIG_INTEGER_TUPLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BYTES_TUPLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.COPY_CODE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.DESTROY_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_BALANCE;
@@ -33,28 +43,41 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.GeneralContractExecutionResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.concurrent.TimeoutException;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -78,12 +101,22 @@ public class EquivalenceFeature extends AbstractFeature {
 
     private DeployedContract equivalenceDestructContract;
     private DeployedContract equivalenceCallContract;
+    private DeployedContract deployedPrecompileContract;
 
     private String equivalenceDestructContractSolidityAddress;
     private String equivalenceCallContractSolidityAddress;
+    private String precompileContractSolidityAddress;
+
     private TokenId fungibleTokenId;
+    private TokenId nonFungibleTokenId;
+    private ExpandedAccountId admin;
+    private ExpandedAccountId receiverAccount;
+    private ExpandedAccountId secondReceiverAccount;
+    private String receiverAccountAlias;
+    private String secondReceiverAccountAlias;
 
     private final TokenClient tokenClient;
+    private final AccountClient accountClient;
 
     @Given("I successfully create selfdestruct contract")
     public void createNewSelfDestructContract() {
@@ -111,15 +144,48 @@ public class EquivalenceFeature extends AbstractFeature {
         verifyContractDeployed(equivalenceDestructContractSolidityAddress);
     }
 
+    @RetryAsserts
+    @Given("I verify the estimate precompile contract bytecode is deployed in mirror node")
+    public void verifyEstimatePrecompileContractDeployed() {
+        verifyContractDeployed(precompileContractSolidityAddress);
+    }
+
     private void verifyContractDeployed(String contractAddress) {
         var response = mirrorClient.getContractInfo(contractAddress);
         Assertions.assertThat(response.getBytecode()).isNotBlank();
         Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
+    @RetryAsserts
+    @Then("the mirror node REST API should return status {int} for the HAPI transactions")
+    public void verifyMirrorNodeAPIResponses(int status) {
+        if (networkTransactionResponse != null) {
+            verifyMirrorTransactionsResponse(mirrorClient, status);
+        }
+    }
+
     @Given("I successfully create tokens")
     public void createTokens() {
         fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
+        nonFungibleTokenId = tokenClient.getToken(NFT).tokenId();
+    }
+
+    @Given("I successfully create estimate precompile contract for in equivalence validation")
+    public void createNewEstimatePrecompileContractForInEquivalenceValidation() {
+        deployedPrecompileContract = getContract(ESTIMATE_PRECOMPILE);
+        precompileContractSolidityAddress =
+                deployedPrecompileContract.contractId().toSolidityAddress();
+        admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        receiverAccount = accountClient.getAccount(BOB);
+        receiverAccountAlias = receiverAccount.getPublicKey().toEvmAddress().toString();
+        secondReceiverAccount = accountClient.getAccount(ALICE);
+        secondReceiverAccountAlias = secondReceiverAccount.getPublicKey().toString();
+    }
+
+    @Given("I mint a new nft")
+    public void mintNft() {
+        networkTransactionResponse =
+                tokenClient.mint(nonFungibleTokenId, RandomStringUtils.random(4).getBytes());
     }
 
     @And("I associate {token} to contract")
@@ -450,6 +516,261 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
+    @Then("I call precompile with transfer {token} token to a {string} address")
+    public void transferTokens(TokenNameEnum tokenName, String address) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var callType = getMethodName(tokenName.getSymbol(), "transfer");
+        var node = acceptanceTestProperties.getNodeType();
+        approveTokenFor(
+                tokenName,
+                tokenId,
+                AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+
+        var data = encodeDataToByteArray(
+                ESTIMATE_PRECOMPILE,
+                callType,
+                TestUtil.asAddress(tokenId.toSolidityAddress()),
+                TestUtil.asAddress(admin.getAccountId().toSolidityAddress()),
+                TestUtil.asAddress(receiverAccountId),
+                1L);
+
+        final var response = callContract(node, StringUtils.EMPTY, ESTIMATE_PRECOMPILE, callType, data, null);
+        var expectedMessage = getExpectedResponseMessage(address);
+        if (node.equals(NodeNameEnum.CONSENSUS)) {
+            assertEquals(expectedMessage, response.errorMessage());
+        } else {
+            assertThat(response.errorMessage()).startsWith(BAD_REQUEST);
+        }
+    }
+
+    @Then("I call precompile with transferFrom {token} token to a {string} address")
+    public void transferFromTokenToSystemAccount(TokenNameEnum tokenName, String address) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var callType = getMethodName(tokenName.getSymbol(), "transferFrom");
+        var node = acceptanceTestProperties.getNodeType();
+        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        approveTokenFor(
+                tokenName,
+                tokenId,
+                AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+
+        var data = encodeDataToByteArray(
+                ESTIMATE_PRECOMPILE,
+                callType,
+                TestUtil.asAddress(tokenId.toSolidityAddress()),
+                TestUtil.asAddress(admin.getAccountId().toSolidityAddress()),
+                TestUtil.asAddress(receiverAccountId),
+                new BigInteger("1"));
+
+        final var response = callContract(node, StringUtils.EMPTY, ESTIMATE_PRECOMPILE, callType, data, null);
+        var expectedMessage = getExpectedResponseMessage(address);
+        if (node.equals(NodeNameEnum.CONSENSUS)) {
+            assertEquals(expectedMessage, response.errorMessage());
+        } else {
+            assertThat(response.errorMessage()).startsWith(BAD_REQUEST);
+        }
+    }
+
+    @Then("I call precompile with transferFromNFT to a {string} address")
+    public void transferFromNftTokens(String address) {
+        var receiverAccountId = new AccountId(extractAccountNumber(address)).toSolidityAddress();
+        var node = acceptanceTestProperties.getNodeType();
+        var data = encodeDataToByteArray(
+                ESTIMATE_PRECOMPILE,
+                "transferFromNFTExternal",
+                TestUtil.asAddress(nonFungibleTokenId.toSolidityAddress()),
+                TestUtil.asAddress(admin.getAccountId().toSolidityAddress()),
+                TestUtil.asAddress(receiverAccountId),
+                new BigInteger("1"));
+
+        final var response =
+                callContract(node, StringUtils.EMPTY, ESTIMATE_PRECOMPILE, "transferFromNFTExternal", data, null);
+        var expectedMessage = INVALID_RECEIVING_NODE_ACCOUNT;
+        if (extractAccountNumber(address) > 751) {
+            expectedMessage = SPENDER_DOES_NOT_HAVE_ALLOWANCE;
+        }
+        if (node.equals(NodeNameEnum.CONSENSUS)) {
+            assertEquals(expectedMessage.name(), response.errorMessage());
+        } else {
+            assertThat(response.errorMessage()).startsWith(BAD_REQUEST);
+        }
+    }
+
+    @Then("I call precompile with transferFrom {token} token to a contract")
+    public void transferFromTokensToContract(TokenNameEnum tokenName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var node = acceptanceTestProperties.getNodeType();
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
+
+        tokenClient.associate(equivalenceCallContract.contractId(), tokenId);
+        approveTokenFor(
+                tokenName,
+                tokenId,
+                AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+
+        var data = encodeDataToByteArray(
+                ESTIMATE_PRECOMPILE,
+                contractFunction,
+                TestUtil.asAddress(tokenId.toSolidityAddress()),
+                TestUtil.asAddress(admin.getAccountId().toSolidityAddress()),
+                TestUtil.asAddress(equivalenceCallContract.contractId().toSolidityAddress()),
+                new BigInteger("1"));
+
+        final var response = callContract(node, StringUtils.EMPTY, ESTIMATE_PRECOMPILE, contractFunction, data, null);
+
+        if (node.equals(NodeNameEnum.CONSENSUS)) {
+            assertEquals(
+                    SUCCESS.name(),
+                    response.networkResponse().getReceipt().status.name());
+        } else {
+            assertThat(response.contractCallResponse().getResult()).isEqualTo("0x");
+        }
+    }
+
+    @Then("I call precompile with transferFrom {token} token to a {account} EVM address")
+    public void transferFromTokensReceiver(TokenNameEnum tokenName, AccountNameEnum accountName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var accountAlias = getAccountAlias(accountName);
+        var accountId = (accountName.name().equals("ALICE")) ? secondReceiverAccount : receiverAccount;
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
+        var node = acceptanceTestProperties.getNodeType();
+
+        tokenClient.associate(accountId, tokenId);
+        approveTokenFor(
+                tokenName,
+                tokenId,
+                AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+
+        var data = encodeDataToByteArray(
+                ESTIMATE_PRECOMPILE,
+                contractFunction,
+                TestUtil.asAddress(tokenId.toSolidityAddress()),
+                TestUtil.asAddress(admin.getAccountId().toSolidityAddress()),
+                TestUtil.asAddress(accountAlias),
+                new BigInteger("2"));
+
+        final var response = callContract(node, StringUtils.EMPTY, ESTIMATE_PRECOMPILE, contractFunction, data, null);
+        if (node.equals(NodeNameEnum.CONSENSUS)) {
+            if (accountName.name().equals("ALICE")) {
+                assertEquals(
+                        SUCCESS.name(),
+                        response.networkResponse().getReceipt().status.name());
+            } else {
+                assertEquals(INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE.name(), response.errorMessage());
+            }
+        } else {
+            assertThat(response.contractCallResponse().getResult()).isEqualTo("0x");
+        }
+    }
+
+    @Then("I call precompile with transferFrom {token} token to an EVM address")
+    public void transferFromTokensToEVMAddress(TokenNameEnum tokenName) {
+        var HEX_DIGITS = "0123456789abcdef";
+        var RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
+        var node = acceptanceTestProperties.getNodeType();
+
+        approveTokenFor(
+                tokenName,
+                tokenId,
+                AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+
+        var data = encodeDataToByteArray(
+                ESTIMATE_PRECOMPILE,
+                contractFunction,
+                TestUtil.asAddress(tokenId.toSolidityAddress()),
+                TestUtil.asAddress(admin.getAccountId().toSolidityAddress()),
+                TestUtil.asAddress(RANDOM_ADDRESS.substring(24, 64)),
+                new BigInteger("3"));
+
+        final var response = callContract(node, StringUtils.EMPTY, ESTIMATE_PRECOMPILE, contractFunction, data, null);
+
+        if (node.equals(NodeNameEnum.CONSENSUS)) {
+            assertEquals(
+                    SUCCESS.name(),
+                    response.networkResponse().getReceipt().status.name());
+        } else {
+            assertThat(response.contractCallResponse().getResult()).isEqualTo("0x");
+        }
+    }
+
+    @And("I update the {account} account and token key for contract {string}")
+    public void updateAccountAndTokensKeys(AccountNameEnum accountName, String contractName)
+            throws PrecheckStatusException, ReceiptStatusException, TimeoutException, IOException {
+        ExpandedAccountId account = accountClient.getAccount(accountName);
+        DeployedContract contract = getContract(ContractResource.valueOf(contractName));
+        var keyList = KeyList.of(account.getPublicKey(), contract.contractId()).setThreshold(1);
+        new AccountUpdateTransaction()
+                .setAccountId(account.getAccountId())
+                .setKey(keyList)
+                .freezeWith(accountClient.getClient())
+                .sign(account.getPrivateKey())
+                .execute(accountClient.getClient());
+        new TokenUpdateTransaction()
+                .setTokenId(fungibleTokenId)
+                .setSupplyKey(keyList)
+                .setAdminKey(keyList)
+                .freezeWith(accountClient.getClient())
+                .sign(account.getPrivateKey())
+                .execute(accountClient.getClient());
+        var tokenUpdate = new TokenUpdateTransaction()
+                .setTokenId(nonFungibleTokenId)
+                .setSupplyKey(keyList)
+                .setAdminKey(keyList)
+                .freezeWith(accountClient.getClient())
+                .sign(account.getPrivateKey())
+                .execute(accountClient.getClient());
+        networkTransactionResponse = new NetworkTransactionResponse(
+                tokenUpdate.transactionId, tokenUpdate.getReceipt(accountClient.getClient()));
+    }
+
+    @Then("I call precompile with signer BOB to transferFrom {token} token to ALICE")
+    public void transferFromBobToAlice(TokenNameEnum tokenName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var contractFunction = getMethodName(tokenName.getSymbol(), "transferFrom");
+        var node = acceptanceTestProperties.getNodeType();
+
+        tokenClient.associate(secondReceiverAccount, tokenId);
+        approveTokenFor(
+                tokenName,
+                tokenId,
+                AccountId.fromString(deployedPrecompileContract.contractId().toString()));
+        approveTokenFor(tokenName, tokenId, receiverAccount.getAccountId());
+        accountClient.sendCryptoTransfer(
+                receiverAccount.getAccountId(), Hbar.from(50L), receiverAccount.getPrivateKey());
+
+        var data = encodeDataToByteArray(
+                ESTIMATE_PRECOMPILE,
+                contractFunction,
+                TestUtil.asAddress(tokenId.toSolidityAddress()),
+                TestUtil.asAddress(admin.getAccountId().toSolidityAddress()),
+                TestUtil.asAddress(secondReceiverAccount.getAccountId().toSolidityAddress()),
+                new BigInteger("4"));
+
+        final var response = callContract(node, StringUtils.EMPTY, ESTIMATE_PRECOMPILE, contractFunction, data, null);
+
+        if (node.equals(NodeNameEnum.CONSENSUS)) {
+            assertEquals(
+                    SUCCESS.name(),
+                    response.networkResponse().getReceipt().status.name());
+        } else {
+            assertThat(response.contractCallResponse().getResult()).isEqualTo("0x");
+        }
+    }
+
+    private void approveTokenFor(TokenNameEnum tokenName, TokenId tokenId, AccountId accountId) {
+        if (tokenName.getSymbol().equals("non_fungible")) {
+            networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, accountId);
+        } else {
+            networkTransactionResponse = accountClient.approveToken(tokenId, accountId, 10L);
+        }
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        verifyMirrorTransactionsResponse(mirrorClient, 200);
+    }
+
     private byte[] constructFunctionParameterDataForInternalCallToSystemAccount(
             long accountNumber, String call, String callType) {
         if (accountNumber == 359) { // HTS precompile
@@ -496,7 +817,12 @@ public class EquivalenceFeature extends AbstractFeature {
         if (amount == null) {
             // Should succeed
             if (accountNumber > 0 && accountNumber <= 9) {
-                assertArrayEquals(functionParameterData, response.contractCallResponse().getResultAsBytes().trimTrailingZeros().toArray());
+                assertArrayEquals(
+                        functionParameterData,
+                        response.contractCallResponse()
+                                .getResultAsBytes()
+                                .trimTrailingZeros()
+                                .toArray());
             } else {
                 assertArrayEquals(new byte[0], returnedDataBytes.toArray());
             }
@@ -552,6 +878,16 @@ public class EquivalenceFeature extends AbstractFeature {
         };
     }
 
+    private String getAccountAlias(AccountNameEnum accountName) {
+        if (accountName.name().equals("ALICE")) {
+            return secondReceiverAccount.getAccountId().toSolidityAddress();
+        } else if (accountName.name().equals("BOB")) {
+            return receiverAccountAlias;
+        } else {
+            return "Invalid account name!";
+        }
+    }
+
     public String getMethodNameForHtsAccount(String typeOfCall, String amountValue) {
         String combinedKey = typeOfCall + "_" + amountValue;
 
@@ -595,6 +931,16 @@ public class EquivalenceFeature extends AbstractFeature {
 
     private Bytes getBigIntegerBytes(BigInteger number) {
         return Bytes32.leftPad(Bytes.wrap(number.toByteArray()));
+    }
+
+    private static String getExpectedResponseMessage(String address) {
+        var expectedMessage = INVALID_RECEIVING_NODE_ACCOUNT;
+        if (extractAccountNumber(address) > 751 && extractAccountNumber(address) < 1001) {
+            expectedMessage = TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;
+        } else if (extractAccountNumber(address) > 1001) {
+            expectedMessage = INVALID_ALIAS_KEY;
+        }
+        return expectedMessage.name();
     }
 
     @Getter
