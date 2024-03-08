@@ -508,8 +508,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -621,8 +620,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -721,8 +719,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -829,8 +826,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -950,8 +946,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1090,8 +1085,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1154,7 +1148,7 @@
           "refId": "B"
         }
       ],
-      "title": "Hit %",
+      "title": "ARC HIT %",
       "type": "timeseries"
     },
     {
@@ -1204,8 +1198,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1364,7 +1357,7 @@
           "refId": "I"
         }
       ],
-      "title": "Used Space",
+      "title": "ARC BreakDown",
       "type": "timeseries"
     },
     {
@@ -1414,8 +1407,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1463,7 +1455,7 @@
           "refId": "A"
         }
       ],
-      "title": "Compression Ratio",
+      "title": "ARC Compress Ratio",
       "type": "timeseries"
     },
     {
@@ -1526,8 +1518,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1677,8 +1668,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1789,8 +1779,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1910,7 +1899,7 @@
       "type": "row"
     }
   ],
-  "refresh": "10s",
+  "refresh": "1m",
   "schemaVersion": 39,
   "tags": [],
   "templating": {
@@ -1954,6 +1943,38 @@
         "regex": ".*(?<!usage)",
         "skipUrlSync": false,
         "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(system_cpu_count,cluster)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(system_cpu_count,cluster)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
       },
       {
         "current": {
@@ -2032,7 +2053,7 @@
     ]
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-3h",
     "to": "now"
   },
   "timepicker": {
@@ -2051,6 +2072,6 @@
   "timezone": "",
   "title": "ZFS",
   "uid": "da4984e4-f13d-45dd-850d-d6de840d6d77",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }
