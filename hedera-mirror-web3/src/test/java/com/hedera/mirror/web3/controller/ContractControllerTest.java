@@ -20,12 +20,13 @@ import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
-import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
@@ -37,8 +38,12 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import io.github.bucket4j.Bucket;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.annotation.Resource;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
+import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -47,24 +52,27 @@ import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 @ExtendWith(SpringExtension.class)
-@WebFluxTest(controllers = ContractController.class)
+@WebMvcTest(controllers = ContractController.class)
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
     private static final String ONE_BYTE_HEX = "80";
 
     @Resource
-    private WebTestClient webClient;
+    private MockMvc mockMvc;
+
+    @Resource
+    private ObjectMapper objectMapper;
 
     @MockBean
     private ContractCallService service;
@@ -80,66 +88,51 @@ class ContractControllerTest {
         given(bucket.tryConsume(1)).willReturn(true);
     }
 
+    @SneakyThrows
+    private String convert(Object object) {
+        return objectMapper.writeValueAsString(object);
+    }
+
+    @SneakyThrows
+    private ResultActions contractCall(ContractCallRequest request) {
+        return mockMvc.perform(post(CALL_URI)
+                .accept(MediaType.APPLICATION_JSON)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(convert(request)));
+    }
+
     @NullAndEmptySource
     @ValueSource(strings = {"0x00000000000000000000000000000000000007e7"})
     @ParameterizedTest
-    void estimateGas(String to) {
+    void estimateGas(String to) throws Exception {
         final var request = request();
         request.setEstimate(true);
         request.setTo(to);
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(OK);
+        contractCall(request).andExpect(status().isOk());
     }
 
     @ValueSource(longs = {2000, -2000, Long.MAX_VALUE, 0})
     @ParameterizedTest
-    void estimateGasWithInvalidGasParameter(long gas) {
+    void estimateGasWithInvalidGasParameter(long gas) throws Exception {
         final var errorString = gas < 21000L
                 ? numberErrorString("gas", "greater", 21000L)
                 : numberErrorString("gas", "less", 15_000_000L);
         final var request = request();
         request.setEstimate(true);
         request.setGas(gas);
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorString));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
     }
 
     @Test
-    void exceedingRateLimit() {
+    void exceedingRateLimit() throws Exception {
         for (var i = 0; i < 3; i++) {
-            webClient
-                    .post()
-                    .uri(CALL_URI)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(BodyInserters.fromValue(request()))
-                    .exchange()
-                    .expectStatus()
-                    .isEqualTo(OK);
+            contractCall(request()).andExpect(status().isOk());
         }
-        given(bucket.tryConsume(1)).willReturn(false);
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request()))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(TOO_MANY_REQUESTS);
+        given(bucket.tryConsume(1)).willReturn(false);
+        contractCall(request()).andExpect(status().isTooManyRequests());
     }
 
     @NullAndEmptySource
@@ -154,38 +147,24 @@ class ContractControllerTest {
                 "00000000001239847e"
             })
     @ParameterizedTest
-    void callInvalidTo(String to) {
+    void callInvalidTo(String to) throws Exception {
         final var request = request();
         request.setTo(to);
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class);
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(new StringContains("to field")));
     }
 
     @Test
-    void callMissingTo() {
+    void callMissingTo() throws Exception {
         final var exceptionMessage = "No such contract or token";
         final var request = request();
 
         given(service.processCall(any())).willThrow(new EntityNotFoundException(exceptionMessage));
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(NOT_FOUND)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(exceptionMessage));
+        contractCall(request)
+                .andExpect(status().isNotFound())
+                .andExpect(content().string(convert(new GenericErrorResponse(exceptionMessage))));
     }
 
     @EmptySource
@@ -200,64 +179,41 @@ class ContractControllerTest {
                 "00000000001239847e"
             })
     @ParameterizedTest
-    void callInvalidFrom(String from) {
+    void callInvalidFrom(String from) throws Exception {
         final var errorString = "from field ".concat(MESSAGE);
         final var request = request();
         request.setFrom(from);
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorString));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
     }
 
     @Test
-    void callInvalidValue() {
+    void callInvalidValue() throws Exception {
+        final var error = "value field must be greater than or equal to 0";
         final var request = request();
         request.setValue(-1L);
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("value field must be greater than or equal to 0"));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse(error))));
     }
 
     @Test
-    void exceedingDataCallSizeOnEstimate() {
+    void exceedingDataCallSizeOnEstimate() throws Exception {
+        var error = "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters";
         final var request = request();
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(
-                        new GenericErrorResponse(
-                                "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters"));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse(error))));
     }
 
     @Test
-    void exceedingDataCreateSizeOnEstimate() {
+    void exceedingDataCreateSizeOnEstimate() throws Exception {
+        var error = "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters";
         final var request = request();
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
@@ -265,57 +221,43 @@ class ContractControllerTest {
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(
-                        new GenericErrorResponse(
-                                "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters"));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse(error))));
     }
 
     @Test
-    void callWithMalformedJsonBody() {
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue("{from: 0x00000000000000000000000000000000000004e2"))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(
-                        "Failed to read HTTP message", "Unable to parse JSON", StringUtils.EMPTY));
+    void callWithMalformedJsonBody() throws Exception {
+        var request = "{from: 0x00000000000000000000000000000000000004e2\"";
+        mockMvc.perform(post(CALL_URI)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(request))
+                .andExpect(status().isBadRequest())
+                .andExpect(content()
+                        .string(convert(new GenericErrorResponse(
+                                "Unable to parse JSON",
+                                "JSON parse error: Unexpected character ('f' (code 102)): was expecting double-quote to start field name",
+                                StringUtils.EMPTY))));
     }
 
     @Test
-    void callWithUnsupportedMediaTypeBody() {
+    void callWithUnsupportedMediaTypeBody() throws Exception {
         final var request = request();
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.TEXT_PLAIN)
-                .body(BodyInserters.fromValue(request.toString()))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(UNSUPPORTED_MEDIA_TYPE)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(
-                        "Unsupported Media Type",
-                        "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel"
-                                + ".ContractCallRequest",
-                        StringUtils.EMPTY));
+        mockMvc.perform(post(CALL_URI)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content(convert(request)))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(content()
+                        .string(convert(new GenericErrorResponse(
+                                "Unsupported Media Type",
+                                "Content-Type 'text/plain;charset=UTF-8' is not supported",
+                                StringUtils.EMPTY))));
     }
 
     @Test
-    void callRevertMethodAndExpectDetailMessage() {
+    void callRevertMethodAndExpectDetailMessage() throws Exception {
         final var detailedErrorMessage = "Custom revert message";
         final var hexDataErrorMessage =
                 "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
@@ -326,217 +268,148 @@ class ContractControllerTest {
                 .willThrow(new MirrorEvmTransactionException(
                         CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(
-                        CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content()
+                        .string(convert(new GenericErrorResponse(
+                                CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage))));
     }
 
     @Test
-    void callWithInvalidParameter() {
-        final var ERROR_MESSAGE = "No such contract or token";
+    void callWithInvalidParameter() throws Exception {
+        final var error = "No such contract or token";
         final var request = request();
 
-        given(service.processCall(any())).willThrow(new InvalidParametersException(ERROR_MESSAGE));
-
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(ERROR_MESSAGE));
+        given(service.processCall(any())).willThrow(new InvalidParametersException(error));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse(error))));
     }
 
     @Test
-    void callInvalidGasPrice() {
+    void callInvalidGasPrice() throws Exception {
         final var errorString = numberErrorString("gasPrice", "greater", 0);
         final var request = request();
         request.setGasPrice(-1L);
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorString));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
     }
 
     @Test
-    void transferWithoutSender() {
+    void transferWithoutSender() throws Exception {
         final var errorString = "from field must not be empty";
         final var request = request();
         request.setFrom(null);
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorString));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
     }
 
     @NullAndEmptySource
     @ParameterizedTest
     @ValueSource(strings = {"earliest", "latest", "0", "0x1a", "pending", "safe", "finalized"})
-    void callValidBlockType(String value) {
+    void callValidBlockType(String value) throws Exception {
         final var request = request();
         request.setBlock(BlockType.of(value));
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(OK);
+        contractCall(request).andExpect(status().isOk());
     }
 
     @Test
-    void callWithBlockNumberOutOfRangeExceptionTest() {
+    void callNegativeBlock() throws Exception {
+        mockMvc.perform(post(CALL_URI)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"block\": \"-1\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void callWithBlockNumberOutOfRangeExceptionTest() throws Exception {
         final var request = request();
         given(service.processCall(any())).willThrow(new BlockNumberOutOfRangeException("Unknown block number"));
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isBadRequest()
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("Unknown block number"));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse("Unknown block number"))));
     }
 
     @Test
-    void callWithBlockNumberNotFoundExceptionTest() {
+    void callWithBlockNumberNotFoundExceptionTest() throws Exception {
         final var request = request();
         given(service.processCall(any())).willThrow(new BlockNumberNotFoundException());
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isBadRequest()
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("Unknown block number"));
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(convert(new GenericErrorResponse("Unknown block number"))));
     }
 
     @Test
-    void callSuccess() {
+    void callSuccess() throws Exception {
         final var request = request();
         request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
         request.setValue(0);
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(OK);
+        contractCall(request).andExpect(status().isOk());
     }
 
     @NullAndEmptySource
     @ParameterizedTest
-    void callSuccessWithNullAndEmptyData(String data) {
+    void callSuccessWithNullAndEmptyData(String data) throws Exception {
         final var request = request();
         request.setData(data);
         request.setValue(0);
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(OK);
+        contractCall(request).andExpect(status().isOk());
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"1", "1aa"})
-    void callBadRequestWithInvalidHexData(String data) {
+    void callBadRequestWithInvalidHexData(String data) throws Exception {
         final var request = request();
         request.setData(data);
         request.setValue(0);
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST);
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(new StringContains("contains invalid odd length characters")));
     }
 
     @Test
-    void transferSuccess() {
+    void transferSuccess() throws Exception {
         final var request = request();
         request.setData(null);
 
-        webClient
-                .post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request()))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(OK);
+        contractCall(request).andExpect(status().isOk());
     }
 
+    /*
+     * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
+     * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
+     */
     @Test
-    void callSuccessCors() {
-        webClient
-                .options()
-                /*
-                 * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
-                 * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
-                 */
-                .uri("http://localhost" + CALL_URI)
-                .header("Origin", "http://example.com")
-                .header("Access-Control-Request-Method", "POST")
-                .exchange()
-                .expectHeader()
-                .valueEquals("Access-Control-Allow-Origin", "*")
-                .expectHeader()
-                .valueEquals("Access-Control-Allow-Methods", "POST");
+    void callSuccessCors() throws Exception {
+        mockMvc.perform(options(CALL_URI)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Origin", "http://example.com")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(header().string("Access-Control-Allow-Origin", "*"))
+                .andExpect(header().string("Access-Control-Allow-Methods", "POST"));
     }
 
     private ContractCallRequest request() {
         final var request = new ContractCallRequest();
+        request.setBlock(BlockType.LATEST);
+        request.setData("0x1079023a");
         request.setFrom("0x00000000000000000000000000000000000004e2");
         request.setGas(200000L);
         request.setGasPrice(78282329L);
         request.setTo("0x00000000000000000000000000000000000004e4");
         request.setValue(23);
-        request.setData("0x1079023a");
-        request.setBlock(BlockType.LATEST);
         return request;
     }
 
@@ -549,6 +422,11 @@ class ContractControllerTest {
         @Bean
         public MirrorNodeEvmProperties evmProperties() {
             return new MirrorNodeEvmProperties();
+        }
+
+        @Bean
+        MeterRegistry meterRegistry() {
+            return new SimpleMeterRegistry();
         }
     }
 }

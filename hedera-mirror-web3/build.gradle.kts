@@ -34,19 +34,21 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
     implementation("org.springframework.boot:spring-boot-starter-validation")
-    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
-    runtimeOnly(
-        group = "io.netty",
-        name = "netty-resolver-dns-native-macos",
-        classifier = "osx-aarch_64"
-    )
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
-    testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.flywaydb:flyway-core")
     testImplementation("org.mockito:mockito-inline")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
 }
+
+tasks.bootRun { jvmArgs = listOf("--enable-preview") }
+
+tasks.compileJava { options.compilerArgs.add("--enable-preview") }
+
+tasks.compileTestJava { options.compilerArgs.add("--enable-preview") }
+
+tasks.test { jvmArgs = listOf("--enable-preview") }

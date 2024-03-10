@@ -53,7 +53,7 @@ global:
 hpa:
   behavior: {}
   enabled: false
-  maxReplicas: 8
+  maxReplicas: 12
   metrics:
     - type: Resource
       resource:
@@ -256,8 +256,8 @@ resources:
     cpu: 2
     memory: 2048Mi
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 1
+    memory: 1024Mi
 
 revisionHistoryLimit: 3
 

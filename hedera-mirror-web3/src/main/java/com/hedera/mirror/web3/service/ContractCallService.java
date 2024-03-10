@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.common.ContractCallContext.init;
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
@@ -38,61 +37,78 @@ import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
 @CustomLog
 @Named
-@RequiredArgsConstructor
 public class ContractCallService {
 
+    static final String GAS_METRIC = "hedera.mirror.web3.call.gas";
     private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
 
-    private final Counter.Builder gasCounter =
-            Counter.builder("hedera.mirror.web3.call.gas").description("The amount of gas consumed by the EVM");
-    private final MeterRegistry meterRegistry;
     private final BinaryGasEstimator binaryGasEstimator;
+    private final MeterProvider<Counter> gasCounter;
     private final Store store;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final RecordFileRepository recordFileRepository;
 
-    @SuppressWarnings("try")
+    public ContractCallService(
+            MeterRegistry meterRegistry,
+            BinaryGasEstimator binaryGasEstimator,
+            Store store,
+            MirrorEvmTxProcessor mirrorEvmTxProcessor,
+            RecordFileRepository recordFileRepository) {
+        this.binaryGasEstimator = binaryGasEstimator;
+        this.gasCounter = Counter.builder(GAS_METRIC)
+                .description("The amount of gas consumed by the EVM")
+                .withRegistry(meterRegistry);
+        this.store = store;
+        this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
+        this.recordFileRepository = recordFileRepository;
+    }
+
     public String processCall(final CallServiceParameters params) {
-        var stopwatch = Stopwatch.createStarted();
-        var stringResult = "";
+        return ContractCallContext.run(ctx -> {
+            var stopwatch = Stopwatch.createStarted();
+            var stringResult = "";
 
-        try (ContractCallContext ctx = init()) {
-            Bytes result;
-            if (params.isEstimate()) {
-                // eth_estimateGas initialization - historical timestamp is Optional.empty()
-                ctx.initializeStackFrames(store.getStackedStateFrames());
-                result = estimateGas(params);
-            } else {
-                BlockType block = params.getBlock();
-                // if we have historical call then set corresponding file record
-                if (block != BlockType.LATEST) {
-                    var recordFileOptional =
-                            findRecordFileByBlock(block).orElseThrow(BlockNumberNotFoundException::new);
-                    ctx.setRecordFile(recordFileOptional);
+            try {
+                Bytes result;
+                if (params.isEstimate()) {
+                    // eth_estimateGas initialization - historical timestamp is Optional.empty()
+                    ctx.initializeStackFrames(store.getStackedStateFrames());
+                    result = estimateGas(params);
+                } else {
+                    BlockType block = params.getBlock();
+                    // if we have historical call then set corresponding file record
+                    if (block != BlockType.LATEST) {
+                        var recordFileOptional =
+                                findRecordFileByBlock(block).orElseThrow(BlockNumberNotFoundException::new);
+                        ctx.setRecordFile(recordFileOptional);
+                    }
+                    // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
+                    // if the call is historical
+                    ctx.initializeStackFrames(store.getStackedStateFrames());
+                    final var ethCallTxnResult = doProcessCall(params, params.getGas());
+
+                    validateResult(ethCallTxnResult, params.getCallType());
+
+                    result = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
                 }
-                // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
-                // if the call is historical
-                ctx.initializeStackFrames(store.getStackedStateFrames());
-                final var ethCallTxnResult = doProcessCall(params, params.getGas());
 
-                validateResult(ethCallTxnResult, params.getCallType());
-
-                result = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
+                stringResult = result.toHexString();
+            } finally {
+                log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
             }
-            return result.toHexString();
-        } finally {
-            log.debug("Processed request {} in {}: {}", params, stopwatch, stringResult);
-        }
+
+            return stringResult;
+        });
     }
 
     /**
@@ -107,7 +123,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final CallServiceParameters params) {
-        HederaEvmTransactionProcessingResult processingResult = doProcessCall(params, params.getGas());
+        final var processingResult = doProcessCall(params, params.getGas());
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -126,15 +142,12 @@ public class ContractCallService {
         return Bytes.ofUnsignedLong(estimatedGas);
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(
-            final CallServiceParameters params, final long estimatedGas) {
-        HederaEvmTransactionProcessingResult transactionResult;
+    private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params, long estimatedGas) {
         try {
-            transactionResult = mirrorEvmTxProcessor.execute(params, estimatedGas);
+            return mirrorEvmTxProcessor.execute(params, estimatedGas);
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
-        return transactionResult;
     }
 
     private void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallType type) {
@@ -150,9 +163,7 @@ public class ContractCallService {
 
     private void updateGasMetric(final CallType callType, final long gasUsed, final int iterations) {
         gasCounter
-                .tag("type", callType.toString())
-                .tag("iteration", String.valueOf(iterations))
-                .register(meterRegistry)
+                .withTags("type", callType.toString(), "iteration", String.valueOf(iterations))
                 .increment(gasUsed);
     }
 
@@ -161,13 +172,11 @@ public class ContractCallService {
             return recordFileRepository.findEarliest();
         }
 
-        long latestBlock = recordFileRepository
+        recordFileRepository
                 .findLatestIndex()
+                .filter(latest -> block.number() <= latest)
                 .orElseThrow(() -> new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER));
 
-        if (block.number() > latestBlock) {
-            throw new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER);
-        }
         return recordFileRepository.findByIndex(block.number());
     }
 }

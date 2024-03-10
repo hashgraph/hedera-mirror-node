@@ -21,17 +21,20 @@ import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import java.util.EmptyStackException;
 import java.util.Optional;
+import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
-public class ContractCallContext implements AutoCloseable {
+@SuppressWarnings("preview")
+public class ContractCallContext {
 
     public static final String CONTEXT_NAME = "ContractCallContext";
-    private static final ThreadLocal<ContractCallContext> THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
+    private static final ScopedValue<ContractCallContext> SCOPED_VALUE = ScopedValue.newInstance();
 
     /**
-     * Record file which stores the block timestamp and other historical block details used for filtering of historical data.
+     * Record file which stores the block timestamp and other historical block details used for filtering of historical
+     * data.
      */
     @Setter
     private RecordFile recordFile;
@@ -45,32 +48,16 @@ public class ContractCallContext implements AutoCloseable {
     private ContractCallContext() {}
 
     public static ContractCallContext get() {
-        return THREAD_LOCAL.get();
+        return SCOPED_VALUE.get();
     }
 
-    /**
-     * Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
-     * `ROCachingStateFrame` on top of it.  Therefore, everything already read from the database is still present,
-     * unchanged, in the stacked cache.  (Usage case is the multiple calls to `eth_estimateGas` in order to "binary
-     * search" to the closest gas approximation for a given contract call: The _first_ call is the only one that
-     * actually hits the database (via the database accessors), all subsequent executions will fetch the same values
-     * (required!) from the RO-cache without touching the database again - if you cut back the stack between executions
-     * using this method.)
-     */
-    public static ContractCallContext init() {
-        var context = new ContractCallContext();
-        THREAD_LOCAL.set(context);
-        return context;
+    public static <T> T run(Function<ContractCallContext, T> function) {
+        return ScopedValue.getWhere(SCOPED_VALUE, new ContractCallContext(), () -> function.apply(SCOPED_VALUE.get()));
     }
 
     public void reset() {
         recordFile = null;
         stack = stackBase;
-    }
-
-    @Override
-    public void close() {
-        THREAD_LOCAL.remove();
     }
 
     public int getStackHeight() {

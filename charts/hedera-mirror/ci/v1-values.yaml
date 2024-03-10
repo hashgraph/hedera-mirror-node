@@ -41,3 +41,9 @@ restjava:
       cpu: 200m
 rosetta:
   enabled: true
+web3:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
