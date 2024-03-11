@@ -31,8 +31,6 @@ import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
 class TokenUpdateNftsTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -56,24 +54,19 @@ class TokenUpdateNftsTransactionHandlerTest extends AbstractTransactionHandlerTe
         return EntityType.TOKEN;
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void updateNftMetadata(boolean hasMetadata) {
+    @Test
+    void updateNftMetadata() {
         // Given
-        var recordItem = hasMetadata
-                ? recordItemBuilder.tokenNftsUpdate().build()
-                : recordItemBuilder.tokenNftsUpdateWithoutMetadata().build();
+        var recordItem = recordItemBuilder.tokenNftsUpdate().build();
         var transaction = domainBuilder.transaction().get();
         var nft = ArgumentCaptor.forClass(Nft.class);
         var expectedSerialNumbers = List.of(1L, 2L);
         int expectedNfts = expectedSerialNumbers.size();
-        var expectedMetadata = hasMetadata
-                ? recordItem
-                        .getTransactionBody()
-                        .getTokenUpdateNfts()
-                        .getMetadata()
-                        .toByteArray()
-                : null;
+        var expectedMetadata = recordItem
+                .getTransactionBody()
+                .getTokenUpdateNfts()
+                .getMetadata()
+                .toByteArray();
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);

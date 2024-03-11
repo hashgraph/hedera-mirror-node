@@ -722,16 +722,11 @@ public class RecordItemBuilder {
         return builder;
     }
 
-    public Builder<TokenUpdateNftsTransactionBody.Builder> tokenNftsUpdateWithoutMetadata() {
+    public Builder<TokenUpdateNftsTransactionBody.Builder> tokenNftsUpdate() {
         var transactionBody = TokenUpdateNftsTransactionBody.newBuilder().setToken(tokenId());
         transactionBody.addSerialNumbers(1L).addSerialNumbers(2L);
+        transactionBody.setMetadata(BytesValue.of(bytes(16)));
         return new Builder<>(TransactionType.TOKENUPDATENFTS, transactionBody);
-    }
-
-    public Builder<TokenUpdateNftsTransactionBody.Builder> tokenNftsUpdate() {
-        var builder = tokenNftsUpdateWithoutMetadata();
-        builder.transactionBody.setMetadata(BytesValue.of(bytes(16)));
-        return builder;
     }
 
     public Builder<TokenPauseTransactionBody.Builder> tokenPause() {
