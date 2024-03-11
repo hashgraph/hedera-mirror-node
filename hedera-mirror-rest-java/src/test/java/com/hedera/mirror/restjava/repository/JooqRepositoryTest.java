@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.restjava.repository;
 
-import static com.hedera.mirror.restjava.model.jooq.Tables.NFT_ALLOWANCE;
+import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;

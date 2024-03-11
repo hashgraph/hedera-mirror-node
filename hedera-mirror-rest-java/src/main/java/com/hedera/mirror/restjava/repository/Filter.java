@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.config;
+package com.hedera.mirror.restjava.repository;
 
-import com.hedera.mirror.restjava.jooq.DomainRecordMapperProvider;
-import org.springframework.boot.autoconfigure.jooq.DefaultConfigurationCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import com.hedera.mirror.restjava.common.RangeOperator;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Configuration
-class JooqCustomConfiguration {
-
-    @Bean
-    public DefaultConfigurationCustomizer configurationCustomizer(
-            DomainRecordMapperProvider domainRecordMapperProvider) {
-        return c -> c.set(domainRecordMapperProvider).settings().withRenderSchema(false);
-    }
+@AllArgsConstructor
+@Builder
+@Data
+@NoArgsConstructor
+public class Filter<T> {
+    private String name;
+    private RangeOperator operator;
+    private T value;
+    private Class<T> valueType;
 }

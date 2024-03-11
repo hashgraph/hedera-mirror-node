@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.config;
+package com.hedera.mirror.restjava.exception;
 
-import com.hedera.mirror.restjava.jooq.DomainRecordMapperProvider;
-import org.springframework.boot.autoconfigure.jooq.DefaultConfigurationCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import java.io.Serial;
 
-@Configuration
-class JooqCustomConfiguration {
+public class RecordMappingException extends RestException {
 
-    @Bean
-    public DefaultConfigurationCustomizer configurationCustomizer(
-            DomainRecordMapperProvider domainRecordMapperProvider) {
-        return c -> c.set(domainRecordMapperProvider).settings().withRenderSchema(false);
+    @Serial
+    private static final long serialVersionUID = 4044997636814538880L;
+
+    public RecordMappingException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

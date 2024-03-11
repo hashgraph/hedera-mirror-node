@@ -21,31 +21,37 @@ description = "Hedera Mirror Node Rest Java"
 
 plugins {
     id("openapi-conventions")
-    id("org.jooq.jooq-codegen-gradle") version "3.19.5"
-    id("org.flywaydb.flyway") version "10.8.1"
+    id("org.jooq.jooq-codegen-gradle")
+    id("org.flywaydb.flyway")
     id("spring-conventions")
 }
 
 dependencies {
+    val jooqVersion = rootProject.extra["jooq.version"].toString()
+
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("jakarta.inject:jakarta.inject-api")
+    implementation("org.jooq:jooq-postgres-extensions:$jooqVersion")
     implementation("org.springframework:spring-context-support")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
-    implementation("org.springframework.boot:spring-boot-starter-jooq")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("org.mockito:mockito-inline")
     testImplementation("org.flywaydb:flyway-core")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
+
+    // add postgres extensions as jooq codegen dependency to support int8range
+    jooqCodegen("org.jooq:jooq-postgres-extensions:$jooqVersion")
 }
 
 val dbContainerProvider =
@@ -83,7 +89,7 @@ jooq {
             }
             target {
                 directory = jooqTargetDir
-                packageName = "com.hedera.mirror.restjava.model.jooq"
+                packageName = "com.hedera.mirror.restjava.jooq.domain"
             }
         }
     }

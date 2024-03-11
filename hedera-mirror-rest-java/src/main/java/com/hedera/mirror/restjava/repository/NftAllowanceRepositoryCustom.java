@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.config;
+package com.hedera.mirror.restjava.repository;
 
-import com.hedera.mirror.restjava.jooq.DomainRecordMapperProvider;
-import org.springframework.boot.autoconfigure.jooq.DefaultConfigurationCustomizer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import java.util.Collection;
+import java.util.List;
+import org.springframework.data.domain.Pageable;
 
-@Configuration
-class JooqCustomConfiguration {
+public interface NftAllowanceRepositoryCustom {
 
-    @Bean
-    public DefaultConfigurationCustomizer configurationCustomizer(
-            DomainRecordMapperProvider domainRecordMapperProvider) {
-        return c -> c.set(domainRecordMapperProvider).settings().withRenderSchema(false);
-    }
+    Collection<NftAllowance> findByFilters(List<Filter<?>> filters, Pageable pageable);
 }
