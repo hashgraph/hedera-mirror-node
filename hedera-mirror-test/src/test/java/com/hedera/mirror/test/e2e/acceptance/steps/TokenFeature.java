@@ -101,12 +101,28 @@ public class TokenFeature extends AbstractFeature {
             verifyMirrorTransactionsResponse(mirrorClient, 200);
         }
         var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
-        assertThat(tokenInfo.getDecimals()).isNotNull();
-        if (tokenName.getTokenType() == TokenType.NON_FUNGIBLE_UNIQUE) {
-            assertThat(tokenInfo.getDecimals()).isEqualTo("0");
-        }
-        assertThat(tokenInfo.getName()).isNotNull();
         log.debug("Get token info for token {}: {}", tokenName, tokenInfo);
+    }
+
+    @Given("I ensure token has the correct properties")
+    public void ensureTokenProperties() {
+        var tokensResponse = mirrorClient.getTokensResponse(tokenId.toString()).getTokens();
+        assertThat(tokensResponse).isNotNull().hasSize(1);
+        var token = tokensResponse.get(0);
+        var tokenDecimals = token.getDecimals();
+        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE.toString())) {
+            assertThat(tokenDecimals).isEqualTo(0L);
+        } else {
+            assertThat(tokenDecimals).isEqualTo(10L);
+        }
+        assertThat(token.getName()).isNotNull();
+        log.debug("Get tokens response for token {}: {}", tokenId, tokensResponse);
+
+        var balancesResponse = mirrorClient.getTokenBalances(tokenId.toString()).getBalances();
+        assertThat(balancesResponse).isNotNull().hasSize(1);
+        var balanceDecimals = balancesResponse.get(0).getDecimals();
+        assertThat(balanceDecimals).isEqualTo(tokenDecimals);
+        log.debug("Get token balances for token {}: {}", tokenId, balancesResponse);
     }
 
     @Given("I associate account {account} with token {token}")
