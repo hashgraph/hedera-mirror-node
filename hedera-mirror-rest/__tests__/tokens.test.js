@@ -90,6 +90,57 @@ describe('token extractSqlFromTokenRequest tests', () => {
     );
   });
 
+  test('Verify multiple token ids query', () => {
+    const initialQuery = tokens.tokensSelectQuery;
+    const initialParams = [];
+    const filters = [
+      {
+        key: constants.filterKeys.TOKEN_ID,
+        operator: ' = ',
+        value: '111',
+      },
+      {
+        key: constants.filterKeys.TOKEN_ID,
+        operator: ' = ',
+        value: '222',
+      },
+      {
+        key: constants.filterKeys.TOKEN_ID,
+        operator: ' = ',
+        value: '333',
+      },
+    ];
+
+    const expectedQuery = `
+        select
+            t.decimals,
+            t.freeze_status,
+            e.key,
+            t.kyc_status,
+            t.name,
+            t.symbol,
+            t.token_id,
+            t.type
+        from token t
+        where t.token_id = any($1)
+        order by t.token_id asc
+            limit $2`;
+    const expectedParams = [['111', '222', '333'], defaultLimit];
+    const expectedOrder = constants.orderFilterValues.ASC;
+    const expectedLimit = defaultLimit;
+
+    verifyExtractSqlFromTokenRequest(
+      initialQuery,
+      initialParams,
+      filters,
+      undefined,
+      expectedQuery,
+      expectedParams,
+      expectedOrder,
+      expectedLimit
+    );
+  });
+
   test('Verify public key filter', () => {
     const initialQuery = [tokens.tokensSelectQuery, tokens.entityIdJoinQuery].join('\n');
     const initialParams = [];
@@ -260,6 +311,9 @@ describe('token extractSqlFromTokenRequest tests', () => {
         value: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       },
       {key: constants.filterKeys.TOKEN_ID, operator: ' > ', value: '2'},
+      {key: constants.filterKeys.TOKEN_ID, operator: ' =< ', value: '98'},
+      {key: constants.filterKeys.TOKEN_ID, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.TOKEN_ID, operator: ' = ', value: '100'},
       {
         key: constants.filterKeys.TOKEN_TYPE,
         operator: ' = ',
@@ -290,10 +344,20 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            where ta.associated is true
                              and e.public_key = $2
                              and t.token_id > $3
-                             and t.type = $4
+                             and t.token_id =< $4
+                             and t.type = $5
+                             and t.token_id = any($6)
                            order by t.token_id desc
-                           limit $5`;
-    const expectedParams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', tokenType, '3'];
+                           limit $7`;
+    const expectedParams = [
+      5,
+      '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
+      '2',
+      '98',
+      tokenType,
+      ['3', '100'],
+      '3',
+    ];
     const expectedOrder = constants.orderFilterValues.DESC;
     const expectedLimit = 3;
 

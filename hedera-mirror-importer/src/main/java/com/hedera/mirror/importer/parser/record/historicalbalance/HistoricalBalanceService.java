@@ -199,7 +199,7 @@ public class HistoricalBalanceService {
     }
 
     private boolean shouldGenerate(long consensusEnd) {
-        return accountBalanceFileRepository
+        return properties.isEnabled() && accountBalanceFileRepository
                 .findLatest()
                 .map(AccountBalanceFile::getConsensusTimestamp)
                 .or(() -> recordFileRepository

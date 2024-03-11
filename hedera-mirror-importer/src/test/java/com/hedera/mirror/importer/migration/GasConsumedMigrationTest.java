@@ -59,7 +59,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
 
     private final JdbcTemplate jdbcTemplate;
 
-    @Value("classpath:db/migration/v1/V1.94.1__add_gas_consumed_field.sql")
+    @Value("classpath:db/migration/v1/V1.94.1.1__add_gas_consumed_field.sql")
     private final Resource sql;
 
     private final TransactionTemplate transactionTemplate;
@@ -87,13 +87,15 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
     void migrate() {
         // Given
         final var ethTxCreate = domainBuilder.ethereumTransaction(true).persist();
+        final var ethTxCreate1 = domainBuilder.ethereumTransaction(true).persist();
         final var ethTxCall = domainBuilder.ethereumTransaction(true).persist();
 
         // run migration to create gas_consumed column
         runMigration();
 
-        persistData(ethTxCreate, true);
-        persistData(ethTxCall, false);
+        persistData(ethTxCreate, true, null);
+        persistData(ethTxCreate1, false, new byte[] {1, 0, 0, 1, 1, 1});
+        persistData(ethTxCall, false, null);
 
         // run migration to populate gas_consumed column
         runMigration();
@@ -101,10 +103,10 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
         // then
         assertThat(contractResultRepository.findAll())
                 .extracting(ContractResult::getGasConsumed)
-                .containsExactly(53296L, 22224L);
+                .containsExactly(53296L, 53272L, 22224L);
     }
 
-    private void persistData(EthereumTransaction ethTx, boolean topLevelCreate) {
+    private void persistData(EthereumTransaction ethTx, boolean successTopLevelCreate, byte[] failedInitCode) {
         final var contract = domainBuilder
                 .contract()
                 .customize(c -> c.initcode(new byte[] {1, 0, 0, 0, 0, 1, 1, 1, 1}))
@@ -112,11 +114,15 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
         domainBuilder
                 .entity()
                 .customize(e -> e.createdTimestamp(
-                        topLevelCreate ? ethTx.getConsensusTimestamp() : ethTx.getConsensusTimestamp() + 1))
+                        successTopLevelCreate ? ethTx.getConsensusTimestamp() : ethTx.getConsensusTimestamp() + 1))
                 .customize(e -> e.id(contract.getId()))
                 .persist();
         var migrateContractResult = createMigrationContractResult(
-                ethTx.getConsensusTimestamp(), domainBuilder.entityId(), contract.getId(), domainBuilder);
+                ethTx.getConsensusTimestamp(),
+                domainBuilder.entityId(),
+                contract.getId(),
+                failedInitCode,
+                domainBuilder);
         persistMigrationContractResult(migrateContractResult, jdbcTemplate);
         domainBuilder
                 .contractAction()
@@ -154,6 +160,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
         private long contractId;
         private List<Long> createdContractIds;
         private String errorMessage;
+        private byte[] failedInitcode;
         private byte[] functionParameters;
         private byte[] functionResult;
         private Long gasLimit;
@@ -167,7 +174,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
     }
 
     public static MigrationContractResult createMigrationContractResult(
-            long timestamp, EntityId senderId, long contractId, DomainBuilder domainBuilder) {
+            long timestamp, EntityId senderId, long contractId, byte[] failedInitcode, DomainBuilder domainBuilder) {
         return MigrationContractResult.builder()
                 .amount(1000L)
                 .bloom(domainBuilder.bytes(256))
@@ -176,6 +183,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
                 .contractId(contractId)
                 .createdContractIds(List.of(domainBuilder.entityId().getId()))
                 .errorMessage("")
+                .failedInitcode(failedInitcode)
                 .functionParameters(domainBuilder.bytes(64))
                 .functionResult(domainBuilder.bytes(128))
                 .gasLimit(200L)
@@ -194,9 +202,9 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
                 """
                 insert into contract_result
                 (amount, bloom, call_result, consensus_timestamp, contract_id, created_contract_ids,
-                error_message, function_parameters, function_result, gas_limit, gas_used,
+                error_message, failed_initcode, function_parameters, function_result, gas_limit, gas_used,
                 payer_account_id, sender_id, transaction_hash, transaction_index, transaction_nonce,
-                transaction_result) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                transaction_result) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         jdbcTemplate.update(sql, ps -> {
@@ -211,16 +219,17 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
                     ps.getConnection().createArrayOf("bigint", createdContractIdsArray);
             ps.setArray(6, createdContractIdsSqlArray);
             ps.setString(7, result.getErrorMessage());
-            ps.setBytes(8, result.getFunctionParameters());
-            ps.setBytes(9, result.getFunctionResult());
-            ps.setLong(10, result.getGasLimit());
-            ps.setLong(11, result.getGasUsed());
-            ps.setObject(12, result.getPayerAccountId().getId());
-            ps.setObject(13, result.getSenderId().getId());
-            ps.setBytes(14, result.getTransactionHash());
-            ps.setInt(15, result.getTransactionIndex());
-            ps.setInt(16, result.getTransactionNonce());
-            ps.setInt(17, result.getTransactionResult());
+            ps.setBytes(8, result.getFailedInitcode());
+            ps.setBytes(9, result.getFunctionParameters());
+            ps.setBytes(10, result.getFunctionResult());
+            ps.setLong(11, result.getGasLimit());
+            ps.setLong(12, result.getGasUsed());
+            ps.setObject(13, result.getPayerAccountId().getId());
+            ps.setObject(14, result.getSenderId().getId());
+            ps.setBytes(15, result.getTransactionHash());
+            ps.setInt(16, result.getTransactionIndex());
+            ps.setInt(17, result.getTransactionNonce());
+            ps.setInt(18, result.getTransactionResult());
         });
     }
 }
