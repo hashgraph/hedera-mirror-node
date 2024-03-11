@@ -83,7 +83,7 @@ Feature: in-equivalence tests
     Then I verify the equivalence contract bytecode is deployed
     Then I verify the selfdestruct contract bytecode is deployed
     Given I ensure token "FUNGIBLE" has been created
-    Given I ensure token "NFT" has been created
+    Given I ensure token "NFTEQUIVALENCE" has been created
     Given I successfully create tokens
     And I associate "FUNGIBLE" to contract
     Then the mirror node REST API should return status 200 for the HAPI transactions
@@ -125,9 +125,9 @@ Feature: in-equivalence tests
     Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
     Then I call precompile with transfer "FUNGIBLE" token to a <account> address
-    Then I call precompile with transfer "NFT" token to a <account> address
+    Then I call precompile with transfer "NFTEQUIVALENCE" token to a <account> address
     Then I call precompile with transferFrom "FUNGIBLE" token to a <account> address
-    Then I call precompile with transferFrom "NFT" token to a <account> address
+    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to a <account> address
     Then I call precompile with transferFromNFT to a <account> address
 
     Examples:
@@ -160,20 +160,20 @@ Feature: in-equivalence tests
     Given I successfully create tokens
     Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
-    Then I call precompile with transferFrom "NFT" token to a contract
+    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to a contract
     Then I call precompile with transferFrom "FUNGIBLE" token to a contract
     Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
     Then I call precompile with transferFrom "FUNGIBLE" token to a "BOB" EVM address
-#    Then I call precompile with transferFrom "NFT" token to a "BOB" EVM address // success but should fail
-    Then I call precompile with transferFrom "NFT" token to a "ALICE" EVM address
+#    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to a "BOB" EVM address // success but should fail
+    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to a "ALICE" EVM address
     Then I call precompile with transferFrom "FUNGIBLE" token to a "ALICE" EVM address
     Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
-#    Then I call precompile with transferFrom "NFT" token to an EVM address // fails on mirror node since the address is not found in the state and it is not created
+#    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to an EVM address // fails on mirror node since the address is not found in the state and it is not created
 #    Then I call precompile with transferFrom "FUNGIBLE" token to an EVM address // same as above
     Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
     And I update the "BOB" account and token key for contract "ESTIMATE_PRECOMPILE"
-    Then I call precompile with signer BOB to transferFrom "NFT" token to ALICE
+    Then I call precompile with signer BOB to transferFrom "NFTEQUIVALENCE" token to ALICE
     Then I call precompile with signer BOB to transferFrom "FUNGIBLE" token to ALICE

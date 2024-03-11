@@ -27,7 +27,7 @@ import static com.hedera.mirror.test.e2e.acceptance.client.AccountClient.Account
 import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BIG_INTEGER_TUPLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter.BYTES_TUPLE;
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFTEQUIVALENCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_CALL;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.EQUIVALENCE_DESTRUCT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
@@ -167,7 +167,7 @@ public class EquivalenceFeature extends AbstractFeature {
     @Given("I successfully create tokens")
     public void createTokens() {
         fungibleTokenId = tokenClient.getToken(FUNGIBLE).tokenId();
-        nonFungibleTokenId = tokenClient.getToken(NFT).tokenId();
+        nonFungibleTokenId = tokenClient.getToken(NFTEQUIVALENCE).tokenId();
     }
 
     @Given("I successfully create estimate precompile contract for in equivalence validation")

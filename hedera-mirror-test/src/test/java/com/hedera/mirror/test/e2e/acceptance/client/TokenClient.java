@@ -643,6 +643,11 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
+        NFTEQUIVALENCE(
+                "non_fungible",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable),
         FUNGIBLE_KYC_UNFROZEN(
                 "fungible_kyc_unfrozen", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
         FUNGIBLE_KYC_UNFROZEN_2(
