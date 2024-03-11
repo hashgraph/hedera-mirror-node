@@ -129,7 +129,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_zpool_dataset_reads{node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_zpool_dataset_reads{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "reads/{{node}}/{{dataset}}",
           "range": true,
@@ -141,7 +141,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_zpool_dataset_writes{node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_zpool_dataset_writes{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "writes/{{node}}/{{dataset}}",
@@ -239,7 +239,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "code",
-          "expr": "kubelet_volume_stats_used_bytes{job=\"kubelet\", node=~\"$node\", namespace=~\"$namespace\"} / kubelet_volume_stats_capacity_bytes{job=\"kubelet\", node=~\"$node\", namespace=~\"$namespace\"}",
+          "expr": "kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", node=~\"$node\", namespace=~\"$namespace\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", node=~\"$node\", namespace=~\"$namespace\"}",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
@@ -338,7 +338,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "kubelet_volume_stats_used_bytes{node=~\"$node\", namespace=~\"$namespace\"}",
+          "expr": "kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", node=~\"$node\", namespace=~\"$namespace\"}",
           "instant": false,
           "legendFormat": "{{node}}/{{namespace}}/{{persistentvolumeclaim}}",
           "range": true,
@@ -451,7 +451,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_io_now{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_io_now{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -508,7 +508,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -550,7 +551,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_read_time_seconds_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) / irate(node_disk_reads_completed_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_read_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) / irate(node_disk_reads_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "read/{{node}}",
           "range": true,
@@ -562,7 +563,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_write_time_seconds_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) / irate(node_disk_writes_completed_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_write_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) / irate(node_disk_writes_completed_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "write/{{node}}",
@@ -620,7 +621,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -662,7 +664,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_io_time_seconds_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_io_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -719,7 +721,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -757,7 +760,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_read_bytes_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_read_bytes_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
           "legendFormat": "read/{{node}}",
           "range": true,
           "refId": "A"
@@ -768,7 +771,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_written_bytes_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_written_bytes_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "write/{{node}}",
@@ -826,7 +829,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -863,7 +867,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_reads_completed_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_reads_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "reads/{{node}}",
           "range": true,
@@ -875,7 +879,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_writes_completed_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_writes_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "write/{{node}}",
@@ -946,7 +950,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -989,7 +994,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_hits{node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "data-hits/{{node}}",
           "range": true,
@@ -1001,7 +1006,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_metadata_hits{node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_demand_metadata_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata-hits/{{node}}",
@@ -1014,7 +1019,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_misses{node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "data-misses/{{node}}",
@@ -1027,7 +1032,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_metadata_misses{node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_demand_metadata_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata-misses/{{node}}",
@@ -1085,7 +1090,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1127,7 +1133,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_hits{node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{node=~\"$node\"}[$__rate_interval])) ",
+          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\",  node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])) ",
           "hide": false,
           "instant": false,
           "legendFormat": "data/{{node}}",
@@ -1140,7 +1146,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_hits{node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{node=~\"$node\"}[$__rate_interval])) ",
+          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])) ",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata/{{node}}",
@@ -1198,7 +1204,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1271,7 +1278,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_mfu_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_mfu_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": true,
           "instant": false,
           "legendFormat": "mfu/{{node}}",
@@ -1284,7 +1291,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_mru_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_mru_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": true,
           "instant": false,
           "legendFormat": "mru/{{node}}",
@@ -1297,7 +1304,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_data_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_data_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "data/{{node}}",
@@ -1310,7 +1317,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_metadata_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_metadata_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata/{{node}}",
@@ -1323,7 +1330,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_anon_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_anon_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "anon/{{node}}",
@@ -1336,7 +1343,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_hdr_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_hdr_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "hdr/{{node}}",
@@ -1349,7 +1356,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_overhead_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_overhead_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "overhead/{{node}}",
@@ -1407,7 +1414,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1448,7 +1456,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_size{node=~\"$node\"} / node_zfs_arc_compressed_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_size{cluster=~\"$cluster\", node=~\"$node\"} / node_zfs_arc_compressed_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -1518,7 +1526,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1585,7 +1594,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_l2_asize{node=~\"$node\"}",
+          "expr": "node_zfs_arc_l2_asize{cluster=~\"$cluster\", node=~\"$node\"}",
           "instant": false,
           "legendFormat": "asize/{{node}}",
           "range": true,
@@ -1597,7 +1606,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_l2_hdr_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_l2_hdr_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "hdr/{{node}}",
@@ -1610,7 +1619,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_l2_size{node=~\"$node\"}",
+          "expr": "node_zfs_arc_l2_size{cluster=~\"$cluster\", node=~\"$node\"}",
           "hide": false,
           "instant": false,
           "legendFormat": "size/{{node}}",
@@ -1668,7 +1677,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1709,7 +1719,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_l2_hits{node=\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "hits/{{node}}",
           "range": true,
@@ -1721,7 +1731,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_l2_misses{node=\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_l2_misses{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval])",
           "hide": false,
           "instant": false,
           "legendFormat": "misses/{{node}}",
@@ -1779,7 +1789,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1817,7 +1828,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_l2_hits{node=\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_l2_hits{node=\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_l2_misses{node=\"$node\"}[$__rate_interval]))",
+          "expr": "irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_l2_misses{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval]))",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -1946,38 +1957,6 @@
       },
       {
         "current": {
-          "selected": true,
-          "text": [
-            "All"
-          ],
-          "value": [
-            "$__all"
-          ]
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "prometheus"
-        },
-        "definition": "label_values(system_cpu_count,cluster)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Cluster",
-        "multi": true,
-        "name": "cluster",
-        "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values(system_cpu_count,cluster)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
-      },
-      {
-        "current": {
           "selected": false,
           "text": "All",
           "value": "$__all"
@@ -2049,6 +2028,34 @@
         "query": "sdb",
         "skipUrlSync": false,
         "type": "constant"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(system_cpu_count,cluster)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(system_cpu_count,cluster)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
       }
     ]
   },
