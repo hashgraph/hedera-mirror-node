@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -109,14 +107,13 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
             token.setKycKey(transactionBody.getKycKey().toByteArray());
         }
 
-        var metadata =
-                transactionBody.hasMetadata() ? transactionBody.getMetadata().toByteArray() : EMPTY_BYTE_ARRAY;
-        token.setMetadata(metadata);
+        if (transactionBody.hasMetadata()) {
+            token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata().toByteString()));
+        }
 
-        var metadataKey = transactionBody.hasMetadataKey()
-                ? transactionBody.getMetadataKey().toByteArray()
-                : EMPTY_BYTE_ARRAY;
-        token.setMetadataKey(metadataKey);
+        if (transactionBody.hasMetadataKey()) {
+            token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
+        }
 
         if (!transactionBody.getName().isEmpty()) {
             token.setName(transactionBody.getName());

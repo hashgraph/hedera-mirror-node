@@ -20,7 +20,6 @@ import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.NOT_APPLICABLE;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.UNFROZEN;
 
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -107,7 +106,6 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         var transactionBody = recordItem.getTransactionBody().getTokenCreation();
         var consensusTimestamp = transaction.getConsensusTimestamp();
         var freezeDefault = transactionBody.getFreezeDefault();
-        var metadata = transactionBody.getMetadata();
         var tokenId = transaction.getEntityId();
         var treasury = EntityId.of(transactionBody.getTreasury());
 
@@ -118,9 +116,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         token.setInitialSupply(transactionBody.getInitialSupply());
         token.setMaxSupply(transactionBody.getMaxSupply());
         // Never null. Services PBJ sets EMPTY when no metadata defined on create
-        if (!ByteString.EMPTY.equals(metadata)) {
-            token.setMetadata(metadata.toByteArray());
-        }
+        token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata()));
         token.setName(transactionBody.getName());
         token.setSupplyType(TokenSupplyTypeEnum.fromId(transactionBody.getSupplyTypeValue()));
         token.setSymbol(transactionBody.getSymbol());

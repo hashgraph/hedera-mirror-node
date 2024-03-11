@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -2006,14 +2005,12 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void onTokenMergeClearMetadataAndKey() {
+    void onTokenMergeRetainMetadataAndKey() {
         // given
         var tokenCreate = domainBuilder.token().get();
         sqlEntityListener.onToken(tokenCreate);
 
         var tokenUpdate = Token.builder()
-                .metadata(EMPTY_BYTE_ARRAY)
-                .metadataKey(EMPTY_BYTE_ARRAY)
                 .timestampRange(Range.atLeast(domainBuilder.timestamp()))
                 .tokenId(tokenCreate.getTokenId())
                 .build();
@@ -2022,8 +2019,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
 
         // then
         var tokenMerged = TestUtils.clone(tokenCreate);
-        tokenMerged.setMetadata(null);
-        tokenMerged.setMetadataKey(null);
+        // Metadata and key are unchanged since create
         tokenMerged.setTimestampRange(tokenUpdate.getTimestampRange());
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
 

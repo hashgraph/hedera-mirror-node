@@ -637,31 +637,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setKycKey(previous.getKycKey());
         }
 
-        /*
-         * There are a number of ways for a Token instance to be provided to onToken(). For token metadata and
-         * metadataKey, if current has a null value, then the current instance was not provided by
-         * TokenUpdateTransactionHandler and the previous value needs to be carried forward.
-         *
-         * A value of EMPTY_BYTE_ARRAY is set by TokenUpdateTransactionHandler to indicate the transaction body did
-         * not define value, meaning any previous value has been cleared, such as the removal of the metadata and/or
-         * metadata key. In this case the current instance value is set to null so that the database column(s) are
-         * set to null on upsert to indicate no value present.
-         *
-         * For a value other than null or EMPTY_BYTE_ARRAY then the updated field value is present in the current
-         * instance and is to be carried forward.
-         */
-        var currentMetadata = current.getMetadata();
-        if (currentMetadata == null) {
+        if (current.getMetadata() == null) {
             current.setMetadata(previous.getMetadata());
-        } else if (Arrays.equals(EMPTY_BYTE_ARRAY, currentMetadata)) {
-            current.setMetadata(null);
         }
 
-        var currentMetadataKey = current.getMetadataKey();
-        if (currentMetadataKey == null) {
+        if (current.getMetadataKey() == null) {
             current.setMetadataKey(previous.getMetadataKey());
-        } else if (Arrays.equals(EMPTY_BYTE_ARRAY, currentMetadataKey)) {
-            current.setMetadataKey(null);
         }
 
         if (current.getName() == null) {

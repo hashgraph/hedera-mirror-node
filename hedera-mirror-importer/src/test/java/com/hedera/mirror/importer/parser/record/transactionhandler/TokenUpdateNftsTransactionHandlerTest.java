@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -74,7 +73,7 @@ class TokenUpdateNftsTransactionHandlerTest extends AbstractTransactionHandlerTe
                         .getTokenUpdateNfts()
                         .getMetadata()
                         .toByteArray()
-                : EMPTY_BYTE_ARRAY;
+                : null;
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);

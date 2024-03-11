@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Range;
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.CustomFee;
@@ -106,7 +108,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         b.clearKycKey();
                     }
                     if (!hasMetadata) {
-                        b.clearMetadata();
+                        // Never null. Services PBJ sets EMPTY when no metadata defined on create
+                        b.setMetadata(ByteString.EMPTY);
                     }
                     if (!hasMetadataKey) {
                         b.clearMetadataKey();
@@ -140,7 +143,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // Then
         var expectedFreezeKey = hasFreezeKey ? transactionBody.getFreezeKey().toByteArray() : null;
         var expectedKycKey = hasKycKey ? transactionBody.getKycKey().toByteArray() : null;
-        var expectedMetadata = hasMetadata ? transactionBody.getMetadata().toByteArray() : null;
+        var expectedMetadata = hasMetadata ? transactionBody.getMetadata().toByteArray() : EMPTY_BYTE_ARRAY;
         var expectedMetadataKey =
                 hasMetadataKey ? transactionBody.getMetadataKey().toByteArray() : null;
         verify(entityListener).onToken(token.capture());
@@ -257,7 +260,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(null, Token::getFeeScheduleKey)
                 .returns(null, Token::getFreezeKey)
                 .returns(null, Token::getKycKey)
-                .returns(null, Token::getMetadata)
+                // Never null. Services PBJ sets EMPTY when no metadata defined on create
+                .returns(EMPTY_BYTE_ARRAY, Token::getMetadata)
                 .returns(null, Token::getMetadataKey)
                 .returns(null, Token::getPauseKey)
                 .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)

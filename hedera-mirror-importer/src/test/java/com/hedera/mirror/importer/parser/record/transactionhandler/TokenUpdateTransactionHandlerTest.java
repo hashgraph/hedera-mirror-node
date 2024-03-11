@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -151,8 +150,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(null, Token::getFeeScheduleKey)
                 .returns(null, Token::getFreezeKey)
                 .returns(recordItem.getConsensusTimestamp(), Token::getTimestampLower)
-                .returns(EMPTY_BYTE_ARRAY, Token::getMetadata)
-                .returns(EMPTY_BYTE_ARRAY, Token::getMetadataKey)
+                .returns(null, Token::getMetadata)
+                .returns(null, Token::getMetadataKey)
                 .returns(null, Token::getName)
                 .returns(null, Token::getPauseKey)
                 .returns(null, Token::getSupplyKey)
