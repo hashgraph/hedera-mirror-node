@@ -31,7 +31,6 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("grpcVersion", "1.62.2")
-    set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("jooq.version", "3.19.5")
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.3")
@@ -84,12 +83,12 @@ dependencies {
         api("jakarta.inject:jakarta.inject-api:2.0.1")
         api("net.devh:grpc-spring-boot-starter:3.0.0.RELEASE")
         api("net.java.dev.jna:jna:5.14.0")
-        api("org.apache.commons:commons-compress:1.26.0")
+        api("org.apache.commons:commons-compress:1.26.1")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2")
-        api("org.gaul:s3proxy:2.1.0")
+        api("org.gaul:s3proxy:2.2.0")
         api("org.hyperledger.besu:secp256k1:0.8.2")
         api("org.hyperledger.besu:evm:23.10.2")
         api("org.jetbrains:annotations:24.1.0")
@@ -98,9 +97,9 @@ dependencies {
         api("org.msgpack:jackson-dataformat-msgpack:0.9.8")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.0")
-        api("org.testcontainers:junit-jupiter:1.19.6")
+        api("org.testcontainers:junit-jupiter:1.19.7")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.1")
+        api("software.amazon.awssdk:bom:2.25.6")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }

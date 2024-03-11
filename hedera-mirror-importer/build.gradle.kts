@@ -47,7 +47,6 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-kubernetes-fabric8-leader")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
-    implementation("org.springframework.integration:spring-integration-core")
     implementation("software.amazon.awssdk:netty-nio-client")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sts")
