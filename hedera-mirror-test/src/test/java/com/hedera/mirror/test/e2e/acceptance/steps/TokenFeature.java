@@ -111,7 +111,7 @@ public class TokenFeature extends AbstractFeature {
         var token = tokensResponse.get(0);
         var tokenDecimals = token.getDecimals();
         if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE.toString())) {
-            assertThat(tokenDecimals).isEqualTo(0L);
+            assertThat(tokenDecimals).isZero();
         } else {
             assertThat(tokenDecimals).isEqualTo(10L);
         }
