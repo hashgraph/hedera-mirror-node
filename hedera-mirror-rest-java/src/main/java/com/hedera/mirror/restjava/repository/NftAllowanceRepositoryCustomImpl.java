@@ -16,53 +16,139 @@
 
 package com.hedera.mirror.restjava.repository;
 
+import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
+
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.restjava.common.Filter;
+import com.hedera.mirror.restjava.common.Order;
+import com.hedera.mirror.restjava.common.RangeOperator;
+import com.hedera.mirror.restjava.exception.InvalidFilterException;
 import jakarta.inject.Named;
+import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.springframework.data.domain.Pageable;
+import org.jooq.Field;
+import org.jooq.SortField;
 
 @CustomLog
 @Named
 @RequiredArgsConstructor
 class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
+    private static final Map<OrderSpec, List<SortField<?>>> SORT_ORDERS = Map.of(
+            new OrderSpec(true, Order.ASC), List.of(NFT_ALLOWANCE.SPENDER.asc(), NFT_ALLOWANCE.TOKEN_ID.asc()),
+            new OrderSpec(true, Order.DESC), List.of(NFT_ALLOWANCE.SPENDER.desc(), NFT_ALLOWANCE.TOKEN_ID.desc()),
+            new OrderSpec(false, Order.ASC), List.of(NFT_ALLOWANCE.OWNER.asc(), NFT_ALLOWANCE.TOKEN_ID.asc()),
+            new OrderSpec(false, Order.DESC), List.of(NFT_ALLOWANCE.OWNER.desc(), NFT_ALLOWANCE.TOKEN_ID.desc()));
+
     private final DSLContext dslContext;
 
-    //    @Getter(lazy = true)
-    //    private final Map<String, Field> fieldsMap = getFieldsForTable(NFT_ALLOWANCE);
-
+    @NotNull
     @Override
-    public Collection<NftAllowance> findByFilters(List<Filter<?>> filters, Pageable pageable) {
-        //        var whereStep = dslContext.selectFrom(NFT_ALLOWANCE)
-        //                .where(NFT_ALLOWANCE.APPROVED_FOR_ALL.eq(false))
-        //                .
+    @SuppressWarnings("unchecked")
+    public Collection<NftAllowance> findAll(
+            boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Order order) {
+        Condition primaryCondition = null;
+        var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
+        var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
+        Filter<?> primarySortFilter = null;
+        Filter<?> tokenFilter = null;
 
-        //        if (!filters.isEmpty()) {
-        //            var fields = getFieldsMap();
-        //            for (var filter : filters) {
-        //                var field = fields.get(filter.getName());
-        //                if (field == null) {
-        //                    log.warn("Ignoring filter with unknown field: {}", filter.getName());
-        //                    continue;
-        //                }
-        //
-        //                field.eq(filter.getValue());
-        //            }
-        //        }
-        //        NFT_ALLOWANCE.APPROVED_FOR_ALL.eq(false);
-        //        dslContext.selectFrom(NFT_ALLOWANCE);
-        //        not(NFT_ALLOWANCE.OWNER.eq(2L));
-        return Collections.emptyList();
+        for (var filter : filters) {
+            var field = filter.field();
+            if (filter.field() == primaryField) {
+                primaryCondition = makeCondition(filter);
+            } else if (field == primarySortField) {
+                primarySortFilter = filter;
+            } else if (field == NFT_ALLOWANCE.TOKEN_ID) {
+                tokenFilter = filter;
+            }
+        }
+
+        if (primaryCondition == null) {
+            throw new InvalidFilterException("Primary filter not found");
+        }
+
+        if (tokenFilter != null && primarySortFilter == null) {
+            throw new InvalidFilterException(
+                    "Token filter exists without primary sort column (owner or spender) filter");
+        }
+
+        var baseCondition = getBaseCondition(primaryCondition, primarySortFilter, tokenFilter);
+        var secondaryCondition = getSecondaryCondition(primaryCondition, primarySortFilter, tokenFilter);
+        var condition = secondaryCondition != null ? baseCondition.or(secondaryCondition) : baseCondition;
+
+        return dslContext
+                .selectFrom(NFT_ALLOWANCE)
+                .where(condition)
+                .orderBy(SORT_ORDERS.get(new OrderSpec(byOwner, order)))
+                .limit(limit)
+                .fetchInto(NftAllowance.class);
     }
 
-    //    private static Map<String, Field> getFieldsForTable(Table<?> table) {
-    //        return Arrays.stream(table.fields())
-    //                        .collect(Collectors.toMap(field -> field.getUnqualifiedName().unquotedName().toString(),
-    // field -> field));
-    //    }
+    private Condition getBaseCondition(Condition primaryCondition, Filter<?> primarySortFilter, Filter<?> tokenFilter) {
+        if (primarySortFilter == null) {
+            return primaryCondition;
+        }
+
+        if (tokenFilter == null) {
+            return primaryCondition.and(makeCondition(primarySortFilter));
+        } else {
+            if (primarySortFilter.operator() == RangeOperator.EQ) {
+                return primaryCondition.and(makeCondition(primarySortFilter)).and(makeCondition(tokenFilter));
+            }
+
+            // Create a filter for the primary sort field with EQ operator
+            var value = (Long) primarySortFilter.value();
+            if (primarySortFilter.operator() == RangeOperator.GT) {
+                value += 1L;
+            } else if (primarySortFilter.operator() == RangeOperator.LT) {
+                value -= 1L;
+            }
+
+            var filter = new Filter<>(primarySortFilter.field(), RangeOperator.EQ, value, Long.class);
+            return primaryCondition.and(makeCondition(filter)).and(makeCondition(tokenFilter));
+        }
+    }
+
+    private Condition getSecondaryCondition(
+            Condition primaryCondition, Filter<?> primarySortFilter, Filter<?> tokenFilter) {
+        // No secondary condition if there is no token filter, or the primary sort filter's operator is EQ. Note that
+        // it's guaranteed that there must be a primary sort filter when token filter exists
+        if (tokenFilter == null || primarySortFilter.operator() == RangeOperator.EQ) {
+            return null;
+        }
+
+        var value = (Long) primarySortFilter.value();
+        var operator = primarySortFilter.operator();
+        if (operator == RangeOperator.GT || operator == RangeOperator.GTE) {
+            value += 1L;
+        } else if (operator == RangeOperator.LT || operator == RangeOperator.LTE) {
+            value -= 1L;
+        }
+
+        var filter = new Filter<>(primarySortFilter.field(), operator, value, Long.class);
+        return primaryCondition.and(makeCondition(filter));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Condition makeCondition(Filter<?> filter) {
+        var field = (Field) filter.field();
+        var value = filter.value();
+        return switch (filter.operator()) {
+            case EQ -> field.eq(value);
+            case GT -> field.gt(value);
+            case GTE -> field.ge(value);
+            case LT -> field.lt(value);
+            case LTE -> field.le(value);
+            case NE -> field.ne(value);
+        };
+    }
+
+    private record OrderSpec(boolean byOwner, Order order) {}
 }

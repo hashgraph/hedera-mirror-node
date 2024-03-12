@@ -16,18 +16,14 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import com.hedera.mirror.restjava.exception.MismatchTypeException;
+import org.jooq.Field;
 
-@Getter
-@RequiredArgsConstructor
-public enum RangeOperator {
-    EQ("="),
-    GT(">"),
-    GTE(">="),
-    LT("<"),
-    LTE("<="),
-    NE("!=");
+public record Filter<T>(Field<?> field, RangeOperator operator, T value, Class<T> type) {
 
-    private final String operator;
+    public Filter {
+        if (field.getType() != type) {
+            throw new MismatchTypeException(field.getType(), type);
+        }
+    }
 }

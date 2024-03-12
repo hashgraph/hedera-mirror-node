@@ -16,18 +16,17 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@Getter
-@RequiredArgsConstructor
-public enum RangeOperator {
-    EQ("="),
-    GT(">"),
-    GTE(">="),
-    LT("<"),
-    LTE("<="),
-    NE("!=");
+import com.hedera.mirror.restjava.exception.MismatchTypeException;
+import org.junit.jupiter.api.Test;
 
-    private final String operator;
+class FilterTest {
+
+    @Test
+    void mismatchTypeException() {
+        assertThatThrownBy(() -> new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, "owner", String.class))
+                .isInstanceOf(MismatchTypeException.class);
+    }
 }

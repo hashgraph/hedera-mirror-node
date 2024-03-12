@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.exception;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import java.io.Serial;
 
-@Getter
-@RequiredArgsConstructor
-public enum RangeOperator {
-    EQ("="),
-    GT(">"),
-    GTE(">="),
-    LT("<"),
-    LTE("<="),
-    NE("!=");
+public class InvalidFilterException extends RestException {
 
-    private final String operator;
+    @Serial
+    private static final long serialVersionUID = 1518569037954950068L;
+
+    public InvalidFilterException(String message) {
+        super(message);
+    }
 }

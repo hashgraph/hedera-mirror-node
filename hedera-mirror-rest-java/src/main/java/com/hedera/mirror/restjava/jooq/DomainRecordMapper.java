@@ -77,7 +77,7 @@ class DomainRecordMapper<R extends Record, E> implements RecordMapper<R, E> {
     @SuppressWarnings("unchecked")
     public @Nullable E map(R source) {
         try {
-            var entity = defaultConstructor.invoke();
+            var entity = (E) defaultConstructor.invoke();
             for (int i = 0; i < recordFields.length; i++) {
                 var field = recordFields[i];
                 var setter = setters.get(field.getName());
@@ -90,7 +90,7 @@ class DomainRecordMapper<R extends Record, E> implements RecordMapper<R, E> {
                 method.invoke(entity, value);
             }
 
-            return (E) entity;
+            return entity;
         } catch (Throwable e) {
             throw new RecordMappingException("Failed to map record to entity", e);
         }

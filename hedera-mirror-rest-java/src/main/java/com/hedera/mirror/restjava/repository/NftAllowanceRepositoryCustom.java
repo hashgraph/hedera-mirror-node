@@ -17,11 +17,24 @@
 package com.hedera.mirror.restjava.repository;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.restjava.common.Filter;
+import com.hedera.mirror.restjava.common.Order;
 import java.util.Collection;
 import java.util.List;
-import org.springframework.data.domain.Pageable;
+import org.jetbrains.annotations.NotNull;
 
 public interface NftAllowanceRepositoryCustom {
 
-    Collection<NftAllowance> findByFilters(List<Filter<?>> filters, Pageable pageable);
+    /**
+     * Find all NftAllowance matching the filters with the given limit, sort order, and byOwner flag
+     * @param byOwner  True if looking for nft allowances granted by the same owner, otherwise looking for nft
+     *                 nft allowances granted to the same spender
+     * @param filters The filters
+     * @param limit The limit of the number of nft allowances to return
+     * @param order The sort order
+     * @return The matching nft allowances
+     */
+    @NotNull
+    Collection<NftAllowance> findAll(
+            boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Order order);
 }

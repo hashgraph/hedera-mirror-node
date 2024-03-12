@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.repository;
+package com.hedera.mirror.restjava.exception;
 
-import com.hedera.mirror.restjava.common.RangeOperator;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.io.Serial;
 
-@AllArgsConstructor
-@Builder
-@Data
-@NoArgsConstructor
-public class Filter<T> {
-    private String name;
-    private RangeOperator operator;
-    private T value;
-    private Class<T> valueType;
+public class MismatchTypeException extends RestException {
+
+    private static final String MESSAGE = "Expected type %s but got %s";
+
+    @Serial
+    private static final long serialVersionUID = -1216734672367851011L;
+
+    public MismatchTypeException(Class<?> expected, Class<?> actual) {
+        super(MESSAGE.formatted(expected.getName(), actual.getName()));
+    }
 }

@@ -16,18 +16,7 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-
-@Getter
-@RequiredArgsConstructor
-public enum RangeOperator {
-    EQ("="),
-    GT(">"),
-    GTE(">="),
-    LT("<"),
-    LTE("<="),
-    NE("!=");
-
-    private final String operator;
+public enum Order {
+    ASC,
+    DESC
 }

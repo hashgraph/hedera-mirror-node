@@ -31,7 +31,7 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("grpcVersion", "1.62.2")
-    set("jooq.version", "3.19.5")
+    set("jooq.version", "3.19.6")
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
