@@ -76,10 +76,9 @@ jooq {
                 excludes =
                     """
                     account_balance_old
-                    | account_balance_p.*
                     | flyway_schema_history
-                    | token_balance_p.*
                     | transaction_hash_.*
+                    | .*_p\d+_\d+
                 """
                 includes = ".*"
                 inputSchema = dbSchema
