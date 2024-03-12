@@ -136,7 +136,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         return primaryCondition.and(makeCondition(filter));
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"java:S1905", "rawtypes", "unchecked"})
     private static Condition makeCondition(Filter<?> filter) {
         var field = (Field) filter.field();
         var value = filter.value();

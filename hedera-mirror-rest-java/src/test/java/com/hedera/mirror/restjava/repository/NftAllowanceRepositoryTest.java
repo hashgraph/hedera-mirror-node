@@ -27,6 +27,7 @@ import com.hedera.mirror.restjava.common.Order;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.exception.InvalidFilterException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +130,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
 
     @Test
     void findAllThrowInvalidFilterException() {
-        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, List.of(), 10, Order.ASC))
+        var emptyFilters = Collections.<Filter<?>>emptyList();
+        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, emptyFilters, 10, Order.ASC))
                 .isInstanceOf(InvalidFilterException.class);
 
         var filters = List.<Filter<?>>of(

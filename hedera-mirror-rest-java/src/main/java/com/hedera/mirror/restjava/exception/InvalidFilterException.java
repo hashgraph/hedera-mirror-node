@@ -18,6 +18,7 @@ package com.hedera.mirror.restjava.exception;
 
 import java.io.Serial;
 
+@SuppressWarnings("java:S110")
 public class InvalidFilterException extends RestException {
 
     @Serial

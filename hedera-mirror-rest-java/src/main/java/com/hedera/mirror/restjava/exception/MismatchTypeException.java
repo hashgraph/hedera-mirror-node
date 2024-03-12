@@ -18,6 +18,7 @@ package com.hedera.mirror.restjava.exception;
 
 import java.io.Serial;
 
+@SuppressWarnings("java:S110")
 public class MismatchTypeException extends RestException {
 
     private static final String MESSAGE = "Expected type %s but got %s";

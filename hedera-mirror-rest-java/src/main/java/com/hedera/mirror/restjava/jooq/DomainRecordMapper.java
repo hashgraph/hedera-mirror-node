@@ -96,7 +96,7 @@ class DomainRecordMapper<R extends Record, E> implements RecordMapper<R, E> {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"java:S3776", "rawtypes", "unchecked"})
     private static Object convert(Setter setter, Object source) throws JsonProcessingException {
         if (source == null) {
             return null;
