@@ -33,10 +33,10 @@ public class DomainRecordMapperProvider implements RecordMapperProvider {
 
     private final Map<MapperKey, RecordMapper<?, ?>> mappers = new ConcurrentHashMap<>();
 
+    @NotNull
     @Override
     @SuppressWarnings("unchecked")
-    public @NotNull <R extends Record, E> RecordMapper<R, E> provide(
-            RecordType<R> recordType, Class<? extends E> type) {
+    public <R extends Record, E> RecordMapper<R, E> provide(RecordType<R> recordType, Class<? extends E> type) {
         var key = new MapperKey(recordType, type);
         return (RecordMapper<R, E>) mappers.computeIfAbsent(key, k -> {
             if (type.getName().startsWith(PACKAGE_PREFIX)) {

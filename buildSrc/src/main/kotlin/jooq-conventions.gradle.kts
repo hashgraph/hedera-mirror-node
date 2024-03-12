@@ -19,8 +19,8 @@ import org.testcontainers.images.builder.Transferable
 
 plugins {
     id("java-conventions")
-    id("org.jooq.jooq-codegen-gradle")
     id("org.flywaydb.flyway")
+    id("org.jooq.jooq-codegen-gradle")
 }
 
 dependencies {

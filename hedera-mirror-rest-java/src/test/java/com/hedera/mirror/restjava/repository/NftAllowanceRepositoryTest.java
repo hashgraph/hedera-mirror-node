@@ -129,6 +129,44 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     }
 
     @Test
+    void findAllNoMatch() {
+        // given
+        setupNftAllowances();
+
+        // when, then
+        var filters =
+                List.<Filter<?>>of(new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(2) + 1, Long.class));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+
+        // when, then
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
+                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.EQ, spenders.get(2) + 1, Long.class));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+
+        // when, then
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
+                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.EQ, spenders.get(0), Long.class),
+                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.EQ, tokenIds.get(2) + 1, Long.class));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+
+        // when, then
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
+                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.GT, spenders.get(2), Long.class),
+                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.GT, tokenIds.get(0), Long.class));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+
+        // when, then
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
+                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.LT, spenders.get(0), Long.class),
+                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.LT, tokenIds.get(2), Long.class));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+    }
+
+    @Test
     void findAllThrowInvalidFilterException() {
         var emptyFilters = Collections.<Filter<?>>emptyList();
         assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, emptyFilters, 10, Order.ASC))

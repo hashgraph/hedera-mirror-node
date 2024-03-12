@@ -50,7 +50,6 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
     @NotNull
     @Override
-    @SuppressWarnings("unchecked")
     public Collection<NftAllowance> findAll(
             boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Order order) {
         Condition primaryCondition = null;
@@ -61,7 +60,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
         for (var filter : filters) {
             var field = filter.field();
-            if (filter.field() == primaryField) {
+            if (field == primaryField) {
                 primaryCondition = makeCondition(filter);
             } else if (field == primarySortField) {
                 primarySortFilter = filter;
