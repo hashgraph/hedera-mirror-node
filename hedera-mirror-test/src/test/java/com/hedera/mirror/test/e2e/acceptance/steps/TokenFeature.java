@@ -106,7 +106,7 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I ensure token has the correct properties")
     public void ensureTokenProperties() {
-        var tokensResponse = mirrorClient.getTokensResponse(tokenId.toString()).getTokens();
+        var tokensResponse = mirrorClient.getTokens(tokenId.toString()).getTokens();
         assertThat(tokensResponse).isNotNull().hasSize(1);
         var token = tokensResponse.get(0);
         var tokenDecimals = token.getDecimals();

@@ -278,7 +278,7 @@ public class MirrorNodeClient {
         return callRestEndpoint("/tokens/{tokenId}", TokenInfo.class, tokenId);
     }
 
-    public TokensResponse getTokensResponse(String tokenId) {
+    public TokensResponse getTokens(String tokenId) {
         log.debug("Verify token with query parameter '{}' is returned by Mirror Node", tokenId);
         return callRestEndpoint("/tokens/?token.id={tokenId}", TokensResponse.class, tokenId);
     }
