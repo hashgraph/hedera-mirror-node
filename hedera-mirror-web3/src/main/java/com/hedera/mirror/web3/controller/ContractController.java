@@ -82,9 +82,8 @@ class ContractController {
 
         final var params = constructServiceParameters(request);
         final var result = contractCallService.processCall(params);
-        final var callResponse = new ContractCallResponse(result);
 
-        return callResponse;
+        return new ContractCallResponse(result);
     }
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {

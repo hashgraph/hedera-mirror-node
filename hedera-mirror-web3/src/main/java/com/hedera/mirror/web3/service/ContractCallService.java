@@ -172,11 +172,13 @@ public class ContractCallService {
             return recordFileRepository.findEarliest();
         }
 
-        recordFileRepository
+        long latestBlock = recordFileRepository
                 .findLatestIndex()
-                .filter(latest -> block.number() <= latest)
                 .orElseThrow(() -> new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER));
 
+        if (block.number() > latestBlock) {
+            throw new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER);
+        }
         return recordFileRepository.findByIndex(block.number());
     }
 }
