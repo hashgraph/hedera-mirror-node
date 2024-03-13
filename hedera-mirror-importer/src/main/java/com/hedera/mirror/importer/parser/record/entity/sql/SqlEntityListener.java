@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.entity.sql;
 
-import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
-
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -67,7 +65,6 @@ import com.hedera.mirror.importer.parser.record.entity.ParserContext;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -560,16 +557,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setDeleted(src.getDeleted());
         }
 
-        /*
-         * For metadata, a value of EMPTY_BYTE_ARRAY is an indicator from TokenUpdateNftsTransactionHandler that
-         * the metadata has been cleared in the update. Replace the value with null in dest so that it is reflected
-         * as a null column value in the database on upsert.
-         */
-        var destMetadata = dest.getMetadata();
-        if (destMetadata == null) {
+        if (dest.getMetadata() == null) {
             dest.setMetadata(src.getMetadata());
-        } else if (Arrays.equals(EMPTY_BYTE_ARRAY, destMetadata)) {
-            dest.setMetadata(null);
         }
 
         if (dest.getTimestampLower() > src.getTimestampLower()) {

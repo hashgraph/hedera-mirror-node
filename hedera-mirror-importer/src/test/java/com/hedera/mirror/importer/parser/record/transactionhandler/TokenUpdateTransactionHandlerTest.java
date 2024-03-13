@@ -102,7 +102,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(body.getKycKey().toByteArray(), Token::getKycKey)
                 .returns(Range.atLeast(timestamp), Token::getTimestampRange)
                 .returns(body.getName(), Token::getName)
-                .returns(body.getMetadata().toByteArray(), Token::getMetadata)
+                .returns(body.getMetadata().getValue().toByteArray(), Token::getMetadata)
                 .returns(body.getMetadataKey().toByteArray(), Token::getMetadataKey)
                 .returns(body.getPauseKey().toByteArray(), Token::getPauseKey)
                 .returns(body.getSupplyKey().toByteArray(), Token::getSupplyKey)

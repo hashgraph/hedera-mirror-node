@@ -108,7 +108,6 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         b.clearKycKey();
                     }
                     if (!hasMetadata) {
-                        // Never null. Services PBJ sets EMPTY when no metadata defined on create
                         b.setMetadata(ByteString.EMPTY);
                     }
                     if (!hasMetadataKey) {
@@ -260,7 +259,6 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(null, Token::getFeeScheduleKey)
                 .returns(null, Token::getFreezeKey)
                 .returns(null, Token::getKycKey)
-                // Never null. Services PBJ sets EMPTY when no metadata defined on create
                 .returns(EMPTY_BYTE_ARRAY, Token::getMetadata)
                 .returns(null, Token::getMetadataKey)
                 .returns(null, Token::getPauseKey)

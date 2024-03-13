@@ -1380,7 +1380,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         completeFileAndCommit();
 
         Nft nft1 = getNft(tokenId1, 1L, accountId1, 3L, false, metadata1Update, 4L); // transfer + metadata update
-        Nft nft2 = getNft(tokenId2, 1L, accountId2, 4L, false, null, 5L); // transfer + metadata clear
+        Nft nft2 = getNft(tokenId2, 1L, accountId2, 4L, false, "", 5L); // transfer + metadata clear
 
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }

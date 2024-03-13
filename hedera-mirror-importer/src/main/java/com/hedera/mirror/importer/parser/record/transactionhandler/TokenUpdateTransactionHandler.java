@@ -108,7 +108,7 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         if (transactionBody.hasMetadata()) {
-            token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata().toByteString()));
+            token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata().getValue()));
         }
 
         if (transactionBody.hasMetadataKey()) {

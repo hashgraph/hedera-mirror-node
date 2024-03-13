@@ -57,15 +57,16 @@ class TokenUpdateNftsTransactionHandlerTest extends AbstractTransactionHandlerTe
     @Test
     void updateNftMetadata() {
         // Given
-        var recordItem = recordItemBuilder.tokenNftsUpdate().build();
+        var recordItem = recordItemBuilder.tokenUpdateNfts().build();
         var transaction = domainBuilder.transaction().get();
         var nft = ArgumentCaptor.forClass(Nft.class);
         var expectedSerialNumbers = List.of(1L, 2L);
-        int expectedNfts = expectedSerialNumbers.size();
+        var expectedNfts = expectedSerialNumbers.size();
         var expectedMetadata = recordItem
                 .getTransactionBody()
                 .getTokenUpdateNfts()
                 .getMetadata()
+                .getValue()
                 .toByteArray();
 
         // When
@@ -93,7 +94,7 @@ class TokenUpdateNftsTransactionHandlerTest extends AbstractTransactionHandlerTe
     void updateTransactionDisabled() {
         // Given
         entityProperties.getPersist().setTokens(false);
-        var recordItem = recordItemBuilder.tokenNftsUpdate().build();
+        var recordItem = recordItemBuilder.tokenUpdateNfts().build();
         var transaction = domainBuilder.transaction().get();
 
         // When

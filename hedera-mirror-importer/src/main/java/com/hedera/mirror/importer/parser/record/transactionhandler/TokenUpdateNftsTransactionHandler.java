@@ -55,15 +55,20 @@ class TokenUpdateNftsTransactionHandler extends AbstractTransactionHandler {
         }
 
         var transactionBody = recordItem.getTransactionBody().getTokenUpdateNfts();
+
+        // Since there's only one updatable field, this is a no-op. In the future if there's multiple fields we'll have
+        // to rework this logic
+        if (!transactionBody.hasMetadata()) {
+            return;
+        }
+
         var tokenId = transaction.getEntityId();
         var consensusTimestamp = recordItem.getConsensusTimestamp();
-
-        var nftBuilder =
-                Nft.builder().timestampRange(Range.atLeast(consensusTimestamp)).tokenId(tokenId.getId());
-
-        if (transactionBody.hasMetadata()) {
-            nftBuilder.metadata(toBytes(transactionBody.getMetadata().toByteString()));
-        }
+        var nftBuilder = Nft.builder()
+                .metadata(toBytes(transactionBody.getMetadata().getValue()))
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .tokenId(tokenId.getId())
+                .tokenId(tokenId.getId());
 
         var serialNumbers = transactionBody.getSerialNumbersList();
         for (int i = 0; i < serialNumbers.size(); i++) {

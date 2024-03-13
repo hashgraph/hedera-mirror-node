@@ -727,10 +727,12 @@ public class RecordItemBuilder {
         return builder;
     }
 
-    public Builder<TokenUpdateNftsTransactionBody.Builder> tokenNftsUpdate() {
-        var transactionBody = TokenUpdateNftsTransactionBody.newBuilder().setToken(tokenId());
-        transactionBody.addSerialNumbers(1L).addSerialNumbers(2L);
-        transactionBody.setMetadata(BytesValue.of(bytes(16)));
+    public Builder<TokenUpdateNftsTransactionBody.Builder> tokenUpdateNfts() {
+        var transactionBody = TokenUpdateNftsTransactionBody.newBuilder()
+                .addSerialNumbers(1L)
+                .addSerialNumbers(2L)
+                .setMetadata(BytesValue.of(bytes(16)))
+                .setToken(tokenId());
         return new Builder<>(TransactionType.TOKENUPDATENFTS, transactionBody);
     }
 
