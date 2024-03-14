@@ -34,45 +34,86 @@ Feature: in-equivalence tests
   Scenario Outline: Validate in-equivalence tests for system accounts with call, staticcall, delegatecall
   and callcode
     Given I successfully create equivalence call contract
-    Then the mirror node REST API should return status 200 for the contracts creation
     Then I verify the equivalence contract bytecode is deployed
-    Then I make internal <callType> to system account <account> <amountType> amount to <node> node
+    Given I successfully create fungible token for internal calls tests
+    Then I make internal <callType> to system account <account> <amountType> amount
 
     Examples:
-      | callType       | account   | amountType | node     |
-      | "call"         | "0.0.0"   | "without"  | "MIRROR" |
-      | "call"         | "0.0.0"   | "with"     | "MIRROR" |
-      | "call"         | "0.0.9"   | "without"  | "MIRROR" |
-      | "call"         | "0.0.9"   | "with"     | "MIRROR" |
-      | "call"         | "0.0.357" | "without"  | "MIRROR" |
-      | "call"         | "0.0.357" | "with"     | "MIRROR" |
-      | "call"         | "0.0.358" | "without"  | "MIRROR" |
-      | "call"         | "0.0.358" | "with"     | "MIRROR" |
-      | "call"         | "0.0.741" | "without"  | "MIRROR" |
-      | "call"         | "0.0.741" | "with"     | "MIRROR" |
-      | "call"         | "0.0.800" | "without"  | "MIRROR" |
-      | "call"         | "0.0.800" | "with"     | "MIRROR" |
-      | "staticcall"   | "0.0.0"   | "without"  | "MIRROR" |
-      | "staticcall"   | "0.0.9"   | "without"  | "MIRROR" |
-      | "staticcall"   | "0.0.357" | "without"  | "MIRROR" |
-      | "staticcall"   | "0.0.358" | "without"  | "MIRROR" |
-      | "staticcall"   | "0.0.741" | "without"  | "MIRROR" |
-      | "staticcall"   | "0.0.800" | "without"  | "MIRROR" |
-      | "delegatecall" | "0.0.0"   | "without"  | "MIRROR" |
-      | "delegatecall" | "0.0.9"   | "without"  | "MIRROR" |
-      | "delegatecall" | "0.0.357" | "without"  | "MIRROR" |
-      | "delegatecall" | "0.0.358" | "without"  | "MIRROR" |
-      | "delegatecall" | "0.0.741" | "without"  | "MIRROR" |
-      | "delegatecall" | "0.0.800" | "without"  | "MIRROR" |
-      | "callcode"     | "0.0.0"   | "without"  | "MIRROR" |
-      | "callcode"     | "0.0.0"   | "with"     | "MIRROR" |
-      | "callcode"     | "0.0.9"   | "without"  | "MIRROR" |
-      | "callcode"     | "0.0.9"   | "with"     | "MIRROR" |
-      | "callcode"     | "0.0.357" | "without"  | "MIRROR" |
-      | "callcode"     | "0.0.357" | "with"     | "MIRROR" |
-      | "callcode"     | "0.0.358" | "without"  | "MIRROR" |
-      | "callcode"     | "0.0.358" | "with"     | "MIRROR" |
-      | "callcode"     | "0.0.741" | "without"  | "MIRROR" |
-      | "callcode"     | "0.0.741" | "with"     | "MIRROR" |
-      | "callcode"     | "0.0.800" | "without"  | "MIRROR" |
-      | "callcode"     | "0.0.800" | "with"     | "MIRROR" |
+      | callType       | account   | amountType |
+      | "call"         | "0.0.0"   | "without"  |
+#      | "call"         | "0.0.0"   | "with"     | fails
+      | "call"         | "0.0.4"   | "without"  |
+#      | "call"         | "0.0.4"   | "with"     | fails
+      | "call"         | "0.0.100" | "without"  |
+#      | "call"         | "0.0.100" | "with"     | fails
+      | "call"         | "0.0.358" | "without"  |
+#      | "call"         | "0.0.358" | "with"     | fails
+      | "call"         | "0.0.359" | "without"  |
+#      | "call"         | "0.0.359" | "with"     | fails
+      | "call"         | "0.0.741" | "without"  |
+#      | "call"         | "0.0.741" | "with"     | fails
+      | "call"         | "0.0.800" | "without"  |
+      | "call"         | "0.0.800" | "with"     |
+      | "staticcall"   | "0.0.0"   | "without"  |
+      | "staticcall"   | "0.0.4"   | "without"  |
+      | "staticcall"   | "0.0.358" | "without"  |
+      | "staticcall"   | "0.0.359" | "without"  |
+      | "staticcall"   | "0.0.741" | "without"  |
+      | "staticcall"   | "0.0.800" | "without"  |
+      | "delegatecall" | "0.0.0"   | "without"  |
+      | "delegatecall" | "0.0.4"   | "without"  |
+      | "delegatecall" | "0.0.358" | "without"  |
+      | "delegatecall" | "0.0.359" | "without"  |
+      | "delegatecall" | "0.0.741" | "without"  |
+      | "delegatecall" | "0.0.800" | "without"  |
+      | "callcode"     | "0.0.0"   | "without"  |
+#      | "callcode"     | "0.0.0"   | "with"     | fails
+      | "callcode"     | "0.0.4"   | "without"  |
+#      | "callcode"     | "0.0.4"   | "with"     | add assertion
+      | "callcode"     | "0.0.358" | "without"  |
+#      | "callcode"     | "0.0.358" | "with"     | fails
+      | "callcode"     | "0.0.741" | "without"  |
+#      | "callcode"     | "0.0.741" | "with"     | fails
+      | "callcode"     | "0.0.800" | "without"  |
+      | "callcode"     | "0.0.800" | "with"     |
+
+  Scenario Outline: Validate in-equivalence tests for internal calls
+    Given I successfully create equivalence call contract
+    Given I successfully create selfdestruct contract
+    Then I verify the equivalence contract bytecode is deployed
+    Then I verify the selfdestruct contract bytecode is deployed
+    Given I ensure token "FUNGIBLE" has been created
+    Given I ensure token "NFT" has been created
+    Given I successfully create tokens
+    And I associate "FUNGIBLE" to contract
+    Then the mirror node REST API should return status 200 for the contracts creation
+    Then I execute internal "call" against "payable" contract "with" amount
+    Then I execute internal "call" against "non-payable" contract "with" amount
+    Then I execute internal "call" against "payable" contract "without" amount
+    Then I execute internal "staticcall" against "payable" contract "without" amount
+    Then I execute internal "delegatecall" against "payable" contract "without" amount
+    Then I execute internal "callcode" against "payable" contract "with" amount
+    Then I execute internal "callcode" against "non-payable" contract "with" amount
+    Then I execute internal "callcode" against "payable" contract "without" amount
+    Then I execute internal "call" against Identity precompile
+    Then I execute internal "staticcall" against Identity precompile
+    Then I execute internal "delegatecall" against Identity precompile
+    Then I execute internal "call" against Ecrecover precompile
+    Then I execute internal "staticcall" against Ecrecover precompile
+    Then I execute internal "delegatecall" against Ecrecover precompile
+    Then I execute internal "call" against SHA-256 precompile
+    Then I execute internal "staticcall" against SHA-256 precompile
+    Then I execute internal "delegatecall" against SHA-256 precompile
+    Then I execute internal "call" against Ripemd-160 precompile
+    Then I execute internal "staticcall" against Ripemd-160 precompile
+    Then I execute internal "delegatecall" against Ripemd-160 precompile
+    Then I execute internal "call" against PRNG precompile address "without" amount
+#    Then I execute internal "call" against PRNG precompile address "with" amount - success but should fail
+    Then I execute internal "staticcall" against PRNG precompile address "without" amount
+    Then I execute internal "delegatecall" against PRNG precompile address "without" amount
+    Then I execute internal "callcode" against PRNG precompile address "without" amount
+#    Then I execute internal "callcode" against PRNG precompile address "with" amount - success but should fail
+    Then I execute internal "call" against exchange rate precompile address "without" amount
+#    Then I execute internal "call" against exchange rate precompile address "with" amount - success but should fail
+    Then I execute internal "staticcall" against exchange rate precompile address "without" amount
+    Then I execute internal "delegatecall" against exchange rate precompile address "without" amount

@@ -135,6 +135,12 @@ public class TestUtil {
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 
+    public static Address asAddress(byte[] bytes) {
+        final var addressBytes = Bytes.wrap(bytes);
+        final var addressAsInteger = addressBytes.toUnsignedBigInteger();
+        return Address.wrap(Address.toChecksumAddress(addressAsInteger));
+    }
+
     public static Tuple accountAmount(String account, Long amount, boolean isApproval) {
         return Tuple.of(asAddress(account), amount, isApproval);
     }

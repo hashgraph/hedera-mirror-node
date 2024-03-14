@@ -14,6 +14,13 @@ contract EquivalenceContract {
         (success, returnData) = _to.call{value: msg.value}(_data);
     }
 
+    function makeCallWithAmountRevert(address _to, bytes memory _data) external payable returns (bool success, bytes memory returnData) {
+        (success, returnData) = _to.call{value: msg.value}(_data);
+
+        // Revert if the call was not successful
+        require(success, "Call failed");
+    }
+
     function makeStaticCall(address _to, bytes memory _data) external returns (bool success, bytes memory returnData) {
         (success, returnData) = _to.staticcall(_data);
     }
@@ -22,40 +29,49 @@ contract EquivalenceContract {
         (success, returnData) = _to.delegatecall(_data);
     }
 
-    function callCodeToContractWithoutAmount(address _addr, bytes calldata _customData) external returns (bytes32 output) {
+    function callCodeToContractWithoutAmount(address _addr, bytes calldata _customData) external returns (bytes32 returnData) {
         assembly {
-            let x := mload(0x40)
-            calldatacopy(x, _customData.offset, calldatasize())
+            let input := mload(0x40)
+            mstore(0x40, add(input, calldatasize()))
+            calldatacopy(input, _customData.offset, calldatasize())
+
+            let output := mload(0x40)
+            mstore(0x40, add(output, 0x20))
 
             let success := callcode(
                 900000, // gas
                 _addr, // target address
                 0, // value
-                x, // extracted and loaded calldata for the internal call
-                calldatasize(), // as far as the data is dynamic, we can use calldatasize() to get the variable size
-                x, // memory overlapping to save some space
-                0x20 // output is 32 bytes long
+                input, // input data location
+                calldatasize(), // input data size
+                output, // output data location
+                0x20 // size of output data expected
             )
 
-            output := mload(x) // assign output value to the var
+            returnData := mload(output) // assign output value to the var
         }
     }
 
-    function callCodeToContractWithAmount(address _addr, bytes calldata _customData) external payable returns (bytes32 output) {
+    function callCodeToContractWithAmount(address _addr, bytes calldata _customData) external payable returns (bytes32 returnData) {
         assembly {
-            let x := mload(0x40)
-            calldatacopy(x, _customData.offset, calldatasize())
+            let input := mload(0x40)
+            mstore(0x40, add(input, calldatasize()))
+            calldatacopy(input, _customData.offset, calldatasize())
+
+            let output := mload(0x40)
+            mstore(0x40, add(output, 0x20))
+
             let success := callcode(
                 900000, // gas
                 _addr, // target address
                 callvalue(), // value
-                x, // extracted and loaded calldata for the internal call
-                calldatasize(), // as far as the data is dynamic, we can use calldatasize() to get the variable size
-                x, // memory overlapping to save some space
-                0x20 // output is 32 bytes long
+                input, // input data location
+                calldatasize(), // input data size
+                output, // output data location
+                0x20 // size of output data expected
             )
 
-            output := mload(x) // assign output value to the var
+            returnData := mload(output) // assign output value to the var
         }
     }
 
@@ -120,7 +136,72 @@ contract EquivalenceContract {
         tinybars = abi.decode(result, (uint256));
     }
 
+    function htsCallWithoutAmount(address token) external returns (bool success, bool isToken) {
+        (bool callSuccess, bytes memory result) = HTS_PRECOMPILE_ADDRESS.call(
+            abi.encodeWithSignature("isToken(address)", token));
+        if (callSuccess) {
+            (int64 responseCode, bool isTokenFlag) = abi.decode(result, (int32, bool));
+            success = responseCode == 22; // success
+            isToken = success && isTokenFlag;
+        }
+    }
+
+    function htsCallWithAmount(address token) external payable returns (bool success, bool isToken) {
+        (bool callSuccess, bytes memory result) = HTS_PRECOMPILE_ADDRESS.call{value: msg.value}(
+            abi.encodeWithSignature("isToken(address)", token));
+        if (callSuccess) {
+            (int64 responseCode, bool isTokenFlag) = abi.decode(result, (int32, bool));
+            success = responseCode == 22; // success
+            isToken = success && isTokenFlag;
+        }
+    }
+
+    function htsStaticCall(address token) external returns (bool success, bool isToken) {
+        (bool callSuccess, bytes memory result) = HTS_PRECOMPILE_ADDRESS.staticcall(
+            abi.encodeWithSignature("isToken(address)", token));
+        if (callSuccess) {
+            (int64 responseCode, bool isTokenFlag) = abi.decode(result, (int32, bool));
+            success = responseCode == 22; // success
+            isToken = success && isTokenFlag;
+        }
+    }
+
+    function htsDelegateCall(address token) external returns (bool success, bool isToken) {
+        (bool callSuccess, bytes memory result) = HTS_PRECOMPILE_ADDRESS.delegatecall(
+            abi.encodeWithSignature("isToken(address)", token));
+        if (callSuccess) {
+            (int64 responseCode, bool isTokenFlag) = abi.decode(result, (int32, bool));
+            success = responseCode == 22; // success
+            isToken = success && isTokenFlag;
+        }
+    }
+
     function getCurrentAddress() external returns(address){
         return address(this);
     }
+
+    function makeCallWithoutAmountToIdentityPrecompile()  external returns (bool success, bytes memory returnData) {
+        bytes memory input = abi.encode("Hello, World");
+
+        (bool success, bytes memory returnData) = address(0x04).call(abi.encode(input));
+    }
+
+    function makeCallWithAmountToIdentityPrecompile()  external payable returns (bool success, bytes memory returnData) {
+        bytes memory input = abi.encode("Hello, World");
+
+        (bool success, bytes memory returnData) = address(0x04).call{value: msg.value}(abi.encode(input));
+    }
+
+    function makeStaticCallToIdentityPrecompile()  external returns (bool success, bytes memory returnData) {
+        bytes memory input = abi.encode("Hello, World");
+
+        (bool success, bytes memory returnData) = address(0x04).staticcall(abi.encode(input));
+    }
+
+    function makeDelegateCallToIdentityPrecompile()  external returns (bool success, bytes memory returnData) {
+        bytes memory input = abi.encode("Hello, World");
+
+        (bool success, bytes memory returnData) = address(0x04).delegatecall(abi.encode(input));
+    }
+
 }
