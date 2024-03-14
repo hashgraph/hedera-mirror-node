@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 class FilterTest {
 
     @Test
-    void mismatchTypeException() {
+    void mismatchedTypeException() {
         assertThatThrownBy(() -> new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, "owner", String.class))
                 .isInstanceOf(MismatchedTypeException.class);
     }

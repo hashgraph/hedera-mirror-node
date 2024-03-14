@@ -143,7 +143,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         assertThat(nftAllowanceRepository.findAll(true, filters, 4, Direction.ASC))
                 .containsExactlyElementsOf(expected);
 
-        // given approved_for_all is true
+        // given approved_for_all is false
         filters = List.of(
                 new Filter<>(NFT_ALLOWANCE.APPROVED_FOR_ALL, RangeOperator.EQ, false, Boolean.class),
                 new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class));

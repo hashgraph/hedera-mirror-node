@@ -95,17 +95,17 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
                 .fetchInto(NftAllowance.class);
     }
 
-    private Condition getBaseCondition(Condition primaryCondition, Filter<?> primarySortFilter, Filter<?> tokenFilter) {
+    private Condition getBaseCondition(Condition commonCondition, Filter<?> primarySortFilter, Filter<?> tokenFilter) {
         if (primarySortFilter == null) {
-            return primaryCondition;
+            return commonCondition;
         }
 
         if (tokenFilter == null) {
-            return primaryCondition.and(makeCondition(primarySortFilter));
+            return commonCondition.and(makeCondition(primarySortFilter));
         }
 
         if (primarySortFilter.operator() == RangeOperator.EQ) {
-            return primaryCondition.and(makeCondition(primarySortFilter)).and(makeCondition(tokenFilter));
+            return commonCondition.and(makeCondition(primarySortFilter)).and(makeCondition(tokenFilter));
         }
 
         // Create a filter for the primary sort field with EQ operator
@@ -117,11 +117,11 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         }
 
         var filter = new Filter<>(primarySortFilter.field(), RangeOperator.EQ, value, Long.class);
-        return primaryCondition.and(makeCondition(filter)).and(makeCondition(tokenFilter));
+        return commonCondition.and(makeCondition(filter)).and(makeCondition(tokenFilter));
     }
 
     private Condition getSecondaryCondition(
-            Condition primaryCondition, Filter<?> primarySortFilter, Filter<?> tokenFilter) {
+            Condition commonCondition, Filter<?> primarySortFilter, Filter<?> tokenFilter) {
         // No secondary condition if there is no token filter, or the primary sort filter's operator is EQ. Note that
         // it's guaranteed that there must be a primary sort filter when token filter exists
         if (tokenFilter == null || primarySortFilter.operator() == RangeOperator.EQ) {
@@ -137,7 +137,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         }
 
         var filter = new Filter<>(primarySortFilter.field(), operator, value, Long.class);
-        return primaryCondition.and(makeCondition(filter));
+        return commonCondition.and(makeCondition(filter));
     }
 
     @SuppressWarnings({"java:S1905", "rawtypes", "unchecked"})
