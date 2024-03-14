@@ -101,8 +101,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
     private static final String RANDOM_ADDRESS = to32BytesString(RandomStringUtils.random(40, HEX_DIGITS));
     private final TokenClient tokenClient;
     private final AccountClient accountClient;
-    private static final int BASE_GAS_FEE = 21000;
-    private static final int ADDITIONAL_FEE_FOR_CREATE = 32000;
+    private static final int BASE_GAS_FEE = 21_000;
+    private static final int ADDITIONAL_FEE_FOR_CREATE = 32_000;
     private DeployedContract deployedContract;
     private DeployedContract deployedPrecompileContract;
     private String contractSolidityAddress;
@@ -818,9 +818,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
         DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24803),
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53631),
         DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55786),
-        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 318385),
-        DEPLOY_NEW_INSTANCE("deployNewInstance", 0),
-        DEPLOY_AND_CALL_CONTRACT("deployAndCallContract", 0),
+        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 318113),
+        DEPLOY_NEW_INSTANCE("createClone", 0),
+        DEPLOY_AND_CALL_CONTRACT("deployAndCallMockContract", 0),
         DEPLOY_AND_DESTROY("deployDestroy", 0),
         DESTROY("destroy", 26300),
         GET_GAS_LEFT("getGasLeft", 21313),

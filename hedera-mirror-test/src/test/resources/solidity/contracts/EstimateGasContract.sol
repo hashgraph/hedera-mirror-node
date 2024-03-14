@@ -92,7 +92,7 @@ contract EstimateGasContract is Caller {
         return transferType;
     }
 
-    function deployAndCallContract(uint _numCalls) public {
+    function deployAndCallMockContract(uint _numCalls) public {
         MockContract newB = new MockContract();
         deployedMockContracts.push(address(newB));
 
@@ -101,7 +101,7 @@ contract EstimateGasContract is Caller {
         }
     }
 
-    function deployContract() public returns (address) {
+    function createDummyContract() public returns (address) {
         DeployDummyContract newContract = new DeployDummyContract(true);
         return address(newContract);
     }
@@ -126,7 +126,7 @@ contract EstimateGasContract is Caller {
         return address(newContract);
     }
 
-    function createClone() internal returns (address result) {
+    function createClone() public returns (address result) {
         bytes20 targetBytes = bytes20(address(this)); // This contract's address
         // EIP-1167 bytecode for creating a clone
         assembly {
@@ -137,11 +137,6 @@ contract EstimateGasContract is Caller {
             result := create(0, clone, 0x37) // Deploying a new proxy contract
         }
         require(result != address(0), "Clone creation failed");
-    }
-
-    // Function to call `createClone` and create a new instance
-    function deployNewInstance() public returns (address) {
-        return createClone();
     }
 
     function staticCallToContract(address _address, bytes4 _sig) public view returns (address) {
