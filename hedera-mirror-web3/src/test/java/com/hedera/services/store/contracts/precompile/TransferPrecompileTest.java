@@ -98,6 +98,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -206,6 +207,9 @@ class TransferPrecompileTest {
     private EntityAddressSequencer entityAddressSequencer;
 
     @Mock
+    private Predicate<Address> systemAccountDetector;
+
+    @Mock
     private HederaEvmStackedWorldStateUpdater worldUpdater;
 
     @Mock
@@ -243,7 +247,8 @@ class TransferPrecompileTest {
                 contextOptionValidator,
                 autoCreationLogic,
                 syntheticTxnFactory,
-                entityAddressSequencer);
+                entityAddressSequencer,
+                systemAccountDetector);
         PrecompileMapper precompileMapper = new PrecompileMapper(Set.of(transferPrecompile));
         subject = new HTSPrecompiledContract(
                 infrastructureFactory, mirrorNodeEvmProperties, precompileMapper, store, tokenAccessor, pricingUtils);
@@ -556,7 +561,7 @@ class TransferPrecompileTest {
         given(precompileContext.getSenderAddress()).willReturn(contractAddress);
         given(worldUpdater.getStore()).willReturn(store);
         final var lazyCreationFee = 500L;
-        when(autoCreationLogic.create(any(), any(), any(), any()))
+        when(autoCreationLogic.create(any(), any(), any(), any(), any()))
                 .thenReturn(Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, lazyCreationFee));
 
         // when:

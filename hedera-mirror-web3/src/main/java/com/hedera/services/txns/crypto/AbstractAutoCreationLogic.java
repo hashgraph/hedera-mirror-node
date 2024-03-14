@@ -34,7 +34,13 @@ import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.*;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -80,7 +86,8 @@ public abstract class AbstractAutoCreationLogic {
             final BalanceChange change,
             final Timestamp timestamp,
             final Store store,
-            final EntityAddressSequencer ids) {
+            final EntityAddressSequencer ids,
+            final List<BalanceChange> changes) {
         if (change.isForToken() && !evmProperties.isLazyCreationEnabled()) {
             return Pair.of(NOT_SUPPORTED, 0L);
         }
@@ -90,12 +97,16 @@ public abstract class AbstractAutoCreationLogic {
         }
 
         TransactionBody.Builder syntheticCreation;
+        // This map is used to count number of maxAutoAssociations needed on auto created account
+        final var tokenAliasMap = analyzeTokenTransferCreations(changes);
+        final var maxAutoAssociations =
+                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         final var isAliasEVMAddress = alias.size() == EVM_ADDRESS_SIZE;
         if (isAliasEVMAddress) {
-            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
+            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L, maxAutoAssociations);
         } else {
             final var key = asPrimitiveKeyUnchecked(alias);
-            syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, 0);
+            syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, maxAutoAssociations);
         }
 
         var fee = autoCreationFeeFor(syntheticCreation, timestamp);
@@ -114,7 +125,7 @@ public abstract class AbstractAutoCreationLogic {
                 0L,
                 0L,
                 null,
-                0,
+                maxAutoAssociations,
                 Collections.emptySortedMap(),
                 Collections.emptySortedMap(),
                 Collections.emptySortedSet(),
@@ -154,5 +165,26 @@ public abstract class AbstractAutoCreationLogic {
         final var accessor = synthAccessorFor(cryptoCreateTxn);
         final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+    }
+
+    private Map<ByteString, Set<Id>> analyzeTokenTransferCreations(final List<BalanceChange> changes) {
+        final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
+        for (final var change : changes) {
+            if (change.isForHbar()) {
+                continue;
+            }
+            var alias = change.getNonEmptyAliasIfPresent();
+
+            if (alias != null) {
+                if (tokenAliasMap.containsKey(alias)) {
+                    final var oldSet = tokenAliasMap.get(alias);
+                    oldSet.add(change.getToken());
+                    tokenAliasMap.put(alias, oldSet);
+                } else {
+                    tokenAliasMap.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
+                }
+            }
+        }
+        return tokenAliasMap;
     }
 }

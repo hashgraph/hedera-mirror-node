@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
@@ -39,6 +40,7 @@ import static com.hedera.services.store.contracts.precompile.codec.DecodingFacad
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_REPEATED_IN_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_AMOUNTS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_RECEIVING_NODE_ACCOUNT;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_ID_REPEATED_IN_TOKEN_LIST;
@@ -145,6 +147,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
     private final ContextOptionValidator contextOptionValidator;
     private final AutoCreationLogic autoCreationLogic;
     private final EntityAddressSequencer entityAddressSequencer;
+    private Predicate<Address> systemAccountDetector;
 
     public TransferPrecompile(
             final PrecompilePricingUtils pricingUtils,
@@ -153,13 +156,15 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final ContextOptionValidator contextOptionValidator,
             final AutoCreationLogic autoCreationLogic,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final EntityAddressSequencer entityAddressSequencer) {
+            final EntityAddressSequencer entityAddressSequencer,
+            final Predicate<Address> systemAccountDetector) {
         super(pricingUtils, syntheticTxnFactory);
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.transferLogic = transferLogic;
         this.contextOptionValidator = contextOptionValidator;
         this.autoCreationLogic = autoCreationLogic;
         this.entityAddressSequencer = entityAddressSequencer;
+        this.systemAccountDetector = systemAccountDetector;
     }
 
     @Override
@@ -211,7 +216,15 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
             if (change.hasAlias()) {
-                replaceAliasWithId(change, completedLazyCreates, store, entityAddressSequencer);
+                replaceAliasWithId(change, completedLazyCreates, store, entityAddressSequencer, changes);
+            }
+
+            final var units = change.getAggregatedUnits();
+            final var isCredit = units > 0;
+
+            // Checks whether the balance modification targets the receiver account (i.e. credit operation).
+            if (isCredit && !change.isForCustomFee()) {
+                revertIfReceiverIsSystemAccount(change);
             }
         }
 
@@ -472,7 +485,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             final BalanceChange change,
             final Map<ByteString, EntityNum> completedLazyCreates,
             Store store,
-            EntityAddressSequencer entityAddressSequencer) {
+            EntityAddressSequencer entityAddressSequencer,
+            final List<BalanceChange> changes) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
@@ -483,7 +497,8 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                             .setSeconds(Instant.now().getEpochSecond())
                             .build(),
                     store,
-                    entityAddressSequencer);
+                    entityAddressSequencer,
+                    changes);
             validateTrue(lazyCreateResult.getLeft() == OK, lazyCreateResult.getLeft());
             completedLazyCreates.put(
                     receiverAlias,
@@ -626,5 +641,13 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         }
 
         return allChanges;
+    }
+
+    private void revertIfReceiverIsSystemAccount(final BalanceChange change) {
+        final var accountAddress = change.counterPartyAccountId() != null
+                ? EntityIdUtils.asTypedEvmAddress(change.counterPartyAccountId())
+                : change.getAccount().asEvmAddress();
+
+        validateTrueOrRevert(!systemAccountDetector.test(accountAddress), INVALID_RECEIVING_NODE_ACCOUNT);
     }
 }

@@ -124,7 +124,7 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownTokenChange(edKeyAlias);
 
-        final var result = subject.create(input, at, store, ids);
+        final var result = subject.create(input, at, store, ids, List.of(input));
         assertEquals(NOT_SUPPORTED, result.getLeft());
     }
 
@@ -136,7 +136,8 @@ class AutoCreationLogicTest {
                         .setAccountID(payer)
                         .build(),
                 payer);
-        final var result = assertThrows(IllegalStateException.class, () -> subject.create(input, at, store, ids));
+        final var result =
+                assertThrows(IllegalStateException.class, () -> subject.create(input, at, store, ids, List.of(input)));
         assertTrue(result.getMessage().contains("Cannot auto-create an account from unaliased change"));
     }
 
@@ -148,14 +149,14 @@ class AutoCreationLogicTest {
         TransactionBody.Builder syntheticHollowCreation =
                 TransactionBody.newBuilder().setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder());
 
-        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L, 0)).willReturn(syntheticHollowCreation);
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
 
         final var input = wellKnownChange(evmAddressAlias);
 
         store.wrap();
-        final var result = subject.create(input, at, store, ids);
+        final var result = subject.create(input, at, store, ids, List.of(input));
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         assertEquals(initialTransfer, input.getNewBalance());
@@ -174,17 +175,17 @@ class AutoCreationLogicTest {
         ByteString edKeyAlias = aPrimitiveKey.toByteString();
         TransactionBody.Builder syntheticEDAliasCreation = TransactionBody.newBuilder()
                 .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setAlias(edKeyAlias));
+        final var input = wellKnownTokenChange(edKeyAlias);
+        final var changes = List.of(input);
 
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 0))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, changes.size()))
                 .willReturn(syntheticEDAliasCreation);
 
-        final var input = wellKnownTokenChange(edKeyAlias);
-
         store.wrap();
-        final var result = subject.create(input, at, store, ids);
+        final var result = subject.create(input, at, store, ids, changes);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         verify(aliasManager)

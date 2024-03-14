@@ -93,8 +93,8 @@ class ERCTransferPrecompileTest {
     void decodeTransferFromFungibleInputUsingApprovalIfNotOwner() {
         final var notOwner = IdUtils.asAccount("0.0.1002");
         given(tokenAccessor.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
-        final var decodedInput =
-                decodeERCTransferFrom(TRANSFER_FROM_FUNGIBLE_INPUT, tokenID, tokenAccessor, notOwner, identity());
+        final var decodedInput = decodeERCTransferFrom(
+                TRANSFER_FROM_FUNGIBLE_INPUT, tokenID, tokenAccessor, notOwner, identity(), x -> true);
         final var fungibleTransfer = decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
         assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
@@ -107,8 +107,8 @@ class ERCTransferPrecompileTest {
     void decodeHapiTransferFromFungibleInputUsingApprovalIfNotOwner() {
         final var notOwner = IdUtils.asAccount("0.0.1002");
         given(tokenAccessor.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
-        final var decodedInput =
-                decodeERCTransferFrom(HAPI_TRANSFER_FROM_FUNGIBLE_INPUT, null, tokenAccessor, notOwner, identity());
+        final var decodedInput = decodeERCTransferFrom(
+                HAPI_TRANSFER_FROM_FUNGIBLE_INPUT, null, tokenAccessor, notOwner, identity(), x -> true);
         final var fungibleTransfer = decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
         assertEquals(HTSTestsUtil.token, fungibleTransfer.get(0).getDenomination());
         assertEquals(fungibleTransfer.get(1).sender(), IdUtils.asAccount("0.0.1450"));
@@ -121,8 +121,8 @@ class ERCTransferPrecompileTest {
     void decodeTransferFromFungibleInputStillUsesApprovalIfFromIsOperator() {
         final var owner = IdUtils.asAccount("0.0.1450");
         given(tokenAccessor.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
-        final var decodedInput =
-                decodeERCTransferFrom(TRANSFER_FROM_FUNGIBLE_INPUT, tokenID, tokenAccessor, owner, identity());
+        final var decodedInput = decodeERCTransferFrom(
+                TRANSFER_FROM_FUNGIBLE_INPUT, tokenID, tokenAccessor, owner, identity(), x -> true);
         final var fungibleTransfer = decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
         assertTrue(fungibleTransfer.get(0).receiver().getAccountNum() > 0);
@@ -135,8 +135,8 @@ class ERCTransferPrecompileTest {
     void decodeHapiTransferFromFungibleInputStillUsesApprovalIfFromIsOperator() {
         final var owner = IdUtils.asAccount("0.0.1450");
         given(tokenAccessor.typeOf(any())).willReturn(TokenType.FUNGIBLE_COMMON);
-        final var decodedInput =
-                decodeERCTransferFrom(HAPI_TRANSFER_FROM_FUNGIBLE_INPUT, null, tokenAccessor, owner, identity());
+        final var decodedInput = decodeERCTransferFrom(
+                HAPI_TRANSFER_FROM_FUNGIBLE_INPUT, null, tokenAccessor, owner, identity(), x -> true);
         final var fungibleTransfer = decodedInput.tokenTransferWrappers().get(0).fungibleTransfers();
 
         assertEquals(IdUtils.asToken("0.0.1"), fungibleTransfer.get(0).getDenomination());
@@ -150,8 +150,8 @@ class ERCTransferPrecompileTest {
     void decodeTransferFromNonFungibleInputUsingApprovalIfNotOwner() {
         final var notOwner = IdUtils.asAccount("0.0.1002");
         given(tokenAccessor.typeOf(any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        final var decodedInput =
-                decodeERCTransferFrom(TRANSFER_FROM_NON_FUNGIBLE_INPUT, tokenID, tokenAccessor, notOwner, identity());
+        final var decodedInput = decodeERCTransferFrom(
+                TRANSFER_FROM_NON_FUNGIBLE_INPUT, tokenID, tokenAccessor, notOwner, identity(), x -> true);
         final var nftTransfer = decodedInput
                 .tokenTransferWrappers()
                 .get(0)
@@ -169,8 +169,8 @@ class ERCTransferPrecompileTest {
     void decodeHapiTransferFromNFTInputUsingApprovalIfNotOwner() {
         final var notOwner = IdUtils.asAccount("0.0.1002");
         given(tokenAccessor.typeOf(any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        final var decodedInput =
-                decodeERCTransferFrom(HAPI_TRANSFER_FROM_NFT_INPUT, null, tokenAccessor, notOwner, identity());
+        final var decodedInput = decodeERCTransferFrom(
+                HAPI_TRANSFER_FROM_NFT_INPUT, null, tokenAccessor, notOwner, identity(), x -> true);
         final var nftTransfer =
                 decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0);
 
@@ -186,8 +186,8 @@ class ERCTransferPrecompileTest {
     void decodeTransferFromNonFungibleInputIfOwner() {
         final var owner = IdUtils.asAccount("0.0.1001");
         given(tokenAccessor.typeOf(any())).willReturn(TokenType.NON_FUNGIBLE_UNIQUE);
-        final var decodedInput =
-                decodeERCTransferFrom(TRANSFER_FROM_NON_FUNGIBLE_INPUT, tokenID, tokenAccessor, owner, identity());
+        final var decodedInput = decodeERCTransferFrom(
+                TRANSFER_FROM_NON_FUNGIBLE_INPUT, tokenID, tokenAccessor, owner, identity(), x -> true);
         final var nftTransfer = decodedInput
                 .tokenTransferWrappers()
                 .get(0)
@@ -206,7 +206,7 @@ class ERCTransferPrecompileTest {
         final var owner = IdUtils.asAccount("0.0.1450");
 
         final var decodedInput =
-                decodeERCTransferFrom(HAPI_TRANSFER_FROM_NFT_INPUT, null, tokenAccessor, owner, identity());
+                decodeERCTransferFrom(HAPI_TRANSFER_FROM_NFT_INPUT, null, tokenAccessor, owner, identity(), x -> true);
         final var nftTransfer =
                 decodedInput.tokenTransferWrappers().get(0).nftExchanges().get(0);
 
@@ -224,6 +224,7 @@ class ERCTransferPrecompileTest {
         final UnaryOperator<byte[]> identity = identity();
         assertThrows(
                 ArithmeticException.class,
-                () -> decodeERCTransferFrom(TRANSFER_FROM_LONG_OVERFLOWN, tokenID, tokenAccessor, owner, identity));
+                () -> decodeERCTransferFrom(
+                        TRANSFER_FROM_LONG_OVERFLOWN, tokenID, tokenAccessor, owner, identity, x -> true));
     }
 }

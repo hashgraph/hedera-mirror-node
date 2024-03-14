@@ -66,6 +66,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -108,7 +109,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             AutoCreationLogic autoCreationLogic,
             SyntheticTxnFactory syntheticTxnFactory,
             EntityAddressSequencer entityAddressSequencer,
-            EncodingFacade encoder) {
+            EncodingFacade encoder,
+            Predicate<Address> systemAccountDetector) {
         super(
                 pricingUtils,
                 mirrorNodeEvmProperties,
@@ -116,7 +118,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                 contextOptionValidator,
                 autoCreationLogic,
                 syntheticTxnFactory,
-                entityAddressSequencer);
+                entityAddressSequencer,
+                systemAccountDetector);
         this.encoder = encoder;
     }
 
@@ -126,6 +129,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         if (bodyParams instanceof ERCTransferParams transferParams) {
             final var senderAddress = transferParams.senderAddress();
             final var tokenID = transferParams.tokenID();
+            final var exists = transferParams.exists();
             final var transferOp =
                     switch (transferParams.functionId()) {
                         case AbiConstants.ABI_ID_ERC_TRANSFER -> decodeERCTransfer(
@@ -135,7 +139,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
                                 AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
                             final var operatorID = EntityIdUtils.accountIdFromEvmAddress(senderAddress);
                             yield decodeERCTransferFrom(
-                                    input, tokenID, transferParams.tokenAccessor(), operatorID, aliasResolver);
+                                    input, tokenID, transferParams.tokenAccessor(), operatorID, aliasResolver, exists);
                         }
                         default -> null;
                     };
@@ -204,7 +208,8 @@ public class ERCTransferPrecompile extends TransferPrecompile {
             final TokenID tokenID,
             final TokenAccessor tokenAccessor,
             final AccountID operatorID,
-            final UnaryOperator<byte[]> aliasResolver) {
+            final UnaryOperator<byte[]> aliasResolver,
+            final Predicate<Address> exists) {
 
         final List<HbarTransfer> hbarTransfers = Collections.emptyList();
         final var offset = tokenID == null ? 1 : 0;
@@ -219,7 +224,7 @@ public class ERCTransferPrecompile extends TransferPrecompile {
         }
 
         final var from = convertLeftPaddedAddressToAccountId(decodedArguments.get(offset), aliasResolver);
-        final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(offset + 1), aliasResolver);
+        final var to = convertLeftPaddedAddressToAccountId(decodedArguments.get(offset + 1), aliasResolver, exists);
         final var isFungible =
                 TokenType.FUNGIBLE_COMMON.equals(tokenAccessor.typeOf(EntityIdUtils.asTypedEvmAddress(token)));
         if (isFungible) {
