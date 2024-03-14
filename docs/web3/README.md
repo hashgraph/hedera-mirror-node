@@ -16,9 +16,8 @@ is used for the persistence layer.
 | Y        | Y      | non precompile functions                                                                  | Y         | Y          | Y     | Y             |
 | Y        | N      | non precompile functions with lazy account creation                                       | Y         | Y          | Y     | Y             |
 | Y        | Y      | operations for ERC precompile functions (balance, symbol, tokenURI, name, decimals, etc.) | Y         | Y          | Y     | N             |
-| Y        | Y      | operations for IsApprovedForAllPrecompile                                                 | Y         | Y          | Y     | N             |
-| Y        | Y      | operations for AllowancePrecompile                                                        | Y         | Y          | Y     | N             |
-| Y        | Y      | operations for GetApprovedPrecompile                                                      | Y         | Y          | Y     | N             |
+| Y        | Y      | read-only ERC precompile functions                                                        | Y         | Y          | Y     | N             |
+| Y        | Y      | modifying ERC precompile functions                                                        | Y         | Y          | Y     | Y             |
 | Y        | Y      | read-only operations for HTS system contract                                              | Y         | Y          | Y     | N             |
 | Y        | N      | modifying operations for HTS system contract                                              | Y         | Y          | Y     | Y             |
 
@@ -55,6 +54,9 @@ docker run --rm -v "${PWD}/charts/hedera-mirror-web3/postman.json:/tmp/postman.j
 _Note:_ To test against an instance running on the same machine as Docker use your local IP instead of 127.0.0.1.
 
 ## Manual Tests
+
+Any REST client can be used to manually invoke the contract call API. In the below example, curl is used to simulate a
+call to the `tinycentsToTinybars(uint256)` function in the exchange rate system contract with 100 cents as input.
 
 ```shell
 curl -X 'POST' https://testnet.mirrornode.hedera.com/api/v1/contracts/call -H 'Content-Type: application/json' -d \
