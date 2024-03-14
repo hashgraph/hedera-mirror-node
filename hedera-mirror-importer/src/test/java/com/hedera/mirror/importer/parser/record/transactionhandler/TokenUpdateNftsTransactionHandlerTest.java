@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -94,7 +95,10 @@ class TokenUpdateNftsTransactionHandlerTest extends AbstractTransactionHandlerTe
     @Test
     void updateNftHasMetadataFalse() {
         // Given
-        var recordItem = recordItemBuilder.tokenUpdateNftsEmpty().build();
+        var recordItem = recordItemBuilder
+                .tokenUpdateNfts()
+                .transactionBody(Builder::clearMetadata)
+                .build();
         var transaction = domainBuilder.transaction().get();
 
         // When
