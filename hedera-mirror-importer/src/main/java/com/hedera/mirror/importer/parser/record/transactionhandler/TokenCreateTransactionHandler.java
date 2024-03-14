@@ -104,8 +104,8 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         var transactionBody = recordItem.getTransactionBody().getTokenCreation();
-        var consensusTimestamp = transaction.getConsensusTimestamp();
-        var freezeDefault = transactionBody.getFreezeDefault();
+        long consensusTimestamp = transaction.getConsensusTimestamp();
+        boolean freezeDefault = transactionBody.getFreezeDefault();
         var tokenId = transaction.getEntityId();
         var treasury = EntityId.of(transactionBody.getTreasury());
 
