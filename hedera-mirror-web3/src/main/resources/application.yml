@@ -39,13 +39,14 @@ management:
 server:
   compression:
     enabled: true
+  forward-headers-strategy: framework # Enable spring ForwardedHeaderFilter
   http2:
     enabled: true
   max-http-request-header-size: 1KB
-  netty:
-    connection-timeout: 3s
   port: 8545
   shutdown: graceful
+  tomcat:
+    connection-timeout: 3s
 spring:
   application:
     name: hedera-mirror-web3
@@ -74,6 +75,7 @@ spring:
       validation-timeout: 3000
   jpa:
     database: PostgreSQL
+    open-in-view: false
     properties:
       hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
       hibernate.generate_statistics: true
@@ -81,3 +83,6 @@ spring:
       hibernate.type.json_format_mapper: com.hedera.mirror.common.converter.CustomJsonFormatMapper
   lifecycle:
     timeout-per-shutdown-phase: 20s
+  threads:
+    virtual:
+      enabled: true

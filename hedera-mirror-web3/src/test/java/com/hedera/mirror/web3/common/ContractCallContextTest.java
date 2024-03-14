@@ -20,12 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.StackedStateFramesTest.BareDatabaseAccessor;
-import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+@ExtendWith(ContextExtension.class)
 class ContractCallContextTest {
 
     private final StackedStateFrames stackedStateFrames;
@@ -33,42 +35,30 @@ class ContractCallContextTest {
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
     public ContractCallContextTest() {
-        stackedStateFrames = new StackedStateFrames(List.<DatabaseAccessor<Object, ?>>of(
+        stackedStateFrames = new StackedStateFrames(List.of(
                 new BareDatabaseAccessor<Object, Character>() {}, new BareDatabaseAccessor<Object, String>() {}));
     }
 
     @Test
     void testGet() {
-        ContractCallContext context = ContractCallContext.init();
+        var context = ContractCallContext.get();
         assertThat(ContractCallContext.get()).isEqualTo(context);
-        context.close();
-    }
-
-    @Test
-    void testClose() {
-        ContractCallContext context = ContractCallContext.init();
-
-        context.close();
-
-        assertThat(ContractCallContext.get()).isNull();
     }
 
     @Test
     void testRecordFileIsClearedOnReset() {
-        ContractCallContext context = ContractCallContext.init();
+        var context = ContractCallContext.get();
         final var recordFile = domainBuilder.recordFile().get();
         context.setRecordFile(recordFile);
         assertThat(context.getRecordFile()).isEqualTo(recordFile);
 
         context.reset();
         assertThat(context.getRecordFile()).isNull();
-
-        context.close();
     }
 
     @Test
     void testReset() {
-        ContractCallContext context = ContractCallContext.init();
+        var context = ContractCallContext.get();
         context.setRecordFile(RecordFile.builder().consensusEnd(123L).build());
         context.initializeStackFrames(stackedStateFrames);
         stackedStateFrames.push();
@@ -77,7 +67,5 @@ class ContractCallContextTest {
         context.reset();
         assertThat(context.getRecordFile()).isNull();
         assertThat(context.getStack()).isEqualTo(context.getStackBase());
-
-        context.close();
     }
 }
