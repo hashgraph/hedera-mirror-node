@@ -27,10 +27,8 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
-import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-@CustomLog
 @Named
 @RequiredArgsConstructor
 class TokenUpdateNftsTransactionHandler extends AbstractTransactionHandler {
@@ -67,7 +65,6 @@ class TokenUpdateNftsTransactionHandler extends AbstractTransactionHandler {
         var nftBuilder = Nft.builder()
                 .metadata(toBytes(transactionBody.getMetadata().getValue()))
                 .timestampRange(Range.atLeast(consensusTimestamp))
-                .tokenId(tokenId.getId())
                 .tokenId(tokenId.getId());
 
         var serialNumbers = transactionBody.getSerialNumbersList();

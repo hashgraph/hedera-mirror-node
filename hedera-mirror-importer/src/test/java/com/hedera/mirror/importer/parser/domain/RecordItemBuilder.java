@@ -727,6 +727,11 @@ public class RecordItemBuilder {
         return builder;
     }
 
+    public Builder<TokenUpdateNftsTransactionBody.Builder> tokenUpdateNftsEmpty() {
+        var transactionBody = TokenUpdateNftsTransactionBody.newBuilder();
+        return new Builder<>(TransactionType.TOKENUPDATENFTS, transactionBody);
+    }
+
     public Builder<TokenUpdateNftsTransactionBody.Builder> tokenUpdateNfts() {
         var transactionBody = TokenUpdateNftsTransactionBody.newBuilder()
                 .addSerialNumbers(1L)

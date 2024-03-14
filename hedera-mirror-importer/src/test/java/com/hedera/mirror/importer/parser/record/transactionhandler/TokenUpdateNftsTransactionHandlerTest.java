@@ -26,6 +26,7 @@ import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.AbstractNft;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -88,6 +89,35 @@ class TokenUpdateNftsTransactionHandlerTest extends AbstractTransactionHandlerTe
 
         assertThat(recordItem.getEntityTransactions())
                 .containsExactlyInAnyOrderEntriesOf(getExpectedEntityTransactions(recordItem, transaction));
+    }
+
+    @Test
+    void updateNftHasMetadataFalse() {
+        // Given
+        var recordItem = recordItemBuilder.tokenUpdateNftsEmpty().build();
+        var transaction = domainBuilder.transaction().get();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verifyNoInteractions(entityListener);
+    }
+
+    @Test
+    void updateNftTransactionNotSuccessful() {
+        // Given
+        var recordItem = recordItemBuilder
+                .tokenUpdateNfts()
+                .status(ResponseCodeEnum.INVALID_TRANSACTION)
+                .build();
+        var transaction = domainBuilder.transaction().get();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verifyNoInteractions(entityListener);
     }
 
     @Test
