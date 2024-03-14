@@ -25,6 +25,8 @@ plugins {
 
 dependencies {
     val jooqVersion = rootProject.extra["jooq.version"].toString()
+    implementation("org.jooq:jooq-postgres-extensions:$jooqVersion")
+    implementation("org.springframework.boot:spring-boot-starter-jooq")
     // add postgres extensions as jooq codegen dependency to support int8range
     jooqCodegen("org.jooq:jooq-postgres-extensions:$jooqVersion")
 }

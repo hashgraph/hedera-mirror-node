@@ -18,16 +18,16 @@ package com.hedera.mirror.restjava.repository;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.Filter;
-import com.hedera.mirror.restjava.common.Order;
+import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.List;
-import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Sort;
 
 public interface NftAllowanceRepositoryCustom {
 
     /**
      * Find all NftAllowance matching the filters with the given limit, sort order, and byOwner flag
-     * @param byOwner  True if looking for nft allowances granted by the same owner, otherwise looking for nft
+     * @param byOwner  True if looking for nft allowances granted by the same owner, otherwise looking for
      *                 nft allowances granted to the same spender
      * @param filters The filters
      * @param limit The limit of the number of nft allowances to return
@@ -36,5 +36,5 @@ public interface NftAllowanceRepositoryCustom {
      */
     @NotNull
     Collection<NftAllowance> findAll(
-            boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Order order);
+            boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Sort.Direction order);
 }

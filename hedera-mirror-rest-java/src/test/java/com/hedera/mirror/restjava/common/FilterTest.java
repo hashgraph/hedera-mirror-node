@@ -19,7 +19,7 @@ package com.hedera.mirror.restjava.common;
 import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.mirror.restjava.exception.MismatchTypeException;
+import com.hedera.mirror.restjava.exception.MismatchedTypeException;
 import org.junit.jupiter.api.Test;
 
 class FilterTest {
@@ -27,6 +27,6 @@ class FilterTest {
     @Test
     void mismatchTypeException() {
         assertThatThrownBy(() -> new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, "owner", String.class))
-                .isInstanceOf(MismatchTypeException.class);
+                .isInstanceOf(MismatchedTypeException.class);
     }
 }

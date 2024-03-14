@@ -20,7 +20,6 @@ import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.Filter;
-import com.hedera.mirror.restjava.common.Order;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.exception.InvalidFilterException;
 import jakarta.inject.Named;
@@ -28,31 +27,31 @@ import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.SortField;
+import org.springframework.data.domain.Sort.Direction;
 
-@CustomLog
 @Named
 @RequiredArgsConstructor
 class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
     private static final Map<OrderSpec, List<SortField<?>>> SORT_ORDERS = Map.of(
-            new OrderSpec(true, Order.ASC), List.of(NFT_ALLOWANCE.SPENDER.asc(), NFT_ALLOWANCE.TOKEN_ID.asc()),
-            new OrderSpec(true, Order.DESC), List.of(NFT_ALLOWANCE.SPENDER.desc(), NFT_ALLOWANCE.TOKEN_ID.desc()),
-            new OrderSpec(false, Order.ASC), List.of(NFT_ALLOWANCE.OWNER.asc(), NFT_ALLOWANCE.TOKEN_ID.asc()),
-            new OrderSpec(false, Order.DESC), List.of(NFT_ALLOWANCE.OWNER.desc(), NFT_ALLOWANCE.TOKEN_ID.desc()));
+            new OrderSpec(true, Direction.ASC), List.of(NFT_ALLOWANCE.SPENDER.asc(), NFT_ALLOWANCE.TOKEN_ID.asc()),
+            new OrderSpec(true, Direction.DESC), List.of(NFT_ALLOWANCE.SPENDER.desc(), NFT_ALLOWANCE.TOKEN_ID.desc()),
+            new OrderSpec(false, Direction.ASC), List.of(NFT_ALLOWANCE.OWNER.asc(), NFT_ALLOWANCE.TOKEN_ID.asc()),
+            new OrderSpec(false, Direction.DESC), List.of(NFT_ALLOWANCE.OWNER.desc(), NFT_ALLOWANCE.TOKEN_ID.desc()));
 
     private final DSLContext dslContext;
 
     @NotNull
     @Override
     public Collection<NftAllowance> findAll(
-            boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Order order) {
-        Condition primaryCondition = null;
+            boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Direction order) {
+        Filter<?> approvedForAllFilter = null;
+        Condition commonCondition = null;
         var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
         Filter<?> primarySortFilter = null;
@@ -60,8 +59,10 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
         for (var filter : filters) {
             var field = filter.field();
-            if (field == primaryField) {
-                primaryCondition = makeCondition(filter);
+            if (field == NFT_ALLOWANCE.APPROVED_FOR_ALL) {
+                approvedForAllFilter = filter;
+            } else if (field == primaryField) {
+                commonCondition = makeCondition(filter);
             } else if (field == primarySortField) {
                 primarySortFilter = filter;
             } else if (field == NFT_ALLOWANCE.TOKEN_ID) {
@@ -69,7 +70,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
             }
         }
 
-        if (primaryCondition == null) {
+        if (commonCondition == null) {
             throw new InvalidFilterException("Primary filter not found");
         }
 
@@ -78,8 +79,12 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
                     "Token filter exists without primary sort column (owner or spender) filter");
         }
 
-        var baseCondition = getBaseCondition(primaryCondition, primarySortFilter, tokenFilter);
-        var secondaryCondition = getSecondaryCondition(primaryCondition, primarySortFilter, tokenFilter);
+        if (approvedForAllFilter != null) {
+            commonCondition = commonCondition.and(makeCondition(approvedForAllFilter));
+        }
+
+        var baseCondition = getBaseCondition(commonCondition, primarySortFilter, tokenFilter);
+        var secondaryCondition = getSecondaryCondition(commonCondition, primarySortFilter, tokenFilter);
         var condition = secondaryCondition != null ? baseCondition.or(secondaryCondition) : baseCondition;
 
         return dslContext
@@ -97,22 +102,22 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
         if (tokenFilter == null) {
             return primaryCondition.and(makeCondition(primarySortFilter));
-        } else {
-            if (primarySortFilter.operator() == RangeOperator.EQ) {
-                return primaryCondition.and(makeCondition(primarySortFilter)).and(makeCondition(tokenFilter));
-            }
-
-            // Create a filter for the primary sort field with EQ operator
-            var value = (Long) primarySortFilter.value();
-            if (primarySortFilter.operator() == RangeOperator.GT) {
-                value += 1L;
-            } else if (primarySortFilter.operator() == RangeOperator.LT) {
-                value -= 1L;
-            }
-
-            var filter = new Filter<>(primarySortFilter.field(), RangeOperator.EQ, value, Long.class);
-            return primaryCondition.and(makeCondition(filter)).and(makeCondition(tokenFilter));
         }
+
+        if (primarySortFilter.operator() == RangeOperator.EQ) {
+            return primaryCondition.and(makeCondition(primarySortFilter)).and(makeCondition(tokenFilter));
+        }
+
+        // Create a filter for the primary sort field with EQ operator
+        var value = (Long) primarySortFilter.value();
+        if (primarySortFilter.operator() == RangeOperator.GT) {
+            value += 1L;
+        } else if (primarySortFilter.operator() == RangeOperator.LT) {
+            value -= 1L;
+        }
+
+        var filter = new Filter<>(primarySortFilter.field(), RangeOperator.EQ, value, Long.class);
+        return primaryCondition.and(makeCondition(filter)).and(makeCondition(tokenFilter));
     }
 
     private Condition getSecondaryCondition(
@@ -149,5 +154,5 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         };
     }
 
-    private record OrderSpec(boolean byOwner, Order order) {}
+    private record OrderSpec(boolean byOwner, Direction direction) {}
 }

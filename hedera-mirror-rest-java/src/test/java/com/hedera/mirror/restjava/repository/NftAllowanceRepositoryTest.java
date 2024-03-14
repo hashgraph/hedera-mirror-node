@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.common.Filter;
-import com.hedera.mirror.restjava.common.Order;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.exception.InvalidFilterException;
 import java.util.ArrayList;
@@ -116,7 +115,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
 
     @MethodSource("provideFindAllArguments")
     @ParameterizedTest
-    void findAll(boolean byOwner, List<IndexedFilter> indexedFilters, int limit, Order order, List<Tuple> expected) {
+    void findAll(
+            boolean byOwner, List<IndexedFilter> indexedFilters, int limit, Direction order, List<Tuple> expected) {
         // given
         setupNftAllowances();
         var filters = new ArrayList<Filter<?>>();
@@ -129,6 +129,34 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     }
 
     @Test
+    void findAllApprovedForAll() {
+        setupNftAllowances();
+        // given approved_for_all is true
+        var filters = List.<Filter<?>>of(
+                new Filter<>(NFT_ALLOWANCE.APPROVED_FOR_ALL, RangeOperator.EQ, true, Boolean.class),
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class));
+        var expected = Stream.of(new Tuple(0, 0, 0), new Tuple(0, 0, 2), new Tuple(0, 1, 1), new Tuple(0, 2, 0))
+                .map(nftAllowances::get)
+                .toList();
+
+        // when, then
+        assertThat(nftAllowanceRepository.findAll(true, filters, 4, Direction.ASC))
+                .containsExactlyElementsOf(expected);
+
+        // given approved_for_all is true
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.APPROVED_FOR_ALL, RangeOperator.EQ, false, Boolean.class),
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class));
+        expected = Stream.of(new Tuple(0, 0, 1), new Tuple(0, 1, 0), new Tuple(0, 1, 2), new Tuple(0, 2, 1))
+                .map(nftAllowances::get)
+                .toList();
+
+        // when, then
+        assertThat(nftAllowanceRepository.findAll(true, filters, 4, Direction.ASC))
+                .containsExactlyElementsOf(expected);
+    }
+
+    @Test
     void findAllNoMatch() {
         // given
         setupNftAllowances();
@@ -136,46 +164,51 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         // when, then
         var filters =
                 List.<Filter<?>>of(new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(2) + 1, Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
 
         // when, then
         filters = List.of(
                 new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
                 new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.EQ, spenders.get(2) + 1, Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
 
         // when, then
         filters = List.of(
                 new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
                 new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.EQ, spenders.get(0), Long.class),
                 new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.EQ, tokenIds.get(2) + 1, Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
 
         // when, then
         filters = List.of(
                 new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
                 new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.GT, spenders.get(2), Long.class),
                 new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.GT, tokenIds.get(0), Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
 
         // when, then
         filters = List.of(
                 new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
                 new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.LT, spenders.get(0), Long.class),
                 new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.LT, tokenIds.get(2), Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Order.ASC)).isEmpty();
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
     }
 
     @Test
     void findAllThrowInvalidFilterException() {
         var emptyFilters = Collections.<Filter<?>>emptyList();
-        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, emptyFilters, 10, Order.ASC))
+        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, emptyFilters, 10, Direction.ASC))
                 .isInstanceOf(InvalidFilterException.class);
 
         var filters = List.<Filter<?>>of(
                 new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, 1L, Long.class),
                 new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.EQ, 3L, Long.class));
-        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, filters, 10, Order.ASC))
+        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
                 .isInstanceOf(InvalidFilterException.class);
     }
 
@@ -194,9 +227,14 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                 long spender = spenders.get(spenderIndex);
                 for (int tokenIndex = 0; tokenIndex < tokenIds.size(); tokenIndex++) {
                     long tokenId = tokenIds.get(tokenIndex);
+                    // true if sum of index is even, otherwise false
+                    boolean approvedForAll = (ownerIndex + spenderIndex + tokenIndex) % 2 == 0;
                     var nftAllowance = domainBuilder
                             .nftAllowance()
-                            .customize(n -> n.owner(owner).spender(spender).tokenId(tokenId))
+                            .customize(n -> n.approvedForAll(approvedForAll)
+                                    .owner(owner)
+                                    .spender(spender)
+                                    .tokenId(tokenId))
                             .persist();
                     nftAllowances.put(new Tuple(ownerIndex, spenderIndex, tokenIndex), nftAllowance);
                 }
@@ -225,37 +263,37 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         true,
                         List.of(new IndexedFilter(NFT_ALLOWANCE.OWNER, 0, RangeOperator.EQ)),
                         4,
-                        Order.ASC,
+                        Direction.ASC,
                         List.of(new Tuple(0, 0, 0), new Tuple(0, 0, 1), new Tuple(0, 0, 2), new Tuple(0, 1, 0))),
                 // Only owner = ? filter, DESC
                 Arguments.of(
                         true,
                         List.of(new IndexedFilter(NFT_ALLOWANCE.OWNER, 0, RangeOperator.EQ)),
                         4,
-                        Order.DESC,
+                        Direction.DESC,
                         List.of(new Tuple(0, 2, 2), new Tuple(0, 2, 1), new Tuple(0, 2, 0), new Tuple(0, 1, 2))),
                 // Only spender = ? filter, by spender, ASC
                 Arguments.of(
                         false,
                         List.of(new IndexedFilter(NFT_ALLOWANCE.SPENDER, 1, RangeOperator.EQ)),
                         4,
-                        Order.ASC,
+                        Direction.ASC,
                         List.of(new Tuple(0, 1, 0), new Tuple(0, 1, 1), new Tuple(0, 1, 2), new Tuple(1, 1, 0))),
                 // Only spender = ? filter, by spender, DESC
                 Arguments.of(
                         false,
                         List.of(new IndexedFilter(NFT_ALLOWANCE.SPENDER, 1, RangeOperator.EQ)),
                         4,
-                        Order.DESC,
+                        Direction.DESC,
                         List.of(new Tuple(2, 1, 2), new Tuple(2, 1, 1), new Tuple(2, 1, 0), new Tuple(1, 1, 2))),
-                // By owner, owner = ? and spender = ? filter, ASC
+                // By owner, approved_for_all is true and owner = ? and spender = ? filter, ASC
                 Arguments.of(
                         true,
                         List.of(
                                 new IndexedFilter(NFT_ALLOWANCE.OWNER, 1, RangeOperator.EQ),
                                 new IndexedFilter(NFT_ALLOWANCE.SPENDER, 0, RangeOperator.EQ)),
                         4,
-                        Order.ASC,
+                        Direction.ASC,
                         List.of(new Tuple(1, 0, 0), new Tuple(1, 0, 1), new Tuple(1, 0, 2))),
                 // By owner, owner = ? and spender >= ? filter, ASC
                 Arguments.of(
@@ -264,7 +302,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 new IndexedFilter(NFT_ALLOWANCE.OWNER, 1, RangeOperator.EQ),
                                 new IndexedFilter(NFT_ALLOWANCE.SPENDER, 0, RangeOperator.GTE)),
                         4,
-                        Order.ASC,
+                        Direction.ASC,
                         List.of(new Tuple(1, 0, 0), new Tuple(1, 0, 1), new Tuple(1, 0, 2), new Tuple(1, 1, 0))),
                 // By owner, owner = ? and spender >= ? and token >= ? filter, ASC
                 Arguments.of(
@@ -274,7 +312,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 new IndexedFilter(NFT_ALLOWANCE.SPENDER, 0, RangeOperator.GTE),
                                 new IndexedFilter(NFT_ALLOWANCE.TOKEN_ID, 1, RangeOperator.GTE)),
                         4,
-                        Order.ASC,
+                        Direction.ASC,
                         List.of(new Tuple(1, 0, 1), new Tuple(1, 0, 2), new Tuple(1, 1, 0), new Tuple(1, 1, 1))),
                 // By owner, owner = ? and spender > ? and token > ? filter, ASC
                 Arguments.of(
@@ -284,7 +322,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 new IndexedFilter(NFT_ALLOWANCE.SPENDER, 0, RangeOperator.GT),
                                 new IndexedFilter(NFT_ALLOWANCE.TOKEN_ID, 1, RangeOperator.GT)),
                         4,
-                        Order.ASC,
+                        Direction.ASC,
                         List.of(new Tuple(1, 1, 2), new Tuple(1, 2, 0), new Tuple(1, 2, 1), new Tuple(1, 2, 2))),
                 // By owner, owner = ? and spender < ? and token < ? filter, DESC
                 Arguments.of(
@@ -294,7 +332,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 new IndexedFilter(NFT_ALLOWANCE.SPENDER, 2, RangeOperator.LT),
                                 new IndexedFilter(NFT_ALLOWANCE.TOKEN_ID, 2, RangeOperator.LT)),
                         4,
-                        Order.DESC,
+                        Direction.DESC,
                         List.of(new Tuple(1, 1, 1), new Tuple(1, 1, 0), new Tuple(1, 0, 2), new Tuple(1, 0, 1))),
                 // By owner, owner = ? and spender <= ? and token <= ? filter, DESC
                 Arguments.of(
@@ -304,7 +342,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 new IndexedFilter(NFT_ALLOWANCE.SPENDER, 2, RangeOperator.LTE),
                                 new IndexedFilter(NFT_ALLOWANCE.TOKEN_ID, 1, RangeOperator.LTE)),
                         4,
-                        Order.DESC,
+                        Direction.DESC,
                         List.of(new Tuple(1, 2, 1), new Tuple(1, 2, 0), new Tuple(1, 1, 2), new Tuple(1, 1, 1))),
                 // By owner, owner = ? and spender = ? and token = ? filter, ASC
                 Arguments.of(
@@ -314,7 +352,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                 new IndexedFilter(NFT_ALLOWANCE.SPENDER, 0, RangeOperator.EQ),
                                 new IndexedFilter(NFT_ALLOWANCE.TOKEN_ID, 1, RangeOperator.EQ)),
                         4,
-                        Order.ASC,
+                        Direction.ASC,
                         List.of(new Tuple(1, 0, 1))));
     }
 

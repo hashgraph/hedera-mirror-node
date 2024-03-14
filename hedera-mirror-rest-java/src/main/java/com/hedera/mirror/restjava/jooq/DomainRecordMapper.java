@@ -81,10 +81,6 @@ class DomainRecordMapper<R extends Record, E> implements RecordMapper<R, E> {
             for (int i = 0; i < recordFields.length; i++) {
                 var field = recordFields[i];
                 var setter = setters.get(field.getName());
-                if (setter == null) {
-                    continue;
-                }
-
                 var method = setter.methodHandle;
                 var value = convert(setter, source.get(i));
                 method.invoke(entity, value);
@@ -107,22 +103,21 @@ class DomainRecordMapper<R extends Record, E> implements RecordMapper<R, E> {
         var targetType = setter.methodHandle.type().parameterType(1);
 
         if (targetType.isEnum()) {
-            if (EnumType.class.isAssignableFrom(sourceType)) {
-                return Enum.valueOf((Class<Enum>) targetType, ((EnumType) source).getLiteral());
-            } else {
+            if (source instanceof EnumType enumValue) {
+                return Enum.valueOf((Class<Enum>) targetType, enumValue.getLiteral());
+            } else if (source instanceof Number number) {
                 // TokenFreezeStatus and TokenKycStatus are stored as smallint instead of pg enum in the database
-                return targetType.getEnumConstants()[((Number) source).shortValue()];
+                return targetType.getEnumConstants()[number.shortValue()];
             }
-        } else if (targetType == Range.class && sourceType == LongRange.class) {
-            return LongRangeConverter.INSTANCE.convert((LongRange) source);
-        } else if (targetType == EntityId.class && sourceType == Long.class) {
-            return EntityId.of((Long) source);
-        } else if (collectionType != null && sourceType == JSONB.class) {
-            return OBJECT_MAPPER.readValue(((JSONB) source).data(), collectionType);
+        } else if (targetType == Range.class && source instanceof LongRange longRange) {
+            return LongRangeConverter.INSTANCE.convert(longRange);
+        } else if (targetType == EntityId.class && source instanceof Long id) {
+            return EntityId.of(id);
+        } else if (collectionType != null && source instanceof JSONB jsonb) {
+            return OBJECT_MAPPER.readValue(jsonb.data(), collectionType);
         } else if (sourceType != targetType
-                && Number.class.isAssignableFrom(sourceType)
+                && source instanceof Number number
                 && Number.class.isAssignableFrom(targetType)) {
-            var number = (Number) source;
             if (targetType == Integer.class) {
                 return number.intValue();
             } else if (targetType == Long.class) {
