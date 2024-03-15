@@ -133,22 +133,19 @@ Feature: in-equivalence tests
     Examples:
       | account     |
 #      contract reverts due to INVALID_ALIAS_KEY - C but should be INVALID_RECEIVING_NODE_ACCOUNT
-#      contract reverts due to INVALID_ACCOUNT_ID - M but should be INVALID_RECEIVING_NODE_ACCOUNT
-      | "0.0.0"     |
-#      contract reverts due to TOKEN_NOT_ASSOCIATED_TO_ACCOUNT - M but should be INVALID_RECEIVING_NODE_ACCOUNT
+#      success - M but should be 400 Bad Request
+#      | "0.0.0"     |
       | "0.0.1"     |
-#      contract reverts due to TOKEN_NOT_ASSOCIATED_TO_ACCOUNT - M but should be INVALID_RECEIVING_NODE_ACCOUNT
       | "0.0.4"     |
 #      contract reverts due to INVALID_ALIAS_KEY - C but should be INVALID_RECEIVING_NODE_ACCOUNT
-#      contract reverts due to INVALID_ACCOUNT_ID - M but should be INVALID_RECEIVING_NODE_ACCOUNT
-      | "0.0.358"   |
+#      success - M but should be 400 Bad Request
+#      | "0.0.358"   |
 #      contract reverts due to INVALID_ALIAS_KEY - C but should be INVALID_RECEIVING_NODE_ACCOUNT
-#      contract reverts due to INVALID_ACCOUNT_ID - M but should be INVALID_RECEIVING_NODE_ACCOUNT
-      | "0.0.359"   |
+#      success - M but should be 400 Bad Request
+#      | "0.0.359"   |
 #      contract reverts due to INVALID_ALIAS_KEY - C but should be INVALID_RECEIVING_NODE_ACCOUNT
-#      contract reverts due to INVALID_ACCOUNT_ID - M but should be INVALID_RECEIVING_NODE_ACCOUNT
-      | "0.0.360"   |
-#      contract reverts due to TOKEN_NOT_ASSOCIATED_TO_ACCOUNT - M but should be INVALID_RECEIVING_NODE_ACCOUNT
+#      success - M but should be 400 Bad Request
+#      | "0.0.360"   |
       | "0.0.741"   |
       | "0.0.800"   |
 
@@ -165,13 +162,13 @@ Feature: in-equivalence tests
     Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
     Then I call precompile with transferFrom "FUNGIBLE" token to a "BOB" EVM address
-#    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to a "BOB" EVM address // success but should fail
+    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to a "BOB" EVM address
     Then I call precompile with transferFrom "NFTEQUIVALENCE" token to a "ALICE" EVM address
     Then I call precompile with transferFrom "FUNGIBLE" token to a "ALICE" EVM address
     Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
-#    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to an EVM address // fails on mirror node since the address is not found in the state and it is not created
-#    Then I call precompile with transferFrom "FUNGIBLE" token to an EVM address // same as above
+    Then I call precompile with transferFrom "NFTEQUIVALENCE" token to an EVM address
+    Then I call precompile with transferFrom "FUNGIBLE" token to an EVM address
     Given I mint a new nft
     Then the mirror node REST API should return status 200 for the HAPI transactions
     And I update the "BOB" account and token key for contract "ESTIMATE_PRECOMPILE"

@@ -302,7 +302,8 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
     @Test
     void selfDestructCallWithSystemAccount() {
         // destroyContract(address)
-        final var destroyContractInput = "0x016a3738000000000000000000000000" + OWNER_ADDRESS.toUnprefixedHexString();
+        final var destroyContractInput =
+                "0x016a3738000000000000000000000000" + SYSTEM_ACCOUNT_ADDRESS.toUnprefixedHexString();
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(destroyContractInput), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 

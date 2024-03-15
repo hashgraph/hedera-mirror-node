@@ -235,6 +235,17 @@ public class DecodingFacade {
         return accountIdFromEvmAddress(resolvedAddress);
     }
 
+    public static AccountID convertLeftPaddedAddressToAccountId(
+            final byte[] leftPaddedAddress,
+            @NonNull final UnaryOperator<byte[]> aliasResolver,
+            @NonNull final Predicate<Address> exists) {
+        var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
+        if (!exists.test(EntityIdUtils.asTypedEvmAddress(accountID)) && !accountID.hasAlias()) {
+            accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
+        }
+        return accountID;
+    }
+
     public static String removeBrackets(final String type) {
         final var typeWithRemovedOpenBracket = type.replace("(", "");
         return typeWithRemovedOpenBracket.replace(")", "");

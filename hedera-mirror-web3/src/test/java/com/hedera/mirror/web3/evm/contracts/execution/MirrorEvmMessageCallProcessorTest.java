@@ -60,7 +60,7 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
 
     @Test
     void executeLazyCreateFailsWithHaltReason() {
-        when(autoCreationLogic.create(any(), any(), any(), any())).thenReturn(Pair.of(NOT_SUPPORTED, 0L));
+        when(autoCreationLogic.create(any(), any(), any(), any(), any())).thenReturn(Pair.of(NOT_SUPPORTED, 0L));
 
         subject.executeLazyCreate(messageFrame, operationTracer);
 
@@ -71,8 +71,8 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
     }
 
     @Test
-    void executeLazyCreateFailsWithInsuffiientGas() {
-        when(autoCreationLogic.create(any(), any(), any(), any())).thenReturn(Pair.of(OK, 1000L));
+    void executeLazyCreateFailsWithInsufficientGas() {
+        when(autoCreationLogic.create(any(), any(), any(), any(), any())).thenReturn(Pair.of(OK, 1000L));
         when(messageFrame.getRemainingGas()).thenReturn(0L);
         when(messageFrame.getGasPrice()).thenReturn(Wei.ONE);
         subject.executeLazyCreate(messageFrame, operationTracer);

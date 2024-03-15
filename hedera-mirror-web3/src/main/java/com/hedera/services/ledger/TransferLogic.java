@@ -82,7 +82,8 @@ public class TransferLogic {
                                 .setSeconds(Instant.now().getEpochSecond())
                                 .build(),
                         store,
-                        ids);
+                        ids,
+                        changes);
                 validity = result.getKey();
                 if (validity == OK && (change.isForToken())) {
                     validity = hederaTokenStore.tryTokenChange(change);
