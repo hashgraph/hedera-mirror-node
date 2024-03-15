@@ -41,8 +41,10 @@ import com.hedera.mirror.rest.model.Nft;
 import com.hedera.mirror.rest.model.NftTransactionHistory;
 import com.hedera.mirror.rest.model.Schedule;
 import com.hedera.mirror.rest.model.TokenAllowancesResponse;
+import com.hedera.mirror.rest.model.TokenBalancesResponse;
 import com.hedera.mirror.rest.model.TokenInfo;
 import com.hedera.mirror.rest.model.TokenRelationshipResponse;
+import com.hedera.mirror.rest.model.TokensResponse;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
@@ -273,9 +275,19 @@ public class MirrorNodeClient {
         return callRestEndpoint("/schedules/{scheduleId}", Schedule.class, scheduleId);
     }
 
+    public TokenBalancesResponse getTokenBalances(String tokenId) {
+        log.debug("Verify token balances '{}' is returned by Mirror Node", tokenId);
+        return callRestEndpoint("/tokens/{tokenId}/balances", TokenBalancesResponse.class, tokenId);
+    }
+
     public TokenInfo getTokenInfo(String tokenId) {
         log.debug("Verify token '{}' is returned by Mirror Node", tokenId);
         return callRestEndpoint("/tokens/{tokenId}", TokenInfo.class, tokenId);
+    }
+
+    public TokensResponse getTokens(String tokenId) {
+        log.debug("Verify token with query parameter '{}' is returned by Mirror Node", tokenId);
+        return callRestEndpoint("/tokens/?token.id={tokenId}", TokensResponse.class, tokenId);
     }
 
     public TransactionsResponse getTransactionInfoByTimestamp(String timestamp) {

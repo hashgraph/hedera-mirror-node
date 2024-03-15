@@ -22,14 +22,14 @@ Feature: in-equivalence tests
       | "0.0.999"  |
 
 #   Separated scenario as it needs to be executed only once
-    Scenario Outline: Validate in-equivalence for selfdestruct and balance against contract
-      Given I successfully create selfdestruct contract
-      Then I verify the selfdestruct contract bytecode is deployed
-      Given I successfully create equivalence call contract
-      Then I verify the equivalence contract bytecode is deployed
-      Then the mirror node REST API should return status 200 for the HAPI transactions
-      Then I execute balance opcode against a contract with balance
-      Then I execute selfdestruct and set beneficiary to the deleted contract address
+  Scenario Outline: Validate in-equivalence for selfdestruct and balance against contract
+    Given I successfully create selfdestruct contract
+    Then I verify the selfdestruct contract bytecode is deployed
+    Given I successfully create equivalence call contract
+    Then I verify the equivalence contract bytecode is deployed
+    Then the mirror node REST API should return status 200 for the HAPI transactions
+    Then I execute balance opcode against a contract with balance
+    Then I execute selfdestruct and set beneficiary to the deleted contract address
 
   Scenario Outline: Validate in-equivalence tests for system accounts with call, staticcall, delegatecall
   and callcode
