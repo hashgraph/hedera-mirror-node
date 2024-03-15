@@ -217,8 +217,7 @@ public class MirrorNodeClient {
 
     public ContractActionsResponse getContractResultActionsByTransactionId(String transactionId) {
         log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
-        String createdUri = "/contracts/results/" + transactionId + "/actions";
-        return callRestEndpoint(createdUri, ContractActionsResponse.class);
+        return callRestEndpoint("/contracts/results/{id}/actions", ContractActionsResponse.class, transactionId);
     }
 
     public NetworkExchangeRateSetResponse getExchangeRates() {

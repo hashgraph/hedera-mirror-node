@@ -819,13 +819,13 @@ public class EstimateFeature extends AbstractEstimateFeature {
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53631),
         DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55786),
         DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 318113),
-        DEPLOY_NEW_INSTANCE("createClone", 0),
+        DEPLOY_NEW_INSTANCE("createClone", 0), // Set actual gas to 0; unnecessary for gasConsumed test validation.
         DEPLOY_AND_CALL_CONTRACT("deployAndCallMockContract", 0),
-        DEPLOY_AND_DESTROY("deployDestroy", 0),
+        DEPLOY_AND_DESTROY("deployDestroy", 0), // Set actual gas to 0; unnecessary for gasConsumed test validation.
         DESTROY("destroy", 26300),
         GET_GAS_LEFT("getGasLeft", 21313),
         GET_MOCK_ADDRESS("getMockContractAddress", 0),
-        INCREMENT_COUNTER("incrementCounter", 0),
+        INCREMENT_COUNTER("incrementCounter", 0), // Set actual gas to 0; unnecessary for gasConsumed test validation.
         LOGS("logs", 28822),
         MESSAGE_SENDER("msgSender", 21365),
         MESSAGE_SIGNER("msgSig", 21361),
@@ -838,8 +838,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
         STATIC_CALL_TO_INVALID_CONTRACT("staticCallToInvalidContract", 24826),
         STATE_UPDATE_OF_CONTRACT("updateStateNTimes", 28847),
         TX_ORIGIN("txOrigin", 21342),
-        UPDATE_COUNTER("updateCounter", 23783),
-        UPDATE_TYPE("updateType", 0),
+        UPDATE_COUNTER("updateCounter", 26583),
+        UPDATE_TYPE("updateType", 0), // Set actual gas to 0; unnecessary for gasConsumed test validation.
         WRONG_METHOD_SIGNATURE("ffffffff()", 0),
         IERC20_TOKEN_TRANSFER("transfer(address,uint256)", 38193),
         IERC20_TOKEN_APPROVE("approve(address,uint256)", 728550),
