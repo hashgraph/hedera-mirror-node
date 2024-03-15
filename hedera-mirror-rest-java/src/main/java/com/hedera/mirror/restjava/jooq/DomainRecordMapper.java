@@ -26,6 +26,7 @@ import com.hedera.mirror.common.converter.ObjectToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.converter.LongRangeConverter;
 import com.hedera.mirror.restjava.exception.RecordMappingException;
+import jakarta.annotation.Nullable;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
@@ -41,7 +42,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.Nullable;
 import org.jooq.EnumType;
 import org.jooq.JSONB;
 import org.jooq.Record;
@@ -145,13 +145,13 @@ class DomainRecordMapper<R extends Record, E> implements RecordMapper<R, E> {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Setter> getSetters(Set<String> filedNames, Class<?> type)
+    private static Map<String, Setter> getSetters(Set<String> fieldNames, Class<?> type)
             throws ReflectiveOperationException {
         var setters = new HashMap<String, Setter>();
         for (var member : getInstanceMembers(type)) {
             var name = member.getName();
             var key = FORMAT_CONVERTER.convert(name);
-            if (!filedNames.contains(key)) {
+            if (!fieldNames.contains(key)) {
                 continue;
             }
 
