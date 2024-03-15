@@ -20,8 +20,8 @@ import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalseOrRevert;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_CRYPTO_TRANSFER_V2;
 import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_TRANSFER_NFT;
@@ -648,6 +648,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
                 ? EntityIdUtils.asTypedEvmAddress(change.counterPartyAccountId())
                 : change.getAccount().asEvmAddress();
 
-        validateTrueOrRevert(!systemAccountDetector.test(accountAddress), INVALID_RECEIVING_NODE_ACCOUNT);
+        validateFalseOrRevert(systemAccountDetector.test(accountAddress), INVALID_RECEIVING_NODE_ACCOUNT);
     }
 }
