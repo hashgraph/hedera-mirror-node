@@ -37,6 +37,14 @@ public record GeneralContractExecutionResponse(
         this(transactionId, networkResponse, errorMessage, null);
     }
 
+    public GeneralContractExecutionResponse(String errorMessage) {
+        this(null, null, errorMessage, null);
+    }
+
+    public GeneralContractExecutionResponse(String transactionId, String errorMessage) {
+        this(transactionId, null, errorMessage, null);
+    }
+
     public String getMirrorNodeResponseAsString() {
         return contractCallResponse.getResult().substring(2);
     }
