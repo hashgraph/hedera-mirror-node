@@ -36,6 +36,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -168,6 +170,16 @@ public class TestUtil {
                 .map(TestUtil::toJson)
                 .findFirst()
                 .orElseThrow();
+    }
+
+    public static String extractTransactionId(String message) {
+        Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
+        Matcher matcher = pattern.matcher(message);
+        if (matcher.find()) {
+            return matcher.group(1) + "-" + matcher.group(2) + "-" + matcher.group(3);
+        } else {
+            return "Not found";
+        }
     }
 
     @SneakyThrows

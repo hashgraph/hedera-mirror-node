@@ -59,6 +59,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.Contra
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.WRONG_METHOD_SIGNATURE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.IS_TOKEN_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.extractTransactionId;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -84,8 +85,6 @@ import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -751,16 +750,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
                         .getAcceptanceTestProperties()
                         .getFeatureProperties()
                         .getMaxContractFunctionGas());
-    }
-
-    private static String extractTransactionId(String message) {
-        Pattern pattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
-        Matcher matcher = pattern.matcher(message);
-        if (matcher.find()) {
-            return matcher.group(1) + "-" + matcher.group(2) + "-" + matcher.group(3);
-        } else {
-            return "Not found";
-        }
     }
 
     private Long getGasConsumedByTransactionId(String transactionId) {
