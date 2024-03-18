@@ -80,6 +80,7 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
                 ethTx1.getConsensusTimestamp(),
                 domainBuilder.entityId(),
                 domainBuilder.entityId().getId(),
+                null,
                 domainBuilder);
         persistMigrationContractResult(migrationContractResult, jdbcTemplate);
 
@@ -161,7 +162,7 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
         return jdbcTemplate.query(
                 """
                         select amount, bloom, call_result, consensus_timestamp, contract_id, created_contract_ids,
-                        error_message, function_parameters, function_result, gas_limit, gas_used, payer_account_id,
+                        error_message, failed_initcode, function_parameters, function_result, gas_limit, gas_used, payer_account_id,
                         sender_id, transaction_hash, transaction_index, transaction_nonce,
                         transaction_result from contract_result
                         """,
@@ -178,6 +179,7 @@ class BackfillFailedEthereumTransactionContractResultMigrationTest extends Impor
                             .createdContractIds(
                                     createdContractIds == null ? null : List.of((Long[]) createdContractIds.getArray()))
                             .errorMessage(rs.getString("error_message"))
+                            .failedInitcode(rs.getBytes("failed_initcode"))
                             .functionParameters(rs.getBytes("function_parameters"))
                             .functionResult(rs.getBytes("function_result"))
                             .gasLimit(rs.getLong("gas_limit"))

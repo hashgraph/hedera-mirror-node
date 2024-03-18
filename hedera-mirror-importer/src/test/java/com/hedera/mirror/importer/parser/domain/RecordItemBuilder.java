@@ -122,6 +122,7 @@ import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUpdateNftsTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -538,6 +539,11 @@ public class RecordItemBuilder {
 
         if (create) {
             transactionBody.setCallData(fileId());
+            builder.sidecarRecords
+                    .get(1)
+                    .getActionsBuilder()
+                    .getContractActionsBuilder(0)
+                    .setCallType(ContractActionType.CREATE);
             builder.record(r -> r.setContractCreateResult(functionResult));
         }
 
@@ -721,6 +727,15 @@ public class RecordItemBuilder {
         return builder;
     }
 
+    public Builder<TokenUpdateNftsTransactionBody.Builder> tokenUpdateNfts() {
+        var transactionBody = TokenUpdateNftsTransactionBody.newBuilder()
+                .addSerialNumbers(1L)
+                .addSerialNumbers(2L)
+                .setMetadata(BytesValue.of(bytes(16)))
+                .setToken(tokenId());
+        return new Builder<>(TransactionType.TOKENUPDATENFTS, transactionBody);
+    }
+
     public Builder<TokenPauseTransactionBody.Builder> tokenPause() {
         var transactionBody = TokenPauseTransactionBody.newBuilder().setToken(tokenId());
         return new Builder<>(TransactionType.TOKENPAUSE, transactionBody);
@@ -755,6 +770,8 @@ public class RecordItemBuilder {
                 .setFreezeKey(key())
                 .setKycKey(key())
                 .setMemo(StringValue.of(text(16)))
+                .setMetadata(BytesValue.of(bytes(64)))
+                .setMetadataKey(key())
                 .setName(text(4))
                 .setPauseKey(key())
                 .setSupplyKey(key())
@@ -777,6 +794,8 @@ public class RecordItemBuilder {
                 .setFreezeKey(key())
                 .setKycKey(key())
                 .setMemo(String.valueOf(text(16)))
+                .setMetadata(bytes(64))
+                .setMetadataKey(key())
                 .setName(text(4))
                 .setPauseKey(key())
                 .setSupplyKey(key())
@@ -859,13 +878,16 @@ public class RecordItemBuilder {
     private TransactionSidecarRecord.Builder contractActions() {
         return TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
-                        .addContractActions(contractAction())
+                        .addContractActions(contractAction().setCallDepth(0))
                         .addContractActions(contractAction()
+                                .setCallDepth(1)
                                 .setCallingAccount(accountId())
                                 .setError(bytes(10))
                                 .setRecipientAccount(accountId()))
-                        .addContractActions(
-                                contractAction().setTargetedAddress(bytes(20)).setRevertReason(bytes(10))));
+                        .addContractActions(contractAction()
+                                .setCallDepth(2)
+                                .setTargetedAddress(bytes(20))
+                                .setRevertReason(bytes(10))));
     }
 
     private ContractAction.Builder contractAction() {

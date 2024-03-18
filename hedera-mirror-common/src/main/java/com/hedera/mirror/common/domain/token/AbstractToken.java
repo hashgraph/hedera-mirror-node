@@ -73,6 +73,12 @@ public class AbstractToken implements History {
     @Column(updatable = false)
     private long maxSupply;
 
+    @ToString.Exclude
+    private byte[] metadata;
+
+    @ToString.Exclude
+    private byte[] metadataKey;
+
     private String name;
 
     @ToString.Exclude

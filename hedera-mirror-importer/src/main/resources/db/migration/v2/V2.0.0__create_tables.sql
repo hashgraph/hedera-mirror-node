@@ -547,6 +547,8 @@ create table if not exists token
     kyc_key             bytea,
     kyc_status          smallint               not null,
     max_supply          bigint                 not null default 9223372036854775807, -- max long
+    metadata            bytea,
+    metadata_key        bytea,
     name                character varying(100) not null,
     pause_key           bytea                  null,
     pause_status        token_pause_status     not null default 'NOT_APPLICABLE',

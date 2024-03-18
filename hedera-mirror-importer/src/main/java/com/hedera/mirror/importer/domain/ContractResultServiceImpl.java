@@ -76,7 +76,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 ? transactionRecord.getContractCreateResult()
                 : transactionRecord.getContractCallResult();
 
-        final var sidecarProcessingResult = processSidecarRecords(recordItem, transactionBody);
+        final var sidecarProcessingResult = processSidecarRecords(recordItem);
 
         // handle non create/call transactions
         var contractCallOrCreate = isContractCreateOrCall(transactionBody);
@@ -247,11 +247,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setTransactionResult(transaction.getResult());
         transactionHandler.updateContractResult(contractResult, recordItem);
 
-        if (sidecarProcessingResult.payload() != null
+        if (sidecarProcessingResult.initcode() != null
                 && !recordItem.isSuccessful()
                 && contractResult.getFailedInitcode() == null
                 && sidecarProcessingResult.isContractCreation()) {
-            contractResult.setFailedInitcode(sidecarProcessingResult.payload());
+            contractResult.setFailedInitcode(sidecarProcessingResult.initcode());
         }
 
         if (isValidContractFunctionResult(functionResult)) {
@@ -269,10 +269,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
 
-            if (sidecarProcessingResult.totalGasUsed() != null) {
-                contractResult.setGasConsumed(
-                        sidecarProcessingResult.totalGasUsed() + sidecarProcessingResult.getIntrinsicGas());
-            }
+            sidecarProcessingResult.updateGasConsumed(contractResult);
 
             if (functionResult.hasSenderId()) {
                 var senderId = EntityId.of(functionResult.getSenderId());
@@ -393,8 +390,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     @SuppressWarnings("java:S3776")
-    private SidecarProcessingResult processSidecarRecords(
-            final RecordItem recordItem, final TransactionBody transactionBody) {
+    private SidecarProcessingResult processSidecarRecords(final RecordItem recordItem) {
         final var sidecarRecords = recordItem.getSidecarRecords();
         if (sidecarRecords.isEmpty()) {
             return new SidecarProcessingResult(null, false, null);
@@ -445,18 +441,6 @@ public class ContractResultServiceImpl implements ContractResultService {
                     sidecarRecords.size(),
                     migrationCount,
                     stopwatch);
-        }
-
-        // For a contract call we need to use the function parameters from the transaction body
-        if (payloadBytes == null && !isContractCreation) {
-            if (transactionBody.hasContractCall()) {
-                payloadBytes = transactionBody.getContractCall().getFunctionParameters();
-            } else {
-                payloadBytes = recordItem
-                        .getTransactionRecord()
-                        .getContractCallResult()
-                        .getFunctionParameters();
-            }
         }
 
         return new SidecarProcessingResult(
@@ -518,32 +502,45 @@ public class ContractResultServiceImpl implements ContractResultService {
     /**
      * Record representing the result of processing sidecar records.
      *
-     * @param payload The payload of the contract transaction.
+     * @param initcode           The payload of the contract transaction.
      * @param isContractCreation Whether the transaction is a contract creation.
-     * @param totalGasUsed The gas used by the contract actions in the sidecar records.
+     * @param totalGasUsed       The gas used by the contract actions in the sidecar records.
      */
     @SuppressWarnings("java:S6218")
-    private record SidecarProcessingResult(byte[] payload, boolean isContractCreation, Long totalGasUsed) {
+    private record SidecarProcessingResult(byte[] initcode, boolean isContractCreation, Long totalGasUsed) {
         private static final long TX_DATA_ZERO_COST = 4L;
         private static final long ISTANBUL_TX_DATA_NON_ZERO_COST = 16L;
         private static final long TX_BASE_COST = 21_000L;
         private static final long TX_CREATE_EXTRA = 32_000L;
 
         /**
-         * Returns the intrinsic gas cost for a contract transaction.
+         * Update the gas consumed for a contract transaction.
          */
-        long getIntrinsicGas() {
-            int zeros = 0;
-            for (byte b : payload) {
-                if (b == 0) {
-                    ++zeros;
-                }
+        void updateGasConsumed(ContractResult contractResult) {
+            if (totalGasUsed == null) {
+                return;
             }
-            final int nonZeros = payload.length - zeros;
+
+            int nonZeros = 0;
+            var payload = initcode;
+            int zeros = 0;
+
+            if (payload == null) {
+                payload = contractResult.getFunctionParameters();
+            }
+
+            if (payload != null) {
+                for (byte b : payload) {
+                    if (b == 0) {
+                        ++zeros;
+                    }
+                }
+                nonZeros = payload.length - zeros;
+            }
 
             long cost = TX_BASE_COST + TX_DATA_ZERO_COST * zeros + ISTANBUL_TX_DATA_NON_ZERO_COST * nonZeros;
-
-            return isContractCreation ? (cost + TX_CREATE_EXTRA) : cost;
+            long intrinsicGas = isContractCreation ? (cost + TX_CREATE_EXTRA) : cost;
+            contractResult.setGasConsumed(totalGasUsed + intrinsicGas);
         }
     }
 }

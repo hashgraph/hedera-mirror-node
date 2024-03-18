@@ -26,7 +26,7 @@ import org.springframework.data.domain.Sort;
 public class NftAllowanceRequest {
 
     @Builder.Default
-    private RangeOperator accountIdOperator = RangeOperator.GT;
+    private RangeOperator accountIdOperator = RangeOperator.gt;
 
     private long ownerId;
 
@@ -44,5 +44,5 @@ public class NftAllowanceRequest {
     private long tokenId;
 
     @Builder.Default
-    private RangeOperator tokenIdOperator = RangeOperator.GT;
+    private RangeOperator tokenIdOperator = RangeOperator.gt;
 }
