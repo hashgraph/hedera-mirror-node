@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.mapper;
+package com.hedera.mirror.restjava.exception;
 
-import static org.mapstruct.MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG;
+import com.hedera.mirror.common.exception.MirrorNodeException;
+import java.io.Serial;
 
-import com.hedera.mirror.rest.model.NftAllowance;
-import org.mapstruct.MapperConfig;
-import org.mapstruct.Mapping;
+public abstract class RestException extends MirrorNodeException {
 
-@MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
-public interface EntityMapper<T extends NftAllowance> {
+    @Serial
+    private static final long serialVersionUID = 540139852402841430L;
 
-    @Mapping(source = "timestampRange", target = "timestamp")
-    T map(com.hedera.mirror.common.domain.entity.NftAllowance source);
+    protected RestException(String message) {
+        super(message);
+    }
 }

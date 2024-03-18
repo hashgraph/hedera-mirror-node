@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.mapper;
+package com.hedera.mirror.restjava.common;
 
-import static org.mapstruct.MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG;
+public interface RangeParameter<T> {
 
-import com.hedera.mirror.rest.model.NftAllowance;
-import org.mapstruct.MapperConfig;
-import org.mapstruct.Mapping;
+    RangeOperator getOperator();
 
-@MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
-public interface EntityMapper<T extends NftAllowance> {
-
-    @Mapping(source = "timestampRange", target = "timestamp")
-    T map(com.hedera.mirror.common.domain.entity.NftAllowance source);
+    T getValue();
 }

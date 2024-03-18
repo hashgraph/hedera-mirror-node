@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.hedera.mirror.restjava.mapper;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.rest.model.TimestampRange;
-import java.time.Instant;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
 
@@ -26,7 +25,7 @@ import org.mapstruct.MappingInheritanceStrategy;
 public interface CommonMapper {
 
     default String mapEntityId(Long source) {
-        if (source == null) {
+        if (source == null || source == 0) {
             return null;
         }
 
@@ -35,14 +34,7 @@ public interface CommonMapper {
     }
 
     default String mapEntityId(com.hedera.mirror.common.domain.entity.EntityId source) {
-        if (source == null) {
-            return null;
-        }
-        return source.getShard() + "." + source.getRealm() + "." + source.getNum();
-    }
-
-    default Instant mapInstant(Long source) {
-        return source != null ? Instant.ofEpochSecond(0L, source) : null;
+        return source != null ? source.toString() : null;
     }
 
     default TimestampRange mapRange(Range<Long> source) {
@@ -52,11 +44,11 @@ public interface CommonMapper {
 
         var target = new TimestampRange();
         if (source.hasLowerBound()) {
-            target.setFrom(mapInstant(source.lowerEndpoint()).toString());
+            target.setFrom(String.valueOf(source.lowerEndpoint() / Math.pow(10, 9)));
         }
 
         if (source.hasUpperBound()) {
-            target.setTo(mapInstant(source.upperEndpoint()).toString());
+            target.setTo(String.valueOf(source.upperEndpoint() / Math.pow(10, 9)));
         }
 
         return target;
