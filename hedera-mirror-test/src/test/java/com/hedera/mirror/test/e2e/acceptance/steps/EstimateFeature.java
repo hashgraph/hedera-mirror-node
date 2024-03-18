@@ -31,8 +31,8 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.Contra
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_AND_CALL_CONTRACT;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_AND_DESTROY;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_BYTECODE_DATA;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_OPCODE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DEPLOY_NEW_INSTANCE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.DESTROY;
 import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.GET_GAS_LEFT;
@@ -144,6 +144,18 @@ public class EstimateFeature extends AbstractEstimateFeature {
         }
     }
 
+    @RetryAsserts
+    @Given("I verify the estimate contract bytecode is deployed")
+    public void verifyEstimateContractIsDeployed() {
+        verifyContractDeployed(contractSolidityAddress);
+    }
+
+    private void verifyContractDeployed(String contractAddress) {
+        var response = mirrorClient.getContractInfo(contractAddress);
+        Assertions.assertThat(response.getBytecode()).isNotBlank();
+        Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
+    }
+
     @And("lower deviation is {int}% and upper deviation is {int}%")
     public void setDeviations(int lower, int upper) {
         lowerDeviation = lower;
@@ -197,8 +209,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with function that successfully deploys a new smart contract via CREATE2 op code")
     public void deployContractViaCreateTwoOpcodeEstimateCall() {
-        var data = encodeData(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE);
-        validateGasEstimation(data, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE, contractSolidityAddress);
+        var data = encodeData(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE);
+        validateGasEstimation(data, DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE, contractSolidityAddress);
     }
 
     @Then("I get mock contract address and getAddress selector")
@@ -587,8 +599,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I execute contractCall for contract deploy function via create2 and verify gasConsumed")
     public void deployContractViaCreateTwo() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE);
-        var txId = executeContractTransaction(deployedContract, DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE, data);
+        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE, data);
         verifyGasConsumed(txId, data);
     }
 
@@ -654,21 +666,16 @@ public class EstimateFeature extends AbstractEstimateFeature {
         verifyGasConsumed(txId, successfulInitByteCode);
     }
 
-    private void verifyGasConsumed(String txId, byte[] data) {
-        int intrinsicValue = calculateIntrinsicValue(data);
-        verifyGasConsumedCommon(txId, BASE_GAS_FEE + intrinsicValue);
-    }
-
-    private void verifyGasConsumed(String txId, String bytecode) throws DecoderException {
-        byte[] data = Hex.decodeHex(bytecode.replaceFirst("0x", ""));
-        int intrinsicValue = calculateIntrinsicValue(data);
-        verifyGasConsumedCommon(txId, BASE_GAS_FEE + ADDITIONAL_FEE_FOR_CREATE + intrinsicValue);
-    }
-
-    private void verifyGasConsumedCommon(String txId, int additionalGas) {
+    private void verifyGasConsumed(String txId, Object data) {
+        int totalGasFee;
+        try {
+            totalGasFee = calculateIntrinsicValue(data);
+        } catch (DecoderException e) {
+            throw new RuntimeException("Failed to decode hexadecimal string.", e);
+        }
         var gasConsumed = getGasConsumedByTransactionId(txId);
         var gasUsed = getGasFromActions(txId);
-        assertThat(gasConsumed).isEqualTo(gasUsed + additionalGas);
+        assertThat(gasConsumed).isEqualTo(gasUsed + totalGasFee);
     }
 
     private String executeContractTransaction(
@@ -767,26 +774,40 @@ public class EstimateFeature extends AbstractEstimateFeature {
     }
 
     /**
-     * Calculates the intrinsic value by adding 4 for each 0 value and 16 for non-zero values.
+     * Calculates the total intrinsic gas required for a given operation, taking into account the
+     * operation type and the data involved. This method adjusts the gas calculation based
+     * on the type of operation: contract creation (CREATE) operations, indicated by a hexadecimal
+     * string input, include an additional fee on top of the base gas fee. The intrinsic gas for
+     * the data payload is calculated by adding a specific gas amount for each byte in the payload,
+     * with different amounts for zero and non-zero bytes.
+     *
+     * @param data The operation data, which can be a hexadecimal string for CREATE operations or
+     *             a byte array for contract call operations.
+     * @return The total intrinsic gas calculated for the operation
+     * @throws DecoderException If the data parameter is a String and cannot be decoded from hexadecimal
+     *                          format, indicating an issue with the input format.
+     * @throws IllegalArgumentException If the data parameter is not an instance of String or byte[],
+     *                                  indicating that the provided data type is unsupported for gas
+     *                                  calculation in the context of this method and tests.
      */
-    public static int calculateIntrinsicValue(byte[] values) {
+    private int calculateIntrinsicValue(Object data) throws DecoderException {
         int total = 0;
+        byte[] values;
+        if (data instanceof String) {
+            values = Hex.decodeHex(((String) data).replaceFirst("0x", ""));
+            total += BASE_GAS_FEE + ADDITIONAL_FEE_FOR_CREATE;
+        } else if (data instanceof byte[]) {
+            values = (byte[]) data;
+            total += BASE_GAS_FEE;
+        } else {
+            throw new IllegalArgumentException("Unsupported data type for gas calculation.");
+        }
+
+        // Calculates the intrinsic value by adding 4 for each 0 bytes and 16 for non-zero bytes
         for (byte value : values) {
             total += (value == 0) ? 4 : 16;
         }
         return total;
-    }
-
-    @RetryAsserts
-    @Given("I verify the estimate contract bytecode is deployed")
-    public void verifyEstimateContractIsDeployed() {
-        verifyContractDeployed(contractSolidityAddress);
-    }
-
-    private void verifyContractDeployed(String contractAddress) {
-        var response = mirrorClient.getContractInfo(contractAddress);
-        Assertions.assertThat(response.getBytecode()).isNotBlank();
-        Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
     /**
@@ -806,7 +827,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         DELEGATE_CALL_TO_CONTRACT("delegateCallToContract", 25124),
         DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24803),
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53631),
-        DEPLOY_CONTRACT_VIA_CREATE_TWO_OPCODE("deployViaCreate2", 55786),
+        DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE("deployViaCreate2", 55786),
         DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 318113),
         DEPLOY_NEW_INSTANCE("createClone", 0), // Set actual gas to 0; unnecessary for gasConsumed test validation.
         DEPLOY_AND_CALL_CONTRACT("deployAndCallMockContract", 0),
