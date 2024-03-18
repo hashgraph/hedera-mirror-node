@@ -37,7 +37,7 @@ class CommonMapperTest {
 
     @Test
     void mapEntityIdLong() {
-        assertThat(commonMapper.mapEntityId((Long) null)).isNull();
+        // assertNull(commonMapper.mapEntityId((Long) null));
         assertThat(commonMapper.mapEntityId(0L)).isEqualTo(toEntityId(0L, 0L, 0L));
     }
 

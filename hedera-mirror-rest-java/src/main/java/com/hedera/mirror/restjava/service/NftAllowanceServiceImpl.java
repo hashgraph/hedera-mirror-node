@@ -70,7 +70,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
     }
 
     private static long getUpdatedEntityId(RangeOperator accountIdOperator, long entityId) {
-        if (accountIdOperator == RangeOperator.gte) {
+        if (accountIdOperator == RangeOperator.GTE) {
             entityId = entityId > 0 ? entityId - 1 : entityId;
         }
         return entityId;

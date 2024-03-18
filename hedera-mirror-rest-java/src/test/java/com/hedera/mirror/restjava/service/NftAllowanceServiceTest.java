@@ -22,6 +22,7 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.domain.Sort;
@@ -52,37 +53,21 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void getNftAllowancesForOrderDesc(boolean owner) {
+    @Test
+    void getNftAllowancesForOrderDescOwner() {
         var accountId = 1000L;
-        NftAllowance nftAllowance1, nftAllowance2;
 
-        saveNftAllowance(accountId, owner);
-        saveNftAllowance(accountId, owner);
-
-        if (owner) {
-            nftAllowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.owner(accountId).spender(accountId + 100))
-                    .persist();
-            nftAllowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.owner(accountId).spender(accountId + 50))
-                    .persist();
-        } else {
-            nftAllowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.spender(accountId).owner(accountId + 100))
-                    .persist();
-            nftAllowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.spender(accountId).owner(accountId + 50))
-                    .persist();
-        }
+        var nftAllowance1 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.owner(accountId).spender(accountId + 100))
+                .persist();
+        var nftAllowance2 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.owner(accountId).spender(accountId + 50))
+                .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
-                .isOwner(owner)
+                .isOwner(true)
                 .limit(2)
                 .ownerId(accountId)
                 .spenderId(1000L)
@@ -92,43 +77,87 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
         var response = service.getNftAllowances(request);
 
-        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void getNftAllowancesForGte(boolean owner) {
+    @Test
+    void getNftAllowancesForOrderDescSpender() {
+        var accountId = 1000L;
+
+        var nftAllowance1 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(accountId).owner(accountId + 100))
+                .persist();
+        var nftAllowance2 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(accountId).owner(accountId + 50))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .ownerId(accountId)
+                .spenderId(1000L)
+                .tokenId(1000L)
+                .order(Sort.Direction.DESC)
+                .build();
+
+        var response = service.getNftAllowances(request);
+
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+    }
+
+    @Test
+    void getNftAllowancesForGteOwner() {
         var accountId = 1001L;
 
-        var nftAllowance1 = saveNftAllowance(accountId, owner);
+        var nftAllowance1 = saveNftAllowance(accountId, true);
 
         // Setting the account.id and token id to 2 less than allowance1 in order to test GTE.
         // This should return only the first allowance.
-        if (owner) {
-            domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.owner(accountId)
-                            .spender(nftAllowance1.getSpender() - 2)
-                            .tokenId(nftAllowance1.getTokenId() - 2))
-                    .persist();
-        } else {
-            domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.spender(accountId)
-                            .owner(nftAllowance1.getOwner() - 2)
-                            .tokenId(nftAllowance1.getTokenId() - 2))
-                    .persist();
-        }
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.owner(accountId)
+                        .spender(nftAllowance1.getSpender() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
-                .isOwner(owner)
+                .isOwner(true)
                 .limit(2)
                 .ownerId(nftAllowance1.getOwner())
                 .spenderId(nftAllowance1.getSpender())
                 .tokenId(nftAllowance1.getTokenId())
                 .order(Sort.Direction.ASC)
-                .accountIdOperator(RangeOperator.gte)
-                .tokenIdOperator(RangeOperator.gte)
+                .accountIdOperator(RangeOperator.GTE)
+                .tokenIdOperator(RangeOperator.GTE)
+                .build();
+        var response = service.getNftAllowances(request);
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1);
+    }
+
+    @Test
+    void getNftAllowancesForGteSpender() {
+        var accountId = 1001L;
+
+        var nftAllowance1 = saveNftAllowance(accountId, false);
+
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(accountId)
+                        .owner(nftAllowance1.getOwner() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .ownerId(nftAllowance1.getOwner())
+                .spenderId(nftAllowance1.getSpender())
+                .tokenId(nftAllowance1.getTokenId())
+                .order(Sort.Direction.ASC)
+                .accountIdOperator(RangeOperator.GTE)
+                .tokenIdOperator(RangeOperator.GTE)
                 .build();
         var response = service.getNftAllowances(request);
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1);

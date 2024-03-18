@@ -20,6 +20,7 @@ import static com.hedera.mirror.restjava.common.Constants.LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.ORDER;
 import static com.hedera.mirror.restjava.common.Constants.OWNER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -79,7 +80,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .retrieve()
                 .body(NftAllowancesResponse.class);
         assertThat(result.getAllowances()).isEqualTo(mapper.map(collection));
-        assertThat(result.getLinks().getNext()).isEqualTo(null);
+        assertNull(result.getLinks().getNext());
     }
 
     @Test

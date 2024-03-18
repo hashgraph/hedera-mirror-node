@@ -25,7 +25,7 @@ import org.mapstruct.MappingInheritanceStrategy;
 public interface CommonMapper {
 
     default String mapEntityId(Long source) {
-        if (source == null || source == 0) {
+        if (source == null) {
             return null;
         }
 

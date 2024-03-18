@@ -27,7 +27,7 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
 
     public static EntityIdRangeParameter valueOf(String entityIdRangeParam) {
 
-        if (entityIdRangeParam.isBlank()) {
+        if (entityIdRangeParam == null || entityIdRangeParam.isBlank()) {
             return EMPTY;
         }
 
@@ -35,9 +35,9 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
 
         if (splitVal.length == 1) {
             // No operator specified. Just use "eq:"
-            return validateId(splitVal, 0, RangeOperator.eq);
+            return validateId(splitVal, 0, RangeOperator.EQ);
         }
-        return validateId(splitVal, 1, RangeOperator.valueOf(splitVal[0]));
+        return validateId(splitVal, 1, RangeOperator.valueOf(splitVal[0].toUpperCase()));
     }
 
     @NotNull

@@ -16,38 +16,43 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
-import static com.hedera.mirror.restjava.common.Constants.encodedEntityIdRegex;
-import static com.hedera.mirror.restjava.common.Constants.entityIdRegex;
-import static com.hedera.mirror.restjava.common.Constants.evmAddressRegex;
-import static com.hedera.mirror.restjava.common.Constants.evmAddressShardRealmRegex;
-import static com.hedera.mirror.restjava.common.Constants.maxEncodedId;
-import static com.hedera.mirror.restjava.common.Constants.maxNum;
-import static com.hedera.mirror.restjava.common.Constants.maxRealm;
-import static com.hedera.mirror.restjava.common.Constants.maxShard;
-import static com.hedera.mirror.restjava.common.Constants.numBits;
-import static com.hedera.mirror.restjava.common.Constants.realmBits;
-
 import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Pattern;
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
+
+import static com.hedera.mirror.restjava.common.Constants.ENCODED_ENTITY_ID_REGEX;
+import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_REGEX;
+import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_REGEX;
+import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_SHARD_REALM_REGEX;
+import static com.hedera.mirror.restjava.common.Constants.MAX_ENCODED_ID;
+import static com.hedera.mirror.restjava.common.Constants.MAX_NUM;
+import static com.hedera.mirror.restjava.common.Constants.MAX_REALM;
+import static com.hedera.mirror.restjava.common.Constants.MAX_SHARD;
+import static com.hedera.mirror.restjava.common.Constants.NUM_BITS;
+import static com.hedera.mirror.restjava.common.Constants.REALM_BITS;
+import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
+
+@CustomLog
+@UtilityClass
 public class Utils {
     public static final Map<String, RangeOperator> OPERATOR_PATTERNS = Map.of(
-            "asc", RangeOperator.gte,
-            "desc", RangeOperator.lte);
+            "asc", RangeOperator.GTE,
+            "desc", RangeOperator.LTE);
 
     public static boolean isValidEntityIdPattern(String id) {
         if (StringUtils.isBlank(id)) {
             return false;
         }
-        if (isAMatch(entityIdRegex, id) || isAMatch(encodedEntityIdRegex, id)) {
+        if (isAMatch(ENTITY_ID_REGEX, id) || isAMatch(ENCODED_ENTITY_ID_REGEX, id)) {
             return true;
         }
         return isValidEvmAddress(id, Constants.EvmAddressType.ANY);
@@ -62,12 +67,12 @@ public class Utils {
     private static boolean isValidEvmAddress(String address, Constants.EvmAddressType evmAddressType) {
 
         if (evmAddressType == Constants.EvmAddressType.ANY) {
-            return isAMatch(evmAddressRegex, address) || isAMatch(evmAddressShardRealmRegex, address);
+            return isAMatch(EVM_ADDRESS_REGEX, address) || isAMatch(EVM_ADDRESS_SHARD_REALM_REGEX, address);
         }
         if (evmAddressType == Constants.EvmAddressType.NO_SHARD_REALM) {
-            return isAMatch(evmAddressRegex, address);
+            return isAMatch(EVM_ADDRESS_REGEX, address);
         }
-        return isAMatch(evmAddressShardRealmRegex, address);
+        return isAMatch(EVM_ADDRESS_SHARD_REALM_REGEX, address);
     }
 
     public static long[] parseFromEvmAddress(String evmAddress) {
@@ -77,7 +82,7 @@ public class Utils {
             Long.parseLong(hexDigits.substring(0, 8), 16), // shard
             Long.parseLong(hexDigits.substring(8, 24), 16), // realm
             Long.parseLong(hexDigits.substring(24, 40), 16)
-        }; // num
+        };
     }
 
     public static long[] parseId(String id) {
@@ -85,12 +90,12 @@ public class Utils {
             var idParts = id.contains(".") || isValidEvmAddressLength(id.length())
                     ? parseDelimitedString(id)
                     : parseFromEncodedId(id);
-            if (idParts[2] > maxNum || idParts[1] > maxRealm || idParts[0] > maxShard) {
-                throw new InvalidParametersException(id + "- Id has an invalid format");
+            if (idParts[2] > MAX_NUM || idParts[1] > MAX_REALM || idParts[0] > MAX_SHARD) {
+                throw new InvalidParametersException(" Id '%s' is greater than the allowed value".formatted(id));
             }
             return idParts;
         } else {
-            throw new InvalidParametersException(id + "- Id has an invalid format");
+            throw new InvalidParametersException(" Id '%s' has an invalid format".formatted(id));
         }
     }
 
@@ -100,17 +105,16 @@ public class Utils {
         var numOrEvmAddress = parts.getLast();
 
         if (isValidEvmAddressLength(numOrEvmAddress.length())) {
-            var evmAddress = numOrEvmAddress.replace("0x", "");
             var shardRealmNum = parseFromEvmAddress(numOrEvmAddress);
             var shard = shardRealmNum[0];
             var realm = shardRealmNum[1];
             var num = shardRealmNum[2];
-            if (shard > maxShard || realm > maxRealm || num > maxNum) {
+            if (shard > MAX_SHARD || realm > MAX_REALM || num > MAX_NUM) {
                 // non-parsable evm address. get id num from evm address here
             } else {
                 if (parts.size() == 3
                         && ((Long.parseLong(parts.getFirst()) != shard) || Long.parseLong(parts.get(1)) != realm)) {
-                    throw new InvalidParametersException(id + "- Id has an invalid format");
+                    throw new InvalidParametersException(" Id '%s' cannot be parsed".formatted(id));
                 }
                 return new long[] {shard, realm, num};
             }
@@ -125,13 +129,13 @@ public class Utils {
 
     private static long[] parseFromEncodedId(String id) {
         var encodedId = Long.parseLong(id);
-        if (encodedId > maxEncodedId) {
-            throw new InvalidParametersException(id + "- Id has an invalid format");
+        if (encodedId > MAX_ENCODED_ID) {
+            throw new InvalidParametersException(" Id '%s' is greater than the allowed value".formatted(id));
         }
-        var num = encodedId & maxNum;
-        var shardRealm = encodedId >> numBits;
-        var realm = shardRealm & maxRealm;
-        var shard = shardRealm >> realmBits;
+        var num = encodedId & MAX_NUM;
+        var shardRealm = encodedId >> NUM_BITS;
+        var realm = shardRealm & MAX_REALM;
+        var shard = shardRealm >> REALM_BITS;
         return new long[] {shard, realm, num};
     }
 
@@ -178,10 +182,10 @@ public class Utils {
         for (Map.Entry<String, String> lastValue : lastValues.entrySet()) {
             boolean inclusive = includedMap.get(lastValue.getKey());
             var pattern = OPERATOR_PATTERNS.get(order);
-            var newPattern = order.equals("asc") ? RangeOperator.gt : RangeOperator.lt;
+            var newPattern = order.equals("asc") ? RangeOperator.GT.name() : RangeOperator.LT;
             var insertValue =
                     inclusive ? pattern + ":" + lastValue.getValue() : newPattern + ":" + lastValue.getValue();
-            next.append("&").append(lastValue.getKey()).append("=").append(insertValue);
+            next.append("&").append(lastValue.getKey()).append("=").append(insertValue.toLowerCase());
         }
         return next.toString();
     }

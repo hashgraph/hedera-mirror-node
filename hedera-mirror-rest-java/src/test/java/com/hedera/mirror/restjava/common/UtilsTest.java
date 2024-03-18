@@ -40,7 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
-public class UtilsTest {
+class UtilsTest {
 
     @Mock
     HttpServletRequest request;
@@ -100,25 +100,25 @@ public class UtilsTest {
     @Test
     @DisplayName("EntityId parse from string tests")
     void entityParseFromString() {
-        assertArrayEquals(Utils.parseId("0.0.0"), new long[] {0, 0, 0});
-        assertArrayEquals(Utils.parseId("0"), new long[] {0, 0, 0});
-        assertArrayEquals(Utils.parseId("0.0.4294967295"), new long[] {0, 0, 4294967295L});
-        assertArrayEquals(Utils.parseId("32767.65535.4294967295"), new long[] {32767, 65535, 4294967295L});
-        assertArrayEquals(Utils.parseId("4294967295"), new long[] {0, 0, 4294967295L});
-        assertArrayEquals(Utils.parseId("24294967295"), new long[] {0, 5, 2820130815L});
-        assertArrayEquals(Utils.parseId("0.1"), new long[] {0, 0, 1});
-        assertArrayEquals(Utils.parseId("0x0000000000000000000000000000000000000001"), new long[] {0, 0, 1});
-        assertArrayEquals(Utils.parseId("0000000000000000000000000000000000000001"), new long[] {0, 0, 1});
-        assertArrayEquals(Utils.parseId("0x0000000100000000000000020000000000000003"), new long[] {1, 2, 3});
+        assertArrayEquals(new long[] {0, 0, 0}, Utils.parseId("0.0.0"));
+        assertArrayEquals(new long[] {0, 0, 0}, Utils.parseId("0"));
+        assertArrayEquals(new long[] {0, 0, 4294967295L}, Utils.parseId("0.0.4294967295"));
+        assertArrayEquals(new long[] {32767, 65535, 4294967295L}, Utils.parseId("32767.65535.4294967295"));
+        assertArrayEquals(new long[] {0, 0, 4294967295L}, Utils.parseId("4294967295"));
+        assertArrayEquals(new long[] {0, 5, 2820130815L}, Utils.parseId("24294967295"));
+        assertArrayEquals(new long[] {0, 0, 1}, Utils.parseId("0.1"));
+        assertArrayEquals(new long[] {0, 0, 1}, Utils.parseId("0x0000000000000000000000000000000000000001"));
+        assertArrayEquals(new long[] {0, 0, 1}, Utils.parseId("0000000000000000000000000000000000000001"));
+        assertArrayEquals(new long[] {1, 2, 3}, Utils.parseId("0x0000000100000000000000020000000000000003"));
         assertArrayEquals(
-                Utils.parseId("0x00007fff000000000000ffff00000000ffffffff"), new long[] {32767, 65535, 4294967295L});
-        assertArrayEquals(Utils.parseId("0.0.000000000000000000000000000000000186Fb1b"), new long[] {0, 0, 25623323});
-        assertArrayEquals(Utils.parseId("0.000000000000000000000000000000000186Fb1b"), new long[] {0, 0, 25623323});
-        assertArrayEquals(Utils.parseId("000000000000000000000000000000000186Fb1b"), new long[] {0, 0, 25623323});
-        assertArrayEquals(Utils.parseId("0x000000000000000000000000000000000186Fb1b"), new long[] {0, 0, 25623323});
-        assertArrayEquals(Utils.parseId("0000000100000000000000020000000000000007"), new long[] {1, 2, 7});
-        assertArrayEquals(Utils.parseId("0x0000000100000000000000020000000000000007"), new long[] {1, 2, 7});
-        assertArrayEquals(Utils.parseId("1.2.0000000100000000000000020000000000000007"), new long[] {1, 2, 7});
+                new long[] {32767, 65535, 4294967295L}, Utils.parseId("0x00007fff000000000000ffff00000000ffffffff"));
+        assertArrayEquals(new long[] {0, 0, 25623323}, Utils.parseId("0.0.000000000000000000000000000000000186Fb1b"));
+        assertArrayEquals(new long[] {0, 0, 25623323}, Utils.parseId("0.000000000000000000000000000000000186Fb1b"));
+        assertArrayEquals(new long[] {0, 0, 25623323}, Utils.parseId("000000000000000000000000000000000186Fb1b"));
+        assertArrayEquals(new long[] {0, 0, 25623323}, Utils.parseId("0x000000000000000000000000000000000186Fb1b"));
+        assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("0000000100000000000000020000000000000007"));
+        assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("0x0000000100000000000000020000000000000007"));
+        assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("1.2.0000000100000000000000020000000000000007"));
         // Handle null and evm address cases
     }
 

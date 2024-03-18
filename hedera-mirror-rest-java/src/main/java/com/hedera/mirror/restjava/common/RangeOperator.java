@@ -22,12 +22,12 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum RangeOperator {
-    lt("<"),
-    lte("<="),
-    gt(">"),
-    gte(">="),
-    eq("="),
-    ne("!=");
+    LT("<"),
+    LTE("<="),
+    GT(">"),
+    GTE(">="),
+    EQ("="),
+    NE("!=");
 
     private final String operator;
 }

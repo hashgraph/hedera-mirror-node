@@ -26,23 +26,21 @@ public class Constants {
     public static final int MIN_LIMIT = 1;
 
     // format: |0|15-bit shard|16-bit realm|32-bit num|
-    public static final long numBits = 32;
-    public static final long maxNum = (long) Math.pow(2, numBits) - 1;
+    public static final long NUM_BITS = 32;
+    public static final long MAX_NUM = (long) Math.pow(2, NUM_BITS) - 1;
 
-    public static final long realmBits = 16;
-    public static final long maxRealm = (long) Math.pow(2, realmBits) - 1;
-    public static final long shardBits = 15;
+    public static final long REALM_BITS = 16;
+    public static final long MAX_REALM = (long) Math.pow(2, REALM_BITS) - 1;
+    public static final long SHARD_BITS = 15;
 
-    public static final long maxShard = (long) Math.pow(2, shardBits) - 1;
-    public static final long maxSafeShard = (long) Math.pow(2, 5) - 1;
+    public static final long MAX_SHARD = (long) Math.pow(2, SHARD_BITS) - 1;
+    public static final long MAX_ENCODED_ID = (long) Math.pow(2, 63) - 1;
 
-    public static final long maxEncodedId = (long) Math.pow(2, 63) - 1;
+    public static final String ENTITY_ID_REGEX = "^(\\d{1,5}\\.){1,2}\\d{1,10}$";
+    public static final String ENCODED_ENTITY_ID_REGEX = "^\\d{1,19}$";
 
-    public static final String entityIdRegex = "^(\\d{1,5}\\.){1,2}\\d{1,10}$";
-    public static final String encodedEntityIdRegex = "^\\d{1,19}$";
-
-    public static final String evmAddressShardRealmRegex = "^(\\d{1,10}\\.){0,2}[A-Fa-f0-9]{40}$";
-    public static final String evmAddressRegex = "^(0x)?[A-Fa-f0-9]{40}$";
+    public static final String EVM_ADDRESS_SHARD_REALM_REGEX = "^(\\d{1,10}\\.){0,2}[A-Fa-f0-9]{40}$";
+    public static final String EVM_ADDRESS_REGEX = "^(0x)?[A-Fa-f0-9]{40}$";
 
     public static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
 

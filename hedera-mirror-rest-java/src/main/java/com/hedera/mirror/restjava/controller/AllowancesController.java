@@ -143,24 +143,29 @@ public class AllowancesController {
 
         ServletRequestAttributes servletRequestAttributes =
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (servletRequestAttributes == null) {
+            return null;
+        }
         HttpServletRequest request = servletRequestAttributes.getRequest();
         HashMap<String, String> lastValues = new HashMap<>();
         HashMap<String, Boolean> included = new HashMap<>();
-        if (owner) {
-            lastValues.put(
-                    ACCOUNT_ID,
-                    response.getAllowances().get(serviceResponse.size() - 1).getSpender());
+        if (response.getAllowances() != null) {
+            if (owner) {
+                lastValues.put(
+                        ACCOUNT_ID,
+                        response.getAllowances().get(serviceResponse.size() - 1).getSpender());
 
-        } else {
+            } else {
+                lastValues.put(
+                        ACCOUNT_ID,
+                        response.getAllowances().get(serviceResponse.size() - 1).getOwner());
+            }
+            included.put(ACCOUNT_ID, true);
             lastValues.put(
-                    ACCOUNT_ID,
-                    response.getAllowances().get(serviceResponse.size() - 1).getOwner());
+                    TOKEN_ID,
+                    response.getAllowances().get(serviceResponse.size() - 1).getTokenId());
+            included.put(TOKEN_ID, false);
         }
-        included.put(ACCOUNT_ID, true);
-        lastValues.put(
-                TOKEN_ID,
-                response.getAllowances().get(serviceResponse.size() - 1).getTokenId());
-        included.put(TOKEN_ID, false);
         return Utils.getPaginationLink(request, false, lastValues, included, order, limit);
     }
 }
