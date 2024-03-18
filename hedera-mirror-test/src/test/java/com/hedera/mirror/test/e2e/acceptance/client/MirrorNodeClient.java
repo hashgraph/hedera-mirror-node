@@ -48,6 +48,7 @@ import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
+import com.hedera.mirror.test.e2e.acceptance.props.Order;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
 import java.util.ArrayList;
@@ -223,9 +224,9 @@ public class MirrorNodeClient {
         return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, request);
     }
 
-    public BlocksResponse getBlocks() {
+    public BlocksResponse getBlocks(Order order, long limit) {
         log.debug("Get blocks data by Mirror Node");
-        return callRestEndpoint("/blocks", BlocksResponse.class);
+        return callRestEndpoint("/blocks?order={order}&limit={limit}", BlocksResponse.class, order, limit);
     }
 
     public List<NetworkNode> getNetworkNodes() {
