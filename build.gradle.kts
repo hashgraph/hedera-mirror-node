@@ -32,7 +32,7 @@ plugins {
 extra.apply {
     set("grpcVersion", "1.62.2")
     set("mapStructVersion", "1.5.5.Final")
-    set("protobufVersion", "3.25.3")
+    set("protobufVersion", "4.26.0")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.5")
 }
