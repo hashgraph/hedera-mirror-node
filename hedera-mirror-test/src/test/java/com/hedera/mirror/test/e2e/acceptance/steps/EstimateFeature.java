@@ -791,14 +791,13 @@ public class EstimateFeature extends AbstractEstimateFeature {
      *                                  calculation in the context of this method and tests.
      */
     private int calculateIntrinsicValue(Object data) throws DecoderException {
-        int total = 0;
+        int total = BASE_GAS_FEE;
         byte[] values;
         if (data instanceof String) {
             values = Hex.decodeHex(((String) data).replaceFirst("0x", ""));
-            total += BASE_GAS_FEE + ADDITIONAL_FEE_FOR_CREATE;
+            total += ADDITIONAL_FEE_FOR_CREATE;
         } else if (data instanceof byte[]) {
             values = (byte[]) data;
-            total += BASE_GAS_FEE;
         } else {
             throw new IllegalArgumentException("Unsupported data type for gas calculation.");
         }
