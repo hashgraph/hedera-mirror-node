@@ -2,3 +2,5 @@ spring:
   test:
     database:
       replace: NONE
+server:
+  port: 8084

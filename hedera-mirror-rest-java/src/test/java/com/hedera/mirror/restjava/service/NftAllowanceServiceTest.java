@@ -127,8 +127,8 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .spenderId(nftAllowance1.getSpender())
                 .tokenId(nftAllowance1.getTokenId())
                 .order(Sort.Direction.ASC)
-                .accountIdOperator(RangeOperator.GTE)
-                .tokenIdOperator(RangeOperator.GTE)
+                .accountIdOperator(RangeOperator.gte)
+                .tokenIdOperator(RangeOperator.gte)
                 .build();
         var response = service.getNftAllowances(request);
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1);
