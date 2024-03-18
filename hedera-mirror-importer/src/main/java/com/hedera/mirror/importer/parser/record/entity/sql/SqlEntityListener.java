@@ -626,6 +626,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setKycKey(previous.getKycKey());
         }
 
+        if (current.getMetadata() == null) {
+            current.setMetadata(previous.getMetadata());
+        }
+
+        if (current.getMetadataKey() == null) {
+            current.setMetadataKey(previous.getMetadataKey());
+        }
+
         if (current.getName() == null) {
             current.setName(previous.getName());
         }
