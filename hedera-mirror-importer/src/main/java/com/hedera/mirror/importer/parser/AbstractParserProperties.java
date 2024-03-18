@@ -29,6 +29,9 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 public abstract class AbstractParserProperties implements ParserProperties {
 
+    @NotNull
+    protected BatchProperties batch = new BatchProperties();
+
     protected boolean enabled = true;
 
     @DurationMin(millis = 10L)
@@ -39,9 +42,6 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @NotNull
     protected Duration processingTimeout = Duration.ofSeconds(10L);
 
-    @Min(0)
-    protected int queueCapacity = 1;
-
     @NotNull
     protected RetryProperties retry = new RetryProperties();
 
@@ -49,6 +49,28 @@ public abstract class AbstractParserProperties implements ParserProperties {
     @DurationUnit(ChronoUnit.SECONDS)
     @NotNull
     protected Duration transactionTimeout = Duration.ofSeconds(120);
+
+    @Data
+    @Validated
+    public static class BatchProperties {
+
+        @NotNull
+        @DurationMin(millis = 100L)
+        private Duration flushInterval = Duration.ofSeconds(2L);
+
+        @Min(1)
+        private int maxFiles = 1;
+
+        @Min(1)
+        private long maxItems = 60_000L;
+
+        @Min(1)
+        private int queueCapacity = maxFiles;
+
+        @NotNull
+        @DurationMin(millis = 100L)
+        private Duration window = Duration.ofMinutes(5L);
+    }
 
     @Data
     @Validated

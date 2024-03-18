@@ -20,7 +20,6 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-import static com.hedera.mirror.web3.common.ContractCallContext.init;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -620,7 +619,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 new byte[] {},
                                 new byte[] {},
                                 null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 8_000_000L));
     }
 
     private static TokenCreateWrapper getFungibleTokenExpiryInUint32Range() {
@@ -636,7 +636,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 10_000_000L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(
+                        4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 8_000_000L));
     }
 
     private static TokenCreateWrapper getNonFungibleTokenWithKeys() {
@@ -659,7 +660,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                                 new byte[] {},
                                 new byte[] {},
                                 null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 8_000_000L));
     }
 
     private static TokenCreateWrapper getNonFungibleTokenExpiryInUint32Range() {
@@ -675,7 +677,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(
+                        4_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 8_000_000L));
     }
 
     protected static TokenCreateWrapper getFungibleToken(Address ownerAddress) {
@@ -691,7 +694,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 10_000_000L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
     private static TokenCreateWrapper getFungibleToken2() {
@@ -707,67 +711,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 10_000_000L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L));
-    }
-
-    protected TokenCreateWrapper getFungibleTokenInvalidMemo(Address ownerAddress) {
-        var random = new Random();
-        var bytes = new byte[mirrorNodeEvmProperties.getMaxMemoUtf8Bytes() + 1];
-        random.nextBytes(bytes);
-
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
-                new String(bytes, StandardCharsets.UTF_8),
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
-    }
-
-    protected TokenCreateWrapper getFungibleTokenInvalidName(Address ownerAddress) {
-        var random = new Random();
-        var bytes = new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1];
-        random.nextBytes(bytes);
-
-        return new TokenCreateWrapper(
-                true,
-                new String(bytes, StandardCharsets.UTF_8),
-                "TST",
-                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
-    }
-
-    protected TokenCreateWrapper getFungibleTokenInvalidSymbol(Address ownerAddress) {
-        var random = new Random();
-        var bytes = new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1];
-        random.nextBytes(bytes);
-
-        return new TokenCreateWrapper(
-                true,
-                "Test",
-                new String(bytes, StandardCharsets.UTF_8),
-                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
-                "test",
-                true,
-                BigInteger.valueOf(10L),
-                BigInteger.valueOf(10L),
-                10_000_000L,
-                false,
-                List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 8_000_000L));
     }
 
     protected static TokenCreateWrapper getNonFungibleToken(Address ownerAddress) {
@@ -789,7 +734,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 false,
                 List.of(new TokenKeyWrapper(0b1111101, keyValue)),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
     protected static TokenCreateWrapper getNonFungibleTokenInfinite(Address ownerAddress) {
@@ -805,7 +751,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 false,
                 List.of(),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
     protected static TokenCreateWrapper getNonFungibleTokenNoTreasury(Address ownerAddress) {
@@ -823,7 +770,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 false,
                 List.of(new TokenKeyWrapper(0b1111111, keyValue)),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
     protected static TokenCreateWrapper getNonFungibleTokenFreezeDefaultNoKey(Address ownerAddress) {
@@ -845,7 +793,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 0L,
                 true,
                 List.of(new TokenKeyWrapper(0b0010000, keyValue)),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
     protected static TokenCreateWrapper getNonFungibleTokenInvalidAutoRenewPeriod(Address ownerAddress) {
@@ -893,7 +842,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         new TokenKeyWrapper(0b0010000, keyValue),
                         new TokenKeyWrapper(0b0100000, keyValue),
                         new TokenKeyWrapper(0b1000000, keyValue)),
-                new TokenExpiryWrapper(9_999L, EntityIdUtils.accountIdFromEvmAddress(autoRenewAccountAddress), 1800L));
+                new TokenExpiryWrapper(
+                        9_999L, EntityIdUtils.accountIdFromEvmAddress(autoRenewAccountAddress), 8_000_000L));
     }
 
     private static TokenCreateWrapper getFungibleTokenInheritKeys() {
@@ -910,7 +860,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 true,
                 List.of(new TokenKeyWrapper(
                         0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 8_000_000L));
     }
 
     private static TokenCreateWrapper getNftHbarTokenAndKeysHbarsTokenWrapper(
@@ -936,7 +887,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         new TokenKeyWrapper(0b0010000, keyValue),
                         new TokenKeyWrapper(0b0100000, keyValue),
                         new TokenKeyWrapper(0b1000000, keyValue)),
-                new TokenExpiryWrapper(9999L, EntityIdUtils.accountIdFromEvmAddress(autoRenewAccountAddress), 1800L));
+                new TokenExpiryWrapper(
+                        9999L, EntityIdUtils.accountIdFromEvmAddress(autoRenewAccountAddress), 8_000_000L));
     }
 
     private static TokenCreateWrapper getNonFungibleTokenInheritKeys() {
@@ -953,7 +905,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 true,
                 List.of(new TokenKeyWrapper(
                         0b1111111, new KeyValueWrapper(true, null, new byte[] {}, new byte[] {}, null))),
-                new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 10_000L));
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(OWNER_ADDRESS), 8_000_000L));
     }
 
     // Get Custom Fee Wrappers
@@ -970,7 +923,71 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     private static TokenExpiryWrapper getTokenExpiry() {
-        return new TokenExpiryWrapper(9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 10_000L);
+        return new TokenExpiryWrapper(
+                9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS), 8_000_000L);
+    }
+
+    protected TokenCreateWrapper getFungibleTokenInvalidMemo(Address ownerAddress) {
+        var random = new Random();
+        var bytes = new byte[mirrorNodeEvmProperties.getMaxMemoUtf8Bytes() + 1];
+        random.nextBytes(bytes);
+
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                new String(bytes, StandardCharsets.UTF_8),
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
+    }
+
+    protected TokenCreateWrapper getFungibleTokenInvalidName(Address ownerAddress) {
+        var random = new Random();
+        var bytes = new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1];
+        random.nextBytes(bytes);
+
+        return new TokenCreateWrapper(
+                true,
+                new String(bytes, StandardCharsets.UTF_8),
+                "TST",
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
+    }
+
+    protected TokenCreateWrapper getFungibleTokenInvalidSymbol(Address ownerAddress) {
+        var random = new Random();
+        var bytes = new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1];
+        random.nextBytes(bytes);
+
+        return new TokenCreateWrapper(
+                true,
+                "Test",
+                new String(bytes, StandardCharsets.UTF_8),
+                EntityIdUtils.accountIdFromEvmAddress(ownerAddress),
+                "test",
+                true,
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(10L),
+                10_000_000L,
+                false,
+                List.of(),
+                new TokenExpiryWrapper(
+                        9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
     protected CallServiceParameters serviceParametersForExecution(
@@ -1020,17 +1037,15 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     @SuppressWarnings("try")
     protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
-        long result;
-        try (ContractCallContext ctx = init()) {
+        return ContractCallContext.run(ctx -> {
             ctx.initializeStackFrames(store.getStackedStateFrames());
-            result = processor
+            long result = processor
                     .execute(serviceParameters, serviceParameters.getGas())
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
-        }
-
-        return result;
+            return result;
+        });
     }
 
     protected void persistEntities() {

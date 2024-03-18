@@ -38,8 +38,7 @@ public class ContextExtension implements InvocationInterceptor {
     public <T> T interceptTestFactoryMethod(
             Invocation<T> invocation,
             ReflectiveInvocationContext<Method> invocationContext,
-            ExtensionContext extensionContext)
-            throws Throwable {
+            ExtensionContext extensionContext) {
         return intercept(invocation, invocationContext);
     }
 
@@ -47,8 +46,7 @@ public class ContextExtension implements InvocationInterceptor {
     public void interceptTestMethod(
             Invocation<Void> invocation,
             ReflectiveInvocationContext<Method> invocationContext,
-            ExtensionContext extensionContext)
-            throws Throwable {
+            ExtensionContext extensionContext) {
         intercept(invocation, invocationContext);
     }
 
@@ -56,22 +54,22 @@ public class ContextExtension implements InvocationInterceptor {
     public void interceptTestTemplateMethod(
             Invocation<Void> invocation,
             ReflectiveInvocationContext<Method> invocationContext,
-            ExtensionContext extensionContext)
-            throws Throwable {
+            ExtensionContext extensionContext) {
         intercept(invocation, invocationContext);
     }
 
-    private <T> T intercept(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext)
-            throws Throwable {
-
+    private <T> T intercept(Invocation<T> invocation, ReflectiveInvocationContext<Method> invocationContext) {
         var stackedStateFrames =
                 getStackedStateFrames(invocationContext.getTarget().get());
 
-        try (var context = ContractCallContext.init()) {
-            context.initializeStackFrames(stackedStateFrames);
-            log.debug("Creating new context {}", context);
-            return invocation.proceed();
-        }
+        return ContractCallContext.run(context -> {
+            try {
+                context.initializeStackFrames(stackedStateFrames);
+                return invocation.proceed();
+            } catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     // If there's a Store field on the test use it to initialize the context

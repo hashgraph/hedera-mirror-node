@@ -30,6 +30,7 @@ import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
@@ -101,6 +102,27 @@ public class TokenFeature extends AbstractFeature {
         }
         var tokenInfo = mirrorClient.getTokenInfo(tokenAndResponse.tokenId().toString());
         log.debug("Get token info for token {}: {}", tokenName, tokenInfo);
+    }
+
+    @Given("I ensure token has the correct properties")
+    public void ensureTokenProperties() {
+        var tokensResponse = mirrorClient.getTokens(tokenId.toString()).getTokens();
+        assertThat(tokensResponse).isNotNull().hasSize(1);
+        var token = tokensResponse.get(0);
+        var tokenDecimals = token.getDecimals();
+        if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE.toString())) {
+            assertThat(tokenDecimals).isZero();
+        } else {
+            assertThat(tokenDecimals).isEqualTo(10L);
+        }
+        assertThat(token.getName()).isNotNull();
+        log.debug("Get tokens response for token {}: {}", tokenId, tokensResponse);
+
+        var balancesResponse = mirrorClient.getTokenBalances(tokenId.toString()).getBalances();
+        assertThat(balancesResponse).isNotNull().hasSize(1);
+        var balanceDecimals = balancesResponse.get(0).getDecimals();
+        assertThat(balanceDecimals).isEqualTo(tokenDecimals);
+        log.debug("Get token balances for token {}: {}", tokenId, balancesResponse);
     }
 
     @Given("I associate account {account} with token {token}")
@@ -479,6 +501,7 @@ public class TokenFeature extends AbstractFeature {
         assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
         assertThat(token.getFreezeStatus()).isEqualTo(FreezeStatusEnum.UNFROZEN);
         assertThat(token.getKycStatus()).isEqualTo(KycStatusEnum.REVOKED);
+        assertThat(token.getDecimals()).isNotNull();
     }
 
     @Then("the mirror node REST API should return the token relationship for nft")

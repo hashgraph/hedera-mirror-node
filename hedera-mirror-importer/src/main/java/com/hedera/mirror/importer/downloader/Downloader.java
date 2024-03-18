@@ -304,19 +304,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
 
             try {
                 nodeSignatureVerifier.verify(signatures);
-
-                var consensusCount = signatures.stream()
-                        .filter(s -> s.getStatus() == StreamFileSignature.SignatureStatus.CONSENSUS_REACHED)
-                        .count();
-
-                if (consensusCount == nodeIds.size()) {
-                    log.debug("Verified signature file {} reached consensus", sigFilename);
-                } else if (consensusCount > 0) {
-                    log.warn(
-                            "Verified signature file {} reached consensus but with some errors: {}",
-                            sigFilename,
-                            statusMap(signatures, nodeIds));
-                }
             } catch (SignatureVerificationException ex) {
                 var statusMapMessage = statusMap(signatures, nodeIds);
                 if (sigFilenameIter.hasNext()) {

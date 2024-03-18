@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-import fs from 'fs';
-import {getDatabases} from './globalSetup';
 import log4js from 'log4js';
+import {getContainerRuntimeClient} from 'testcontainers';
 
 export default async function () {
-  const tmpDir = process.env.MIGRATION_TMP_DIR;
-  if (tmpDir) {
-    fs.rmSync(tmpDir, {force: true, recursive: true});
-    console.log(`Removed temp directory ${tmpDir}`);
+  const client = await getContainerRuntimeClient();
+  while (true) {
+    const container = await client.container.fetchByLabel('tearDownProcessId', process.env.TEARDOWN_PROCESS_ID);
+    if (!container) {
+      break;
+    }
+
+    await client.container.stop(container);
+    await client.container.remove(container);
   }
-  await Promise.all(getDatabases().map((d) => d.stop()));
+
   log4js.shutdown();
 }
