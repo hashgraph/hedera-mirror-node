@@ -16,12 +16,14 @@
 
 package com.hedera.mirror.restjava.mapper;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.TimestampRange;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CommonMapperTest {
 
@@ -30,15 +32,15 @@ class CommonMapperTest {
     @Test
     void mapEntityId() {
         var entityId = com.hedera.mirror.common.domain.entity.EntityId.of("1.2.3");
-        assertThat(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null))
-                .isNull();
-        assertThat(commonMapper.mapEntityId(entityId)).isEqualTo(toEntityId(1L, 2L, 3L));
+        assertNull(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null));
+        assertThat(commonMapper.mapEntityId(entityId))
+                .isEqualTo(EntityId.of(1L, 2L, 3L).toString());
     }
 
     @Test
     void mapEntityIdLong() {
-        // assertNull(commonMapper.mapEntityId((Long) null));
-        assertThat(commonMapper.mapEntityId(0L)).isEqualTo(toEntityId(0L, 0L, 0L));
+        assertNull(commonMapper.mapEntityId((Long) null));
+        assertNull(commonMapper.mapEntityId(0L));
     }
 
     @Test
@@ -54,9 +56,5 @@ class CommonMapperTest {
         assertThat(commonMapper.mapRange(Range.openClosed(0L, now)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
-    }
-
-    private String toEntityId(Long shard, Long realm, Long num) {
-        return shard + "." + realm + "." + num;
     }
 }
