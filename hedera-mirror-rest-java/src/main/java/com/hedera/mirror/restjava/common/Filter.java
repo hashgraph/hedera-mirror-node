@@ -16,14 +16,12 @@
 
 package com.hedera.mirror.restjava.common;
 
-import com.hedera.mirror.restjava.exception.MismatchedTypeException;
+import org.jooq.Condition;
 import org.jooq.Field;
 
-public record Filter<T>(Field<?> field, RangeOperator operator, T value, Class<T> type) {
+public record Filter<T>(Field<T> field, RangeOperator operator, T value) {
 
-    public Filter {
-        if (field.getType() != type) {
-            throw new MismatchedTypeException(field.getType(), type);
-        }
+    public Condition getCondition() {
+        return operator.getFunction().apply(field, value);
     }
 }

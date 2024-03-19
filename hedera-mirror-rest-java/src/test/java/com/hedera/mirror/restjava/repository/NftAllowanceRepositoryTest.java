@@ -53,209 +53,6 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     private List<Long> spenders;
     private List<Long> tokenIds;
 
-    @Test
-    void findBySpenderAndFilterByOwnerGtAndTokenGt() {
-        var nftAllowance = domainBuilder.nftAllowance().persist();
-        domainBuilder.nftAllowance().persist();
-        domainBuilder.nftAllowance().persist();
-        Pageable pageable =
-                PageRequest.of(0, 1, Sort.by(Direction.ASC, "owner").and(Sort.by(Direction.ASC, "token_id")));
-
-        assertThat(nftAllowanceRepository.findBySpenderAndFilterByOwnerAndToken(
-                        nftAllowance.getSpender(),
-                        nftAllowance.getOwner() - 1,
-                        nftAllowance.getTokenId() - 1,
-                        pageable))
-                .containsExactly(nftAllowance);
-    }
-
-    @Test
-    void findBySpenderAndFilterByOwnerGtAndTokenGtTokenNotPresent() {
-        var nftAllowance = domainBuilder.nftAllowance().persist();
-        domainBuilder.nftAllowance().persist();
-        domainBuilder.nftAllowance().persist();
-        Pageable pageable =
-                PageRequest.of(0, 1, Sort.by(Direction.ASC, "owner").and(Sort.by(Direction.ASC, "token_id")));
-
-        assertThat(nftAllowanceRepository.findBySpenderAndFilterByOwnerAndToken(
-                        nftAllowance.getSpender(), nftAllowance.getOwner(), nftAllowance.getTokenId(), pageable))
-                .isEmpty();
-    }
-
-    @Test
-    void findByOwnerAndFilterBySpenderGtAndTokenGt() {
-        var nftAllowance = domainBuilder.nftAllowance().persist();
-        var nftAllowance1 = domainBuilder.nftAllowance().get();
-        nftAllowance1.setOwner(nftAllowance.getOwner());
-        nftAllowanceRepository.save(nftAllowance1);
-        domainBuilder.nftAllowance().persist();
-        domainBuilder.nftAllowance().persist();
-        Pageable pageable =
-                PageRequest.of(0, 2, Sort.by(Direction.ASC, "spender").and(Sort.by(Direction.ASC, "token_id")));
-
-        assertThat(nftAllowanceRepository.findByOwnerAndFilterBySpenderAndToken(
-                        nftAllowance.getOwner(),
-                        nftAllowance.getSpender() - 2,
-                        nftAllowance.getTokenId() - 2,
-                        pageable))
-                .containsExactlyInAnyOrder(nftAllowance, nftAllowance1);
-    }
-
-    @Test
-    void findByOwnerAndFilterBySpenderGtAndTokenGtOwnerNotPresent() {
-        var nftAllowance = domainBuilder.nftAllowance().persist();
-        domainBuilder.nftAllowance().persist();
-        Pageable pageable =
-                PageRequest.of(0, 1, Sort.by(Direction.ASC, "spender").and(Sort.by(Direction.ASC, "token_id")));
-
-        assertThat(nftAllowanceRepository.findByOwnerAndFilterBySpenderAndToken(
-                        nftAllowance.getOwner() + 1, nftAllowance.getSpender(), nftAllowance.getTokenId(), pageable))
-                .isEmpty();
-    }
-
-    @MethodSource("provideFindAllArguments")
-    @ParameterizedTest
-    void findAll(
-            boolean byOwner, List<IndexedFilter> indexedFilters, int limit, Direction order, List<Tuple> expected) {
-        // given
-        setupNftAllowances();
-        var filters = new ArrayList<Filter<?>>();
-        indexedFilters.stream().map(this::toFilter).forEach(filters::add);
-        var expectedNftAllowances = expected.stream().map(nftAllowances::get).toList();
-
-        // when, then
-        assertThat(nftAllowanceRepository.findAll(byOwner, filters, limit, order))
-                .containsExactlyElementsOf(expectedNftAllowances);
-    }
-
-    @Test
-    void findAllApprovedForAll() {
-        setupNftAllowances();
-        // given approved_for_all is true
-        var filters = List.<Filter<?>>of(
-                new Filter<>(NFT_ALLOWANCE.APPROVED_FOR_ALL, RangeOperator.EQ, true, Boolean.class),
-                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class));
-        var expected = Stream.of(new Tuple(0, 0, 0), new Tuple(0, 0, 2), new Tuple(0, 1, 1), new Tuple(0, 2, 0))
-                .map(nftAllowances::get)
-                .toList();
-
-        // when, then
-        assertThat(nftAllowanceRepository.findAll(true, filters, 4, Direction.ASC))
-                .containsExactlyElementsOf(expected);
-
-        // given approved_for_all is false
-        filters = List.of(
-                new Filter<>(NFT_ALLOWANCE.APPROVED_FOR_ALL, RangeOperator.EQ, false, Boolean.class),
-                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class));
-        expected = Stream.of(new Tuple(0, 0, 1), new Tuple(0, 1, 0), new Tuple(0, 1, 2), new Tuple(0, 2, 1))
-                .map(nftAllowances::get)
-                .toList();
-
-        // when, then
-        assertThat(nftAllowanceRepository.findAll(true, filters, 4, Direction.ASC))
-                .containsExactlyElementsOf(expected);
-    }
-
-    @Test
-    void findAllNoMatch() {
-        // given
-        setupNftAllowances();
-
-        // when, then
-        var filters =
-                List.<Filter<?>>of(new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(2) + 1, Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
-                .isEmpty();
-
-        // when, then
-        filters = List.of(
-                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
-                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.EQ, spenders.get(2) + 1, Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
-                .isEmpty();
-
-        // when, then
-        filters = List.of(
-                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
-                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.EQ, spenders.get(0), Long.class),
-                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.EQ, tokenIds.get(2) + 1, Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
-                .isEmpty();
-
-        // when, then
-        filters = List.of(
-                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
-                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.GT, spenders.get(2), Long.class),
-                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.GT, tokenIds.get(0), Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
-                .isEmpty();
-
-        // when, then
-        filters = List.of(
-                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0), Long.class),
-                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.LT, spenders.get(0), Long.class),
-                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.LT, tokenIds.get(2), Long.class));
-        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
-                .isEmpty();
-    }
-
-    @Test
-    void findAllThrowInvalidFilterException() {
-        var emptyFilters = Collections.<Filter<?>>emptyList();
-        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, emptyFilters, 10, Direction.ASC))
-                .isInstanceOf(InvalidFilterException.class);
-
-        var filters = List.<Filter<?>>of(
-                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, 1L, Long.class),
-                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.EQ, 3L, Long.class));
-        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
-                .isInstanceOf(InvalidFilterException.class);
-    }
-
-    private void setupNftAllowances() {
-        // Set up 3 (owners) x 3 (spenders) x 3 (tokens) NFT allowances
-        var entityIds =
-                IntStream.range(0, 9).mapToLong(x -> domainBuilder.id()).boxed().toList();
-        owners = entityIds.subList(0, 3);
-        spenders = entityIds.subList(3, 6);
-        tokenIds = entityIds.subList(6, 9);
-        nftAllowances = new HashMap<>();
-
-        for (int ownerIndex = 0; ownerIndex < owners.size(); ownerIndex++) {
-            long owner = owners.get(ownerIndex);
-            for (int spenderIndex = 0; spenderIndex < spenders.size(); spenderIndex++) {
-                long spender = spenders.get(spenderIndex);
-                for (int tokenIndex = 0; tokenIndex < tokenIds.size(); tokenIndex++) {
-                    long tokenId = tokenIds.get(tokenIndex);
-                    // true if sum of index is even, otherwise false
-                    boolean approvedForAll = (ownerIndex + spenderIndex + tokenIndex) % 2 == 0;
-                    var nftAllowance = domainBuilder
-                            .nftAllowance()
-                            .customize(n -> n.approvedForAll(approvedForAll)
-                                    .owner(owner)
-                                    .spender(spender)
-                                    .tokenId(tokenId))
-                            .persist();
-                    nftAllowances.put(new Tuple(ownerIndex, spenderIndex, tokenIndex), nftAllowance);
-                }
-            }
-        }
-    }
-
-    private Filter<?> toFilter(IndexedFilter indexedFilter) {
-        // All fields in the test have Long value type
-        Long value = null;
-        if (indexedFilter.field == NFT_ALLOWANCE.OWNER) {
-            value = owners.get(indexedFilter.index);
-        } else if (indexedFilter.field == NFT_ALLOWANCE.SPENDER) {
-            value = spenders.get(indexedFilter.index);
-        } else if (indexedFilter.field == NFT_ALLOWANCE.TOKEN_ID) {
-            value = tokenIds.get(indexedFilter.index);
-        }
-
-        return new Filter<>(indexedFilter.field, indexedFilter.operator, value, Long.class);
-    }
-
     private static Stream<Arguments> provideFindAllArguments() {
         return Stream.of(
                 // Only owner = ? filter, ASC
@@ -356,7 +153,181 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         List.of(new Tuple(1, 0, 1))));
     }
 
-    private record IndexedFilter(Field<?> field, int index, RangeOperator operator) {}
+    @Test
+    void findBySpenderAndFilterByOwnerGtAndTokenGt() {
+        var nftAllowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "owner").and(Sort.by(Direction.ASC, "token_id")));
+
+        assertThat(nftAllowanceRepository.findBySpenderAndFilterByOwnerAndToken(
+                        nftAllowance.getSpender(),
+                        nftAllowance.getOwner() - 1,
+                        nftAllowance.getTokenId() - 1,
+                        pageable))
+                .containsExactly(nftAllowance);
+    }
+
+    @Test
+    void findBySpenderAndFilterByOwnerGtAndTokenGtTokenNotPresent() {
+        var nftAllowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "owner").and(Sort.by(Direction.ASC, "token_id")));
+
+        assertThat(nftAllowanceRepository.findBySpenderAndFilterByOwnerAndToken(
+                        nftAllowance.getSpender(), nftAllowance.getOwner(), nftAllowance.getTokenId(), pageable))
+                .isEmpty();
+    }
+
+    @Test
+    void findByOwnerAndFilterBySpenderGtAndTokenGt() {
+        var nftAllowance = domainBuilder.nftAllowance().persist();
+        var nftAllowance1 = domainBuilder.nftAllowance().get();
+        nftAllowance1.setOwner(nftAllowance.getOwner());
+        nftAllowanceRepository.save(nftAllowance1);
+        domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        Pageable pageable =
+                PageRequest.of(0, 2, Sort.by(Direction.ASC, "spender").and(Sort.by(Direction.ASC, "token_id")));
+
+        assertThat(nftAllowanceRepository.findByOwnerAndFilterBySpenderAndToken(
+                        nftAllowance.getOwner(),
+                        nftAllowance.getSpender() - 2,
+                        nftAllowance.getTokenId() - 2,
+                        pageable))
+                .containsExactlyInAnyOrder(nftAllowance, nftAllowance1);
+    }
+
+    @Test
+    void findByOwnerAndFilterBySpenderGtAndTokenGtOwnerNotPresent() {
+        var nftAllowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.nftAllowance().persist();
+        Pageable pageable =
+                PageRequest.of(0, 1, Sort.by(Direction.ASC, "spender").and(Sort.by(Direction.ASC, "token_id")));
+
+        assertThat(nftAllowanceRepository.findByOwnerAndFilterBySpenderAndToken(
+                        nftAllowance.getOwner() + 1, nftAllowance.getSpender(), nftAllowance.getTokenId(), pageable))
+                .isEmpty();
+    }
+
+    @MethodSource("provideFindAllArguments")
+    @ParameterizedTest
+    void findAll(
+            boolean byOwner, List<IndexedFilter> indexedFilters, int limit, Direction order, List<Tuple> expected) {
+        // given
+        setupNftAllowances();
+        var filters = new ArrayList<Filter<?>>();
+        indexedFilters.stream().map(this::toFilter).forEach(filters::add);
+        var expectedNftAllowances = expected.stream().map(nftAllowances::get).toList();
+
+        // when, then
+        assertThat(nftAllowanceRepository.findAll(byOwner, filters, limit, order))
+                .containsExactlyElementsOf(expectedNftAllowances);
+    }
+
+    @Test
+    void findAllNoMatch() {
+        // given
+        setupNftAllowances();
+
+        // when, then
+        var filters = List.<Filter<?>>of(new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(2) + 1));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
+
+        // when, then
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0)),
+                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.EQ, spenders.get(2) + 1));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
+
+        // when, then
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0)),
+                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.EQ, spenders.get(0)),
+                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.EQ, tokenIds.get(2) + 1));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
+
+        // when, then
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0)),
+                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.GT, spenders.get(2)),
+                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.GT, tokenIds.get(0)));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
+
+        // when, then
+        filters = List.of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, owners.get(0)),
+                new Filter<>(NFT_ALLOWANCE.SPENDER, RangeOperator.LT, spenders.get(0)),
+                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.LT, tokenIds.get(2)));
+        assertThat(nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isEmpty();
+    }
+
+    @Test
+    void findAllThrowInvalidFilterException() {
+        var emptyFilters = Collections.<Filter<?>>emptyList();
+        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, emptyFilters, 10, Direction.ASC))
+                .isInstanceOf(InvalidFilterException.class);
+
+        var filters = List.<Filter<?>>of(
+                new Filter<>(NFT_ALLOWANCE.OWNER, RangeOperator.EQ, 1L),
+                new Filter<>(NFT_ALLOWANCE.TOKEN_ID, RangeOperator.EQ, 3L));
+        assertThatThrownBy(() -> nftAllowanceRepository.findAll(true, filters, 10, Direction.ASC))
+                .isInstanceOf(InvalidFilterException.class);
+    }
+
+    private void setupNftAllowances() {
+        // Set up 3 (owners) x 3 (spenders) x 3 (tokens) NFT allowances
+        var entityIds =
+                IntStream.range(0, 9).mapToLong(x -> domainBuilder.id()).boxed().toList();
+        owners = entityIds.subList(0, 3);
+        spenders = entityIds.subList(3, 6);
+        tokenIds = entityIds.subList(6, 9);
+        nftAllowances = new HashMap<>();
+
+        for (int ownerIndex = 0; ownerIndex < owners.size(); ownerIndex++) {
+            long owner = owners.get(ownerIndex);
+            for (int spenderIndex = 0; spenderIndex < spenders.size(); spenderIndex++) {
+                long spender = spenders.get(spenderIndex);
+                for (int tokenIndex = 0; tokenIndex < tokenIds.size(); tokenIndex++) {
+                    long tokenId = tokenIds.get(tokenIndex);
+                    // true if sum of index is even, otherwise false
+                    boolean approvedForAll = (ownerIndex + spenderIndex + tokenIndex) % 2 == 0;
+                    var nftAllowance = domainBuilder
+                            .nftAllowance()
+                            .customize(n -> n.approvedForAll(approvedForAll)
+                                    .owner(owner)
+                                    .spender(spender)
+                                    .tokenId(tokenId))
+                            .persist();
+                    nftAllowances.put(new Tuple(ownerIndex, spenderIndex, tokenIndex), nftAllowance);
+                }
+            }
+        }
+    }
+
+    private Filter<Long> toFilter(IndexedFilter indexedFilter) {
+        // All fields in the test have Long value type
+        Long value = null;
+        if (indexedFilter.field == NFT_ALLOWANCE.OWNER) {
+            value = owners.get(indexedFilter.index);
+        } else if (indexedFilter.field == NFT_ALLOWANCE.SPENDER) {
+            value = spenders.get(indexedFilter.index);
+        } else if (indexedFilter.field == NFT_ALLOWANCE.TOKEN_ID) {
+            value = tokenIds.get(indexedFilter.index);
+        }
+
+        return new Filter<>(indexedFilter.field, indexedFilter.operator, value);
+    }
+
+    private record IndexedFilter(Field<Long> field, int index, RangeOperator operator) {}
 
     private record Tuple(int ownerIndex, int spenderIndex, int tokenIndex) {}
 }

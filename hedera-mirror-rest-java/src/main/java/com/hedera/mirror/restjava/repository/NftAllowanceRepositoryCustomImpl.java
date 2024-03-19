@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava.repository;
 
 import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
+import static org.jooq.impl.DSL.noCondition;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.Filter;
@@ -30,7 +31,6 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Field;
 import org.jooq.SortField;
 import org.springframework.data.domain.Sort.Direction;
 
@@ -48,25 +48,23 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
     @NotNull
     @Override
+    @SuppressWarnings("unchecked")
     public Collection<NftAllowance> findAll(
             boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Direction order) {
-        Filter<?> approvedForAllFilter = null;
         Condition commonCondition = null;
         var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
-        Filter<?> primarySortFilter = null;
-        Filter<?> tokenFilter = null;
+        Filter<Long> primarySortFilter = null;
+        Filter<Long> tokenFilter = null;
 
         for (var filter : filters) {
             var field = filter.field();
-            if (field == NFT_ALLOWANCE.APPROVED_FOR_ALL) {
-                approvedForAllFilter = filter;
-            } else if (field == primaryField) {
-                commonCondition = makeCondition(filter);
+            if (field == primaryField) {
+                commonCondition = filter.getCondition();
             } else if (field == primarySortField) {
-                primarySortFilter = filter;
+                primarySortFilter = (Filter<Long>) filter;
             } else if (field == NFT_ALLOWANCE.TOKEN_ID) {
-                tokenFilter = filter;
+                tokenFilter = (Filter<Long>) filter;
             }
         }
 
@@ -79,13 +77,9 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
                     "Token filter exists without primary sort column (owner or spender) filter");
         }
 
-        if (approvedForAllFilter != null) {
-            commonCondition = commonCondition.and(makeCondition(approvedForAllFilter));
-        }
-
-        var baseCondition = getBaseCondition(commonCondition, primarySortFilter, tokenFilter);
-        var secondaryCondition = getSecondaryCondition(commonCondition, primarySortFilter, tokenFilter);
-        var condition = secondaryCondition != null ? baseCondition.or(secondaryCondition) : baseCondition;
+        var baseCondition = getBaseCondition(primarySortFilter, tokenFilter);
+        var secondaryCondition = getSecondaryCondition(primarySortFilter, tokenFilter);
+        var condition = commonCondition.and(baseCondition.or(secondaryCondition));
 
         return dslContext
                 .selectFrom(NFT_ALLOWANCE)
@@ -95,40 +89,39 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
                 .fetchInto(NftAllowance.class);
     }
 
-    private Condition getBaseCondition(Condition commonCondition, Filter<?> primarySortFilter, Filter<?> tokenFilter) {
+    private Condition getBaseCondition(Filter<Long> primarySortFilter, Filter<Long> tokenFilter) {
         if (primarySortFilter == null) {
-            return commonCondition;
+            return noCondition();
         }
 
         if (tokenFilter == null) {
-            return commonCondition.and(makeCondition(primarySortFilter));
+            return primarySortFilter.getCondition();
         }
 
         if (primarySortFilter.operator() == RangeOperator.EQ) {
-            return commonCondition.and(makeCondition(primarySortFilter)).and(makeCondition(tokenFilter));
+            return primarySortFilter.getCondition().and(tokenFilter.getCondition());
         }
 
         // Create a filter for the primary sort field with EQ operator
-        var value = (Long) primarySortFilter.value();
+        long value = primarySortFilter.value();
         if (primarySortFilter.operator() == RangeOperator.GT) {
             value += 1L;
         } else if (primarySortFilter.operator() == RangeOperator.LT) {
             value -= 1L;
         }
 
-        var filter = new Filter<>(primarySortFilter.field(), RangeOperator.EQ, value, Long.class);
-        return commonCondition.and(makeCondition(filter)).and(makeCondition(tokenFilter));
+        var filter = new Filter<>(primarySortFilter.field(), RangeOperator.EQ, value);
+        return filter.getCondition().and(tokenFilter.getCondition());
     }
 
-    private Condition getSecondaryCondition(
-            Condition commonCondition, Filter<?> primarySortFilter, Filter<?> tokenFilter) {
+    private Condition getSecondaryCondition(Filter<Long> primarySortFilter, Filter<Long> tokenFilter) {
         // No secondary condition if there is no token filter, or the primary sort filter's operator is EQ. Note that
         // it's guaranteed that there must be a primary sort filter when token filter exists
         if (tokenFilter == null || primarySortFilter.operator() == RangeOperator.EQ) {
-            return null;
+            return noCondition();
         }
 
-        var value = (Long) primarySortFilter.value();
+        long value = primarySortFilter.value();
         var operator = primarySortFilter.operator();
         if (operator == RangeOperator.GT || operator == RangeOperator.GTE) {
             value += 1L;
@@ -136,22 +129,8 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
             value -= 1L;
         }
 
-        var filter = new Filter<>(primarySortFilter.field(), operator, value, Long.class);
-        return commonCondition.and(makeCondition(filter));
-    }
-
-    @SuppressWarnings({"java:S1905", "rawtypes", "unchecked"})
-    private static Condition makeCondition(Filter<?> filter) {
-        var field = (Field) filter.field();
-        var value = filter.value();
-        return switch (filter.operator()) {
-            case EQ -> field.eq(value);
-            case GT -> field.gt(value);
-            case GTE -> field.ge(value);
-            case LT -> field.lt(value);
-            case LTE -> field.le(value);
-            case NE -> field.ne(value);
-        };
+        var filter = new Filter<>(primarySortFilter.field(), operator, value);
+        return filter.getCondition();
     }
 
     private record OrderSpec(boolean byOwner, Direction direction) {}
