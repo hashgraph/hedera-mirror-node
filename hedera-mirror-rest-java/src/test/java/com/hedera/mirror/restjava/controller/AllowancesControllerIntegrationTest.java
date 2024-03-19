@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = RestJavaApplication.class)
 public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
 
-    private static final String CALL_URI = "http://localhost:8084/api/v1/accounts/{id}/allowances/nfts";
+    private static final String CALL_URI = "http://localhost:8094/api/v1/accounts/{id}/allowances/nfts";
 
     @Resource
     private DomainBuilder domainBuilder;
