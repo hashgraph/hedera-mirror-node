@@ -47,7 +47,7 @@ import org.springframework.web.client.RestClient;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
 
-    private static final String CALL_URI = "http://localhost:8084/api/v1/accounts/{id}/allowances/nfts";
+    private static final String CALL_URI = "http://localhost:8094/api/v1/accounts/{id}/allowances/nfts";
 
     @Resource
     private DomainBuilder domainBuilder;
