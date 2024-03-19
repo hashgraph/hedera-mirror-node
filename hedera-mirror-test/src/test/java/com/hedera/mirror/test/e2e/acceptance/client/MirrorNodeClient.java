@@ -48,6 +48,7 @@ import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorActionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
 import java.util.ArrayList;
@@ -212,6 +213,11 @@ public class MirrorNodeClient {
     public ContractResult getContractResultByTransactionId(String transactionId) {
         log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
         return callRestEndpoint("/contracts/results/{transactionId}", ContractResult.class, transactionId);
+    }
+
+    public MirrorActionsResponse getContractActions(String transactionId) {
+        log.debug("Verify contract actions '{}' is returned by Mirror Node", transactionId);
+        return callRestEndpoint("/contracts/results/{contractId}/actions", MirrorActionsResponse.class, transactionId);
     }
 
     public NetworkExchangeRateSetResponse getExchangeRates() {

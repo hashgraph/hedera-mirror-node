@@ -37,6 +37,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.response.GeneralContractExecutionResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
@@ -191,8 +192,18 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
             final SelectorInterface method,
             final String data,
             final TupleType returnTupleType) {
-        return ContractCallResponseWrapper.of(networkAdapter.contractsCall(
-                node, false, from, getContract(contractResource), method, data, returnTupleType));
+        return networkAdapter.contractsCall(
+                node, false, from, getContract(contractResource), method, data, returnTupleType);
+    }
+
+    protected GeneralContractExecutionResponse callContract(
+            final NodeNameEnum node,
+            final String from,
+            final ContractResource contractResource,
+            final String method,
+            final byte[] data,
+            final Hbar amount) {
+        return networkAdapter.contractsCall(node, false, from, getContract(contractResource), method, data, amount);
     }
 
     protected ContractCallResponseWrapper estimateContract(String data, String contractAddress) {
