@@ -51,7 +51,7 @@ public class TestUtil {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final SecureRandom RANDOM = new SecureRandom();
     public static String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-    Pattern extractTransactionIdPattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
+    private static final Pattern extractTransactionIdPattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
 
     public static String getAliasFromPublicKey(@NonNull PublicKey key) {
         if (key.isECDSA()) {
