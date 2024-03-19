@@ -16,23 +16,14 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static com.hedera.mirror.restjava.common.Constants.LIMIT;
-import static com.hedera.mirror.restjava.common.Constants.ORDER;
-import static com.hedera.mirror.restjava.common.Constants.OWNER;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
+import com.hedera.mirror.restjava.RestJavaApplication;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import jakarta.annotation.Resource;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -43,8 +34,19 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import static com.hedera.mirror.restjava.common.Constants.LIMIT;
+import static com.hedera.mirror.restjava.common.Constants.ORDER;
+import static com.hedera.mirror.restjava.common.Constants.OWNER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = RestJavaApplication.class)
 public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
 
     private static final String CALL_URI = "http://localhost:8084/api/v1/accounts/{id}/allowances/nfts";

@@ -16,19 +16,6 @@
 
 package com.hedera.mirror.restjava.common;
 
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.CustomLog;
-import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.domain.Sort;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.regex.Pattern;
-
 import static com.hedera.mirror.restjava.common.Constants.ENCODED_ENTITY_ID_REGEX;
 import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_REGEX;
 import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_REGEX;
@@ -40,6 +27,18 @@ import static com.hedera.mirror.restjava.common.Constants.MAX_SHARD;
 import static com.hedera.mirror.restjava.common.Constants.NUM_BITS;
 import static com.hedera.mirror.restjava.common.Constants.REALM_BITS;
 import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
+
+import com.hedera.mirror.restjava.exception.InvalidParametersException;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Pattern;
+import lombok.CustomLog;
+import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Sort;
 
 @CustomLog
 @UtilityClass
@@ -182,9 +181,10 @@ public class Utils {
         for (Map.Entry<String, String> lastValue : lastValues.entrySet()) {
             boolean inclusive = includedMap.get(lastValue.getKey());
             var pattern = OPERATOR_PATTERNS.get(order);
-            var newPattern = order.equals("asc") ? RangeOperator.GT.name() : RangeOperator.LT;
-            var insertValue =
-                    inclusive ? pattern + ":" + lastValue.getValue() : newPattern + ":" + lastValue.getValue();
+            var newPattern = order.equals("asc") ? RangeOperator.GT : RangeOperator.LT;
+            var insertValue = inclusive
+                    ? pattern.toString() + ":" + lastValue.getValue()
+                    : newPattern + ":" + lastValue.getValue();
             next.append("&").append(lastValue.getKey()).append("=").append(insertValue.toLowerCase());
         }
         return next.toString();

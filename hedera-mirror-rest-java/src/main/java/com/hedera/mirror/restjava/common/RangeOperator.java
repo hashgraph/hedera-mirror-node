@@ -30,4 +30,9 @@ public enum RangeOperator {
     NE("!=");
 
     private final String operator;
+
+    @Override
+    public String toString() {
+        return name().toLowerCase();
+    }
 }
