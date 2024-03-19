@@ -28,6 +28,15 @@ contract Caller {
 }
 
 contract MockContract {
+    uint public counter;
+
+    function incrementCounter() public {
+        counter += 1;
+        if (counter>10){
+            revert("Forced revert");
+        }
+    }
+
     function getAddress() public view returns (address) {
         return address(this);
     }
@@ -35,13 +44,34 @@ contract MockContract {
     function destroy() public {
         selfdestruct(payable(msg.sender));
     }
+
+    receive() external payable {}
+}
+
+contract DeployDummyContract{
+    DummyContract dummyContract;
+    constructor(bool flag) payable {
+        dummyContract = new DummyContract(flag);
+    }
+}
+
+contract DummyContract {
+    constructor(bool shouldFail) payable {
+        if (shouldFail) {
+            revert("DummyContract deployment failed intentionally.");
+        }
+    }
 }
 
 contract EstimateGasContract is Caller {
     uint256 public salt = 1;
     uint256 public salt2 = 2;
     uint256 public counter = 1;
+    uint256 public transferType = 1; // 1-transfer, 2-send, 3-call
     MockContract mockContract;
+    DeployDummyContract deployDummyContract;
+    address[] public deployedMockContracts;
+
 
     constructor() payable {
         mockContract = new MockContract();
@@ -50,6 +80,30 @@ contract EstimateGasContract is Caller {
     function updateCounter(uint256 _counter) public returns (uint256) {
         counter = _counter;
         return counter;
+    }
+
+    function incrementCounter() public returns (address)  {
+        counter += 1;
+        return address(this);
+    }
+
+    function updateType(uint256 _type) public returns (uint256) {
+        transferType = _type;
+        return transferType;
+    }
+
+    function deployAndCallMockContract(uint _numCalls) public {
+        MockContract newB = new MockContract();
+        deployedMockContracts.push(address(newB));
+
+        for (uint i = 0; i < _numCalls; i++) {
+            newB.incrementCounter();
+        }
+    }
+
+    function createDummyContract() public returns (address) {
+        DeployDummyContract newContract = new DeployDummyContract(true);
+        return address(newContract);
     }
 
     function getCounter() public view returns (uint256) {
@@ -70,6 +124,19 @@ contract EstimateGasContract is Caller {
         MockContract newContract = new MockContract{salt: bytes32(counter)}();
 
         return address(newContract);
+    }
+
+    function createClone() public returns (address result) {
+        bytes20 targetBytes = bytes20(address(this)); // This contract's address
+        // EIP-1167 bytecode for creating a clone
+        assembly {
+            let clone := mload(0x40)
+            mstore(clone, 0x3d80600a3d3981f3) // EIP-1167 bytecode start
+            mstore(add(clone, 0x14), targetBytes) // Address of the master contract
+            mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf3) // EIP-1167 bytecode end
+            result := create(0, clone, 0x37) // Deploying a new proxy contract
+        }
+        require(result != address(0), "Clone creation failed");
     }
 
     function staticCallToContract(address _address, bytes4 _sig) public view returns (address) {
@@ -235,13 +302,9 @@ contract EstimateGasContract is Caller {
         return (address(newContract1), address(newContract2));
     }
 
-    function deployDestroyAndRedeploy() public returns (address) {
+    function deployDestroy() public  {
         MockContract newContract = new MockContract{salt: bytes32(salt)}();
         newContract.destroy();
-
-        MockContract redeployedContract = new MockContract{salt: bytes32(salt)}();
-
-        return address(redeployedContract);
     }
 
     function reentrancyCallWithGas(address _to, uint256 _amount) external returns (uint256, uint256)  {
@@ -252,7 +315,43 @@ contract EstimateGasContract is Caller {
         return (balanceBefore, balanceAfter);
     }
 
+    function recurse(uint256 depth) external {
+
+        // Each call takes at least 3 slots in the stack
+        uint256 placeHolder1 = 1;
+        uint256 placeHolder2 = 2;
+        uint256 placeHolder3 = 3;
+
+        if(depth > 0) {
+            this.recurse(depth - 1);
+        }
+    }
+
+    event TransferSuccess(bool success);
+
     receive() external payable {}
+
+    fallback() external payable {
+        require(address(mockContract) != address(0), "MockContract address not set");
+
+        address payable mockContractAddress = payable(address(mockContract)); // Cast to payable address
+
+        if (transferType == 1) {
+            // Using transfer
+            mockContractAddress.transfer(msg.value);
+        } else if (transferType == 2) {
+            // Using send
+            bool sent = mockContractAddress.send(msg.value);
+            require(sent, "Failed to send Ether via send");
+        } else if (transferType == 3) {
+            // Using call
+            (bool success, ) = mockContractAddress.call{value: msg.value, gas: 2300}("");
+            require(success, "Failed to send Ether via call");
+        } else {
+            revert("Invalid transfer type");
+        }
+    }
+
 }
 
 contract ReentrancyHelper {

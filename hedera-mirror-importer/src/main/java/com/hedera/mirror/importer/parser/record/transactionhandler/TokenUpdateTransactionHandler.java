@@ -107,6 +107,14 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
             token.setKycKey(transactionBody.getKycKey().toByteArray());
         }
 
+        if (transactionBody.hasMetadata()) {
+            token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata().getValue()));
+        }
+
+        if (transactionBody.hasMetadataKey()) {
+            token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
+        }
+
         if (!transactionBody.getName().isEmpty()) {
             token.setName(transactionBody.getName());
         }

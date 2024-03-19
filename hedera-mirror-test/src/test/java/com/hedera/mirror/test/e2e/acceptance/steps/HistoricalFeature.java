@@ -66,6 +66,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnu
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.Order;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -843,7 +844,12 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     }
 
     private String getLastBlockNumber() {
-        return mirrorClient.getBlocks().getBlocks().getFirst().getNumber().toString();
+        return mirrorClient
+                .getBlocks(Order.DESC, 1)
+                .getBlocks()
+                .getFirst()
+                .getNumber()
+                .toString();
     }
 
     private void waitForNextBlock() {

@@ -126,6 +126,11 @@ public abstract class ImporterIntegrationTest extends CommonIntegrationTest {
         return findHistory(historyClass, ids, null);
     }
 
+    protected <T> Collection<T> findHistory(String table, Class<T> historyClass) {
+        var ids = DEFAULT_DOMAIN_CLASS_IDS.computeIfAbsent(historyClass, this::getDefaultIdColumns);
+        return findHistory(historyClass, ids, table);
+    }
+
     protected <T> Collection<T> findHistory(Class<T> historyClass, String ids, String table) {
         if (StringUtils.isEmpty(table)) {
             table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, historyClass.getSimpleName());
