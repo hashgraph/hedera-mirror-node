@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -96,17 +97,17 @@ class TokenRelationshipTest {
                 0L,
                 accountId,
                 defaultLongValue,
-                defaultLongValue,
+                Suppliers.ofInstance(defaultLongValue),
                 false,
-                defaultLongValue,
+                Suppliers.ofInstance(defaultLongValue),
                 defaultLongValue,
                 Id.DEFAULT,
                 defaultIntValue,
                 null,
                 null,
                 null,
-                3,
-                defaultIntValue,
+                Suppliers.ofInstance(3),
+                Suppliers.ofInstance(defaultIntValue),
                 defaultIntValue,
                 0L,
                 false,
@@ -144,13 +145,13 @@ class TokenRelationshipTest {
     @Test
     void toStringAsExpected() {
         // given:
-        final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321,"
-                + " expiry=0, balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0,"
-                + " alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3,"
-                + " numPositiveBalances=0}, token=Token{id=0.0.1234, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=null,"
-                + " autoRenewAccount=null, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, currentSerialNumber=0,"
-                + " pauseKey=null, paused=false}, balance=1234, balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=true}";
-
+        final var desired =
+                "TokenRelationship{notYetPersisted=true, account=Account{entityId=0, id=1.0.4321, alias=, address=0x00000000000000000000000000000000000010e1, expiry=0, balance=0, deleted=false, ownedNfts=0, "
+                        + "autoRenewSecs=0, proxy=0.0.0, accountAddress=0x00000000000000000000000000000000000010e1, autoAssociationMetadata=0, cryptoAllowances=null, "
+                        + "fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3, numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, "
+                        + "isSmartContract=false, key=null, createdTimestamp=0}, token=Token{id=0.0.1234, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=null,"
+                        + " autoRenewAccount=null, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, currentSerialNumber=0,"
+                        + " pauseKey=null, paused=false}, balance=1234, balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=true}";
         // expect:
         assertEquals(desired, subject.toString());
     }

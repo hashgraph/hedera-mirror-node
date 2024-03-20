@@ -19,7 +19,10 @@ package com.hedera.services.store.models;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -45,17 +48,17 @@ class AccountTest {
                 0L,
                 subjectId,
                 defaultLongValue,
-                defaultLongValue,
+                Suppliers.ofInstance(defaultLongValue),
                 false,
-                ownedNfts,
+                Suppliers.ofInstance(ownedNfts),
                 defaultLongValue,
                 Id.DEFAULT,
                 alreadyUsedAutoAssociations,
                 null,
                 null,
                 null,
-                numAssociations,
-                numPositiveBalances,
+                Suppliers.ofInstance(numAssociations),
+                Suppliers.ofInstance(numPositiveBalances),
                 numTreasuryTitles,
                 0L,
                 false,
@@ -75,9 +78,9 @@ class AccountTest {
         assertEquals(ownedNfts, subject.getOwnedNfts());
         assertEquals(Id.DEFAULT, subject.getProxy());
         assertEquals(subjectId.asEvmAddress(), subject.getAccountAddress());
-        assertNull(subject.getCryptoAllowances());
-        assertNull(subject.getFungibleTokenAllowances());
-        assertNull(subject.getApproveForAllNfts());
+        assertEquals(subject.getCryptoAllowances(), new TreeMap<>());
+        assertEquals(subject.getFungibleTokenAllowances(), new TreeMap<>());
+        assertEquals(subject.getApproveForAllNfts(), new TreeSet<>());
         assertEquals(numTreasuryTitles, subject.getNumTreasuryTitles());
     }
 
@@ -118,10 +121,29 @@ class AccountTest {
 
     @Test
     void toStringAsExpected() {
-        final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, ownedNfts=5,"
-                + " alreadyUsedAutoAssociations=0, maxAutoAssociations=123, alias=,"
-                + " cryptoAllowances=null, fungibleTokenAllowances=null,"
-                + " approveForAllNfts=null, numAssociations=3, numPositiveBalances=2}";
+        final var desired = "Account{" + "entityId=0"
+                + ", id=0.0.12345"
+                + ", alias="
+                + ", address="
+                + subjectId.asEvmAddress() + ", expiry=0"
+                + ", balance=0"
+                + ", deleted=false"
+                + ", ownedNfts=5"
+                + ", autoRenewSecs=0"
+                + ", proxy=0.0.0"
+                + ", accountAddress="
+                + subjectId.asEvmAddress() + ", autoAssociationMetadata=123"
+                + ", cryptoAllowances=null"
+                + ", fungibleTokenAllowances=null"
+                + ", approveForAllNfts=null"
+                + ", numAssociations=3"
+                + ", numPositiveBalances=2"
+                + ", numTreasuryTitles=0"
+                + ", ethereumNonce=0"
+                + ", isSmartContract=false"
+                + ", key=null"
+                + ", createdTimestamp=0"
+                + "}";
 
         // expect:
         assertEquals(desired, subject.toString());

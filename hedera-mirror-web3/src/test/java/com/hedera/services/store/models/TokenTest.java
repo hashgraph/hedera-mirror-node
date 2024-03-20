@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -58,17 +59,17 @@ class TokenTest {
             0L,
             treasuryId,
             defaultLongValue,
-            defaultLongValue,
+            Suppliers.ofInstance(defaultLongValue),
             false,
-            defaultLongValue,
+            Suppliers.ofInstance(defaultLongValue),
             defaultLongValue,
             Id.DEFAULT,
             defaultIntValue,
             null,
             null,
             null,
-            numAssociations,
-            numPositiveBalances,
+            Suppliers.ofInstance(numAssociations),
+            Suppliers.ofInstance(numPositiveBalances),
             defaultIntValue,
             0L,
             false,
@@ -79,17 +80,17 @@ class TokenTest {
             0L,
             nonTreasuryId,
             defaultLongValue,
-            defaultLongValue,
+            Suppliers.ofInstance(defaultLongValue),
             false,
-            defaultLongValue,
+            Suppliers.ofInstance(defaultLongValue),
             defaultLongValue,
             Id.DEFAULT,
             defaultIntValue,
             null,
             null,
             null,
-            numAssociations,
-            numPositiveBalances,
+            Suppliers.ofInstance(numAssociations),
+            Suppliers.ofInstance(numPositiveBalances),
             defaultIntValue,
             0L,
             false,
@@ -657,9 +658,10 @@ class TokenTest {
     @Test
     void toStringWorks() {
         final var desired = "Token{id=1.2.3, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, "
-                + "treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, ownedNfts=0,"
-                + " alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances=null, "
-                + "fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=2, numPositiveBalances=1},"
+                + "treasury=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, deleted=false, ownedNfts=0, "
+                + "autoRenewSecs=0, proxy=0.0.0, accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances=null, "
+                + "fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=2, numPositiveBalances=1, numTreasuryTitles=0, ethereumNonce=0, "
+                + "isSmartContract=false, key=null, createdTimestamp=0},"
                 + " autoRenewAccount=null, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, currentSerialNumber=0,"
                 + " pauseKey=null, paused=false}";
 

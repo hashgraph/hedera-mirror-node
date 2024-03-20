@@ -23,6 +23,7 @@ import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -109,17 +110,17 @@ public abstract class AbstractAutoCreationLogic {
                 0L,
                 Id.fromGrpcAccount(newId),
                 0L,
-                0L,
+                Suppliers.memoize(() -> 0L),
                 false,
-                0L,
+                Suppliers.memoize(() -> 0L),
                 0L,
                 null,
                 0,
-                Collections.emptySortedMap(),
-                Collections.emptySortedMap(),
-                Collections.emptySortedSet(),
-                0,
-                0,
+                Suppliers.memoize(() -> Collections.emptySortedMap()),
+                Suppliers.memoize(() -> Collections.emptySortedMap()),
+                Suppliers.memoize(() -> Collections.emptySortedSet()),
+                Suppliers.memoize(() -> 0),
+                Suppliers.memoize(() -> 0),
                 0,
                 0L,
                 false,

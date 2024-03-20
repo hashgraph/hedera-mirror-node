@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -127,17 +128,17 @@ public class HederaEvmStackedWorldStateUpdater
                         ? Id.fromGrpcAccount(accountIdFromEvmAddress(resolvedAddress))
                         : Id.fromGrpcAccount(accountIdFromEvmAddress(address)),
                 0L,
-                balance.toLong(),
+                Suppliers.memoize(() -> balance.toLong()),
                 false,
-                0L,
+                Suppliers.memoize(() -> 0L),
                 0L,
                 null,
                 0,
-                Collections.emptySortedMap(),
-                Collections.emptySortedMap(),
-                Collections.emptySortedSet(),
-                0,
-                0,
+                Suppliers.memoize(() -> Collections.emptySortedMap()),
+                Suppliers.memoize(() -> Collections.emptySortedMap()),
+                Suppliers.memoize(() -> Collections.emptySortedSet()),
+                Suppliers.memoize(() -> 0),
+                Suppliers.memoize(() -> 0),
                 0,
                 nonce,
                 false,

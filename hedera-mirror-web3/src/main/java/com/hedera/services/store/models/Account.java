@@ -22,7 +22,7 @@ import static com.hedera.services.utils.BitPackUtils.getMaxAutomaticAssociations
 import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
 
-import com.google.common.base.MoreObjects;
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.jproto.JKey;
@@ -33,6 +33,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import lombok.Getter;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -58,11 +59,11 @@ public class Account extends HederaEvmAccount {
 
     private final long expiry;
 
-    private final long balance;
+    private final Supplier<Long> balance;
 
     private final boolean deleted;
 
-    private final long ownedNfts;
+    private final Supplier<Long> ownedNfts;
 
     private final long autoRenewSecs;
 
@@ -72,15 +73,15 @@ public class Account extends HederaEvmAccount {
 
     private final int autoAssociationMetadata;
 
-    private final SortedMap<EntityNum, Long> cryptoAllowances;
+    private final Supplier<SortedMap<EntityNum, Long>> cryptoAllowances;
 
-    private final SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances;
+    private final Supplier<SortedMap<FcTokenAllowanceId, Long>> fungibleTokenAllowances;
 
-    private final SortedSet<FcTokenAllowanceId> approveForAllNfts;
+    private final Supplier<SortedSet<FcTokenAllowanceId>> approveForAllNfts;
 
-    private final int numAssociations;
+    private final Supplier<Integer> numAssociations;
 
-    private final int numPositiveBalances;
+    private final Supplier<Integer> numPositiveBalances;
 
     private final int numTreasuryTitles;
 
@@ -98,17 +99,17 @@ public class Account extends HederaEvmAccount {
             Long entityId,
             Id id,
             long expiry,
-            long balance,
+            Supplier<Long> balance,
             boolean deleted,
-            long ownedNfts,
+            Supplier<Long> ownedNfts,
             long autoRenewSecs,
             Id proxy,
             int autoAssociationMetadata,
-            SortedMap<EntityNum, Long> cryptoAllowances,
-            SortedMap<FcTokenAllowanceId, Long> fungibleTokenAllowances,
-            SortedSet<FcTokenAllowanceId> approveForAllNfts,
-            int numAssociations,
-            int numPositiveBalances,
+            Supplier<SortedMap<EntityNum, Long>> cryptoAllowances,
+            Supplier<SortedMap<FcTokenAllowanceId, Long>> fungibleTokenAllowances,
+            Supplier<SortedSet<FcTokenAllowanceId>> approveForAllNfts,
+            Supplier<Integer> numAssociations,
+            Supplier<Integer> numPositiveBalances,
             int numTreasuryTitles,
             long ethereumNonce,
             boolean isSmartContract,
@@ -148,17 +149,17 @@ public class Account extends HederaEvmAccount {
                 entityId,
                 id,
                 0L,
-                balance,
+                Suppliers.memoize(() -> balance),
                 false,
-                0L,
+                Suppliers.memoize(() -> 0L),
                 0L,
                 null,
                 0,
-                new TreeMap<>(),
-                new TreeMap<>(),
-                new TreeSet<>(),
-                0,
-                0,
+                Suppliers.memoize(() -> new TreeMap<>()),
+                Suppliers.memoize(() -> new TreeMap<>()),
+                Suppliers.memoize(() -> new TreeSet<>()),
+                Suppliers.memoize(() -> 0),
+                Suppliers.memoize(() -> 0),
                 0,
                 0L,
                 false,
@@ -176,17 +177,17 @@ public class Account extends HederaEvmAccount {
                 entityId,
                 id,
                 0L,
-                balance,
+                Suppliers.memoize(() -> balance),
                 false,
-                0L,
+                Suppliers.memoize(() -> 0L),
                 0L,
                 null,
                 0,
-                new TreeMap<>(),
-                new TreeMap<>(),
-                new TreeSet<>(),
-                0,
-                0,
+                Suppliers.memoize(() -> new TreeMap<>()),
+                Suppliers.memoize(() -> new TreeMap<>()),
+                Suppliers.memoize(() -> new TreeSet<>()),
+                Suppliers.memoize(() -> 0),
+                Suppliers.memoize(() -> 0),
                 0,
                 0L,
                 false,
@@ -223,7 +224,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.expiry,
                 oldAccount.balance,
                 oldAccount.deleted,
-                ownedNfts,
+                Suppliers.memoize(() -> ownedNfts),
                 oldAccount.autoRenewSecs,
                 oldAccount.proxy,
                 oldAccount.autoAssociationMetadata,
@@ -262,7 +263,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.cryptoAllowances,
                 oldAccount.fungibleTokenAllowances,
                 oldAccount.approveForAllNfts,
-                numAssociations,
+                Suppliers.memoize(() -> numAssociations),
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
@@ -295,7 +296,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.fungibleTokenAllowances,
                 oldAccount.approveForAllNfts,
                 oldAccount.numAssociations,
-                newNumPositiveBalances,
+                Suppliers.memoize(() -> newNumPositiveBalances),
                 oldAccount.numTreasuryTitles,
                 oldAccount.ethereumNonce,
                 oldAccount.isSmartContract,
@@ -414,7 +415,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.entityId,
                 oldAccount.id,
                 oldAccount.expiry,
-                newBalance,
+                Suppliers.memoize(() -> newBalance),
                 oldAccount.deleted,
                 oldAccount.ownedNfts,
                 oldAccount.autoRenewSecs,
@@ -453,7 +454,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.autoRenewSecs,
                 oldAccount.proxy,
                 oldAccount.autoAssociationMetadata,
-                cryptoAllowances,
+                Suppliers.memoize(() -> cryptoAllowances),
                 oldAccount.fungibleTokenAllowances,
                 oldAccount.approveForAllNfts,
                 oldAccount.numAssociations,
@@ -487,7 +488,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.proxy,
                 oldAccount.autoAssociationMetadata,
                 oldAccount.cryptoAllowances,
-                fungibleTokenAllowances,
+                Suppliers.memoize(() -> fungibleTokenAllowances),
                 oldAccount.approveForAllNfts,
                 oldAccount.numAssociations,
                 oldAccount.numPositiveBalances,
@@ -521,7 +522,7 @@ public class Account extends HederaEvmAccount {
                 oldAccount.autoAssociationMetadata,
                 oldAccount.cryptoAllowances,
                 oldAccount.fungibleTokenAllowances,
-                newApproveForAllNfts,
+                Suppliers.memoize(() -> newApproveForAllNfts),
                 oldAccount.numAssociations,
                 oldAccount.numPositiveBalances,
                 oldAccount.numTreasuryTitles,
@@ -667,31 +668,60 @@ public class Account extends HederaEvmAccount {
         return setAlreadyUsedAutomaticAssociations(--count);
     }
 
+    public Long getBalance() {
+        return balance != null ? balance.get() : 0L;
+    }
+
+    public Long getOwnedNfts() {
+        return ownedNfts != null ? ownedNfts.get() : 0L;
+    }
+
+    public SortedMap<EntityNum, Long> getCryptoAllowances() {
+        return cryptoAllowances != null ? cryptoAllowances.get() : new TreeMap<>();
+    }
+
+    public SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
+        return fungibleTokenAllowances != null ? fungibleTokenAllowances.get() : new TreeMap<>();
+    }
+
+    public SortedSet<FcTokenAllowanceId> getApproveForAllNfts() {
+        return approveForAllNfts != null ? approveForAllNfts.get() : new TreeSet<>();
+    }
+
+    public Integer getNumAssociations() {
+        return numAssociations != null ? numAssociations.get() : 0;
+    }
+
+    public Integer getNumPositiveBalances() {
+        return numPositiveBalances != null ? numPositiveBalances.get() : 0;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
         Account account = (Account) o;
         return expiry == account.expiry
-                && balance == account.balance
                 && deleted == account.deleted
-                && ownedNfts == account.ownedNfts
                 && autoRenewSecs == account.autoRenewSecs
                 && autoAssociationMetadata == account.autoAssociationMetadata
-                && numAssociations == account.numAssociations
-                && numPositiveBalances == account.numPositiveBalances
                 && numTreasuryTitles == account.numTreasuryTitles
                 && ethereumNonce == account.ethereumNonce
                 && isSmartContract == account.isSmartContract
                 && createdTimestamp == account.createdTimestamp
+                && Objects.equals(alias, account.alias)
+                && Objects.equals(address, account.address)
                 && Objects.equals(entityId, account.entityId)
                 && Objects.equals(id, account.id)
+                && Objects.equals(balance.get(), account.balance.get())
+                && Objects.equals(ownedNfts.get(), account.ownedNfts.get())
                 && Objects.equals(proxy, account.proxy)
                 && Objects.equals(accountAddress, account.accountAddress)
-                && Objects.equals(cryptoAllowances, account.cryptoAllowances)
-                && Objects.equals(fungibleTokenAllowances, account.fungibleTokenAllowances)
-                && Objects.equals(approveForAllNfts, account.approveForAllNfts)
+                && Objects.equals(cryptoAllowances.get(), account.cryptoAllowances.get())
+                && Objects.equals(fungibleTokenAllowances.get(), account.fungibleTokenAllowances.get())
+                && Objects.equals(approveForAllNfts.get(), account.approveForAllNfts.get())
+                && Objects.equals(numAssociations.get(), account.numAssociations.get())
+                && Objects.equals(numPositiveBalances.get(), account.numPositiveBalances.get())
                 && Objects.equals(key, account.key);
     }
 
@@ -723,21 +753,29 @@ public class Account extends HederaEvmAccount {
 
     @Override
     public String toString() {
-        return MoreObjects.toStringHelper(Account.class)
-                .add("id", id)
-                .add("expiry", expiry)
-                .add("balance", balance)
-                .add("deleted", deleted)
-                .add("ownedNfts", ownedNfts)
-                .add("alreadyUsedAutoAssociations", getAlreadyUsedAutomaticAssociations())
-                .add("maxAutoAssociations", getMaxAutomaticAssociations())
-                .add("alias", getAlias().toStringUtf8())
-                .add("cryptoAllowances", cryptoAllowances)
-                .add("fungibleTokenAllowances", fungibleTokenAllowances)
-                .add("approveForAllNfts", approveForAllNfts)
-                .add("numAssociations", numAssociations)
-                .add("numPositiveBalances", numPositiveBalances)
-                .toString();
+        return "Account{" + "entityId="
+                + entityId + ", id="
+                + id + ", alias="
+                + alias.toStringUtf8() + ", address="
+                + address + ", expiry="
+                + expiry + ", balance="
+                + (balance != null ? balance.get() : 0) + ", deleted="
+                + deleted + ", ownedNfts="
+                + (ownedNfts != null ? ownedNfts.get() : 0) + ", autoRenewSecs="
+                + autoRenewSecs + ", proxy="
+                + proxy + ", accountAddress="
+                + accountAddress + ", autoAssociationMetadata="
+                + autoAssociationMetadata + ", cryptoAllowances="
+                + (cryptoAllowances != null ? cryptoAllowances.get() : null) + ", fungibleTokenAllowances="
+                + (fungibleTokenAllowances != null ? fungibleTokenAllowances.get() : null) + ", approveForAllNfts="
+                + (approveForAllNfts != null ? approveForAllNfts.get() : null) + ", numAssociations="
+                + (numAssociations != null ? numAssociations.get() : 0) + ", numPositiveBalances="
+                + (numPositiveBalances != null ? numPositiveBalances.get() : 0) + ", numTreasuryTitles="
+                + numTreasuryTitles + ", ethereumNonce="
+                + ethereumNonce + ", isSmartContract="
+                + isSmartContract + ", key="
+                + key + ", createdTimestamp="
+                + createdTimestamp + "}";
     }
 
     private boolean isValidAlreadyUsedCount(int alreadyUsedCount) {

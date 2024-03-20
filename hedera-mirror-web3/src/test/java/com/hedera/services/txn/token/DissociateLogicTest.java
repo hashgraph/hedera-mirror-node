@@ -28,6 +28,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -223,17 +224,17 @@ class DissociateLogicTest {
                 0L,
                 accountId,
                 9999999999L,
-                0L,
+                Suppliers.memoize(() -> 0L),
                 false,
-                0L,
+                Suppliers.memoize(() -> 0L),
                 0L,
                 null,
                 3,
                 null,
                 null,
                 null,
-                3,
-                0,
+                Suppliers.memoize(() -> 3),
+                Suppliers.memoize(() -> 0),
                 0,
                 0,
                 false,
@@ -260,17 +261,17 @@ class DissociateLogicTest {
                 0L,
                 accountId,
                 9999999999L,
-                0L,
+                Suppliers.ofInstance(0L),
                 false,
+                Suppliers.ofInstance(0L),
                 0L,
-                0L,
                 null,
                 3,
                 null,
                 null,
                 null,
-                3,
-                3,
+                Suppliers.ofInstance(3),
+                Suppliers.ofInstance(3),
                 0,
                 0,
                 false,
