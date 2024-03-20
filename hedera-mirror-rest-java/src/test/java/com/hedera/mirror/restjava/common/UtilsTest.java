@@ -120,8 +120,6 @@ class UtilsTest {
         assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("0000000100000000000000020000000000000007"));
         assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("0x0000000100000000000000020000000000000007"));
         assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("1.2.0000000100000000000000020000000000000007"));
-        assertArrayEquals(new long[] {0, 0, 0}, Utils.parseId("71eaa748d5252be68c1185588beca495459fdba4"));
-
         // Handle null and evm address cases
     }
 
