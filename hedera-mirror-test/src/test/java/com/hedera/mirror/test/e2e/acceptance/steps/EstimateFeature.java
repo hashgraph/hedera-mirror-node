@@ -209,6 +209,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
          * 3. Zero to Non-Zero Update:
          *    - Highest gas cost (e.g., 50611) because initializing a slot is more complex.
          *
+         * 4. Non-Zero to Zero Update
+         *    - Distinct gas cost (e.g, 36452) due to process of clearing the storage slot.
          */
         var data = encodeData(ESTIMATE_GAS, UPDATE_COUNTER, new BigInteger("100"));
         validateGasEstimation(data, UPDATE_COUNTER, contractSolidityAddress);
