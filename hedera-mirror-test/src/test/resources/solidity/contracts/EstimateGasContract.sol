@@ -77,6 +77,14 @@ contract EstimateGasContract is Caller {
         mockContract = new MockContract();
     }
 
+
+    /*
+     * NB: Gas costs for updating contract storage slots in the EVM vary due to its storage operation logic:
+     * 1. **Same Value Update**: Minimal gas consumption (e.g., 27726) due to no effective operation.
+     * 2. **Different Non-Zero Value Update**: Increased gas usage (e.g., 30946) for actual computational changes.
+     * 3. **Zero to Non-Zero Update**: Highest gas cost (e.g., 50611) because initializing a slot is more complex.
+     * 4. **Non-Zero to Zero Update**: Distinct gas cost (e.g, 36452) due to process of clearing the storage slot.
+    */
     function updateCounter(uint256 _counter) public returns (uint256) {
         counter = _counter;
         return counter;
@@ -238,13 +246,13 @@ contract EstimateGasContract is Caller {
     }
 
     function callExternalFunctionNTimes(uint256 _n, address _contractAddress) external {
-        for (uint256 i = 0; i < _n; i++) {
+        for (uint256 i = 1; i < _n; i++) {
             _contractAddress.call(abi.encodeWithSignature("updateCounter(uint256)", i));
         }
     }
 
     function delegatecallExternalFunctionNTimes(uint256 _n, address _contractAddress) external {
-        for (uint256 i = 0; i < _n; i++) {
+        for (uint256 i = 1; i < _n; i++) {
             _contractAddress.delegatecall(abi.encodeWithSignature("updateCounter(uint256)", i));
         }
     }
