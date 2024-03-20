@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.config;
 
-import java.util.function.BiFunction;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.jooq.Condition;
-import org.jooq.Field;
+import com.hedera.mirror.restjava.jooq.DomainRecordMapperProvider;
+import org.springframework.boot.autoconfigure.jooq.DefaultConfigurationCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-@Getter
-@RequiredArgsConstructor
-@SuppressWarnings({"rawtypes", "unchecked"})
-public enum RangeOperator {
-    EQ("=", Field::eq),
-    GT(">", Field::gt),
-    GTE(">=", Field::ge),
-    LT("<", Field::lt),
-    LTE("<=", Field::le),
-    NE("!=", Field::ne);
+@Configuration
+class JooqCustomConfiguration {
 
-    private final String operator;
-    private final BiFunction<Field, Object, Condition> function;
+    @Bean
+    public DefaultConfigurationCustomizer configurationCustomizer(
+            DomainRecordMapperProvider domainRecordMapperProvider) {
+        return c -> c.set(domainRecordMapperProvider).settings().withRenderSchema(false);
+    }
 }

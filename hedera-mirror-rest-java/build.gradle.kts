@@ -18,6 +18,7 @@ description = "Hedera Mirror Node Rest Java"
 
 plugins {
     id("openapi-conventions")
+    id("jooq-conventions")
     id("spring-conventions")
 }
 
@@ -41,4 +42,3 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
 }
-

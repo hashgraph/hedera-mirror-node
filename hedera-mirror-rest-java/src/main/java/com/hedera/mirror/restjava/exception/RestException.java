@@ -14,25 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.exception;
 
-import java.util.function.BiFunction;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.jooq.Condition;
-import org.jooq.Field;
+import com.hedera.mirror.common.exception.MirrorNodeException;
+import java.io.Serial;
 
-@Getter
-@RequiredArgsConstructor
-@SuppressWarnings({"rawtypes", "unchecked"})
-public enum RangeOperator {
-    EQ("=", Field::eq),
-    GT(">", Field::gt),
-    GTE(">=", Field::ge),
-    LT("<", Field::lt),
-    LTE("<=", Field::le),
-    NE("!=", Field::ne);
+abstract class RestException extends MirrorNodeException {
 
-    private final String operator;
-    private final BiFunction<Field, Object, Condition> function;
+    @Serial
+    private static final long serialVersionUID = 3383312779795690341L;
+
+    protected RestException(String message) {
+        super(message);
+    }
+
+    protected RestException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

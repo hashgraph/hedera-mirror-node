@@ -14,25 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.exception;
 
-import java.util.function.BiFunction;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.jooq.Condition;
-import org.jooq.Field;
+import java.io.Serial;
 
-@Getter
-@RequiredArgsConstructor
-@SuppressWarnings({"rawtypes", "unchecked"})
-public enum RangeOperator {
-    EQ("=", Field::eq),
-    GT(">", Field::gt),
-    GTE(">=", Field::ge),
-    LT("<", Field::lt),
-    LTE("<=", Field::le),
-    NE("!=", Field::ne);
+@SuppressWarnings("java:S110")
+public class InvalidFilterException extends RestException {
 
-    private final String operator;
-    private final BiFunction<Field, Object, Condition> function;
+    @Serial
+    private static final long serialVersionUID = 1518569037954950068L;
+
+    public InvalidFilterException(String message) {
+        super(message);
+    }
 }

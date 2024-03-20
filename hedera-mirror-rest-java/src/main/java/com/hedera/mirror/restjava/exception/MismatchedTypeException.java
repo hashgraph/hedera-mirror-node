@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.exception;
 
-import java.util.function.BiFunction;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.jooq.Condition;
-import org.jooq.Field;
+import java.io.Serial;
 
-@Getter
-@RequiredArgsConstructor
-@SuppressWarnings({"rawtypes", "unchecked"})
-public enum RangeOperator {
-    EQ("=", Field::eq),
-    GT(">", Field::gt),
-    GTE(">=", Field::ge),
-    LT("<", Field::lt),
-    LTE("<=", Field::le),
-    NE("!=", Field::ne);
+@SuppressWarnings("java:S110")
+public class MismatchedTypeException extends RestException {
 
-    private final String operator;
-    private final BiFunction<Field, Object, Condition> function;
+    private static final String MESSAGE = "Expected type %s but got %s";
+
+    @Serial
+    private static final long serialVersionUID = -1216734672367851011L;
+
+    public MismatchedTypeException(Class<?> expected, Class<?> actual) {
+        super(MESSAGE.formatted(expected.getName(), actual.getName()));
+    }
 }
