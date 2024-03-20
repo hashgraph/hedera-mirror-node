@@ -16,20 +16,25 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.AllArgsConstructor;
+import java.util.function.BiFunction;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.jooq.Condition;
+import org.jooq.Field;
 
 @Getter
-@AllArgsConstructor
+@RequiredArgsConstructor
+@SuppressWarnings({"rawtypes", "unchecked"})
 public enum RangeOperator {
-    LT("<"),
-    LTE("<="),
-    GT(">"),
-    GTE(">="),
-    EQ("="),
-    NE("!=");
+    EQ("=", Field::eq),
+    GT(">", Field::gt),
+    GTE(">=", Field::ge),
+    LT("<", Field::lt),
+    LTE("<=", Field::le),
+    NE("!=", Field::ne);
 
     private final String operator;
+    private final BiFunction<Field, Object, Condition> function;
 
     @Override
     public String toString() {

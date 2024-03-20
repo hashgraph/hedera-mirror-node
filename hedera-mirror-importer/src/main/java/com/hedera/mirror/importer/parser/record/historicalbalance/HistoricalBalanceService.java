@@ -199,16 +199,17 @@ public class HistoricalBalanceService {
     }
 
     private boolean shouldGenerate(long consensusEnd) {
-        return properties.isEnabled() && accountBalanceFileRepository
-                .findLatest()
-                .map(AccountBalanceFile::getConsensusTimestamp)
-                .or(() -> recordFileRepository
-                        .findFirst()
-                        .map(RecordFile::getConsensusEnd)
-                        .map(timestamp ->
-                                timestamp + properties.getInitialDelay().toNanos()))
-                .filter(lastTimestamp -> consensusEnd - lastTimestamp
-                        >= properties.getMinFrequency().toNanos())
-                .isPresent();
+        return properties.isEnabled()
+                && accountBalanceFileRepository
+                        .findLatest()
+                        .map(AccountBalanceFile::getConsensusTimestamp)
+                        .or(() -> recordFileRepository
+                                .findFirst()
+                                .map(RecordFile::getConsensusEnd)
+                                .map(timestamp ->
+                                        timestamp + properties.getInitialDelay().toNanos()))
+                        .filter(lastTimestamp -> consensusEnd - lastTimestamp
+                                >= properties.getMinFrequency().toNanos())
+                        .isPresent();
     }
 }

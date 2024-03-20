@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,16 @@ package com.hedera.mirror.restjava.exception;
 import com.hedera.mirror.common.exception.MirrorNodeException;
 import java.io.Serial;
 
-public abstract class RestException extends MirrorNodeException {
+abstract class RestException extends MirrorNodeException {
 
     @Serial
-    private static final long serialVersionUID = 540139852402841430L;
+    private static final long serialVersionUID = 3383312779795690341L;
 
     protected RestException(String message) {
         super(message);
+    }
+
+    protected RestException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

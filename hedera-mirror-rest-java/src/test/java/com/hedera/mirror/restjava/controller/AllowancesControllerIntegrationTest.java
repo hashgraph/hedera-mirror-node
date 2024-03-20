@@ -26,13 +26,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
+import com.hedera.mirror.restjava.RestJavaApplication;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import jakarta.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.util.Hexadecimals;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -44,7 +47,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = RestJavaApplication.class)
 public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
 
     private static final String CALL_URI = "http://localhost:8094/api/v1/accounts/{id}/allowances/nfts";
@@ -64,7 +67,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     private static final String orderParam = "order={order}";
 
     @Test
-    void successWithNoQueryParams() {
+    void successWithNoQueryParamsShardRealmNumAccountId() {
         var allowance = domainBuilder.nftAllowance().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
@@ -76,6 +79,46 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         var result = restClient
                 .get()
                 .uri(CALL_URI, allowance.getOwner())
+                .accept(MediaType.ALL)
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(collection));
+        assertNull(result.getLinks().getNext());
+    }
+
+    @Test
+    void successWithNoQueryParamsEncodedAccountId() {
+        var allowance = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance.getOwner()))
+                .persist();
+        Collection<NftAllowance> collection = List.of(allowance, allowance1);
+
+        RestClient restClient = RestClient.create();
+        var result = restClient
+                .get()
+                .uri(CALL_URI, EntityId.of(allowance.getOwner()))
+                .accept(MediaType.ALL)
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(collection));
+        assertNull(result.getLinks().getNext());
+    }
+
+    @Test
+    void successWithNoQueryParamsEvmAddress() {
+        var allowance = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance.getOwner()))
+                .persist();
+        Collection<NftAllowance> collection = List.of(allowance, allowance1);
+
+        RestClient restClient = RestClient.create();
+        var result = restClient
+                .get()
+                .uri(CALL_URI, Hexadecimals.toHexString(DomainUtils.toEvmAddress(EntityId.of(allowance.getOwner()))))
                 .accept(MediaType.ALL)
                 .retrieve()
                 .body(NftAllowancesResponse.class);
@@ -263,7 +306,9 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         "0.0.1001,0.0.3000,0.0.2000,false,-1,asc",
         "0.0.1001,0.0.3000,0.0.2000,false,111,asc",
         "0.0.1001,0.0.3000,0.0.2000,false,3,ttt",
-        "0.0.1001,gee:0.0.3000,0.0.2000,false,3,asc"
+        "0.0.1001,gee:0.0.3000,0.0.2000,false,3,asc",
+        "9223372036854775807,0.0.3000,0.0.2000,false,3,asc",
+        "0x00000001000000000000000200000000000000034,0.0.3000,0.0.2000,false,3,asc"
     })
     void failWithInvalidParams(String id, String accountId, String tokenId, String owner, String limit, String order) {
         Map<String, String> uriVariables =

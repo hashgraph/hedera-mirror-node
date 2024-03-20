@@ -31,9 +31,13 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("grpcVersion", "1.62.2")
+    // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
+    // with the next springboot release
+    set("jooq.version", "3.19.6")
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
+    set("spring-framework.version", "6.1.5") // Temporary until next Spring Boot
     set("vertxVersion", "4.5.5")
 }
 
