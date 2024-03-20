@@ -188,9 +188,9 @@ class BatchStreamFileNotifierTest {
         var sleep = Duration.ofMillis(500L);
 
         doAnswer(invocation -> {
-            Uninterruptibles.sleepUninterruptibly(sleep);
-            return null;
-        })
+                    Uninterruptibles.sleepUninterruptibly(sleep);
+                    return null;
+                })
                 .when(recordFileParser)
                 .parse(recordFile1);
 

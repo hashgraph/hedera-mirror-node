@@ -16,19 +16,15 @@
 
 package com.hedera.mirror.restjava.exception;
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
 import java.io.Serial;
 
-abstract class RestException extends MirrorNodeException {
+@SuppressWarnings("java:S110")
+public class InvalidFilterException extends RestException {
 
     @Serial
-    private static final long serialVersionUID = 3383312779795690341L;
+    private static final long serialVersionUID = 1518569037954950068L;
 
-    protected RestException(String message) {
+    public InvalidFilterException(String message) {
         super(message);
-    }
-
-    protected RestException(String message, Throwable throwable) {
-        super(message, throwable);
     }
 }

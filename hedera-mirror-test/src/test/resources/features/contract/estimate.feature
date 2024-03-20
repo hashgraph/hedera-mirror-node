@@ -45,3 +45,35 @@ Feature: EstimateGas Contract Base Coverage Feature
     Then I call estimateGas with contract deploy with bytecode as data
     Then I call estimateGas with contract deploy with bytecode as data with sender
     Then I call estimateGas with contract deploy with bytecode as data with invalid sender
+
+
+  Scenario Outline: Validate gasConsumed
+    Given I successfully create fungible token
+    Given I successfully create EstimateGas contract from contract bytes
+    Given I successfully create Precompile contract from contract bytes
+    Then the mirror node REST API should return status 200 for the estimate contract creation
+    Then I verify the estimate contract bytecode is deployed
+    Then I get mock contract address and getAddress selector
+    Then I execute create operation with bad contract and verify gasConsumed
+    Then I execute create operation with complex contract and verify gasConsumed
+    Then I execute create operation with complex contract and lower gas limit and verify gasConsumed
+    Then I execute contractCall for function that changes the contract slot and verify gasConsumed
+    Then I execute contractCall with delegatecall and function that changes contract slot and verify gasConsumed
+    Then I execute contractCall with delegatecall with low gas and function that changes contract slot and verify gasConsumed
+    Then I execute contractCall with callcode and function that changes contract slot and verify gasConsumed
+    Then I execute contractCall with callcode with low gas and function that changes contract slot and verify gasConsumed
+    Then I execute contractCall with static call and verify gasConsumed
+    Then I execute contractCall with static call with low gas and verify gasConsumed
+    Then I trigger fallback function with transfer and verify gasConsumed
+    Then I trigger fallback function with send and verify gasConsumed
+    Then I trigger fallback function with call and verify gasConsumed
+    Then I execute contractCall for nested function and verify gasConsumed
+    Then I execute contractCall for nested functions with lower gas limit and verify gasConsumed
+    Then I execute contractCall for failing nested functions and verify gasConsumed
+    Then I execute contractCall for failing precompile function and verify gasConsumed
+    Then I execute contractCall for contract deploy function via create and verify gasConsumed
+    Then I execute contractCall for contract deploy function via create2 and verify gasConsumed
+    Then I execute contractCall failing to deploy contract due to low gas and verify gasConsumed
+    Then I execute deploy and call contract and verify gasConsumed
+    Then I execute deploy and call contract that fails and verify gasConsumed
+    Then I execute deploy and selfdestruct and verify gasConsumed

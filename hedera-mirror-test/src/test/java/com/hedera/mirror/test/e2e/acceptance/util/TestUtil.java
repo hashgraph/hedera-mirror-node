@@ -19,6 +19,7 @@ package com.hedera.mirror.test.e2e.acceptance.util;
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Range;
 import com.google.common.io.BaseEncoding;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -32,10 +33,13 @@ import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
@@ -49,6 +53,7 @@ public class TestUtil {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final SecureRandom RANDOM = new SecureRandom();
     public static String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+    private static final Pattern extractTransactionIdPattern = Pattern.compile("(\\d+\\.\\d+\\.\\d+)@(\\d+)\\.(\\d+)");
 
     public static String getAliasFromPublicKey(@NonNull PublicKey key) {
         if (key.isECDSA()) {
@@ -170,6 +175,15 @@ public class TestUtil {
                 .orElseThrow();
     }
 
+    public static String extractTransactionId(String message) {
+        Matcher matcher = extractTransactionIdPattern.matcher(message);
+        if (matcher.find()) {
+            return matcher.group(1) + "-" + matcher.group(2) + "-" + matcher.group(3);
+        } else {
+            return "Not found";
+        }
+    }
+
     @SneakyThrows
     private static String toJson(Object object) {
         return OBJECT_MAPPER.writeValueAsString(object);
@@ -183,6 +197,37 @@ public class TestUtil {
         var bytes = new byte[length];
         RANDOM.nextBytes(bytes);
         return bytes;
+    }
+
+    public static Range<Instant> convertRange(com.hedera.mirror.rest.model.TimestampRange timestampRange) {
+        if (timestampRange == null) {
+            return null;
+        }
+
+        var from = convertTimestamp(timestampRange.getFrom());
+        var to = convertTimestamp(timestampRange.getTo());
+
+        if (from != null && to != null) {
+            return Range.closedOpen(from, to);
+        } else if (from != null) {
+            return Range.atLeast(from);
+        } else if (to != null) {
+            return Range.lessThan(to);
+        }
+
+        throw new IllegalArgumentException("Unsupported TimestampRange: " + timestampRange);
+    }
+
+    public static Instant convertTimestamp(String timestamp) {
+        var parts = StringUtils.split(timestamp, '.');
+
+        if (parts == null || parts.length != 2) {
+            throw new IllegalArgumentException("Unsupported Timestamp: " + timestamp);
+        }
+
+        long seconds = Long.parseLong(parts[0]);
+        long nanos = Long.parseLong(parts[1]);
+        return Instant.ofEpochSecond(seconds, nanos);
     }
 
     public static class TokenTransferListBuilder {

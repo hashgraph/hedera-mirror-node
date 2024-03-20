@@ -26,6 +26,7 @@ import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.rest.model.AccountBalanceTransactions;
 import com.hedera.mirror.rest.model.AccountInfo;
 import com.hedera.mirror.rest.model.BlocksResponse;
+import com.hedera.mirror.rest.model.ContractActionsResponse;
 import com.hedera.mirror.rest.model.ContractCallRequest;
 import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.rest.model.ContractResponse;
@@ -48,6 +49,7 @@ import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
+import com.hedera.mirror.test.e2e.acceptance.props.Order;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 import jakarta.inject.Named;
 import java.util.ArrayList;
@@ -214,6 +216,11 @@ public class MirrorNodeClient {
         return callRestEndpoint("/contracts/results/{transactionId}", ContractResult.class, transactionId);
     }
 
+    public ContractActionsResponse getContractResultActionsByTransactionId(String transactionId) {
+        log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
+        return callRestEndpoint("/contracts/results/{id}/actions", ContractActionsResponse.class, transactionId);
+    }
+
     public NetworkExchangeRateSetResponse getExchangeRates() {
         log.debug("Get exchange rates by Mirror Node");
         return callRestEndpoint("/network/exchangerate", NetworkExchangeRateSetResponse.class);
@@ -223,9 +230,9 @@ public class MirrorNodeClient {
         return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, request);
     }
 
-    public BlocksResponse getBlocks() {
+    public BlocksResponse getBlocks(Order order, long limit) {
         log.debug("Get blocks data by Mirror Node");
-        return callRestEndpoint("/blocks", BlocksResponse.class);
+        return callRestEndpoint("/blocks?order={order}&limit={limit}", BlocksResponse.class, order, limit);
     }
 
     public List<NetworkNode> getNetworkNodes() {

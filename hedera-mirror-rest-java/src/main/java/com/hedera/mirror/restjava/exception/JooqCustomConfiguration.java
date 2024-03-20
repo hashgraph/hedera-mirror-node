@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.config;
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
-import java.io.Serial;
+import com.hedera.mirror.restjava.jooq.DomainRecordMapperProvider;
+import org.springframework.boot.autoconfigure.jooq.DefaultConfigurationCustomizer;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-abstract class RestException extends MirrorNodeException {
+@Configuration
+class JooqCustomConfiguration {
 
-    @Serial
-    private static final long serialVersionUID = 3383312779795690341L;
-
-    protected RestException(String message) {
-        super(message);
-    }
-
-    protected RestException(String message, Throwable throwable) {
-        super(message, throwable);
+    @Bean
+    public DefaultConfigurationCustomizer configurationCustomizer(
+            DomainRecordMapperProvider domainRecordMapperProvider) {
+        return c -> c.set(domainRecordMapperProvider).settings().withRenderSchema(false);
     }
 }
