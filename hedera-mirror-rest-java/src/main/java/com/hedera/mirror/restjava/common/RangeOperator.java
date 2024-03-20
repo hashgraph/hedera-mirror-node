@@ -16,11 +16,11 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 @Getter
-@AllArgsConstructor
+@RequiredArgsConstructor
 public enum RangeOperator {
     LT("<"),
     LTE("<="),
