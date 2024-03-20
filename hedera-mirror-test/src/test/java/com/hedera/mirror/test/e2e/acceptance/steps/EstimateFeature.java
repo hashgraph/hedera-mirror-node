@@ -197,6 +197,19 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with function that changes contract slot information"
             + " by updating global contract field with the passed argument")
     public void updateCounterEstimateCall() {
+        /*
+         * NB: Variations in gas costs for contract storage slot updates in the EVM:
+         *
+         * 1. Same Value Update:
+         *    - Minimal gas consumption (e.g., 27726) due to no effective operation.
+         *
+         * 2. Different Non-Zero Value Update:
+         *    - Increased gas usage (e.g., 30946) for actual computational changes.
+         *
+         * 3. Zero to Non-Zero Update:
+         *    - Highest gas cost (e.g., 50611) because initializing a slot is more complex.
+         *
+         */
         var data = encodeData(ESTIMATE_GAS, UPDATE_COUNTER, new BigInteger("100"));
         validateGasEstimation(data, UPDATE_COUNTER, contractSolidityAddress);
     }
@@ -308,7 +321,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_GAS,
                 CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
-                new BigInteger("1"),
+                new BigInteger("2"),
                 asAddress(contractSolidityAddress));
         validateGasEstimation(data, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, contractSolidityAddress);
     }
@@ -318,7 +331,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_GAS,
                 DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
-                new BigInteger("1"),
+                new BigInteger("3"),
                 asAddress(contractSolidityAddress));
         validateGasEstimation(data, DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, contractSolidityAddress);
     }
@@ -559,7 +572,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         var data = encodeDataToByteArray(
                 ESTIMATE_GAS,
                 CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
-                new BigInteger("1"),
+                new BigInteger("2"),
                 asAddress(contractSolidityAddress));
         var txId = executeContractTransaction(deployedContract, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, data);
         verifyGasConsumed(txId, data);
@@ -570,7 +583,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         var data = encodeDataToByteArray(
                 ESTIMATE_GAS,
                 CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
-                new BigInteger("20"),
+                new BigInteger("21"),
                 asAddress(contractSolidityAddress));
         var txId = executeContractTransaction(deployedContract, 50000L, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, data);
         verifyGasConsumed(txId, data);
@@ -633,7 +646,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     }
 
     @Then("I execute create operation with bad contract and verify gasConsumed")
-    public void deployBadContract() throws DecoderException {
+    public void deployBadContract() {
         var contractPath = "classpath:solidity/artifacts/contracts/EstimateGasContract.sol/DummyContract.json";
         var txId = createContractAndReturnTransactionId(contractPath);
         var initByteCode = Objects.requireNonNull(
@@ -642,7 +655,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     }
 
     @Then("I execute create operation with complex contract and verify gasConsumed")
-    public void deployEstimateContract() throws DecoderException {
+    public void deployEstimateContract() {
         var contractPath = ESTIMATE_GAS.getPath();
         var txId = createContractAndReturnTransactionId(contractPath);
         var contractId = Objects.requireNonNull(
@@ -655,7 +668,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     }
 
     @Then("I execute create operation with complex contract and lower gas limit and verify gasConsumed")
-    public void deployEstimateContractWithLowGas() throws DecoderException {
+    public void deployEstimateContractWithLowGas() {
         var contractPath = ESTIMATE_GAS.getPath();
         var txId = createContractAndReturnTransactionId(contractPath, 320000L);
         var transactions =
@@ -818,11 +831,11 @@ public class EstimateFeature extends AbstractEstimateFeature {
     enum ContractMethods implements ContractMethodInterface {
         ADDRESS_BALANCE("addressBalance", 21735),
         CALL_CODE_TO_CONTRACT("callCodeToContract", 25128),
-        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("callExternalFunctionNTimes", 26100),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("callExternalFunctionNTimes", 25217),
         CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("delegatecallExternalViewFunctionNTimes", 29809),
         CALL_CODE_TO_INVALID_CONTRACT("callCodeToInvalidContract", 24486),
         CALL_TO_INVALID_CONTRACT("callToInvalidContract", 24807),
-        DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("delegatecallExternalFunctionNTimes", 24712),
+        DELEGATE_CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("delegatecallExternalFunctionNTimes", 29334),
         DELEGATE_CALL_TO_CONTRACT("delegateCallToContract", 25124),
         DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24803),
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53631),

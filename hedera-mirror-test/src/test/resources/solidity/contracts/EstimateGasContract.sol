@@ -238,13 +238,13 @@ contract EstimateGasContract is Caller {
     }
 
     function callExternalFunctionNTimes(uint256 _n, address _contractAddress) external {
-        for (uint256 i = 0; i < _n; i++) {
+        for (uint256 i = 1; i < _n; i++) {
             _contractAddress.call(abi.encodeWithSignature("updateCounter(uint256)", i));
         }
     }
 
     function delegatecallExternalFunctionNTimes(uint256 _n, address _contractAddress) external {
-        for (uint256 i = 0; i < _n; i++) {
+        for (uint256 i = 1; i < _n; i++) {
             _contractAddress.delegatecall(abi.encodeWithSignature("updateCounter(uint256)", i));
         }
     }
