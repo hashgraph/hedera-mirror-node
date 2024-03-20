@@ -18,6 +18,7 @@ description = "Hedera Mirror Node Rest Java"
 
 plugins {
     id("openapi-conventions")
+    id("jooq-conventions")
     id("spring-conventions")
 }
 

@@ -43,6 +43,7 @@ import org.springframework.data.domain.Sort;
 @CustomLog
 @UtilityClass
 public class Utils {
+
     public static final Map<String, RangeOperator> OPERATOR_PATTERNS = Map.of(
             "asc", RangeOperator.GTE,
             "desc", RangeOperator.LTE);
@@ -126,7 +127,7 @@ public class Utils {
         return ArrayUtils.toPrimitive(parts.stream().map(Long::valueOf).toArray(Long[]::new));
     }
 
-    private static long[] parseFromEncodedId(String id) {
+    public static long[] parseFromEncodedId(String id) {
         var encodedId = Long.parseLong(id);
         if (encodedId > MAX_ENCODED_ID) {
             throw new InvalidParametersException(" Id '%s' is greater than the allowed value".formatted(id));
@@ -182,9 +183,8 @@ public class Utils {
             boolean inclusive = includedMap.get(lastValue.getKey());
             var pattern = OPERATOR_PATTERNS.get(order);
             var newPattern = order.equals("asc") ? RangeOperator.GT : RangeOperator.LT;
-            var insertValue = inclusive
-                    ? pattern.toString() + ":" + lastValue.getValue()
-                    : newPattern + ":" + lastValue.getValue();
+            var insertValue =
+                    inclusive ? pattern + ":" + lastValue.getValue() : newPattern + ":" + lastValue.getValue();
             next.append("&").append(lastValue.getKey()).append("=").append(insertValue.toLowerCase());
         }
         return next.toString();

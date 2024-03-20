@@ -16,14 +16,25 @@
 
 package com.hedera.mirror.restjava.controller;
 
+import static com.hedera.mirror.restjava.common.Constants.LIMIT;
+import static com.hedera.mirror.restjava.common.Constants.ORDER;
+import static com.hedera.mirror.restjava.common.Constants.OWNER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
-import com.hedera.mirror.restjava.RestJavaApplication;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import jakarta.annotation.Resource;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import org.assertj.core.util.Hexadecimals;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -34,19 +45,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import static com.hedera.mirror.restjava.common.Constants.LIMIT;
-import static com.hedera.mirror.restjava.common.Constants.ORDER;
-import static com.hedera.mirror.restjava.common.Constants.OWNER;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT, classes = RestJavaApplication.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
 
     private static final String CALL_URI = "http://localhost:8094/api/v1/accounts/{id}/allowances/nfts";
@@ -66,7 +66,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     private static final String orderParam = "order={order}";
 
     @Test
-    void successWithNoQueryParams() {
+    void successWithNoQueryParamsShardRealmNumAccountId() {
         var allowance = domainBuilder.nftAllowance().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
@@ -81,7 +81,47 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .accept(MediaType.ALL)
                 .retrieve()
                 .body(NftAllowancesResponse.class);
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(collection));
+        assertEquals(result.getAllowances(), (mapper.map(collection)));
+        assertNull(result.getLinks().getNext());
+    }
+
+    @Test
+    void successWithNoQueryParamsEncodedAccountId() {
+        var allowance = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance.getOwner()))
+                .persist();
+        Collection<NftAllowance> collection = List.of(allowance, allowance1);
+
+        RestClient restClient = RestClient.create();
+        var result = restClient
+                .get()
+                .uri(CALL_URI, EntityId.of(allowance.getOwner()))
+                .accept(MediaType.ALL)
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+        assertEquals(result.getAllowances(), (mapper.map(collection)));
+        assertNull(result.getLinks().getNext());
+    }
+
+    @Test
+    void successWithNoQueryParamsEvmAddress() {
+        var allowance = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance.getOwner()))
+                .persist();
+        Collection<NftAllowance> collection = List.of(allowance, allowance1);
+
+        RestClient restClient = RestClient.create();
+        var result = restClient
+                .get()
+                .uri(CALL_URI, Hexadecimals.toHexString(DomainUtils.toEvmAddress(EntityId.of(allowance.getOwner()))))
+                .accept(MediaType.ALL)
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+        assertEquals(result.getAllowances(), (mapper.map(collection)));
         assertNull(result.getLinks().getNext());
     }
 
@@ -122,9 +162,10 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance)));
-        assertThat(result.getLinks().getNext())
-                .isEqualTo("/api/v1/accounts/" + allowance.getOwner()
+        assertEquals(result.getAllowances(), mapper.map(List.of(allowance)));
+        assertEquals(
+                result.getLinks().getNext(),
+                "/api/v1/accounts/" + allowance.getOwner()
                         + "/allowances/nfts?limit=1&order=asc&account.id=gte:" + EntityId.of(allowance.getSpender())
                         + "&token.id=gt:" + EntityId.of(allowance.getTokenId()));
     }
@@ -166,9 +207,10 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
         // This test will need to change after the new repository layer is integrated to return the correct result for
         // spenderId = allowance.spender()
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
-        assertThat(result.getLinks().getNext())
-                .isEqualTo("/api/v1/accounts/" + allowance.getOwner()
+        assertEquals(result.getAllowances(), mapper.map(List.of(allowance1)));
+        assertEquals(
+                result.getLinks().getNext(),
+                "/api/v1/accounts/" + allowance.getOwner()
                         + "/allowances/nfts?limit=1&order=asc&account.id=gte:" + EntityId.of(allowance1.getSpender())
                         + "&token.id=gt:" + EntityId.of(allowance1.getTokenId()));
     }
@@ -207,9 +249,10 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         // Performing the GET operation
         var result = restClient.get().uri(params).retrieve().body(NftAllowancesResponse.class);
 
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
-        assertThat(result.getLinks().getNext())
-                .isEqualTo("/api/v1/accounts/" + allowance1.getOwner()
+        assertEquals(result.getAllowances(), mapper.map(List.of(allowance1)));
+        assertEquals(
+                result.getLinks().getNext(),
+                "/api/v1/accounts/" + allowance1.getOwner()
                         + "/allowances/nfts?limit=1&order=desc&account.id=lte:" + EntityId.of(allowance1.getSpender())
                         + "&token.id=lt:" + EntityId.of(allowance1.getTokenId()));
     }
@@ -251,9 +294,10 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance)));
-        assertThat(result.getLinks().getNext())
-                .isEqualTo("/api/v1/accounts/" + allowance.getSpender()
+        assertEquals(result.getAllowances(), mapper.map(List.of(allowance)));
+        assertEquals(
+                result.getLinks().getNext(),
+                "/api/v1/accounts/" + allowance.getSpender()
                         + "/allowances/nfts?limit=1&order=asc&account.id=gte:" + EntityId.of(allowance.getOwner())
                         + "&token.id=gt:" + EntityId.of(allowance.getTokenId()));
     }
@@ -265,7 +309,9 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         "0.0.1001,0.0.3000,0.0.2000,false,-1,asc",
         "0.0.1001,0.0.3000,0.0.2000,false,111,asc",
         "0.0.1001,0.0.3000,0.0.2000,false,3,ttt",
-        "0.0.1001,gee:0.0.3000,0.0.2000,false,3,asc"
+        "0.0.1001,gee:0.0.3000,0.0.2000,false,3,asc",
+        "9223372036854775807,0.0.3000,0.0.2000,false,3,asc",
+        "0x00000001000000000000000200000000000000034,0.0.3000,0.0.2000,false,3,asc"
     })
     void failWithInvalidParams(String id, String accountId, String tokenId, String owner, String limit, String order) {
         Map<String, String> uriVariables =

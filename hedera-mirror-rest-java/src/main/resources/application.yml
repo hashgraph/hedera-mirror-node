@@ -73,6 +73,8 @@ spring:
       maximum-pool-size: 50
       minimum-idle: 4
       validation-timeout: 3000
+  jooq:
+    sql-dialect: Postgres
   jpa:
     database: PostgreSQL
     open-in-view: false
