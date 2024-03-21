@@ -37,6 +37,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPP
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
@@ -52,6 +53,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -109,7 +111,7 @@ public class Token {
     private final long autoRenewPeriod;
     private final long createdTimestamp;
     private final long lastUsedSerialNumber;
-    private final List<CustomFee> customFees;
+    private final Supplier<List<CustomFee>> customFees;
 
     public Token(Id id) {
         this(
@@ -145,7 +147,7 @@ public class Token {
                 0,
                 0,
                 0,
-                new ArrayList<>());
+                null);
     }
 
     @SuppressWarnings("java:S107")
@@ -182,7 +184,7 @@ public class Token {
             int decimals,
             long autoRenewPeriod,
             long lastUsedSerialNumber,
-            List<CustomFee> customFees) {
+            Supplier<List<CustomFee>> customFees) {
         this.entityId = entityId;
         this.id = id;
         this.mintedUniqueTokens =
@@ -285,7 +287,7 @@ public class Token {
                 op.getDecimals(),
                 op.getAutoRenewPeriod().getSeconds(),
                 0,
-                Collections.emptyList());
+                Suppliers.memoize(() -> Collections.emptyList()));
     }
 
     // copied from TokenTypesManager in services
@@ -1840,7 +1842,7 @@ public class Token {
     }
 
     public List<CustomFee> getCustomFees() {
-        return customFees;
+        return customFees != null && customFees.get() != null ? customFees.get() : new ArrayList<>();
     }
 
     public boolean hasMintedUniqueTokens() {

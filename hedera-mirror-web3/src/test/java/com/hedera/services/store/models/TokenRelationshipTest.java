@@ -90,7 +90,7 @@ class TokenRelationshipTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Suppliers.memoize(() -> Collections.emptyList()));
 
         account = new Account(
                 ByteString.EMPTY,

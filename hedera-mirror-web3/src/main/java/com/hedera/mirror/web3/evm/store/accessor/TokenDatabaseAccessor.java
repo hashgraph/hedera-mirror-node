@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -41,6 +42,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -165,7 +167,8 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .orElse(null);
     }
 
-    private List<CustomFee> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
-        return customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList());
+    private Supplier<List<CustomFee>> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
+        return Suppliers.memoize(
+                () -> customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList()));
     }
 }

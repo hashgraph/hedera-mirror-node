@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -183,7 +184,7 @@ class OpUsageCtxHelperTest {
                 10,
                 0L,
                 0L,
-                Collections.emptyList());
+                Suppliers.memoize(() -> Collections.emptyList()));
 
         given(accessor.getTxn()).willReturn(txn);
         given(accessor.getSubType()).willReturn(TOKEN_NON_FUNGIBLE_UNIQUE);

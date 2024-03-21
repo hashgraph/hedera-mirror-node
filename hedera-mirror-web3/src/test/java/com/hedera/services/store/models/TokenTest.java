@@ -136,7 +136,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Suppliers.memoize(() -> Collections.emptyList()));
 
         treasuryRel = new TokenRelationship(
                 subject, treasuryAccount, initialTreasuryBalance, false, false, false, false, true, 0);
@@ -259,7 +259,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Suppliers.memoize(() -> Collections.emptyList()));
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
@@ -454,7 +454,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Suppliers.memoize(() -> Collections.emptyList()));
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 11));
 
         // negate account balance
@@ -600,7 +600,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Suppliers.memoize(() -> Collections.emptyList()));
         final var metadata = List.of(ByteString.copyFromUtf8("memo"));
         final List<ByteString> emptyMetadata = List.of();
 
@@ -649,7 +649,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Suppliers.memoize(() -> Collections.emptyList()));
 
         assertNotEquals(subject, otherToken);
         assertNotEquals(subject.hashCode(), otherToken.hashCode());
