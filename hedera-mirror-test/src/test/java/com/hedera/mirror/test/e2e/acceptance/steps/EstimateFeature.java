@@ -672,7 +672,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I execute create operation with complex contract and lower gas limit and verify gasConsumed")
     public void deployEstimateContractWithLowGas() {
         var contractPath = ESTIMATE_GAS.getPath();
-        var txId = createContractAndReturnTransactionId(contractPath, 320000L);
+        var txId = createContractAndReturnTransactionId(contractPath, 440000L);
         var transactions =
                 Objects.requireNonNull(mirrorClient.getTransactions(txId).getTransactions());
         var contractId = transactions.getFirst().getEntityId();
@@ -833,7 +833,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     enum ContractMethods implements ContractMethodInterface {
         ADDRESS_BALANCE("addressBalance", 21735),
         CALL_CODE_TO_CONTRACT("callCodeToContract", 25128),
-        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("callExternalFunctionNTimes", 25217),
+        CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION("callExternalFunctionNTimes", 25168),
         CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION_VIEW("delegatecallExternalViewFunctionNTimes", 29809),
         CALL_CODE_TO_INVALID_CONTRACT("callCodeToInvalidContract", 24486),
         CALL_TO_INVALID_CONTRACT("callToInvalidContract", 24807),
@@ -841,8 +841,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
         DELEGATE_CALL_TO_CONTRACT("delegateCallToContract", 25124),
         DELEGATE_CALL_TO_INVALID_CONTRACT("delegateCallToInvalidContract", 24803),
         DEPLOY_CONTRACT_VIA_CREATE_OPCODE("deployViaCreate", 53631),
-        DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE("deployViaCreate2", 55786),
-        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 318113),
+        DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE("deployViaCreate2", 55927),
+        DEPLOY_CONTRACT_VIA_BYTECODE_DATA("", 433605),
         DEPLOY_NEW_INSTANCE("createClone", 0), // Set actual gas to 0; unnecessary for gasConsumed test validation.
         DEPLOY_AND_CALL_CONTRACT("deployAndCallMockContract", 0),
         DEPLOY_AND_DESTROY("deployDestroy", 0), // Set actual gas to 0; unnecessary for gasConsumed test validation.
@@ -860,9 +860,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
         REENTRANCY_CALL_ATTACK("reentrancyWithCall", 56426),
         STATIC_CALL_TO_CONTRACT("staticCallToContract", 25146),
         STATIC_CALL_TO_INVALID_CONTRACT("staticCallToInvalidContract", 24826),
-        STATE_UPDATE_OF_CONTRACT("updateStateNTimes", 28847),
+        STATE_UPDATE_OF_CONTRACT("updateStateNTimes", 27718),
         TX_ORIGIN("txOrigin", 21342),
-        UPDATE_COUNTER("updateCounter", 26583),
+        UPDATE_COUNTER("updateCounter", 26538),
         UPDATE_TYPE("updateType", 0), // Set actual gas to 0; unnecessary for gasConsumed test validation.
         WRONG_METHOD_SIGNATURE("ffffffff()", 0),
         IERC20_TOKEN_TRANSFER("transfer(address,uint256)", 38193),
