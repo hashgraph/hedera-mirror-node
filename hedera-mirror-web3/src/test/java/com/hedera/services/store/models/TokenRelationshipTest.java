@@ -66,7 +66,7 @@ class TokenRelationshipTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                defaultIntValue,
+                Suppliers.memoize(() -> defaultLongValue),
                 21_000_000,
                 null,
                 null,

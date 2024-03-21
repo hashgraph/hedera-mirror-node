@@ -114,13 +114,13 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 getCustomFees(entity.getId(), timestamp));
     }
 
-    private Long getTotalSupply(
+    private Supplier<Long> getTotalSupply(
             final com.hedera.mirror.common.domain.token.Token token, final Optional<Long> timestamp) {
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> Optional.of(getTotalSupplyHistorical(
                         token.getType().equals(TokenTypeEnum.FUNGIBLE_COMMON), token.getTokenId(), t)))
                 .orElseGet(() -> Optional.ofNullable(token.getTotalSupply()))
-                .orElse(0L);
+                .orElse(0L));
     }
 
     private Long getTotalSupplyHistorical(boolean isFungible, long tokenId, long timestamp) {

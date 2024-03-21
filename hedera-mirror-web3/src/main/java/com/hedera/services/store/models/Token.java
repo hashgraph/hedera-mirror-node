@@ -87,7 +87,7 @@ public class Token {
     private final boolean supplyHasChanged;
     private final TokenType type;
     private final TokenSupplyType supplyType;
-    private final long totalSupply;
+    private final Supplier<Long> totalSupply;
     private final long maxSupply;
     private final JKey kycKey;
     private final JKey freezeKey;
@@ -123,7 +123,7 @@ public class Token {
                 false,
                 null,
                 null,
-                0,
+                null,
                 0,
                 null,
                 null,
@@ -160,7 +160,7 @@ public class Token {
             boolean supplyHasChanged,
             TokenType type,
             TokenSupplyType supplyType,
-            long totalSupply,
+            Supplier<Long> totalSupply,
             long maxSupply,
             JKey kycKey,
             JKey freezeKey,
@@ -263,7 +263,7 @@ public class Token {
                 false,
                 mapToDomain(op.getTokenType()),
                 op.getSupplyType(),
-                0,
+                Suppliers.memoize(() -> 0L),
                 op.getMaxSupply(),
                 kycKey.orElse(null),
                 freezeKey.orElse(null),
@@ -411,7 +411,7 @@ public class Token {
                 true,
                 oldToken.type,
                 oldToken.supplyType,
-                totalSupply,
+                Suppliers.memoize(() -> totalSupply),
                 oldToken.maxSupply,
                 oldToken.kycKey,
                 oldToken.freezeKey,
@@ -1545,7 +1545,7 @@ public class Token {
         baseWipeValidations(accountRel);
         amountWipeValidations(accountRel, amount);
 
-        final var newTotalSupply = totalSupply - amount;
+        final var newTotalSupply = totalSupply.get() - amount;
         final var newAccBalance = accountRel.getBalance() - amount;
 
         var newAccountRel = accountRel;
@@ -1579,7 +1579,7 @@ public class Token {
             validateTrue(wipeAccountIsOwner, ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
         }
 
-        final var newTotalSupply = totalSupply - serialNumbers.size();
+        final var newTotalSupply = totalSupply.get() - serialNumbers.size();
         final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
         var account = accountRel.getAccount();
         final var newRemovedUniqueTokens = new ArrayList<>(removedUniqueTokens);
@@ -1632,7 +1632,7 @@ public class Token {
         if (!ignoreSupplyKey) {
             validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
-        final long newTotalSupply = totalSupply + amount;
+        final long newTotalSupply = totalSupply.get() + amount;
         validateTrue(newTotalSupply >= 0, negSupplyCode);
         if (supplyType == TokenSupplyType.FINITE) {
             validateTrue(
@@ -1667,7 +1667,7 @@ public class Token {
     private void amountWipeValidations(final TokenRelationship accountRel, final long amount) {
         validateTrue(amount >= 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
 
-        final var newTotalSupply = totalSupply - amount;
+        final var newTotalSupply = totalSupply.get() - amount;
         validateTrue(
                 newTotalSupply >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate the total supply of the given token.");
 
@@ -1713,7 +1713,7 @@ public class Token {
     }
 
     public long getTotalSupply() {
-        return totalSupply;
+        return totalSupply != null && totalSupply.get() != null ? totalSupply.get() : 0L;
     }
 
     public long getMaxSupply() {
