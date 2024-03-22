@@ -56,6 +56,8 @@ spec:
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
+    stackgres:
+      enabled: true
     testkube:
       enabled: true
       test:
@@ -66,4 +68,6 @@ spec:
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod"} } }'
+    zfs:
+      enabled: true
 
