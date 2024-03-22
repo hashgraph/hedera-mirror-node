@@ -215,9 +215,6 @@ class TokenDatabaseAccessorTest {
         when(autorenewEntity.getRealm()).thenReturn(12L);
         when(autorenewEntity.getNum()).thenReturn(13L);
         when(autorenewEntity.getBalance()).thenReturn(14L);
-        when(entityRepository.findActiveByIdAndTimestamp(
-                        databaseToken.getTreasuryAccountId().getId(), timestamp.get()))
-                .thenReturn(Optional.of(autorenewEntity));
         when(entityRepository.findActiveByIdAndTimestamp(entity.getAutoRenewAccountId(), timestamp.get()))
                 .thenReturn(Optional.of(autorenewEntity));
 

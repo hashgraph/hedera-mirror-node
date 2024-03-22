@@ -139,32 +139,32 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         }
     }
 
-    private Account getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {
+    private Supplier<Account> getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {
         if (autoRenewAccountId == null) {
             return null;
         }
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(autoRenewAccountId, t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(autoRenewAccountId))
                 .map(autoRenewAccount -> new Account(
                         autoRenewAccount.getId(),
                         new Id(autoRenewAccount.getShard(), autoRenewAccount.getRealm(), autoRenewAccount.getNum()),
                         autoRenewAccount.getBalance() != null ? autoRenewAccount.getBalance() : 0L))
-                .orElse(null);
+                .orElse(null));
     }
 
-    private Account getTreasury(EntityId treasuryId, final Optional<Long> timestamp) {
+    private Supplier<Account> getTreasury(EntityId treasuryId, final Optional<Long> timestamp) {
         if (treasuryId == null) {
             return null;
         }
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId()))
                 .map(entity -> new Account(
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                         entity.getBalance() != null ? entity.getBalance() : 0L))
-                .orElse(null);
+                .orElse(null));
     }
 
     private Supplier<List<CustomFee>> getCustomFees(Long tokenId, final Optional<Long> timestamp) {

@@ -97,8 +97,8 @@ public class Token {
     private final JKey feeScheduleKey;
     private final JKey pauseKey;
     private final boolean frozenByDefault;
-    private final Account treasury;
-    private final Account autoRenewAccount;
+    private final Supplier<Account> treasury;
+    private final Supplier<Account> autoRenewAccount;
     private final boolean deleted;
     private final boolean paused;
     private final boolean autoRemoved;
@@ -170,8 +170,8 @@ public class Token {
             JKey feeScheduleKey,
             JKey pauseKey,
             boolean frozenByDefault,
-            Account treasury,
-            Account autoRenewAccount,
+            Supplier<Account> treasury,
+            Supplier<Account> autoRenewAccount,
             boolean deleted,
             boolean paused,
             boolean autoRemoved,
@@ -273,8 +273,8 @@ public class Token {
                 feeScheduleKey.orElse(null),
                 pauseKey.orElse(null),
                 op.getFreezeDefault(),
-                treasury,
-                autoRenewAccount,
+                Suppliers.memoize(() -> treasury),
+                Suppliers.memoize(() -> autoRenewAccount),
                 false,
                 false,
                 false,
@@ -287,7 +287,7 @@ public class Token {
                 op.getDecimals(),
                 op.getAutoRenewPeriod().getSeconds(),
                 0,
-                Suppliers.memoize(() -> Collections.emptyList()));
+                Suppliers.memoize(ArrayList::new));
     }
 
     // copied from TokenTypesManager in services
@@ -466,7 +466,7 @@ public class Token {
                 oldToken.feeScheduleKey,
                 oldToken.pauseKey,
                 oldToken.frozenByDefault,
-                treasury,
+                Suppliers.memoize(() -> treasury),
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
@@ -826,7 +826,7 @@ public class Token {
                 oldToken.feeScheduleKey,
                 oldToken.pauseKey,
                 oldToken.frozenByDefault,
-                treasury,
+                Suppliers.memoize(() -> treasury),
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
@@ -1051,7 +1051,7 @@ public class Token {
                 oldToken.pauseKey,
                 oldToken.frozenByDefault,
                 oldToken.treasury,
-                autoRenewAccount,
+                Suppliers.memoize(() -> autoRenewAccount),
                 oldToken.deleted,
                 oldToken.paused,
                 oldToken.autoRemoved,
@@ -1478,7 +1478,7 @@ public class Token {
             newMintedTokens.add(uniqueToken);
             tokenWithMintedUniqueTokens = tokenMod.token().setMintedUniqueTokens(newMintedTokens);
         }
-        var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() + metadataCount);
+        var newTreasury = treasury.get().setOwnedNfts(treasury.get().getOwnedNfts() + metadataCount);
         var newToken = createNewTokenWithNewTreasury(
                 tokenWithMintedUniqueTokens != null ? tokenWithMintedUniqueTokens : tokenMod.token(), newTreasury);
         return new TokenModificationResult(
@@ -1508,7 +1508,7 @@ public class Token {
     public TokenModificationResult burn(final TokenRelationship treasuryRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
-        final var treasuryId = treasury.getId();
+        final var treasuryId = treasury.get().getId();
         final var newRemovedUniqueTokens = new ArrayList<>(removedUniqueTokens);
         for (final long serialNum : serialNumbers) {
             final var uniqueToken = loadedUniqueTokens.get(serialNum);
@@ -1523,7 +1523,7 @@ public class Token {
                     new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
         }
         final var numBurned = serialNumbers.size();
-        var newTreasury = treasury.setOwnedNfts(treasury.getOwnedNfts() - numBurned);
+        var newTreasury = treasury.get().setOwnedNfts(treasury.get().getOwnedNfts() - numBurned);
         var tokenMod = changeSupply(treasuryRel, -numBurned, FAIL_INVALID, false);
         final var tokenWithRemovedUniqueTokens = tokenMod.token().setRemovedUniqueTokens(newRemovedUniqueTokens);
         var newToken = createNewTokenWithNewTreasury(tokenWithRemovedUniqueTokens, newTreasury);
@@ -1626,7 +1626,7 @@ public class Token {
             final boolean ignoreSupplyKey) {
         validateTrue(treasuryRel != null, FAIL_INVALID, "Cannot mint with a null treasuryRel");
         validateTrue(
-                treasuryRel.hasInvolvedIds(id, treasury.getId()),
+                treasuryRel.hasInvolvedIds(id, treasury.get().getId()),
                 FAIL_INVALID,
                 "Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
         if (!ignoreSupplyKey) {
@@ -1659,7 +1659,7 @@ public class Token {
         validateTrue(hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY, "Cannot wipe Tokens without wipe key.");
 
         validateFalse(
-                treasury.getId().equals(accountRel.getAccount().getId()),
+                treasury.get().getId().equals(accountRel.getAccount().getId()),
                 CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
                 "Cannot wipe treasury account of token.");
     }
@@ -1693,7 +1693,7 @@ public class Token {
     }
 
     public Account getTreasury() {
-        return treasury;
+        return treasury != null ? treasury.get() : null;
     }
 
     public Token setTreasury(Account treasury) {
@@ -1701,7 +1701,7 @@ public class Token {
     }
 
     public Account getAutoRenewAccount() {
-        return autoRenewAccount;
+        return autoRenewAccount != null ? autoRenewAccount.get() : null;
     }
 
     public Token setAutoRenewAccount(Account autoRenewAccount) {
@@ -1965,8 +1965,8 @@ public class Token {
                 .add("type", type)
                 .add("deleted", deleted)
                 .add("autoRemoved", autoRemoved)
-                .add("treasury", treasury)
-                .add("autoRenewAccount", autoRenewAccount)
+                .add("treasury", treasury != null ? treasury.get() : null)
+                .add("autoRenewAccount", autoRenewAccount != null ? autoRenewAccount.get() : null)
                 .add("kycKey", kycKey)
                 .add("freezeKey", freezeKey)
                 .add("frozenByDefault", frozenByDefault)
