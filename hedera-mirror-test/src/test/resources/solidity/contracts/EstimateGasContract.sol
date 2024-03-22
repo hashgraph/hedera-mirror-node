@@ -66,7 +66,12 @@ contract DummyContract {
 contract EstimateGasContract is Caller {
     uint256 public salt = 1;
     uint256 public salt2 = 2;
+    uint256 public salt_create2 = 1;
     uint256 public counter = 1;
+    uint256 public counter2 = 1;
+    uint256 public counter3 = 1;
+    uint256 public counter4 = 1;
+    uint256 public counter5 = 1;
     uint256 public transferType = 1; // 1-transfer, 2-send, 3-call
     MockContract mockContract;
     DeployDummyContract deployDummyContract;
@@ -90,8 +95,18 @@ contract EstimateGasContract is Caller {
         return counter;
     }
 
+    function updateCounter4(uint256 _counter) public returns (uint256) {
+        counter4 = _counter;
+        return counter4;
+    }
+
+    function updateCounter5(uint256 _counter) public returns (uint256) {
+        counter5 = _counter;
+        return counter5;
+    }
+
     function incrementCounter() public returns (address)  {
-        counter += 1;
+        counter2 += 1;
         return address(this);
     }
 
@@ -129,7 +144,7 @@ contract EstimateGasContract is Caller {
     }
 
     function deployViaCreate2() public returns (address) {
-        MockContract newContract = new MockContract{salt: bytes32(counter)}();
+        MockContract newContract = new MockContract{salt: bytes32(salt_create2)}();
 
         return address(newContract);
     }
@@ -247,13 +262,13 @@ contract EstimateGasContract is Caller {
 
     function callExternalFunctionNTimes(uint256 _n, address _contractAddress) external {
         for (uint256 i = 1; i < _n; i++) {
-            _contractAddress.call(abi.encodeWithSignature("updateCounter(uint256)", i));
+            _contractAddress.call(abi.encodeWithSignature("updateCounter4(uint256)", i));
         }
     }
 
     function delegatecallExternalFunctionNTimes(uint256 _n, address _contractAddress) external {
         for (uint256 i = 1; i < _n; i++) {
-            _contractAddress.delegatecall(abi.encodeWithSignature("updateCounter(uint256)", i));
+            _contractAddress.delegatecall(abi.encodeWithSignature("updateCounter5(uint256)", i));
         }
     }
 
@@ -265,9 +280,9 @@ contract EstimateGasContract is Caller {
 
     function updateStateNTimes(uint256 _n) external returns (uint256) {
         for (uint256 i = 0; i < _n; i++) {
-            counter = i;
+            counter3 = i;
         }
-        return counter;
+        return counter3;
     }
 
     function callExternalViewFunctionNTimes(uint256 _n, address _contractAddress) external {
