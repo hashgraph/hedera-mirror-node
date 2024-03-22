@@ -23,6 +23,7 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.base.Suppliers;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -155,7 +156,8 @@ class CreateLogicTest {
                 .thenReturn(token);
         given(token.getId()).willReturn(tokenId);
         given(token.newEnabledRelationship(any()))
-                .willReturn(new TokenRelationship(token, account, 0, false, true, false, false, false, 0));
+                .willReturn(new TokenRelationship(
+                        token, account, Suppliers.memoize(() -> 0L), false, true, false, false, false, 0));
         given(token.getTreasury()).willReturn(treasury);
         given(treasury.getId()).willReturn(treasuryId);
         given(token.getCustomFees()).willReturn(Collections.emptyList());
@@ -186,7 +188,8 @@ class CreateLogicTest {
                         any(long.class)))
                 .thenReturn(token);
         given(token.newEnabledRelationship(any()))
-                .willReturn(new TokenRelationship(token, account, 0, false, true, false, false, false, 0));
+                .willReturn(new TokenRelationship(
+                        token, account, Suppliers.memoize(() -> 0L), false, true, false, false, false, 0));
         given(token.getId()).willReturn(tokenId);
         given(token.getTreasury()).willReturn(treasury);
         given(treasury.getId()).willReturn(treasuryId);
@@ -210,7 +213,8 @@ class CreateLogicTest {
         staticMock.when(() -> Id.fromGrpcToken(any())).thenReturn(tokenId);
         given(tokenId.asEvmAddress()).willReturn(tokenAddress);
         given(token.newEnabledRelationship(any()))
-                .willReturn(new TokenRelationship(token, account, 0, false, true, false, false, false, 0));
+                .willReturn(new TokenRelationship(
+                        token, account, Suppliers.memoize(() -> 0L), false, true, false, false, false, 0));
         given(store.getAccount(any(), any())).willReturn(treasury).willReturn(account);
         given(op.hasAutoRenewAccount()).willReturn(true);
         staticToken.when(Token::getEmptyToken).thenCallRealMethod();

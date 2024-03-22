@@ -139,8 +139,17 @@ class TokenTest {
                 Suppliers.memoize(Collections::emptyList));
 
         treasuryRel = new TokenRelationship(
-                subject, treasuryAccount, initialTreasuryBalance, false, false, false, false, true, 0);
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, false, false, false, true, 0);
+                subject,
+                treasuryAccount,
+                Suppliers.memoize(() -> initialTreasuryBalance),
+                false,
+                false,
+                false,
+                false,
+                true,
+                0);
+        nonTreasuryRel = new TokenRelationship(
+                subject, nonTreasuryAccount, Suppliers.memoize(() -> 0L), false, false, false, false, true, 0);
     }
 
     @Test
@@ -210,7 +219,8 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithNoKeys() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, 0);
+        nonTreasuryRel = new TokenRelationship(
+                subject, nonTreasuryAccount, Suppliers.memoize(() -> 0L), false, true, false, false, false, 0);
 
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
@@ -222,7 +232,8 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndFrozenByDefault() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, true, true, false, false, false, 0);
+        nonTreasuryRel = new TokenRelationship(
+                subject, nonTreasuryAccount, Suppliers.memoize(() -> 0L), true, true, false, false, false, 0);
 
         // given:
 
@@ -270,7 +281,8 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndNotFrozenByDefault() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, 0);
+        nonTreasuryRel = new TokenRelationship(
+                subject, nonTreasuryAccount, Suppliers.memoize(() -> 0L), false, true, false, false, false, 0);
 
         // given:
         subject = subject.setFreezeKey(someKey);
@@ -308,7 +320,8 @@ class TokenTest {
 
     @Test
     void burnsUniqueAsExpected() {
-        treasuryRel = new TokenRelationship(subject, treasuryAccount, 2, false, false, false, false, true, 0);
+        treasuryRel = new TokenRelationship(
+                subject, treasuryAccount, Suppliers.memoize(() -> 2L), false, false, false, false, true, 0);
         subject = subject.setSupplyKey(someKey);
         // treasuryRel = treasuryRel.initBalance(2);
         subject.getLoadedUniqueTokens()
@@ -341,7 +354,8 @@ class TokenTest {
 
     @Test
     void mintsUniqueAsExpected() {
-        treasuryRel = new TokenRelationship(subject, treasuryAccount, 0, false, false, false, false, true, 0);
+        treasuryRel = new TokenRelationship(
+                subject, treasuryAccount, Suppliers.memoize(() -> 0L), false, false, false, false, true, 0);
         subject = subject.setSupplyKey(someKey);
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 

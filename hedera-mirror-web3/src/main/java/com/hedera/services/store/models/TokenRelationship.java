@@ -23,10 +23,12 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Suppliers;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
+import java.util.Objects;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Copied model from hedera-services.
@@ -52,7 +54,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 public class TokenRelationship {
     private final Token token;
     private final Account account;
-    private final long balance;
+    private final Supplier<Long> balance;
     private final boolean frozen;
     private final boolean kycGranted;
     private final boolean destroyed;
@@ -64,7 +66,7 @@ public class TokenRelationship {
     public TokenRelationship(
             Token token,
             Account account,
-            long balance,
+            Supplier<Long> balance,
             boolean frozen,
             boolean kycGranted,
             boolean destroyed,
@@ -86,7 +88,7 @@ public class TokenRelationship {
         this(
                 token,
                 account,
-                0,
+                Suppliers.memoize(() -> 0L),
                 token.isFrozenByDefault() && token.hasFreezeKey(),
                 !token.hasKycKey(),
                 false,
@@ -117,7 +119,7 @@ public class TokenRelationship {
         return new TokenRelationship(
                 oldTokenRel.token,
                 oldTokenRel.account,
-                balance,
+                Suppliers.memoize(() -> balance),
                 oldTokenRel.frozen,
                 oldTokenRel.kycGranted,
                 oldTokenRel.destroyed,
@@ -276,7 +278,7 @@ public class TokenRelationship {
     }
 
     public long getBalance() {
-        return balance;
+        return balance != null ? balance.get() : 0L;
     }
 
     /**
@@ -292,7 +294,7 @@ public class TokenRelationship {
             validateTrue(isTokenKycGrantedFor(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
-        long newBalanceChange = (balance - this.balance) + balanceChange;
+        long newBalanceChange = (balance - (this.balance != null ? this.balance.get() : 0L)) + balanceChange;
         return createNewTokenRelationshipWithNewBalance(this, newBalanceChange, balance);
     }
 
@@ -397,7 +399,7 @@ public class TokenRelationship {
         return new EqualsBuilder()
                 .append(notYetPersisted, that.notYetPersisted)
                 .append(account, that.account)
-                .append(balance, that.balance)
+                .append(balance.get(), that.balance.get())
                 .append(balanceChange, that.balanceChange)
                 .append(frozen, that.frozen)
                 .append(kycGranted, that.kycGranted)
@@ -406,21 +408,30 @@ public class TokenRelationship {
     }
 
     @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
-    }
-
-    @Override
     public String toString() {
         return MoreObjects.toStringHelper(TokenRelationship.class)
                 .add("notYetPersisted", notYetPersisted)
                 .add("account", account)
                 .add("token", token)
-                .add("balance", balance)
+                .add("balance", balance.get() != null ? balance.get() : 0L)
                 .add("balanceChange", balanceChange)
                 .add("frozen", frozen)
                 .add("kycGranted", kycGranted)
                 .add("isAutomaticAssociation", automaticAssociation)
                 .toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                token,
+                account,
+                balance.get() != null ? balance.get() : 0L,
+                frozen,
+                kycGranted,
+                destroyed,
+                notYetPersisted,
+                automaticAssociation,
+                balanceChange);
     }
 }

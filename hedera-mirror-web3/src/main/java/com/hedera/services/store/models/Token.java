@@ -1600,8 +1600,8 @@ public class Token {
     }
 
     public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
-        var newRel =
-                new TokenRelationship(this, account, 0, false, !hasKycKey(), false, false, automaticAssociation, 0);
+        var newRel = new TokenRelationship(
+                this, account, Suppliers.memoize(() -> 0L), false, !hasKycKey(), false, false, automaticAssociation, 0);
         if (hasFreezeKey() && frozenByDefault) {
             newRel = newRel.setFrozen(true);
         }
@@ -1616,7 +1616,7 @@ public class Token {
      * @return newly created {@link TokenRelationship}
      */
     public TokenRelationship newEnabledRelationship(final Account account) {
-        return new TokenRelationship(this, account, 0, false, true, false, false, false, 0);
+        return new TokenRelationship(this, account, Suppliers.memoize(() -> 0L), false, true, false, false, false, 0);
     }
 
     private TokenModificationResult changeSupply(
