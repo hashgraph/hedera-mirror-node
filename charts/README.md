@@ -261,7 +261,7 @@ kubectl exec -it "${RELEASE}-postgres-postgresql-0" -c postgresql -- psql -d mir
 V2:
 
 ```shell
-kubectl exec -it "${RELEASE}-citus-coord-0" -c postgres-util -- psql
+kubectl exec -it "${RELEASE}-citus-coord-0" -c postgres-util -- psql -d mirror_node -U mirror_node
 ```
 
 A thread dump can be taken by sending a `QUIT` signal to the java process inside the container. The thread dump output
