@@ -12,7 +12,7 @@ require (
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20230720072335-ed5726877e99
 	github.com/hashgraph/hedera-sdk-go/v2 v2.34.1
 	github.com/hellofresh/health-go/v4 v4.7.0
-	github.com/jackc/pgtype v1.14.2
+	github.com/jackc/pgtype v1.14.3
 	github.com/lib/pq v1.10.9
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onrik/gorm-logrus v0.5.0
@@ -26,10 +26,10 @@ require (
 	github.com/thanhpk/randstr v1.0.6
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	golang.org/x/exp v0.0.0-20240110193028-0dcbfd608b1e
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.5.7
-	gorm.io/gorm v1.25.7
+	gorm.io/gorm v1.25.8
 )
 
 require (
@@ -50,7 +50,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/docker/cli v20.10.17+incompatible // indirect
-	github.com/docker/docker v24.0.7+incompatible // indirect
+	github.com/docker/docker v24.0.9+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/ethereum/c-kzg-4844 v0.4.0 // indirect
@@ -77,7 +77,6 @@ require (
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v4 v4.18.2 // indirect
 	github.com/jackc/pgx/v5 v5.5.4 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
