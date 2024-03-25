@@ -66,13 +66,13 @@ class UnfreezeLogicTest {
         TokenRelationship modifiedTokenRelationship = mock(TokenRelationship.class);
         given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
                 .willReturn(tokenRelationship);
-        given(tokenRelationship.setFrozen(false)).willReturn(modifiedTokenRelationship);
+        given(tokenRelationship.changeFrozenState(false)).willReturn(modifiedTokenRelationship);
 
         // when:
         subject.unfreeze(idOfToken, idOfAccount, store);
 
         // then:
-        verify(tokenRelationship).setFrozen(false);
+        verify(tokenRelationship).changeFrozenState(false);
         verify(store).updateTokenRelationship(modifiedTokenRelationship);
     }
 

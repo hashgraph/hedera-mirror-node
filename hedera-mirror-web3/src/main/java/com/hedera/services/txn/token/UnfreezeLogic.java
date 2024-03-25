@@ -43,7 +43,7 @@ public class UnfreezeLogic {
         var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW);
 
         /* --- Do the business logic --- */
-        var unfrozentokenRelationship = tokenRelationship.setFrozen(false);
+        var unfrozentokenRelationship = tokenRelationship.changeFrozenState(false);
 
         /* --- Persist the updated models --- */
         store.updateTokenRelationship(unfrozentokenRelationship);
