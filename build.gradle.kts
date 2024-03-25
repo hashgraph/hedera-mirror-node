@@ -62,7 +62,7 @@ dependencies {
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.1.0")
         api("com.google.guava:guava:33.1.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
+        api("com.graphql-java-generator:graphql-java-client-runtime:2.5")
         api("com.graphql-java:graphql-java-extended-scalars:21.0")
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.47.1")
