@@ -23,7 +23,6 @@ import static com.hedera.services.utils.MiscUtils.*;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
-import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -36,6 +35,8 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.Collections;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -110,17 +111,17 @@ public abstract class AbstractAutoCreationLogic {
                 0L,
                 Id.fromGrpcAccount(newId),
                 0L,
-                Suppliers.memoize(() -> 0L),
+                () -> 0L,
                 false,
-                Suppliers.memoize(() -> 0L),
+                () -> 0L,
                 0L,
                 null,
                 0,
-                Suppliers.memoize(() -> Collections.emptySortedMap()),
-                Suppliers.memoize(() -> Collections.emptySortedMap()),
-                Suppliers.memoize(() -> Collections.emptySortedSet()),
-                Suppliers.memoize(() -> 0),
-                Suppliers.memoize(() -> 0),
+                () -> Collections.unmodifiableSortedMap(new TreeMap<>()),
+                () -> Collections.unmodifiableSortedMap(new TreeMap<>()),
+                () -> Collections.unmodifiableSortedSet(new TreeSet<>()),
+                () -> 0,
+                () -> 0,
                 0,
                 0L,
                 false,

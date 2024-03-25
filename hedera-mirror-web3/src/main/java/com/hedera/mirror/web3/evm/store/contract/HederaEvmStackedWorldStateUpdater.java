@@ -34,7 +34,8 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
-import java.util.Collections;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -130,15 +131,15 @@ public class HederaEvmStackedWorldStateUpdater
                 0L,
                 Suppliers.memoize(() -> balance.toLong()),
                 false,
-                Suppliers.memoize(() -> 0L),
+                () -> 0L,
                 0L,
                 null,
                 0,
-                Suppliers.memoize(() -> Collections.emptySortedMap()),
-                Suppliers.memoize(() -> Collections.emptySortedMap()),
-                Suppliers.memoize(() -> Collections.emptySortedSet()),
-                Suppliers.memoize(() -> 0),
-                Suppliers.memoize(() -> 0),
+                TreeMap::new,
+                TreeMap::new,
+                TreeSet::new,
+                () -> 0,
+                () -> 0,
                 0,
                 nonce,
                 false,

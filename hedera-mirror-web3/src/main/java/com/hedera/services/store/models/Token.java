@@ -53,9 +53,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Copied model from hedera-services.
@@ -263,7 +262,7 @@ public class Token {
                 false,
                 mapToDomain(op.getTokenType()),
                 op.getSupplyType(),
-                Suppliers.memoize(() -> 0L),
+                () -> 0L,
                 op.getMaxSupply(),
                 kycKey.orElse(null),
                 freezeKey.orElse(null),
@@ -287,7 +286,7 @@ public class Token {
                 op.getDecimals(),
                 op.getAutoRenewPeriod().getSeconds(),
                 0,
-                Suppliers.memoize(ArrayList::new));
+                () -> Collections.unmodifiableList(new ArrayList<>()));
     }
 
     // copied from TokenTypesManager in services
@@ -1478,7 +1477,7 @@ public class Token {
             newMintedTokens.add(uniqueToken);
             tokenWithMintedUniqueTokens = tokenMod.token().setMintedUniqueTokens(newMintedTokens);
         }
-        var newTreasury = treasury.get().setOwnedNfts(treasury.get().getOwnedNfts() + metadataCount);
+        var newTreasury = getTreasury().setOwnedNfts(getTreasury().getOwnedNfts() + metadataCount);
         var newToken = createNewTokenWithNewTreasury(
                 tokenWithMintedUniqueTokens != null ? tokenWithMintedUniqueTokens : tokenMod.token(), newTreasury);
         return new TokenModificationResult(
@@ -1508,7 +1507,7 @@ public class Token {
     public TokenModificationResult burn(final TokenRelationship treasuryRel, final List<Long> serialNumbers) {
         validateTrue(type == TokenType.NON_FUNGIBLE_UNIQUE, FAIL_INVALID);
         validateFalse(serialNumbers.isEmpty(), INVALID_TOKEN_BURN_METADATA);
-        final var treasuryId = treasury.get().getId();
+        final var treasuryId = getTreasury().getId();
         final var newRemovedUniqueTokens = new ArrayList<>(removedUniqueTokens);
         for (final long serialNum : serialNumbers) {
             final var uniqueToken = loadedUniqueTokens.get(serialNum);
@@ -1523,7 +1522,7 @@ public class Token {
                     new UniqueToken(id, serialNum, RichInstant.MISSING_INSTANT, treasuryId, Id.DEFAULT, new byte[] {}));
         }
         final var numBurned = serialNumbers.size();
-        var newTreasury = treasury.get().setOwnedNfts(treasury.get().getOwnedNfts() - numBurned);
+        var newTreasury = getTreasury().setOwnedNfts(getTreasury().getOwnedNfts() - numBurned);
         var tokenMod = changeSupply(treasuryRel, -numBurned, FAIL_INVALID, false);
         final var tokenWithRemovedUniqueTokens = tokenMod.token().setRemovedUniqueTokens(newRemovedUniqueTokens);
         var newToken = createNewTokenWithNewTreasury(tokenWithRemovedUniqueTokens, newTreasury);
@@ -1545,7 +1544,7 @@ public class Token {
         baseWipeValidations(accountRel);
         amountWipeValidations(accountRel, amount);
 
-        final var newTotalSupply = totalSupply.get() - amount;
+        final var newTotalSupply = getTotalSupply() - amount;
         final var newAccBalance = accountRel.getBalance() - amount;
 
         var newAccountRel = accountRel;
@@ -1579,7 +1578,7 @@ public class Token {
             validateTrue(wipeAccountIsOwner, ACCOUNT_DOES_NOT_OWN_WIPED_NFT);
         }
 
-        final var newTotalSupply = totalSupply.get() - serialNumbers.size();
+        final var newTotalSupply = getTotalSupply() - serialNumbers.size();
         final var newAccountBalance = accountRel.getBalance() - serialNumbers.size();
         var account = accountRel.getAccount();
         final var newRemovedUniqueTokens = new ArrayList<>(removedUniqueTokens);
@@ -1601,7 +1600,7 @@ public class Token {
 
     public TokenRelationship newRelationshipWith(final Account account, final boolean automaticAssociation) {
         var newRel = new TokenRelationship(
-                this, account, Suppliers.memoize(() -> 0L), false, !hasKycKey(), false, false, automaticAssociation, 0);
+                this, account, () -> 0L, false, !hasKycKey(), false, false, automaticAssociation, 0);
         if (hasFreezeKey() && frozenByDefault) {
             newRel = newRel.setFrozen(true);
         }
@@ -1616,7 +1615,7 @@ public class Token {
      * @return newly created {@link TokenRelationship}
      */
     public TokenRelationship newEnabledRelationship(final Account account) {
-        return new TokenRelationship(this, account, Suppliers.memoize(() -> 0L), false, true, false, false, false, 0);
+        return new TokenRelationship(this, account, () -> 0L, false, true, false, false, false, 0);
     }
 
     private TokenModificationResult changeSupply(
@@ -1626,13 +1625,13 @@ public class Token {
             final boolean ignoreSupplyKey) {
         validateTrue(treasuryRel != null, FAIL_INVALID, "Cannot mint with a null treasuryRel");
         validateTrue(
-                treasuryRel.hasInvolvedIds(id, treasury.get().getId()),
+                treasuryRel.hasInvolvedIds(id, getTreasury().getId()),
                 FAIL_INVALID,
                 "Cannot change " + this + " supply (" + amount + ") with non-treasury rel " + treasuryRel);
         if (!ignoreSupplyKey) {
             validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);
         }
-        final long newTotalSupply = totalSupply.get() + amount;
+        final long newTotalSupply = getTotalSupply() + amount;
         validateTrue(newTotalSupply >= 0, negSupplyCode);
         if (supplyType == TokenSupplyType.FINITE) {
             validateTrue(
@@ -1659,7 +1658,7 @@ public class Token {
         validateTrue(hasWipeKey(), TOKEN_HAS_NO_WIPE_KEY, "Cannot wipe Tokens without wipe key.");
 
         validateFalse(
-                treasury.get().getId().equals(accountRel.getAccount().getId()),
+                getTreasury().getId().equals(accountRel.getAccount().getId()),
                 CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT,
                 "Cannot wipe treasury account of token.");
     }
@@ -1667,7 +1666,7 @@ public class Token {
     private void amountWipeValidations(final TokenRelationship accountRel, final long amount) {
         validateTrue(amount >= 0, INVALID_WIPING_AMOUNT, errorMessage("wipe", amount, accountRel));
 
-        final var newTotalSupply = totalSupply.get() - amount;
+        final var newTotalSupply = getTotalSupply() - amount;
         validateTrue(
                 newTotalSupply >= 0, INVALID_WIPING_AMOUNT, "Wiping would negate the total supply of the given token.");
 
@@ -1693,7 +1692,7 @@ public class Token {
     }
 
     public Account getTreasury() {
-        return treasury != null ? treasury.get() : null;
+        return treasury != null && treasury.get() != null ? treasury.get() : Account.getEmptyAccount();
     }
 
     public Token setTreasury(Account treasury) {
@@ -1701,7 +1700,9 @@ public class Token {
     }
 
     public Account getAutoRenewAccount() {
-        return autoRenewAccount != null ? autoRenewAccount.get() : null;
+        return autoRenewAccount != null && autoRenewAccount.get() != null
+                ? autoRenewAccount.get()
+                : Account.getEmptyAccount();
     }
 
     public Token setAutoRenewAccount(Account autoRenewAccount) {
@@ -1842,7 +1843,9 @@ public class Token {
     }
 
     public List<CustomFee> getCustomFees() {
-        return customFees != null && customFees.get() != null ? customFees.get() : new ArrayList<>();
+        return customFees != null && customFees.get() != null
+                ? customFees.get()
+                : Collections.unmodifiableList(new ArrayList<>());
     }
 
     public boolean hasMintedUniqueTokens() {
@@ -1949,13 +1952,81 @@ public class Token {
     readability of unit tests; this model object is not used in hash-based
     collections, so the performance of these methods doesn't matter. */
     @Override
-    public boolean equals(final Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Token token = (Token) o;
+        return supplyHasChanged == token.supplyHasChanged
+                && getMaxSupply() == token.getMaxSupply()
+                && isFrozenByDefault() == token.isFrozenByDefault()
+                && isDeleted() == token.isDeleted()
+                && isPaused() == token.isPaused()
+                && autoRemoved == token.autoRemoved
+                && getExpiry() == token.getExpiry()
+                && isNew() == token.isNew()
+                && getDecimals() == token.getDecimals()
+                && getAutoRenewPeriod() == token.getAutoRenewPeriod()
+                && getCreatedTimestamp() == token.getCreatedTimestamp()
+                && getLastUsedSerialNumber() == token.getLastUsedSerialNumber()
+                && Objects.equals(getEntityId(), token.getEntityId())
+                && Objects.equals(getId(), token.getId())
+                && Objects.equals(mintedUniqueTokens, token.mintedUniqueTokens)
+                && Objects.equals(removedUniqueTokens, token.removedUniqueTokens)
+                && Objects.equals(getLoadedUniqueTokens(), token.getLoadedUniqueTokens())
+                && getType() == token.getType()
+                && getSupplyType() == token.getSupplyType()
+                && Objects.equals(getTotalSupply(), token.getTotalSupply())
+                && Objects.equals(getKycKey(), token.getKycKey())
+                && Objects.equals(getFreezeKey(), token.getFreezeKey())
+                && Objects.equals(getSupplyKey(), token.getSupplyKey())
+                && Objects.equals(getWipeKey(), token.getWipeKey())
+                && Objects.equals(getAdminKey(), token.getAdminKey())
+                && Objects.equals(getFeeScheduleKey(), token.getFeeScheduleKey())
+                && Objects.equals(getPauseKey(), token.getPauseKey())
+                && Objects.equals(getTreasury(), token.getTreasury())
+                && Objects.equals(getAutoRenewAccount(), token.getAutoRenewAccount())
+                && Objects.equals(getMemo(), token.getMemo())
+                && Objects.equals(getName(), token.getName())
+                && Objects.equals(getSymbol(), token.getSymbol())
+                && Objects.equals(getCustomFees(), token.getCustomFees());
     }
 
     @Override
     public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
+        return Objects.hash(
+                getEntityId(),
+                getId(),
+                mintedUniqueTokens,
+                removedUniqueTokens,
+                getLoadedUniqueTokens(),
+                supplyHasChanged,
+                getType(),
+                getSupplyType(),
+                getTotalSupply(),
+                getMaxSupply(),
+                getKycKey(),
+                getFreezeKey(),
+                getSupplyKey(),
+                getWipeKey(),
+                getAdminKey(),
+                getFeeScheduleKey(),
+                getPauseKey(),
+                isFrozenByDefault(),
+                getTreasury(),
+                getAutoRenewAccount(),
+                isDeleted(),
+                isPaused(),
+                autoRemoved,
+                getExpiry(),
+                isNew(),
+                getMemo(),
+                getName(),
+                getSymbol(),
+                getDecimals(),
+                getAutoRenewPeriod(),
+                getCreatedTimestamp(),
+                getLastUsedSerialNumber(),
+                getCustomFees());
     }
 
     @Override
@@ -1965,8 +2036,8 @@ public class Token {
                 .add("type", type)
                 .add("deleted", deleted)
                 .add("autoRemoved", autoRemoved)
-                .add("treasury", treasury != null ? treasury.get() : null)
-                .add("autoRenewAccount", autoRenewAccount != null ? autoRenewAccount.get() : null)
+                .add("treasury", getTreasury())
+                .add("autoRenewAccount", getAutoRenewAccount())
                 .add("kycKey", kycKey)
                 .add("freezeKey", freezeKey)
                 .add("frozenByDefault", frozenByDefault)

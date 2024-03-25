@@ -90,7 +90,7 @@ class TokenRelationshipTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Suppliers.memoize(() -> Collections.emptyList()));
+                Suppliers.memoize(Collections::emptyList));
 
         account = new Account(
                 ByteString.EMPTY,
@@ -147,12 +147,7 @@ class TokenRelationshipTest {
     void toStringAsExpected() {
         // given:
         final var desired =
-                "TokenRelationship{notYetPersisted=true, account=Account{entityId=0, id=1.0.4321, alias=, address=0x00000000000000000000000000000000000010e1, expiry=0, balance=0, deleted=false, ownedNfts=0, "
-                        + "autoRenewSecs=0, proxy=0.0.0, accountAddress=0x00000000000000000000000000000000000010e1, autoAssociationMetadata=0, cryptoAllowances=null, "
-                        + "fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3, numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, "
-                        + "isSmartContract=false, key=null, createdTimestamp=0}, token=Token{id=0.0.1234, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=null,"
-                        + " autoRenewAccount=null, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, currentSerialNumber=0,"
-                        + " pauseKey=null, paused=false}, balance=1234, balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=true}";
+                "TokenRelationship{notYetPersisted=true, account=Account{entityId=0, id=1.0.4321, alias=, address=0x00000000000000000000000000000000000010e1, expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=0.0.0, accountAddress=0x00000000000000000000000000000000000010e1, autoAssociationMetadata=0, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=3, numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, token=Token{id=0.0.1234, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=null, accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=0, numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, autoRenewAccount=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=null, accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=0, numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, currentSerialNumber=0, pauseKey=null, paused=false}, balance=1234, balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=true}";
         // expect:
         assertEquals(desired, subject.toString());
     }

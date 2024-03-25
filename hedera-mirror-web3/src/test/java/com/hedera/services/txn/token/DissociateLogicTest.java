@@ -224,17 +224,17 @@ class DissociateLogicTest {
                 0L,
                 accountId,
                 9999999999L,
-                Suppliers.memoize(() -> 0L),
+                () -> 0L,
                 false,
-                Suppliers.memoize(() -> 0L),
+                () -> 0L,
                 0L,
                 null,
                 3,
                 null,
                 null,
                 null,
-                Suppliers.memoize(() -> 3),
-                Suppliers.memoize(() -> 0),
+                () -> 3,
+                () -> 0,
                 0,
                 0,
                 false,
@@ -242,8 +242,8 @@ class DissociateLogicTest {
                 0L);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
-        tokenRelationship = new TokenRelationship(
-                token, spyAccount, Suppliers.memoize(() -> 3L), false, !token.hasKycKey(), false, false, true, 3L);
+        tokenRelationship =
+                new TokenRelationship(token, spyAccount, () -> 3L, false, !token.hasKycKey(), false, false, true, 3L);
         setupToken();
         setupTokenRelationship();
         setupAccount();
@@ -279,8 +279,8 @@ class DissociateLogicTest {
                 0L);
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
-        tokenRelationship = new TokenRelationship(
-                token, spyAccount, Suppliers.memoize(() -> 3L), false, !token.hasKycKey(), false, false, false, 0L);
+        tokenRelationship =
+                new TokenRelationship(token, spyAccount, () -> 3L, false, !token.hasKycKey(), false, false, false, 0L);
         setupToken();
         setupTokenRelationship();
         setupAccount();

@@ -121,29 +121,8 @@ class AccountTest {
 
     @Test
     void toStringAsExpected() {
-        final var desired = "Account{" + "entityId=0"
-                + ", id=0.0.12345"
-                + ", alias="
-                + ", address="
-                + subjectId.asEvmAddress() + ", expiry=0"
-                + ", balance=0"
-                + ", deleted=false"
-                + ", ownedNfts=5"
-                + ", autoRenewSecs=0"
-                + ", proxy=0.0.0"
-                + ", accountAddress="
-                + subjectId.asEvmAddress() + ", autoAssociationMetadata=123"
-                + ", cryptoAllowances=null"
-                + ", fungibleTokenAllowances=null"
-                + ", approveForAllNfts=null"
-                + ", numAssociations=3"
-                + ", numPositiveBalances=2"
-                + ", numTreasuryTitles=0"
-                + ", ethereumNonce=0"
-                + ", isSmartContract=false"
-                + ", key=null"
-                + ", createdTimestamp=0"
-                + "}";
+        final var desired =
+                "Account{entityId=0, id=0.0.12345, alias=, address=0x0000000000000000000000000000000000003039, expiry=0, balance=0, deleted=false, ownedNfts=5, autoRenewSecs=0, proxy=0.0.0, accountAddress=0x0000000000000000000000000000000000003039, autoAssociationMetadata=123, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=3, numPositiveBalances=2, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}";
 
         // expect:
         assertEquals(desired, subject.toString());

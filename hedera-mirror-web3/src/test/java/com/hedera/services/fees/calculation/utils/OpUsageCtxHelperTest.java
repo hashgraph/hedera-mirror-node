@@ -160,7 +160,7 @@ class OpUsageCtxHelperTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                Suppliers.memoize(() -> 0L),
+                () -> 0L,
                 21_000_000,
                 null,
                 null,

@@ -28,7 +28,6 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import java.util.Objects;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * Copied model from hedera-services.
@@ -88,7 +87,7 @@ public class TokenRelationship {
         this(
                 token,
                 account,
-                Suppliers.memoize(() -> 0L),
+                () -> 0L,
                 token.isFrozenByDefault() && token.hasFreezeKey(),
                 !token.hasKycKey(),
                 false,
@@ -294,7 +293,7 @@ public class TokenRelationship {
             validateTrue(isTokenKycGrantedFor(), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
         }
 
-        long newBalanceChange = (balance - (this.balance != null ? this.balance.get() : 0L)) + balanceChange;
+        long newBalanceChange = (balance - getBalance()) + balanceChange;
         return createNewTokenRelationshipWithNewBalance(this, newBalanceChange, balance);
     }
 
@@ -387,33 +386,12 @@ public class TokenRelationship {
     readability of unit tests; model objects are not used in hash-based
     collections, so the performance of these methods doesn't matter. */
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null || !obj.getClass().equals(TokenRelationship.class)) {
-            return false;
-        }
-
-        final var that = (TokenRelationship) obj;
-        return new EqualsBuilder()
-                .append(notYetPersisted, that.notYetPersisted)
-                .append(account, that.account)
-                .append(balance.get(), that.balance.get())
-                .append(balanceChange, that.balanceChange)
-                .append(frozen, that.frozen)
-                .append(kycGranted, that.kycGranted)
-                .append(automaticAssociation, that.automaticAssociation)
-                .isEquals();
-    }
-
-    @Override
     public String toString() {
         return MoreObjects.toStringHelper(TokenRelationship.class)
                 .add("notYetPersisted", notYetPersisted)
                 .add("account", account)
                 .add("token", token)
-                .add("balance", balance.get() != null ? balance.get() : 0L)
+                .add("balance", getBalance())
                 .add("balanceChange", balanceChange)
                 .add("frozen", frozen)
                 .add("kycGranted", kycGranted)
@@ -422,16 +400,32 @@ public class TokenRelationship {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TokenRelationship that = (TokenRelationship) o;
+        return isFrozen() == that.isFrozen()
+                && isKycGranted() == that.isKycGranted()
+                && isDestroyed() == that.isDestroyed()
+                && isNotYetPersisted() == that.isNotYetPersisted()
+                && isAutomaticAssociation() == that.isAutomaticAssociation()
+                && getBalanceChange() == that.getBalanceChange()
+                && Objects.equals(getToken(), that.getToken())
+                && Objects.equals(getAccount(), that.getAccount())
+                && Objects.equals(getBalance(), that.getBalance());
+    }
+
+    @Override
     public int hashCode() {
         return Objects.hash(
-                token,
-                account,
-                balance.get() != null ? balance.get() : 0L,
-                frozen,
-                kycGranted,
-                destroyed,
-                notYetPersisted,
-                automaticAssociation,
-                balanceChange);
+                getToken(),
+                getAccount(),
+                getBalance(),
+                isFrozen(),
+                isKycGranted(),
+                isDestroyed(),
+                isNotYetPersisted(),
+                isAutomaticAssociation(),
+                getBalanceChange());
     }
 }

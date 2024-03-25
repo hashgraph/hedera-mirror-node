@@ -274,11 +274,11 @@ class TokenDatabaseAccessorTest {
                         .returns(emptyList(), Token::removedUniqueTokens)
                         .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
                         .returns(false, Token::hasChangedSupply)
-                        .returns(null, Token::getTreasury)
-                        .returns(null, Token::getAutoRenewAccount)
+                        .returns(Account.getEmptyAccount(), Token::getTreasury)
+                        .returns(Account.getEmptyAccount(), Token::getAutoRenewAccount)
                         .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
                         .returns(false, Token::isNew)
-                        .returns(null, Token::getTreasury)
+                        .returns(Account.getEmptyAccount(), Token::getTreasury)
                         .returns(0L, Token::getLastUsedSerialNumber)
                         .returns(emptyList(), Token::getCustomFees));
     }
@@ -297,11 +297,11 @@ class TokenDatabaseAccessorTest {
                 .returns(emptyList(), Token::removedUniqueTokens)
                 .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
                 .returns(false, Token::hasChangedSupply)
-                .returns(null, Token::getTreasury)
-                .returns(null, Token::getAutoRenewAccount)
+                .returns(Account.getEmptyAccount(), Token::getTreasury)
+                .returns(Account.getEmptyAccount(), Token::getAutoRenewAccount)
                 .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
                 .returns(false, Token::isNew)
-                .returns(null, Token::getTreasury)
+                .returns(Account.getEmptyAccount(), Token::getTreasury)
                 .returns(0L, Token::getLastUsedSerialNumber)
                 .returns(emptyList(), Token::getCustomFees));
     }
