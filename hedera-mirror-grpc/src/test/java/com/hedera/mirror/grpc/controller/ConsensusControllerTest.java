@@ -45,12 +45,16 @@ import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @CustomLog
+@ExtendWith(OutputCaptureExtension.class)
 class ConsensusControllerTest extends GrpcIntegrationTest {
 
     private static final Duration WAIT = Duration.ofSeconds(10L);
@@ -98,6 +102,35 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .thenAwait(WAIT)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Invalid entity ID"))
                 .verify(WAIT);
+    }
+
+    @Test
+    void maxConsensusEndTime(CapturedOutput capturedOutput) {
+        var topicMessage1 = domainBuilder.topicMessage().block();
+        var query = ConsensusTopicQuery.newBuilder()
+                .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
+                .setConsensusEndTime(
+                        Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
+                .setLimit(1L)
+                .build();
+        assertThat(blockingService.subscribeTopic(query))
+                .toIterable()
+                .hasSize(1)
+                .containsSequence(grpcResponse(topicMessage1));
+        assertThat(capturedOutput.getAll()).doesNotContain("Long overflow when converting time");
+    }
+
+    @Test
+    void maxConsensusStartTime(CapturedOutput capturedOutput) {
+        var query = ConsensusTopicQuery.newBuilder()
+                .setConsensusStartTime(
+                        Timestamp.newBuilder().setSeconds(Long.MAX_VALUE).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
+                .setLimit(1L)
+                .build();
+        blockingService.subscribeTopic(query);
+        assertThat(capturedOutput.getAll()).doesNotContain("Long overflow when converting time");
     }
 
     @Test
