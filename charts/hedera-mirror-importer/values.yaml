@@ -229,7 +229,7 @@ prometheusRules:
       application: hedera-mirror-importer
       area: cloud
 
-  ImporterDbStorageFull:
+  DatabaseStorageFull:
     annotations:
       description: Storage for {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full
       summary: Database storage is full
@@ -238,18 +238,6 @@ prometheusRules:
     for: 1m
     labels:
       severity: critical
-      application: hedera-mirror-importer
-      area: resource
-
-  ImporterDbStorageFullWarning:
-    annotations:
-      description: Storage for {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full
-      summary: Database storage is almost full
-    enabled: true
-    expr: kubelet_volume_stats_used_bytes{node=~".*(worker|coord).*"} / kubelet_volume_stats_capacity_bytes{node=~".*(worker|coord).*"} >= .70
-    for: 1m
-    labels:
-      severity: warning
       application: hedera-mirror-importer
       area: resource
 
