@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.service.ContractCallService.GAS_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
@@ -47,7 +48,23 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractCallServiceTest extends ContractCallTestSetup {
 
-    private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
+    static Stream<BlockType> provideBlockTypes() {
+        return Stream.of(
+                BlockType.EARLIEST,
+                BlockType.of("safe"),
+                BlockType.of("pending"),
+                BlockType.of("finalized"),
+                BlockType.LATEST);
+    }
+
+    static Stream<Arguments> provideCustomBlockTypes() {
+        return Stream.of(
+                Arguments.of(BlockType.of("0x1"), "0x", false),
+                Arguments.of(
+                        BlockType.of("0x100"),
+                        "0x0000000000000000000000000000000000000000000000000000000000000004",
+                        true));
+    }
 
     @BeforeEach
     void setup() {
@@ -563,7 +580,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     private double getGasUsedBeforeExecution(final CallType callType) {
-        final var callCounter = meterRegistry.find(GAS_METRICS).counters().stream()
+        final var callCounter = meterRegistry.find(GAS_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst();
 
@@ -576,7 +593,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {
-        final var afterExecution = meterRegistry.find(GAS_METRICS).counters().stream()
+        final var afterExecution = meterRegistry.find(GAS_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst()
                 .get();
@@ -690,23 +707,5 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         private final String function;
         private final Object[] functionParams;
         private final String data;
-    }
-
-    static Stream<BlockType> provideBlockTypes() {
-        return Stream.of(
-                BlockType.EARLIEST,
-                BlockType.of("safe"),
-                BlockType.of("pending"),
-                BlockType.of("finalized"),
-                BlockType.LATEST);
-    }
-
-    static Stream<Arguments> provideCustomBlockTypes() {
-        return Stream.of(
-                Arguments.of(BlockType.of("0x1"), "0x", false),
-                Arguments.of(
-                        BlockType.of("0x100"),
-                        "0x0000000000000000000000000000000000000000000000000000000000000004",
-                        true));
     }
 }

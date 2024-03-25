@@ -51,3 +51,8 @@ rosetta:
 stackgres:
   enabled: true
   podAntiAffinity: false
+web3:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi

@@ -806,7 +806,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(reactor_netty_http_server_data_received_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) / sum(rate(reactor_netty_http_server_data_received_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) >= 0",
+          "expr": "sum(rate(hedera_mirror_web3_request_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) / sum(rate(hedera_mirror_web3_request_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) >= 0",
           "interval": "1m",
           "legendFormat": "{{uri}}",
           "range": true,
@@ -1020,7 +1020,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(rate(reactor_netty_http_server_data_sent_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) / sum(rate(reactor_netty_http_server_data_sent_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) >= 0",
+          "expr": "sum(rate(hedera_mirror_web3_response_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) / sum(rate(hedera_mirror_web3_response_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) >= 0",
           "interval": "1m",
           "legendFormat": "{{uri}}",
           "range": true,
@@ -2888,13 +2888,7 @@
         "y": 155
       },
       "id": 54,
-      "links": [
-        {
-          "targetBlank": true,
-          "title": "Explore Logs",
-          "url": "/explore?panes={\"rl3\":{\"datasource\":\"${loki}\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{app=\\\"web3\\\", cluster=\\\"${cluster:text}\\\", namespace=\\\"${namespace:text}\\\"} |= ``\",\"queryType\":\"range\",\"datasource\":{\"type\":\"loki\",\"uid\":\"${loki}\"},\"editorMode\":\"builder\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&schemaVersion=1&orgId=1"
-        }
-      ],
+      "links": [],
       "options": {
         "dedupStrategy": "none",
         "enableLogDetails": false,

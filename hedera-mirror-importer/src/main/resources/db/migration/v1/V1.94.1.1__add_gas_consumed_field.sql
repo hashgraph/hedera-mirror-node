@@ -18,12 +18,17 @@ with contract_action_gas_usage as (
         e.created_timestamp,
         -- Correctly assign `payload` based on whether it's a contract creation or call.
         coalesce(
-        case
-            when cr.consensus_timestamp = e.created_timestamp then c.initcode
-            else cr.function_parameters
-        end, ''::bytea) as payload,
+            case
+                when cr.consensus_timestamp = e.created_timestamp then c.initcode
+                when cr.failed_initcode is not null then cr.failed_initcode
+                else cr.function_parameters
+            end, ''::bytea) as payload,
         -- Contract creation has an extra cost of 32000
-        case when cr.consensus_timestamp = e.created_timestamp then 32000 else 0 end as creation_cost
+        case
+            when cr.consensus_timestamp = e.created_timestamp then 32000
+            when cr.failed_initcode is not null then 32000
+            else 0
+        end as creation_cost
     from
         contract_result cr
     left join contract c on cr.contract_id = c.id

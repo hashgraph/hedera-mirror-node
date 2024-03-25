@@ -23,7 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
+public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>, NftAllowanceRepositoryCustom {
 
     /**
      * This repository method will query based on the spender and further filter by the owner and token_id,

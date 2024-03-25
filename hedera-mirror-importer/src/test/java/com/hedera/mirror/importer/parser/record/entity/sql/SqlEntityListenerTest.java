@@ -1358,6 +1358,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         EntityId accountId2 = EntityId.of("0.0.4");
         EntityId treasuryId = EntityId.of("0.0.98");
         String metadata1 = "nft1";
+        String metadata1Update = "update_nft1";
         String metadata2 = "nft2";
 
         Token token1 = getToken(tokenId1, treasuryId, 1L, 1L);
@@ -1369,15 +1370,17 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         // create nft 1
         sqlEntityListener.onNft(getNft(tokenId1, 1L, null, 3L, false, metadata1, 3L)); // mint
         sqlEntityListener.onNft(getNft(tokenId1, 1L, accountId1, null, null, null, 3L)); // transfer
+        sqlEntityListener.onNft(getNft(tokenId1, 1L, null, null, null, metadata1Update, 4L)); // metadata update
 
         // create nft 2
         sqlEntityListener.onNft(getNft(tokenId2, 1L, null, 4L, false, metadata2, 4L)); // mint
         sqlEntityListener.onNft(getNft(tokenId2, 1L, accountId2, null, null, null, 4L)); // transfer
+        sqlEntityListener.onNft(getNft(tokenId2, 1L, accountId2, null, null, "", 5L)); // metadata clear
 
         completeFileAndCommit();
 
-        Nft nft1 = getNft(tokenId1, 1L, accountId1, 3L, false, metadata1, 3L); // transfer
-        Nft nft2 = getNft(tokenId2, 1L, accountId2, 4L, false, metadata2, 4L); // transfer
+        Nft nft1 = getNft(tokenId1, 1L, accountId1, 3L, false, metadata1Update, 4L); // transfer + metadata update
+        Nft nft2 = getNft(tokenId2, 1L, accountId2, 4L, false, "", 5L); // transfer + metadata clear
 
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
     }
@@ -1979,6 +1982,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         sqlEntityListener.onToken(tokenCreate);
 
         var tokenUpdate = Token.builder()
+                .metadata(domainBuilder.bytes(16))
+                .metadataKey(domainBuilder.key())
                 .pauseStatus(TokenPauseStatusEnum.PAUSED)
                 .timestampRange(Range.atLeast(domainBuilder.timestamp()))
                 .tokenId(tokenCreate.getTokenId())
@@ -1988,7 +1993,33 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
 
         // then
         var tokenMerged = TestUtils.clone(tokenCreate);
+        tokenMerged.setMetadata(tokenUpdate.getMetadata());
+        tokenMerged.setMetadataKey(tokenUpdate.getMetadataKey());
         tokenMerged.setPauseStatus(tokenUpdate.getPauseStatus());
+        tokenMerged.setTimestampRange(tokenUpdate.getTimestampRange());
+        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
+
+        var tokenHistory = TestUtils.clone(tokenCreate);
+        tokenHistory.setTimestampUpper(tokenUpdate.getTimestampLower());
+        assertThat(findHistory(Token.class)).containsExactlyInAnyOrder(tokenHistory);
+    }
+
+    @Test
+    void onTokenMergeRetainMetadataAndKey() {
+        // given
+        var tokenCreate = domainBuilder.token().get();
+        sqlEntityListener.onToken(tokenCreate);
+
+        var tokenUpdate = Token.builder()
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .tokenId(tokenCreate.getTokenId())
+                .build();
+        sqlEntityListener.onToken(tokenUpdate);
+        completeFileAndCommit();
+
+        // then
+        var tokenMerged = TestUtils.clone(tokenCreate);
+        // Metadata and key are unchanged since create
         tokenMerged.setTimestampRange(tokenUpdate.getTimestampRange());
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrder(tokenMerged);
 
@@ -2956,6 +2987,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
                 1_000_000_000L,
                 hexKey,
                 TokenKycStatusEnum.REVOKED,
+                domainBuilder.bytes(16),
+                hexKey,
                 "FOO COIN TOKEN",
                 hexKey,
                 "FOOTOK",
@@ -2976,6 +3009,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
             Long initialSupply,
             Key kycKey,
             TokenKycStatusEnum kycStatus,
+            byte[] metadata,
+            Key metadataKey,
             String name,
             Key supplyKey,
             String symbol,
@@ -2992,6 +3027,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         token.setKycKey(kycKey != null ? kycKey.toByteArray() : null);
         token.setKycStatus(kycStatus);
         token.setMaxSupply(0L);
+        token.setMetadata(metadata);
+        token.setMetadataKey(metadataKey != null ? metadataKey.toByteArray() : null);
         token.setName(name);
         token.setPauseKey(pauseKey != null ? pauseKey.toByteArray() : null);
         token.setPauseStatus(pauseStatus);

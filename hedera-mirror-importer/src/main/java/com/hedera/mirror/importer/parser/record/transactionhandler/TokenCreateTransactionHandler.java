@@ -105,16 +105,17 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
 
         var transactionBody = recordItem.getTransactionBody().getTokenCreation();
         long consensusTimestamp = transaction.getConsensusTimestamp();
+        boolean freezeDefault = transactionBody.getFreezeDefault();
         var tokenId = transaction.getEntityId();
         var treasury = EntityId.of(transactionBody.getTreasury());
 
         var token = new Token();
-        boolean freezeDefault = transactionBody.getFreezeDefault();
         token.setCreatedTimestamp(consensusTimestamp);
         token.setDecimals(transactionBody.getDecimals());
         token.setFreezeDefault(freezeDefault);
         token.setInitialSupply(transactionBody.getInitialSupply());
         token.setMaxSupply(transactionBody.getMaxSupply());
+        token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata()));
         token.setName(transactionBody.getName());
         token.setSupplyType(TokenSupplyTypeEnum.fromId(transactionBody.getSupplyTypeValue()));
         token.setSymbol(transactionBody.getSymbol());
@@ -140,6 +141,10 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
             token.setKycStatus(TokenKycStatusEnum.REVOKED);
         } else {
             token.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        }
+
+        if (transactionBody.hasMetadataKey()) {
+            token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
         }
 
         if (transactionBody.hasPauseKey()) {

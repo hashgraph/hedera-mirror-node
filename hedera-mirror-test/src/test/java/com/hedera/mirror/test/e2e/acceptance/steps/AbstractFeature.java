@@ -73,7 +73,7 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
     protected NetworkExchangeRateSetResponse exchangeRates;
 
     @Autowired
-    private ResourceLoader resourceLoader;
+    protected ResourceLoader resourceLoader;
 
     protected long calculateCreateTokenFee(double usdFee, boolean useCurrentFee) {
         if (exchangeRates == null) {

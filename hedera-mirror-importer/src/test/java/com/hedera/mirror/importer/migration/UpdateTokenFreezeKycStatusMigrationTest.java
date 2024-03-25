@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
@@ -30,13 +29,16 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.repository.TokenRepository;
 import io.hypersistence.utils.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import jakarta.persistence.Id;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -56,31 +58,31 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
 
     private static final String REVERT_DDL =
             """
-            alter table if exists token
-              drop column freeze_status,
-              drop column kyc_status;
-            alter table if exists token_history
-              drop column freeze_status,
-              drop column kyc_status;
-            alter table if exists token_account
-              alter column automatic_association set default false,
-              alter column automatic_association set not null,
-              alter column balance_timestamp set not null,
-              alter column created_timestamp set not null,
-              alter column freeze_status set default 0,
-              alter column freeze_status set not null,
-              alter column kyc_status set default 0,
-              alter column kyc_status set not null;
-            alter table if exists token_account_history
-              alter column automatic_association set default false,
-              alter column automatic_association set not null,
-              alter column balance_timestamp set not null,
-              alter column created_timestamp set not null,
-              alter column freeze_status set default 0,
-              alter column freeze_status set not null,
-              alter column kyc_status set default 0,
-              alter column kyc_status set not null;
-            """;
+                    alter table if exists token
+                      drop column freeze_status,
+                      drop column kyc_status;
+                    alter table if exists token_history
+                      drop column freeze_status,
+                      drop column kyc_status;
+                    alter table if exists token_account
+                      alter column automatic_association set default false,
+                      alter column automatic_association set not null,
+                      alter column balance_timestamp set not null,
+                      alter column created_timestamp set not null,
+                      alter column freeze_status set default 0,
+                      alter column freeze_status set not null,
+                      alter column kyc_status set default 0,
+                      alter column kyc_status set not null;
+                    alter table if exists token_account_history
+                      alter column automatic_association set default false,
+                      alter column automatic_association set not null,
+                      alter column balance_timestamp set not null,
+                      alter column created_timestamp set not null,
+                      alter column freeze_status set default 0,
+                      alter column freeze_status set not null,
+                      alter column kyc_status set default 0,
+                      alter column kyc_status set not null;
+                    """;
 
     private final DomainBuilder domainBuilder;
 
@@ -88,8 +90,6 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
 
     @Value("classpath:db/migration/v1/V1.94.0__update_token_freeze_kyc_status.sql")
     private final Resource migrationSql;
-
-    private final TokenRepository tokenRepository;
 
     @AfterEach
     void cleanup() {
@@ -99,20 +99,20 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
     @Test
     void empty() {
         runMigration();
-        assertThat(tokenRepository.findAll()).isEmpty();
-        assertThat(findHistory(Token.class)).isEmpty();
+        assertThat(postFindAll()).isEmpty();
+        assertThat(findHistory("token", PostMigrationToken.class)).isEmpty();
     }
 
     @Test
     void migrate() {
         // given
         var tokens = new ArrayList<MigrationToken>();
-        var expectedHistory = new ArrayList<Token>();
+        var expectedHistory = new ArrayList<PostMigrationToken>();
 
         // freeze default is false, and have both freeze key and kyc key
         var token = getMigrationToken().build();
         tokens.add(token);
-        expectedHistory.add(token.toToken()
+        expectedHistory.add(token.toPostMigrationToken()
                 .freezeStatus(TokenFreezeStatusEnum.UNFROZEN)
                 .kycStatus(TokenKycStatusEnum.REVOKED)
                 .build());
@@ -120,7 +120,7 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
         // freeze default is true, and have both freeze key and kyc key
         token = getMigrationToken().freezeDefault(true).build();
         tokens.add(token);
-        expectedHistory.add(token.toToken()
+        expectedHistory.add(token.toPostMigrationToken()
                 .freezeStatus(TokenFreezeStatusEnum.FROZEN)
                 .kycStatus(TokenKycStatusEnum.REVOKED)
                 .build());
@@ -128,7 +128,7 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
         // no freeze key / kyc key
         token = getMigrationToken().freezeKey(null).kycKey(null).build();
         tokens.add(token);
-        expectedHistory.add(token.toToken()
+        expectedHistory.add(token.toPostMigrationToken()
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .build());
@@ -150,8 +150,8 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
         runMigration();
 
         // then
-        assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedCurrent);
-        assertThat(findHistory(Token.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(postFindAll()).containsExactlyInAnyOrderElementsOf(expectedCurrent);
+        assertThat(findHistory("token", PostMigrationToken.class)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
     private MigrationToken.MigrationTokenBuilder getMigrationToken() {
@@ -171,10 +171,10 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
     private void persistMigrationTokens(Collection<MigrationToken> migrationTokens, boolean current) {
         var sql = String.format(
                 """
-                insert into %s (created_timestamp, decimals, freeze_default, freeze_key, initial_supply, kyc_key,
-                  max_supply, name, symbol, timestamp_range, token_id, treasury_account_id)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::int8range, ?, ?)
-                """,
+                        insert into %s (created_timestamp, decimals, freeze_default, freeze_key, initial_supply, kyc_key,
+                          max_supply, name, symbol, timestamp_range, token_id, treasury_account_id)
+                        values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?::int8range, ?, ?)
+                        """,
                 current ? "token" : "token_history");
         jdbcTemplate.batchUpdate(sql, migrationTokens, migrationTokens.size(), (ps, token) -> {
             ps.setLong(1, token.getCreatedTimestamp());
@@ -200,6 +200,29 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
         }
     }
 
+    private List<PostMigrationToken> postFindAll() {
+        return jdbcTemplate.query("SELECT * FROM token", (rs, index) -> PostMigrationToken.builder()
+                .createdTimestamp(rs.getLong("created_timestamp"))
+                .decimals(rs.getInt("decimals"))
+                .freezeDefault(rs.getBoolean("freeze_default"))
+                .freezeKey(rs.getBytes("freeze_key"))
+                .freezeStatus(TokenFreezeStatusEnum.values()[rs.getInt("freeze_status")])
+                .initialSupply(rs.getLong("initial_supply"))
+                .kycKey(rs.getBytes("kyc_key"))
+                .kycStatus(TokenKycStatusEnum.values()[rs.getInt("kyc_status")])
+                .maxSupply(rs.getLong("max_supply"))
+                .name(rs.getString("name"))
+                .pauseStatus(TokenPauseStatusEnum.valueOf(rs.getString("pause_status")))
+                .supplyType(TokenSupplyTypeEnum.valueOf(rs.getString("supply_type")))
+                .symbol(rs.getString("symbol"))
+                .timestampRange(PostgreSQLGuavaRangeType.longRange(rs.getString("timestamp_range")))
+                .tokenId(rs.getLong("token_id"))
+                .totalSupply(rs.getLong("total_supply"))
+                .treasuryAccountId(EntityId.of(rs.getLong("treasury_account_id")))
+                .type(TokenTypeEnum.valueOf(rs.getString("type")))
+                .build());
+    }
+
     @Builder(toBuilder = true)
     @Data
     private static class MigrationToken {
@@ -219,8 +242,8 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
         private long tokenId;
         private long treasuryAccountId;
 
-        public Token.TokenBuilder<?, ?> toToken() {
-            return Token.builder()
+        public PostMigrationToken.PostMigrationTokenBuilder toPostMigrationToken() {
+            return PostMigrationToken.builder()
                     .createdTimestamp(createdTimestamp)
                     .decimals(decimals)
                     .freezeDefault(freezeDefault)
@@ -238,5 +261,37 @@ class UpdateTokenFreezeKycStatusMigrationTest extends ImporterIntegrationTest {
                     .treasuryAccountId(EntityId.of(treasuryAccountId))
                     .type(TokenTypeEnum.FUNGIBLE_COMMON);
         }
+    }
+
+    @Builder(toBuilder = true)
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Data
+    private static class PostMigrationToken {
+        private Long createdTimestamp;
+        private Integer decimals;
+        private byte[] feeScheduleKey;
+        private Boolean freezeDefault;
+        private byte[] freezeKey;
+        private TokenFreezeStatusEnum freezeStatus;
+        private Long initialSupply;
+        private byte[] kycKey;
+        private TokenKycStatusEnum kycStatus;
+        private long maxSupply;
+        private String name;
+        private byte[] pauseKey;
+        private TokenPauseStatusEnum pauseStatus;
+        private byte[] supplyKey;
+        private TokenSupplyTypeEnum supplyType;
+        private String symbol;
+        private Range<Long> timestampRange;
+
+        @Id
+        private Long tokenId;
+
+        private Long totalSupply;
+        private EntityId treasuryAccountId;
+        private TokenTypeEnum type;
+        private byte[] wipeKey;
     }
 }
