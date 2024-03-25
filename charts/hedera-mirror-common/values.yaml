@@ -483,9 +483,3 @@ zfs:
         key: zfs
         operator: Equal
         value: "true"
-  zfsPlugin:
-    image:
-      registry: gcr.io/
-      repository: mirrornode/zfs-driver
-      pullPolicy: IfNotPresent
-      tag: 2.4.1-HEDERA

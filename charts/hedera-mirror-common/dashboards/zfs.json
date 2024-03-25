@@ -43,8 +43,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Number of read/write operations per ZFS dataset",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -54,12 +55,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -110,53 +112,56 @@
         "legend": {
           "calcs": [
             "min",
-            "mean",
-            "max"
+            "max",
+            "mean"
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_zpool_dataset_reads{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_zpool_dataset_reads{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) > 0",
           "instant": false,
-          "legendFormat": "reads/{{node}}/{{dataset}}",
+          "legendFormat": "reads/{{dataset}}",
           "range": true,
           "refId": "A"
         },
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_zpool_dataset_writes{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_zpool_dataset_writes{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) > 0",
           "hide": false,
           "instant": false,
-          "legendFormat": "writes/{{node}}/{{dataset}}",
+          "legendFormat": "writes/{{dataset}}",
           "range": true,
           "refId": "B"
         }
       ],
-      "title": "ZPool Ops",
+      "title": "ZPool IOps",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Percentage of used space",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -166,12 +171,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -227,15 +233,15 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "disableTextWrap": false,
           "editorMode": "code",
@@ -255,8 +261,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Used bytes",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -266,12 +273,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -327,15 +335,15 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
           "expr": "kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", node=~\"$node\", namespace=~\"$namespace\"}",
@@ -366,6 +374,7 @@
         "type": "prometheus",
         "uid": "${prometheus}"
       },
+      "description": "Number of operations waiting to be serviced",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -375,12 +384,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -431,16 +441,18 @@
         "legend": {
           "calcs": [
             "min",
-            "mean",
-            "max"
+            "max",
+            "mean"
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "pluginVersion": "10.2.3",
@@ -448,10 +460,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_io_now{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_io_time_weighted_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) >= 0",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -466,6 +478,7 @@
         "type": "prometheus",
         "uid": "${prometheus}"
       },
+      "description": "Time taken for reads and writes",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -475,12 +488,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -532,26 +546,28 @@
         "legend": {
           "calcs": [
             "min",
-            "mean",
-            "max"
+            "max",
+            "mean"
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_read_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) / irate(node_disk_reads_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_read_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) / irate(node_disk_reads_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) >= 0",
           "instant": false,
           "legendFormat": "read/{{node}}",
           "range": true,
@@ -563,7 +579,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_write_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) / irate(node_disk_writes_completed_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_write_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) / irate(node_disk_writes_completed_total{node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) >= 0",
           "hide": false,
           "instant": false,
           "legendFormat": "write/{{node}}",
@@ -579,6 +595,7 @@
         "type": "prometheus",
         "uid": "${prometheus}"
       },
+      "description": "Percentage of disk utilization",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -588,12 +605,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -621,8 +639,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -645,26 +662,28 @@
         "legend": {
           "calcs": [
             "min",
-            "mean",
-            "max"
+            "max",
+            "mean"
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_io_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_io_time_seconds_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) >= 0",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -679,6 +698,7 @@
         "type": "prometheus",
         "uid": "${prometheus}"
       },
+      "description": "Bytes read/written",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -688,12 +708,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -721,8 +742,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -735,22 +755,28 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 9,
+        "w": 24,
         "x": 0,
         "y": 47
       },
       "id": 415,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
@@ -760,7 +786,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_read_bytes_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_read_bytes_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) > 0",
           "legendFormat": "read/{{node}}",
           "range": true,
           "refId": "A"
@@ -771,7 +797,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_written_bytes_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_written_bytes_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "write/{{node}}",
@@ -787,6 +813,7 @@
         "type": "prometheus",
         "uid": "${prometheus}"
       },
+      "description": "Number of read/write operations",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -796,12 +823,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -829,8 +857,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -842,32 +869,38 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 47
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 56
       },
       "id": 416,
       "options": {
         "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+          "calcs": [
+            "min",
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_reads_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_reads_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) > 0",
           "instant": false,
           "legendFormat": "reads/{{node}}",
           "range": true,
@@ -879,7 +912,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_disk_writes_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval])",
+          "expr": "irate(node_disk_writes_completed_total{cluster=~\"$cluster\", node=~\"$node\", device=\"$zfsDeviceId\"}[$__rate_interval]) > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "write/{{node}}",
@@ -896,7 +929,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 66
       },
       "id": 427,
       "panels": [],
@@ -906,8 +939,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Per cache type rate data is found/missed in the ARC",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -917,12 +951,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -950,8 +985,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -966,7 +1000,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 56
+        "y": 67
       },
       "id": 421,
       "options": {
@@ -983,18 +1017,18 @@
           "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) > 0",
           "instant": false,
           "legendFormat": "data-hits/{{node}}",
           "range": true,
@@ -1003,10 +1037,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_metadata_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_demand_metadata_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata-hits/{{node}}",
@@ -1016,10 +1050,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "data-misses/{{node}}",
@@ -1029,10 +1063,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_metadata_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_demand_metadata_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata-misses/{{node}}",
@@ -1046,8 +1080,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Per cache type hit percentage",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1057,12 +1092,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -1090,8 +1126,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1107,7 +1142,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 56
+        "y": 67
       },
       "id": 420,
       "options": {
@@ -1119,21 +1154,23 @@
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\",  node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])) ",
+          "expr": "(irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\",  node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]))) >= 0",
           "hide": false,
           "instant": false,
           "legendFormat": "data/{{node}}",
@@ -1143,10 +1180,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])) ",
+          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])) >= 0",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata/{{node}}",
@@ -1160,8 +1197,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Per cache type used bytes ",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1171,12 +1209,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -1204,8 +1243,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1252,7 +1290,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 76
       },
       "id": 374,
       "options": {
@@ -1264,21 +1302,23 @@
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_mfu_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_mfu_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": true,
           "instant": false,
           "legendFormat": "mfu/{{node}}",
@@ -1288,10 +1328,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_mru_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_mru_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": true,
           "instant": false,
           "legendFormat": "mru/{{node}}",
@@ -1301,10 +1341,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_data_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_data_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "data/{{node}}",
@@ -1314,10 +1354,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_metadata_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_metadata_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata/{{node}}",
@@ -1327,10 +1367,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_anon_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_anon_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "anon/{{node}}",
@@ -1340,10 +1380,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_hdr_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_hdr_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "hdr/{{node}}",
@@ -1353,10 +1393,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_overhead_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_overhead_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "overhead/{{node}}",
@@ -1370,8 +1410,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Compression ratio of data currently in the ARC",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1381,12 +1422,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -1414,8 +1456,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1430,33 +1471,35 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 73
+        "y": 84
       },
       "id": 394,
       "options": {
         "legend": {
           "calcs": [
             "min",
-            "mean",
-            "max"
+            "max",
+            "mean"
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_size{cluster=~\"$cluster\", node=~\"$node\"} / node_zfs_arc_compressed_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_size{cluster=~\"$cluster\", node=~\"$node\"} / node_zfs_arc_compressed_size{cluster=~\"$cluster\", node=~\"$node\"} >= 0",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -1472,7 +1515,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 93
       },
       "id": 429,
       "panels": [],
@@ -1482,8 +1525,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Used bytes of L2 cache",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1493,12 +1537,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -1526,8 +1571,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1537,38 +1581,13 @@
           },
           "unit": "bytes"
         },
-        "overrides": [
-          {
-            "__systemRef": "hideSeriesFrom",
-            "matcher": {
-              "id": "byNames",
-              "options": {
-                "mode": "exclude",
-                "names": [
-                  "{__name__=\"node_zfs_arc_l2_size\", container=\"node-exporter\", endpoint=\"http-metrics\", instance=\"10.44.0.4:9100\", job=\"node-exporter\", namespace=\"common\", node=\"gke-zfs-metrics-clone-1-coordinator-853532dd-5lm2\", pod=\"mirror-prometheus-node-exporter-xxfcd\", service=\"mirror-prometheus-node-exporter\"}"
-                ],
-                "prefix": "All except:",
-                "readOnly": true
-              }
-            },
-            "properties": [
-              {
-                "id": "custom.hideFrom",
-                "value": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": true
-                }
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 83
+        "y": 94
       },
       "id": 424,
       "options": {
@@ -1580,21 +1599,23 @@
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_l2_asize{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_l2_asize{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "instant": false,
           "legendFormat": "asize/{{node}}",
           "range": true,
@@ -1603,10 +1624,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_l2_hdr_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_l2_hdr_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "hdr/{{node}}",
@@ -1616,10 +1637,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "node_zfs_arc_l2_size{cluster=~\"$cluster\", node=~\"$node\"}",
+          "expr": "node_zfs_arc_l2_size{cluster=~\"$cluster\", node=~\"$node\"} > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "size/{{node}}",
@@ -1633,8 +1654,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "The rate data is found/missed in cache",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1644,12 +1666,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -1677,8 +1700,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1693,7 +1715,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 91
+        "y": 102
       },
       "id": 423,
       "options": {
@@ -1705,21 +1727,23 @@
           ],
           "displayMode": "table",
           "placement": "right",
-          "showLegend": true
+          "showLegend": true,
+          "sortBy": "Mean",
+          "sortDesc": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) > 0",
           "instant": false,
           "legendFormat": "hits/{{node}}",
           "range": true,
@@ -1728,10 +1752,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_l2_misses{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval])",
+          "expr": "irate(node_zfs_arc_l2_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) > 0",
           "hide": false,
           "instant": false,
           "legendFormat": "misses/{{node}}",
@@ -1745,8 +1769,9 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${prometheus}"
       },
+      "description": "Percentage requested data is in L2 cache",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1756,12 +1781,13 @@
             "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisGridShow": false,
             "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
+            "fillOpacity": 10,
+            "gradientMode": "hue",
             "hideFrom": {
               "legend": false,
               "tooltip": false,
@@ -1789,8 +1815,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1806,7 +1831,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 91
+        "y": 102
       },
       "id": 422,
       "options": {
@@ -1817,18 +1842,18 @@
           "showLegend": true
         },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi",
+          "sort": "desc"
         }
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_l2_misses{cluster=~\"$cluster\", node=\"$node\"}[$__rate_interval]))",
+          "expr": "irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_l2_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_l2_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])) > 0",
           "instant": false,
           "legendFormat": "{{node}}",
           "range": true,
@@ -1839,7 +1864,7 @@
       "type": "timeseries"
     },
     {
-      "collapsed": true,
+      "collapsed": false,
       "datasource": {
         "type": "prometheus",
         "uid": "${prometheus}"
@@ -1848,55 +1873,10 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 99
+        "y": 110
       },
       "id": 35,
-      "panels": [
-        {
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
-          },
-          "description": "The log events",
-          "gridPos": {
-            "h": 10,
-            "w": 24,
-            "x": 0,
-            "y": 2
-          },
-          "id": 54,
-          "links": [
-            {
-              "targetBlank": true,
-              "title": "Explore Logs",
-              "url": "/explore?panes={\"rl3\":{\"datasource\":\"${loki}\",\"queries\":[{\"refId\":\"A\",\"expr\":\"{app=\\\"importer\\\", cluster=\\\"${cluster:text}\\\", namespace=\\\"${namespace:text}\\\"} |= ``\",\"queryType\":\"range\",\"datasource\":{\"type\":\"loki\",\"uid\":\"${loki}\"},\"editorMode\":\"builder\"}],\"range\":{\"from\":\"${__from}\",\"to\":\"${__to}\"}}}&schemaVersion=1&orgId=1"
-            }
-          ],
-          "options": {
-            "dedupStrategy": "none",
-            "enableLogDetails": false,
-            "prettifyLogMessage": false,
-            "showCommonLabels": true,
-            "showLabels": true,
-            "showTime": false,
-            "sortOrder": "Ascending",
-            "wrapLogMessage": false
-          },
-          "targets": [
-            {
-              "datasource": {
-                "uid": "${loki}"
-              },
-              "editorMode": "builder",
-              "expr": "{component=~\".*zfs.*\"}",
-              "queryType": "range",
-              "refId": "A"
-            }
-          ],
-          "title": "Messages",
-          "type": "logs"
-        }
-      ],
+      "panels": [],
       "targets": [
         {
           "datasource": {
@@ -1908,6 +1888,44 @@
       ],
       "title": "Logs",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "The log events",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 111
+      },
+      "id": 54,
+      "links": [],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": false,
+        "prettifyLogMessage": false,
+        "showCommonLabels": true,
+        "showLabels": true,
+        "showTime": false,
+        "sortOrder": "Ascending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "uid": "${loki}"
+          },
+          "editorMode": "builder",
+          "expr": "{component=~\".*zfs.*\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Messages",
+      "type": "logs"
     }
   ],
   "refresh": "1m",
@@ -1965,7 +1983,7 @@
           "type": "prometheus",
           "uid": "${prometheus}"
         },
-        "definition": "label_values(kubelet_volume_stats_used_bytes{node=~\"$node\"},namespace)",
+        "definition": "label_values(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\",node=~\"$node\"},namespace)",
         "hide": 0,
         "includeAll": true,
         "label": "Namespace",
@@ -1974,7 +1992,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(kubelet_volume_stats_used_bytes{node=~\"$node\"},namespace)",
+          "query": "label_values(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\",node=~\"$node\"},namespace)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
@@ -2000,7 +2018,7 @@
           "type": "prometheus",
           "uid": "${prometheus}"
         },
-        "definition": "label_values(node_zfs_arc_size,node)",
+        "definition": "label_values(node_zfs_arc_size{cluster=~\"$cluster\"},node)",
         "description": "List of nodes with ZFS pools",
         "hide": 0,
         "includeAll": true,
@@ -2010,7 +2028,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(node_zfs_arc_size,node)",
+          "query": "label_values(node_zfs_arc_size{cluster=~\"$cluster\"},node)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
@@ -2037,7 +2055,7 @@
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "prometheus"
+          "uid": "${prometheus}"
         },
         "definition": "label_values(system_cpu_count,cluster)",
         "hide": 0,
@@ -2054,7 +2072,7 @@
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 5,
         "type": "query"
       }
     ]
@@ -2079,6 +2097,6 @@
   "timezone": "",
   "title": "ZFS",
   "uid": "da4984e4-f13d-45dd-850d-d6de840d6d77",
-  "version": 5,
+  "version": 1,
   "weekStart": ""
 }
