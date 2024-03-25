@@ -79,7 +79,7 @@ dependencies {
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
         api("io.projectreactor:reactor-core-micrometer:1.1.4")
-        api("io.swagger:swagger-annotations:1.6.13")
+        api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
