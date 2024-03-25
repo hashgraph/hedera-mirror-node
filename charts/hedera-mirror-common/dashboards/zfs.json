@@ -249,7 +249,7 @@
           "fullMetaSearch": false,
           "includeNullMetadata": true,
           "instant": false,
-          "legendFormat": "{{node}}/{{namespace}}/{{persistentvolumeclaim}}",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "range": true,
           "refId": "A",
           "useBackend": false
@@ -348,7 +348,7 @@
           "editorMode": "code",
           "expr": "kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", node=~\"$node\", namespace=~\"$namespace\"}",
           "instant": false,
-          "legendFormat": "{{node}}/{{namespace}}/{{persistentvolumeclaim}}",
+          "legendFormat": "{{persistentvolumeclaim}}",
           "range": true,
           "refId": "A"
         }
@@ -1936,8 +1936,8 @@
       {
         "current": {
           "selected": false,
-          "text": "Loki",
-          "value": "P8E80F9AEF21F6940"
+          "text": "",
+          "value": ""
         },
         "description": "Name of the Loki datasource to use",
         "hide": 2,
