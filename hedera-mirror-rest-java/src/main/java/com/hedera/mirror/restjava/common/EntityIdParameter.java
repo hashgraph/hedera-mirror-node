@@ -16,9 +16,19 @@
 
 package com.hedera.mirror.restjava.common;
 
-public interface RangeParameter<T> {
+import static com.hedera.mirror.restjava.common.Utils.parseId;
 
-    RangeOperator operator();
+import com.hedera.mirror.common.domain.entity.EntityId;
 
-    T value();
+public record EntityIdParameter(EntityId value) {
+    public static final EntityIdParameter EMPTY = new EntityIdParameter(null);
+
+    public static EntityIdParameter valueOf(String entityIdParam) {
+
+        if (entityIdParam == null || entityIdParam.isBlank()) {
+            return EMPTY;
+        }
+
+        return new EntityIdParameter(parseId(entityIdParam));
+    }
 }

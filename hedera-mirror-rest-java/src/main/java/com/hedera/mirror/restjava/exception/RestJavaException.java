@@ -14,11 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.exception;
 
-public interface RangeParameter<T> {
+import com.hedera.mirror.common.exception.MirrorNodeException;
+import java.io.Serial;
 
-    RangeOperator operator();
+abstract class RestJavaException extends MirrorNodeException {
 
-    T value();
+    @Serial
+    private static final long serialVersionUID = 3383312779795690341L;
+
+    protected RestJavaException(String message) {
+        super(message);
+    }
+
+    protected RestJavaException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

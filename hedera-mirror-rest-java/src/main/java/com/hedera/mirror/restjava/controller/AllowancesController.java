@@ -19,40 +19,30 @@ package com.hedera.mirror.restjava.controller;
 import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
-import static com.hedera.mirror.restjava.common.Constants.MIN_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.rest.model.Error;
-import com.hedera.mirror.rest.model.ErrorStatus;
-import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
+import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.Utils;
-import com.hedera.mirror.restjava.exception.InvalidInputException;
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest.NftAllowanceRequestBuilder;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.NoSuchElementException;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -68,41 +58,20 @@ public class AllowancesController {
 
     @GetMapping(value = "/nfts")
     NftAllowancesResponse getNftAllowancesByAccountId(
-            @PathVariable EntityIdRangeParameter id,
+            @PathVariable EntityIdParameter id,
             @RequestParam(name = ACCOUNT_ID, required = false) EntityIdRangeParameter accountId,
+            @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
+            @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(defaultValue = "true") boolean owner,
-            @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId,
-            @RequestParam(defaultValue = "" + DEFAULT_LIMIT) @Min(MIN_LIMIT) @Max(MAX_LIMIT) int limit,
-            @RequestParam(defaultValue = "asc") String order) {
+            @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId) {
 
-        long accountPathParam = id.getValue().getNum();
-        Sort.Direction orderDirection;
-        try {
-            orderDirection = Sort.Direction.fromString(order);
-        } catch (IllegalArgumentException e) {
-            throw new InvalidParametersException("order parameter must have a valid direction");
-        }
-        NftAllowanceRequestBuilder requestBuilder =
-                NftAllowanceRequest.builder().limit(limit).order(orderDirection).isOwner(owner);
-
-        if (accountId == null && tokenId != null) {
-            throw new InvalidParametersException("token.id parameter must have account.id present");
-        }
-
-        // Setting both owner and spender Id to the account.id query parameter value.
-        if (accountId != null && accountId.getValue() != null) {
-            requestBuilder
-                    .spenderId(accountId.value().getId())
-                    .ownerId(accountId.value().getId())
-                    .accountIdOperator(accountId.operator());
-        }
-
-        // Owner value decides if owner or spender should be set to the accountId.
-        requestBuilder = owner ? requestBuilder.ownerId(accountPathParam) : requestBuilder.spenderId(accountPathParam);
-
-        if (tokenId != null) {
-            requestBuilder.tokenId(tokenId.value().getId()).tokenIdOperator(tokenId.operator());
-        }
+        NftAllowanceRequestBuilder requestBuilder = NftAllowanceRequest.builder()
+                .accountId(id)
+                .isOwner(owner)
+                .limit(limit)
+                .order(order)
+                .ownerOrSpenderId(accountId)
+                .tokenId(tokenId);
 
         var serviceResponse = service.getNftAllowances(requestBuilder.build());
 
@@ -111,27 +80,10 @@ public class AllowancesController {
 
         String next = null;
         if (!serviceResponse.isEmpty() && serviceResponse.size() == limit) {
-            next = buildNextLink(owner, orderDirection, limit, response, serviceResponse);
+            next = buildNextLink(owner, order, limit, response, serviceResponse);
         }
         response.links(new Links().next(next));
         return response;
-    }
-
-    @ResponseStatus(value = HttpStatus.NOT_FOUND, reason = "Not found")
-    @ExceptionHandler(NoSuchElementException.class)
-    void notFound() {
-        // Currently no scenario is throwing this error
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private Error inputValidationError(final InvalidInputException e) {
-        log.warn("Input validation error: {}", e.getMessage());
-        var errorMessage = new ErrorStatusMessagesInner();
-        errorMessage.setMessage(e.getMessage());
-        var errorStatus = new ErrorStatus().addMessagesItem(errorMessage);
-        var error = new Error();
-        return error.status(errorStatus);
     }
 
     private static String buildNextLink(

@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava.mapper;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.TimestampRange;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
@@ -29,7 +30,7 @@ public interface CommonMapper {
             return null;
         }
 
-        var eid = com.hedera.mirror.common.domain.entity.EntityId.of(source);
+        var eid = EntityId.of(source);
         return mapEntityId(eid);
     }
 
@@ -44,13 +45,19 @@ public interface CommonMapper {
 
         var target = new TimestampRange();
         if (source.hasLowerBound()) {
-            target.setFrom(String.valueOf(source.lowerEndpoint() / Math.pow(10, 9)));
+            target.setFrom(mapTimestamp(source.lowerEndpoint()));
         }
 
         if (source.hasUpperBound()) {
-            target.setTo(String.valueOf(source.upperEndpoint() / Math.pow(10, 9)));
+            target.setTo(mapTimestamp(source.upperEndpoint()));
         }
 
         return target;
+    }
+
+    default String mapTimestamp(long timestamp) {
+        var seconds = timestamp / Math.pow(10, 9);
+        var nanos = timestamp % Math.pow(10, 9);
+        return seconds + "." + nanos;
     }
 }

@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.common;
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
-import java.io.Serial;
+import jakarta.inject.Named;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.domain.Sort;
 
-abstract class RestException extends MirrorNodeException {
-
-    @Serial
-    private static final long serialVersionUID = 3383312779795690341L;
-
-    protected RestException(String message) {
-        super(message);
-    }
-
-    protected RestException(String message, Throwable throwable) {
-        super(message, throwable);
+@Named
+@ConfigurationPropertiesBinding
+public class OrderConverter implements Converter<String, Sort.Direction> {
+    @Override
+    public Sort.Direction convert(String order) {
+        return Sort.Direction.valueOf(order.toUpperCase());
     }
 }

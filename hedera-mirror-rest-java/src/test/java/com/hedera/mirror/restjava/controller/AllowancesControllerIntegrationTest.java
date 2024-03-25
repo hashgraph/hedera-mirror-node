@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
@@ -34,7 +33,6 @@ import jakarta.annotation.Resource;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.assertj.core.util.Hexadecimals;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -98,26 +96,6 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         var result = restClient
                 .get()
                 .uri(CALL_URI, EntityId.of(allowance.getOwner()))
-                .accept(MediaType.ALL)
-                .retrieve()
-                .body(NftAllowancesResponse.class);
-        assertEquals(result.getAllowances(), (mapper.map(collection)));
-        assertNull(result.getLinks().getNext());
-    }
-
-    @Test
-    void successWithNoQueryParamsEvmAddress() {
-        var allowance = domainBuilder.nftAllowance().persist();
-        var allowance1 = domainBuilder
-                .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance.getOwner()))
-                .persist();
-        Collection<NftAllowance> collection = List.of(allowance, allowance1);
-
-        RestClient restClient = RestClient.create();
-        var result = restClient
-                .get()
-                .uri(CALL_URI, Hexadecimals.toHexString(DomainUtils.toEvmAddress(EntityId.of(allowance.getOwner()))))
                 .accept(MediaType.ALL)
                 .retrieve()
                 .body(NftAllowancesResponse.class);
@@ -341,10 +319,20 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .build();
 
         // Performing the GET operation
-        assertThrows(HttpClientErrorException.BadRequest.class, () -> restClient
+        assertThrows(HttpClientErrorException.NotFound.class, () -> restClient
                 .get()
                 .uri("?" + ownerParam + tokenIdParam + limitParam + orderParam)
                 .retrieve()
                 .body(NftAllowancesResponse.class));
+    }
+
+    @Test
+    void failWithUnsupportedMediaException() {
+        RestClient restClient = RestClient.create();
+
+        // Performing the GET operation
+        assertThrows(
+                HttpClientErrorException.MethodNotAllowed.class,
+                () -> restClient.post().uri(CALL_URI, "0.0.1000").retrieve().body(NftAllowancesResponse.class));
     }
 }

@@ -16,27 +16,19 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static com.hedera.mirror.restjava.common.Constants.ENCODED_ENTITY_ID_REGEX;
-import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_REGEX;
-import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_REGEX;
-import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_SHARD_REALM_REGEX;
-import static com.hedera.mirror.restjava.common.Constants.MAX_ENCODED_ID;
-import static com.hedera.mirror.restjava.common.Constants.MAX_NUM;
-import static com.hedera.mirror.restjava.common.Constants.MAX_REALM;
-import static com.hedera.mirror.restjava.common.Constants.MAX_SHARD;
-import static com.hedera.mirror.restjava.common.Constants.NUM_BITS;
-import static com.hedera.mirror.restjava.common.Constants.REALM_BITS;
+import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_PATTERN;
 import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 
@@ -48,99 +40,53 @@ public class Utils {
             "asc", RangeOperator.GTE,
             "desc", RangeOperator.LTE);
 
-    public static boolean isValidEntityIdPattern(String id) {
+    public static EntityId parseId(String id) {
+
         if (StringUtils.isBlank(id)) {
-            return false;
+            throw new InvalidParametersException(" Id '%s' has an invalid format".formatted(id));
         }
-        if (isAMatch(ENTITY_ID_REGEX, id) || isAMatch(ENCODED_ENTITY_ID_REGEX, id)) {
-            return true;
-        }
-        return isValidEvmAddress(id, Constants.EvmAddressType.ANY);
-    }
+        Matcher entityIdMatcher = ENTITY_ID_PATTERN.matcher(id);
 
-    private static boolean isAMatch(String regex, String id) {
-        Pattern partitionedPattern = Pattern.compile(regex);
-        var matcher = partitionedPattern.matcher(id);
-        return matcher.matches();
-    }
-
-    private static boolean isValidEvmAddress(String address, Constants.EvmAddressType evmAddressType) {
-
-        if (evmAddressType == Constants.EvmAddressType.ANY) {
-            return isAMatch(EVM_ADDRESS_REGEX, address) || isAMatch(EVM_ADDRESS_SHARD_REALM_REGEX, address);
-        }
-        if (evmAddressType == Constants.EvmAddressType.NO_SHARD_REALM) {
-            return isAMatch(EVM_ADDRESS_REGEX, address);
-        }
-        return isAMatch(EVM_ADDRESS_SHARD_REALM_REGEX, address);
-    }
-
-    public static long[] parseFromEvmAddress(String evmAddress) {
-        // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
-        var hexDigits = evmAddress.replace("0x", "");
-        return new long[] {
-            Long.parseLong(hexDigits.substring(0, 8), 16), // shard
-            Long.parseLong(hexDigits.substring(8, 24), 16), // realm
-            Long.parseLong(hexDigits.substring(24, 40), 16)
-        };
-    }
-
-    public static long[] parseId(String id) {
-        if (isValidEntityIdPattern(id)) {
-            var idParts = id.contains(".") || isValidEvmAddressLength(id.length())
-                    ? parseDelimitedString(id)
-                    : parseFromEncodedId(id);
-            if (idParts[2] > MAX_NUM || idParts[1] > MAX_REALM || idParts[0] > MAX_SHARD) {
-                throw new InvalidParametersException(" Id '%s' is greater than the allowed value".formatted(id));
+        if (entityIdMatcher.matches()) {
+            // Group 0 is for shard.realm.num entityId
+            if (entityIdMatcher.group(1) != null || entityIdMatcher.group(3) != null) {
+                return parseDelimitedString(id);
+            } else {
+                // change this with evm address and alias support
+                throw new InvalidParametersException("Id format is not yet supported");
             }
-            return idParts;
         } else {
             throw new InvalidParametersException(" Id '%s' has an invalid format".formatted(id));
         }
     }
 
-    private static long[] parseDelimitedString(String id) {
+    private static EntityId parseDelimitedString(String id) {
+
+        long shard = 0;
+        long realm = 0;
         List<String> parts =
                 SPLITTER.splitToStream(Objects.requireNonNullElse(id, "")).toList();
         var numOrEvmAddress = parts.getLast();
 
-        if (isValidEvmAddressLength(numOrEvmAddress.length())) {
-            var shardRealmNum = parseFromEvmAddress(numOrEvmAddress);
-            var shard = shardRealmNum[0];
-            var realm = shardRealmNum[1];
-            var num = shardRealmNum[2];
-            if (shard > MAX_SHARD || realm > MAX_REALM || num > MAX_NUM) {
-                // non-parsable evm address. get id num from evm address here
-            } else {
-                if (parts.size() == 3
-                        && ((Long.parseLong(parts.getFirst()) != shard) || Long.parseLong(parts.get(1)) != realm)) {
-                    throw new InvalidParametersException(" Id '%s' cannot be parsed".formatted(id));
+        try {
+            switch (parts.size()) {
+                case 1 -> {
+                    shard = 0;
                 }
-                return new long[] {shard, realm, num};
+                case 2 -> {
+                    shard = 0;
+                    realm = Long.parseLong(parts.getFirst());
+                }
+                case 3 -> {
+                    shard = Long.parseLong(parts.getFirst());
+                    realm = Long.parseLong(parts.get(1));
+                }
             }
-        }
 
-        // it's either shard.realm.num or realm.num
-        if (parts.size() < 3) {
-            return new long[] {0, 0, Long.parseLong(parts.getLast())};
+            return EntityId.of(shard, realm, Long.parseLong(numOrEvmAddress));
+        } catch (InvalidEntityException e) {
+            throw new InvalidParametersException(e.getMessage());
         }
-        return ArrayUtils.toPrimitive(parts.stream().map(Long::valueOf).toArray(Long[]::new));
-    }
-
-    public static long[] parseFromEncodedId(String id) {
-        var encodedId = Long.parseLong(id);
-        if (encodedId > MAX_ENCODED_ID) {
-            throw new InvalidParametersException(" Id '%s' is greater than the allowed value".formatted(id));
-        }
-        var num = encodedId & MAX_NUM;
-        var shardRealm = encodedId >> NUM_BITS;
-        var realm = shardRealm & MAX_REALM;
-        var shard = shardRealm >> REALM_BITS;
-        return new long[] {shard, realm, num};
-    }
-
-    public static boolean isValidEvmAddressLength(int len) {
-        return len == 40 || len == 42;
     }
 
     public static String getPaginationLink(

@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import org.mapstruct.Mapper;
 
-@Mapper(config = EntityMapper.class)
+@Mapper(config = RestJavaMapperConfig.class)
 public interface NftAllowanceMapper {
 
     com.hedera.mirror.rest.model.NftAllowance map(NftAllowance source);

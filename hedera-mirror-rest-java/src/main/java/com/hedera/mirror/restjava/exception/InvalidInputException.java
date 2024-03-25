@@ -19,7 +19,7 @@ package com.hedera.mirror.restjava.exception;
 import java.io.Serial;
 
 @SuppressWarnings("java:S110")
-public abstract class InvalidInputException extends RestException {
+public abstract class InvalidInputException extends RestJavaException {
 
     @Serial
     private static final long serialVersionUID = 2844340575857376468L;

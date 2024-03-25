@@ -46,16 +46,14 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
 }
 
-tasks.withType<JavaCompile> {
-    if (name == "compileJava") {
-        options.compilerArgs.addAll(
-            listOf(
-                "-Amapstruct.defaultComponentModel=jakarta",
-                "-Amapstruct.defaultInjectionStrategy=constructor",
-                "-Amapstruct.disableBuilders=true"
-            )
+tasks.compileJava {
+    options.compilerArgs.addAll(
+        listOf(
+            "-Amapstruct.defaultComponentModel=jakarta",
+            "-Amapstruct.defaultInjectionStrategy=constructor",
+            "-Amapstruct.disableBuilders=true"
         )
-    }
+    )
 }
 
 java.sourceSets["main"].java {

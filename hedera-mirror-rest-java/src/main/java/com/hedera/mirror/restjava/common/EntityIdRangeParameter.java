@@ -19,6 +19,7 @@ package com.hedera.mirror.restjava.common;
 import static com.hedera.mirror.restjava.common.Utils.parseId;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import org.jetbrains.annotations.NotNull;
 
 public record EntityIdRangeParameter(RangeOperator operator, EntityId value) implements RangeParameter<EntityId> {
@@ -33,26 +34,26 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
 
         String[] splitVal = entityIdRangeParam.split(":");
 
-        if (splitVal.length == 1) {
-            // No operator specified. Just use "eq:"
-            return validateId(splitVal, 0, RangeOperator.EQ);
-        }
-        return validateId(splitVal, 1, RangeOperator.valueOf(splitVal[0].toUpperCase()));
+        return switch (splitVal.length) {
+            case 1 -> validateId(splitVal, 0, RangeOperator.EQ);
+            case 2 -> validateId(splitVal, 1, RangeOperator.of(splitVal[0]));
+            default -> throw new InvalidParametersException(
+                    "Invalid range operator %s. Should have format rangeOperator:Id".formatted(entityIdRangeParam));
+        };
     }
 
     @NotNull
     private static EntityIdRangeParameter validateId(String[] splitVal, int x, RangeOperator eq) {
-        var id = parseId(splitVal[x]);
-        return new EntityIdRangeParameter(eq, EntityId.of(id[0], id[1], id[2]));
+        return new EntityIdRangeParameter(eq, parseId(splitVal[x]));
     }
 
     @Override
-    public RangeOperator getOperator() {
+    public RangeOperator operator() {
         return operator;
     }
 
     @Override
-    public EntityId getValue() {
+    public EntityId value() {
         return value;
     }
 }

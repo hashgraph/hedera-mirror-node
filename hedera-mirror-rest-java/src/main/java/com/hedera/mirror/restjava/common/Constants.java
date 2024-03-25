@@ -17,13 +17,12 @@
 package com.hedera.mirror.restjava.common;
 
 import com.google.common.base.Splitter;
+import java.util.regex.Pattern;
 
 public class Constants {
 
     public static final int MAX_LIMIT = 100;
-    public static final int DEFAULT_LIMIT = 25;
-
-    public static final int MIN_LIMIT = 1;
+    public static final String DEFAULT_LIMIT = "25";
 
     // format: |0|15-bit shard|16-bit realm|32-bit num|
     public static final long NUM_BITS = 32;
@@ -36,11 +35,10 @@ public class Constants {
     public static final long MAX_SHARD = (long) Math.pow(2, SHARD_BITS) - 1;
     public static final long MAX_ENCODED_ID = (long) Math.pow(2, 63) - 1;
 
-    public static final String ENTITY_ID_REGEX = "^(\\d{1,5}\\.){1,2}\\d{1,10}$";
-    public static final String ENCODED_ENTITY_ID_REGEX = "^\\d{1,19}$";
+    public static final String ENTITY_ID_REGEX =
+            "(^(\\d{1,5}\\.){1,2}\\d{1,10}$)|(^\\d{1,19}$)|(^(0x)?[A-Fa-f0-9]{40}$)|(^(\\d{1,10}\\.){0,2}[A-Fa-f0-9]{40}$)";
 
-    public static final String EVM_ADDRESS_SHARD_REALM_REGEX = "^(\\d{1,10}\\.){0,2}[A-Fa-f0-9]{40}$";
-    public static final String EVM_ADDRESS_REGEX = "^(0x)?[A-Fa-f0-9]{40}$";
+    public static final Pattern ENTITY_ID_PATTERN = Pattern.compile(ENTITY_ID_REGEX);
 
     public static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
 
@@ -50,13 +48,4 @@ public class Constants {
     public static final String ORDER = "order";
     public static final String OWNER = "owner";
     public static final String LIMIT = "limit";
-
-    enum EvmAddressType {
-        // evm address without shard and realm and with 0x prefix
-        NO_SHARD_REALM,
-        // evm address with shard and realm as optionals
-        OPTIONAL_SHARD_REALM,
-        // can be either a NO_SHARD_REALM or OPTIONAL_SHARD_REALM
-        ANY,
-    }
 }

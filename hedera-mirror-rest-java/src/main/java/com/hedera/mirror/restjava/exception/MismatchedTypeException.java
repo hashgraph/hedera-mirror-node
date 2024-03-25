@@ -19,7 +19,7 @@ package com.hedera.mirror.restjava.exception;
 import java.io.Serial;
 
 @SuppressWarnings("java:S110")
-public class MismatchedTypeException extends RestException {
+public class MismatchedTypeException extends RestJavaException {
 
     private static final String MESSAGE = "Expected type %s but got %s";
 

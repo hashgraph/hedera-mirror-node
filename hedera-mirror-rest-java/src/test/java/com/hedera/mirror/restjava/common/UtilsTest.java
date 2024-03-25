@@ -18,14 +18,13 @@ package com.hedera.mirror.restjava.common;
 
 import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.Utils.getPaginationLink;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
@@ -44,32 +43,6 @@ class UtilsTest {
 
     @Mock
     HttpServletRequest request;
-
-    @ParameterizedTest
-    @ValueSource(strings = {"3", "65535.000000001", "1.2.3", "0.2.3", "2814792716779530", "" + (Long.MAX_VALUE)})
-    @DisplayName("EntityId isValidEntityId tests, positive cases")
-    void isValidEntityIdPatternSuccess(String inputId) {
-        assertTrue(Utils.isValidEntityIdPattern(inputId));
-    }
-
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(
-            strings = {
-                "",
-                "0.1.2.3",
-                "-1.0.1",
-                "0.-1.1",
-                "0.0.-1",
-                "100000.65535.000000001",
-                "100000.000000001",
-                "-1",
-                "" + Long.MAX_VALUE + 1
-            })
-    @DisplayName("EntityId isValidEntityId tests, negative cases")
-    void isValidEntityIdPatternFailure(String inputId) {
-        assertFalse(Utils.isValidEntityIdPattern(inputId));
-    }
 
     @ParameterizedTest
     @NullSource
@@ -101,36 +74,13 @@ class UtilsTest {
     @Test
     @DisplayName("EntityId parse from string tests")
     void entityParseFromString() {
-        assertArrayEquals(new long[] {0, 0, 0}, Utils.parseId("0.0.0"));
-        assertArrayEquals(new long[] {0, 0, 0}, Utils.parseId("0"));
-        assertArrayEquals(new long[] {0, 0, 4294967295L}, Utils.parseId("0.0.4294967295"));
-        assertArrayEquals(new long[] {32767, 65535, 4294967295L}, Utils.parseId("32767.65535.4294967295"));
-        assertArrayEquals(new long[] {0, 0, 4294967295L}, Utils.parseId("4294967295"));
-        assertArrayEquals(new long[] {0, 5, 2820130815L}, Utils.parseId("24294967295"));
-        assertArrayEquals(new long[] {0, 0, 1}, Utils.parseId("0.1"));
-        assertArrayEquals(new long[] {0, 0, 1}, Utils.parseId("0x0000000000000000000000000000000000000001"));
-        assertArrayEquals(new long[] {0, 0, 1}, Utils.parseId("0000000000000000000000000000000000000001"));
-        assertArrayEquals(new long[] {1, 2, 3}, Utils.parseId("0x0000000100000000000000020000000000000003"));
-        assertArrayEquals(
-                new long[] {32767, 65535, 4294967295L}, Utils.parseId("0x00007fff000000000000ffff00000000ffffffff"));
-        assertArrayEquals(new long[] {0, 0, 25623323}, Utils.parseId("0.0.000000000000000000000000000000000186Fb1b"));
-        assertArrayEquals(new long[] {0, 0, 25623323}, Utils.parseId("0.000000000000000000000000000000000186Fb1b"));
-        assertArrayEquals(new long[] {0, 0, 25623323}, Utils.parseId("000000000000000000000000000000000186Fb1b"));
-        assertArrayEquals(new long[] {0, 0, 25623323}, Utils.parseId("0x000000000000000000000000000000000186Fb1b"));
-        assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("0000000100000000000000020000000000000007"));
-        assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("0x0000000100000000000000020000000000000007"));
-        assertArrayEquals(new long[] {1, 2, 7}, Utils.parseId("1.2.0000000100000000000000020000000000000007"));
-        // Handle null and evm address cases
-    }
-
-    @Test
-    @DisplayName("EntityId parse from encoded Id")
-    void entityParseFromEncodedId() {
-        assertArrayEquals(new long[] {0, 0, 0}, Utils.parseFromEncodedId("0"));
-        assertArrayEquals(new long[] {0, 0, 4294967295L}, Utils.parseId("4294967295"));
-        assertArrayEquals(new long[] {10, 10, 10}, Utils.parseId("2814792716779530"));
-        assertArrayEquals(new long[] {32767, 65535, 4294967294L}, Utils.parseId("9223372036854775806"));
-        assertArrayEquals(new long[] {32767, 0, 0}, Utils.parseId("9223090561878065152"));
+        assertThat(EntityId.of(0, 0, 0)).isEqualTo(Utils.parseId("0.0.0"));
+        assertThat(EntityId.of(0, 0, 0)).isEqualTo(Utils.parseId("0"));
+        assertThat(EntityId.of(0, 0, 4294967295L)).isEqualTo(Utils.parseId("0.0.4294967295"));
+        assertThat(EntityId.of(0, 65535, 1)).isEqualTo(Utils.parseId("65535.000000001"));
+        assertThat(EntityId.of(32767, 65535, 4294967295L)).isEqualTo(Utils.parseId("32767.65535.4294967295"));
+        assertThat(EntityId.of(0, 0, 4294967295L)).isEqualTo(Utils.parseId("4294967295"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0.1"));
     }
 
     @Test
