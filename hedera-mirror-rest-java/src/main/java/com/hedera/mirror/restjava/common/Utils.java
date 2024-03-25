@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava.common;
 
 import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_PATTERN;
+import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_PATTERN;
 import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -46,15 +47,14 @@ public class Utils {
             throw new InvalidParametersException(" Id '%s' has an invalid format".formatted(id));
         }
         Matcher entityIdMatcher = ENTITY_ID_PATTERN.matcher(id);
+        Matcher evmAddressMatcher = EVM_ADDRESS_PATTERN.matcher(id);
 
         if (entityIdMatcher.matches()) {
-            // Group 0 is for shard.realm.num entityId
-            if (entityIdMatcher.group(1) != null || entityIdMatcher.group(3) != null) {
-                return parseDelimitedString(id);
-            } else {
-                // change this with evm address and alias support
-                throw new InvalidParametersException("Id format is not yet supported");
-            }
+
+            return parseDelimitedString(id);
+        } else if (evmAddressMatcher.matches()) {
+            // change this with evm address and alias support
+            throw new InvalidParametersException("Id format is not yet supported");
         } else {
             throw new InvalidParametersException(" Id '%s' has an invalid format".formatted(id));
         }
@@ -62,7 +62,7 @@ public class Utils {
 
     private static EntityId parseDelimitedString(String id) {
 
-        long shard = 0;
+        long shard;
         long realm = 0;
         List<String> parts =
                 SPLITTER.splitToStream(Objects.requireNonNullElse(id, "")).toList();
@@ -70,9 +70,7 @@ public class Utils {
 
         try {
             switch (parts.size()) {
-                case 1 -> {
-                    shard = 0;
-                }
+                case 1 -> shard = 0;
                 case 2 -> {
                     shard = 0;
                     realm = Long.parseLong(parts.getFirst());
@@ -81,6 +79,7 @@ public class Utils {
                     shard = Long.parseLong(parts.getFirst());
                     realm = Long.parseLong(parts.get(1));
                 }
+                default -> throw new InvalidParametersException("Id %s format is invalid".formatted(id));
             }
 
             return EntityId.of(shard, realm, Long.parseLong(numOrEvmAddress));

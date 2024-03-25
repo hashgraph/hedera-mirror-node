@@ -48,33 +48,22 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         var order = request.getOrder();
         var ownerOrSpenderId = request.getOwnerOrSpenderId();
         var token = request.getTokenId();
-        long ownerId = 0;
-        long spenderId = 0;
-        long tokenId = 0;
 
-        if (ownerOrSpenderId == null && token != null) {
-            throw new InvalidParametersException("token.id parameter must have account.id present");
-        }
+        checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
         //  LT,LTE,EQ,NE are not supported right now. Default is GT.
-        if (token != null && token.value() != null) {
-            tokenId = getUpdatedEntityId(token);
-        }
+        var tokenId = getTokenId(token);
 
         // Set the value depending on the owner flag
         if (request.isOwner()) {
-            if (ownerOrSpenderId != null && ownerOrSpenderId.value() != null) {
-                spenderId = getUpdatedEntityId(ownerOrSpenderId);
-            }
+            var spenderId = getTokenId(ownerOrSpenderId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
             return repository.findByOwnerAndFilterBySpenderAndToken(
                     accountId.value().getId(), spenderId, tokenId, pageable);
 
         } else {
-            if (ownerOrSpenderId != null && ownerOrSpenderId.value() != null) {
-                ownerId = getUpdatedEntityId(ownerOrSpenderId);
-            }
+            var ownerId = getTokenId(ownerOrSpenderId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
             return repository.findBySpenderAndFilterByOwnerAndToken(
@@ -82,14 +71,27 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         }
     }
 
-    private static long getUpdatedEntityId(EntityIdRangeParameter idParam) {
-        {
-            long id = idParam.value().getId();
-            if (idParam.operator() == RangeOperator.GTE) {
-                id = id > 0 ? id - 1 : id;
-            }
-            return id;
+    private static long getTokenId(EntityIdRangeParameter idParam) {
+        long id = 0;
+        if (idParam != EntityIdRangeParameter.EMPTY) {
+            id = getUpdatedEntityId(idParam);
         }
+        return id;
+    }
+
+    private static void checkOwnerSpenderParamValidity(
+            EntityIdRangeParameter ownerOrSpenderId, EntityIdRangeParameter token) {
+        if (ownerOrSpenderId == EntityIdRangeParameter.EMPTY && token != EntityIdRangeParameter.EMPTY) {
+            throw new InvalidParametersException("token.id parameter must have account.id present");
+        }
+    }
+
+    private static long getUpdatedEntityId(EntityIdRangeParameter idParam) {
+        long id = idParam.value().getId();
+        if (idParam.operator() == RangeOperator.GTE) {
+            id = id > 0 ? id - 1 : id;
+        }
+        return id;
     }
 
     private static Sort sort(Sort.Direction direction, String account) {

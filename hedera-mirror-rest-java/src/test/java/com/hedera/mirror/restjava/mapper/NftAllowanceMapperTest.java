@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.mapper;
 
+import static com.hedera.mirror.restjava.common.Constants.NANOS_PER_SECOND;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -41,6 +42,9 @@ class NftAllowanceMapperTest {
     void map() {
         var allowance = domainBuilder.nftAllowance().get();
 
+        var to = Math.floorDiv(allowance.getTimestampLower(), NANOS_PER_SECOND) + "."
+                + Math.floorMod(allowance.getTimestampLower(), NANOS_PER_SECOND);
+
         assertThat(mapper.map(List.of(allowance)))
                 .first()
                 .returns(EntityId.of(allowance.getOwner()).toString(), NftAllowance::getOwner)
@@ -48,9 +52,7 @@ class NftAllowanceMapperTest {
                 .returns(EntityId.of(allowance.getSpender()).toString(), NftAllowance::getSpender)
                 .returns(allowance.isApprovedForAll(), NftAllowance::getApprovedForAll)
                 .satisfies(a -> assertThat(a.getTimestamp())
-                        .returns(
-                                String.valueOf(allowance.getTimestampLower() / Math.pow(10, 9)),
-                                TimestampRange::getFrom)
+                        .returns(to, TimestampRange::getFrom)
                         .returns(null, TimestampRange::getTo));
     }
 

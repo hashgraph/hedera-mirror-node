@@ -16,11 +16,13 @@
 
 package com.hedera.mirror.restjava.mapper;
 
+import static com.hedera.mirror.restjava.common.Constants.NANOS_PER_SECOND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.TimestampRange;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
@@ -52,8 +54,8 @@ class CommonMapperTest {
         assertThat(commonMapper.mapRange(Range.atLeast(0L)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
-        range.setTo(String.valueOf(now / Math.pow(10, 9)));
-        assertThat(commonMapper.mapRange(Range.openClosed(0L, now)))
+        range.setTo(Math.floorDiv(now, NANOS_PER_SECOND) + "." + Math.floorMod(now, NANOS_PER_SECOND));
+        assertThat(commonMapper.mapRange(Range.openClosed(0L, DomainUtils.convertToNanosMax(0L, now))))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
     }

@@ -43,17 +43,10 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
     }
 
     @NotNull
-    private static EntityIdRangeParameter validateId(String[] splitVal, int x, RangeOperator eq) {
-        return new EntityIdRangeParameter(eq, parseId(splitVal[x]));
-    }
-
-    @Override
-    public RangeOperator operator() {
-        return operator;
-    }
-
-    @Override
-    public EntityId value() {
-        return value;
+    private static EntityIdRangeParameter validateId(String[] splitVal, int x, RangeOperator operator) {
+        if (operator == RangeOperator.NE) {
+            throw new InvalidParametersException("Invalid range operator ne. This operator is not supported");
+        }
+        return new EntityIdRangeParameter(operator, parseId(splitVal[x]));
     }
 }

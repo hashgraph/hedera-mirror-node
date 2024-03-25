@@ -19,7 +19,7 @@ package com.hedera.mirror.restjava.controller;
 import static com.hedera.mirror.restjava.common.Constants.LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.ORDER;
 import static com.hedera.mirror.restjava.common.Constants.OWNER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -79,7 +79,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .accept(MediaType.ALL)
                 .retrieve()
                 .body(NftAllowancesResponse.class);
-        assertEquals(result.getAllowances(), (mapper.map(collection)));
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(collection));
         assertNull(result.getLinks().getNext());
     }
 
@@ -99,7 +99,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .accept(MediaType.ALL)
                 .retrieve()
                 .body(NftAllowancesResponse.class);
-        assertEquals(result.getAllowances(), (mapper.map(collection)));
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(collection));
         assertNull(result.getLinks().getNext());
     }
 
@@ -140,10 +140,9 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
-        assertEquals(result.getAllowances(), mapper.map(List.of(allowance)));
-        assertEquals(
-                result.getLinks().getNext(),
-                "/api/v1/accounts/" + allowance.getOwner()
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance)));
+        assertThat(result.getLinks().getNext())
+                .isEqualTo("/api/v1/accounts/" + allowance.getOwner()
                         + "/allowances/nfts?limit=1&order=asc&account.id=gte:" + EntityId.of(allowance.getSpender())
                         + "&token.id=gt:" + EntityId.of(allowance.getTokenId()));
     }
@@ -185,10 +184,9 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
         // This test will need to change after the new repository layer is integrated to return the correct result for
         // spenderId = allowance.spender()
-        assertEquals(result.getAllowances(), mapper.map(List.of(allowance1)));
-        assertEquals(
-                result.getLinks().getNext(),
-                "/api/v1/accounts/" + allowance.getOwner()
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
+        assertThat(result.getLinks().getNext())
+                .isEqualTo("/api/v1/accounts/" + allowance.getOwner()
                         + "/allowances/nfts?limit=1&order=asc&account.id=gte:" + EntityId.of(allowance1.getSpender())
                         + "&token.id=gt:" + EntityId.of(allowance1.getTokenId()));
     }
@@ -227,10 +225,9 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         // Performing the GET operation
         var result = restClient.get().uri(params).retrieve().body(NftAllowancesResponse.class);
 
-        assertEquals(result.getAllowances(), mapper.map(List.of(allowance1)));
-        assertEquals(
-                result.getLinks().getNext(),
-                "/api/v1/accounts/" + allowance1.getOwner()
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
+        assertThat(result.getLinks().getNext())
+                .isEqualTo("/api/v1/accounts/" + allowance1.getOwner()
                         + "/allowances/nfts?limit=1&order=desc&account.id=lte:" + EntityId.of(allowance1.getSpender())
                         + "&token.id=lt:" + EntityId.of(allowance1.getTokenId()));
     }
@@ -272,10 +269,9 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
-        assertEquals(result.getAllowances(), mapper.map(List.of(allowance)));
-        assertEquals(
-                result.getLinks().getNext(),
-                "/api/v1/accounts/" + allowance.getSpender()
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance)));
+        assertThat(result.getLinks().getNext())
+                .isEqualTo("/api/v1/accounts/" + allowance.getSpender()
                         + "/allowances/nfts?limit=1&order=asc&account.id=gte:" + EntityId.of(allowance.getOwner())
                         + "&token.id=gt:" + EntityId.of(allowance.getTokenId()));
     }

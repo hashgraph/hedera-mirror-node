@@ -34,8 +34,9 @@ class EntityIdRangeParameterTest {
                 .isEqualTo(EntityIdRangeParameter.valueOf("gte:0.0.2000"));
         assertThat(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of("0.0.2000")))
                 .isEqualTo(EntityIdRangeParameter.valueOf("0.0.2000"));
-        assertThat(EntityIdRangeParameter.EMPTY).isEqualTo(EntityIdRangeParameter.valueOf(""));
-        assertThat(EntityIdRangeParameter.EMPTY).isEqualTo(EntityIdRangeParameter.valueOf(null));
+        assertThat(EntityIdRangeParameter.EMPTY)
+                .isEqualTo(EntityIdRangeParameter.valueOf(""))
+                .isEqualTo(EntityIdRangeParameter.valueOf(null));
     }
 
     @ParameterizedTest
@@ -54,7 +55,8 @@ class EntityIdRangeParameterTest {
                 "100000.000000001",
                 "eq:0.0.1:someinvalidstring",
                 "BLAH:0.0.1",
-                "0.0.1:someinvalidstring"
+                "0.0.1:someinvalidstring",
+                "ne:0.0.1"
             })
     @DisplayName("EntityIdRangeParameter parse from string tests, negative cases")
     void testInvalidParam(String input) {

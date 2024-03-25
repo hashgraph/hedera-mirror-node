@@ -18,27 +18,19 @@ package com.hedera.mirror.restjava.common;
 
 import com.google.common.base.Splitter;
 import java.util.regex.Pattern;
+import lombok.experimental.UtilityClass;
 
+@UtilityClass
 public class Constants {
 
     public static final int MAX_LIMIT = 100;
     public static final String DEFAULT_LIMIT = "25";
+    public static final String ENTITY_ID_REGEX = "^(((\\d{1,5}\\.){1,2}\\d{1,10})|(\\d{1,19}))$";
 
-    // format: |0|15-bit shard|16-bit realm|32-bit num|
-    public static final long NUM_BITS = 32;
-    public static final long MAX_NUM = (long) Math.pow(2, NUM_BITS) - 1;
-
-    public static final long REALM_BITS = 16;
-    public static final long MAX_REALM = (long) Math.pow(2, REALM_BITS) - 1;
-    public static final long SHARD_BITS = 15;
-
-    public static final long MAX_SHARD = (long) Math.pow(2, SHARD_BITS) - 1;
-    public static final long MAX_ENCODED_ID = (long) Math.pow(2, 63) - 1;
-
-    public static final String ENTITY_ID_REGEX =
-            "(^(\\d{1,5}\\.){1,2}\\d{1,10}$)|(^\\d{1,19}$)|(^(0x)?[A-Fa-f0-9]{40}$)|(^(\\d{1,10}\\.){0,2}[A-Fa-f0-9]{40}$)";
+    public static final String EVM_ADDRESS_REGEX = "^(((0x)?[A-Fa-f0-9]{40})|((\\d{1,10}\\.){0,2}[A-Fa-f0-9]{40}))$";
 
     public static final Pattern ENTITY_ID_PATTERN = Pattern.compile(ENTITY_ID_REGEX);
+    public static final Pattern EVM_ADDRESS_PATTERN = Pattern.compile(EVM_ADDRESS_REGEX);
 
     public static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
 
@@ -48,4 +40,6 @@ public class Constants {
     public static final String ORDER = "order";
     public static final String OWNER = "owner";
     public static final String LIMIT = "limit";
+
+    public static final long NANOS_PER_SECOND = 1000_000_000L;
 }

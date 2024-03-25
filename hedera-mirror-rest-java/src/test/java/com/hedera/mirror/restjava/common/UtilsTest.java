@@ -19,7 +19,6 @@ package com.hedera.mirror.restjava.common;
 import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.Utils.getPaginationLink;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -90,9 +89,8 @@ class UtilsTest {
         when(request.getRequestURI()).thenReturn(uri);
         var lastValues = Map.of(ACCOUNT_ID, "0.0.2000");
         var included = Map.of(ACCOUNT_ID, true);
-        assertEquals(
-                getPaginationLink(request, false, lastValues, included, Sort.Direction.ASC, 2),
-                uri + "?limit=2&order=asc&account.id=gte:0.0.2000");
+        assertThat(getPaginationLink(request, false, lastValues, included, Sort.Direction.ASC, 2))
+                .isEqualTo(uri + "?limit=2&order=asc&account.id=gte:0.0.2000");
     }
 
     @Test
