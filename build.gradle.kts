@@ -37,7 +37,7 @@ extra.apply {
     set("mapStructVersion", "1.5.5.Final")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.5")
+    set("vertxVersion", "4.5.6")
 }
 
 // Temporarily override json version until snyk/gradle-plugin has an update with a fix
