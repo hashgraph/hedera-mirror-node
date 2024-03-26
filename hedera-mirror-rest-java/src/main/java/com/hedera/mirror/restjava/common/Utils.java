@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.restjava.common;
 
+import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_MAX_LENGTH;
 import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_PATTERN;
+import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_MIN_LENGTH;
 import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_PATTERN;
 import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
 
@@ -27,7 +29,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
@@ -43,16 +44,14 @@ public class Utils {
 
     public static EntityId parseId(String id) {
 
-        if (StringUtils.isBlank(id)) {
+        if (StringUtils.isEmpty(id)) {
             throw new InvalidParametersException(" Id '%s' has an invalid format".formatted(id));
         }
-        Matcher entityIdMatcher = ENTITY_ID_PATTERN.matcher(id);
-        Matcher evmAddressMatcher = EVM_ADDRESS_PATTERN.matcher(id);
 
-        if (entityIdMatcher.matches()) {
-
+        if (id.length() <= ENTITY_ID_MAX_LENGTH && ENTITY_ID_PATTERN.matcher(id).matches()) {
             return parseDelimitedString(id);
-        } else if (evmAddressMatcher.matches()) {
+        } else if (id.length() >= EVM_ADDRESS_MIN_LENGTH
+                && EVM_ADDRESS_PATTERN.matcher(id).matches()) {
             // change this with evm address and alias support
             throw new InvalidParametersException("Id format is not yet supported");
         } else {
