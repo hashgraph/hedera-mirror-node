@@ -229,14 +229,10 @@ class TokenTest {
         assertEquals(newRel, nonTreasuryRel);
     }
 
+    // Divergence from services test, since we have immutable models and should set up them at the beginning
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndFrozenByDefault() {
         // setup:
-        nonTreasuryRel =
-                new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, true, true, false, false, false, 0);
-
-        // given:
-
         subject = new Token(
                 0L,
                 tokenId,
@@ -271,6 +267,9 @@ class TokenTest {
                 defaultLongValue,
                 defaultLongValue,
                 Suppliers.memoize(Collections::emptyList));
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, true, true, false, false, false, 0);
+
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
@@ -278,14 +277,13 @@ class TokenTest {
         assertEquals(newRel, nonTreasuryRel);
     }
 
+    // Divergence from services test, since we have immutable models and should set up them at the beginning
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndNotFrozenByDefault() {
         // setup:
+        subject = subject.setFreezeKey(someKey);
         nonTreasuryRel =
                 new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, false, true, false, false, false, 0);
-
-        // given:
-        subject = subject.setFreezeKey(someKey);
 
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);

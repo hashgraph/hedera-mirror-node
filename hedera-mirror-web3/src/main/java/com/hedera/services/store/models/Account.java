@@ -678,17 +678,16 @@ public class Account extends HederaEvmAccount {
     }
 
     public SortedMap<EntityNum, Long> getCryptoAllowances() {
-        return cryptoAllowances != null ? cryptoAllowances.get() : Collections.unmodifiableSortedMap(new TreeMap<>());
+        return Collections.unmodifiableSortedMap(cryptoAllowances != null ? cryptoAllowances.get() : new TreeMap<>());
     }
 
     public SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
-        return fungibleTokenAllowances != null
-                ? fungibleTokenAllowances.get()
-                : Collections.unmodifiableSortedMap(new TreeMap<>());
+        return Collections.unmodifiableSortedMap(
+                fungibleTokenAllowances != null ? fungibleTokenAllowances.get() : new TreeMap<>());
     }
 
     public SortedSet<FcTokenAllowanceId> getApproveForAllNfts() {
-        return approveForAllNfts != null ? approveForAllNfts.get() : Collections.unmodifiableSortedSet(new TreeSet<>());
+        return Collections.unmodifiableSortedSet(approveForAllNfts != null ? approveForAllNfts.get() : new TreeSet<>());
     }
 
     public Integer getNumAssociations() {
