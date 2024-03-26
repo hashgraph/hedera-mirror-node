@@ -594,7 +594,7 @@ public class TokenClient extends AbstractNetworkClient {
                 "fungible",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
+                TokenFreezeStatus.Unfrozen),
         FUNGIBLEHISTORICAL(
                 "fungible_historical", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
         FUNGIBLE_DELETABLE(
@@ -622,7 +622,7 @@ public class TokenClient extends AbstractNetworkClient {
                 "non_fungible",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
+                TokenFreezeStatus.Unfrozen),
         NFT_FOR_ETH_CALL(
                 "non_fungible",
                 TokenType.NON_FUNGIBLE_UNIQUE,
