@@ -37,7 +37,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPP
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
@@ -272,8 +271,8 @@ public class Token {
                 feeScheduleKey.orElse(null),
                 pauseKey.orElse(null),
                 op.getFreezeDefault(),
-                Suppliers.memoize(() -> treasury),
-                Suppliers.memoize(() -> autoRenewAccount),
+                () -> treasury,
+                () -> autoRenewAccount,
                 false,
                 false,
                 false,
@@ -286,7 +285,7 @@ public class Token {
                 op.getDecimals(),
                 op.getAutoRenewPeriod().getSeconds(),
                 0,
-                () -> Collections.unmodifiableList(new ArrayList<>()));
+                Collections::emptyList);
     }
 
     // copied from TokenTypesManager in services
@@ -410,7 +409,7 @@ public class Token {
                 true,
                 oldToken.type,
                 oldToken.supplyType,
-                Suppliers.memoize(() -> totalSupply),
+                () -> totalSupply,
                 oldToken.maxSupply,
                 oldToken.kycKey,
                 oldToken.freezeKey,
@@ -465,7 +464,7 @@ public class Token {
                 oldToken.feeScheduleKey,
                 oldToken.pauseKey,
                 oldToken.frozenByDefault,
-                Suppliers.memoize(() -> treasury),
+                () -> treasury,
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
@@ -825,7 +824,7 @@ public class Token {
                 oldToken.feeScheduleKey,
                 oldToken.pauseKey,
                 oldToken.frozenByDefault,
-                Suppliers.memoize(() -> treasury),
+                () -> treasury,
                 oldToken.autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
@@ -1050,7 +1049,7 @@ public class Token {
                 oldToken.pauseKey,
                 oldToken.frozenByDefault,
                 oldToken.treasury,
-                Suppliers.memoize(() -> autoRenewAccount),
+                () -> autoRenewAccount,
                 oldToken.deleted,
                 oldToken.paused,
                 oldToken.autoRemoved,
@@ -1843,9 +1842,8 @@ public class Token {
     }
 
     public List<CustomFee> getCustomFees() {
-        return customFees != null && customFees.get() != null
-                ? customFees.get()
-                : Collections.unmodifiableList(new ArrayList<>());
+        return Collections.unmodifiableList(
+                customFees != null && customFees.get() != null ? customFees.get() : new ArrayList<>());
     }
 
     public boolean hasMintedUniqueTokens() {

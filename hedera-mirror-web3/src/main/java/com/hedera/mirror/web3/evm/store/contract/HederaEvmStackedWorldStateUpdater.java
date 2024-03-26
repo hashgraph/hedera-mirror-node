@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 
-import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -34,8 +33,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.Collections;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -129,15 +127,15 @@ public class HederaEvmStackedWorldStateUpdater
                         ? Id.fromGrpcAccount(accountIdFromEvmAddress(resolvedAddress))
                         : Id.fromGrpcAccount(accountIdFromEvmAddress(address)),
                 0L,
-                Suppliers.memoize(() -> balance.toLong()),
+                balance::toLong,
                 false,
                 () -> 0L,
                 0L,
                 null,
                 0,
-                TreeMap::new,
-                TreeMap::new,
-                TreeSet::new,
+                Collections::emptySortedMap,
+                Collections::emptySortedMap,
+                Collections::emptySortedSet,
                 () -> 0,
                 () -> 0,
                 0,

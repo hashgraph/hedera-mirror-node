@@ -112,7 +112,7 @@ class TokenTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                Suppliers.memoize(() -> initialSupply),
+                () -> initialSupply,
                 21_000_000,
                 null,
                 null,
@@ -122,7 +122,7 @@ class TokenTest {
                 null,
                 null,
                 false,
-                Suppliers.memoize(() -> treasuryAccount),
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -136,18 +136,10 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Suppliers.memoize(Collections::emptyList));
+                Collections::emptyList);
 
         treasuryRel = new TokenRelationship(
-                subject,
-                treasuryAccount,
-                Suppliers.memoize(() -> initialTreasuryBalance),
-                false,
-                false,
-                false,
-                false,
-                true,
-                0);
+                subject, treasuryAccount, () -> initialTreasuryBalance, false, false, false, false, true, 0);
         nonTreasuryRel =
                 new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, false, false, false, false, true, 0);
     }
@@ -242,7 +234,7 @@ class TokenTest {
                 false,
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenSupplyType.FINITE,
-                Suppliers.memoize(() -> initialSupply),
+                () -> initialSupply,
                 20000L,
                 null,
                 someKey,
@@ -252,7 +244,7 @@ class TokenTest {
                 null,
                 null,
                 true,
-                Suppliers.memoize(() -> treasuryAccount),
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -266,7 +258,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Suppliers.memoize(Collections::emptyList));
+                Collections::emptyList);
         nonTreasuryRel =
                 new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, true, true, false, false, false, 0);
 
@@ -450,7 +442,7 @@ class TokenTest {
                 null,
                 null,
                 false,
-                Suppliers.memoize(() -> treasuryAccount),
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -464,7 +456,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Suppliers.memoize(Collections::emptyList));
+                Collections::emptyList);
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 11));
 
         // negate account balance
@@ -596,7 +588,7 @@ class TokenTest {
                 null,
                 null,
                 false,
-                Suppliers.memoize(() -> treasuryAccount),
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -610,7 +602,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Suppliers.memoize(Collections::emptyList));
+                Collections::emptyList);
         final var metadata = List.of(ByteString.copyFromUtf8("memo"));
         final List<ByteString> emptyMetadata = List.of();
 
@@ -645,7 +637,7 @@ class TokenTest {
                 null,
                 null,
                 false,
-                Suppliers.memoize(() -> treasuryAccount),
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -659,7 +651,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Suppliers.memoize(Collections::emptyList));
+                Collections::emptyList);
 
         assertNotEquals(subject, otherToken);
         assertNotEquals(subject.hashCode(), otherToken.hashCode());

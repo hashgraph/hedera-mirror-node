@@ -35,8 +35,6 @@ import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
 import com.hederahashgraph.api.proto.java.*;
 import java.util.Collections;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -117,9 +115,9 @@ public abstract class AbstractAutoCreationLogic {
                 0L,
                 null,
                 0,
-                () -> Collections.unmodifiableSortedMap(new TreeMap<>()),
-                () -> Collections.unmodifiableSortedMap(new TreeMap<>()),
-                () -> Collections.unmodifiableSortedSet(new TreeSet<>()),
+                Collections::emptySortedMap,
+                Collections::emptySortedMap,
+                Collections::emptySortedSet,
                 () -> 0,
                 () -> 0,
                 0,

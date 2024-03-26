@@ -66,7 +66,7 @@ class TokenRelationshipTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                Suppliers.memoize(() -> defaultLongValue),
+                () -> defaultLongValue,
                 21_000_000,
                 null,
                 null,
@@ -90,7 +90,7 @@ class TokenRelationshipTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Suppliers.memoize(Collections::emptyList));
+                Collections::emptyList);
 
         account = new Account(
                 ByteString.EMPTY,
@@ -114,8 +114,7 @@ class TokenRelationshipTest {
                 null,
                 0L);
 
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
     }
 
     @Test
@@ -160,12 +159,10 @@ class TokenRelationshipTest {
 
     @Test
     void automaticAssociationSetterWorks() {
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), false, false, false, true, false, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, false, 0);
         assertFalse(subject.isAutomaticAssociation());
 
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
         assertTrue(subject.isAutomaticAssociation());
     }
 
@@ -173,8 +170,7 @@ class TokenRelationshipTest {
     void cannotChangeBalanceIfFrozenForToken() {
         // given:
         token = token.setFreezeKey(freezeKey);
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, true, false, false, true, true, 0);
 
         assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_FROZEN_FOR_TOKEN);
     }
@@ -183,8 +179,7 @@ class TokenRelationshipTest {
     void canChangeBalanceIfFrozenForDeletedToken() {
         token = token.setFreezeKey(freezeKey);
         token = token.setIsDeleted(true);
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, true, false, false, true, true, 0);
 
         subject = subject.setBalance(0);
         assertEquals(-balance, subject.getBalanceChange());
@@ -205,8 +200,7 @@ class TokenRelationshipTest {
     @Test
     void canChangeBalanceIfNoFreezeKey() {
         // given:
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, true, false, false, true, true, 0);
 
         // when:
         subject = subject.setBalance(balance + 1);
@@ -219,8 +213,7 @@ class TokenRelationshipTest {
     void cannotChangeBalanceIfKycNotGranted() {
         // given:
         token = token.setKycKey(kycKey);
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
         // verify
         assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
     }
@@ -229,8 +222,7 @@ class TokenRelationshipTest {
     void canChangeBalanceIfKycGranted() {
         // given:
         token = token.setKycKey(kycKey);
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), false, true, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, true, false, true, true, 0);
 
         // when:
         subject = subject.setBalance(balance + 1);
@@ -255,8 +247,7 @@ class TokenRelationshipTest {
         token = token.setFreezeKey(freezeKey);
 
         // when:
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, true, false, false, true, true, 0);
 
         // then:
         assertTrue(subject.isFrozen());
@@ -275,8 +266,7 @@ class TokenRelationshipTest {
 
     @Test
     void testHashCode() {
-        var rel = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), false, false, false, true, true, 0);
+        var rel = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
         assertEquals(rel.hashCode(), subject.hashCode());
     }
 
@@ -286,8 +276,7 @@ class TokenRelationshipTest {
         token.setKycKey(kycKey);
 
         // when:
-        subject = new TokenRelationship(
-                token, account, Suppliers.memoize(() -> balance), false, true, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, true, false, true, true, 0);
 
         // then:
         assertTrue(subject.isKycGranted());

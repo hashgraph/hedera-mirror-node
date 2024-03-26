@@ -23,7 +23,6 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NO
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Suppliers;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import java.util.Objects;
@@ -118,7 +117,7 @@ public class TokenRelationship {
         return new TokenRelationship(
                 oldTokenRel.token,
                 oldTokenRel.account,
-                Suppliers.memoize(() -> balance),
+                () -> balance,
                 oldTokenRel.frozen,
                 oldTokenRel.kycGranted,
                 oldTokenRel.destroyed,
