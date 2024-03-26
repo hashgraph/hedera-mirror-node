@@ -16,7 +16,7 @@ dependencies:
     version: 55.8.3
   - name: promtail
     condition: promtail.enabled
-    version: 6.15.3
+    version: 6.15.5
     repository: https://grafana.github.io/helm-charts
   - alias: stackgres
     condition: stackgres.enabled
