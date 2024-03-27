@@ -22,7 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
+import static com.hedera.services.utils.TxnUtils.assertFailsWith;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Id;
@@ -98,6 +101,21 @@ class FreezeLogicTest {
 
         // expect:
         assertEquals(INVALID_ACCOUNT_ID, subject.validate(tokenFreezeTxn));
+    }
+
+    @Test
+    void rejectChangeFrozenStateWithoutTokenFreezeKey() {
+        final TokenRelationship tokenRelationship = TokenRelationship.getEmptyTokenRelationship();
+
+        // given:
+        given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW)).willReturn(tokenRelationship);
+
+        // expect:
+        assertFalse(tokenRelationship.getToken().hasFreezeKey());
+        assertFailsWith(() -> subject.freeze(idOfToken, idOfAccount, store), TOKEN_HAS_NO_FREEZE_KEY);
+
+        // verify:
+        verify(store, never()).updateTokenRelationship(tokenRelationship);
     }
 
     private void givenValidTxnCtx() {
