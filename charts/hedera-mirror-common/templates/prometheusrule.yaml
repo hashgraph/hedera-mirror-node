@@ -1,4 +1,4 @@
-{{- if and .Values.prometheusRules.enabled .Values.stackgres.enabled -}}
+{{- if and .Values.stackgres.prometheusRules.enabled .Values.stackgres.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -9,7 +9,7 @@ spec:
   groups:
     - name: {{ include "hedera-mirror-common.fullname" . }}
       rules:
-      {{- range $name, $rule := omit .Values.prometheusRules "enabled" }}
+      {{- range $name, $rule := omit .Values.stackgres.prometheusRules "enabled" }}
         {{- if $rule.enabled }}
         - alert: {{ $name }}
           {{- omit $rule "enabled" | toYaml | nindent 10 }}
