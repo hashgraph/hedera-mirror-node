@@ -17,8 +17,7 @@
 package com.hedera.services.store.models;
 
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -251,10 +250,21 @@ class TokenRelationshipTest {
         token = token.setFreezeKey(freezeKey);
 
         // when:
-        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        subject = subject.changeFrozenState(true);
 
         // then:
         assertTrue(subject.isFrozen());
+    }
+
+    @Test
+    void updateFreezeFailsAsExpectedIfFreezeKeyIsNotPresent() {
+        // given:
+        subject.setFrozen(false);
+        token.setFreezeKey(null);
+
+        // verify
+        assertFailsWith(() -> subject.changeFrozenState(true), TOKEN_HAS_NO_FREEZE_KEY);
     }
 
     @Test

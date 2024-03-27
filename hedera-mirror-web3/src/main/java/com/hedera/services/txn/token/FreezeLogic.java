@@ -42,8 +42,8 @@ public class FreezeLogic {
                 new TokenRelationshipKey(targetTokenId.asEvmAddress(), targetAccountId.asEvmAddress());
         var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW);
 
-        /* --- Do the business logic --- */
-        var frozenTokenRelationship = tokenRelationship.setFrozen(true);
+               /* --- Do the business logic --- */
+        var frozenTokenRelationship = tokenRelationship.changeFrozenState(true);
 
         /* --- Persist the updated models --- */
         store.updateTokenRelationship(frozenTokenRelationship);
