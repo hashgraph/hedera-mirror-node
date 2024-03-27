@@ -229,18 +229,6 @@ prometheusRules:
       application: hedera-mirror-importer
       area: cloud
 
-  DatabaseStorageFull:
-    annotations:
-      description: Storage for {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full
-      summary: Database storage is full
-    enabled: true
-    expr: kubelet_volume_stats_used_bytes{node=~".*(worker|coord).*"} / kubelet_volume_stats_capacity_bytes{node=~".*(worker|coord).*"} >= .80
-    for: 1m
-    labels:
-      severity: critical
-      application: hedera-mirror-importer
-      area: resource
-
   ImporterFileVerificationErrors:
     annotations:
       description: "Error rate of {{ $value | humanizePercentage }} trying to download and verify {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}"

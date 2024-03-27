@@ -21,7 +21,7 @@
       }
     ]
   },
-  "editable": true,
+  "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "links": [],
@@ -89,8 +89,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -205,8 +204,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -307,8 +305,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -418,8 +415,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -522,8 +518,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1905,11 +1900,11 @@
       "links": [],
       "options": {
         "dedupStrategy": "none",
-        "enableLogDetails": false,
+        "enableLogDetails": true,
         "prettifyLogMessage": false,
-        "showCommonLabels": true,
+        "showCommonLabels": false,
         "showLabels": true,
-        "showTime": false,
+        "showTime": true,
         "sortOrder": "Ascending",
         "wrapLogMessage": false
       },
@@ -1919,7 +1914,7 @@
             "uid": "${loki}"
           },
           "editorMode": "builder",
-          "expr": "{component=~\".*zfs.*\"}",
+          "expr": "{component=~\"$zfsComponentsRegex\", cluster=\"$cluster\", node_name=~\"$node\"}",
           "queryType": "range",
           "refId": "A"
         }
@@ -1933,6 +1928,20 @@
   "tags": [],
   "templating": {
     "list": [
+      {
+        "hide": 2,
+        "name": "zfsComponentsRegex",
+        "query": ".*zfs-(controller|node).*",
+        "skipUrlSync": false,
+        "type": "constant"
+      },
+      {
+        "hide": 2,
+        "name": "zfsDeviceId",
+        "query": "sdb",
+        "skipUrlSync": false,
+        "type": "constant"
+      },
       {
         "current": {
           "selected": false,
@@ -1983,11 +1992,39 @@
           "type": "prometheus",
           "uid": "${prometheus}"
         },
+        "definition": "label_values(system_cpu_count,cluster)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Cluster",
+        "multi": true,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(system_cpu_count,cluster)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 5,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${prometheus}"
+        },
         "definition": "label_values(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\",node=~\"$node\"},namespace)",
         "hide": 0,
         "includeAll": true,
         "label": "Namespace",
-        "multi": false,
+        "multi": true,
         "name": "namespace",
         "options": [],
         "query": {
@@ -2018,7 +2055,7 @@
           "type": "prometheus",
           "uid": "${prometheus}"
         },
-        "definition": "label_values(node_zfs_arc_size{cluster=~\"$cluster\"},node)",
+        "definition": "label_values(kube_pod_info{cluster=~\"$cluster\", pod=~\"$zfsComponentsRegex\"},node)",
         "description": "List of nodes with ZFS pools",
         "hide": 0,
         "includeAll": true,
@@ -2028,7 +2065,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(node_zfs_arc_size{cluster=~\"$cluster\"},node)",
+          "query": "label_values(kube_pod_info{cluster=~\"$cluster\", pod=~\"$zfsComponentsRegex\"},node)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
@@ -2039,41 +2076,6 @@
         "tagsQuery": "",
         "type": "query",
         "useTags": false
-      },
-      {
-        "hide": 2,
-        "name": "zfsDeviceId",
-        "query": "sdb",
-        "skipUrlSync": false,
-        "type": "constant"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "${prometheus}"
-        },
-        "definition": "label_values(system_cpu_count,cluster)",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Cluster",
-        "multi": true,
-        "name": "cluster",
-        "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values(system_cpu_count,cluster)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 5,
-        "type": "query"
       }
     ]
   },
