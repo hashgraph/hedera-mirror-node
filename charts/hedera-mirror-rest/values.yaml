@@ -161,9 +161,9 @@ prometheusRules:
   RestErrors:
     annotations:
       description: "REST API 5xx error rate for {{ $labels.namespace }} is {{ $value | humanizePercentage }}"
-      summary: "Mirror REST API error rate exceeds 5%"
+      summary: "Mirror REST API error rate exceeds 1%"
     enabled: true
-    expr: sum(rate(api_request_total{container="rest",code=~"^5.."}[1m])) by (namespace) / sum(rate(api_request_total{container="rest"}[1m])) by (namespace) > 0.05
+    expr: sum(rate(api_request_total{container="rest",code=~"^5.."}[1m])) by (namespace) / sum(rate(api_request_total{container="rest"}[1m])) by (namespace) > 0.01
     for: 1m
     labels:
       severity: critical
