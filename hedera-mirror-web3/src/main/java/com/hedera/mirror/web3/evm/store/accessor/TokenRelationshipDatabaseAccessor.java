@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.accessor;
 
+import com.google.common.base.Suppliers;
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -32,6 +33,7 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.utils.EntityIdUtils;
 import jakarta.inject.Named;
 import java.util.Optional;
+import java.util.function.Supplier;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
@@ -71,12 +73,12 @@ public class TokenRelationshipDatabaseAccessor extends DatabaseAccessor<Object, 
     /**
      * Determines fungible or NFT balance based on block context.
      */
-    private Long getBalance(
+    private Supplier<Long> getBalance(
             final Account account, final Token token, final TokenAccount tokenAccount, final Optional<Long> timestamp) {
         if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE)) {
-            return getNftBalance(tokenAccount, timestamp, account.getCreatedTimestamp());
+            return Suppliers.memoize(() -> getNftBalance(tokenAccount, timestamp, account.getCreatedTimestamp()));
         }
-        return getFungibleBalance(tokenAccount, timestamp, account.getCreatedTimestamp());
+        return Suppliers.memoize(() -> getFungibleBalance(tokenAccount, timestamp, account.getCreatedTimestamp()));
     }
 
     /**

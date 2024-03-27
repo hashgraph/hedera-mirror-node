@@ -223,17 +223,17 @@ class DissociateLogicTest {
                 0L,
                 accountId,
                 9999999999L,
-                0L,
+                () -> 0L,
                 false,
-                0L,
+                () -> 0L,
                 0L,
                 null,
                 3,
                 null,
                 null,
                 null,
-                3,
-                0,
+                () -> 3,
+                () -> 0,
                 0,
                 0,
                 false,
@@ -242,7 +242,7 @@ class DissociateLogicTest {
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
-                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, true, 3L);
+                new TokenRelationship(token, spyAccount, () -> 3L, false, !token.hasKycKey(), false, false, true, 3L);
         setupToken();
         setupTokenRelationship();
         setupAccount();
@@ -260,17 +260,17 @@ class DissociateLogicTest {
                 0L,
                 accountId,
                 9999999999L,
-                0L,
+                () -> 0L,
                 false,
+                () -> 0L,
                 0L,
-                0L,
                 null,
                 3,
                 null,
                 null,
                 null,
-                3,
-                3,
+                () -> 3,
+                () -> 3,
                 0,
                 0,
                 false,
@@ -279,7 +279,7 @@ class DissociateLogicTest {
         newAccount = newAccount.setAlreadyUsedAutomaticAssociations(3);
         spyAccount = spy(newAccount);
         tokenRelationship =
-                new TokenRelationship(token, spyAccount, 3L, false, !token.hasKycKey(), false, false, false, 0L);
+                new TokenRelationship(token, spyAccount, () -> 3L, false, !token.hasKycKey(), false, false, false, 0L);
         setupToken();
         setupTokenRelationship();
         setupAccount();

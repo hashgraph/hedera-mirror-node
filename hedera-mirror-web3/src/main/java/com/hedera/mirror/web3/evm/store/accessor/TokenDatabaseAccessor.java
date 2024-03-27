@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -41,6 +42,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 
@@ -112,13 +114,13 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 getCustomFees(entity.getId(), timestamp));
     }
 
-    private Long getTotalSupply(
+    private Supplier<Long> getTotalSupply(
             final com.hedera.mirror.common.domain.token.Token token, final Optional<Long> timestamp) {
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> Optional.of(getTotalSupplyHistorical(
                         token.getType().equals(TokenTypeEnum.FUNGIBLE_COMMON), token.getTokenId(), t)))
                 .orElseGet(() -> Optional.ofNullable(token.getTotalSupply()))
-                .orElse(0L);
+                .orElse(0L));
     }
 
     private Long getTotalSupplyHistorical(boolean isFungible, long tokenId, long timestamp) {
@@ -137,35 +139,36 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
         }
     }
 
-    private Account getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {
+    private Supplier<Account> getAutoRenewAccount(Long autoRenewAccountId, final Optional<Long> timestamp) {
         if (autoRenewAccountId == null) {
             return null;
         }
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(autoRenewAccountId, t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(autoRenewAccountId))
                 .map(autoRenewAccount -> new Account(
                         autoRenewAccount.getId(),
                         new Id(autoRenewAccount.getShard(), autoRenewAccount.getRealm(), autoRenewAccount.getNum()),
                         autoRenewAccount.getBalance() != null ? autoRenewAccount.getBalance() : 0L))
-                .orElse(null);
+                .orElse(null));
     }
 
-    private Account getTreasury(EntityId treasuryId, final Optional<Long> timestamp) {
+    private Supplier<Account> getTreasury(EntityId treasuryId, final Optional<Long> timestamp) {
         if (treasuryId == null) {
             return null;
         }
-        return timestamp
+        return Suppliers.memoize(() -> timestamp
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId()))
                 .map(entity -> new Account(
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                         entity.getBalance() != null ? entity.getBalance() : 0L))
-                .orElse(null);
+                .orElse(null));
     }
 
-    private List<CustomFee> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
-        return customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList());
+    private Supplier<List<CustomFee>> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
+        return Suppliers.memoize(
+                () -> customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList()));
     }
 }

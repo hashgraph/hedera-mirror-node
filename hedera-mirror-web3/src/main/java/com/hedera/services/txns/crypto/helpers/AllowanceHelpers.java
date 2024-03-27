@@ -105,7 +105,7 @@ public class AllowanceHelpers {
         final var ownerId = Id.fromGrpcAccount(owner);
         if (owner.equals(AccountID.getDefaultInstance())
                 || owner.equals(payerAccount.getId().asGrpcAccount())) {
-            return payerAccount;
+            return entitiesChanged.getOrDefault(payerAccount.getId().num(), payerAccount);
         } else if (entitiesChanged.containsKey(ownerId.num())) {
             return entitiesChanged.get(ownerId.num());
         } else {

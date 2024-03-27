@@ -17,15 +17,15 @@
 package com.hedera.services.txn.token;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
-import static com.hedera.services.utils.TxnUtils.assertFailsWith;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.accessor.model.TokenRelationshipKey;
 import com.hedera.services.store.models.Id;
@@ -108,7 +108,8 @@ class FreezeLogicTest {
         final TokenRelationship tokenRelationship = TokenRelationship.getEmptyTokenRelationship();
 
         // given:
-        given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW)).willReturn(tokenRelationship);
+        given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
+                .willReturn(tokenRelationship);
 
         // expect:
         assertFalse(tokenRelationship.getToken().hasFreezeKey());

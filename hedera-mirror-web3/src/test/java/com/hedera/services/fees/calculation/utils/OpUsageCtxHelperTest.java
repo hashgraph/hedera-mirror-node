@@ -159,7 +159,7 @@ class OpUsageCtxHelperTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                0,
+                () -> 0L,
                 21_000_000,
                 null,
                 null,
@@ -183,7 +183,7 @@ class OpUsageCtxHelperTest {
                 10,
                 0L,
                 0L,
-                Collections.emptyList());
+                Collections::emptyList);
 
         given(accessor.getTxn()).willReturn(txn);
         given(accessor.getSubType()).willReturn(TOKEN_NON_FUNGIBLE_UNIQUE);

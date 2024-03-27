@@ -58,17 +58,17 @@ class TokenTest {
             0L,
             treasuryId,
             defaultLongValue,
-            defaultLongValue,
+            () -> defaultLongValue,
             false,
-            defaultLongValue,
+            () -> defaultLongValue,
             defaultLongValue,
             Id.DEFAULT,
             defaultIntValue,
             null,
             null,
             null,
-            numAssociations,
-            numPositiveBalances,
+            () -> numAssociations,
+            () -> numPositiveBalances,
             defaultIntValue,
             0L,
             false,
@@ -79,17 +79,17 @@ class TokenTest {
             0L,
             nonTreasuryId,
             defaultLongValue,
-            defaultLongValue,
+            () -> defaultLongValue,
             false,
-            defaultLongValue,
+            () -> defaultLongValue,
             defaultLongValue,
             Id.DEFAULT,
             defaultIntValue,
             null,
             null,
             null,
-            numAssociations,
-            numPositiveBalances,
+            () -> numAssociations,
+            () -> numPositiveBalances,
             defaultIntValue,
             0L,
             false,
@@ -111,7 +111,7 @@ class TokenTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                initialSupply,
+                () -> initialSupply,
                 21_000_000,
                 null,
                 null,
@@ -121,7 +121,7 @@ class TokenTest {
                 null,
                 null,
                 false,
-                treasuryAccount,
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -135,11 +135,12 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Collections::emptyList);
 
         treasuryRel = new TokenRelationship(
-                subject, treasuryAccount, initialTreasuryBalance, false, false, false, false, true, 0);
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, false, false, false, true, 0);
+                subject, treasuryAccount, () -> initialTreasuryBalance, false, false, false, false, true, 0);
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, false, false, false, false, true, 0);
     }
 
     @Test
@@ -209,7 +210,8 @@ class TokenTest {
     @Test
     void constructsExpectedDefaultRelWithNoKeys() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, 0);
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, false, true, false, false, false, 0);
 
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
@@ -218,13 +220,10 @@ class TokenTest {
         assertEquals(newRel, nonTreasuryRel);
     }
 
+    // Divergence from services test, since we have immutable models and should set up them at the beginning
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndFrozenByDefault() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, true, true, false, false, false, 0);
-
-        // given:
-
         subject = new Token(
                 0L,
                 tokenId,
@@ -234,7 +233,7 @@ class TokenTest {
                 false,
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenSupplyType.FINITE,
-                initialSupply,
+                () -> initialSupply,
                 20000L,
                 null,
                 someKey,
@@ -244,7 +243,7 @@ class TokenTest {
                 null,
                 null,
                 true,
-                treasuryAccount,
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -258,7 +257,10 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Collections::emptyList);
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, true, true, false, false, false, 0);
+
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
 
@@ -266,13 +268,13 @@ class TokenTest {
         assertEquals(newRel, nonTreasuryRel);
     }
 
+    // Divergence from services test, since we have immutable models and should set up them at the beginning
     @Test
     void constructsExpectedDefaultRelWithFreezeKeyAndNotFrozenByDefault() {
         // setup:
-        nonTreasuryRel = new TokenRelationship(subject, nonTreasuryAccount, 0, false, true, false, false, false, 0);
-
-        // given:
         subject = subject.setFreezeKey(someKey);
+        nonTreasuryRel =
+                new TokenRelationship(subject, nonTreasuryAccount, () -> 0L, false, true, false, false, false, 0);
 
         // when:
         final var newRel = subject.newRelationshipWith(nonTreasuryAccount, false);
@@ -307,7 +309,7 @@ class TokenTest {
 
     @Test
     void burnsUniqueAsExpected() {
-        treasuryRel = new TokenRelationship(subject, treasuryAccount, 2, false, false, false, false, true, 0);
+        treasuryRel = new TokenRelationship(subject, treasuryAccount, () -> 2L, false, false, false, false, true, 0);
         subject = subject.setSupplyKey(someKey);
         // treasuryRel = treasuryRel.initBalance(2);
         subject.getLoadedUniqueTokens()
@@ -340,7 +342,7 @@ class TokenTest {
 
     @Test
     void mintsUniqueAsExpected() {
-        treasuryRel = new TokenRelationship(subject, treasuryAccount, 0, false, false, false, false, true, 0);
+        treasuryRel = new TokenRelationship(subject, treasuryAccount, () -> 0L, false, false, false, false, true, 0);
         subject = subject.setSupplyKey(someKey);
         subject = subject.setType(TokenType.NON_FUNGIBLE_UNIQUE);
 
@@ -429,7 +431,7 @@ class TokenTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                10,
+                () -> 10L,
                 20000L,
                 null,
                 null,
@@ -439,7 +441,7 @@ class TokenTest {
                 null,
                 null,
                 false,
-                treasuryAccount,
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -453,7 +455,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Collections::emptyList);
         assertThrows(InvalidTransactionException.class, () -> subject.wipe(nonTreasuryRel, 11));
 
         // negate account balance
@@ -575,7 +577,7 @@ class TokenTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                100000,
+                () -> 100000L,
                 20000L,
                 null,
                 null,
@@ -585,7 +587,7 @@ class TokenTest {
                 null,
                 null,
                 false,
-                treasuryAccount,
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -599,7 +601,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Collections::emptyList);
         final var metadata = List.of(ByteString.copyFromUtf8("memo"));
         final List<ByteString> emptyMetadata = List.of();
 
@@ -624,7 +626,7 @@ class TokenTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                100000,
+                () -> 100000L,
                 20000L,
                 null,
                 null,
@@ -634,7 +636,7 @@ class TokenTest {
                 null,
                 null,
                 false,
-                treasuryAccount,
+                () -> treasuryAccount,
                 null,
                 false,
                 false,
@@ -648,7 +650,7 @@ class TokenTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Collections::emptyList);
 
         assertNotEquals(subject, otherToken);
         assertNotEquals(subject.hashCode(), otherToken.hashCode());
@@ -656,12 +658,14 @@ class TokenTest {
 
     @Test
     void toStringWorks() {
-        final var desired = "Token{id=1.2.3, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, "
-                + "treasury=Account{id=0.0.0, expiry=0, balance=0, deleted=false, ownedNfts=0,"
-                + " alreadyUsedAutoAssociations=0, maxAutoAssociations=0, alias=, cryptoAllowances=null, "
-                + "fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=2, numPositiveBalances=1},"
-                + " autoRenewAccount=null, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, currentSerialNumber=0,"
-                + " pauseKey=null, paused=false}";
+        final var desired =
+                "Token{id=1.2.3, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, "
+                        + "expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=0.0.0, accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances={}, "
+                        + "fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=2, numPositiveBalances=1, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, "
+                        + "autoRenewAccount=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=null, "
+                        + "accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=0, "
+                        + "numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, "
+                        + "currentSerialNumber=0, pauseKey=null, paused=false}";
 
         assertEquals(desired, subject.toString());
     }
