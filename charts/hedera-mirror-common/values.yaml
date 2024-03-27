@@ -346,6 +346,9 @@ promtail:
       memory: 50Mi
   serviceMonitor:
     enabled: true
+  tolerations:
+    - effect: NoSchedule
+      operator: Exists
 
 stackgres:
   enabled: false

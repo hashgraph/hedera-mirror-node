@@ -21,6 +21,7 @@ import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -101,6 +102,20 @@ public class TokenRelationship {
 
     public boolean isEmptyTokenRelationship() {
         return this.equals(getEmptyTokenRelationship());
+    }
+
+    /**
+     * Modifies the state of the "Frozen" property to either true (freezes the relation between the
+     * account and the token) or false (unfreezes the relation between the account and the token).
+     *
+     * <p>Before the property modification, the method performs validation, that the respective
+     * token has a freeze key.
+     *
+     * @param freeze the new state of the property
+     */
+    public TokenRelationship changeFrozenState(boolean freeze) {
+        validateTrue(token.hasFreezeKey(), TOKEN_HAS_NO_FREEZE_KEY);
+        return createNewTokenRelationshipWithFrozenFlag(this, freeze);
     }
 
     /**
