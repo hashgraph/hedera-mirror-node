@@ -23,6 +23,8 @@ plugins {
     id("jacoco")
 }
 
+tasks.register("clean") { layout.buildDirectory.asFile.get().deleteRecursively() }
+
 tasks.register<NpmTask>("run") {
     dependsOn(tasks.npmInstall)
     args = listOf("start")
