@@ -28,9 +28,11 @@ import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.Utils;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
+import com.hedera.mirror.restjava.service.EntityService;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest.NftAllowanceRequestBuilder;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
@@ -54,6 +56,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class AllowancesController {
 
     private final NftAllowanceService service;
+    private final EntityService entityService;
     private final NftAllowanceMapper accountMapper;
 
     @GetMapping(value = "/nfts")
@@ -64,6 +67,10 @@ public class AllowancesController {
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(defaultValue = "true") boolean owner,
             @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId) {
+
+        if (!entityService.lookup(id.value()).isPresent()) {
+            throw new EntityNotFoundException("Id %s does not exist".formatted(id));
+        }
 
         NftAllowanceRequestBuilder requestBuilder = NftAllowanceRequest.builder()
                 .accountId(id)

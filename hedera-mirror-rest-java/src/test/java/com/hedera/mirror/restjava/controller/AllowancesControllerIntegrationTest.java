@@ -66,6 +66,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     @Test
     void successWithNoQueryParamsShardRealmNumAccountId() {
         var allowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.entity().customize(e -> e.id(allowance.getOwner())).persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance.getOwner()))
@@ -86,6 +87,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     @Test
     void successWithNoQueryParamsEncodedAccountId() {
         var allowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.entity().customize(e -> e.id(allowance.getOwner())).persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance.getOwner()))
@@ -107,6 +109,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     void successWithAllQueryParamsOrderAsc() {
         // Creating nft allowances
         var allowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.entity().customize(e -> e.id(allowance.getOwner())).persist();
         domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance.getOwner()))
@@ -151,6 +154,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     void successWithNoOperators() {
         // Creating nft allowances
         var allowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.entity().customize(e -> e.id(allowance.getOwner())).persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance.getOwner()))
@@ -195,6 +199,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     void successWithAllQueryParamsOrderDesc() {
         // Creating nft allowances
         var allowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.entity().customize(e -> e.id(allowance.getOwner())).persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance.getOwner()))
@@ -236,6 +241,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     void successWithOwnerFalse() {
         // Creating nft allowances
         var allowance = domainBuilder.nftAllowance().persist();
+        domainBuilder.entity().customize(e -> e.id(allowance.getSpender())).persist();
         domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance.getOwner()))

@@ -16,10 +16,12 @@
 
 package com.hedera.mirror.restjava.common;
 
+import static com.hedera.mirror.restjava.common.Constants.BASE32;
 import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_MAX_LENGTH;
 import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_PATTERN;
 import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_MIN_LENGTH;
 import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_PATTERN;
+import static com.hedera.mirror.restjava.common.Constants.HEX_PREFIX;
 import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -31,6 +33,9 @@ import java.util.Map;
 import java.util.Objects;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
 
@@ -84,6 +89,23 @@ public class Utils {
             return EntityId.of(shard, realm, Long.parseLong(numOrEvmAddress));
         } catch (InvalidEntityException e) {
             throw new InvalidParametersException(e.getMessage());
+        }
+    }
+
+    public static byte[] decodeBase32(String base32) {
+        return BASE32.decode(base32);
+    }
+
+    public static byte[] decodeEvmAddress(String evmAddress) {
+        if (evmAddress == null) {
+            return ArrayUtils.EMPTY_BYTE_ARRAY;
+        }
+
+        try {
+            evmAddress = StringUtils.removeStart(evmAddress, HEX_PREFIX);
+            return Hex.decodeHex(evmAddress);
+        } catch (DecoderException e) {
+            throw new IllegalArgumentException("Unable to decode evmAddress: " + evmAddress);
         }
     }
 
