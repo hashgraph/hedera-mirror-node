@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
@@ -209,17 +208,17 @@ class HederaEvmWorldStateTest {
                 0L,
                 Id.fromGrpcAccount(accountIdFromEvmAddress(address.toArrayUnsafe())),
                 0L,
-                Suppliers.ofInstance(123L),
+                () -> 123L,
                 false,
-                Suppliers.ofInstance(0L),
+                () -> 0L,
                 0L,
                 null,
                 0,
-                Suppliers.ofInstance(Collections.emptySortedMap()),
-                Suppliers.ofInstance(Collections.emptySortedMap()),
-                Suppliers.ofInstance(Collections.emptySortedSet()),
-                Suppliers.ofInstance(0),
-                Suppliers.ofInstance(0),
+                Collections::emptySortedMap,
+                Collections::emptySortedMap,
+                Collections::emptySortedSet,
+                () -> 0,
+                () -> 0,
                 0,
                 0L,
                 false,

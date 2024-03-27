@@ -25,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
-import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
@@ -59,17 +58,17 @@ class TokenTest {
             0L,
             treasuryId,
             defaultLongValue,
-            Suppliers.ofInstance(defaultLongValue),
+            () -> defaultLongValue,
             false,
-            Suppliers.ofInstance(defaultLongValue),
+            () -> defaultLongValue,
             defaultLongValue,
             Id.DEFAULT,
             defaultIntValue,
             null,
             null,
             null,
-            Suppliers.ofInstance(numAssociations),
-            Suppliers.ofInstance(numPositiveBalances),
+            () -> numAssociations,
+            () -> numPositiveBalances,
             defaultIntValue,
             0L,
             false,
@@ -80,17 +79,17 @@ class TokenTest {
             0L,
             nonTreasuryId,
             defaultLongValue,
-            Suppliers.ofInstance(defaultLongValue),
+            () -> defaultLongValue,
             false,
-            Suppliers.ofInstance(defaultLongValue),
+            () -> defaultLongValue,
             defaultLongValue,
             Id.DEFAULT,
             defaultIntValue,
             null,
             null,
             null,
-            Suppliers.ofInstance(numAssociations),
-            Suppliers.ofInstance(numPositiveBalances),
+            () -> numAssociations,
+            () -> numPositiveBalances,
             defaultIntValue,
             0L,
             false,

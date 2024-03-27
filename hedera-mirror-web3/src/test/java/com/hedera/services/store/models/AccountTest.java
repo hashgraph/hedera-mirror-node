@@ -19,7 +19,6 @@ package com.hedera.services.store.models;
 import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.common.base.Suppliers;
 import com.google.protobuf.ByteString;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -48,17 +47,17 @@ class AccountTest {
                 0L,
                 subjectId,
                 defaultLongValue,
-                Suppliers.ofInstance(defaultLongValue),
+                () -> defaultLongValue,
                 false,
-                Suppliers.ofInstance(ownedNfts),
+                () -> ownedNfts,
                 defaultLongValue,
                 Id.DEFAULT,
                 alreadyUsedAutoAssociations,
                 null,
                 null,
                 null,
-                Suppliers.ofInstance(numAssociations),
-                Suppliers.ofInstance(numPositiveBalances),
+                () -> numAssociations,
+                () -> numPositiveBalances,
                 numTreasuryTitles,
                 0L,
                 false,
