@@ -16,11 +16,7 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static com.hedera.mirror.restjava.common.Utils.parseId;
-
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
-import org.jetbrains.annotations.NotNull;
 
 public record EntityIdRangeParameter(RangeOperator operator, EntityId value) implements RangeParameter<EntityId> {
 
@@ -35,18 +31,10 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
         String[] splitVal = entityIdRangeParam.split(":");
 
         return switch (splitVal.length) {
-            case 1 -> validateId(splitVal, 0, RangeOperator.EQ);
-            case 2 -> validateId(splitVal, 1, RangeOperator.of(splitVal[0]));
-            default -> throw new InvalidParametersException(
+            case 1 -> new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(splitVal[0]));
+            case 2 -> new EntityIdRangeParameter(RangeOperator.of(splitVal[0]), EntityId.of(splitVal[1]));
+            default -> throw new IllegalArgumentException(
                     "Invalid range operator %s. Should have format rangeOperator:Id".formatted(entityIdRangeParam));
         };
-    }
-
-    @NotNull
-    private static EntityIdRangeParameter validateId(String[] splitVal, int x, RangeOperator operator) {
-        if (operator == RangeOperator.NE) {
-            throw new InvalidParametersException("Invalid range operator ne. This operator is not supported");
-        }
-        return new EntityIdRangeParameter(operator, parseId(splitVal[x]));
     }
 }

@@ -19,14 +19,12 @@ package com.hedera.mirror.restjava.service;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
+import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-
-import java.util.Collection;
 
 @Named
 @RequiredArgsConstructor
@@ -53,18 +51,18 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
         //  LT,LTE,EQ,NE are not supported right now. Default is GT.
-        var tokenId = getId(token);
+        var tokenId = verifyAndGetRangeId(token);
 
         // Set the value depending on the owner flag
         if (request.isOwner()) {
-            var spenderId = getId(ownerOrSpenderId);
+            var spenderId = verifyAndGetRangeId(ownerOrSpenderId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
             return repository.findByOwnerAndFilterBySpenderAndToken(
                     accountId.value().getId(), spenderId, tokenId, pageable);
 
         } else {
-            var ownerId = getId(ownerOrSpenderId);
+            var ownerId = verifyAndGetRangeId(ownerOrSpenderId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
             return repository.findBySpenderAndFilterByOwnerAndToken(
@@ -72,9 +70,13 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         }
     }
 
-    private static long getId(EntityIdRangeParameter idParam) {
+    private static long verifyAndGetRangeId(EntityIdRangeParameter idParam) {
         long id = 0;
+        // Setting default to 0.static queries will return all values with ids > 0 .
         if (idParam != null) {
+            if (idParam.operator() == RangeOperator.NE) {
+                throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
+            }
             id = getUpdatedEntityId(idParam);
         }
         return id;
@@ -83,7 +85,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
     private static void checkOwnerSpenderParamValidity(
             EntityIdRangeParameter ownerOrSpenderId, EntityIdRangeParameter token) {
         if (ownerOrSpenderId == null && token != null) {
-            throw new InvalidParametersException("token.id parameter must have account.id present");
+            throw new IllegalArgumentException("token.id parameter must have account.id present");
         }
     }
 

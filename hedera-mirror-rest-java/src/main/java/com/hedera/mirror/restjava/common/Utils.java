@@ -17,20 +17,15 @@
 package com.hedera.mirror.restjava.common;
 
 import static com.hedera.mirror.restjava.common.Constants.BASE32;
-import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_MAX_LENGTH;
 import static com.hedera.mirror.restjava.common.Constants.ENTITY_ID_PATTERN;
 import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_MIN_LENGTH;
 import static com.hedera.mirror.restjava.common.Constants.EVM_ADDRESS_PATTERN;
 import static com.hedera.mirror.restjava.common.Constants.HEX_PREFIX;
-import static com.hedera.mirror.restjava.common.Constants.SPLITTER;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.InvalidEntityException;
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.regex.Matcher;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.codec.DecoderException;
@@ -38,58 +33,59 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @CustomLog
 @UtilityClass
 public class Utils {
 
     public static final Map<String, RangeOperator> OPERATOR_PATTERNS = Map.of(
-            "asc", RangeOperator.GTE,
-            "desc", RangeOperator.LTE);
+            "ASC", RangeOperator.GTE,
+            "DESC", RangeOperator.LTE);
 
     public static EntityId parseId(String id) {
 
         if (StringUtils.isEmpty(id)) {
-            throw new InvalidParametersException(" Id '%s' has an invalid format".formatted(id));
+            throw new IllegalArgumentException(" Id '%s' has an invalid format".formatted(id));
         }
+        Matcher entityIdMatcher = ENTITY_ID_PATTERN.matcher(id);
+        Matcher evmAddressMatcher = EVM_ADDRESS_PATTERN.matcher(id);
 
-        if (id.length() <= ENTITY_ID_MAX_LENGTH && ENTITY_ID_PATTERN.matcher(id).matches()) {
-            return parseDelimitedString(id);
-        } else if (id.length() >= EVM_ADDRESS_MIN_LENGTH
-                && EVM_ADDRESS_PATTERN.matcher(id).matches()) {
-            // change this with evm address and alias support
-            throw new InvalidParametersException("Id format is not yet supported");
+        if (id.length() < EVM_ADDRESS_MIN_LENGTH) {
+            return parseEntityId(id);
         } else {
-            throw new InvalidParametersException(" Id '%s' has an invalid format".formatted(id));
+            throw new IllegalArgumentException("Unsupported ID: " + id);
         }
     }
 
-    private static EntityId parseDelimitedString(String id) {
+    private static EntityId parseEntityId(String id) {
 
-        long shard;
+        var matcher = ENTITY_ID_PATTERN.matcher(id);
+        long shard = 0;
         long realm = 0;
-        List<String> parts =
-                SPLITTER.splitToStream(Objects.requireNonNullElse(id, "")).toList();
-        var numOrEvmAddress = parts.getLast();
+        String numOrEvmAddress;
+        if (matcher.matches()) {
 
-        try {
-            switch (parts.size()) {
-                case 1 -> shard = 0;
-                case 2 -> {
+            if (matcher.group(4) != null) {
+                realm = Long.parseLong(matcher.group(5));
+                if (matcher.group(2) == null) {
+                    // get the system shard value from properties
                     shard = 0;
-                    realm = Long.parseLong(parts.getFirst());
+                } else {
+                    shard = Long.parseLong(matcher.group(3));
                 }
-                case 3 -> {
-                    shard = Long.parseLong(parts.getFirst());
-                    realm = Long.parseLong(parts.get(1));
-                }
-                default -> throw new InvalidParametersException("Id %s format is invalid".formatted(id));
+            } else if (matcher.group(2) != null) {
+                realm = Long.parseLong(matcher.group(3));
             }
 
-            return EntityId.of(shard, realm, Long.parseLong(numOrEvmAddress));
-        } catch (InvalidEntityException e) {
-            throw new InvalidParametersException(e.getMessage());
+            numOrEvmAddress = matcher.group(6);
+
+        } else {
+            throw new IllegalArgumentException("Id %s format is invalid".formatted(id));
         }
+
+        return EntityId.of(shard, realm, Long.parseLong(numOrEvmAddress));
     }
 
     public static byte[] decodeBase32(String base32) {
@@ -110,13 +106,17 @@ public class Utils {
     }
 
     public static String getPaginationLink(
-            HttpServletRequest req,
-            boolean isEnd,
-            Map<String, String> lastValues,
-            Map<String, Boolean> included,
-            Sort.Direction order,
-            int limit) {
-        var url = req.getRequestURI();
+            boolean isEnd, Map<String, String> lastValues, Map<String, Boolean> included, Sort.Direction order) {
+
+        ServletRequestAttributes servletRequestAttributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        if (servletRequestAttributes == null) {
+            return null;
+        }
+        HttpServletRequest request = servletRequestAttributes.getRequest();
+        var paramsMap = request.getParameterMap();
+        var url = request.getRequestURI();
         StringBuilder paginationLink = new StringBuilder();
 
         if (lastValues == null || lastValues.isEmpty()) {
@@ -124,31 +124,50 @@ public class Utils {
         }
 
         if (!isEnd) {
-            // add limit and order
-            var orderString = order == null
-                    ? Sort.Direction.ASC.toString().toLowerCase()
-                    : order.toString().toLowerCase();
-            var next = getNextParamQueries(orderString, lastValues, included);
-            if (next.isBlank()) {
-                return null;
-            }
             // remove the '/' at the end of req.path
-            var path = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-            paginationLink.append(path);
-            paginationLink.append("?limit=").append(limit);
-            paginationLink.append("&order=").append(orderString);
-            paginationLink.append(next);
+            generateLinkFromRequestParams(lastValues, included, order, url, paginationLink, paramsMap);
         }
         return paginationLink.isEmpty() ? null : paginationLink.toString();
     }
 
+    private static void generateLinkFromRequestParams(
+            Map<String, String> lastValues,
+            Map<String, Boolean> included,
+            Sort.Direction order,
+            String url,
+            StringBuilder paginationLink,
+            Map<String, String[]> paramsMap) {
+        var path = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+        paginationLink.append(path);
+        if (!paramsMap.isEmpty() || !lastValues.isEmpty()) {
+            paginationLink.append("?");
+        }
+        // add all params from the existing url
+        int count = 0; // This is to check for first parameter
+        for (Map.Entry<String, String[]> param : paramsMap.entrySet()) {
+            if (!lastValues.containsKey(param.getKey())) {
+                if (count != 0) {
+                    paginationLink.append("&");
+                }
+                paginationLink.append("%s=".formatted(param.getKey())).append(param.getValue()[0]);
+                count++;
+            }
+        }
+        var next = getNextParamQueries(order, lastValues, included);
+        if (paramsMap.isEmpty()) {
+            paginationLink.append(next.substring(1));
+        } else {
+            paginationLink.append(next);
+        }
+    }
+
     private static String getNextParamQueries(
-            String order, Map<String, String> lastValues, Map<String, Boolean> includedMap) {
+            Sort.Direction order, Map<String, String> lastValues, Map<String, Boolean> includedMap) {
         StringBuilder next = new StringBuilder();
         for (Map.Entry<String, String> lastValue : lastValues.entrySet()) {
             boolean inclusive = includedMap.get(lastValue.getKey());
-            var pattern = OPERATOR_PATTERNS.get(order);
-            var newPattern = order.equals("asc") ? RangeOperator.GT : RangeOperator.LT;
+            var pattern = OPERATOR_PATTERNS.get(order.name());
+            var newPattern = order == Sort.Direction.ASC ? RangeOperator.GT : RangeOperator.LT;
             var insertValue =
                     inclusive ? pattern + ":" + lastValue.getValue() : newPattern + ":" + lastValue.getValue();
             next.append("&").append(lastValue.getKey()).append("=").append(insertValue.toLowerCase());
