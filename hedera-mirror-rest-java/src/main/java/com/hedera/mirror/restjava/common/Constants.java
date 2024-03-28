@@ -31,14 +31,11 @@ public class Constants {
     public static final String EVM_ADDRESS_REGEX = "^(((0x)?[A-Fa-f0-9]{40})|((\\d{1,10}\\.){0,2}[A-Fa-f0-9]{40}))$";
 
     public static final Pattern ENTITY_ID_PATTERN = Pattern.compile(ENTITY_ID_REGEX);
-    public static final Pattern EVM_ADDRESS_PATTERN = Pattern.compile(EVM_ADDRESS_REGEX);
 
     public static final String ACCOUNT_ID = "account.id";
     public static final String TOKEN_ID = "token.id";
 
-    public static final String ORDER = "order";
     public static final String OWNER = "owner";
-    public static final String LIMIT = "limit";
 
     public static final long NANOS_PER_SECOND = 1000_000_000L;
 }

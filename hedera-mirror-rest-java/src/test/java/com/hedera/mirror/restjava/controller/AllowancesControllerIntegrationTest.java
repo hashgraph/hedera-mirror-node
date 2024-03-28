@@ -61,7 +61,6 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     @BeforeEach
     void setup() {
         callUri = "http://localhost:%d/api/v1/accounts/{id}/allowances/nfts".formatted(port);
-        ;
         restClient = RestClient.builder()
                 .baseUrl(callUri)
                 .defaultHeader("Accept", "application/json")

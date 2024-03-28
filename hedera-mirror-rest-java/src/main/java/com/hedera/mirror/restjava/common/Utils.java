@@ -119,7 +119,7 @@ public class Utils {
         // add all params from the existing url
         int count = 0; // This is to check for first parameter
         for (Map.Entry<String, String[]> param : paramsMap.entrySet()) {
-            if (!lastValues.keySet().contains(param.getKey())) {
+            if (!lastValues.containsKey(param.getKey())) {
                 if (count != 0) {
                     paginationLink.append("&");
                 }
@@ -129,7 +129,7 @@ public class Utils {
         }
         var next = getNextParamQueries(order, lastValues, included);
         if (paramsMap.isEmpty()) {
-            paginationLink.append(next.substring(1, next.length()));
+            paginationLink.append(next.substring(1));
         } else {
             paginationLink.append(next);
         }
