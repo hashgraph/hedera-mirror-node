@@ -25,7 +25,6 @@ import static com.hedera.mirror.restjava.common.Constants.HEX_PREFIX;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
-import java.util.regex.Matcher;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.codec.DecoderException;
@@ -49,14 +48,41 @@ public class Utils {
         if (StringUtils.isEmpty(id)) {
             throw new IllegalArgumentException(" Id '%s' has an invalid format".formatted(id));
         }
-        Matcher entityIdMatcher = ENTITY_ID_PATTERN.matcher(id);
-        Matcher evmAddressMatcher = EVM_ADDRESS_PATTERN.matcher(id);
 
         if (id.length() < EVM_ADDRESS_MIN_LENGTH) {
             return parseEntityId(id);
         } else {
-            throw new IllegalArgumentException("Unsupported ID: " + id);
+            return parseEvmAddressOrAlias(id);
         }
+    }
+
+    private static EntityId parseEvmAddressOrAlias(String id) {
+
+        var matcher = EVM_ADDRESS_PATTERN.matcher(id);
+        long shard = 0;
+        long realm = 0;
+        String numOrEvmAddress;
+        if (matcher.matches()) {
+
+            if (matcher.group(4) != null) {
+                realm = Long.parseLong(matcher.group(5));
+                if (matcher.group(2) == null) {
+                    // get the system shard value from properties
+                    shard = 0;
+                } else {
+                    shard = Long.parseLong(matcher.group(3));
+                }
+            } else if (matcher.group(2) != null) {
+                realm = Long.parseLong(matcher.group(3));
+            }
+
+            numOrEvmAddress = matcher.group(6);
+
+        } else {
+            throw new IllegalArgumentException("Id %s format is invalid".formatted(id));
+        }
+
+        return EntityId.of(shard, realm, Long.parseLong(numOrEvmAddress));
     }
 
     private static EntityId parseEntityId(String id) {

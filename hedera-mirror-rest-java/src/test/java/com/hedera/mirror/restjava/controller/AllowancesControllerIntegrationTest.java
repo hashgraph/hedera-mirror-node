@@ -71,7 +71,11 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
     @Test
     void successWithNoQueryParamsShardRealmNumAccountId() {
-        var allowance1 = domainBuilder.nftAllowance().persist();
+        var entity = domainBuilder.entity().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
         var allowance2 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
@@ -80,7 +84,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
         var result = restClient
                 .get()
-                .uri(callUri, allowance1.getOwner())
+                .uri("", allowance1.getOwner())
                 .accept(MediaType.ALL)
                 .retrieve()
                 .body(NftAllowancesResponse.class);
@@ -90,8 +94,13 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
     @Test
     void successWithAllQueryParamsOrderAsc() {
+        var entity = domainBuilder.entity().persist();
+
         // Creating nft allowances
-        var allowance1 = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
         domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
@@ -120,8 +129,12 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
     @Test
     void successWithNoOperators() {
+        var entity = domainBuilder.entity().persist();
         // Creating nft allowances
-        var allowance1 = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
         var allowance2 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
@@ -149,8 +162,12 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
     @Test
     void successWithAllQueryParamsOrderDesc() {
+        var entity = domainBuilder.entity().persist();
         // Creating nft allowances
-        var allowance1 = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
         var allowance2 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
@@ -177,11 +194,15 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
     @Test
     void successWithOwnerFalse() {
+        var entity = domainBuilder.entity().persist();
         // Creating nft allowances
-        var allowance1 = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.spender(entity.getId()))
+                .persist();
         domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .customize(nfta -> nfta.spender(allowance1.getSpender()))
                 .persist();
 
         var uriParams = "?account.id=gte:0.0.1000&owner=false&token.id=gt:0.0.1000&limit=1&order=asc";
