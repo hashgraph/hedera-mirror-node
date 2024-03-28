@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * <p>
  * Differences with the original:
  * 1. Use abstraction for the state by introducing {@link Store} interface
- * 2. Used token.setPaused instead of token.changePauseStatus (like in services)
+ * 2. Used token.changePauseStatus (like in services)
  * 3. Used store.updateToken(token)
  *    instead of tokenStore.commitToken(token) (like in services)
  */
@@ -41,7 +41,7 @@ public class PauseLogic {
         var token = store.loadPossiblyPausedToken(targetTokenId.asEvmAddress());
 
         /* --- Do the business logic --- */
-        var pausedToken = token.setPaused(true);
+        var pausedToken = token.changePauseStatus(true);
 
         /* --- Persist the updated models --- */
         store.updateToken(pausedToken);
