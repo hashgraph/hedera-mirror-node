@@ -1178,7 +1178,7 @@
             "uid": "${prometheus}"
           },
           "editorMode": "code",
-          "expr": "irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_data_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_data_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])) >= 0",
+          "expr": "irate(node_zfs_arc_demand_metadata_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) / (irate(node_zfs_arc_demand_metadata_hits{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval]) + irate(node_zfs_arc_demand_metadata_misses{cluster=~\"$cluster\", node=~\"$node\"}[$__rate_interval])) >= 0",
           "hide": false,
           "instant": false,
           "legendFormat": "metadata/{{node}}",
