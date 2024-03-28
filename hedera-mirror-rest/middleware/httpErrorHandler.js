@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import {httpStatusCodes, requestStartTime} from '../constants';
+import {httpStatusCodes, requestStartTime, StatusCode} from '../constants';
+import {HttpError} from 'http-errors';
 
 const defaultStatusCode = httpStatusCodes.INTERNAL_ERROR;
 
@@ -30,7 +31,14 @@ const simpleErrors = /statement timeout/;
 // Error middleware which formats thrown errors and maps them to appropriate http status codes
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const handleError = async (err, req, res, next) => {
-  const statusCode = errorMap[err.constructor.name] || defaultStatusCode;
+  var statusCode = defaultStatusCode;
+
+  if (err.constructor.name in errorMap) {
+    statusCode = errorMap[err.constructor.name];
+  } else if (err instanceof HttpError) {
+    statusCode = new StatusCode(err.statusCode, err.msg);
+  }
+
   let errorMessage;
   const startTime = res.locals[requestStartTime];
   const elapsed = startTime ? Date.now() - startTime : 0;

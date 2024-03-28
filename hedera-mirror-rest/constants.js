@@ -170,7 +170,7 @@ const tokenTypeFilter = {
 
 const zeroRandomPageCostQueryHint = 'set local random_page_cost = 0';
 
-class StatusCode {
+export class StatusCode {
   constructor(code, message) {
     this.code = code;
     this.message = message;
