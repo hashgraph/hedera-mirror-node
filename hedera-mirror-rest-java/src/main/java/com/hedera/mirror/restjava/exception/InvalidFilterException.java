@@ -19,7 +19,7 @@ package com.hedera.mirror.restjava.exception;
 import java.io.Serial;
 
 @SuppressWarnings("java:S110")
-public class InvalidFilterException extends RestException {
+public class InvalidFilterException extends RestJavaException {
 
     @Serial
     private static final long serialVersionUID = 1518569037954950068L;

@@ -35,4 +35,18 @@ public enum RangeOperator {
 
     private final String operator;
     private final BiFunction<Field, Object, Condition> function;
+
+    @Override
+    public String toString() {
+        return name().toLowerCase();
+    }
+
+    public static RangeOperator of(String rangeOperator) {
+        try {
+            return RangeOperator.valueOf(rangeOperator.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid range operator %s. Valid values: eq, gt, gte, lt, lte, ne"
+                    .formatted(rangeOperator.toLowerCase()));
+        }
+    }
 }

@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.mapper;
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
-import java.io.Serial;
+import static org.mapstruct.MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG;
 
-abstract class RestException extends MirrorNodeException {
+import com.hedera.mirror.rest.model.NftAllowance;
+import org.mapstruct.MapperConfig;
+import org.mapstruct.Mapping;
 
-    @Serial
-    private static final long serialVersionUID = 3383312779795690341L;
+@MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
+public interface RestJavaMapperConfig {
 
-    protected RestException(String message) {
-        super(message);
-    }
-
-    protected RestException(String message, Throwable throwable) {
-        super(message, throwable);
-    }
+    @Mapping(source = "timestampRange", target = "timestamp")
+    NftAllowance map(com.hedera.mirror.common.domain.entity.NftAllowance source);
 }

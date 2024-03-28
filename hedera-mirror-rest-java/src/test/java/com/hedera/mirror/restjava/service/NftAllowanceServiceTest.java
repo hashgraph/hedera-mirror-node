@@ -17,11 +17,16 @@
 package com.hedera.mirror.restjava.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
+import com.hedera.mirror.restjava.common.EntityIdParameter;
+import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.domain.Sort;
@@ -34,7 +39,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void getNftAllowancesForOrderAsc(boolean owner) {
-        var accountId = 1000L;
+        var accountId = EntityId.of(1000L);
 
         var nftAllowance1 = saveNftAllowance(accountId, owner);
         var nftAllowance2 = saveNftAllowance(accountId, owner);
@@ -43,107 +48,181 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(owner)
                 .limit(2)
-                .ownerId(accountId)
-                .spenderId(1000L)
-                .tokenId(1000L)
+                .accountId(new EntityIdParameter(accountId))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void getNftAllowancesForOrderDesc(boolean owner) {
-        var accountId = 1000L;
-        NftAllowance nftAllowance1, nftAllowance2;
+    @Test
+    void getNftAllowancesForOrderDescOwner() {
+        var accountId = EntityId.of(1000L);
+        var id = accountId.getId();
 
-        saveNftAllowance(accountId, owner);
-        saveNftAllowance(accountId, owner);
-
-        if (owner) {
-            nftAllowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.owner(accountId).spender(accountId + 100))
-                    .persist();
-            nftAllowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.owner(accountId).spender(accountId + 50))
-                    .persist();
-        } else {
-            nftAllowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.spender(accountId).owner(accountId + 100))
-                    .persist();
-            nftAllowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.spender(accountId).owner(accountId + 50))
-                    .persist();
-        }
+        var nftAllowance1 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.owner(id).spender(id + 100))
+                .persist();
+        var nftAllowance2 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.owner(id).spender(id + 50))
+                .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
-                .isOwner(owner)
+                .isOwner(true)
                 .limit(2)
-                .ownerId(accountId)
-                .spenderId(1000L)
-                .tokenId(1000L)
+                .accountId(new EntityIdParameter(accountId))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .order(Sort.Direction.DESC)
                 .build();
 
         var response = service.getNftAllowances(request);
 
-        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void getNftAllowancesForGte(boolean owner) {
-        var accountId = 1001L;
+    @Test
+    void getNftAllowancesForOrderDescSpender() {
+        var accountId = EntityId.of(1000L);
+        var id = accountId.getId();
 
-        var nftAllowance1 = saveNftAllowance(accountId, owner);
+        var nftAllowance1 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(id).owner(id + 100))
+                .persist();
+        var nftAllowance2 = domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(id).owner(id + 50))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdParameter(accountId))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .order(Sort.Direction.DESC)
+                .build();
+
+        var response = service.getNftAllowances(request);
+
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+    }
+
+    @Test
+    void getNftAllowancesForGteOwner() {
+        var accountId = EntityId.of(1001L);
+
+        var nftAllowance1 = saveNftAllowance(accountId, true);
 
         // Setting the account.id and token id to 2 less than allowance1 in order to test GTE.
         // This should return only the first allowance.
-        if (owner) {
-            domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.owner(accountId)
-                            .spender(nftAllowance1.getSpender() - 2)
-                            .tokenId(nftAllowance1.getTokenId() - 2))
-                    .persist();
-        } else {
-            domainBuilder
-                    .nftAllowance()
-                    .customize(e -> e.spender(accountId)
-                            .owner(nftAllowance1.getOwner() - 2)
-                            .tokenId(nftAllowance1.getTokenId() - 2))
-                    .persist();
-        }
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.owner(accountId.getId())
+                        .spender(nftAllowance1.getSpender() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
-                .isOwner(owner)
+                .isOwner(true)
                 .limit(2)
-                .ownerId(nftAllowance1.getOwner())
-                .spenderId(nftAllowance1.getSpender())
-                .tokenId(nftAllowance1.getTokenId())
+                .accountId(new EntityIdParameter(accountId))
+                .ownerOrSpenderId(
+                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender())))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
                 .order(Sort.Direction.ASC)
-                .accountIdOperator(RangeOperator.GTE)
-                .tokenIdOperator(RangeOperator.GTE)
                 .build();
         var response = service.getNftAllowances(request);
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1);
     }
 
-    NftAllowance saveNftAllowance(long accountId, boolean owner) {
+    @Test
+    void getNftAllowancesForGteSpender() {
+        var accountId = EntityId.of(1001L);
+
+        var nftAllowance1 = saveNftAllowance(accountId, false);
+
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(accountId.getId())
+                        .owner(nftAllowance1.getOwner() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdParameter(accountId))
+                .ownerOrSpenderId(
+                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender())))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
+                .order(Sort.Direction.ASC)
+                .build();
+        var response = service.getNftAllowances(request);
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1);
+    }
+
+    @Test
+    void getNftAllowancesForOwnerOrSpenderIdNotPresent() {
+        var accountId = EntityId.of(1001L);
+
+        var nftAllowance1 = saveNftAllowance(accountId, false);
+
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(accountId.getId())
+                        .owner(nftAllowance1.getOwner() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdParameter(accountId))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
+                .order(Sort.Direction.ASC)
+                .build();
+        assertThrows(IllegalArgumentException.class, () -> service.getNftAllowances(request));
+    }
+
+    @Test
+    void getNftAllowancesForInvalidOperatorPresent() {
+        var accountId = EntityId.of(1001L);
+
+        var nftAllowance1 = saveNftAllowance(accountId, false);
+
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(accountId.getId())
+                        .owner(nftAllowance1.getOwner() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdParameter(accountId))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.NE, EntityId.of(nftAllowance1.getSpender())))
+                .order(Sort.Direction.ASC)
+                .build();
+        assertThrows(IllegalArgumentException.class, () -> service.getNftAllowances(request));
+    }
+
+    NftAllowance saveNftAllowance(EntityId accountId, boolean owner) {
         if (owner) {
             return domainBuilder
                     .nftAllowance()
-                    .customize(e -> e.owner(accountId))
+                    .customize(e -> e.owner(accountId.getId()))
                     .persist();
         } else {
             return domainBuilder
                     .nftAllowance()
-                    .customize(e -> e.spender(accountId))
+                    .customize(e -> e.spender(accountId.getId()))
                     .persist();
         }
     }

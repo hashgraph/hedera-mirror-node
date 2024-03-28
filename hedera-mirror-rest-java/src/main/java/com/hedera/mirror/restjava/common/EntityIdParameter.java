@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.common;
 
-import java.io.Serial;
+import static com.hedera.mirror.restjava.common.Utils.parseId;
 
-@SuppressWarnings("java:S110")
-public class MismatchedTypeException extends RestJavaException {
+import com.hedera.mirror.common.domain.entity.EntityId;
 
-    private static final String MESSAGE = "Expected type %s but got %s";
+public record EntityIdParameter(EntityId value) {
+    public static final EntityIdParameter EMPTY = new EntityIdParameter(null);
 
-    @Serial
-    private static final long serialVersionUID = -1216734672367851011L;
+    public static EntityIdParameter valueOf(String entityIdParam) {
 
-    public MismatchedTypeException(Class<?> expected, Class<?> actual) {
-        super(MESSAGE.formatted(expected.getName(), actual.getName()));
+        if (entityIdParam == null || entityIdParam.isBlank()) {
+            return EMPTY;
+        }
+
+        return new EntityIdParameter(parseId(entityIdParam));
     }
 }

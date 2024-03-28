@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.common;
 
-import java.io.Serial;
+public interface RangeParameter<T> {
 
-@SuppressWarnings("java:S110")
-public class MismatchedTypeException extends RestJavaException {
+    RangeOperator operator();
 
-    private static final String MESSAGE = "Expected type %s but got %s";
-
-    @Serial
-    private static final long serialVersionUID = -1216734672367851011L;
-
-    public MismatchedTypeException(Class<?> expected, Class<?> actual) {
-        super(MESSAGE.formatted(expected.getName(), actual.getName()));
-    }
+    T value();
 }
