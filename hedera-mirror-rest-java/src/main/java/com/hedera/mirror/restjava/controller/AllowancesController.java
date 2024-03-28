@@ -31,7 +31,6 @@ import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest.NftAllowanceRequestBuilder;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import java.util.Collection;
@@ -39,13 +38,12 @@ import java.util.HashMap;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -56,6 +54,7 @@ public class AllowancesController {
     private final NftAllowanceService service;
     private final NftAllowanceMapper accountMapper;
 
+    @CrossOrigin(origins = "*")
     @GetMapping(value = "/nfts")
     NftAllowancesResponse getNftAllowancesByAccountId(
             @PathVariable EntityIdParameter id,
@@ -80,7 +79,7 @@ public class AllowancesController {
 
         String next = null;
         if (!serviceResponse.isEmpty() && serviceResponse.size() == limit) {
-            next = buildNextLink(owner, order, limit, response, serviceResponse);
+            next = buildNextLink(owner, order, response, serviceResponse);
         }
         response.links(new Links().next(next));
         return response;
@@ -89,16 +88,9 @@ public class AllowancesController {
     private static String buildNextLink(
             boolean owner,
             Sort.Direction order,
-            int limit,
             NftAllowancesResponse response,
             Collection<NftAllowance> serviceResponse) {
 
-        ServletRequestAttributes servletRequestAttributes =
-                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (servletRequestAttributes == null) {
-            return null;
-        }
-        HttpServletRequest request = servletRequestAttributes.getRequest();
         HashMap<String, String> lastValues = new HashMap<>();
         HashMap<String, Boolean> included = new HashMap<>();
         if (response.getAllowances() != null) {
@@ -118,6 +110,6 @@ public class AllowancesController {
                     response.getAllowances().get(serviceResponse.size() - 1).getTokenId());
             included.put(TOKEN_ID, false);
         }
-        return Utils.getPaginationLink(request, false, lastValues, included, order, limit);
+        return Utils.getPaginationLink(false, lastValues, included, order);
     }
 }

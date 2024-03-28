@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,17 +49,20 @@ class EntityIdRangeParameterTest {
                 "-1.-1.-1",
                 "-1",
                 "0.0.-1",
-                "0.0.4294967296",
-                "32768.65536.4294967296",
-                "100000.65535.000000001",
                 "100000.000000001",
                 "eq:0.0.1:someinvalidstring",
                 "BLAH:0.0.1",
-                "0.0.1:someinvalidstring",
-                "ne:0.0.1"
+                "0.0.1:someinvalidstring"
             })
     @DisplayName("EntityIdRangeParameter parse from string tests, negative cases")
     void testInvalidParam(String input) {
-        assertThrows(InvalidParametersException.class, () -> EntityIdRangeParameter.valueOf(input));
+        assertThrows(IllegalArgumentException.class, () -> EntityIdRangeParameter.valueOf(input));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0.0.4294967296", "32768.65536.4294967296", "100000.65535.000000001"})
+    @DisplayName("EntityIdRangeParameter parse from string tests, negative cases for ID having valid format")
+    void testInvalidEntity(String input) {
+        assertThrows(InvalidEntityException.class, () -> EntityIdRangeParameter.valueOf(input));
     }
 }

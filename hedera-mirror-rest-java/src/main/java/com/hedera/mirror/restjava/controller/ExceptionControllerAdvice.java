@@ -20,10 +20,10 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.rest.model.Error;
 import com.hedera.mirror.rest.model.ErrorStatus;
 import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import jakarta.persistence.EntityNotFoundException;
 import java.net.BindException;
 import lombok.CustomLog;
@@ -43,13 +43,12 @@ public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler()
     @ResponseStatus(NOT_FOUND)
     private Error notFound(final EntityNotFoundException e) {
-        log.warn("Not found: {}", e.getMessage());
         return errorResponse(e.getMessage());
     }
 
-    @ExceptionHandler(value = InvalidParametersException.class)
+    @ExceptionHandler()
     @ResponseStatus(BAD_REQUEST)
-    private Error inputValidationError(final InvalidParametersException e) {
+    private Error inputValidationError(final InvalidEntityException e) {
         return errorResponse(e.getMessage());
     }
 
@@ -62,7 +61,6 @@ public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Error bindError(final BindException e) {
-        log.warn("Validation error: {}", e.getMessage());
         return errorResponse(e.getMessage());
     }
 

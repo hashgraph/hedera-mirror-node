@@ -25,7 +25,6 @@ import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -188,7 +187,30 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
                 .order(Sort.Direction.ASC)
                 .build();
-        assertThrows(InvalidParametersException.class, () -> service.getNftAllowances(request));
+        assertThrows(IllegalArgumentException.class, () -> service.getNftAllowances(request));
+    }
+
+    @Test
+    void getNftAllowancesForInvalidOperatorPresent() {
+        var accountId = EntityId.of(1001L);
+
+        var nftAllowance1 = saveNftAllowance(accountId, false);
+
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(accountId.getId())
+                        .owner(nftAllowance1.getOwner() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdParameter(accountId))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.NE, EntityId.of(nftAllowance1.getSpender())))
+                .order(Sort.Direction.ASC)
+                .build();
+        assertThrows(IllegalArgumentException.class, () -> service.getNftAllowances(request));
     }
 
     NftAllowance saveNftAllowance(EntityId accountId, boolean owner) {

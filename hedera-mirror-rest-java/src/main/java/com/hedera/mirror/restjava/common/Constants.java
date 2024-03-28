@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.restjava.common;
 
-import com.google.common.base.Splitter;
 import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
 
@@ -25,8 +24,7 @@ public class Constants {
 
     public static final int MAX_LIMIT = 100;
     public static final String DEFAULT_LIMIT = "25";
-    public static final String ENTITY_ID_REGEX = "^(((\\d{1,5}\\.){1,2}\\d{1,10})|(\\d{1,19}))$";
-    public static final int ENTITY_ID_MAX_LENGTH = 22;
+    public static final String ENTITY_ID_REGEX = "^(((\\d{1,5})\\.)?((\\d{1,5})\\.)?(\\d{1,10}))$";
 
     public static final int EVM_ADDRESS_MIN_LENGTH = 40;
 
@@ -34,8 +32,6 @@ public class Constants {
 
     public static final Pattern ENTITY_ID_PATTERN = Pattern.compile(ENTITY_ID_REGEX);
     public static final Pattern EVM_ADDRESS_PATTERN = Pattern.compile(EVM_ADDRESS_REGEX);
-
-    public static final Splitter SPLITTER = Splitter.on('.').omitEmptyStrings().trimResults();
 
     public static final String ACCOUNT_ID = "account.id";
     public static final String TOKEN_ID = "token.id";

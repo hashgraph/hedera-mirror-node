@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.restjava.common;
 
-import com.hedera.mirror.restjava.exception.InvalidParametersException;
 import java.util.function.BiFunction;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -46,9 +45,8 @@ public enum RangeOperator {
         try {
             return RangeOperator.valueOf(rangeOperator.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new InvalidParametersException(
-                    "Invalid range operator %s. Valid values: lt(e), gt(e), eq. Not supported: ne"
-                            .formatted(rangeOperator.toLowerCase()));
+            throw new IllegalArgumentException("Invalid range operator %s. Valid values: eq, gt, gte, lt, lte, ne"
+                    .formatted(rangeOperator.toLowerCase()));
         }
     }
 }
