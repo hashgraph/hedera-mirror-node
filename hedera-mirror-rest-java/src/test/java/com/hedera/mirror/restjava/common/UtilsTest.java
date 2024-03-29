@@ -155,11 +155,7 @@ class UtilsTest {
     @Test
     @DisplayName("Empty next link")
     void getEmptyPaginationLinks() {
-        var uri = "/api/v1/1001/accounts/allowances/nfts";
         LinkedHashMap<String, String> lastValues = new LinkedHashMap<>(Map.of(ACCOUNT_ID, "0.0.2000"));
-        context.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
-        when(attributes.getRequest()).thenReturn(request);
-        when(request.getRequestURI()).thenReturn(uri);
         // When the last element has already been returned
         assertNull(getPaginationLink(true, lastValues, Sort.Direction.ASC));
         // When the lastValues map is null
