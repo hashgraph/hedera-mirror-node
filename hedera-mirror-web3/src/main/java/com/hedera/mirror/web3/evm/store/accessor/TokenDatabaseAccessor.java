@@ -38,6 +38,7 @@ import com.hedera.services.store.models.Token;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import jakarta.inject.Named;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -168,7 +169,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
     }
 
     private Supplier<List<CustomFee>> getCustomFees(Long tokenId, final Optional<Long> timestamp) {
-        return Suppliers.memoize(
-                () -> customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(Collections.emptyList()));
+        return Suppliers.memoize(() -> Collections.unmodifiableList(
+                customFeeDatabaseAccessor.get(tokenId, timestamp).orElse(new ArrayList<>())));
     }
 }

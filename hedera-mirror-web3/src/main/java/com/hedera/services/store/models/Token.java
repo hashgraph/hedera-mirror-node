@@ -1842,8 +1842,7 @@ public class Token {
     }
 
     public List<CustomFee> getCustomFees() {
-        return Collections.unmodifiableList(
-                customFees != null && customFees.get() != null ? customFees.get() : new ArrayList<>());
+        return customFees != null && customFees.get() != null ? customFees.get() : Collections.emptyList();
     }
 
     public boolean hasMintedUniqueTokens() {

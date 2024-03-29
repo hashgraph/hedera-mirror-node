@@ -31,8 +31,6 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.SortedMap;
 import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.Supplier;
 import lombok.Getter;
 import org.hyperledger.besu.datatypes.Address;
@@ -677,16 +675,15 @@ public class Account extends HederaEvmAccount {
     }
 
     public SortedMap<EntityNum, Long> getCryptoAllowances() {
-        return Collections.unmodifiableSortedMap(cryptoAllowances != null ? cryptoAllowances.get() : new TreeMap<>());
+        return cryptoAllowances != null ? cryptoAllowances.get() : Collections.emptySortedMap();
     }
 
     public SortedMap<FcTokenAllowanceId, Long> getFungibleTokenAllowances() {
-        return Collections.unmodifiableSortedMap(
-                fungibleTokenAllowances != null ? fungibleTokenAllowances.get() : new TreeMap<>());
+        return fungibleTokenAllowances != null ? fungibleTokenAllowances.get() : Collections.emptySortedMap();
     }
 
     public SortedSet<FcTokenAllowanceId> getApproveForAllNfts() {
-        return Collections.unmodifiableSortedSet(approveForAllNfts != null ? approveForAllNfts.get() : new TreeSet<>());
+        return approveForAllNfts != null ? approveForAllNfts.get() : Collections.emptySortedSet();
     }
 
     public Integer getNumAssociations() {

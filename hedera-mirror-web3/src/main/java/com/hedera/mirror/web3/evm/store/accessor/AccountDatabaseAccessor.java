@@ -45,6 +45,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.SortedMap;
 import java.util.SortedSet;
@@ -146,41 +147,43 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private Supplier<SortedMap<EntityNum, Long>> getCryptoAllowances(Long ownerId, final Optional<Long> timestamp) {
-        return Suppliers.memoize(() -> timestamp
-                .map(t -> cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
-                .orElseGet(() -> cryptoAllowanceRepository.findByOwner(ownerId))
-                .stream()
-                .collect(Collectors.toMap(
-                        cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender())),
-                        CryptoAllowance::getAmount,
-                        NO_DUPLICATE_MERGE_FUNCTION,
-                        TreeMap::new)));
+        return Suppliers.memoize(
+                () -> Collections.unmodifiableSortedMap((SortedMap<EntityNum, ? extends Long>) timestamp
+                        .map(t -> cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
+                        .orElseGet(() -> cryptoAllowanceRepository.findByOwner(ownerId))
+                        .stream()
+                        .collect(Collectors.toMap(
+                                cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender())),
+                                CryptoAllowance::getAmount,
+                                NO_DUPLICATE_MERGE_FUNCTION,
+                                TreeMap::new))));
     }
 
     private Supplier<SortedMap<FcTokenAllowanceId, Long>> getFungibleTokenAllowances(
             Long ownerId, final Optional<Long> timestamp) {
-        return Suppliers.memoize(() -> timestamp
-                .map(t -> tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
-                .orElseGet(() -> tokenAllowanceRepository.findByOwner(ownerId))
-                .stream()
-                .collect(Collectors.toMap(
-                        tokenAllowance -> new FcTokenAllowanceId(
-                                entityNumFromId(EntityId.of(tokenAllowance.getTokenId())),
-                                entityNumFromId(EntityId.of(tokenAllowance.getSpender()))),
-                        AbstractTokenAllowance::getAmount,
-                        NO_DUPLICATE_MERGE_FUNCTION,
-                        TreeMap::new)));
+        return Suppliers.memoize(
+                () -> Collections.unmodifiableSortedMap((SortedMap<FcTokenAllowanceId, ? extends Long>) timestamp
+                        .map(t -> tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
+                        .orElseGet(() -> tokenAllowanceRepository.findByOwner(ownerId))
+                        .stream()
+                        .collect(Collectors.toMap(
+                                tokenAllowance -> new FcTokenAllowanceId(
+                                        entityNumFromId(EntityId.of(tokenAllowance.getTokenId())),
+                                        entityNumFromId(EntityId.of(tokenAllowance.getSpender()))),
+                                AbstractTokenAllowance::getAmount,
+                                NO_DUPLICATE_MERGE_FUNCTION,
+                                TreeMap::new))));
     }
 
     private Supplier<SortedSet<FcTokenAllowanceId>> getApproveForAllNfts(Long ownerId, final Optional<Long> timestamp) {
-        return Suppliers.memoize(() -> timestamp
+        return Suppliers.memoize(() -> Collections.unmodifiableSortedSet(timestamp
                 .map(t -> nftAllowanceRepository.findByOwnerAndTimestampAndApprovedForAllIsTrue(ownerId, t))
                 .orElseGet(() -> nftAllowanceRepository.findByOwnerAndApprovedForAllIsTrue(ownerId))
                 .stream()
                 .map(nftAllowance -> new FcTokenAllowanceId(
                         entityNumFromId(EntityId.of(nftAllowance.getTokenId())),
                         entityNumFromId(EntityId.of(nftAllowance.getSpender()))))
-                .collect(Collectors.toCollection(TreeSet::new)));
+                .collect(Collectors.toCollection(TreeSet::new))));
     }
 
     private EntityNum entityNumFromId(EntityId entityId) {
