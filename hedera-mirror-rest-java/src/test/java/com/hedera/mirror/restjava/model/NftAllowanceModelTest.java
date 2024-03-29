@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import org.junit.jupiter.api.Test;
 
-public class NftAllowanceModelTest {
+class NftAllowanceModelTest {
     String allowanceResponse =
             """
             {

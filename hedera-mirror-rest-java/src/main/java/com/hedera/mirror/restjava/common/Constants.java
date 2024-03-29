@@ -24,7 +24,7 @@ public class Constants {
 
     public static final int MAX_LIMIT = 100;
     public static final String DEFAULT_LIMIT = "25";
-    public static final String ENTITY_ID_REGEX = "^(((\\d{1,5})\\.)?((\\d{1,5})\\.)?(\\d{1,10}))$";
+    public static final String ENTITY_ID_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?(\\d{1,10})$";
 
     public static final int EVM_ADDRESS_MIN_LENGTH = 40;
 
