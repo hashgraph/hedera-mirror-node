@@ -75,5 +75,19 @@ class CommonMapperTest {
         assertThat(commonMapper.mapRange(Range.openClosed(1586567700453054000L, 1586567700453054000L)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
+
+        // test5
+        range.setFrom("0.000000001");
+        range.setTo("0.000000100");
+        assertThat(commonMapper.mapRange(Range.openClosed(1L, 100L)))
+                .usingRecursiveComparison()
+                .isEqualTo(range);
+
+        // test6
+        range.setFrom("0.110000000");
+        range.setTo("1.100000000");
+        assertThat(commonMapper.mapRange(Range.openClosed(110000000L, 1100000000L)))
+                .usingRecursiveComparison()
+                .isEqualTo(range);
     }
 }

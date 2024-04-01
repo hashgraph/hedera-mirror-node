@@ -21,6 +21,7 @@ import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.TimestampRange;
+import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
 
@@ -62,14 +63,10 @@ public interface CommonMapper {
             return "0.0";
         }
         var timestampString = String.valueOf(timestamp);
-        StringBuilder sb = new StringBuilder();
-        // appending 0's to the timestamp to fulfill nanoseconds requirement
-        while (sb.length() < (NANO_DIGITS - timestampString.length() - 1)) {
-            sb.append('0');
-        }
-        sb.append(timestampString);
-        var nanos = sb.substring(sb.length() - NANO_DIGITS);
-        var secs = sb.substring(0, sb.length() - NANO_DIGITS);
+        var paddedString = StringUtils.leftPad(timestampString, 10, '0');
+
+        var nanos = paddedString.substring(paddedString.length() - NANO_DIGITS);
+        var secs = paddedString.substring(0, paddedString.length() - NANO_DIGITS);
         return secs + "." + nanos;
     }
 }
