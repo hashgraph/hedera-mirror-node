@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
@@ -41,39 +42,57 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
     public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
-        var accountIdOperator = request.getAccountIdOperator();
-        var ownerId = request.getOwnerId();
+        var accountId = request.getAccountId();
         var limit = request.getLimit();
         var order = request.getOrder();
-        var spenderId = request.getSpenderId();
-        var tokenId = request.getTokenId();
-        var tokenIdOperator = request.getAccountIdOperator();
+        var ownerOrSpenderId = request.getOwnerOrSpenderId();
+        var token = request.getTokenId();
+
+        checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
         //  LT,LTE,EQ,NE are not supported right now. Default is GT.
-        tokenId = getUpdatedEntityId(tokenIdOperator, tokenId);
-
+        var tokenId = verifyAndGetRangeId(token);
+        var filterId = verifyAndGetRangeId(ownerOrSpenderId);
         // Set the value depending on the owner flag
         if (request.isOwner()) {
-
-            spenderId = getUpdatedEntityId(accountIdOperator, spenderId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
-            return repository.findByOwnerAndFilterBySpenderAndToken(ownerId, spenderId, tokenId, pageable);
+            return repository.findByOwnerAndFilterBySpenderAndToken(
+                    accountId.value().getId(), filterId, tokenId, pageable);
 
         } else {
-
-            ownerId = getUpdatedEntityId(accountIdOperator, ownerId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
-            return repository.findBySpenderAndFilterByOwnerAndToken(spenderId, ownerId, tokenId, pageable);
+            return repository.findBySpenderAndFilterByOwnerAndToken(
+                    accountId.value().getId(), filterId, tokenId, pageable);
         }
     }
 
-    private static long getUpdatedEntityId(RangeOperator accountIdOperator, long entityId) {
-        if (accountIdOperator == RangeOperator.GTE) {
-            entityId = entityId > 0 ? entityId - 1 : entityId;
+    private static long verifyAndGetRangeId(EntityIdRangeParameter idParam) {
+        long id = 0;
+        // Setting default to 0.static queries will return all values with ids > 0 .
+        if (idParam != null) {
+            if (idParam.operator() == RangeOperator.NE) {
+                throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
+            }
+            id = getUpdatedEntityId(idParam);
         }
-        return entityId;
+        return id;
+    }
+
+    private static void checkOwnerSpenderParamValidity(
+            EntityIdRangeParameter ownerOrSpenderId, EntityIdRangeParameter token) {
+        if (ownerOrSpenderId == null && token != null) {
+            throw new IllegalArgumentException("token.id parameter must have account.id present");
+        }
+    }
+
+    private static long getUpdatedEntityId(EntityIdRangeParameter idParam) {
+        long id = idParam.value().getId();
+        if (idParam.operator() == RangeOperator.GTE) {
+            id = id > 0 ? id - 1 : id;
+        }
+        return id;
     }
 
     private static Sort sort(Sort.Direction direction, String account) {

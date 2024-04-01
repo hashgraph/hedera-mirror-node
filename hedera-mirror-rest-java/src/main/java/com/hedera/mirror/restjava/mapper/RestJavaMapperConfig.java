@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.mapper;
 
-import java.io.Serial;
+import static org.mapstruct.MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG;
 
-@SuppressWarnings("java:S110")
-public class MismatchedTypeException extends RestJavaException {
+import com.hedera.mirror.rest.model.NftAllowance;
+import org.mapstruct.MapperConfig;
+import org.mapstruct.Mapping;
 
-    private static final String MESSAGE = "Expected type %s but got %s";
+@MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
+public interface RestJavaMapperConfig {
 
-    @Serial
-    private static final long serialVersionUID = -1216734672367851011L;
-
-    public MismatchedTypeException(Class<?> expected, Class<?> actual) {
-        super(MESSAGE.formatted(expected.getName(), actual.getName()));
-    }
+    @Mapping(source = "timestampRange", target = "timestamp")
+    NftAllowance map(com.hedera.mirror.common.domain.entity.NftAllowance source);
 }

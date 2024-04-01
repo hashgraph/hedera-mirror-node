@@ -23,11 +23,14 @@ plugins {
 }
 
 dependencies {
+    annotationProcessor("org.mapstruct:mapstruct-processor")
+
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("jakarta.inject:jakarta.inject-api")
+    implementation("org.mapstruct:mapstruct")
     implementation("org.springframework:spring-context-support")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
@@ -41,4 +44,14 @@ dependencies {
     testImplementation("org.flywaydb:flyway-core")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
+}
+
+tasks.compileJava {
+    options.compilerArgs.addAll(
+        listOf(
+            "-Amapstruct.defaultComponentModel=jakarta",
+            "-Amapstruct.defaultInjectionStrategy=constructor",
+            "-Amapstruct.disableBuilders=true"
+        )
+    )
 }

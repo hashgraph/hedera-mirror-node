@@ -16,17 +16,19 @@
 
 package com.hedera.mirror.restjava.exception;
 
+import com.hedera.mirror.common.exception.MirrorNodeException;
 import java.io.Serial;
 
-@SuppressWarnings("java:S110")
-public class MismatchedTypeException extends RestJavaException {
-
-    private static final String MESSAGE = "Expected type %s but got %s";
+abstract class RestJavaException extends MirrorNodeException {
 
     @Serial
-    private static final long serialVersionUID = -1216734672367851011L;
+    private static final long serialVersionUID = 3383312779795690341L;
 
-    public MismatchedTypeException(Class<?> expected, Class<?> actual) {
-        super(MESSAGE.formatted(expected.getName(), actual.getName()));
+    protected RestJavaException(String message) {
+        super(message);
+    }
+
+    protected RestJavaException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

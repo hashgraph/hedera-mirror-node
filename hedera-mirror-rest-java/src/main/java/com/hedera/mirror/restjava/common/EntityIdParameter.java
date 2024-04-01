@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.common;
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
-import java.io.Serial;
+import static com.hedera.mirror.restjava.common.Utils.parseId;
 
-abstract class RestException extends MirrorNodeException {
+import com.hedera.mirror.common.domain.entity.EntityId;
+import org.jooq.tools.StringUtils;
 
-    @Serial
-    private static final long serialVersionUID = 3383312779795690341L;
+public record EntityIdParameter(EntityId value) {
+    public static final EntityIdParameter EMPTY = new EntityIdParameter(null);
 
-    protected RestException(String message) {
-        super(message);
-    }
+    public static EntityIdParameter valueOf(String entityIdParam) {
 
-    protected RestException(String message, Throwable throwable) {
-        super(message, throwable);
+        if (StringUtils.isBlank(entityIdParam)) {
+            return EMPTY;
+        }
+
+        return new EntityIdParameter(parseId(entityIdParam));
     }
 }
