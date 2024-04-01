@@ -16,14 +16,14 @@
 
 package com.hedera.mirror.restjava.mapper;
 
-import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
-
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.TimestampRange;
 import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
+
+import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
 
 @Mapper(mappingInheritanceStrategy = MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG)
 public interface CommonMapper {
@@ -62,11 +62,11 @@ public interface CommonMapper {
         if (timestamp == 0) {
             return "0.0";
         }
-        var timestampString = String.valueOf(timestamp);
-        var paddedString = StringUtils.leftPad(timestampString, 10, '0');
 
-        var nanos = paddedString.substring(paddedString.length() - NANO_DIGITS);
-        var secs = paddedString.substring(0, paddedString.length() - NANO_DIGITS);
+        var timestampString = StringUtils.leftPad(String.valueOf(timestamp), 10, '0');
+
+        var nanos = timestampString.substring(timestampString.length() - NANO_DIGITS);
+        var secs = timestampString.substring(0, timestampString.length() - NANO_DIGITS);
         return secs + "." + nanos;
     }
 }
