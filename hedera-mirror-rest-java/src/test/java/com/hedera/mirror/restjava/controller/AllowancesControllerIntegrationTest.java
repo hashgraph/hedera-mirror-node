@@ -227,14 +227,19 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
     @Test
     void successWithEmptyNextLink() {
+        var entity = domainBuilder.entity().persist();
+
         // Creating nft allowances
-        var allowance1 = domainBuilder.nftAllowance().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.spender(entity.getId()))
+                .persist();
         domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
                 .persist();
 
-        var uriParams = "?account.id=gte:0.0.5000&owner=false&token.id=gt:0.0.5000&limit=1&order=asc";
+        var uriParams = "?account.id=gte:0.0.5000&owner=true&token.id=gt:0.0.5000&limit=1&order=asc";
 
         // Performing the GET operation
         var result = restClient
