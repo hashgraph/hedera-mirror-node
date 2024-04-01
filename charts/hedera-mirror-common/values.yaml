@@ -280,6 +280,11 @@ prometheus:
   prometheus-node-exporter:
     hostNetwork: false
     priorityClassName: critical
+    prometheus:
+      monitor:
+        relabelings:
+          - sourceLabels: [__meta_kubernetes_endpoint_node_name]
+            targetLabel: node
     resources:
       limits:
         cpu: 100m
@@ -353,6 +358,19 @@ promtail:
 
 stackgres:
   enabled: false
+  prometheusRules:
+    enabled: true
+    DatabaseStorageFull:
+      annotations:
+        description: Storage for {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | humanizePercentage }} full
+        summary: Database storage is full
+      enabled: true
+      expr: kubelet_volume_stats_used_bytes{node=~".*(worker|coord).*"} / kubelet_volume_stats_capacity_bytes{node=~".*(worker|coord).*"} >= .80
+      for: 1m
+      labels:
+        severity: critical
+        application: hedera-mirror-common
+        area: resource
 
 testkube:
   enabled: false
@@ -475,6 +493,8 @@ zfs:
             mountPath: /scripts
     nodeSelector:
       csi-type: zfs
+    podLabels:
+      component: openebs-zfs-node
     priorityClass:
       create: true
     tolerations:
