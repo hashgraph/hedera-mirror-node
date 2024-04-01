@@ -28,6 +28,7 @@ import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import jakarta.annotation.Resource;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         var uriParams = "?account.id=gte:0.0.1000&owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
 
         var nextLink =
-                "/api/v1/accounts/%s/allowances/nfts?owner=true&limit=1&order=asc&account.id=gte:%s&token.id=gt:%s"
+                "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=true&token.id=gt:%s&limit=1&order=asc"
                         .formatted(
                                 allowance1.getOwner(),
                                 EntityId.of(allowance1.getSpender()),
@@ -141,7 +142,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .persist();
 
         var uriParams = "?account.id={account.id}&limit=1&order=asc";
-        var nextLink = "/api/v1/accounts/%s/allowances/nfts?limit=1&order=asc&account.id=gte:%s&token.id=gt:%s"
+        var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
                 .formatted(
                         allowance1.getOwner(),
                         EntityId.of(allowance2.getSpender()),
@@ -175,7 +176,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
         var uriParams = "?account.id=gte:0.0.1000&owner=true&token.id=gt:0.0.1000&limit=1&order=desc";
         var nextLink =
-                "/api/v1/accounts/%s/allowances/nfts?owner=true&limit=1&order=desc&account.id=lte:%s&token.id=lt:%s"
+                "/api/v1/accounts/%s/allowances/nfts?account.id=lte:%s&owner=true&token.id=lt:%s&limit=1&order=desc"
                         .formatted(
                                 allowance2.getOwner(),
                                 EntityId.of(allowance2.getSpender()),
@@ -207,7 +208,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
         var uriParams = "?account.id=gte:0.0.1000&owner=false&token.id=gt:0.0.1000&limit=1&order=asc";
         var nextLink =
-                "/api/v1/accounts/%s/allowances/nfts?owner=false&limit=1&order=asc&account.id=gte:%s&token.id=gt:%s"
+                "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=false&token.id=gt:%s&limit=1&order=asc"
                         .formatted(
                                 allowance1.getSpender(),
                                 EntityId.of(allowance1.getOwner()),
@@ -224,6 +225,28 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         assertThat(result.getLinks().getNext()).isEqualTo(nextLink);
     }
 
+    @Test
+    void successWithEmptyNextLink() {
+        // Creating nft allowances
+        var allowance1 = domainBuilder.nftAllowance().persist();
+        domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .persist();
+
+        var uriParams = "?account.id=gte:0.0.5000&owner=false&token.id=gt:0.0.5000&limit=1&order=asc";
+
+        // Performing the GET operation
+        var result = restClient
+                .get()
+                .uri(uriParams, allowance1.getSpender())
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+
+        assertThat(result.getAllowances()).isEqualTo(Collections.EMPTY_LIST);
+        assertThat(result.getLinks().getNext()).isNull();
+    }
+
     @ParameterizedTest
     @CsvSource({
         "0.0.1001,1.2.3.4,0.0.2000,false,2,asc",
@@ -232,7 +255,8 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         "0.0.1001,0.0.3000,0.0.2000,false,111,asc",
         "0.0.1001,0.0.3000,0.0.2000,false,3,ttt",
         "0.0.1001,gee:0.0.3000,0.0.2000,false,3,asc",
-        "0.0.4294967296,ge:0.0.3000,gte:0.0.3000,false,3,asc",
+        "null,gte:0.0.3000,0.0.2000,false,3,asc",
+        "0.0.4294967296,gt:0.0.3000,gte:0.0.3000,false,3,asc",
         "9223372036854775807,0.0.3000,0.0.2000,false,3,asc",
         "0x00000001000000000000000200000000000000034,0.0.3000,0.0.2000,false,3,asc"
     })

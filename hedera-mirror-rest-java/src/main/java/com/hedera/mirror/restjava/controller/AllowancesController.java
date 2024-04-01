@@ -21,7 +21,6 @@ import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
 
-import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
@@ -35,11 +34,11 @@ import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,10 +54,11 @@ public class AllowancesController {
 
     private final NftAllowanceService service;
     private final EntityService entityService;
-    private final NftAllowanceMapper accountMapper;
+    private final NftAllowanceMapper nftAllowanceMapper;
 
     @CrossOrigin(origins = "*")
     @GetMapping(value = "/nfts")
+    @SuppressWarnings("java:S5122")
     NftAllowancesResponse getNftAllowancesByAccountId(
             @PathVariable EntityIdParameter id,
             @RequestParam(name = ACCOUNT_ID, required = false) EntityIdRangeParameter accountId,
@@ -82,41 +82,18 @@ public class AllowancesController {
         var serviceResponse = service.getNftAllowances(requestBuilder.build());
 
         NftAllowancesResponse response = new NftAllowancesResponse();
-        response.setAllowances(accountMapper.map(serviceResponse));
+        response.setAllowances(nftAllowanceMapper.map(serviceResponse));
 
+        var last = CollectionUtils.lastElement(response.getAllowances());
         String next = null;
-        if (!serviceResponse.isEmpty() && serviceResponse.size() == limit) {
-            next = buildNextLink(owner, order, response, serviceResponse);
+        if (last != null && serviceResponse.size() == limit) {
+            var lastAccountId = owner ? last.getSpender() : last.getOwner();
+            LinkedHashMap<String, String> lastValues = new LinkedHashMap<>();
+            lastValues.put(ACCOUNT_ID, lastAccountId);
+            lastValues.put(TOKEN_ID, last.getTokenId());
+            next = Utils.getPaginationLink(false, lastValues, order);
         }
         response.links(new Links().next(next));
         return response;
-    }
-
-    private static String buildNextLink(
-            boolean owner,
-            Sort.Direction order,
-            NftAllowancesResponse response,
-            Collection<NftAllowance> serviceResponse) {
-
-        HashMap<String, String> lastValues = new HashMap<>();
-        HashMap<String, Boolean> included = new HashMap<>();
-        if (response.getAllowances() != null) {
-            if (owner) {
-                lastValues.put(
-                        ACCOUNT_ID,
-                        response.getAllowances().get(serviceResponse.size() - 1).getSpender());
-
-            } else {
-                lastValues.put(
-                        ACCOUNT_ID,
-                        response.getAllowances().get(serviceResponse.size() - 1).getOwner());
-            }
-            included.put(ACCOUNT_ID, true);
-            lastValues.put(
-                    TOKEN_ID,
-                    response.getAllowances().get(serviceResponse.size() - 1).getTokenId());
-            included.put(TOKEN_ID, false);
-        }
-        return Utils.getPaginationLink(false, lastValues, included, order);
     }
 }

@@ -24,6 +24,8 @@ import static com.hedera.mirror.restjava.common.Constants.HEX_PREFIX;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
@@ -38,10 +40,6 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @CustomLog
 @UtilityClass
 public class Utils {
-
-    public static final Map<String, RangeOperator> OPERATOR_PATTERNS = Map.of(
-            "ASC", RangeOperator.GTE,
-            "DESC", RangeOperator.LTE);
 
     public static EntityId parseId(String id) {
 
@@ -90,28 +88,27 @@ public class Utils {
         var matcher = ENTITY_ID_PATTERN.matcher(id);
         long shard = 0;
         long realm = 0;
-        String numOrEvmAddress;
-        if (matcher.matches()) {
 
-            if (matcher.group(4) != null) {
-                realm = Long.parseLong(matcher.group(5));
-                if (matcher.group(2) == null) {
-                    // get the system shard value from properties
-                    shard = 0;
-                } else {
-                    shard = Long.parseLong(matcher.group(3));
-                }
-            } else if (matcher.group(2) != null) {
-                realm = Long.parseLong(matcher.group(3));
-            }
-
-            numOrEvmAddress = matcher.group(6);
-
-        } else {
+        if (!matcher.matches()) {
             throw new IllegalArgumentException("Id %s format is invalid".formatted(id));
         }
+        // This matched the format realm.
+        if (matcher.group(3) != null) {
+            // This gets the realm value
+            realm = Long.parseLong(matcher.group(4));
+            if (matcher.group(1) != null) {
+                // This will get the matched shard value
+                shard = Long.parseLong(matcher.group(2));
+            }
+        } else if (matcher.group(1) != null) {
+            realm = Long.parseLong(matcher.group(2));
+            // get this value from system property
+            shard = 0;
+        }
 
-        return EntityId.of(shard, realm, Long.parseLong(numOrEvmAddress));
+        var num = matcher.group(5);
+
+        return EntityId.of(shard, realm, Long.parseLong(num));
     }
 
     public static byte[] decodeBase32(String base32) {
@@ -131,8 +128,7 @@ public class Utils {
         }
     }
 
-    public static String getPaginationLink(
-            boolean isEnd, Map<String, String> lastValues, Map<String, Boolean> included, Sort.Direction order) {
+    public static String getPaginationLink(boolean isEnd, Map<String, String> lastValues, Sort.Direction order) {
 
         ServletRequestAttributes servletRequestAttributes =
                 (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
@@ -141,8 +137,6 @@ public class Utils {
             return null;
         }
         HttpServletRequest request = servletRequestAttributes.getRequest();
-        var paramsMap = request.getParameterMap();
-        var url = request.getRequestURI();
         StringBuilder paginationLink = new StringBuilder();
 
         if (lastValues == null || lastValues.isEmpty()) {
@@ -150,54 +144,87 @@ public class Utils {
         }
 
         if (!isEnd) {
-            // remove the '/' at the end of req.path
-            generateLinkFromRequestParams(lastValues, included, order, url, paginationLink, paramsMap);
+            paginationLink.append(generateLinkFromRequestParams(lastValues, order, request));
         }
         return paginationLink.isEmpty() ? null : paginationLink.toString();
     }
 
-    private static void generateLinkFromRequestParams(
-            Map<String, String> lastValues,
-            Map<String, Boolean> included,
-            Sort.Direction order,
-            String url,
-            StringBuilder paginationLink,
-            Map<String, String[]> paramsMap) {
+    private static String generateLinkFromRequestParams(
+            Map<String, String> lastValues, Sort.Direction order, HttpServletRequest request) {
+
+        StringBuilder link = new StringBuilder();
+
+        var paramsMap = request.getParameterMap();
+        var url = request.getRequestURI();
+
+        // remove the '/' at the end of req.path
         var path = url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
-        paginationLink.append(path);
+        link.append(path);
+
         if (!paramsMap.isEmpty() || !lastValues.isEmpty()) {
-            paginationLink.append("?");
+            link.append("?");
         }
+
         // add all params from the existing url
         int count = 0; // This is to check for first parameter
+        int last = 0;
+        boolean inclusive = true;
+        List<String> paramsNeeded = new ArrayList<>();
+
         for (Map.Entry<String, String[]> param : paramsMap.entrySet()) {
-            if (!lastValues.containsKey(param.getKey())) {
-                if (count != 0) {
-                    paginationLink.append("&");
-                }
-                paginationLink.append("%s=".formatted(param.getKey())).append(param.getValue()[0]);
-                count++;
+            String key;
+            String value;
+            if (count != 0) {
+                link.append("&");
             }
+            key = param.getKey();
+            if (lastValues.containsKey(param.getKey())) {
+                if (++last == lastValues.size()) {
+                    inclusive = false;
+                }
+                paramsNeeded.add(key);
+                value = getNextValue(order, lastValues, key, inclusive);
+            } else {
+                value = param.getValue()[0];
+            }
+            count++;
+            link.append("%s=".formatted(key)).append(value);
         }
-        var next = getNextParamQueries(order, lastValues, included);
-        if (paramsMap.isEmpty()) {
-            paginationLink.append(next.substring(1));
-        } else {
-            paginationLink.append(next);
+        addLastValueElements(lastValues, order, paramsNeeded, count, link, last, inclusive);
+        return link.toString();
+    }
+
+    private static void addLastValueElements(
+            Map<String, String> lastValues,
+            Sort.Direction order,
+            List<String> paramsNeeded,
+            int count,
+            StringBuilder link,
+            int last,
+            boolean inclusive) {
+        if (paramsNeeded.size() != lastValues.size()) {
+            for (String key : lastValues.keySet()) {
+                if (!paramsNeeded.contains(key)) {
+                    if (count++ != 0) {
+                        link.append("&");
+                    }
+                    if (++last == lastValues.size()) {
+                        inclusive = false;
+                    }
+                    link.append("%s=".formatted(key)).append(getNextValue(order, lastValues, key, inclusive));
+                }
+            }
         }
     }
 
-    private static String getNextParamQueries(
-            Sort.Direction order, Map<String, String> lastValues, Map<String, Boolean> includedMap) {
-        StringBuilder next = new StringBuilder();
-        for (Map.Entry<String, String> lastValue : lastValues.entrySet()) {
-            boolean inclusive = includedMap.get(lastValue.getKey());
-            var pattern = OPERATOR_PATTERNS.get(order.name());
-            var newPattern = order == Sort.Direction.ASC ? RangeOperator.GT : RangeOperator.LT;
-            var insertValue =
-                    inclusive ? pattern + ":" + lastValue.getValue() : newPattern + ":" + lastValue.getValue();
-            next.append("&").append(lastValue.getKey()).append("=").append(insertValue.toLowerCase());
+    private static String getNextValue(
+            Sort.Direction order, Map<String, String> lastValues, String key, boolean inclusive) {
+        var pattern = order == Sort.Direction.ASC ? RangeOperator.GTE : RangeOperator.LTE;
+        var newPattern = order == Sort.Direction.ASC ? RangeOperator.GT : RangeOperator.LT;
+        if (inclusive) {
+            return pattern + ":" + lastValues.get(key);
+        } else {
+            return newPattern + ":" + lastValues.get(key);
         }
-        return next.toString();
     }
 }
