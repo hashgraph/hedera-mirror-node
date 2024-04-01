@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava.common;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import org.jooq.tools.StringUtils;
 
 public record EntityIdRangeParameter(RangeOperator operator, EntityId value) implements RangeParameter<EntityId> {
 
@@ -24,7 +25,7 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
 
     public static EntityIdRangeParameter valueOf(String entityIdRangeParam) {
 
-        if (entityIdRangeParam == null || entityIdRangeParam.isBlank()) {
+        if (StringUtils.isBlank(entityIdRangeParam)) {
             return EMPTY;
         }
 

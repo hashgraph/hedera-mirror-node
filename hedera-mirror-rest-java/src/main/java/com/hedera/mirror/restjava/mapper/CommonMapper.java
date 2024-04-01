@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.restjava.mapper;
 
-import static com.hedera.mirror.restjava.common.Constants.NANOS_PER_SECOND;
+import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -58,8 +58,18 @@ public interface CommonMapper {
     }
 
     default String mapTimestamp(long timestamp) {
-        long secs = Math.addExact(0L, Math.floorDiv(timestamp, NANOS_PER_SECOND));
-        int nos = (int) Math.floorMod(timestamp, NANOS_PER_SECOND);
-        return secs + "." + nos;
+        if (timestamp == 0) {
+            return "0.0";
+        }
+        var timestampString = String.valueOf(timestamp);
+        StringBuilder sb = new StringBuilder();
+        // appending 0's to the timestamp to fulfill nanoseconds requirement
+        while (sb.length() < (NANO_DIGITS - timestampString.length() - 1)) {
+            sb.append('0');
+        }
+        sb.append(timestampString);
+        var nanos = sb.substring(sb.length() - NANO_DIGITS);
+        var secs = sb.substring(0, sb.length() - NANO_DIGITS);
+        return secs + "." + nanos;
     }
 }
