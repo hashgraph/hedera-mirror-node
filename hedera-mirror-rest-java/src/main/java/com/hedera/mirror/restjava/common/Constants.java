@@ -30,7 +30,8 @@ public class Constants {
     public static final int MAX_LIMIT = 100;
     public static final String DEFAULT_LIMIT = "25";
     public static final String ENTITY_ID_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?(\\d{1,10})$";
-    public static final String EVM_ADDRESS_REGEX = "^(((0x)?[A-Fa-f0-9]{40})|((\\d{1,10}\\.){0,2}[A-Fa-f0-9]{40}))$";
+    public static final String EVM_ADDRESS_REGEX =
+            "^(((0x)?([A-Fa-f0-9]{40}))|((\\d{1,10}\\.){0,2}([A-Fa-f0-9]{40})))$";
     public static final int EVM_ADDRESS_MIN_LENGTH = 40;
 
     public static final Pattern ENTITY_ID_PATTERN = Pattern.compile(ENTITY_ID_REGEX);

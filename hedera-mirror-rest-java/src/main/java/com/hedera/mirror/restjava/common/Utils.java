@@ -59,28 +59,21 @@ public class Utils {
         var matcher = EVM_ADDRESS_PATTERN.matcher(id);
         long shard = 0;
         long realm = 0;
-        String numOrEvmAddress;
+        String evmAddress;
         if (matcher.matches()) {
 
-            if (matcher.group(4) != null) {
-                realm = Long.parseLong(matcher.group(5));
-                if (matcher.group(2) == null) {
-                    // get the system shard value from properties
-                    shard = 0;
-                } else {
-                    shard = Long.parseLong(matcher.group(3));
-                }
-            } else if (matcher.group(2) != null) {
-                realm = Long.parseLong(matcher.group(3));
+            if (matcher.group(1) != null) {
+                evmAddress = matcher.group(3);
+            } else {
+                // match shard realm
+                evmAddress = matcher.group(5);
             }
-
-            numOrEvmAddress = matcher.group(6);
 
         } else {
             throw new IllegalArgumentException("Id %s format is invalid".formatted(id));
         }
 
-        return EntityId.of(shard, realm, Long.parseLong(numOrEvmAddress));
+        return EntityId.of(shard, realm, Long.parseLong(evmAddress));
     }
 
     private static EntityId parseEntityId(String id) {

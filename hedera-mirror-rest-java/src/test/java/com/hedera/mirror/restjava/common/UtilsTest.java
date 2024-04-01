@@ -110,6 +110,14 @@ class UtilsTest {
         assertThat(EntityId.of(32767, 65535, 4294967295L)).isEqualTo(Utils.parseId("32767.65535.4294967295"));
         assertThat(EntityId.of(0, 0, 4294967295L)).isEqualTo(Utils.parseId("4294967295"));
         assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0.1"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0x0000000000000000000000000000000000000001"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0000000000000000000000000000000000000001"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0x0000000100000000000000020000000000000003"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0x00007fff000000000000ffff00000000ffffffff"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0.0.000000000000000000000000000000000186Fb1b"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0.000000000000000000000000000000000186Fb1b"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("000000000000000000000000000000000186Fb1b"));
+        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0x000000000000000000000000000000000186Fb1b"));
     }
 
     @Test
