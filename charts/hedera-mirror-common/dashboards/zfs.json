@@ -1889,7 +1889,7 @@
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "The log events",
+      "description": "The log events for ZFS nodes",
       "gridPos": {
         "h": 10,
         "w": 24,
@@ -1914,12 +1914,50 @@
             "uid": "${loki}"
           },
           "editorMode": "builder",
-          "expr": "{component=~\"$zfsComponentsRegex\", cluster=\"$cluster\", node_name=~\"$node\"}",
+          "expr": "{component=~\".*zfs-node.*\", cluster=\"$cluster\", node_name=~\"$node\"}",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Messages",
+      "title": "ZFS Node Messages",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "The log events for ZFS controller",
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 121
+      },
+      "id": 430,
+      "links": [],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Ascending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "uid": "${loki}"
+          },
+          "editorMode": "builder",
+          "expr": "{component=~\".*zfs-controller.*\", cluster=\"$cluster\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "ZFS Controller Messages",
       "type": "logs"
     }
   ],
@@ -1928,13 +1966,6 @@
   "tags": [],
   "templating": {
     "list": [
-      {
-        "hide": 2,
-        "name": "zfsComponentsRegex",
-        "query": ".*zfs-(controller|node).*",
-        "skipUrlSync": false,
-        "type": "constant"
-      },
       {
         "hide": 2,
         "name": "zfsDeviceId",
@@ -2055,7 +2086,7 @@
           "type": "prometheus",
           "uid": "${prometheus}"
         },
-        "definition": "label_values(kube_pod_info{cluster=~\"$cluster\", pod=~\"$zfsComponentsRegex\"},node)",
+        "definition": "label_values(node_zfs_arc_size{cluster=~\"$cluster\"},node)",
         "description": "List of nodes with ZFS pools",
         "hide": 0,
         "includeAll": true,
@@ -2065,7 +2096,7 @@
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(kube_pod_info{cluster=~\"$cluster\", pod=~\"$zfsComponentsRegex\"},node)",
+          "query": "label_values(node_zfs_arc_size{cluster=~\"$cluster\"},node)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 2,
