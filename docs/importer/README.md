@@ -12,13 +12,14 @@ mirror node may fail to capture that extra information until it is updated. The 
 stream format itself changes like when Record File v6 was introduced or the balance file was deprecated. The below
 table provides a compatibility matrix of the most recent changes:
 
-| HAPI Version | Mirror Node Version | Breaking Change | HIP                                                                                                                 |
-| ------------ | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------- |
-| v0.37.0      | v0.75.0+            | False           | [HIP-583](https://hips.hedera.com/hip/hip-583): Expand alias support                                                |
-| v0.40.0      | v0.84.0+            | False           | [HIP-729](https://hips.hedera.com/hip/hip-729): Contract account nonce externalization                              |
-| v0.42.0      | v0.88.0+            | True            | [HIP-794](https://hips.hedera.com/hip/hip-794): Sunsetting balance file                                             |
-| v0.43.0      | v0.89.0+            | False           | [HIP-786](https://hips.hedera.com/hip/hip-786): Enriched staking metadata exports                                   |
-| v0.47.0+     | v0.98.0+            | False           | [HIP-844](https://hips.hedera.com/hip/hip-844): Handling and externalisation improvements for account nonce updates |
+| HAPI Version | Mirror Node Version | Breaking Change | HIP                                                                                                                                                          |
+| ------------ | ------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| v0.37.0      | v0.75.0+            | False           | [HIP-583](https://hips.hedera.com/hip/hip-583): Expand alias support                                                                                         |
+| v0.40.0      | v0.84.0+            | False           | [HIP-729](https://hips.hedera.com/hip/hip-729): Contract account nonce externalization                                                                       |
+| v0.42.0      | v0.88.0+            | True            | [HIP-794](https://hips.hedera.com/hip/hip-794): Sunsetting balance file                                                                                      |
+| v0.43.0      | v0.89.0+            | False           | [HIP-786](https://hips.hedera.com/hip/hip-786): Enriched staking metadata exports                                                                            |
+| v0.47.0+     | v0.98.0+            | False           | [HIP-844](https://hips.hedera.com/hip/hip-844): Handling and externalisation improvements for account nonce updates                                          |
+| v0.48.0+     | v0.101.0+           | False           | [HIP-646](https://hips.hedera.com/hip/hip-646)/[657](https://hips.hedera.com/hip/hip-657)/[765](https://hips.hedera.com/hip/hip-765): Mutable token metadata |
 
 ## Initialize Entity Balance
 

@@ -92,7 +92,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
             AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
             accountBalanceFile.setBytes(streamFileData.getBytes());
             accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
-            accountBalanceFile.setLoadStart(Instant.now().getEpochSecond());
+            accountBalanceFile.setLoadStart(streamFileData.getStreamFilename().getTimestamp());
             accountBalanceFile.setName(streamFileData.getFilename());
 
             reader.lines()
