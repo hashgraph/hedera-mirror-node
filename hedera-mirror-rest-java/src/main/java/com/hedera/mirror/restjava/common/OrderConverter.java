@@ -26,6 +26,6 @@ import org.springframework.data.domain.Sort;
 public class OrderConverter implements Converter<String, Sort.Direction> {
     @Override
     public Sort.Direction convert(String order) {
-        return Sort.Direction.valueOf(order.toUpperCase());
+        return Sort.Direction.fromString(order);
     }
 }

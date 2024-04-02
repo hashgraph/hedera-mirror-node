@@ -775,9 +775,10 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void adjustingRejectsPausedToken() {
+    void adjustingRejectsPausedToken() throws InvalidKeyException {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc)).setPaused(true);
+        var token = new Token(Id.fromGrpcToken(misc)).setPauseKey(JKey.mapKey(key));
+        token = token.changePauseStatus(true);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))

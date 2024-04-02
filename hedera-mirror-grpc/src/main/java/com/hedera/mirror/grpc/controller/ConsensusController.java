@@ -27,6 +27,7 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.service.TopicMessageService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -63,16 +64,24 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         }
 
         if (query.hasConsensusStartTime()) {
-            long startTime = DomainUtils.timestampInNanosMax(query.getConsensusStartTime());
+            long startTime = convertTimestamp(query.getConsensusStartTime());
             filter.startTime(startTime);
         }
 
         if (query.hasConsensusEndTime()) {
-            long endTime = DomainUtils.timestampInNanosMax(query.getConsensusEndTime());
+            long endTime = convertTimestamp(query.getConsensusEndTime());
             filter.endTime(endTime);
         }
 
         return filter.build();
+    }
+
+    // The util class logs an error if the timestamp overflows, so return MAX_VALUE if it's close to max db bigint.
+    private long convertTimestamp(Timestamp timestamp) {
+        if (timestamp.getSeconds() >= 9223372035L) {
+            return Long.MAX_VALUE;
+        }
+        return DomainUtils.timestampInNanosMax(timestamp);
     }
 
     // Consider caching this conversion for multiple subscribers to the same topic if the need arises.

@@ -16,8 +16,13 @@
 
 package com.hedera.services.txn.token;
 
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.web3.evm.store.Store;
@@ -60,13 +65,13 @@ class UnpauseLogicTest {
         // given:
         given(token.getId()).willReturn(id);
         given(store.loadPossiblyPausedToken(id.asEvmAddress())).willReturn(token);
-        given(token.setPaused(false)).willReturn(unpausedToken);
+        given(token.changePauseStatus(false)).willReturn(unpausedToken);
 
         // when:
         subject.unpause(token.getId(), store);
 
         // then:
-        verify(token).setPaused(false);
+        verify(token).changePauseStatus(false);
         verify(store).updateToken(unpausedToken);
     }
 
@@ -87,5 +92,21 @@ class UnpauseLogicTest {
                 TransactionBody.newBuilder().setTokenUnpause(builder).build();
 
         assertEquals(ResponseCodeEnum.INVALID_TOKEN_ID, subject.validateSyntax(txnBody));
+    }
+
+    @Test
+    void rejectChangePauseStatusWithoutTokenPauseKey() {
+        final Token emptyToken = Token.getEmptyToken();
+
+        // given:
+        given(store.loadPossiblyPausedToken(asTypedEvmAddress(IdUtils.asToken("1.2.3"))))
+                .willReturn(emptyToken);
+
+        // expect:
+        assertFalse(emptyToken.hasPauseKey());
+        assertFailsWith(() -> subject.unpause(id, store), TOKEN_HAS_NO_PAUSE_KEY);
+
+        // verify:
+        verify(store, never()).updateToken(emptyToken);
     }
 }

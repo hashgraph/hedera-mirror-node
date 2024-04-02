@@ -289,6 +289,7 @@ stackgres:
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
       work_mem: "32MB"
+    enableMetricsExporter: false
     instances: 1
     resources:
       cpu: 100m
@@ -329,6 +330,7 @@ stackgres:
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
       work_mem: "32MB"
+    enableMetricsExporter: false
     instances: 1
     overrides: []  # Override shard(s) configuration
     replicasPerInstance: 1

@@ -42,5 +42,7 @@ public class Constants {
     public static final String OWNER = "owner";
 
     public static final long NANOS_PER_SECOND = 1000_000_000L;
+    public static final int NANO_DIGITS = 9;
+
     public static final String TOKEN_ID = "token.id";
 }

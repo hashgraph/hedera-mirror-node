@@ -19,13 +19,14 @@ package com.hedera.mirror.restjava.common;
 import static com.hedera.mirror.restjava.common.Utils.parseId;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import org.jooq.tools.StringUtils;
 
 public record EntityIdParameter(EntityId value) {
     public static final EntityIdParameter EMPTY = new EntityIdParameter(null);
 
     public static EntityIdParameter valueOf(String entityIdParam) {
 
-        if (entityIdParam == null || entityIdParam.isBlank()) {
+        if (StringUtils.isBlank(entityIdParam)) {
             return EMPTY;
         }
 

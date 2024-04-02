@@ -55,7 +55,3 @@ tasks.compileJava {
         )
     )
 }
-
-java.sourceSets["main"].java {
-    srcDir("build/generate-resources/main/com/hedera/mirror/rest/model")
-}

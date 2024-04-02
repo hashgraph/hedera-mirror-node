@@ -52,21 +52,19 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         //  LT,LTE,EQ,NE are not supported right now. Default is GT.
         var tokenId = verifyAndGetRangeId(token);
-
+        var filterId = verifyAndGetRangeId(ownerOrSpenderId);
         // Set the value depending on the owner flag
         if (request.isOwner()) {
-            var spenderId = verifyAndGetRangeId(ownerOrSpenderId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
             return repository.findByOwnerAndFilterBySpenderAndToken(
-                    accountId.value().getId(), spenderId, tokenId, pageable);
+                    accountId.value().getId(), filterId, tokenId, pageable);
 
         } else {
-            var ownerId = verifyAndGetRangeId(ownerOrSpenderId);
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
             return repository.findBySpenderAndFilterByOwnerAndToken(
-                    accountId.value().getId(), ownerId, tokenId, pageable);
+                    accountId.value().getId(), filterId, tokenId, pageable);
         }
     }
 

@@ -16,11 +16,12 @@
 
 package com.hedera.mirror.restjava.mapper;
 
-import static com.hedera.mirror.restjava.common.Constants.NANOS_PER_SECOND;
+import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.TimestampRange;
+import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
 
@@ -58,8 +59,14 @@ public interface CommonMapper {
     }
 
     default String mapTimestamp(long timestamp) {
-        long secs = Math.addExact(0L, Math.floorDiv(timestamp, NANOS_PER_SECOND));
-        int nos = (int) Math.floorMod(timestamp, NANOS_PER_SECOND);
-        return secs + "." + nos;
+        if (timestamp == 0) {
+            return "0.0";
+        }
+
+        var timestampString = StringUtils.leftPad(String.valueOf(timestamp), 10, '0');
+
+        var nanos = timestampString.substring(timestampString.length() - NANO_DIGITS);
+        var secs = timestampString.substring(0, timestampString.length() - NANO_DIGITS);
+        return secs + "." + nanos;
     }
 }

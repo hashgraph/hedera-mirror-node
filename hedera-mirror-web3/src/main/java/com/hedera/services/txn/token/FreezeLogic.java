@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
  * <p>
  * Differences with the original:
  * 1. Use abstraction for the state by introducing {@link Store} interface
- * 2. Used tokenRelationship.setFrozen instead of tokenRelationship.changeFrozenState (like in services)
+ * 2. Used tokenRelationship.changeFrozenState (like in services)
  * 3. Used store.updateTokenRelationship(tokenRelationship)
  *    instead of tokenStore.commitTokenRelationships(List.of(tokenRelationship)) (like in services)
  */
@@ -43,7 +43,7 @@ public class FreezeLogic {
         var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW);
 
         /* --- Do the business logic --- */
-        var frozenTokenRelationship = tokenRelationship.setFrozen(true);
+        var frozenTokenRelationship = tokenRelationship.changeFrozenState(true);
 
         /* --- Persist the updated models --- */
         store.updateTokenRelationship(frozenTokenRelationship);
