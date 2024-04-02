@@ -20,7 +20,7 @@ import {getContainerRuntimeClient} from 'testcontainers';
 export default async function () {
   const client = await getContainerRuntimeClient();
   while (true) {
-    const container = await client.container.fetchByLabel('tearDownProcessId', process.env.TEARDOWN_PROCESS_ID);
+    const container = await client.container.fetchByLabel('tearDownLabel', process.env.TEARDOWN_LABEL);
     if (!container) {
       break;
     }

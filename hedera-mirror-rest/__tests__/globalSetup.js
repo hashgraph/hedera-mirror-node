@@ -15,5 +15,5 @@
  */
 
 export default async function () {
-  process.env.TEARDOWN_PROCESS_ID = process.pid.toString();
+  process.env.TEARDOWN_LABEL = 'RestTest';
 }

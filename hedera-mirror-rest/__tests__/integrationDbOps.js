@@ -90,7 +90,7 @@ const createDbContainer = async () => {
       // used to differentiate between containers so that Jest workers do not use a container that is already in use by another worker.
       workerId: workerId,
       // used to remove the containers after the tests have completed.
-      tearDownProcessId: process.env.TEARDOWN_PROCESS_ID,
+      tearDownLabel: process.env.TEARDOWN_LABEL,
     })
     .withPassword('mirror_node_pass')
     .withReuse()
@@ -125,7 +125,7 @@ const flywayMigrate = async (connectionUri) => {
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
   const dbConnectionParams = extractDbConnectionParams(connectionUri);
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
-  const flywayDataPath = path.join('.', 'build', 'flyway');
+  const flywayDataPath = path.join('.', 'build', `${workerId}`, 'flyway');
   const flywayConfigPath = path.join(os.tmpdir(), `config_worker_${workerId}.json`); // store configs in temp dir
   const locations = getMigrationScriptLocation(schemaConfigs.locations);
 
