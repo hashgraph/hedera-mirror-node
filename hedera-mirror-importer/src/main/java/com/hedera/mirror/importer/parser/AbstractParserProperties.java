@@ -36,7 +36,7 @@ public abstract class AbstractParserProperties implements ParserProperties {
 
     @DurationMin(millis = 10L)
     @NotNull
-    protected Duration frequency = Duration.ofMillis(100L);
+    protected Duration frequency = Duration.ofMillis(20L);
 
     @DurationMin(seconds = 5)
     @NotNull
@@ -65,7 +65,7 @@ public abstract class AbstractParserProperties implements ParserProperties {
         private long maxItems = 60_000L;
 
         @Min(1)
-        private int queueCapacity = maxFiles;
+        private int queueCapacity = 10;
 
         @NotNull
         @DurationMin(millis = 100L)

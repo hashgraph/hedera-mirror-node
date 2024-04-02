@@ -77,6 +77,7 @@ Acceptance and performance tests should be updated whenever there's an API chang
 
 - [ ] [Configuration Properties](/docs/configuration.md)
 - [ ] [Database Indexes Table](/docs/database/README.md#indexes)
+- [ ] [HAPI Compatibility Matrix](/docs/importer/README.md#hapi-compatibility)
 - [ ] [REST Database Table](/docs/rest/README.md#database)
 
 ## ETL

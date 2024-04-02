@@ -38,6 +38,8 @@ public class BalanceParserProperties extends AbstractParserProperties {
     private int fileBufferSize = 200_000;
 
     public BalanceParserProperties() {
+        frequency = Duration.ofSeconds(1L);
+        batch.setQueueCapacity(1);
         batch.setMaxItems(batchSize * 5L);
         retry.setMaxAttempts(3);
         transactionTimeout = Duration.ofMinutes(5L);

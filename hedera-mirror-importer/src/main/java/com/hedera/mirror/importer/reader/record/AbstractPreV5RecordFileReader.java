@@ -30,7 +30,6 @@ import java.io.InputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -57,7 +56,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             RecordFile recordFile = new RecordFile();
             recordFile.setBytes(bytes);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
-            recordFile.setLoadStart(Instant.now().getEpochSecond());
+            recordFile.setLoadStart(streamFileData.getStreamFilename().getTimestamp());
             recordFile.setName(filename);
             recordFile.setSize(bytes.length);
 

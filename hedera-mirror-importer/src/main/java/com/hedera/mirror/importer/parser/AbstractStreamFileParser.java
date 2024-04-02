@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
     private final Timer parseDurationMetricFailure;
     private final Timer parseDurationMetricSuccess;
     private final Timer parseLatencyMetric;
+    private final Timer totalDurationMetric;
 
     protected AbstractStreamFileParser(
             MeterRegistry meterRegistry,
@@ -69,6 +71,10 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
         parseLatencyMetric = Timer.builder("hedera.mirror.parse.latency")
                 .description("The difference in ms between the consensus time of the last transaction in the file "
                         + "and the time at which the file was processed successfully")
+                .tag("type", parserProperties.getStreamType().toString())
+                .register(meterRegistry);
+        this.totalDurationMetric = Timer.builder("hedera.mirror.importer.duration")
+                .description("The total amount of time the importer took to download and ingest a stream file")
                 .tag("type", parserProperties.getStreamType().toString())
                 .register(meterRegistry);
     }
@@ -103,8 +109,10 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
                     streamFile.getCount(),
                     streamFile.getName(),
                     stopwatch);
+
             Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
+            totalDurationMetric.record(streamFile.getLoadEnd() - streamFile.getLoadStart(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             success = false;
             log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
@@ -164,6 +172,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implemen
 
             Instant consensusInstant = Instant.ofEpochSecond(0L, previous.getConsensusEnd());
             parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
+            totalDurationMetric.record(streamFile.getLoadEnd() - streamFile.getLoadStart(), TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             success = false;
             log.error("Error parsing file {} in {}: {}", streamFile != null ? streamFile.getName() : "", stopwatch, e);
