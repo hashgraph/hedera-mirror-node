@@ -256,7 +256,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
     @Test
     void deployAddressThisContract() {
         final var serviceParameters = serviceParametersForAddressThis(
-                Bytes.wrap(functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_BYTES_PATH)));
+                Bytes.wrap(functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_INIT_BYTES_PATH)));
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
@@ -276,6 +276,19 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
+    }
+
+    @Test
+    void addressThisEthCallWithoutEvmAlias() {
+        String addressThisContractAddressWithout0x =
+                ADDRESS_THIS_CONTRACT_ADDRESS.toString().substring(2);
+        String successfulResponse = "0x000000000000000000000000" + addressThisContractAddressWithout0x;
+        final var functionHash =
+                functionEncodeDecoder.functionHashFor("getAddressThis", ADDRESS_THIS_CONTRACT_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, ADDRESS_THIS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @Test

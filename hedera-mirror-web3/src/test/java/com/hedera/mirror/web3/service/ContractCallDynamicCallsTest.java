@@ -30,6 +30,7 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.math.BigInteger;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -75,6 +76,30 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                     .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
                     .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
         }
+    }
+
+    @Test
+    void testGetAddressThisWithEvmAliasRecipient() {
+        String ethCallContractWithout0x =
+                DYNAMIC_ETH_CALLS_CONTRACT_ALIAS.toString().substring(2);
+        String successfulResponse = "0x000000000000000000000000" + ethCallContractWithout0x;
+        final var functionHash = functionEncodeDecoder.functionHashFor("getAddressThis", DYNAMIC_ETH_CALLS_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+    }
+
+    @Test
+    void testGetAddressThisWithLongZeroRecipientThatHasEvmAlias() {
+        String ethCallContractWithout0x =
+                DYNAMIC_ETH_CALLS_CONTRACT_ALIAS.toString().substring(2);
+        String successfulResponse = "0x000000000000000000000000" + ethCallContractWithout0x;
+        final var functionHash = functionEncodeDecoder.functionHashFor("getAddressThis", DYNAMIC_ETH_CALLS_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @RequiredArgsConstructor
@@ -245,7 +270,8 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                 },
                 null),
         GRANT_KYC_REVOKE_KYC_FUNGIBLE("grantKycRevokeKyc", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, null),
-        GRANT_KYC_REVOKE_KYC_NFT("grantKycRevokeKyc", new Object[] {NFT_ADDRESS, SENDER_ALIAS}, null);
+        GRANT_KYC_REVOKE_KYC_NFT("grantKycRevokeKyc", new Object[] {NFT_ADDRESS, SENDER_ALIAS}, null),
+        ADDRESS_THIS("getAddressThis", null, null);
         private final String name;
         private final Object[] functionParameters;
         private final String expectedErrorMessage;

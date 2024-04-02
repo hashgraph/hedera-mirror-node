@@ -45,6 +45,7 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.utility.SemanticVersion;
@@ -131,6 +132,9 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private StoreImpl store;
 
+    @Mock
+    private TokenAccessor tokenAccessor;
+
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
     private Pair<ResponseCodeEnum, Long> result;
 
@@ -180,7 +184,8 @@ class MirrorEvmTxProcessorTest {
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
                 mirrorOperationTracer,
                 store,
-                new EntityAddressSequencer());
+                new EntityAddressSequencer(),
+                tokenAccessor);
 
         Pair<ResponseCodeEnum, Long> result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
