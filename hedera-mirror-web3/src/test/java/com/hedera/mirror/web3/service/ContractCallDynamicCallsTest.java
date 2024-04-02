@@ -79,13 +79,25 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
     }
 
     @Test
-    void testGetAddressThisFromFunction() {
+    void testGetAddressThisWithEvmAliasRecipient() {
         String ethCallContractWithout0x =
                 DYNAMIC_ETH_CALLS_CONTRACT_ALIAS.toString().substring(2);
         String successfulResponse = "0x000000000000000000000000" + ethCallContractWithout0x;
         final var functionHash = functionEncodeDecoder.functionHashFor("getAddressThis", DYNAMIC_ETH_CALLS_ABI_PATH);
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L, BlockType.LATEST);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+    }
+
+    @Test
+    void testGetAddressThisWithLongZeroRecipientThatHasEvmAlias() {
+        String ethCallContractWithout0x =
+                DYNAMIC_ETH_CALLS_CONTRACT_ALIAS.toString().substring(2);
+        String successfulResponse = "0x000000000000000000000000" + ethCallContractWithout0x;
+        final var functionHash = functionEncodeDecoder.functionHashFor("getAddressThis", DYNAMIC_ETH_CALLS_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
