@@ -154,20 +154,15 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     }
 
     private Address determineReceiverAddress(Address receiver) {
-        if (receiver == null || receiver.equals(Address.ZERO)) {
+        if (receiver == null || receiver.equals(Address.ZERO) || !aliasManager.isMirror(receiver)) {
             return receiver;
         }
-        // if address is mirror address check for canonical evm address presence
-        if (aliasManager.resolveForEvm(receiver).equals(receiver)) {
-            Address canonical = tokenAccessor.canonicalAddress(receiver);
-            if (null == canonical || Address.ZERO.equals(canonical)) {
-                return receiver;
-            } else {
-                return canonical;
-            }
-        } else {
-            // the address is a canonical evm address, return it
+
+        Address canonical = tokenAccessor.canonicalAddress(receiver);
+        if (canonical == null || Address.ZERO.equals(canonical)) {
             return receiver;
+        } else {
+            return canonical;
         }
     }
 }
