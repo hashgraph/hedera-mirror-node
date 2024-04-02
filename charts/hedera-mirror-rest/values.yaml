@@ -107,7 +107,7 @@ monitor:
           "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
           "name": "kubernetes"
         }
-      ]
+     ]
     }
   enabled: true
   image:
@@ -268,7 +268,7 @@ test:
   image:
     pullPolicy: IfNotPresent
     repository: bats/bats
-    tag: v1.10.0
+    tag: 1.11.0
 
 tolerations: []
 
