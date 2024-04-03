@@ -96,7 +96,10 @@ const createDbContainer = async () => {
     //.withReuse()
     .withUsername('mirror_node')
     .start();
-  logger.info(`Started PostgreSQL container with image ${image}`);
+  logger.info(`Started PostgreSQL container for jest worker ${workerId} with image ${image}`);
+
+  const connectionParams = extractDbConnectionParams(dockerDb.getConnectionUri());
+  logger.info(`Container host/port for worker ${workerId}: ${connectionParams.host}/${connectionParams.port}`);
 
   return dockerDb.getConnectionUri();
 };
@@ -158,7 +161,7 @@ const flywayMigrate = async (connectionUri) => {
 
   fs.mkdirSync(flywayDataPath, {recursive: true});
   fs.writeFileSync(flywayConfigPath, flywayConfig);
-  logger.info(`Added ${flywayConfigPath} to file system for flyway CLI`);
+  logger.info(`Added ${flywayConfigPath} to file system for flyway CLI for jest worker ${workerId}`);
 
   const maxRetries = 10;
   let retries = maxRetries;
@@ -166,11 +169,14 @@ const flywayMigrate = async (connectionUri) => {
 
   while (retries-- > 0) {
     try {
+      logger.info(
+        `Attempting flyway migration for jest worker ${workerId} using: jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}`
+      );
       execSync(`node ${exePath} -c ${flywayConfigPath} migrate`);
-      logger.info('Successfully executed all Flyway migrations');
+      logger.info(`Successfully executed all Flyway migrations for jest worker ${workerId}`);
       break;
     } catch (e) {
-      logger.warn(`Error running flyway during attempt #${maxRetries - retries}: ${e}`);
+      logger.warn(`Error running flyway for jest worker ${workerId} during attempt #${maxRetries - retries}: ${e}`);
       await new Promise((resolve) => setTimeout(resolve, retryMsDelay));
     }
   }
