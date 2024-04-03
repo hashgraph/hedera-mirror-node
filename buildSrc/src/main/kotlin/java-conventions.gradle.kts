@@ -70,12 +70,15 @@ tasks.compileTestJava {
 
 tasks.javadoc { options.encoding = "UTF-8" }
 
-tasks.test {
-    finalizedBy(tasks.jacocoTestReport)
+tasks.withType<Test> {
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
     systemProperty("user.timezone", "UTC")
     systemProperty("spring.test.constructor.autowire.mode", "ALL")
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
     if (System.getenv().containsKey("CI")) {
         retry { maxRetries = 3 }
     }
@@ -83,8 +86,6 @@ tasks.test {
 }
 
 tasks.register<Test>("performanceTest") {
-    maxHeapSize = "4096m"
-    minHeapSize = "1024m"
     useJUnitPlatform { includeTags("performance") }
 }
 
