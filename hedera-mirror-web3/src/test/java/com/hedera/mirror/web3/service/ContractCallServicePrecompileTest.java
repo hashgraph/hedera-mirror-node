@@ -974,7 +974,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     enum NestedContractModificationFunctions {
         CREATE_CONTRACT_VIA_CREATE2_AND_TRANSFER_FROM_IT(
                 "createContractViaCreate2AndTransferFromIt",
-                new Object[] {TREASURY_TOKEN_ADDRESS, SENDER_ALIAS, RECEIVER_ADDRESS, 1L});
+                new Object[] {TREASURY_TOKEN_ADDRESS_WITH_ALL_KEYS, SENDER_ALIAS, RECEIVER_ADDRESS, 1L});
         private final String name;
         private final Object[] functionParameters;
     }
