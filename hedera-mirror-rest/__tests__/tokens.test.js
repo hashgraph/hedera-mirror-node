@@ -43,6 +43,7 @@ describe('token formatTokenRow tests', () => {
       key: '030303',
     },
     decimals: 10,
+    metadata: null,
     name: 'Token name',
     type: 'FUNGIBLE_COMMON',
   };
