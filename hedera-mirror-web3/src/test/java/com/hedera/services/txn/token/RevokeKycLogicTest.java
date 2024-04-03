@@ -108,7 +108,7 @@ public class RevokeKycLogicTest {
     }
 
     @Test
-    void rejectChangeKycStateStateWithoutTokenKYCKey() {
+    void rejectChangeKycStateWithoutTokenKYCKey() {
         final TokenRelationship tokenRelationship = TokenRelationship.getEmptyTokenRelationship();
 
         // given:

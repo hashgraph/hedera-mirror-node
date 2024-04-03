@@ -238,7 +238,7 @@ public class HederaTokenStore {
             }
 
             final var tokenRelationship = store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.THROW);
-            final var newTokenRelationship = tokenRelationship.changeKycState(value);
+            final var newTokenRelationship = tokenRelationship.setKycGranted(value);
             store.updateTokenRelationship(newTokenRelationship);
             return OK;
         });
@@ -251,7 +251,7 @@ public class HederaTokenStore {
             }
 
             final var tokenRelationship = store.getTokenRelationship(asTokenRelationshipKey(aId, tId), OnMissing.THROW);
-            final var newTokenRelationship = tokenRelationship.changeKycState(value);
+            final var newTokenRelationship = tokenRelationship.setFrozen(value);
             store.updateTokenRelationship(newTokenRelationship);
             return OK;
         });
