@@ -93,7 +93,7 @@ const createDbContainer = async () => {
       tearDownLabel: process.env.TEARDOWN_LABEL,
     })
     .withPassword('mirror_node_pass')
-    .withReuse()
+    //.withReuse()
     .withUsername('mirror_node')
     .start();
   logger.info(`Started PostgreSQL container with image ${image}`);
