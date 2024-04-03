@@ -184,6 +184,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address NFT_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1063));
     protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048));
     protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049));
+    protected static final Address TREASURY_TOKEN_ADDRESS_WITH_ALL_KEYS = toAddress(EntityId.of(0, 0, 1110));
     protected static final Address TRANSFRER_FROM_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1111));
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050));
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051));
@@ -1140,6 +1141,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 9999999999999L,
                 TokenPauseStatusEnum.UNPAUSED,
                 false);
+        final var tokenTreasuryWithAllKeysEntityId = fungibleTokenPersist(
+                treasuryEntityId,
+                KEY_PROTO,
+                TREASURY_TOKEN_ADDRESS_WITH_ALL_KEYS,
+                AUTO_RENEW_ACCOUNT_ADDRESS,
+                9999999999999L,
+                TokenPauseStatusEnum.UNPAUSED,
+                false);
         final var tokenGetKeyContractAddressEntityId = fungibleTokenPersist(
                 senderEntityId,
                 keyWithContractId.toByteArray(),
@@ -1251,6 +1260,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         tokenAccountPersist(ethAccount, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
         tokenAccountPersist(senderEntityId, transferFromTokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, tokenTreasuryWithAllKeysEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(ethAccount, notFrozenFungibleTokenEntityId, TokenFreezeStatusEnum.UNFROZEN);

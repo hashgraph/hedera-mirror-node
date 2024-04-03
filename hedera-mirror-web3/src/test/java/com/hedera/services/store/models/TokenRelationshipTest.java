@@ -296,6 +296,16 @@ class TokenRelationshipTest {
         assertTrue(subject.isKycGranted());
     }
 
+    @Test
+    void updateKycFailsAsExpectedIfKycKeyIsNotPresent() {
+        // given:
+        subject.setKycGranted(false);
+        token.setKycKey(null);
+
+        // verify
+        assertFailsWith(() -> subject.changeKycState(true), TOKEN_HAS_NO_KYC_KEY);
+    }
+
     private void assertFailsWith(Runnable something, ResponseCodeEnum status) {
         var ex = assertThrows(InvalidTransactionException.class, something::run);
         assertEquals(status, ex.getResponseCode());
