@@ -308,7 +308,7 @@ test:
   image:
     pullPolicy: IfNotPresent
     repository: postman/newman
-    tag: 6.1.0-alpine
+    tag: 6.1.1-alpine
   postman: ""  # Custom postman.json in base64 encoding
 
 tolerations: []

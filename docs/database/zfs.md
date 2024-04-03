@@ -3,9 +3,9 @@
 ## Purpose
 
 This document outlines the steps needed to run [Citus](https://www.citusdata.com/)
-in [GKE](https://cloud.google.com/kubernetes-engine) using the [ZFS](https://en.wikipedia.org/wiki/ZFS) filesystem with
-[Zstandard](https://github.com/facebook/zstd) compression enabled. This is made possible by installing a custom CSI (
-Container Storage Interface) driver called [OpenEBS ZFS LocalPV](https://openebs.github.io/zfs-localpv/).
+in [GKE](https://cloud.google.com/kubernetes-engine) using the [ZFS](https://en.wikipedia.org/wiki/ZFS) filesystem
+with [Zstandard](https://github.com/facebook/zstd) compression enabled. This is made possible by installing a custom
+CSI (Container Storage Interface) driver called [OpenEBS ZFS LocalPV](https://openebs.github.io/zfs-localpv/).
 
 ## Pre-Requisites
 
@@ -37,15 +37,17 @@ All listed commands with relative paths are assumed to be run from the repositor
 
 On GKE, the following gcloud commands can be used to easily create the cluster and node pools:
 
-If you plan to use an nvme attached ssd for an L2 ARC, be sure to add the `--local-nvme-ssd-block count=1` option when creating the coordinator and worker node pools.
-Note that having an L2 ARC requires some memory overhead in the primary ARC and you may need to increase its size in the helm chart (`zfs.init.arcSizeGb`).
-You should also set `zfs.init.l2ArcNvmeDeviceId` in the helm chart. If only attaching a single local ssd, this value should be `0`. See [here](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/local-ssd-raw#node-pool)
-for more information on the device id.
+If you plan to use an nvme attached ssd for an L2 ARC, be sure to add the `--local-nvme-ssd-block count=1` option when
+creating the coordinator and worker node pools. Note that having an L2 ARC requires some memory overhead in the primary
+ARC and you may need to increase its size in the helm chart (`zfs.init.arcSizeGb`). You should also
+set `zfs.init.l2ArcNvmeDeviceId` in the helm chart. If only attaching a single local ssd, this value should be `0`.
+See [here](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/local-ssd-raw#node-pool) for more
+information on the device id.
 
 ```shell
 NETWORK="default"
 PROJECT="myproject"
-VERSION="1.26.5-gke.2100"
+VERSION="1.29.2-gke.1521000"
 gcloud beta container --project "${PROJECT}" clusters create "citus" --region "us-central1" --no-enable-basic-auth --cluster-version "${VERSION}" --release-channel "None" --machine-type "n2-custom-6-16384" --image-type "COS_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --metadata disable-legacy-endpoints=true --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "1" --logging=SYSTEM,WORKLOAD --monitoring=SYSTEM --enable-ip-alias --network "${NETWORK}" --no-enable-intra-node-visibility --default-max-pods-per-node "110" --security-posture=standard --workload-vulnerability-scanning=disabled --enable-network-policy --no-enable-master-authorized-networks --addons HorizontalPodAutoscaling,HttpLoadBalancing,NodeLocalDNS,GcePersistentDiskCsiDriver --enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --no-enable-managed-prometheus --enable-shielded-nodes --node-locations "us-central1-a","us-central1-b" --workload-pool "${PROJECT}.svc.id.goog" --workload-metadata=GKE_METADATA
 gcloud beta container --project "${PROJECT}" node-pools create "coordinator" --cluster "citus" --region "us-central1" --node-version "${VERSION}" --machine-type "n2-custom-10-32768" --image-type "UBUNTU_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --node-labels csi-type=zfs,citus-role=coordinator --metadata disable-legacy-endpoints=true --node-taints zfs=true:NoSchedule --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "1" --no-enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --node-locations "us-central1-a","us-central1-b" --workload-metadata=GKE_METADATA
 gcloud beta container --project "${PROJECT}" node-pools create "worker" --cluster "citus" --region "us-central1" --node-version "${VERSION}" --machine-type "n2-custom-10-32768" --image-type "UBUNTU_CONTAINERD" --disk-type "pd-balanced" --disk-size "100" --node-labels csi-type=zfs,citus-role=worker --metadata disable-legacy-endpoints=true --node-taints zfs=true:NoSchedule --scopes "https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "1" --no-enable-autoupgrade --enable-autorepair --max-surge-upgrade 1 --max-unavailable-upgrade 0 --node-locations "us-central1-a","us-central1-b","us-central1-c" --workload-metadata=GKE_METADATA
