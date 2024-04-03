@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.101.0-rc3'
+      version: '0.102.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -39,8 +39,6 @@ spec:
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
-        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_BATCH_QUEUECAPACITY: "10"
-        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_FREQUENCY: "20ms"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_ENTITYTRANSACTIONS: "false"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
     monitor:
