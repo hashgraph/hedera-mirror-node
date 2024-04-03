@@ -85,6 +85,8 @@ tasks.test {
 tasks.register<Test>("performanceTest") {
     maxHeapSize = "4096m"
     minHeapSize = "1024m"
+    systemProperty("user.timezone", "UTC")
+    systemProperty("spring.test.constructor.autowire.mode", "ALL")
     useJUnitPlatform { includeTags("performance") }
 }
 
