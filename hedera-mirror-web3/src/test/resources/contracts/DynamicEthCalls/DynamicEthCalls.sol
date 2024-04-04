@@ -406,6 +406,10 @@ contract DynamicEthCalls is HederaTokenService {
         if (response != HederaResponseCodes.SUCCESS) revert("Is kyc operation failed");
         if(isKyc) revert("Kyc status mismatch");
     }
+
+    function getAddressThis() public view returns(address) {
+        return address(this);
+    }
 }
 
 contract SpenderContract {

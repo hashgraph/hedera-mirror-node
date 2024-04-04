@@ -35,6 +35,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_W
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_IS_IMMUTABLE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_MAX_SUPPLY_REACHED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 
 import com.google.common.base.MoreObjects;
 import com.google.protobuf.ByteString;
@@ -1806,6 +1807,11 @@ public class Token {
     }
 
     public Token setPaused(boolean paused) {
+        return createNewTokenWithPaused(this, paused);
+    }
+
+    public Token changePauseStatus(final boolean paused) {
+        validateTrue(hasPauseKey(), TOKEN_HAS_NO_PAUSE_KEY);
         return createNewTokenWithPaused(this, paused);
     }
 

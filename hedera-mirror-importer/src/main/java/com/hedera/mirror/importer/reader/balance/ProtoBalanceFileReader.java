@@ -28,7 +28,6 @@ import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 import jakarta.inject.Named;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import lombok.CustomLog;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -47,8 +46,6 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
 
     @Override
     public AccountBalanceFile read(StreamFileData streamFileData) {
-        Instant loadStart = Instant.now();
-
         try {
             var bytes = streamFileData.getDecompressedBytes();
             var allAccountBalances = AllAccountBalances.parseFrom(bytes);
@@ -67,7 +64,7 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
             accountBalanceFile.setConsensusTimestamp(consensusTimestamp);
             accountBalanceFile.setFileHash(DigestUtils.sha384Hex(bytes));
             accountBalanceFile.setItems(items);
-            accountBalanceFile.setLoadStart(loadStart.getEpochSecond());
+            accountBalanceFile.setLoadStart(streamFileData.getStreamFilename().getTimestamp());
             accountBalanceFile.setName(streamFileData.getFilename());
             return accountBalanceFile;
         } catch (IOException e) {

@@ -30,6 +30,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -55,6 +56,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     private final MirrorEvmContractAliases aliasManager;
     private final Store store;
     private final EntityAddressSequencer entityAddressSequencer;
+    private final TokenAccessor tokenAccessor;
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorImpl(
@@ -69,7 +71,8 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final AbstractCodeCache codeCache,
             final MirrorOperationTracer operationTracer,
             final Store store,
-            final EntityAddressSequencer entityAddressSequencer) {
+            final EntityAddressSequencer entityAddressSequencer,
+            TokenAccessor tokenAccessor) {
         super(
                 worldState,
                 pricesAndFeesProvider,
@@ -84,6 +87,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.codeCache = codeCache;
         this.store = store;
         this.entityAddressSequencer = entityAddressSequencer;
+        this.tokenAccessor = tokenAccessor;
     }
 
     public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
@@ -97,10 +101,10 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                     Account.getDummySenderAccount(params.getSender().canonicalAddress());
             store.updateAccount(senderAccount);
         }
-
+        Address receiverAddress = determineReceiverAddress(params.getReceiver());
         return super.execute(
                 params.getSender(),
-                params.getReceiver(),
+                receiverAddress,
                 gasPrice,
                 params.isEstimate(),
                 params.isEstimate() ? estimatedGas : params.getGas(),
@@ -146,6 +150,19 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                     .inputData(payload)
                     .code(code == null ? CodeV0.EMPTY_CODE : code)
                     .build();
+        }
+    }
+
+    private Address determineReceiverAddress(Address receiver) {
+        if (receiver == null || receiver.equals(Address.ZERO) || !aliasManager.isMirror(receiver)) {
+            return receiver;
+        }
+
+        Address canonical = tokenAccessor.canonicalAddress(receiver);
+        if (canonical == null || Address.ZERO.equals(canonical)) {
+            return receiver;
+        } else {
+            return canonical;
         }
     }
 }

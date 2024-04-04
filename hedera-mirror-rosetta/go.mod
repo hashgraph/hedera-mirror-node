@@ -1,6 +1,6 @@
 module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 
-go 1.21
+go 1.22
 
 require (
 	github.com/Code-Hex/go-generics-cache v1.3.1
@@ -29,7 +29,7 @@ require (
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.5.7
-	gorm.io/gorm v1.25.8
+	gorm.io/gorm v1.25.9
 )
 
 require (

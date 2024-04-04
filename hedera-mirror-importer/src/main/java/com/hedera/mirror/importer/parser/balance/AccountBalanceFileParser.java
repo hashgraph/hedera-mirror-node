@@ -29,7 +29,6 @@ import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -126,8 +125,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             batchPersister.persist(tokenBalances.values());
         }
 
-        Instant loadEnd = Instant.now();
         accountBalanceFile.setCount(count.get());
-        accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
+        accountBalanceFile.setLoadEnd(System.currentTimeMillis());
     }
 }

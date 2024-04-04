@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.102.0-SNAPSHOT",
+  "version": "0.103.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
@@ -39,7 +39,7 @@
     "long": "^5.2.3",
     "mathjs": "^12.4.1",
     "parse-duration": "^1.1.0",
-    "pg": "~8.11.3",
+    "pg": "~8.11.4",
     "pg-range": "^1.1.2",
     "prom-client": "^14.2.0",
     "qs": "^6.12.0",
@@ -50,7 +50,7 @@
     "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.7.2",
+    "@testcontainers/postgresql": "^10.8.0",
     "app-root-path": "^3.1.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.1.0",

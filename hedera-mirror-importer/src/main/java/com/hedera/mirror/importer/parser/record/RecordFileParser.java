@@ -246,7 +246,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
         public void update(RecordFile recordFile) {
             recordFile.setGasUsed(gasUsed);
-            recordFile.setLoadEnd(Instant.now().getEpochSecond());
+            recordFile.setLoadEnd(System.currentTimeMillis());
             recordFile.setLogsBloom(logsBloom.getBloom());
         }
     }

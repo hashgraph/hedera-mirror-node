@@ -669,4 +669,22 @@ class TokenTest {
 
         assertEquals(desired, subject.toString());
     }
+
+    @Test
+    void switchingPauseStatusFailsIfNoPauseKey() {
+        assertFalse(subject.hasPauseKey());
+        assertFailsWith(() -> subject.changePauseStatus(true), TOKEN_HAS_NO_PAUSE_KEY);
+    }
+
+    @Test
+    void switchingPauseStatusWorksIfTokenHasPauseKey() {
+        Token modifiedToken = subject.setPauseKey(someKey);
+        assertTrue(modifiedToken.hasPauseKey());
+
+        modifiedToken = modifiedToken.changePauseStatus(false);
+        assertFalse(modifiedToken.isPaused());
+
+        modifiedToken = modifiedToken.changePauseStatus(true);
+        assertTrue(modifiedToken.isPaused());
+    }
 }

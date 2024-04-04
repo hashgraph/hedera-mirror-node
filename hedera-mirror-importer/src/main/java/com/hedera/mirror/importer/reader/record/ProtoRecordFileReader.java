@@ -37,7 +37,6 @@ import java.io.InputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -55,7 +54,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
     @Override
     public RecordFile read(StreamFileData streamFileData) {
         var filename = streamFileData.getFilename();
-        var loadStart = Instant.now().getEpochSecond();
+        var loadStart = streamFileData.getStreamFilename().getTimestamp();
 
         try (var inputStream = streamFileData.getInputStream()) {
             var recordStreamFile = readRecordStreamFile(filename, inputStream);

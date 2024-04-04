@@ -46,7 +46,7 @@ public class GrantKycLogic {
         final var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, OnMissing.THROW);
 
         /* --- Do the business logic --- */
-        final var tokenRelationshipResult = tokenRelationship.setKycGranted(true);
+        final var tokenRelationshipResult = tokenRelationship.changeKycState(true);
 
         /* --- Persist the updated models --- */
         store.updateTokenRelationship(tokenRelationshipResult);

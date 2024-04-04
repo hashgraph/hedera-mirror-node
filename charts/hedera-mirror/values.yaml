@@ -175,7 +175,7 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-      tag: 14.10.0-debian-11-r16
+      tag: 14.11.0-debian-12-r8
     initdbScriptsCM: "{{ .Release.Name }}-init"
     maxConnections: 200
     password: ""  # Randomly generated if left blank
@@ -289,6 +289,7 @@ stackgres:
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
       work_mem: "32MB"
+    enableMetricsExporter: false
     instances: 1
     resources:
       cpu: 100m
@@ -329,6 +330,7 @@ stackgres:
       wal_init_zero: "off"  # Not needed with ZFS
       wal_recycle: "off"  # Not needed with ZFS
       work_mem: "32MB"
+    enableMetricsExporter: false
     instances: 1
     overrides: []  # Override shard(s) configuration
     replicasPerInstance: 1

@@ -22,6 +22,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_FROZEN
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_FREEZE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
 
 import com.google.common.base.MoreObjects;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -325,6 +326,19 @@ public class TokenRelationship {
 
     public TokenRelationship setKycGranted(boolean kycGranted) {
         return createNewTokenRelationshipWithNewKycGranted(this, kycGranted);
+    }
+
+    /**
+     * Modifies the state of the KYC property to either true (granted) or false (revoked).
+     *
+     * <p>Before the property modification, the method performs validation, that the respective
+     * token has a KYC key.
+     *
+     * @param isGranted the new state of the property
+     */
+    public TokenRelationship changeKycState(boolean isGranted) {
+        validateTrue(token.hasKycKey(), TOKEN_HAS_NO_KYC_KEY);
+        return createNewTokenRelationshipWithNewKycGranted(this, isGranted);
     }
 
     public long getBalanceChange() {
