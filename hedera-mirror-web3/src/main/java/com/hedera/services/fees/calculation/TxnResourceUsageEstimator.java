@@ -46,5 +46,5 @@ public interface TxnResourceUsageEstimator {
      * @throws NullPointerException or analogous if the estimator does not apply to the txn
      */
     @SuppressWarnings("java:S112")
-    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage) throws Exception;
+    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage);
 }
