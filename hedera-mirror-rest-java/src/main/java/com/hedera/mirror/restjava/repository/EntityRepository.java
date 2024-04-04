@@ -16,23 +16,16 @@
 
 package com.hedera.mirror.restjava.repository;
 
-import static com.hedera.mirror.restjava.config.CacheConfiguration.CACHE_NAME;
-import static com.hedera.mirror.restjava.config.CacheConfiguration.ENTITY_CACHE;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import java.util.Optional;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface EntityRepository extends CrudRepository<Entity, Long> {
 
-    @Cacheable(cacheNames = CACHE_NAME, cacheManager = ENTITY_CACHE, unless = "#result == null")
-    Optional<Entity> findByIdAndDeletedIsFalse(Long entityId);
+    @Query(value = "select id from entity where alias = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Long> findByAlias(byte[] alias);
 
-    @Query(value = "select * from entity where alias = ?1 and deleted is not true", nativeQuery = true)
-    Optional<Entity> findByAlias(byte[] alias);
-
-    @Query(value = "select * from entity where evm_address = ?1 and deleted is not true", nativeQuery = true)
-    Optional<Entity> findByEvmAddress(byte[] evmAddress);
+    @Query(value = "select id from entity where evm_address = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Long> findByEvmAddress(byte[] evmAddress);
 }

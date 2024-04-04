@@ -17,10 +17,13 @@
 package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
+import com.hedera.mirror.restjava.common.EntityIdType;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +34,7 @@ import org.springframework.data.domain.Sort;
 public class NftAllowanceServiceImpl implements NftAllowanceService {
 
     private final NftAllowanceRepository repository;
+    private final EntityService entityService;
 
     private static final String TOKEN_ID = "token_id";
     private static final String OWNER = "owner";
@@ -47,6 +51,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         var order = request.getOrder();
         var ownerOrSpenderId = request.getOwnerOrSpenderId();
         var token = request.getTokenId();
+        var id = validateAndGetAccountId(accountId);
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
@@ -57,15 +62,38 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         if (request.isOwner()) {
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
-            return repository.findByOwnerAndFilterBySpenderAndToken(
-                    accountId.value().getId(), filterId, tokenId, pageable);
+            return repository.findByOwnerAndFilterBySpenderAndToken(id, filterId, tokenId, pageable);
 
         } else {
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
-            return repository.findBySpenderAndFilterByOwnerAndToken(
-                    accountId.value().getId(), filterId, tokenId, pageable);
+            return repository.findBySpenderAndFilterByOwnerAndToken(id, filterId, tokenId, pageable);
         }
+    }
+
+    private long validateAndGetAccountId(EntityIdParameter accountId) {
+        long id = 0;
+        String message = "Id %s does not exist".formatted(accountId);
+
+        if (accountId.type() == EntityIdType.NUM && accountId.num() != null) {
+            if (!entityService.lookup(accountId.num()).isPresent()) {
+                throw new EntityNotFoundException(message);
+            }
+            id = accountId.num().getId();
+        } else if (accountId.type() == EntityIdType.ALIAS && accountId.alias() != null) {
+            var entityId = entityService.getByAlias(accountId.alias());
+            if (!entityId.isPresent()) {
+                throw new EntityNotFoundException(message);
+            }
+            id = entityId.get();
+        } else if (accountId.type() == EntityIdType.EVMADDRESS && accountId.evmAddress() != null) {
+            var entityId = entityService.getByEvmAddress(accountId.evmAddress());
+            if (!entityId.isPresent()) {
+                throw new EntityNotFoundException(message);
+            }
+            id = entityId.get();
+        }
+        return id;
     }
 
     private static long verifyAndGetRangeId(EntityIdRangeParameter idParam) {

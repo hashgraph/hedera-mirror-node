@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.service;
+package com.hedera.mirror.restjava.common;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import java.util.Optional;
-
-public interface EntityService {
-
-    Optional<Entity> lookup(EntityId entityId);
-
-    Optional<Long> getByAlias(byte[] alias);
-
-    Optional<Long> getByEvmAddress(byte[] evmAddress);
+public enum EntityIdType {
+    ALIAS,
+    NUM,
+    EVMADDRESS
 }

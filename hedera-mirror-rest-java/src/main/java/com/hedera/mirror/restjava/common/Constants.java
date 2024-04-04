@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.restjava.common;
 
-import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.codec.binary.Base32;
 
@@ -24,18 +23,10 @@ import org.apache.commons.codec.binary.Base32;
 public class Constants {
 
     public static final String ACCOUNT_ID = "account.id";
-    public static final String ACCOUNT_ALIAS_REGEX = "^((\\d{1,5}\\.){0,2})[A-Z2-7]+$";
     public static final Base32 BASE32 = new Base32();
 
     public static final int MAX_LIMIT = 100;
     public static final String DEFAULT_LIMIT = "25";
-    public static final String ENTITY_ID_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?(\\d{1,10})$";
-    public static final String EVM_ADDRESS_REGEX =
-            "^(((0x)?([A-Fa-f0-9]{40}))|((\\d{1,10}\\.){0,2}([A-Fa-f0-9]{40})))$";
-    public static final int EVM_ADDRESS_MIN_LENGTH = 40;
-
-    public static final Pattern ENTITY_ID_PATTERN = Pattern.compile(ENTITY_ID_REGEX);
-    public static final Pattern EVM_ADDRESS_PATTERN = Pattern.compile(EVM_ADDRESS_REGEX);
 
     public static final String HEX_PREFIX = "0x";
 

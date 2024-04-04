@@ -16,15 +16,11 @@
 
 package com.hedera.mirror.restjava.service;
 
-import static com.hedera.mirror.restjava.common.Utils.decodeBase32;
-import static com.hedera.mirror.restjava.common.Utils.decodeEvmAddress;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.restjava.repository.EntityRepository;
 import jakarta.inject.Named;
-import java.nio.ByteBuffer;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 
@@ -40,17 +36,12 @@ public class EntityServiceImpl implements EntityService {
     }
 
     @Override
-    public Optional<Entity> getByAlias(String alias) {
-        return entityRepository.findByAlias(decodeBase32(alias)).filter(e -> e.getType() == EntityType.ACCOUNT);
+    public Optional<Long> getByAlias(byte[] alias) {
+        return entityRepository.findByAlias(alias);
     }
 
     @Override
-    public Optional<Entity> getByEvmAddress(String evmAddress) {
-        byte[] evmAddressBytes = decodeEvmAddress(evmAddress);
-        var buffer = ByteBuffer.wrap(evmAddressBytes);
-        if (buffer.getInt() == 0 && buffer.getLong() == 0) {
-            return entityRepository.findById(buffer.getLong()).filter(e -> e.getType() == EntityType.ACCOUNT);
-        }
-        return entityRepository.findByEvmAddress(evmAddressBytes).filter(e -> e.getType() == EntityType.ACCOUNT);
+    public Optional<Long> getByEvmAddress(byte[] evmAddress) {
+        return entityRepository.findByEvmAddress(evmAddress);
     }
 }
