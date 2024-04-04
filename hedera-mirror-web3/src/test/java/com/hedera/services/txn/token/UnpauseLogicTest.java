@@ -99,8 +99,7 @@ class UnpauseLogicTest {
         final Token emptyToken = Token.getEmptyToken();
 
         // given:
-        given(store.loadPossiblyPausedToken(asTypedEvmAddress(IdUtils.asToken("1.2.3"))))
-                .willReturn(emptyToken);
+        given(store.loadPossiblyPausedToken(asTypedEvmAddress(IdUtils.asToken("1.2.3")))).willReturn(emptyToken);
 
         // expect:
         assertFalse(emptyToken.hasPauseKey());

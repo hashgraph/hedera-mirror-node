@@ -20,6 +20,7 @@ import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -28,6 +29,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.utils.IdUtils;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -74,8 +76,7 @@ class PauseLogicTest {
         final Token emptyToken = Token.getEmptyToken();
 
         // given:
-        given(store.loadPossiblyPausedToken(asTypedEvmAddress(IdUtils.asToken("1.2.3"))))
-                .willReturn(emptyToken);
+        given(store.loadPossiblyPausedToken(asTypedEvmAddress(IdUtils.asToken("1.2.3")))).willReturn(emptyToken);
 
         // expect:
         assertFalse(emptyToken.hasPauseKey());
