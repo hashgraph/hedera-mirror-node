@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava;
+package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.config.CommonIntegrationTest;
-import org.springframework.boot.test.context.SpringBootTest;
+import com.hedera.mirror.restjava.common.EntityIdParameter;
 
-@SpringBootTest(properties = {"hedera.mirror.restJava.shard=0"})
-public abstract class RestJavaIntegrationTest extends CommonIntegrationTest {}
+public interface EntityService {
+
+    long lookup(EntityIdParameter entityId);
+}

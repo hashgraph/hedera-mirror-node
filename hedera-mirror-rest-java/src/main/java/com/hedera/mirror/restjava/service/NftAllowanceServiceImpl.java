@@ -31,6 +31,7 @@ import org.springframework.data.domain.Sort;
 public class NftAllowanceServiceImpl implements NftAllowanceService {
 
     private final NftAllowanceRepository repository;
+    private final EntityService entityService;
 
     private static final String TOKEN_ID = "token_id";
     private static final String OWNER = "owner";
@@ -47,6 +48,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         var order = request.getOrder();
         var ownerOrSpenderId = request.getOwnerOrSpenderId();
         var token = request.getTokenId();
+        var id = entityService.lookup(accountId);
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
@@ -57,14 +59,12 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         if (request.isOwner()) {
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
-            return repository.findByOwnerAndFilterBySpenderAndToken(
-                    accountId.value().getId(), filterId, tokenId, pageable);
+            return repository.findByOwnerAndFilterBySpenderAndToken(id, filterId, tokenId, pageable);
 
         } else {
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
-            return repository.findBySpenderAndFilterByOwnerAndToken(
-                    accountId.value().getId(), filterId, tokenId, pageable);
+            return repository.findBySpenderAndFilterByOwnerAndToken(id, filterId, tokenId, pageable);
         }
     }
 

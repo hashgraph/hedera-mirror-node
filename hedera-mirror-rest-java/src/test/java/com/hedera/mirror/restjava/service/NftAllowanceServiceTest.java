@@ -24,8 +24,10 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
+import com.hedera.mirror.restjava.common.EntityIdType;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -39,7 +41,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void getNftAllowancesForOrderAsc(boolean owner) {
-        var accountId = EntityId.of(1000L);
+        var accountId = domainBuilder.entity().persist().toEntityId();
 
         var nftAllowance1 = saveNftAllowance(accountId, owner);
         var nftAllowance2 = saveNftAllowance(accountId, owner);
@@ -48,7 +50,47 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(owner)
                 .limit(2)
-                .accountId(new EntityIdParameter(accountId))
+                .accountId(getEntityIdParameter(accountId))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .order(Sort.Direction.ASC)
+                .build();
+        var response = service.getNftAllowances(request);
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+    }
+
+    @Test
+    void getNftAllowancesWithAlias() {
+        var entity = domainBuilder.entity().persist();
+        var accountId = entity.toEntityId();
+
+        var nftAllowance1 = saveNftAllowance(accountId, true);
+        var nftAllowance2 = saveNftAllowance(accountId, true);
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(true)
+                .limit(2)
+                .accountId(new EntityIdParameter(null, null, entity.getAlias(), 0L, 0L, EntityIdType.ALIAS))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .order(Sort.Direction.ASC)
+                .build();
+        var response = service.getNftAllowances(request);
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+    }
+
+    @Test
+    void getNftAllowancesWithEvmAddress() {
+        var entity = domainBuilder.entity().persist();
+        var accountId = entity.toEntityId();
+
+        var nftAllowance1 = saveNftAllowance(accountId, true);
+        var nftAllowance2 = saveNftAllowance(accountId, true);
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(true)
+                .limit(2)
+                .accountId(new EntityIdParameter(null, entity.getEvmAddress(), null, 0L, 0L, EntityIdType.EVMADDRESS))
                 .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .order(Sort.Direction.ASC)
@@ -59,7 +101,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForOrderDescOwner() {
-        var accountId = EntityId.of(1000L);
+        var accountId = domainBuilder.entity().persist().toEntityId();
         var id = accountId.getId();
 
         var nftAllowance1 = domainBuilder
@@ -74,7 +116,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(true)
                 .limit(2)
-                .accountId(new EntityIdParameter(accountId))
+                .accountId(getEntityIdParameter(accountId))
                 .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .order(Sort.Direction.DESC)
@@ -87,7 +129,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForOrderDescSpender() {
-        var accountId = EntityId.of(1000L);
+        var accountId = domainBuilder.entity().persist().toEntityId();
         var id = accountId.getId();
 
         var nftAllowance1 = domainBuilder
@@ -102,7 +144,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(false)
                 .limit(2)
-                .accountId(new EntityIdParameter(accountId))
+                .accountId(getEntityIdParameter(accountId))
                 .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .order(Sort.Direction.DESC)
@@ -115,7 +157,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForGteOwner() {
-        var accountId = EntityId.of(1001L);
+        var accountId = domainBuilder.entity().persist().toEntityId();
 
         var nftAllowance1 = saveNftAllowance(accountId, true);
 
@@ -131,7 +173,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(true)
                 .limit(2)
-                .accountId(new EntityIdParameter(accountId))
+                .accountId(getEntityIdParameter(accountId))
                 .ownerOrSpenderId(
                         new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender())))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
@@ -143,7 +185,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForGteSpender() {
-        var accountId = EntityId.of(1001L);
+        var accountId = domainBuilder.entity().persist().toEntityId();
 
         var nftAllowance1 = saveNftAllowance(accountId, false);
 
@@ -157,7 +199,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(false)
                 .limit(2)
-                .accountId(new EntityIdParameter(accountId))
+                .accountId(getEntityIdParameter(accountId))
                 .ownerOrSpenderId(
                         new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender())))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
@@ -169,7 +211,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForOwnerOrSpenderIdNotPresent() {
-        var accountId = EntityId.of(1001L);
+        var accountId = domainBuilder.entity().persist().toEntityId();
 
         var nftAllowance1 = saveNftAllowance(accountId, false);
 
@@ -183,7 +225,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(false)
                 .limit(2)
-                .accountId(new EntityIdParameter(accountId))
+                .accountId(getEntityIdParameter(accountId))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
                 .order(Sort.Direction.ASC)
                 .build();
@@ -192,7 +234,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForInvalidOperatorPresent() {
-        var accountId = EntityId.of(1001L);
+        var accountId = domainBuilder.entity().persist().toEntityId();
 
         var nftAllowance1 = saveNftAllowance(accountId, false);
 
@@ -206,7 +248,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(false)
                 .limit(2)
-                .accountId(new EntityIdParameter(accountId))
+                .accountId(getEntityIdParameter(accountId))
                 .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.NE, EntityId.of(nftAllowance1.getSpender())))
                 .order(Sort.Direction.ASC)
                 .build();
@@ -225,5 +267,10 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                     .customize(e -> e.spender(accountId.getId()))
                     .persist();
         }
+    }
+
+    @NotNull
+    private static EntityIdParameter getEntityIdParameter(EntityId accountId) {
+        return new EntityIdParameter(accountId, null, null, 0L, 0L, EntityIdType.NUM);
     }
 }

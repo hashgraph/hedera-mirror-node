@@ -16,14 +16,14 @@
 
 package com.hedera.mirror.restjava.mapper;
 
+import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
+
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.TimestampRange;
 import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
-
-import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
 
 @Mapper(mappingInheritanceStrategy = MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG)
 public interface CommonMapper {
