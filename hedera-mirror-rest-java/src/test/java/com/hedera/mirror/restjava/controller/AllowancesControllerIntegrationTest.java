@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.controller;
 
+import static com.hedera.mirror.restjava.common.Constants.BASE32;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
@@ -43,7 +45,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = {"hedera.mirror.restJava.shard=0"})
 public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
 
     @LocalServerPort
@@ -86,6 +90,52 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         var result = restClient
                 .get()
                 .uri("", allowance1.getOwner())
+                .accept(MediaType.ALL)
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(collection));
+        assertNull(result.getLinks().getNext());
+    }
+
+    @Test
+    void successWithNoQueryParamsEvmAddress() {
+        var entity = domainBuilder.entity().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
+        var allowance2 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .persist();
+        Collection<NftAllowance> collection = List.of(allowance1, allowance2);
+
+        var result = restClient
+                .get()
+                .uri("", DomainUtils.bytesToHex(entity.getEvmAddress()))
+                .accept(MediaType.ALL)
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(collection));
+        assertNull(result.getLinks().getNext());
+    }
+
+    @Test
+    void successWithNoQueryParamsAlias() {
+        var entity = domainBuilder.entity().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
+        var allowance2 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .persist();
+        Collection<NftAllowance> collection = List.of(allowance1, allowance2);
+
+        var result = restClient
+                .get()
+                .uri("", BASE32.encodeAsString(entity.getAlias()))
                 .accept(MediaType.ALL)
                 .retrieve()
                 .body(NftAllowancesResponse.class);

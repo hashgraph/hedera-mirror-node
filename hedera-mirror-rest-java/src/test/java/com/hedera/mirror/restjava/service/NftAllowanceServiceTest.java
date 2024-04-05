@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.restjava.service;
 
-import static com.hedera.mirror.restjava.common.Constants.BASE32;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -27,16 +26,10 @@ import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.EntityIdType;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.converter.EntityIdArgumentConverter;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.converter.ConvertWith;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.domain.Sort;
 
@@ -77,7 +70,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(true)
                 .limit(2)
-                .accountId(new EntityIdParameter(null, null, entity.getAlias(), EntityIdType.ALIAS))
+                .accountId(new EntityIdParameter(null, null, entity.getAlias(), 0L, 0L, EntityIdType.ALIAS))
                 .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .order(Sort.Direction.ASC)
@@ -97,7 +90,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(true)
                 .limit(2)
-                .accountId(new EntityIdParameter(null, entity.getEvmAddress(), null, EntityIdType.EVMADDRESS))
+                .accountId(new EntityIdParameter(null, entity.getEvmAddress(), null, 0L, 0L, EntityIdType.EVMADDRESS))
                 .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
                 .order(Sort.Direction.ASC)
@@ -262,33 +255,6 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         assertThrows(IllegalArgumentException.class, () -> service.getNftAllowances(request));
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "0.0.5000, null, null, NUM",
-        "'null', AABBCC22, null, ALIAS",
-        "null, null, 000000000000000000000000000000000186Fb1b, EVMADDRESS"
-    })
-    void getNftAllowancesEntityNotPresent(
-            @ConvertWith(EntityIdArgumentConverter.class) EntityId id,
-            String alias,
-            String evmAddress,
-            EntityIdType type)
-            throws DecoderException {
-        var accountId = EntityId.of(5000L);
-        var decodedAlias = !alias.equalsIgnoreCase("null") ? BASE32.decode(alias) : null;
-        var decodedEvmAddress = !evmAddress.equalsIgnoreCase("null") ? Hex.decodeHex(evmAddress) : null;
-
-        NftAllowanceRequest request = NftAllowanceRequest.builder()
-                .isOwner(true)
-                .limit(2)
-                .accountId(new EntityIdParameter(id, decodedEvmAddress, decodedAlias, type))
-                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
-                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
-                .order(Sort.Direction.ASC)
-                .build();
-        assertThrows(EntityNotFoundException.class, () -> service.getNftAllowances(request));
-    }
-
     NftAllowance saveNftAllowance(EntityId accountId, boolean owner) {
         if (owner) {
             return domainBuilder
@@ -305,6 +271,6 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @NotNull
     private static EntityIdParameter getEntityIdParameter(EntityId accountId) {
-        return new EntityIdParameter(accountId, null, null, EntityIdType.NUM);
+        return new EntityIdParameter(accountId, null, null, 0L, 0L, EntityIdType.NUM);
     }
 }

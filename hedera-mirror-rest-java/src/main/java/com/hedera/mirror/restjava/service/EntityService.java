@@ -16,15 +16,9 @@
 
 package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import java.util.Optional;
+import com.hedera.mirror.restjava.common.EntityIdParameter;
 
 public interface EntityService {
 
-    Optional<Entity> lookup(EntityId entityId);
-
-    Optional<Long> getByAlias(byte[] alias);
-
-    Optional<Long> getByEvmAddress(byte[] evmAddress);
+    long lookup(EntityIdParameter entityId);
 }

@@ -16,32 +16,50 @@
 
 package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.restjava.common.EntityIdParameter;
+import com.hedera.mirror.restjava.common.EntityIdType;
 import com.hedera.mirror.restjava.repository.EntityRepository;
 import jakarta.inject.Named;
-import java.util.Optional;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 
 @Named
 @RequiredArgsConstructor
 public class EntityServiceImpl implements EntityService {
 
+    @Value("${hedera.mirror.restJava.shard}")
+    private final long systemShard;
+
     private final EntityRepository entityRepository;
 
     @Override
-    public Optional<Entity> lookup(EntityId entityId) {
-        return entityRepository.findById(entityId.getId()).filter(e -> e.getType() == EntityType.ACCOUNT);
-    }
+    public long lookup(EntityIdParameter accountId) {
 
-    @Override
-    public Optional<Long> getByAlias(byte[] alias) {
-        return entityRepository.findByAlias(alias);
-    }
+        long id = 0;
 
-    @Override
-    public Optional<Long> getByEvmAddress(byte[] evmAddress) {
-        return entityRepository.findByEvmAddress(evmAddress);
+        if ((accountId.shard() != null && accountId.shard() != systemShard) || accountId.realm() != 0) {
+            throw new IllegalArgumentException("Id %s has invalid shard or realm".formatted(accountId));
+        }
+
+        if (accountId.type() == EntityIdType.NUM && accountId.num() != null) {
+            if (!entityRepository.existsById(accountId.num().getId())) {
+                throw new EntityNotFoundException("Id %s does not exist".formatted(accountId));
+            }
+            id = accountId.num().getId();
+        } else if (accountId.type() == EntityIdType.ALIAS && accountId.alias() != null) {
+            var entityId = entityRepository.findByAlias(accountId.alias());
+            if (!entityId.isPresent()) {
+                throw new EntityNotFoundException("No account with a matching evm address found");
+            }
+            id = entityId.get();
+        } else if (accountId.type() == EntityIdType.EVMADDRESS && accountId.evmAddress() != null) {
+            var entityId = entityRepository.findByEvmAddress(accountId.evmAddress());
+            if (!entityId.isPresent()) {
+                throw new EntityNotFoundException("No account with a matching alias found");
+            }
+            id = entityId.get();
+        }
+        return id;
     }
 }

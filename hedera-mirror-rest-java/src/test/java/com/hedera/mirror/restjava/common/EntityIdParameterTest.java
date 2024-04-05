@@ -119,15 +119,17 @@ class EntityIdParameterTest {
     @Test
     @DisplayName("EntityId parse from string tests")
     void entityIdValueOf() {
-        assertThat(new EntityIdParameter(EntityId.of(0, 0, 0), null, null, EntityIdType.NUM))
+        assertThat(new EntityIdParameter(EntityId.of(0, 0, 0), null, null, 0L, 0L, EntityIdType.NUM))
                 .isEqualTo(EntityIdParameter.valueOf("0.0.0"));
         assertThat(EntityIdParameter.EMPTY).isEqualTo(EntityIdParameter.valueOf(null));
-        assertThat(new EntityIdParameter(null, null, new byte[] {0, 2, 17, 11, 90}, EntityIdType.ALIAS))
+        assertThat(new EntityIdParameter(null, null, new byte[] {0, 2, 17, 11, 90}, 0L, 0L, EntityIdType.ALIAS))
                 .isEqualTo(EntityIdParameter.valueOf("AABBCC22"));
         assertThat(new EntityIdParameter(
                         null,
                         new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -122, -5, 27},
                         null,
+                        0L,
+                        0L,
                         EntityIdType.EVMADDRESS))
                 .isEqualTo(EntityIdParameter.valueOf("0x000000000000000000000000000000000186Fb1b"));
     }

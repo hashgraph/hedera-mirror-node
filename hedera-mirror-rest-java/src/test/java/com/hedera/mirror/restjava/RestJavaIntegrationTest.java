@@ -17,5 +17,7 @@
 package com.hedera.mirror.restjava;
 
 import com.hedera.mirror.common.config.CommonIntegrationTest;
+import org.springframework.boot.test.context.SpringBootTest;
 
+@SpringBootTest(properties = {"hedera.mirror.restJava.shard=0"})
 public abstract class RestJavaIntegrationTest extends CommonIntegrationTest {}

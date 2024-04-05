@@ -28,13 +28,14 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.jooq.tools.StringUtils;
 
-public record EntityIdParameter(EntityId num, byte[] evmAddress, byte[] alias, EntityIdType type) {
-    public static final EntityIdParameter EMPTY = new EntityIdParameter(null, null, null, null);
+public record EntityIdParameter(
+        EntityId num, byte[] evmAddress, byte[] alias, Long shard, Long realm, EntityIdType type) {
+    public static final EntityIdParameter EMPTY = new EntityIdParameter(null, null, null, 0L, 0L, null);
 
-    public static final String ACCOUNT_ALIAS_REGEX = "^(\\d{1,5}\\.){0,2}([A-Z2-7]+)$";
+    public static final String ACCOUNT_ALIAS_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?([A-Z2-7]+)$";
 
     public static final String ENTITY_ID_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?(\\d{1,10})$";
-    public static final String EVM_ADDRESS_REGEX = "^(((0x)?|(\\d{1,5}\\.){0,2})([A-Fa-f0-9]{40}))$";
+    public static final String EVM_ADDRESS_REGEX = "^(((0x)?|((\\d{1,5})\\.)?((\\d{1,5})\\.)?)([A-Fa-f0-9]{40}))$";
     public static final int EVM_ADDRESS_MIN_LENGTH = 40;
 
     public static final Pattern ENTITY_ID_PATTERN = Pattern.compile(ENTITY_ID_REGEX);
@@ -56,48 +57,88 @@ public record EntityIdParameter(EntityId num, byte[] evmAddress, byte[] alias, E
             throw new IllegalArgumentException(" Id '%s' has an invalid format".formatted(id));
         }
 
-        var aliasMatcher = ALIAS_PATTERN.matcher(id);
-        if (aliasMatcher.matches()) {
-            return new EntityIdParameter(null, null, decodeBase32(aliasMatcher.group(2)), EntityIdType.ALIAS);
-        } else if (id.length() < EVM_ADDRESS_MIN_LENGTH) {
-            return new EntityIdParameter(parseEntityId(id), null, null, EntityIdType.NUM);
+        EntityIdParameter entityId;
+        if ((entityId = parseEntityId(id)) != null) {
+            return entityId;
+        } else if ((entityId = parseEvmAddress(id)) != null) {
+            return entityId;
+        } else if ((entityId = parseAlias(id)) != null) {
+            return entityId;
         } else {
-            return new EntityIdParameter(null, parseEvmAddress(id), null, EntityIdType.EVMADDRESS);
+            throw new IllegalArgumentException("Id %s format is invalid".formatted(id));
         }
     }
 
-    private static byte[] parseEvmAddress(String id) {
+    private static EntityIdParameter parseEvmAddress(String id) {
         var evmMatcher = EVM_ADDRESS_PATTERN.matcher(id);
+        Long shard = null;
+        Long realm = 0L;
 
         if (!evmMatcher.matches()) {
-            throw new IllegalArgumentException("Id %s format is invalid".formatted(id));
+            return null;
         }
-        return decodeEvmAddress(evmMatcher.group(5));
+        if (evmMatcher.group(6) != null) {
+            // This gets the realm value
+            realm = Long.parseLong(evmMatcher.group(7));
+            shard = Long.parseLong(evmMatcher.group(5));
+
+        } else if (evmMatcher.group(4) != null) {
+            realm = Long.parseLong(evmMatcher.group(5));
+        }
+
+        return new EntityIdParameter(
+                null, decodeEvmAddress(evmMatcher.group(8)), null, shard, realm, EntityIdType.EVMADDRESS);
     }
 
-    private static EntityId parseEntityId(String id) {
+    private static EntityIdParameter parseAlias(String id) {
+        var aliasMatcher = ALIAS_PATTERN.matcher(id);
+        Long shard = null;
+        Long realm = 0L;
+
+        if (!aliasMatcher.matches()) {
+            return null;
+        }
+        if (aliasMatcher.group(3) != null) {
+            // This gets the shard and realm value
+            realm = Long.parseLong(aliasMatcher.group(4));
+            shard = Long.parseLong(aliasMatcher.group(2));
+
+        } else if (aliasMatcher.group(1) != null) {
+            // This gets the realm value and shard will be null
+            realm = Long.parseLong(aliasMatcher.group(2));
+        }
+
+        return new EntityIdParameter(null, null, decodeBase32(aliasMatcher.group(5)), shard, realm, EntityIdType.ALIAS);
+    }
+
+    private static EntityIdParameter parseEntityId(String id) {
 
         var matcher = ENTITY_ID_PATTERN.matcher(id);
-        long shard = 0;
-        long realm = 0;
+        Long shard = null;
+        Long realm = 0L;
 
         if (!matcher.matches()) {
-            throw new IllegalArgumentException("Id %s format is invalid".formatted(id));
+            return null;
         }
-        // This matched the format realm.
+
         if (matcher.group(3) != null) {
-            // This gets the realm value
+            // This gets the shard and realm value
             realm = Long.parseLong(matcher.group(4));
             shard = Long.parseLong(matcher.group(2));
 
         } else if (matcher.group(1) != null) {
+            // This gets the realm value and shard will be null
             realm = Long.parseLong(matcher.group(2));
-            // get this value from system property
-            shard = 0;
         }
         var num = matcher.group(5);
 
-        return EntityId.of(shard, realm, Long.parseLong(num));
+        return new EntityIdParameter(
+                EntityId.of(shard == null ? 0 : shard, realm, Long.parseLong(num)),
+                null,
+                null,
+                shard,
+                realm,
+                EntityIdType.NUM);
     }
 
     public static byte[] decodeBase32(String base32) {
