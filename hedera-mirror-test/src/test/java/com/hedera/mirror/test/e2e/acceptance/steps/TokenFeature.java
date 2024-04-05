@@ -304,6 +304,14 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @Given("I update the token metadata key")
+    public void updateTokenMetadataKey() {
+        var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        networkTransactionResponse = tokenClient.updateTokenMetadataKey(tokenId, operatorId);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
     @Given("I pause the token")
     public void pauseToken() {
         networkTransactionResponse = tokenClient.pause(tokenId);

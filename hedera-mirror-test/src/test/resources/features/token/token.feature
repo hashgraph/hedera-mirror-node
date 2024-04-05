@@ -50,6 +50,7 @@ Feature: HTS Base Coverage Feature
     Then I transfer serial number 0 to ALICE
     And the mirror node REST API should return the transaction for token serial number 0 full flow
     Given I update the metadata to "0002" for serial number 0
+    Given I update the token metadata key
     Then I mint a serial number from the token with metadata "0101"
     And the mirror node REST API should return the transaction for token serial number 1 transaction flow
     Given I update the metadata to "deadbeef" for serial numbers 0 and 1

@@ -67,7 +67,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TokenAccount, NetworkTransactionResponse> associations = new ConcurrentHashMap<>();
-    private final PrivateKey metadataKey = PrivateKey.generateED25519();
+    private PrivateKey metadataKey = PrivateKey.generateED25519();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -270,8 +270,7 @@ public class TokenClient extends AbstractNetworkClient {
         // or metadata_key.
         tokenCreateTransaction.setMetadataKey(metadataKey);
         log.info(
-                "Creating token with metadata key: {}, {} [{}]",
-                metadataKey,
+                "Creating token with metadata key: {} [{}]",
                 metadataKey.getPublicKey(),
                 Hex.encodeHexString(metadataKey.getPublicKey().toBytes()));
 
@@ -504,6 +503,25 @@ public class TokenClient extends AbstractNetworkClient {
 
         var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
         log.info("Updated token {} with new symbol '{}' via {}", tokenId, newSymbol, response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse updateTokenMetadataKey(TokenId tokenId, ExpandedAccountId expandedAccountId) {
+        PublicKey publicKey = expandedAccountId.getPublicKey();
+        metadataKey = PrivateKey.generateECDSA();
+
+        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
+                .setAdminKey(publicKey)
+                .setMetadataKey(metadataKey)
+                .setTokenId(tokenId);
+
+        var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
+        log.info(
+                "Updated token {} with new metadata key {} [{}] via {}",
+                tokenId,
+                metadataKey.getPublicKey(),
+                Hex.encodeHexString(metadataKey.getPublicKey().toBytes()),
+                response.getTransactionId());
         return response;
     }
 
