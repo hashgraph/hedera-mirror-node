@@ -18,7 +18,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.hashgraph.sdk.Status.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOTRANSFER;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -63,12 +62,15 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
@@ -362,9 +364,9 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I mint a serial number from the token")
-    public void mintNftToken() {
-        networkTransactionResponse = tokenClient.mint(tokenId, nextBytes(4));
+    @Given("I mint a serial number from the token with metadata {string}")
+    public void mintNftToken(String metadata) {
+        networkTransactionResponse = tokenClient.mint(tokenId, decodeMetadataString(metadata));
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);
@@ -372,6 +374,16 @@ public class TokenFeature extends AbstractFeature {
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
         tokenSerialNumbers.get(tokenId).add(serialNumber);
+    }
+
+    @Given("I update the metadata to {string} for serial numbers {int} and {int}")
+    public void updateNftMetadata(String metadata, int serialNumberIndex1, int serialNumberIndex2) {
+        updateNftMetadataForSerials(metadata, serialNumberIndex1, serialNumberIndex2);
+    }
+
+    @Given("I update the metadata to {string} for serial number {int}")
+    public void updateNftMetadata(String metadata, int serialNumberIndex) {
+        updateNftMetadataForSerials(metadata, serialNumberIndex);
     }
 
     @Given("I wipe {int} from the token")
@@ -820,5 +832,26 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(mirrorTokenRelationship.getLinks());
         assertNotEquals(0, mirrorTokenRelationship.getTokens().size());
         assertThat(mirrorTokenRelationship.getLinks().getNext()).isNull();
+    }
+
+    private void updateNftMetadataForSerials(String metadata, int... serialNumberIndices) {
+        var serialsForToken = tokenSerialNumbers.get(tokenId);
+        var serialNumbers = Arrays.stream(serialNumberIndices)
+                .mapToObj(serialsForToken::get)
+                .toList();
+        networkTransactionResponse =
+                tokenClient.updateNftMetadata(tokenId, serialNumbers, decodeMetadataString(metadata));
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        TransactionReceipt receipt = networkTransactionResponse.getReceipt();
+        assertNotNull(receipt);
+    }
+
+    private byte[] decodeMetadataString(String metadata) {
+        try {
+            return Hex.decodeHex(metadata);
+        } catch (DecoderException e) {
+            throw new RuntimeException("Failed to decode hexadecimal metadata string", e);
+        }
     }
 }

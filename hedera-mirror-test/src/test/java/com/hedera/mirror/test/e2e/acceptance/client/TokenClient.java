@@ -39,6 +39,7 @@ import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TokenUnfreezeTransaction;
 import com.hedera.hashgraph.sdk.TokenUnpauseTransaction;
+import com.hedera.hashgraph.sdk.TokenUpdateNftsTransaction;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 import com.hedera.hashgraph.sdk.TransferTransaction;
@@ -55,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -65,6 +67,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TokenAccount, NetworkTransactionResponse> associations = new ConcurrentHashMap<>();
+    private final PrivateKey metadataKey = PrivateKey.generateED25519();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -263,6 +266,15 @@ public class TokenClient extends AbstractNetworkClient {
                 maxSupply,
                 customFees);
 
+        // TODO: Only for NFTs right now. Current state of SDK does not allow for FT token metadata
+        // or metadata_key.
+        tokenCreateTransaction.setMetadataKey(metadataKey);
+        log.info(
+                "Creating token with metadata key: {}, {} [{}]",
+                metadataKey,
+                metadataKey.getPublicKey(),
+                Hex.encodeHexString(metadataKey.getPublicKey().toBytes()));
+
         var keyList = KeyList.of(treasuryAccount.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, keyList);
         var tokenId = response.getReceipt().tokenId;
@@ -319,6 +331,21 @@ public class TokenClient extends AbstractNetworkClient {
 
         var response = executeTransactionAndRetrieveReceipt(tokenMintTransaction);
         log.info("Minted {} tokens to {} via {}", amount, tokenId, response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse updateNftMetadata(TokenId tokenId, List<Long> serialNumbers, byte[] metadata) {
+        var tokenUpdateNftsTransaction = new TokenUpdateNftsTransaction()
+                .setTokenId(tokenId)
+                .setSerials(serialNumbers)
+                .setMetadata(metadata);
+
+        var response = executeTransactionAndRetrieveReceipt(tokenUpdateNftsTransaction, KeyList.of(metadataKey));
+        log.info(
+                "Updated NFT metadata on {} NFTs for token {} via {}",
+                serialNumbers.size(),
+                tokenId,
+                response.getTransactionId());
         return response;
     }
 
@@ -590,11 +617,7 @@ public class TokenClient extends AbstractNetworkClient {
     @Getter
     public enum TokenNameEnum {
         // also used in call.feature
-        FUNGIBLE(
-                "fungible",
-                TokenType.FUNGIBLE_COMMON,
-                TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.Unfrozen),
+        FUNGIBLE("fungible", TokenType.FUNGIBLE_COMMON, TokenKycStatus.KycNotApplicable, TokenFreezeStatus.Unfrozen),
         FUNGIBLEHISTORICAL(
                 "fungible_historical", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
         FUNGIBLE_DELETABLE(
@@ -618,11 +641,7 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
-        NFT(
-                "non_fungible",
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.Unfrozen),
+        NFT("non_fungible", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.KycNotApplicable, TokenFreezeStatus.Unfrozen),
         NFT_FOR_ETH_CALL(
                 "non_fungible",
                 TokenType.NON_FUNGIBLE_UNIQUE,
