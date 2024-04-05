@@ -45,7 +45,7 @@ expose the data. This approach provides the following advantages:
 - The signature files are verified using the corresponding node's public key from the address book (stored in
   a `0.0.102` file).
 - The verified signature files are checked to ensure at least 1/3 have the same record file hash.
-- For each valid signature file, the corresponding record file is then downloaded from cloud storage and its hash
+- For each valid signature file, the corresponding record file is then downloaded from cloud storage and its hash is
   verified against the hash contained in the signature file.
 - The downloaded record file contains a previous hash that is validated against the last processed file to verify the
   hash chain.
