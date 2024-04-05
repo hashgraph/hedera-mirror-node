@@ -155,7 +155,7 @@ public class EquivalenceFeature extends AbstractFeature {
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, COPY_CODE, asAddress(accountId));
         var functionResult = callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data, BYTES_TUPLE);
-        assertThat(functionResult.getResultAsText()).isEqualTo("");
+        assertThat(functionResult.getResultAsText()).isEmpty();
     }
 
     @Then("I verify extcodehash opcode against a system account {string} address returns empty bytes")
@@ -165,7 +165,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var data = encodeData(EQUIVALENCE_CALL, GET_CODE_HASH, asAddress(accountId));
         var functionResult =
                 callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, data, BYTES_TUPLE);
-        assertThat(functionResult.getResultAsBytes().toArray()).isEqualTo(new byte[0]);
+        assertThat(functionResult.getResultAsBytes().toArray()).isEmpty();
     }
 
     @Then("I execute selfdestruct and set beneficiary to the deleted contract address")
