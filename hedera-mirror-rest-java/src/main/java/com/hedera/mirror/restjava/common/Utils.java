@@ -39,16 +39,15 @@ public class Utils {
             return null;
         }
         HttpServletRequest request = servletRequestAttributes.getRequest();
-        StringBuilder paginationLink = new StringBuilder();
 
         if (lastValues == null || lastValues.isEmpty()) {
             return null;
         }
 
         if (!isEnd) {
-            paginationLink.append(generateLinkFromRequestParams(lastValues, order, request));
+            return generateLinkFromRequestParams(lastValues, order, request);
         }
-        return paginationLink.isEmpty() ? null : paginationLink.toString();
+        return null;
     }
 
     private static String generateLinkFromRequestParams(

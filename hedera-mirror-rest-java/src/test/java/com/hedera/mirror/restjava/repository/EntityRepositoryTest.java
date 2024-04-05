@@ -32,6 +32,9 @@ public class EntityRepositoryTest extends RestJavaIntegrationTest {
     void exists() {
         var entity = domainBuilder.entity().persist();
         assertThat(entityRepository.existsById(entity.getId())).isTrue();
+        Entity entityDeleted =
+                domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
+        assertThat(entityRepository.existsById(entityDeleted.getId())).isFalse();
     }
 
     @Test
