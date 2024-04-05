@@ -27,6 +27,7 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Con
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_SIZE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -123,7 +124,16 @@ public class EquivalenceFeature extends AbstractFeature {
         var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, asAddress(accountId));
         var functionResult =
                 callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
-        assertThat(BigInteger.ZERO).isEqualTo(functionResult.getResultAsNumber());
+
+        if (extractAccountNumber(address) < 751) {
+            assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
+        } else {
+            if (isAccountExists(accountId)) {
+                assertTrue(functionResult.getResultAsNumber().compareTo(BigInteger.ZERO) > 0);
+            } else {
+                assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
+            }
+        }
     }
 
     @Then("I execute balance opcode against a contract with balance")
@@ -194,5 +204,14 @@ public class EquivalenceFeature extends AbstractFeature {
         GET_CODE_HASH("getCodeHash");
 
         private final String selector;
+    }
+
+    private boolean isAccountExists(final AccountId accountId) {
+        try {
+            mirrorClient.getAccountDetailsByAccountId(accountId);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
