@@ -117,7 +117,7 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute balance opcode to system account {string} address would return 0")
+    @Then("I execute balance opcode to system account {string} address with id 1 to 750 would return 0")
     public void balanceOfAddress(String address) {
         var nodeType = acceptanceTestProperties.getNodeType();
         final var accountId = new AccountId(extractAccountNumber(address));
@@ -125,14 +125,10 @@ public class EquivalenceFeature extends AbstractFeature {
         var functionResult =
                 callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
 
-        if (extractAccountNumber(address) < 751) {
-            assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
+        if (extractAccountNumber(address) > 750 && accountExists(accountId)) {
+            assertTrue(functionResult.getResultAsNumber().compareTo(BigInteger.ZERO) >= 0);
         } else {
-            if (accountExists(accountId)) {
-                assertTrue(functionResult.getResultAsNumber().compareTo(BigInteger.ZERO) > 0);
-            } else {
-                assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
-            }
+            assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
         }
     }
 

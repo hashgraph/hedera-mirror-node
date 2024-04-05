@@ -9,7 +9,7 @@ Feature: in-equivalence tests
     Then I verify the equivalence contract bytecode is deployed
     Then I verify the selfdestruct contract bytecode is deployed
     Then I execute selfdestruct and set beneficiary to <account> address
-    Then I execute balance opcode to system account <account> address would return 0
+    Then I execute balance opcode to system account <account> address with id 1 to 750 would return 0
     Then I verify extcodesize opcode against a system account <account> address returns 0
     Then I verify extcodecopy opcode against a system account <account> address returns empty bytes
     Then I verify extcodehash opcode against a system account <account> address returns empty bytes
