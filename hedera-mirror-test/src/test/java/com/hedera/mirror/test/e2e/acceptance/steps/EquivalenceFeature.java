@@ -128,7 +128,7 @@ public class EquivalenceFeature extends AbstractFeature {
         if (extractAccountNumber(address) < 751) {
             assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
         } else {
-            if (isAccountExists(accountId)) {
+            if (accountExists(accountId)) {
                 assertTrue(functionResult.getResultAsNumber().compareTo(BigInteger.ZERO) > 0);
             } else {
                 assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
@@ -206,7 +206,7 @@ public class EquivalenceFeature extends AbstractFeature {
         private final String selector;
     }
 
-    private boolean isAccountExists(final AccountId accountId) {
+    private boolean accountExists(final AccountId accountId) {
         try {
             mirrorClient.getAccountDetailsByAccountId(accountId);
             return true;
