@@ -6,6 +6,19 @@
   },
   {
     "inputs": [],
+    "name": "getAddressThis",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "testAddressThis",
     "outputs": [],
     "stateMutability": "nonpayable",

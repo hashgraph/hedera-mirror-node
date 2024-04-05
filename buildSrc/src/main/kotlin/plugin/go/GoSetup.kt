@@ -46,6 +46,7 @@ open class GoSetup : DefaultTask() {
         val targetFile = go.cacheDir.toPath().resolve(filename)
 
         if (!targetFile.toFile().exists()) {
+            go.goRoot.deleteRecursively()
             url.openStream().use {
                 logger.warn("Downloading: ${url}")
                 Files.copy(it, targetFile, StandardCopyOption.REPLACE_EXISTING)

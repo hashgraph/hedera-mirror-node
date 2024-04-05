@@ -44,7 +44,7 @@ public class RevokeKycLogic {
         final var tokenRelationship = store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW);
 
         /* --- Do the business logic --- */
-        final var tokenRelationshipResult = tokenRelationship.setKycGranted(false);
+        final var tokenRelationshipResult = tokenRelationship.changeKycState(false);
 
         /* --- Persist the updated models --- */
         store.updateTokenRelationship(tokenRelationshipResult);

@@ -89,6 +89,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
     private final Instant instant;
     private final String sidecarId;
     private final StreamType streamType;
+    private final long timestamp = System.currentTimeMillis();
 
     private StreamFilename(String path, String filename, String pathSeparator) {
         this.pathSeparator = pathSeparator;

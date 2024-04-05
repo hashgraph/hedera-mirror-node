@@ -124,7 +124,7 @@ public class HistoricalBalanceService {
 
             log.info("Generating historical balances after processing record file with consensusEnd {}", consensusEnd);
             transactionTemplate.executeWithoutResult(t -> {
-                long loadStart = Instant.now().getEpochSecond();
+                long loadStart = System.currentTimeMillis();
                 long timestamp = recordFileRepository
                         .findLatest()
                         .map(RecordFile::getConsensusEnd)
@@ -149,7 +149,7 @@ public class HistoricalBalanceService {
                             : 0;
                 }
 
-                long loadEnd = Instant.now().getEpochSecond();
+                long loadEnd = System.currentTimeMillis();
                 String filename = StreamFilename.getFilename(
                         StreamType.BALANCE, FileType.DATA, Instant.ofEpochSecond(0, timestamp));
                 var accountBalanceFile = AccountBalanceFile.builder()

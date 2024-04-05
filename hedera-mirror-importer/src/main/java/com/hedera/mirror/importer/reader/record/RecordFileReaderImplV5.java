@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.EqualsAndHashCode;
@@ -66,7 +65,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             RecordFile recordFile = new RecordFile();
             recordFile.setBytes(bytes);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
-            recordFile.setLoadStart(Instant.now().getEpochSecond());
+            recordFile.setLoadStart(streamFileData.getStreamFilename().getTimestamp());
             recordFile.setName(filename);
             recordFile.setSize(bytes.length);
 

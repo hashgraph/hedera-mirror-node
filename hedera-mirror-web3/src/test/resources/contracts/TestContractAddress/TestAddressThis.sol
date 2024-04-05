@@ -16,4 +16,7 @@ contract TestAddressThis {
         }
     }
 
+    function getAddressThis() public view returns(address) {
+        return address(this);
+    }
 }
