@@ -1,16 +1,30 @@
 name: Security
-
 on:
   pull_request:
-    branches: [main, release/**]
+    branches:
+      - 'main'
+      - 'release/**'
   push:
-    branches: [main, release/**]
-    tags: [v*]
+    branches:
+      - 'main'
+      - 'release/**'
+    tags:
+      - 'v*'
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+env:
+  LC_ALL: C.UTF-8
 
 jobs:
   dependencies:
-    name: Dependency check
-    runs-on: ubuntu-latest
+    name: Dependency Check
+    runs-on: [self-hosted, Linux, large, ephemeral]
     if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
     steps:
       - name: Harden Runner
@@ -18,8 +32,13 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+      - name: Setup Node
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 21
 
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
@@ -43,17 +62,18 @@ jobs:
           path: build/reports/dependency-check-report.html
 
   gosec:
+    name: GoSec Code Scan
     env:
       GO111MODULE: on
-    runs-on: ubuntu-latest
-
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - name: Checkout Code
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           path: tmp
 
@@ -63,6 +83,16 @@ jobs:
           cp -r tmp/hedera-mirror-rosetta/* .
           rm -fr tmp
 
+      - name: Setup Node
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 21
+
+      - name: Setup GoLang
+        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        with:
+          go-version: 1.22
+
       - name: Run Gosec Security Scanner
         uses: securego/gosec@daf6f670f70b98339d8dfb078ce69d401b30bbe6 # master
         with:
@@ -71,17 +101,22 @@ jobs:
   sonar:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: SonarCloud
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           egress-policy: audit
 
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Setup Node
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 21
 
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
@@ -108,15 +143,20 @@ jobs:
   snyk:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: Snyk Open Source
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           egress-policy: audit
 
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+      - name: Setup Node
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 21
 
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
@@ -150,15 +190,20 @@ jobs:
   snyk-code:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: Snyk Code
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           egress-policy: audit
 
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+      - name: Setup Node
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 21
 
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
@@ -192,15 +237,20 @@ jobs:
   snyk-monitor:
     if: github.event_name == 'push' && github.ref_name == 'main'
     name: Snyk Monitor
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           egress-policy: audit
 
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+      - name: Setup Node
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 21
 
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
