@@ -18,6 +18,9 @@ defaults:
 permissions:
   contents: read
 
+env:
+  LC_ALL: C.UTF-8
+
 jobs:
   dependencies:
     name: Dependency Check
