@@ -1,26 +1,29 @@
 name: Rosetta API
-
 on:
+  workflow_dispatch:
   schedule:
     - cron: "0 1 * * *" # Daily at 1:00 AM
   push:
-    branches: [main]
-    tags: [v*]
+    branches:
+      - 'main'
+    tags:
+      - 'v*'
 
 defaults:
   run:
+    shell: bash
     working-directory: ./hedera-mirror-rosetta
+
+permissions:
+  contents: read
 
 env:
   MODULE: hedera-mirror-rosetta
   NETWORK: previewnet
 
-permissions:
-  contents: read
-
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, large, ephemeral]
     timeout-minutes: 30
     env:
       ROSETTA_CLI_VERSION: v0.10.3
@@ -30,8 +33,13 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+      - name: Setup Node
+        uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4.0.2
+        with:
+          node-version: 21
 
       - name: Set Importer StartDate
         run: |
