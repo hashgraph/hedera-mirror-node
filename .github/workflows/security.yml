@@ -32,7 +32,7 @@ jobs:
 
       - name: Vulnerability check
         env:
-          NVD_API_TOKEN: ${{ secrets.NVD_API_TOKEN }}
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: ./gradlew dependencyCheckAggregate
 
       - name: Upload report
