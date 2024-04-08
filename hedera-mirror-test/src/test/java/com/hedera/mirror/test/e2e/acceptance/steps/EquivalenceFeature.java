@@ -195,13 +195,4 @@ public class EquivalenceFeature extends AbstractFeature {
 
         private final String selector;
     }
-
-    private boolean accountExists(final AccountId accountId) {
-        try {
-            mirrorClient.getAccountDetailsByAccountId(accountId);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
 }
