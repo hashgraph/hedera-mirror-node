@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.62.2")
+    set("grpcVersion", "1.63.0")
     // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
     // with the next springboot release
     set("jooq.version", "3.19.6")
@@ -57,7 +57,7 @@ dependencies {
         api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.4")
-        api("org.bouncycastle:bcprov-jdk15to18:1.77")
+        api("org.bouncycastle:bcprov-jdk15to18:1.78")
         api("com.bucket4j:bucket4j-core:8.10.1")
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.1.2")
         api("com.google.guava:guava:33.1.0-jre")
@@ -73,7 +73,7 @@ dependencies {
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
-        api("commons-io:commons-io:2.15.1")
+        api("commons-io:commons-io:2.16.0")
         api("io.cucumber:cucumber-bom:7.16.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
@@ -101,7 +101,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.1")
         api("org.testcontainers:junit-jupiter:1.19.7")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.21")
+        api("software.amazon.awssdk:bom:2.25.26")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }
@@ -115,6 +115,7 @@ allprojects {
             property("sonar.host.url", "https://sonarcloud.io")
             property("sonar.organization", "hashgraph")
             property("sonar.projectKey", "hedera-mirror-node")
+            property("sonar.sourceEncoding", "UTF-8")
             property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5,e6")
             property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")

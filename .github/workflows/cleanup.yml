@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "0 0 * * *" # Daily at midnight
 
+permissions:
+  contents: read
+
 jobs:
   images:
     runs-on: ubuntu-latest
@@ -23,15 +26,20 @@ jobs:
             web3,
           ]
     steps:
-      - uses: actions/checkout@v4
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
         with:
           credentials_json: "${{ secrets.GCR_KEY }}"
 
       - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@98ddc00a17442e89a24bbf282954a3b65ce6d200 # v2.1.0
 
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
