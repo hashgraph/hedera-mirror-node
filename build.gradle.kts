@@ -101,7 +101,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.1")
         api("org.testcontainers:junit-jupiter:1.19.7")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.21")
+        api("software.amazon.awssdk:bom:2.25.26")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }
