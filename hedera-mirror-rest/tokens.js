@@ -350,7 +350,7 @@ const getTokensRequest = async (req, res) => {
 
   const rows = await getTokens(query, params);
   const tokens = rows.map((r) => {
-    TokenService.putTokenCache(r);  // TODO, ask Xin. CachedToken only caches a few fields
+    TokenService.putTokenCache(r);
     return formatTokenRow(r);
   });
 
@@ -910,7 +910,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
   return utils.buildPgSqlObject(query, params, order, limit);
 };
 
-const formatNftHistoryRow = (row) => {
+const formatNftTransactionHistoryRow = (row) => {
   const transactionModel = new Transaction(row);
   return new NftTransactionHistoryViewModel(transactionModel);
 };
@@ -934,7 +934,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
   const {rows} = await pool.queryQuietly(query, params);
   const response = {
-    transactions: rows.map(formatNftHistoryRow),
+    transactions: rows.map(formatNftTransactionHistoryRow),
     links: {
       next: null,
     },
@@ -1012,7 +1012,7 @@ if (utils.isTestEnv()) {
     extractSqlFromTokenBalancesRequest,
     extractSqlFromTokenInfoRequest,
     extractSqlFromTokenRequest,
-    formatNftHistoryRow,
+    formatNftTransactionHistoryRow,
     formatTokenBalanceRow,
     formatTokenInfoRow,
     formatTokenRow,
