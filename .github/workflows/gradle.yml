@@ -20,6 +20,7 @@ permissions:
 
 env:
   LC_ALL: C.UTF-8
+  CGO_ENABLED: 1
 
 jobs:
   build:
