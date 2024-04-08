@@ -141,17 +141,9 @@ public class UsageBasedFeeCalculator implements FeeCalculator {
         } else {
             var sigUsage = getSigUsage(accessor, payerKey);
             var usageEstimator = getTxnUsageEstimator(accessor);
-            try {
-                final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage);
-                final var applicablePrices = prices.get(usage.getSubType());
-                return getFeeObject(usage, applicablePrices, rate);
-            } catch (Exception e) {
-                log.warn(
-                        "Argument accessor={} malformed for implied estimator {}!",
-                        accessor.getSignedTxnWrapper(),
-                        usageEstimator);
-                throw new IllegalArgumentException(e);
-            }
+            final var usage = usageEstimator.usageGiven(accessor.getTxn(), sigUsage);
+            final var applicablePrices = prices.get(usage.getSubType());
+            return getFeeObject(usage, applicablePrices, rate);
         }
     }
 

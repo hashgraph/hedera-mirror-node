@@ -212,15 +212,12 @@ class UsageBasedFeeCalculatorTest {
     }
 
     @Test
-    void failsWithIseGivenApplicableButUnusableCalculator() {
+    void failsWithNpeGivenApplicableButUnusableCalculator() {
         // setup:
-
-        given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
-        given(txnUsageEstimators.get(any())).willReturn(List.of(correctOpEstimator));
+        givenApplicableButUnusableCalculator();
 
         // when:
-
-        assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, at));
+        assertThrows(NullPointerException.class, () -> subject.computeFee(accessor, payerKey, at));
     }
 
     @Test
@@ -249,8 +246,7 @@ class UsageBasedFeeCalculatorTest {
                 getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate, multiplier);
         suggestedMultiplier.set(multiplier);
 
-        given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
-        given(txnUsageEstimators.get(any())).willReturn(List.of(correctOpEstimator));
+        givenApplicableButUnusableCalculator();
         given(correctOpEstimator.usageGiven(any(), any())).willReturn(resourceUsage);
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.activePrices(any())).willReturn(currentPrices);
@@ -292,5 +288,10 @@ class UsageBasedFeeCalculatorTest {
                         Duration.newBuilder().setSeconds(68).build())
                 .setMemo("memo");
         return txn;
+    }
+
+    private void givenApplicableButUnusableCalculator() {
+        given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
+        given(txnUsageEstimators.get(any())).willReturn(List.of(correctOpEstimator));
     }
 }
