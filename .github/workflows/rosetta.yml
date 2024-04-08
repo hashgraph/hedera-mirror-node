@@ -70,7 +70,7 @@ jobs:
           load: true
           provenance: false
           push: false
-          tags: ${{ env.MODULE }}:${{ github.sha }}
+          tags: "${{ env.MODULE }}:${{ github.sha }}"
 
       - name: Importer Configuration
         run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application_importer.yml

@@ -25,7 +25,7 @@ jobs:
   dependencies:
     name: Dependency Check
     runs-on: [self-hosted, Linux, large, ephemeral]
-    if: ${{ github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]') }}
+    if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -43,11 +43,19 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: 21
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@6cec5d49d4d6d4bb982fbed7047db31ea6d38f11 # v3.3.0
+        with:
+          gradle-home-cache-includes: |
+            caches
+            notifications
+            jdks
+            dependency-check-data
+          # write a cache on all executions to ensure the NVD data stays up-to-date
+          cache-read-only: false
 
       - name: Vulnerability check
         env:
@@ -121,7 +129,7 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: 21
 
       - name: Setup Gradle
@@ -161,7 +169,7 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: 21
 
       - name: Setup Gradle
@@ -208,7 +216,7 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: 21
 
       - name: Setup Gradle
@@ -255,7 +263,7 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4.2.1
         with:
-          distribution: "temurin"
+          distribution: temurin
           java-version: 21
 
       - name: Setup Gradle
