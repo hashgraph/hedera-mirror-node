@@ -182,6 +182,11 @@ public abstract class AbstractNetworkClient implements Cleanable {
         });
     }
 
+    @SneakyThrows
+    public TransactionRecord getTransactionRecordDebug(TransactionId transactionId) {
+        return retryTemplate.execute(x -> new TransactionRecordQuery().setTransactionId(transactionId).execute(client));
+    }
+
     public long getBalance() {
         return getBalance(sdkClient.getExpandedOperatorAccountId());
     }

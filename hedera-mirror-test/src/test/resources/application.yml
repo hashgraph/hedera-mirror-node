@@ -4,13 +4,10 @@ hedera:
       acceptance:
         # grpc endpoint
         mirrorNodeAddress: testnet.mirrornode.hedera.com:443
-        network: testnet
+        network: TESTNET
+        operatorId: 0.0.3625646
+        operatorKey: 3030020100300706052b8104000a04220420cd6abbc031eeb83c5626ae75f3c90a2c2371a8cb361bfbae222d794b35af5d2e
         rest:
           baseUrl: https://testnet.mirrornode.hedera.com
-logging:
-  level:
-    root: warn
-    com.hedera.mirror.test: info
-    com.hedera.hashgraph.sdk.TransactionReceiptQuery: error
-  pattern:
-    console: "%clr(%date{${LOG_DATEFORMAT_PATTERN:yyyy-MM-dd'T'HH:mm:ss.SSS}, UTC}Z){faint} %clr(${LOG_LEVEL_PATTERN:%5level}) %clr(%thread){magenta} %clr(%logger{20}){cyan} %m %exception%n"
+        web3:
+          baseUrl: https://testnet.mirrornode.hedera.com

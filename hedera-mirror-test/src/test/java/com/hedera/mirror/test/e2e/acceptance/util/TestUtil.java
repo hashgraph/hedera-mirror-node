@@ -16,11 +16,15 @@
 
 package com.hedera.mirror.test.e2e.acceptance.util;
 
+import static java.lang.System.arraycopy;
+
 import com.esaulpaugh.headlong.abi.Address;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Range;
 import com.google.common.io.BaseEncoding;
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import com.google.protobuf.ByteString;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractId;
@@ -108,6 +112,23 @@ public class TestUtil {
         return Address.wrap(Address.toChecksumAddress(addressAsInteger));
     }
 
+    public static byte[] asSolidityAddress(final ContractId id) {
+        if (id.evmAddress != null && id.evmAddress.length == 20) {
+            return id.evmAddress;
+        }
+        return asSolidityAddress((int) id.shard, id.realm, id.num);
+    }
+
+    public static byte[] asSolidityAddress(final int shard, final long realm, final long num) {
+        final byte[] solidityAddress = new byte[20];
+
+        arraycopy(Ints.toByteArray(shard), 0, solidityAddress, 0, 4);
+        arraycopy(Longs.toByteArray(realm), 0, solidityAddress, 4, 8);
+        arraycopy(Longs.toByteArray(num), 0, solidityAddress, 12, 8);
+
+        return solidityAddress;
+    }
+    
     public static Address asAddress(ContractId contractId) {
         final var address = contractId.toSolidityAddress();
         final var addressBytes = Bytes.fromHexString(address.startsWith("0x") ? address : "0x" + address);

@@ -89,6 +89,12 @@ public class ContractFeature extends AbstractFeature {
         executeCreateChildTransaction(1000);
     }
 
+    @Given("I successfully eth call the  contract")
+    public void ethCallContract() {
+        // log and results to be verified
+        executeCreateChildEthTransaction(1000);
+    }
+
     @Given("I successfully update the contract")
     public void updateContract() {
         networkTransactionResponse = contractClient.updateContract(deployedParentContract.contractId());
@@ -436,6 +442,13 @@ public class ContractFeature extends AbstractFeature {
         executeContractCallTransaction(deployedParentContract.contractId(), "createChild", parameters, null);
     }
 
+    private void executeCreateChildEthTransaction(int transferAmount) {
+        ContractFunctionParameters parameters =
+            new ContractFunctionParameters().addUint256(BigInteger.valueOf(transferAmount));
+        
+        executeEthContractCallTransaction(deployedParentContract.contractId(), "getSender", parameters, null);
+    }
+
     private ExecuteContractResult executeGetChildContractBytecodeTransaction() {
         return executeContractCallTransaction(deployedParentContract.contractId(), "getBytecode", null, null);
     }
@@ -483,6 +496,28 @@ public class ContractFeature extends AbstractFeature {
         return executeContractResult;
     }
 
+    private ExecuteContractResult executeEthContractCallTransaction(
+        ContractId contractId, String functionName, ContractFunctionParameters parameters, Hbar payableAmount) {
+
+        ExecuteContractResult executeContractResult = contractClient.executeEthContract(
+            contractId,
+            contractClient
+                .getSdkClient()
+                .getAcceptanceTestProperties()
+                .getFeatureProperties()
+                .getMaxContractFunctionGas(),
+            functionName,
+            parameters,
+            payableAmount);
+
+        networkTransactionResponse = executeContractResult.networkTransactionResponse();
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        assertNotNull(executeContractResult.contractFunctionResult());
+
+        return executeContractResult;
+    }
+    
     private enum ContractExecutionStage {
         CREATION,
         CALL
