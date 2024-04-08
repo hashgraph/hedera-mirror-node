@@ -27,7 +27,6 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.Con
 import static com.hedera.mirror.test.e2e.acceptance.steps.EquivalenceFeature.ContractMethods.GET_CODE_SIZE;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -117,19 +116,14 @@ public class EquivalenceFeature extends AbstractFeature {
         }
     }
 
-    @Then("I execute balance opcode to system account {string} address with id 1 to 750 would return 0")
+    @Then("I execute balance opcode to system account {string} address would return 0")
     public void balanceOfAddress(String address) {
         var nodeType = acceptanceTestProperties.getNodeType();
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, asAddress(accountId));
         var functionResult =
                 callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
-
-        if (extractAccountNumber(address) > 750 && accountExists(accountId)) {
-            assertTrue(functionResult.getResultAsNumber().compareTo(BigInteger.ZERO) >= 0);
-        } else {
-            assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
-        }
+        assertThat(BigInteger.ZERO).isEqualTo(functionResult.getResultAsNumber());
     }
 
     @Then("I execute balance opcode against a contract with balance")
