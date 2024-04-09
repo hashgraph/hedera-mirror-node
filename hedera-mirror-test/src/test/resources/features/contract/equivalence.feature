@@ -9,17 +9,17 @@ Feature: in-equivalence tests
     Then I verify the equivalence contract bytecode is deployed
     Then I verify the selfdestruct contract bytecode is deployed
     Then I execute selfdestruct and set beneficiary to <account> address
-    Then I execute balance opcode to system account <account> address would return 0
+    Then I execute balance opcode to system account <strictSystemAccount> address would return 0
     Then I verify extcodesize opcode against a system account <account> address returns 0
     Then I verify extcodecopy opcode against a system account <account> address returns empty bytes
     Then I verify extcodehash opcode against a system account <account> address returns empty bytes
     Examples:
-      | account    |
-      | "0.0.1"    |
-      | "0.0.10"   |
-      | "0.0.358"  |
-      | "0.0.750"  |
-      | "0.0.999"  |
+      | account    | strictSystemAccount |
+      | "0.0.1"    | "0.0.1"             |
+      | "0.0.10"   | "0.0.10"            |
+      | "0.0.358"  | "0.0.358"           |
+      | "0.0.750"  | "0.0.749"           |
+      | "0.0.999"  | "0.0.750"           |
 
 #   Separated scenario as it needs to be executed only once
     Scenario Outline: Validate in-equivalence for selfdestruct and balance against contract
