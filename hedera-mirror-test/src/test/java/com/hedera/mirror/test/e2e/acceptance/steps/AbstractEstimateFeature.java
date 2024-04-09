@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import java.util.Optional;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.client.HttpClientErrorException;
 
 abstract class AbstractEstimateFeature extends AbstractFeature {
 
@@ -71,15 +71,16 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * @param sender          The sender's address (optional).
      * @throws AssertionError If the actual gas used is not within the acceptable deviation range.
      */
-    protected void validateGasEstimation(String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
-        var contractCallRequest = ModelBuilder.contractCallRequest()
-                .data(data)
-                .estimate(true)
-                .to(solidityAddress);
+    protected void validateGasEstimation(
+            String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
+        var contractCallRequest =
+                ModelBuilder.contractCallRequest().data(data).estimate(true).to(solidityAddress);
         sender.ifPresent(contractCallRequest::from);
 
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
-        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult()).toBigInteger().intValue();
+        int estimatedGas = Bytes.fromHexString(msgSenderResponse.getResult())
+                .toBigInteger()
+                .intValue();
 
         assertWithinDeviation(actualGasUsed.getActualGas(), estimatedGas, lowerDeviation, upperDeviation);
     }
@@ -95,29 +96,23 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
      * then sends the request. It expects the call to result in a "400 Bad Request" response, and will throw an
      * assertion error if the response is anything other than that.
      *
-     * @param data The encoded function data to be sent.
-     * @param contractAddress     The address of the contract.
+     * @param data            The encoded function data to be sent.
+     * @param contractAddress The address of the contract.
      * @throws AssertionError If the response from the contract call does not contain "400 Bad Request from POST".
      */
     protected void assertContractCallReturnsBadRequest(String data, String contractAddress) {
-        var contractCallRequest = ModelBuilder.contractCallRequest()
-                .data(data)
-                .estimate(true)
-                .to(contractAddress);
+        var contractCallRequest =
+                ModelBuilder.contractCallRequest().data(data).estimate(true).to(contractAddress);
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+                .isInstanceOf(HttpClientErrorException.BadRequest.class);
     }
 
     protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress) {
-        var contractCallRequest = ModelBuilder.contractCallRequest()
-                .block(block)
-                .data(data)
-                .to(contractAddress);
+        var contractCallRequest =
+                ModelBuilder.contractCallRequest().block(block).data(data).to(contractAddress);
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+                .isInstanceOf(HttpClientErrorException.BadRequest.class);
     }
 }

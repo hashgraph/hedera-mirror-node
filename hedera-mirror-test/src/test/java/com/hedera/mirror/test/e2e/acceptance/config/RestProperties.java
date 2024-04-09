@@ -16,13 +16,10 @@
 
 package com.hedera.mirror.test.e2e.acceptance.config;
 
-import com.google.common.base.Throwables;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
-import java.util.Set;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.time.DurationMin;
@@ -30,14 +27,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.client.HttpClientErrorException;
 
 @Component
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.rest")
 @Data
 @RequiredArgsConstructor
 @Validated
-public class RestPollingProperties {
+public class RestProperties {
 
     public static final String URL_SUFFIX = "/api/v1";
 
@@ -45,7 +42,6 @@ public class RestPollingProperties {
     private String baseUrl;
 
     @Min(1)
-    @Max(60)
     private int maxAttempts = 20;
 
     @NotNull
@@ -56,18 +52,10 @@ public class RestPollingProperties {
     @DurationMin(millis = 100L)
     private Duration minBackoff = Duration.ofMillis(500L);
 
-    @NotNull
-    private Set<Class<?>> retryableExceptions = Set.of(Exception.class);
-
+    // Don't retry negative test cases
     public boolean shouldRetry(Throwable t) {
-        // Don't retry negative test cases
-        if (t instanceof WebClientResponseException wcre
-                && (wcre.getStatusCode() == HttpStatus.BAD_REQUEST
-                        || wcre.getStatusCode() == HttpStatus.NOT_IMPLEMENTED)) {
-            return false;
-        }
-        return retryableExceptions.stream()
-                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
+        return !(t instanceof HttpClientErrorException e)
+                || (e.getStatusCode() != HttpStatus.BAD_REQUEST && e.getStatusCode() != HttpStatus.NOT_IMPLEMENTED);
     }
 
     public String getBaseUrl() {

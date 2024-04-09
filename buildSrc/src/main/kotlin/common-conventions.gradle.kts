@@ -23,6 +23,10 @@ repositories { mavenCentral() }
 val resources = rootDir.resolve("buildSrc").resolve("src").resolve("main").resolve("resources")
 
 dependencyCheck {
+    if (System.getenv().containsKey("NVD_API_KEY")) {
+        nvd.apiKey = System.getenv("NVD_API_KEY")
+    }
+
     failBuildOnCVSS = 8f
     suppressionFile = resources.resolve("suppressions.xml").toString()
     analyzers(

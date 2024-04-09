@@ -78,7 +78,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.client.HttpClientErrorException;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -201,8 +201,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     public void checkIfInvalidAccountIsToken() {
         var data = encodeData(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(ZERO_ADDRESS));
         assertThatThrownBy(() -> callContract(data, precompileTestContractSolidityAddress))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+                .isInstanceOf(HttpClientErrorException.BadRequest.class);
     }
 
     @And("the contract call REST API to is token with valid account id should return an error")
@@ -212,8 +211,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 IS_TOKEN_SELECTOR,
                 asAddress(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress()));
         assertThatThrownBy(() -> callContract(data, precompileTestContractSolidityAddress))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+                .isInstanceOf(HttpClientErrorException.BadRequest.class);
     }
 
     @And("verify fungible token isn't frozen")
@@ -244,9 +242,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @Retryable(
-            retryFor = {AssertionError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+            retryFor = {AssertionError.class, HttpClientErrorException.class},
+            backoff = @Backoff(delayExpression = "#{@restProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restProperties.maxAttempts}")
     @And("check if non fungible token is frozen")
     public void checkIfTokenIsFrozen() {
         var data = encodeData(
@@ -265,9 +263,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @Retryable(
-            retryFor = {AssertionError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+            retryFor = {AssertionError.class, HttpClientErrorException.class},
+            backoff = @Backoff(delayExpression = "#{@restProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restProperties.maxAttempts}")
     @And("check if non fungible token is unfrozen")
     public void checkIfTokenIsUnfrozen() {
         var data = encodeData(
@@ -285,9 +283,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @Retryable(
-            retryFor = {AssertionError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+            retryFor = {AssertionError.class, HttpClientErrorException.class},
+            backoff = @Backoff(delayExpression = "#{@restProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restProperties.maxAttempts}")
     @And("check if fungible token is frozen for evm address")
     public void checkIfTokenIsFrozenForEvmAddress() {
         AccountInfo accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
@@ -309,9 +307,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @Retryable(
-            retryFor = {AssertionError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+            retryFor = {AssertionError.class, HttpClientErrorException.class},
+            backoff = @Backoff(delayExpression = "#{@restProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restProperties.maxAttempts}")
     @And("check if fungible token is unfrozen for evm address")
     public void checkIfTokenIsUnfrozenForEvmAddress() {
         AccountInfo accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
@@ -327,9 +325,9 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @Retryable(
-            retryFor = {AssertionError.class, WebClientResponseException.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+            retryFor = {AssertionError.class, HttpClientErrorException.class},
+            backoff = @Backoff(delayExpression = "#{@restProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restProperties.maxAttempts}")
     public void verifyTx(String txId) {
         TransactionByIdResponse txResponse = mirrorClient.getTransactions(txId);
         assertNotNull(txResponse);
@@ -403,8 +401,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Retryable(
             retryFor = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+            backoff = @Backoff(delayExpression = "#{@restProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restProperties.maxAttempts}")
     @And("the contract call REST API should return the information for token for a non fungible token")
     public void getInformationForTokenOfNonFungibleToken() throws Exception {
         var data = encodeData(PRECOMPILE, GET_INFORMATION_FOR_TOKEN_SELECTOR, asAddress(nonFungibleTokenId));
@@ -517,8 +515,8 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Retryable(
             retryFor = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+            backoff = @Backoff(delayExpression = "#{@restProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restProperties.maxAttempts}")
     public void verifyNft(TokenId tokenId, Long serialNumber) {
         Nft mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
 

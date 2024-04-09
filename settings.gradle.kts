@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-plugins { id("com.gradle.enterprise") version ("3.14.1") }
+plugins { id("com.gradle.develocity") version ("3.17") }
 
 rootProject.name = "hedera-mirror-node"
 
@@ -54,10 +54,10 @@ fun shortenProjectName(project: ProjectDescriptor) {
     project.children.forEach(this::shortenProjectName)
 }
 
-gradleEnterprise {
+develocity {
     buildScan {
-        termsOfServiceUrl = "https://gradle.com/terms-of-service"
-        termsOfServiceAgree = "yes"
+        termsOfUseUrl = "https://gradle.com/terms-of-service"
+        termsOfUseAgree = "yes"
         tag("CI")
     }
 }

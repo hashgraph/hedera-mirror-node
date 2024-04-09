@@ -15,6 +15,9 @@ env:
   MODULE: hedera-mirror-rosetta
   NETWORK: previewnet
 
+permissions:
+  contents: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -22,8 +25,13 @@ jobs:
     env:
       ROSETTA_CLI_VERSION: v0.10.3
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        with:
+          egress-policy: audit
+
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
 
       - name: Set Importer StartDate
         run: |
@@ -42,10 +50,10 @@ jobs:
           echo "Set importer startDate to ${startDate}"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
 
       - name: Build Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0 # v5.3.0
         with:
           build-args: GIT_REF=${{ github.sha }}
           cache-from: type=gha
