@@ -17,8 +17,6 @@
 package com.hedera.mirror.restjava.config;
 
 import com.hedera.mirror.restjava.cache.CacheProperties;
-import java.util.Set;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -27,8 +25,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
+import java.util.Set;
+
 @Configuration
-@ConditionalOnProperty(prefix = "spring.cache", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCaching
 public class CacheConfiguration {
     public static final String ENTITY_CACHE = "entity";

@@ -21,14 +21,14 @@ import org.apache.commons.lang3.StringUtils;
 public sealed interface EntityIdParameter
         permits EntityIdNumParameter, EntityIdEvmAddressParameter, EntityIdAliasParameter {
 
-    Long shard();
+    long shard();
 
-    Long realm();
+    long realm();
 
     static EntityIdParameter valueOf(String id) {
 
         if (StringUtils.isBlank(id)) {
-            throw new IllegalArgumentException(" Id '%s' has an invalid format".formatted(id));
+            throw new IllegalArgumentException("ID '%s' has an invalid format".formatted(id));
         }
 
         EntityIdParameter entityId;
@@ -39,7 +39,7 @@ public sealed interface EntityIdParameter
         } else if ((entityId = EntityIdAliasParameter.valueOf(id)) != null) {
             return entityId;
         } else {
-            throw new IllegalArgumentException("ID %s format is invalid".formatted(id));
+            throw new IllegalArgumentException("ID '%s' format is invalid".formatted(id));
         }
     }
 }

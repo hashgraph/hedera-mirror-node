@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 import static com.hedera.mirror.restjava.common.Utils.getPaginationLink;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;

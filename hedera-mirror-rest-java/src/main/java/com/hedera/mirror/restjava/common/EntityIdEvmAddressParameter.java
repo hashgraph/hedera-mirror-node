@@ -16,12 +16,13 @@
 
 package com.hedera.mirror.restjava.common;
 
-import java.util.regex.Pattern;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
-public record EntityIdEvmAddressParameter(byte[] evmAddress, Long shard, Long realm) implements EntityIdParameter {
+import java.util.regex.Pattern;
+
+public record EntityIdEvmAddressParameter(long shard, long realm, byte[] evmAddress) implements EntityIdParameter {
 
     public static final String EVM_ADDRESS_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?(0x)?([A-Fa-f0-9]{40})$";
     public static final Pattern EVM_ADDRESS_PATTERN = Pattern.compile(EVM_ADDRESS_REGEX);
@@ -34,8 +35,8 @@ public record EntityIdEvmAddressParameter(byte[] evmAddress, Long shard, Long re
             return null;
         }
 
-        Long shard = 0L;
-        Long realm = 0L;
+        long shard = 0L;
+        long realm = 0L;
 
         if (evmMatcher.group(3) != null) {
             // This gets the realm value
@@ -47,6 +48,6 @@ public record EntityIdEvmAddressParameter(byte[] evmAddress, Long shard, Long re
         }
         var evmAddress = Hex.decodeHex(evmMatcher.group(6));
 
-        return new EntityIdEvmAddressParameter(evmAddress, shard, realm);
+        return new EntityIdEvmAddressParameter(shard, realm, evmAddress);
     }
 }

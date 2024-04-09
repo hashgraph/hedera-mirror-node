@@ -19,11 +19,8 @@ package com.hedera.mirror.restjava.common;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-public class Constants {
+public class ParameterNames {
 
     public static final String ACCOUNT_ID = "account.id";
-    public static final long NANOS_PER_SECOND = 1_000_000_000L;
-    public static final int NANO_DIGITS = 9;
-
     public static final String TOKEN_ID = "token.id";
 }

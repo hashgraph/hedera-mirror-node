@@ -20,7 +20,7 @@ import com.google.common.io.BaseEncoding;
 
 import java.util.regex.Pattern;
 
-public record EntityIdAliasParameter(byte[] alias, Long shard, Long realm) implements EntityIdParameter {
+public record EntityIdAliasParameter(long shard, long realm, byte[] alias) implements EntityIdParameter {
 
     public static final String ACCOUNT_ALIAS_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?([A-Z2-7]+)$";
 
@@ -34,8 +34,8 @@ public record EntityIdAliasParameter(byte[] alias, Long shard, Long realm) imple
             return null;
         }
 
-        Long shard = 0L;
-        Long realm = 0L;
+        long shard = 0;
+        long realm = 0;
 
         if (aliasMatcher.group(3) != null) {
             // This gets the shard and realm value
@@ -47,6 +47,6 @@ public record EntityIdAliasParameter(byte[] alias, Long shard, Long realm) imple
             realm = Long.parseLong(aliasMatcher.group(2));
         }
 
-        return new EntityIdAliasParameter(BASE32.decode(aliasMatcher.group(5)), shard, realm);
+        return new EntityIdAliasParameter(shard, realm, BASE32.decode(aliasMatcher.group(5)));
     }
 }

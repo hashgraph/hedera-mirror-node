@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;

@@ -16,16 +16,18 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
+import com.google.common.io.BaseEncoding;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.InvalidEntityException;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EntityIdParameterTest {
 
@@ -62,73 +64,46 @@ class EntityIdParameterTest {
         assertThrows(InvalidEntityException.class, () -> EntityIdParameter.valueOf(input));
     }
 
-    @Test
-    @DisplayName("EntityId parse from string tests")
-    void entityParseFromString() {
-        assertThat(EntityId.of(0, 0, 0)).isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf("0.0.0")).id());
-        assertThat(EntityId.of(0, 0, 0)).isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf("0")).id());
-        assertThat(EntityId.of(0, 0, 4294967295L))
-                .isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf("0.0.4294967295")).id());
-        assertThat(EntityId.of(0, 65535, 1))
-                .isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf("65535.000000001")).id());
-        assertThat(EntityId.of(32767, 65535, 4294967295L))
-                .isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf("32767.65535.4294967295")).id());
-        assertThat(EntityId.of(0, 0, 4294967295L))
-                .isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf("4294967295")).id());
-        assertThat(EntityId.of(0, 0, 1)).isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf("0.1")).id());
-        assertThat(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
+    @ParameterizedTest
+    @CsvSource({"0.0.0,0,0,0",
+    "0,0,0,0",
+            "0.1,0,0,1",
+    "0.0.4294967295,0,0,4294967295",
+    "65535.000000001,0,65535,1",
+    "32767.65535.4294967295,32767,65535,4294967295",
+    "4294967295,0,0,4294967295"})
+    void valueOfId(String givenEntityId,long expectedShard,long expectedRealm,long expectedNum) {
+        assertThat(EntityId.of(expectedShard, expectedRealm, expectedNum)).isEqualTo(((EntityIdNumParameter) EntityIdParameter.valueOf(givenEntityId)).id());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"0x0000000000000000000000000000000000000001,0000000000000000000000000000000000000001",
+            "0000000000000000000000000000000000000001,0000000000000000000000000000000000000001",
+            "0x0000000100000000000000020000000000000003,0000000100000000000000020000000000000003",
+            "0000000100000000000000020000000000000003,0000000100000000000000020000000000000003",
+            "1.2.0000000100000000000000020000000000000003,0000000100000000000000020000000000000003",
+            "0x00007fff000000000000ffff00000000ffffffff,00007fff000000000000ffff00000000ffffffff",
+            "0.0.000000000000000000000000000000000186Fb1b,000000000000000000000000000000000186Fb1b",
+            "0.0x000000000000000000000000000000000186Fb1b,000000000000000000000000000000000186Fb1b",
+            "0.0.0x000000000000000000000000000000000186Fb1b,000000000000000000000000000000000186Fb1b",
+            "0.000000000000000000000000000000000186Fb1b,000000000000000000000000000000000186Fb1b",
+            "000000000000000000000000000000000186Fb1b,000000000000000000000000000000000186Fb1b",
+            "0x000000000000000000000000000000000186Fb1b,000000000000000000000000000000000186Fb1b"
+    })
+    void valueOfEvmAddress(String givenEvmAddress,String expectedEvmAddress) {
+        assertThat(Hex.decode(expectedEvmAddress))
                 .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0x0000000000000000000000000000000000000001"))
+                        EntityIdParameter.valueOf(givenEvmAddress))
                         .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0000000000000000000000000000000000000001"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0x0000000100000000000000020000000000000003"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0000000100000000000000020000000000000003"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("1.2.0000000100000000000000020000000000000003"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 127, -1, 0, 0, 0, 0, 0, 0, -1, -1, 0, 0, 0, 0, -1, -1, -1, -1})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0x00007fff000000000000ffff00000000ffffffff"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -122, -5, 27})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0.0.000000000000000000000000000000000186Fb1b"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -122, -5, 27})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0.0x000000000000000000000000000000000186Fb1b"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -122, -5, 27})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0.0.0x000000000000000000000000000000000186Fb1b"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -122, -5, 27})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0.000000000000000000000000000000000186Fb1b"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -122, -5, 27})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("000000000000000000000000000000000186Fb1b"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -122, -5, 27})
-                .isEqualTo(((EntityIdEvmAddressParameter)
-                                EntityIdParameter.valueOf("0x000000000000000000000000000000000186Fb1b"))
-                        .evmAddress());
-        assertThat(new byte[] {0, 2, 17, 11, 90})
-                .isEqualTo(((EntityIdAliasParameter) EntityIdParameter.valueOf("AABBCC22")).alias());
-        assertThat(new byte[] {0, 2, 17, 11, 90})
-                .isEqualTo(((EntityIdAliasParameter) EntityIdParameter.valueOf("0.AABBCC22")).alias());
-        assertThat(new byte[] {0, 2, 17, 11, 90})
-                .isEqualTo(((EntityIdAliasParameter) EntityIdParameter.valueOf("0.1.AABBCC22")).alias());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"AABBCC22,AABBCC22",
+            "0.AABBCC22,AABBCC22",
+            "0.1.AABBCC22,AABBCC22"
+    })
+    void valueOfAlias(String givenAlias, String expectedAlias) {
+        assertThat(BaseEncoding.base32().omitPadding().decode(expectedAlias))
+                .isEqualTo(((EntityIdAliasParameter) EntityIdParameter.valueOf(givenAlias)).alias());
     }
 }

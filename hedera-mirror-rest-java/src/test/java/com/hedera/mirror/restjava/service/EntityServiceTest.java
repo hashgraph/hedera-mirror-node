@@ -46,9 +46,9 @@ public class EntityServiceTest extends RestJavaIntegrationTest {
 
         assertThat(service.lookup(new EntityIdNumParameter(entity.toEntityId())))
                 .isEqualTo(id);
-        assertThat(service.lookup(new EntityIdEvmAddressParameter(entity.getEvmAddress(), 0L, 0L)))
+        assertThat(service.lookup(new EntityIdEvmAddressParameter(0, 0, entity.getEvmAddress())))
                 .isEqualTo(id);
-        assertThat(service.lookup(new EntityIdAliasParameter(entity.getAlias(), 0L, 0L)))
+        assertThat(service.lookup(new EntityIdAliasParameter(0, 0, entity.getAlias())))
                 .isEqualTo(id);
     }
 
@@ -95,13 +95,13 @@ public class EntityServiceTest extends RestJavaIntegrationTest {
 
     @NotNull
     private static EntityIdAliasParameter getEntityIdAliasParameter(String id, Long shard, Long realm) {
-        return new EntityIdAliasParameter(BaseEncoding.base32().omitPadding().decode(id), shard, realm);
+        return new EntityIdAliasParameter(shard, realm, BaseEncoding.base32().omitPadding().decode(id));
     }
 
     @NotNull
     private static EntityIdEvmAddressParameter getEntityIdEvmAddressParameter(String id, Long shard, Long realm)
             throws DecoderException {
-        return new EntityIdEvmAddressParameter(Hex.decodeHex(id), shard, realm);
+        return new EntityIdEvmAddressParameter(shard, realm, Hex.decodeHex(id));
     }
 
     @NotNull

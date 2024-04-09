@@ -25,12 +25,12 @@ public record EntityIdNumParameter(EntityId id) implements EntityIdParameter {
     public static final Pattern ENTITY_ID_PATTERN = Pattern.compile(ENTITY_ID_REGEX);
 
     @Override
-    public Long shard() {
+    public long shard() {
         return id().getShard();
     }
 
     @Override
-    public Long realm() {
+    public long realm() {
         return id().getRealm();
     }
 
@@ -42,8 +42,8 @@ public record EntityIdNumParameter(EntityId id) implements EntityIdParameter {
             return null;
         }
 
-        Long realm = 0L;
-        Long shard = 0L;
+        long realm = 0;
+        long shard = 0;
 
         if (matcher.group(3) != null) {
             // This gets the shard and realm value

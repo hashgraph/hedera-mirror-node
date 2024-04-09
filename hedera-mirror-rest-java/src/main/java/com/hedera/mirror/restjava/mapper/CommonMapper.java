@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.restjava.mapper;
 
-import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
-
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.TimestampRange;
@@ -27,6 +25,8 @@ import org.mapstruct.MappingInheritanceStrategy;
 
 @Mapper(mappingInheritanceStrategy = MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG)
 public interface CommonMapper {
+
+    int NANO_DIGITS = 9;
 
     default String mapEntityId(Long source) {
         if (source == null || source == 0) {
