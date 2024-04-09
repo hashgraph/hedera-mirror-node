@@ -16,109 +16,70 @@
 
 package com.hedera.mirror.test.e2e.acceptance.config;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.web.client.ClientHttpRequestFactories;
+import org.springframework.boot.web.client.ClientHttpRequestFactorySettings;
+import org.springframework.boot.web.client.RestClientCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
-import org.springframework.http.codec.json.Jackson2JsonDecoder;
-import org.springframework.http.codec.json.Jackson2JsonEncoder;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
 
 @Configuration
-@RequiredArgsConstructor
 @EnableRetry
-public class ClientConfiguration {
-
-    public static final String REST_RETRY_TEMPLATE = "rest";
+@RequiredArgsConstructor
+class ClientConfiguration {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
 
     @Bean
-    RetryTemplate retryTemplate() {
-        return retryTemplate(List.of(
-                PrecheckStatusException.class,
-                TimeoutException.class,
-                RuntimeException.class,
-                ReceiptStatusException.class));
-    }
-
-    @Bean
-    WebClient webClient() {
-        HttpClient httpClient = HttpClient.create()
-                .compress(true)
-                .followRedirect(true)
-                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) acceptanceTestProperties
-                        .getWebClientProperties()
-                        .getConnectionTimeout()
-                        .toMillis())
-                .doOnConnected(connection -> {
-                    connection.addHandlerLast(new ReadTimeoutHandler(
-                            acceptanceTestProperties
-                                    .getWebClientProperties()
-                                    .getReadTimeout()
-                                    .toMillis(),
-                            TimeUnit.MILLISECONDS));
-                    connection.addHandlerLast(new WriteTimeoutHandler(
-                            acceptanceTestProperties
-                                    .getWebClientProperties()
-                                    .getWriteTimeout()
-                                    .toMillis(),
-                            TimeUnit.MILLISECONDS));
-                })
-                .wiretap(acceptanceTestProperties.getWebClientProperties().isWiretap()); // enable request logging
-
-        // support snake_case to avoid manually mapping JsonProperty on all properties
-        ObjectMapper objectMapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-        Jackson2JsonDecoder jackson2JsonDecoder = new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON);
-        Jackson2JsonEncoder jackson2JsonEncoder = new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON);
+    RestClientCustomizer restClientCustomizer() {
+        var baseUrl = acceptanceTestProperties.getRestProperties().getBaseUrl();
+        var clientProperties = acceptanceTestProperties.getWebClientProperties();
+        var factorySettings = ClientHttpRequestFactorySettings.DEFAULTS
+                .withConnectTimeout(clientProperties.getConnectionTimeout())
+                .withReadTimeout(clientProperties.getReadTimeout());
         var logger = LoggerFactory.getLogger(MirrorNodeClient.class);
 
-        return WebClient.builder()
-                .baseUrl(acceptanceTestProperties.getRestPollingProperties().getBaseUrl())
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .codecs(clientCodecConfigurer -> {
-                    clientCodecConfigurer.defaultCodecs().jackson2JsonDecoder(jackson2JsonDecoder);
-                    clientCodecConfigurer.defaultCodecs().jackson2JsonEncoder(jackson2JsonEncoder);
-                })
+        return builder -> builder.baseUrl(baseUrl)
                 .defaultHeaders(httpHeaders -> {
                     httpHeaders.setAccept((List.of(MediaType.APPLICATION_JSON)));
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setCacheControl(CacheControl.noStore());
                 })
-                .filter((request, next) -> next.exchange(request).doOnNext(response -> {
-                    if (logger.isDebugEnabled() || response.statusCode() != HttpStatus.NOT_FOUND) {
-                        logger.info("{} {}: {}", request.method(), request.url(), response.statusCode());
+                .requestFactory(ClientHttpRequestFactories.get(factorySettings))
+                .requestInterceptor((request, body, execution) -> {
+                    var response = execution.execute(request, body);
+                    var statusCode = response.getStatusCode();
+
+                    if (logger.isDebugEnabled() || statusCode != HttpStatus.NOT_FOUND) {
+                        logger.info("{} {}: {}", request.getMethod(), request.getURI(), statusCode);
                     }
-                }))
-                .build();
+
+                    return response;
+                });
     }
 
-    private RetryTemplate retryTemplate(List<Class<? extends Throwable>> throwables) {
+    @Bean
+    RetryTemplate retryTemplate() {
+        List<Class<? extends Throwable>> retryableExceptions = List.of(
+                PrecheckStatusException.class,
+                ReceiptStatusException.class,
+                RuntimeException.class,
+                TimeoutException.class);
         return RetryTemplate.builder()
                 .fixedBackoff(acceptanceTestProperties.getBackOffPeriod().toMillis())
                 .maxAttempts(acceptanceTestProperties.getMaxRetries())
-                .retryOn(throwables)
+                .retryOn(retryableExceptions)
                 .traversingCauses()
                 .build();
     }
