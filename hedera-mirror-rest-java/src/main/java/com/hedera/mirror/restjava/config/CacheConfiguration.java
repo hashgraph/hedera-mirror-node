@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package com.hedera.mirror.restjava.config;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.hedera.mirror.restjava.RestJavaProperties;
+import com.hedera.mirror.restjava.cache.CacheProperties;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -31,17 +31,19 @@ import org.springframework.context.annotation.Primary;
 @ConditionalOnProperty(prefix = "spring.cache", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCaching
 public class CacheConfiguration {
-    public static final String ENTITY_CACHE = "entityCache";
+    public static final String ENTITY_CACHE = "entity";
     public static final String CACHE_NAME = "default";
 
     @Bean(ENTITY_CACHE)
     @Primary
-    CacheManager entityCache(RestJavaProperties properties) {
+    CacheManager entityCache(CacheProperties properties) {
+        if (!properties.isEnabled()) {
+            return new NoOpCacheManager();
+        }
+
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME));
-        caffeineCacheManager.setCaffeine(Caffeine.newBuilder()
-                .expireAfterWrite(properties.getCacheExpiry())
-                .maximumSize(properties.getEntityCacheSize()));
+        caffeineCacheManager.setCacheSpecification(properties.getEntity());
         return caffeineCacheManager;
     }
 }

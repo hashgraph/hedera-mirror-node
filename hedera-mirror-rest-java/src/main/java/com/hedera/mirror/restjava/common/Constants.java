@@ -17,22 +17,12 @@
 package com.hedera.mirror.restjava.common;
 
 import lombok.experimental.UtilityClass;
-import org.apache.commons.codec.binary.Base32;
 
 @UtilityClass
 public class Constants {
 
     public static final String ACCOUNT_ID = "account.id";
-    public static final Base32 BASE32 = new Base32();
-
-    public static final int MAX_LIMIT = 100;
-    public static final String DEFAULT_LIMIT = "25";
-
-    public static final String HEX_PREFIX = "0x";
-
-    public static final String OWNER = "owner";
-
-    public static final long NANOS_PER_SECOND = 1000_000_000L;
+    public static final long NANOS_PER_SECOND = 1_000_000_000L;
     public static final int NANO_DIGITS = 9;
 
     public static final String TOKEN_ID = "token.id";

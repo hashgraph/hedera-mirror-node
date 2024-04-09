@@ -17,8 +17,6 @@
 package com.hedera.mirror.restjava.controller;
 
 import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
-import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
 import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
 
 import com.hedera.mirror.rest.model.Links;
@@ -49,6 +47,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/accounts/{id}/allowances")
 @RestController
 public class AllowancesController {
+
+    private static final int MAX_LIMIT = 100;
+    private static final String DEFAULT_LIMIT = "25";
 
     private final NftAllowanceService service;
     private final NftAllowanceMapper nftAllowanceMapper;

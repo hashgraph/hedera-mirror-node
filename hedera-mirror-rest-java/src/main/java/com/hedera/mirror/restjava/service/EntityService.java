@@ -16,9 +16,10 @@
 
 package com.hedera.mirror.restjava.service;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 
 public interface EntityService {
 
-    long lookup(EntityIdParameter entityId);
+    EntityId lookup(EntityIdParameter entityId);
 }

@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static com.hedera.mirror.restjava.common.Constants.BASE32;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,6 +31,7 @@ import jakarta.annotation.Resource;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.codec.binary.Base32;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,9 +45,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"hedera.mirror.restJava.shard=0"})
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
 
     @LocalServerPort
@@ -135,7 +133,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
         var result = restClient
                 .get()
-                .uri("", BASE32.encodeAsString(entity.getAlias()))
+                .uri("", new Base32().encodeAsString(entity.getAlias()))
                 .accept(MediaType.ALL)
                 .retrieve()
                 .body(NftAllowancesResponse.class);

@@ -59,12 +59,12 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         if (request.isOwner()) {
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
-            return repository.findByOwnerAndFilterBySpenderAndToken(id, filterId, tokenId, pageable);
+            return repository.findByOwnerAndFilterBySpenderAndToken(id.getId(), filterId, tokenId, pageable);
 
         } else {
             var pageable =
                     PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
-            return repository.findBySpenderAndFilterByOwnerAndToken(id, filterId, tokenId, pageable);
+            return repository.findBySpenderAndFilterByOwnerAndToken(id.getId(), filterId, tokenId, pageable);
         }
     }
 

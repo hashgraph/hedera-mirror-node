@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,7 @@
 package com.hedera.mirror.restjava;
 
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import java.time.Duration;
 import lombok.Data;
-import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -29,10 +26,6 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.rest-java")
 public class RestJavaProperties {
 
-    @DurationMin(millis = 500L)
-    @NotNull
-    private Duration cacheExpiry = Duration.ofSeconds(60);
-
-    @Min(1)
-    private int entityCacheSize = 50_000;
+    @Min(0)
+    private long shard = 0L;
 }

@@ -16,22 +16,22 @@
 
 package com.hedera.mirror.restjava.service;
 
-import static com.hedera.mirror.restjava.common.Constants.BASE32;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
-import com.hedera.mirror.restjava.common.EntityIdParameter;
-import com.hedera.mirror.restjava.common.EntityIdType;
-import com.hedera.mirror.restjava.converter.EntityIdArgumentConverter;
+import com.hedera.mirror.restjava.common.EntityIdAliasParameter;
+import com.hedera.mirror.restjava.common.EntityIdEvmAddressParameter;
+import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 
 @RequiredArgsConstructor
@@ -39,38 +39,32 @@ public class EntityServiceTest extends RestJavaIntegrationTest {
 
     private final EntityService service;
 
-    @Test
-    void lookup() throws DecoderException {
-        var entity = domainBuilder.entity().persist();
-        var id = entity.getId();
+    private static final Base32 BASE32 = new Base32();
 
-        assertThat(service.lookup(new EntityIdParameter(entity.toEntityId(), null, null, 0L, 0L, EntityIdType.NUM)))
+    @Test
+    void lookup() {
+        var entity = domainBuilder.entity().persist();
+        var id = entity.toEntityId();
+
+        assertThat(service.lookup(new EntityIdNumParameter(entity.toEntityId())))
                 .isEqualTo(id);
-        assertThat(service.lookup(
-                        new EntityIdParameter(null, entity.getEvmAddress(), null, 0L, 0L, EntityIdType.EVMADDRESS)))
+        assertThat(service.lookup(new EntityIdEvmAddressParameter(entity.getEvmAddress(), 0L, 0L)))
                 .isEqualTo(id);
-        assertThat(service.lookup(new EntityIdParameter(null, null, entity.getAlias(), 0L, 0L, EntityIdType.ALIAS)))
+        assertThat(service.lookup(new EntityIdAliasParameter(entity.getAlias(), 0L, 0L)))
                 .isEqualTo(id);
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "0.0.5000, null, null, NUM",
-        "'null', AABBCC22, null, ALIAS",
-        "null, null, 000000000000000000000000000000000186Fb1b, EVMADDRESS"
-    })
-    void lookupEntityNotPresent(
-            @ConvertWith(EntityIdArgumentConverter.class) EntityId id,
-            String alias,
-            String evmAddress,
-            EntityIdType type)
-            throws DecoderException {
+    @Test
+    @SuppressWarnings("java:S5778")
+    void lookupEntityNotPresent() {
 
-        var decodedAlias = !alias.equalsIgnoreCase("null") ? BASE32.decode(alias) : null;
-        var decodedEvmAddress = !evmAddress.equalsIgnoreCase("null") ? Hex.decodeHex(evmAddress) : null;
-        var entityParam = new EntityIdParameter(id, decodedEvmAddress, decodedAlias, 0L, 0L, type);
-
-        assertThrows(EntityNotFoundException.class, () -> service.lookup(entityParam));
+        assertThrows(EntityNotFoundException.class, () -> service.lookup(getEntityId("0.0.5000")));
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> service.lookup(
+                        getEntityIdEvmAddressParameter("000000000000000000000000000000000186Fb1b", 0L, 0L)));
+        assertThrows(
+                EntityNotFoundException.class, () -> service.lookup(getEntityIdAliasParameter("AABBCC22", 0L, 0L)));
     }
 
     @ParameterizedTest
@@ -82,19 +76,38 @@ public class EntityServiceTest extends RestJavaIntegrationTest {
         "null, null, 000000000000000000000000000000000186Fb1b,0,1, EVMADDRESS",
         "null, null, 000000000000000000000000000000000186Fb1b,1,0, EVMADDRESS"
     })
-    void lookupInvalidShardRealm(
-            @ConvertWith(EntityIdArgumentConverter.class) EntityId id,
-            String alias,
-            String evmAddress,
-            Long shard,
-            Long realm,
-            EntityIdType type)
+    @SuppressWarnings("java:S5778")
+    void lookupInvalidShardRealm() {
+
+        assertThrows(IllegalArgumentException.class, () -> service.lookup(getEntityId("1.0.5000")));
+        assertThrows(IllegalArgumentException.class, () -> service.lookup(getEntityId("0.1.5000")));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.lookup(
+                        getEntityIdEvmAddressParameter("000000000000000000000000000000000186Fb1b", 0L, 1L)));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.lookup(
+                        getEntityIdEvmAddressParameter("000000000000000000000000000000000186Fb1b", 1L, 0L)));
+        assertThrows(
+                IllegalArgumentException.class, () -> service.lookup(getEntityIdAliasParameter("AABBCC22", 0L, 1L)));
+        assertThrows(
+                IllegalArgumentException.class, () -> service.lookup(getEntityIdAliasParameter("AABBCC22", 1L, 0L)));
+    }
+
+    @NotNull
+    private static EntityIdAliasParameter getEntityIdAliasParameter(String id, Long shard, Long realm) {
+        return new EntityIdAliasParameter(BASE32.decode(id), shard, realm);
+    }
+
+    @NotNull
+    private static EntityIdEvmAddressParameter getEntityIdEvmAddressParameter(String id, Long shard, Long realm)
             throws DecoderException {
+        return new EntityIdEvmAddressParameter(Hex.decodeHex(id), shard, realm);
+    }
 
-        var decodedAlias = !alias.equalsIgnoreCase("null") ? BASE32.decode(alias) : null;
-        var decodedEvmAddress = !evmAddress.equalsIgnoreCase("null") ? Hex.decodeHex(evmAddress) : null;
-        var entityParam = new EntityIdParameter(id, decodedEvmAddress, decodedAlias, shard, realm, type);
-
-        assertThrows(IllegalArgumentException.class, () -> service.lookup(entityParam));
+    @NotNull
+    private static EntityIdNumParameter getEntityId(String id) {
+        return new EntityIdNumParameter(EntityId.of(id));
     }
 }

@@ -14,10 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava;
+package com.hedera.mirror.restjava.cache;
 
-import com.hedera.mirror.common.config.CommonIntegrationTest;
-import org.springframework.boot.test.context.SpringBootTest;
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-@SpringBootTest
-public abstract class RestJavaIntegrationTest extends CommonIntegrationTest {}
+@Data
+@Validated
+@ConfigurationProperties(prefix = "hedera.mirror.rest-java.cache")
+public class CacheProperties {
+
+    private boolean enabled = true;
+
+    @NotBlank
+    private String entity = "maximumSize=100000,expireAfterWrite=60s,recordStats";
+}

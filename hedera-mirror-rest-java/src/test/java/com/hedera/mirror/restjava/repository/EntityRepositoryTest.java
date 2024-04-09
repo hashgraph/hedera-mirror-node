@@ -32,9 +32,12 @@ public class EntityRepositoryTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var entityDeleted =
                 domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
+        var entityDeletedNull =
+                domainBuilder.entity().customize((b) -> b.deleted(null)).persist();
 
         assertThat(entityRepository.existsById(entity.getId())).isTrue();
         assertThat(entityRepository.existsById(entityDeleted.getId())).isFalse();
+        assertThat(entityRepository.existsById(entityDeletedNull.getId())).isFalse();
     }
 
     @Test
@@ -43,9 +46,12 @@ public class EntityRepositoryTest extends RestJavaIntegrationTest {
         byte[] alias = entity.getAlias();
         var entityDeleted =
                 domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
+        var entityDeletedNull =
+                domainBuilder.entity().customize((b) -> b.deleted(null)).persist();
 
         assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
         assertThat(entityRepository.findByAlias(entityDeleted.getAlias())).isEmpty();
+        assertThat(entityRepository.findByAlias(entityDeletedNull.getAlias())).isEmpty();
     }
 
     @Test
@@ -53,6 +59,8 @@ public class EntityRepositoryTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var entityDeleted =
                 domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
+        var entityDeletedNull =
+                domainBuilder.entity().customize((b) -> b.deleted(null)).persist();
 
         assertThat(entityRepository.findByEvmAddress(entity.getEvmAddress()))
                 .get()
@@ -60,5 +68,7 @@ public class EntityRepositoryTest extends RestJavaIntegrationTest {
         assertThat(entityRepository.findByEvmAddress(entityDeleted.getEvmAddress()))
                 .isEmpty();
         assertThat(entityRepository.findByEvmAddress(new byte[] {1, 2, 3})).isEmpty();
+        assertThat(entityRepository.findByEvmAddress(entityDeletedNull.getEvmAddress()))
+                .isEmpty();
     }
 }
