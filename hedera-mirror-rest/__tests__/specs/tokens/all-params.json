@@ -96,6 +96,7 @@
           "key": "040404"
         },
         "decimals": 4,
+        "metadata": null,
         "name": "Hedera",
         "type": "FUNGIBLE_COMMON"
       },
@@ -107,6 +108,7 @@
           "key": "030303"
         },
         "decimals": 3,
+        "metadata": null,
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       }

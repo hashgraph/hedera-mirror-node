@@ -83,6 +83,7 @@
           "key": "010101"
         },
         "decimals": 1,
+        "metadata": null,
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
@@ -94,6 +95,7 @@
           "key": "020202"
         },
         "decimals": 0,
+        "metadata": null,
         "name": "Original",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
@@ -105,6 +107,7 @@
           "key": "030303"
         },
         "decimals": 2,
+        "metadata": null,
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -116,6 +119,7 @@
           "key": "040404"
         },
         "decimals": 0,
+        "metadata": null,
         "name": "Hedera",
         "type": "NON_FUNGIBLE_UNIQUE"
       }

@@ -31,6 +31,7 @@ describe('token formatTokenRow tests', () => {
     symbol: 'YBTJBOAZ',
     token_id: '7',
     decimals: 10,
+    metadata: null,
     name: 'Token name',
     type: 'FUNGIBLE_COMMON',
   };
@@ -925,18 +926,18 @@ describe('token formatTokenInfoRow tests', () => {
     },
   };
 
-  const rowInputWithMetadata = {
+  const rowInputWithMetadataAndKey = {
     ...rowInput,
-    metadata: [1, 2, 4],
+    metadata: Uint8Array.of(1,2,3),
     metadata_key: [8, 8, 8]
   };
 
-  const expectedWithMetadata = {
+  const expectedWithMetadataAndKey = {
     ...expected,
-    metadata: "1,2,4",
+    metadata: "1,2,3",
     metadata_key: {
-      _type: 'ProtobufEncoded',
-      key: '080808',
+      _type: "ProtobufEncoded",
+      key: "080808",
     }
   };
 
@@ -945,9 +946,9 @@ describe('token formatTokenInfoRow tests', () => {
     expect(actual).toEqual(expected);
   });
 
-  test('Verify formatTokenRowWithMetadata', () => {
-    const actual = tokens.formatTokenInfoRow(rowInputWithMetadata);
-    expect(actual).toEqual(expectedWithMetadata);
+  test('Verify formatTokenRowWithMetadataAndKey', () => {
+    const actual = tokens.formatTokenInfoRow(rowInputWithMetadataAndKey);
+    expect(actual).toEqual(expectedWithMetadataAndKey);
   });
 });
 
@@ -1459,6 +1460,8 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    kyc_status,
                    max_supply,
                    e.memo,
+                   metadata,
+                   metadata_key,
                    lower(t.timestamp_range) as modified_timestamp,
                    name,
                    pause_key,

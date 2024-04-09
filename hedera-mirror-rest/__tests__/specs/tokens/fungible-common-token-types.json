@@ -80,6 +80,7 @@
           "key": "010101"
         },
         "decimals": 1,
+        "metadata": null,
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
@@ -91,6 +92,7 @@
           "key": "030303"
         },
         "decimals": 3,
+        "metadata": null,
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       }

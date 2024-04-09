@@ -69,6 +69,7 @@
         "name": "First Mover",
         "decimals": 3,
         "admin_key": null,
+        "metadata": null,
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -77,6 +78,7 @@
         "name": "Original",
         "decimals": 4,
         "admin_key": null,
+        "metadata": null,
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -85,6 +87,7 @@
         "name": "Mirror Token",
         "decimals": 5,
         "admin_key": null,
+        "metadata": null,
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -93,6 +96,7 @@
         "name": "Hedera Coin",
         "decimals": 6,
         "admin_key": null,
+        "metadata": null,
         "type": "FUNGIBLE_COMMON"
       }
     ],
