@@ -54,9 +54,9 @@ import org.springframework.http.HttpStatus;
 
 @CustomLog
 public abstract class AbstractFeature extends EncoderDecoderFacade {
+    private static final Map<ContractResource, DeployedContract> contractIdMap = new ConcurrentHashMap<>();
     protected NetworkTransactionResponse networkTransactionResponse;
     protected ContractId contractId;
-    private static final Map<ContractResource, DeployedContract> contractIdMap = new ConcurrentHashMap<>();
 
     @Autowired
     protected ContractClient contractClient;
@@ -115,32 +115,30 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
     }
 
     public DeployedContract getContract(ContractResource contractResource) {
-        synchronized (contractIdMap) {
-            return contractIdMap.computeIfAbsent(contractResource, x -> {
-                var resource = resourceLoader.getResource(contractResource.path);
-                try (var in = resource.getInputStream()) {
-                    CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
-                    var fileId = persistContractBytes(
-                            compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
-                    networkTransactionResponse = contractClient.createContract(
-                            fileId,
-                            contractClient
-                                    .getSdkClient()
-                                    .getAcceptanceTestProperties()
-                                    .getFeatureProperties()
-                                    .getMaxContractFunctionGas(),
-                            contractResource.initialBalance == 0
-                                    ? null
-                                    : Hbar.fromTinybars(contractResource.initialBalance),
-                            null);
-                    ContractId contractId = verifyCreateContractNetworkResponse();
-                    return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
-                } catch (IOException e) {
-                    log.warn("Issue creating contract: {}, ex: {}", contractResource, e);
-                    throw new RuntimeException(e);
-                }
-            });
-        }
+        return contractIdMap.computeIfAbsent(contractResource, x -> {
+            var resource = resourceLoader.getResource(contractResource.path);
+            try (var in = resource.getInputStream()) {
+                CompiledSolidityArtifact compiledSolidityArtifact = readCompiledArtifact(in);
+                var fileId = persistContractBytes(
+                        compiledSolidityArtifact.getBytecode().replaceFirst("0x", ""));
+                networkTransactionResponse = contractClient.createContract(
+                        fileId,
+                        contractClient
+                                .getSdkClient()
+                                .getAcceptanceTestProperties()
+                                .getFeatureProperties()
+                                .getMaxContractFunctionGas(),
+                        contractResource.initialBalance == 0
+                                ? null
+                                : Hbar.fromTinybars(contractResource.initialBalance),
+                        null);
+                ContractId contractId = verifyCreateContractNetworkResponse();
+                return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
+            } catch (IOException e) {
+                log.warn("Issue creating contract: {}, ex: {}", contractResource, e);
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     protected FileId persistContractBytes(String contractContents) {
@@ -162,9 +160,6 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
         assertNotNull(contractId);
         return contractId;
     }
-
-    public record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 
     protected ContractCallResponseWrapper callContract(String data, String contractAddress) {
         return callContract("LATEST", data, contractAddress);
@@ -221,14 +216,6 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
         return Strings.encode(new Function(method.getSelector()).encodeCallWithArgs(args));
     }
 
-    public interface SelectorInterface {
-        String getSelector();
-    }
-
-    public interface ContractMethodInterface extends SelectorInterface {
-        int getActualGas();
-    }
-
     protected void removeFromContractIdMap(ContractResource key) {
         contractIdMap.remove(key);
     }
@@ -256,4 +243,15 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
             return "ContractResource{" + "path='" + path + '\'' + '}';
         }
     }
+
+    public interface SelectorInterface {
+        String getSelector();
+    }
+
+    public interface ContractMethodInterface extends SelectorInterface {
+        int getActualGas();
+    }
+
+    public record DeployedContract(
+            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
 }

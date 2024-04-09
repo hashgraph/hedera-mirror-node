@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import com.google.common.base.Suppliers;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.retry.support.RetryTemplate;
@@ -55,7 +57,8 @@ public class AccountClient extends AbstractNetworkClient {
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
     private final Collection<ExpandedAccountId> accountIds = new CopyOnWriteArrayList<>();
     private final long initialBalance;
-    private ExpandedAccountId tokenTreasuryAccount = null;
+    private final Supplier<ExpandedAccountId> tokenTreasuryAccount =
+            Suppliers.memoize(() -> createNewAccount(DEFAULT_INITIAL_BALANCE));
 
     public AccountClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -77,13 +80,8 @@ public class AccountClient extends AbstractNetworkClient {
         return 1; // Run cleanup last so it prints cost
     }
 
-    public synchronized ExpandedAccountId getTokenTreasuryAccount() {
-        if (tokenTreasuryAccount == null) {
-            tokenTreasuryAccount = createNewAccount(DEFAULT_INITIAL_BALANCE);
-            log.debug("Treasury Account: {} will be used for current test session", tokenTreasuryAccount);
-        }
-
-        return tokenTreasuryAccount;
+    public ExpandedAccountId getTokenTreasuryAccount() {
+        return tokenTreasuryAccount.get();
     }
 
     public NetworkTransactionResponse delete(ExpandedAccountId accountId) {

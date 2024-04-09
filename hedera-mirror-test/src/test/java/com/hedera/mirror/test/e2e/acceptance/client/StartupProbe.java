@@ -39,14 +39,13 @@ import java.util.function.Supplier;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.http.MediaType;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.RetryOperations;
+import org.springframework.retry.policy.TimeoutRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.util.retry.Retry;
+import org.springframework.web.client.RestClient;
 
 /**
  * StartupProbe -- a helper class to validate a SDKClient before using it.
@@ -57,7 +56,7 @@ import reactor.util.retry.Retry;
 public class StartupProbe {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
-    private final WebClient webClient;
+    private final RestClient.Builder restClient;
 
     public void validateEnvironment(Client client) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
@@ -143,25 +142,27 @@ public class StartupProbe {
 
     private void callRestEndpoint(Stopwatch stopwatch, TransactionId transactionId) {
         var startupTimeout = acceptanceTestProperties.getStartupTimeout();
-        var properties = acceptanceTestProperties.getRestPollingProperties();
-        var retrySpec = Retry.backoff(Integer.MAX_VALUE, properties.getMinBackoff())
-                .maxBackoff(properties.getMaxBackoff())
-                .filter(properties::shouldRetry);
+        var properties = acceptanceTestProperties.getRestProperties();
+        long timeout = startupTimeout.minus(stopwatch.elapsed()).toMillis();
+        var retryTemplate = RetryTemplate.builder()
+                .customPolicy(new TimeoutRetryPolicy(timeout) {
+                    @Override
+                    public boolean canRetry(RetryContext context) {
+                        return super.canRetry(context) && properties.shouldRetry(context.getLastThrowable());
+                    }
+                })
+                .exponentialBackoff(properties.getMinBackoff(), 2.0, properties.getMaxBackoff())
+                .build();
 
         var restTransactionId = transactionId.accountId + "-" + transactionId.validStart.getEpochSecond() + "-"
                 + transactionId.validStart.getNano();
 
-        String uri = "/transactions/" + restTransactionId;
-        webClient
+        retryTemplate.execute(x -> restClient
+                .build()
                 .get()
-                .uri(uri)
-                .accept(MediaType.APPLICATION_JSON)
+                .uri("/transactions/{id}", restTransactionId)
                 .retrieve()
-                .bodyToMono(String.class)
-                .retryWhen(retrySpec)
-                .doOnError(x -> log.warn("Endpoint {} failed, returning: {}", uri, x.getMessage()))
-                .timeout(startupTimeout.minus(stopwatch.elapsed()))
-                .block();
+                .body(String.class));
     }
 
     private RetryOperations retryOperations(Stopwatch stopwatch) {

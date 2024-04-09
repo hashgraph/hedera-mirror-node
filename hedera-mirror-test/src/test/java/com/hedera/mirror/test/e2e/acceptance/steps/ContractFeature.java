@@ -53,7 +53,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.client.HttpClientErrorException;
 
 @RequiredArgsConstructor
 public class ContractFeature extends AbstractFeature {
@@ -64,10 +64,10 @@ public class ContractFeature extends AbstractFeature {
     private static final String WRONG_SELECTOR = "000000";
     private static final String ACCOUNT_EMPTY_KEYLIST = "3200";
     private static final int EVM_ADDRESS_SALT = 42;
-    private DeployedContract deployedParentContract;
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
     private final Web3Properties web3Properties;
+    private DeployedContract deployedParentContract;
     private String create2ChildContractEvmAddress;
     private String create2ChildContractEntityId;
     private AccountId create2ChildContractAccountId;
@@ -194,8 +194,7 @@ public class ContractFeature extends AbstractFeature {
                 .from(from)
                 .to(to);
         assertThatThrownBy(() -> callContract(contractCallWrongSelector))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+                .isInstanceOf(HttpClientErrorException.BadRequest.class);
     }
 
     @Then("the mirror node REST API should verify the deleted contract entity")
@@ -254,10 +253,10 @@ public class ContractFeature extends AbstractFeature {
     @And("the mirror node REST API should indicate not found when using evm address to retrieve as a contract")
     public void verifyMirrorAPIContractNotFoundResponse() {
         try {
-            mirrorClient.getContractInfoWithNotFound(create2ChildContractEvmAddress);
+            mirrorClient.getContractInfo(create2ChildContractEvmAddress);
             fail("Did not expect to find contract at EVM address");
-        } catch (WebClientResponseException wcre) {
-            assertEquals(HttpStatus.NOT_FOUND, wcre.getStatusCode());
+        } catch (HttpClientErrorException e) {
+            assertEquals(HttpStatus.NOT_FOUND, e.getStatusCode());
         }
     }
 

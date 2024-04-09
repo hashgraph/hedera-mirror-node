@@ -41,6 +41,7 @@ import io.cucumber.java.en.When;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public class AccountFeature extends AbstractFeature {
 
-    private static Runnable CLEANUP;
+    private static AtomicReference<Runnable> CLEANUP = new AtomicReference<>();
 
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
@@ -65,17 +66,17 @@ public class AccountFeature extends AbstractFeature {
 
     @AfterAll
     public static void cleanup() {
-        if (CLEANUP != null) {
-            CLEANUP.run();
+        var cleanup = CLEANUP.get();
+        if (cleanup != null) {
+            cleanup.run();
         }
     }
 
     @Before
-    public synchronized void setup() {
+    public void setup() {
         // This hack allows us to invoke non-static beans in a static @AfterAll
-        if (CLEANUP == null) {
-            CLEANUP = () -> cleanables.stream().sorted(OrderComparator.INSTANCE).forEach(Cleanable::clean);
-        }
+        CLEANUP.compareAndSet(
+                null, () -> cleanables.stream().sorted(OrderComparator.INSTANCE).forEach(Cleanable::clean));
     }
 
     @When("I create a new account with balance {long} tℏ")

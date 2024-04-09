@@ -41,7 +41,7 @@ import org.springframework.validation.annotation.Validated;
 public class AcceptanceTestProperties {
 
     private final FeatureProperties featureProperties;
-    private final RestPollingProperties restPollingProperties;
+    private final RestProperties restProperties;
     private final WebClientProperties webClientProperties;
 
     @NotNull
