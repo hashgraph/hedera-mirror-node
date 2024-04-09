@@ -16,14 +16,16 @@
 
 package com.hedera.mirror.restjava.common;
 
+import com.google.common.io.BaseEncoding;
+
 import java.util.regex.Pattern;
-import org.apache.commons.codec.binary.Base32;
 
 public record EntityIdAliasParameter(byte[] alias, Long shard, Long realm) implements EntityIdParameter {
 
     public static final String ACCOUNT_ALIAS_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?([A-Z2-7]+)$";
 
     public static final Pattern ALIAS_PATTERN = Pattern.compile(ACCOUNT_ALIAS_REGEX);
+    private static final BaseEncoding BASE32 = BaseEncoding.base32().omitPadding();
 
     public static EntityIdAliasParameter valueOf(String id) {
         var aliasMatcher = ALIAS_PATTERN.matcher(id);
@@ -45,6 +47,6 @@ public record EntityIdAliasParameter(byte[] alias, Long shard, Long realm) imple
             realm = Long.parseLong(aliasMatcher.group(2));
         }
 
-        return new EntityIdAliasParameter(new Base32().decode(aliasMatcher.group(5)), shard, realm);
+        return new EntityIdAliasParameter(BASE32.decode(aliasMatcher.group(5)), shard, realm);
     }
 }

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.service;
 
+import com.google.common.io.BaseEncoding;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.common.EntityIdAliasParameter;
@@ -24,7 +25,6 @@ import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -38,8 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class EntityServiceTest extends RestJavaIntegrationTest {
 
     private final EntityService service;
-
-    private static final Base32 BASE32 = new Base32();
 
     @Test
     void lookup() {
@@ -97,7 +95,7 @@ public class EntityServiceTest extends RestJavaIntegrationTest {
 
     @NotNull
     private static EntityIdAliasParameter getEntityIdAliasParameter(String id, Long shard, Long realm) {
-        return new EntityIdAliasParameter(BASE32.decode(id), shard, realm);
+        return new EntityIdAliasParameter(BaseEncoding.base32().omitPadding().decode(id), shard, realm);
     }
 
     @NotNull

@@ -29,5 +29,5 @@ public class CacheProperties {
     private boolean enabled = true;
 
     @NotBlank
-    private String entity = "maximumSize=100000,expireAfterWrite=60s,recordStats";
+    private String entity = "maximumSize=100000,expireAfterWrite=10s,recordStats";
 }
