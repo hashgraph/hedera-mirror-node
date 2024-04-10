@@ -95,6 +95,11 @@ const createDbContainer = async () => {
     })
     .withPassword(ownerPassword)
     .withUsername(ownerUser)
+    .withLogConsumer((stream) => {
+      stream.on('data', (line) => logger.info(`[PostgreSQL ${workerId}]: ${line}`));
+      stream.on('err', (line) => logger.error(`[PostgreSQL ${workerId}]: ${line}`));
+      stream.on('end', () => logger.info(`[PostgreSQL ${workerId}]: Stream closed`));
+    })
     .start();
   logger.info(`Started PostgreSQL container for jest worker ${workerId} with image ${image}`);
 
