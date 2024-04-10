@@ -27,6 +27,7 @@
         "symbol": "FIRSTMOVERLPDJH",
         "created_timestamp": "1234567890000000001",
         "decimals": 3,
+        "metadata": [1, 1],
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
@@ -35,6 +36,7 @@
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
         "decimals": 4,
+        "metadata": [2, 2],
         "name": "Original",
         "type": "FUNGIBLE_COMMON"
       },
@@ -43,6 +45,7 @@
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
         "decimals": 5,
+        "metadata": [3, 3],
         "name": "Mirror Token",
         "type": "FUNGIBLE_COMMON"
       },
@@ -51,6 +54,7 @@
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
         "decimals": 6,
+        "metadata": [4, 4],
         "name": "Hedera Coin",
         "type": "FUNGIBLE_COMMON"
       }
@@ -69,7 +73,7 @@
         "name": "First Mover",
         "decimals": 3,
         "admin_key": null,
-        "metadata": null,
+        "metadata": "AQE=",
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -78,7 +82,7 @@
         "name": "Original",
         "decimals": 4,
         "admin_key": null,
-        "metadata": null,
+        "metadata": "AgI=",
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -87,7 +91,7 @@
         "name": "Mirror Token",
         "decimals": 5,
         "admin_key": null,
-        "metadata": null,
+        "metadata": "AwM=",
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -96,7 +100,7 @@
         "name": "Hedera Coin",
         "decimals": 6,
         "admin_key": null,
-        "metadata": null,
+        "metadata": "BAQ=",
         "type": "FUNGIBLE_COMMON"
       }
     ],

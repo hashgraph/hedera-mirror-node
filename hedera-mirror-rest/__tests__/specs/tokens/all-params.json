@@ -52,6 +52,7 @@
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
         "decimals": 3,
+        "metadata": null,
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -60,6 +61,7 @@
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
         "decimals": 4,
+        "metadata": [1, 1],
         "name": "Hedera",
         "type": "FUNGIBLE_COMMON"
       }
@@ -96,7 +98,7 @@
           "key": "040404"
         },
         "decimals": 4,
-        "metadata": null,
+        "metadata": "AQE=",
         "name": "Hedera",
         "type": "FUNGIBLE_COMMON"
       },

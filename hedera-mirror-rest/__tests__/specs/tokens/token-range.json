@@ -33,6 +33,7 @@
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
         "decimals": 2,
+        "metadata": [1, 1],
         "name": "Original",
         "type": "FUNGIBLE_COMMON"
       },
@@ -41,6 +42,7 @@
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
         "decimals": 3,
+        "metadata": [2, 2],
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -66,7 +68,7 @@
         "admin_key": null,
         "decimals": 2,
         "name": "Original",
-        "metadata": null,
+        "metadata": "AQE=",
         "type": "FUNGIBLE_COMMON"
       },
       {
@@ -75,7 +77,7 @@
         "admin_key": null,
         "decimals": 3,
         "name": "Mirror",
-        "metadata": null,
+        "metadata": "AgI=",
         "type": "FUNGIBLE_COMMON"
       }
     ],
