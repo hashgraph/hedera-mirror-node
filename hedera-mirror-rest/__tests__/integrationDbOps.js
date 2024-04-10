@@ -160,11 +160,11 @@ const flywayMigrate = async (connectionUri) => {
       "baselineOnMigrate": "true",
       "baselineVersion": "${schemaConfigs.baselineVersion}",
       "locations": "filesystem:${locations}",
-      "password": "${dbConnectionParams.password}",
+      "password": "${ownerPassword}",
       "placeholders.api-password": "${defaultDbConfig.password}",
       "placeholders.api-user": "${defaultDbConfig.user}",
       "placeholders.db-name": "${dbName}",
-      "placeholders.db-user": "${dbConnectionParams.user}",
+      "placeholders.db-user": "${ownerUser}",
       "placeholders.hashShardCount": 2,
       "placeholders.partitionStartDate": "'1970-01-01'",
       "placeholders.partitionTimeInterval": "'10 years'",
@@ -174,7 +174,7 @@ const flywayMigrate = async (connectionUri) => {
       "placeholders.tempSchema": "temporary",
       "target": "latest",
       "url": "jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}",
-      "user": "${dbConnectionParams.user}"
+      "user": "${ownerUser}"
     },
     "version": "9.22.3",
     "downloads": {
