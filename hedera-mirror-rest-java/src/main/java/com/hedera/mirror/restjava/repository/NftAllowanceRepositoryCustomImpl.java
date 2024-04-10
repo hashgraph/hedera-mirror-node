@@ -22,7 +22,7 @@ import static org.jooq.impl.DSL.noCondition;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.Filter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.exception.InvalidFilterException;
+import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import jakarta.inject.Named;
 import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
@@ -49,34 +49,30 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     @NotNull
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<NftAllowance> findAll(
-            boolean byOwner, @NotNull List<Filter<?>> filters, int limit, @NotNull Direction order) {
-        Condition commonCondition = null;
+    public Collection<NftAllowance> findAll(NftAllowanceRequest request) {
+        boolean byOwner = request.isOwner();
+        int limit = request.getLimit();
+        Direction order = request.getOrder();
+
         var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
-        Filter<Long> primarySortFilter = null;
-        Filter<Long> tokenFilter = null;
 
-        for (var filter : filters) {
-            var field = filter.field();
-            if (field == primaryField) {
-                commonCondition = filter.getCondition();
-            } else if (field == primarySortField) {
-                primarySortFilter = (Filter<Long>) filter;
-            } else if (field == NFT_ALLOWANCE.TOKEN_ID) {
-                tokenFilter = (Filter<Long>) filter;
-            }
-        }
+        var accountId = request.getAccountId();
+        var primarySortParam = request.getOwnerOrSpenderId();
+        var tokenParam = request.getTokenId();
 
-        if (commonCondition == null) {
-            throw new InvalidFilterException("Primary filter not found");
-        }
+        var primaryFilter =
+                new Filter<>(primaryField, RangeOperator.EQ, accountId.value().getId());
+        var primarySortFilter = new Filter<>(
+                primarySortField,
+                primarySortParam.operator(),
+                primarySortParam.value().getId());
+        var tokenFilter = new Filter<>(
+                NFT_ALLOWANCE.TOKEN_ID,
+                tokenParam.operator(),
+                tokenParam.value().getId());
 
-        if (tokenFilter != null && primarySortFilter == null) {
-            throw new InvalidFilterException(
-                    "Token filter exists without primary sort column (owner or spender) filter");
-        }
-
+        Condition commonCondition = primaryFilter.getCondition();
         var baseCondition = getBaseCondition(primarySortFilter, tokenFilter);
         var secondaryCondition = getSecondaryCondition(primarySortFilter, tokenFilter);
         var condition = commonCondition.and(baseCondition.or(secondaryCondition));
