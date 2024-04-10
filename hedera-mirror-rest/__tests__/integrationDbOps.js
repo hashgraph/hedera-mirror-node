@@ -22,12 +22,15 @@ import path from 'path';
 import config from '../config';
 import {getModuleDirname, isV2Schema} from './testutils';
 import {getPoolClass} from '../utils';
+import {getContainerRuntimeClient} from 'testcontainers';
 import {PostgreSqlContainer} from '@testcontainers/postgresql';
 
 const {db: defaultDbConfig} = config;
 const Pool = getPoolClass();
 
 const dbName = 'mirror_node';
+const ownerUser = 'mirror_node';
+const ownerPassword = 'mirror_node_pass';
 const readOnlyUser = 'mirror_rest';
 const readOnlyPassword = 'mirror_rest_pass';
 const workerId = process.env.JEST_WORKER_ID;
@@ -87,14 +90,11 @@ const createDbContainer = async () => {
     .withCopyFilesToContainer([initSqlCopy])
     .withDatabase(dbName)
     .withLabels({
-      // used to differentiate between containers so that Jest workers do not use a container that is already in use by another worker.
+      // used to differentiate between containers so that Jest workers can reuse their existing container
       workerId: workerId,
-      // used to remove the containers after the tests have completed.
-      tearDownLabel: process.env.TEARDOWN_LABEL,
     })
-    .withPassword('mirror_node_pass')
-    //.withReuse()
-    .withUsername('mirror_node')
+    .withPassword(ownerPassword)
+    .withUsername(ownerUser)
     .start();
   logger.info(`Started PostgreSQL container for jest worker ${workerId} with image ${image}`);
 
@@ -104,9 +104,27 @@ const createDbContainer = async () => {
   return dockerDb.getConnectionUri();
 };
 
+const getConnectionUri = async () => {
+  const client = await getContainerRuntimeClient();
+  const container = await client.container.fetchByLabel('workerId', workerId);
+  let connectionUri;
+  if (container) {
+    const inspectInfo = await client.container.inspect(container);
+    const postgresPort = inspectInfo.NetworkSettings.Ports['5432/tcp'][0].HostPort;
+    connectionUri = `postgres://${ownerUser}:${ownerPassword}@localhost:${postgresPort}/${dbName}`;
+    logger.info(`Using existing container port ${postgresPort} for jest worker ${workerId}`);
+  } else {
+    connectionUri = await createDbContainer();
+    await flywayMigrate(connectionUri);
+  }
+
+  return connectionUri;
+};
+
 const createPool = async () => {
-  const connectionUri = await createDbContainer();
-  await flywayMigrate(connectionUri);
+  const connectionUri = await getConnectionUri();
+  logger.info(`Using connection URI ${connectionUri} for jest worker ${workerId}`);
+
   const dbConnectionParams = {
     ...extractDbConnectionParams(connectionUri),
     database: dbName,

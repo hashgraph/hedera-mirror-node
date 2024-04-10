@@ -15,19 +15,7 @@
  */
 
 import log4js from 'log4js';
-import {getContainerRuntimeClient} from 'testcontainers';
 
 export default async function () {
-  // const client = await getContainerRuntimeClient();
-  // while (true) {
-  //   const container = await client.container.fetchByLabel('tearDownLabel', process.env.TEARDOWN_LABEL);
-  //   if (!container) {
-  //     break;
-  //   }
-  //
-  //   await client.container.stop(container);
-  //   await client.container.remove(container);
-  // }
-
   log4js.shutdown();
 }
