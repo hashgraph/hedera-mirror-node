@@ -22,7 +22,7 @@ meet the project's requirements. Every issue should have one of these mandatory 
 - `documentation`
 - `enhancement`
 
-This label will be used for grouping of items in the release notes. Additionally, issues are also recommended to have a
+This label will be used for grouping items in the release notes. Additionally, issues are also recommended to have a
 green `Area` label to indicate which component is impacted and to route it to the appropriate team member. Any other
 label can be added on an as-needed basis.
 
