@@ -25,6 +25,7 @@ import s3client from './s3client';
 import {CompositeRecordFile} from './stream';
 import TransactionId from './transactionId';
 import * as utils from './utils';
+import {NoSuchKey} from '@aws-sdk/client-s3';
 
 const recordFileSuffixRegex = /\.rcd(\.gz)?$/;
 
@@ -39,12 +40,12 @@ const recordFileSuffixRegex = /\.rcd(\.gz)?$/;
 const getSuccessfulTransactionConsensusNs = async (transactionId, nonce, scheduled) => {
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), nonce, scheduled];
   const sqlQuery = `SELECT consensus_timestamp
-       FROM transaction
-       WHERE payer_account_id = $1
-         AND valid_start_ns = $2
-         AND nonce = $3
-         AND scheduled = $4
-         AND result = 22`; // only the successful transaction
+                    FROM transaction
+                    WHERE payer_account_id = $1
+                      AND valid_start_ns = $2
+                      AND nonce = $3
+                      AND scheduled = $4
+                      AND result = 22`; // only the successful transaction
 
   const {rows} = await pool.queryQuietly(sqlQuery, sqlParams);
   if (_.isEmpty(rows)) {
@@ -66,14 +67,22 @@ const getSuccessfulTransactionConsensusNs = async (transactionId, nonce, schedul
  */
 const getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const sqlQuery = `select bytes, name, node_account_id, version
-       from record_file rf
-       join address_book ab
-         on (ab.end_consensus_timestamp is null and ab.start_consensus_timestamp < rf.consensus_start) or
-            (ab.start_consensus_timestamp < rf.consensus_start and rf.consensus_start <= ab.end_consensus_timestamp)
-       join address_book_entry abe on rf.node_id = abe.node_id and abe.consensus_timestamp = ab.start_consensus_timestamp
-       where consensus_end >= $1
-       order by consensus_end
-       limit 1`;
+                    from record_file rf
+                             join address_book ab
+                                  on (ab.end_consensus_timestamp is null and
+                                      ab.start_consensus_timestamp <
+                                      rf.consensus_start) or
+                                     (ab.start_consensus_timestamp <
+                                      rf.consensus_start and
+                                      rf.consensus_start <=
+                                      ab.end_consensus_timestamp)
+                             join address_book_entry abe
+                                  on rf.node_id = abe.node_id and
+                                     abe.consensus_timestamp =
+                                     ab.start_consensus_timestamp
+                    where consensus_end >= $1
+                    order by consensus_end
+                    limit 1`;
 
   const {rows} = await pool.queryQuietly(sqlQuery, consensusNs);
   if (_.isEmpty(rows)) {
@@ -98,17 +107,16 @@ const getRCDFileInfoByConsensusNs = async (consensusNs) => {
 const getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   // Get the chain of address books whose start_consensus_timestamp <= consensusNs, also aggregate the corresponding
   // memo and node account ids from table address_book_entry
-  let sqlQuery = `SELECT
-         file_data,
-         node_count,
-         string_agg(memo, ',') AS memos,
-         string_agg(cast(abe.node_account_id AS VARCHAR), ',') AS node_account_ids
-       FROM address_book ab
-       LEFT JOIN address_book_entry abe
-         ON ab.start_consensus_timestamp = abe.consensus_timestamp
-       WHERE start_consensus_timestamp <= $1
-         AND file_id = 102
-       GROUP BY start_consensus_timestamp`;
+  let sqlQuery = `SELECT file_data,
+                         node_count,
+                         string_agg(memo, ',')                                 AS memos,
+                         string_agg(cast(abe.node_account_id AS VARCHAR), ',') AS node_account_ids
+                  FROM address_book ab
+                           LEFT JOIN address_book_entry abe
+                                     ON ab.start_consensus_timestamp = abe.consensus_timestamp
+                  WHERE start_consensus_timestamp <= $1
+                    AND file_id = 102
+                  GROUP BY start_consensus_timestamp`;
   if (config.stateproof.addressBookHistory) {
     sqlQuery += `
       ORDER BY start_consensus_timestamp`;
@@ -174,8 +182,8 @@ const downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) =
                   data: Buffer.concat(buffers),
                 });
               })
-              // error may happen if there is an s3 transient error.
-              // capture the error and return it, otherwise Promise.all will fail
+              // Error may happen if there is a transient s3 error. Capture
+              // the error and return it, otherwise Promise.all will fail
               .on('error', (error) => {
                 logger.error(`Failed to download ${utils.JSONStringify(params)}`, error);
                 resolve({
@@ -186,7 +194,11 @@ const downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) =
           },
           // error will happen if the node does not have the requested file
           (error) => {
-            logger.error(`Failed to download ${utils.JSONStringify(params)}`, error);
+            if (error instanceof NoSuchKey) {
+              logger.warn(`Failed to download ${utils.JSONStringify(params)}`, error.message);
+            } else {
+              logger.error(`Failed to download ${utils.JSONStringify(params)}`, error);
+            }
             resolve({
               partialFilePath,
               error,
