@@ -35,16 +35,17 @@ public record EntityIdEvmAddressParameter(long shard, long realm, byte[] evmAddr
             return null;
         }
 
-        long shard = 0L;
-        long realm = 0L;
+        long shard = DEFAULT_SHARD;
+        long realm = 0;
 
-        if (evmMatcher.group(3) != null) {
+        String realmString;
+        if ((realmString = evmMatcher.group(4)) != null) {
             // This gets the realm value
-            realm = Long.parseLong(evmMatcher.group(4));
+            realm = Long.parseLong(realmString);
             shard = Long.parseLong(evmMatcher.group(2));
 
-        } else if (evmMatcher.group(1) != null) {
-            realm = Long.parseLong(evmMatcher.group(2));
+        } else if ((realmString = evmMatcher.group(2)) != null) {
+            realm = Long.parseLong(realmString);
         }
         var evmAddress = Hex.decodeHex(evmMatcher.group(6));
 

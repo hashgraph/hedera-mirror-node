@@ -42,17 +42,18 @@ public record EntityIdNumParameter(EntityId id) implements EntityIdParameter {
             return null;
         }
 
+        long shard = DEFAULT_SHARD;
         long realm = 0;
-        long shard = 0;
 
-        if (matcher.group(3) != null) {
+        String realmString;
+        if ((realmString = matcher.group(4)) != null) {
             // This gets the shard and realm value
-            realm = Long.parseLong(matcher.group(4));
+            realm = Long.parseLong(realmString);
             shard = Long.parseLong(matcher.group(2));
 
-        } else if (matcher.group(1) != null) {
+        } else if ((realmString = matcher.group(2)) != null) {
             // This gets the realm value and shard will be null
-            realm = Long.parseLong(matcher.group(2));
+            realm = Long.parseLong(realmString);
         }
 
         var num = Long.parseLong(matcher.group(5));

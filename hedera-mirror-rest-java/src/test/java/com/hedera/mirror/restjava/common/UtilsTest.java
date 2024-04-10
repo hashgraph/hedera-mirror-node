@@ -16,16 +16,7 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
-import static com.hedera.mirror.restjava.common.Utils.getPaginationLink;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.when;
-
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +30,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
+import static com.hedera.mirror.restjava.common.Utils.getPaginationLink;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UtilsTest {
@@ -106,18 +106,18 @@ class UtilsTest {
     void getEmptyPaginationLinks() {
         LinkedHashMap<String, String> lastValues = new LinkedHashMap<>(Map.of(ACCOUNT_ID, "0.0.2000"));
         // When the last element has already been returned
-        assertNull(getPaginationLink(true, lastValues, Sort.Direction.ASC));
+        assertThat(getPaginationLink(true, lastValues, Sort.Direction.ASC)).isNull();
         // When the lastValues map is null
-        assertNull(getPaginationLink(false, null, Sort.Direction.ASC));
+        assertThat(getPaginationLink(false, null, Sort.Direction.ASC)).isNull();
         // When the no lastValues have been passed
-        assertNull(getPaginationLink(false, new LinkedHashMap<>(Map.of()), Sort.Direction.ASC));
+        assertThat(getPaginationLink(false, new LinkedHashMap<>(Map.of()), Sort.Direction.ASC)).isNull();
     }
 
     @Test
     @DisplayName("No request object available")
     void nullRequestObject() {
         context.when(RequestContextHolder::getRequestAttributes).thenReturn(null);
-        assertNull(getPaginationLink(false, getLastValues(), Sort.Direction.ASC));
+        assertThat(getPaginationLink(false, getLastValues(), Sort.Direction.ASC)).isNull();
     }
 
     @NotNull

@@ -25,7 +25,6 @@ import org.mapstruct.factory.Mappers;
 
 import static com.hedera.mirror.restjava.mapper.CommonMapper.NANO_DIGITS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class CommonMapperTest {
 
@@ -34,15 +33,15 @@ class CommonMapperTest {
     @Test
     void mapEntityId() {
         var entityId = com.hedera.mirror.common.domain.entity.EntityId.of("1.2.3");
-        assertNull(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null));
+        assertThat(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null)).isNull();
         assertThat(commonMapper.mapEntityId(entityId))
                 .isEqualTo(EntityId.of(1L, 2L, 3L).toString());
     }
 
     @Test
     void mapEntityIdLong() {
-        assertNull(commonMapper.mapEntityId((Long) null));
-        assertNull(commonMapper.mapEntityId(0L));
+        assertThat(commonMapper.mapEntityId((Long) null)).isNull();
+        assertThat(commonMapper.mapEntityId(0L)).isNull();
     }
 
     @Test

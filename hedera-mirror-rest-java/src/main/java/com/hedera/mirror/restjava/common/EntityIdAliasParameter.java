@@ -34,17 +34,18 @@ public record EntityIdAliasParameter(long shard, long realm, byte[] alias) imple
             return null;
         }
 
-        long shard = 0;
+        long shard = DEFAULT_SHARD;
         long realm = 0;
 
-        if (aliasMatcher.group(3) != null) {
+        String realmString;
+        if ((realmString = aliasMatcher.group(4)) != null) {
             // This gets the shard and realm value
-            realm = Long.parseLong(aliasMatcher.group(4));
+            realm = Long.parseLong(realmString);
             shard = Long.parseLong(aliasMatcher.group(2));
 
-        } else if (aliasMatcher.group(1) != null) {
+        } else if ((realmString = aliasMatcher.group(2)) != null) {
             // This gets the realm value and shard will be null
-            realm = Long.parseLong(aliasMatcher.group(2));
+            realm = Long.parseLong(realmString);
         }
 
         return new EntityIdAliasParameter(shard, realm, BASE32.decode(aliasMatcher.group(5)));

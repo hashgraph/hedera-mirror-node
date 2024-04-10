@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RequiredArgsConstructor
-public class EntityServiceTest extends RestJavaIntegrationTest {
+class EntityServiceTest extends RestJavaIntegrationTest {
 
     private final EntityService service;
 

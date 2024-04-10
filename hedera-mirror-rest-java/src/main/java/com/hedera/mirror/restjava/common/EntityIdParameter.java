@@ -16,10 +16,13 @@
 
 package com.hedera.mirror.restjava.common;
 
+import com.hedera.mirror.restjava.RestJavaProperties;
 import org.apache.commons.lang3.StringUtils;
 
 public sealed interface EntityIdParameter
         permits EntityIdNumParameter, EntityIdEvmAddressParameter, EntityIdAliasParameter {
+
+    Long DEFAULT_SHARD = SpringApplicationContext.getBean(RestJavaProperties.class).getShard();
 
     long shard();
 
