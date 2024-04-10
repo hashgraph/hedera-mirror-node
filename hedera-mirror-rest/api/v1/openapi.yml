@@ -3269,6 +3269,10 @@ components:
         decimals:
           format: int64
           type: integer
+        metadata:
+          description: base64 encoded binary data
+          type: string
+          format: byte
         name:
           type: string
         symbol:
@@ -3287,6 +3291,7 @@ components:
       example:
         admin_key: null
         decimals: 3
+        metadata: "VGhpcyBpcyBhIHRlc3QgTkZU"
         name: First Mover
         symbol: FIRSTMOVERLPDJH
         token_id: 0.0.1
@@ -3377,6 +3382,12 @@ components:
         max_supply:
           type: string
           example: "9223372036854775807"
+        metadata:
+          description: base64 encoded binary data
+          type: string
+          format: byte
+        metadata_key:
+          $ref: "#/components/schemas/Key"
         modified_timestamp:
           $ref: "#/components/schemas/Timestamp"
         name:
