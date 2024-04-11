@@ -79,6 +79,7 @@ const cleanUp = async () => {
 };
 
 const createDbContainer = async () => {
+  logger.info(`Creating PostgreSQL container for jest worker ${workerId}`);
   const image = isV2Schema() ? v2DatabaseImage : v1DatabaseImage;
   const initSqlPath = path.join('..', 'hedera-mirror-common', 'src', 'test', 'resources', 'init.sql');
   const initSqlCopy = {
@@ -106,7 +107,7 @@ const createDbContainer = async () => {
   const connectionParams = extractDbConnectionParams(dockerDb.getConnectionUri());
   logger.info(`Container host/port for worker ${workerId}: ${connectionParams.host}/${connectionParams.port}`);
 
-  return dockerDb.getConnectionUri();
+  return dockerDb;
 };
 
 const getConnectionUri = async () => {
@@ -116,15 +117,23 @@ const getConnectionUri = async () => {
   if (container) {
     const inspectInfo = await client.container.inspect(container);
     const postgresPort = inspectInfo.NetworkSettings.Ports['5432/tcp'][0].HostPort;
-    connectionUri = `postgres://${ownerUser}:${ownerPassword}@localhost:${postgresPort}/${dbName}`;
-    logger.info(`Using existing container port ${postgresPort} for jest worker ${workerId}`);
+    connectionUri = `postgres://${ownerUser}:${ownerPassword}@0.0.0.0:${postgresPort}/${dbName}`;
+    logger.info(`Using existing container with port ${postgresPort} for jest worker ${workerId}`);
   } else {
-    connectionUri = await createDbContainer();
-    //await new Promise((resolve) => setTimeout(resolve, 10000));
+    const dockerDb = await createDbContainer();
+    connectionUri = dockerDb.getConnectionUri();
     await flywayMigrate(connectionUri);
+    streamLogs(dockerDb);
   }
 
   return connectionUri;
+};
+
+const streamLogs = async (dockerDb) => {
+  (await dockerDb.logs())
+    .on('data', (line) => logger.info(`[Streaming PostgreSQL ${workerId}]: ${line}`))
+    .on('err', (line) => logger.error(`[Streaming PostgreSQL ${workerId}]: ${line}`))
+    .on('end', () => logger.info(`[Streaming PostgreSQL ${workerId}]: Stream closed`));
 };
 
 const createPool = async () => {
@@ -197,7 +206,8 @@ const flywayMigrate = async (connectionUri) => {
         `Attempting flyway migration for jest worker ${workerId} using: jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}`
       );
       logger.info(`Flyway config for jest worker ${workerId}: ${flywayConfig}`);
-      execSync(`node ${exePath} -c ${flywayConfigPath} migrate`);
+      const flywayOutput = execSync(`node ${exePath} -c ${flywayConfigPath} migrate`);
+      logger.info(`Flyway output for jest worker ${workerId}: ${flywayOutput}`);
       logger.info(`Successfully executed all Flyway migrations for jest worker ${workerId}`);
       break;
     } catch (e) {
