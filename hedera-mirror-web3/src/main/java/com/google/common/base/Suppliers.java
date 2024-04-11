@@ -16,11 +16,8 @@
 
 package com.google.common.base;
 
-import static com.google.common.base.NullnessCasts.uncheckedCastNullableTToT;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.Serializable;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.CheckForNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -33,8 +30,7 @@ public class Suppliers {
      * and returns that value on subsequent calls to {@code get()}. See: <a
      * href="http://en.wikipedia.org/wiki/Memoization">memoization</a>
      *
-     * <p>The returned supplier is thread-safe. The delegate's {@code get()} method will be invoked at
-     * most once unless the underlying {@code get()} throws an exception. The supplier's serialized
+     * <p>The supplier's serialized
      * form does not contain the cached value, which will be recalculated when {@code get()} is called
      * on the deserialized instance.
      *
@@ -44,13 +40,18 @@ public class Suppliers {
      * <p>If {@code delegate} is an instance created by an earlier call to {@code memoize}, it is
      * returned directly.
      */
-    public static <T extends @Nullable Object> Supplier<T> memoize(Supplier<T> delegate) {
-        if (delegate instanceof NonSerializableMemoizingSupplier || delegate instanceof MemoizingSupplier) {
-            return delegate;
-        }
-        return delegate instanceof Serializable
-                ? new MemoizingSupplier<T>(delegate)
-                : new NonSerializableMemoizingSupplier<T>(delegate);
+    public static <T> Supplier<T> memoize(Supplier<T> delegate) {
+        final var value = new AtomicReference<T>();
+        return () -> {
+            final T previousValue = value.get();
+            if (previousValue != null) {
+                return previousValue;
+            }
+
+            final T newValue = delegate.get();
+            value.set(newValue);
+            return newValue;
+        };
     }
 
     /** Returns a supplier that always supplies {@code instance}. */
@@ -92,90 +93,5 @@ public class Suppliers {
         }
 
         private static final long serialVersionUID = 0;
-    }
-
-    static class MemoizingSupplier<T extends @Nullable Object> implements Supplier<T>, Serializable {
-        final Supplier<T> delegate;
-        private final ReentrantLock lock = new ReentrantLock();
-        transient volatile boolean initialized;
-        // "value" does not need to be volatile; visibility piggy-backs
-        // on volatile read of "initialized".
-        @CheckForNull
-        transient T value;
-
-        MemoizingSupplier(Supplier<T> delegate) {
-            this.delegate = checkNotNull(delegate);
-        }
-
-        @Override
-        @ParametricNullness
-        public T get() {
-            lock.lock();
-            try {
-                if (!initialized) {
-                    T t = delegate.get();
-                    value = t;
-                    initialized = true;
-                    return t;
-                }
-            } finally {
-                lock.unlock();
-            }
-            // This is safe because we checked `initialized`.
-            return uncheckedCastNullableTToT(value);
-        }
-
-        @Override
-        public String toString() {
-            return "Suppliers.memoize(" + (initialized ? "<supplier that returned " + value + ">" : delegate) + ")";
-        }
-
-        private static final long serialVersionUID = 0;
-    }
-
-    static class NonSerializableMemoizingSupplier<T extends @Nullable Object> implements Supplier<T> {
-        @SuppressWarnings("UnnecessaryLambda") // Must be a fixed singleton object
-        private static final Supplier<Void> SUCCESSFULLY_COMPUTED = () -> {
-            throw new IllegalStateException(); // Should never get called.
-        };
-
-        private volatile Supplier<T> delegate;
-        private final ReentrantLock lock = new ReentrantLock();
-        // "value" does not need to be volatile; visibility piggy-backs on volatile read of "delegate".
-        @CheckForNull
-        private T value;
-
-        NonSerializableMemoizingSupplier(Supplier<T> delegate) {
-            this.delegate = checkNotNull(delegate);
-        }
-
-        @Override
-        @ParametricNullness
-        @SuppressWarnings("unchecked") // Cast from Supplier<Void> to Supplier<T> is always valid
-        public T get() {
-            // Because Supplier is read-heavy, we use the "double-checked locking" pattern.
-            lock.lock();
-            try {
-                if (delegate != SUCCESSFULLY_COMPUTED) {
-                    T t = delegate.get();
-                    value = t;
-                    delegate = (Supplier<T>) SUCCESSFULLY_COMPUTED;
-                    return t;
-                }
-            } finally {
-                lock.unlock();
-            }
-
-            // This is safe because we checked `delegate`.
-            return uncheckedCastNullableTToT(value);
-        }
-
-        @Override
-        public String toString() {
-            Supplier<T> delegate = this.delegate;
-            return "Suppliers.memoize("
-                    + (delegate == SUCCESSFULLY_COMPUTED ? "<supplier that returned " + value + ">" : delegate)
-                    + ")";
-        }
     }
 }
