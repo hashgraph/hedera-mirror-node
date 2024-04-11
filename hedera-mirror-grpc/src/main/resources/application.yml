@@ -52,7 +52,7 @@ server:
     enabled: true
   http2:
     enabled: true
-  max-http-request-header-size: 1KB
+  max-http-request-header-size: 2KB
   port: 8081
   shutdown: graceful
 spring:

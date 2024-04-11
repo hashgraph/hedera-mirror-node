@@ -55,46 +55,50 @@ import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import lombok.CustomLog;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
+import org.awaitility.Awaitility;
 import org.awaitility.Durations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
-import reactor.util.retry.RetryBackoffSpec;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.policy.MaxAttemptsRetryPolicy;
+import org.springframework.retry.support.RetryTemplate;
+import org.springframework.web.client.RestClient;
 
 @CustomLog
 @Named
 public class MirrorNodeClient {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
-    private final WebClient webClient;
-    private final WebClient web3Client;
-    private final RetryBackoffSpec retrySpec;
-    private final RetryBackoffSpec retrySpecWithNotFound;
+    private final RestClient restClient;
+    private final RetryTemplate retryTemplate;
+    private final RestClient web3Client;
 
     public MirrorNodeClient(
-            AcceptanceTestProperties acceptanceTestProperties, WebClient webClient, Web3Properties web3Properties) {
+            AcceptanceTestProperties acceptanceTestProperties,
+            RestClient.Builder restClientBuilder,
+            Web3Properties web3Properties) {
         this.acceptanceTestProperties = acceptanceTestProperties;
-        this.webClient = webClient;
+        this.restClient = restClientBuilder.build();
         this.web3Client = StringUtils.isBlank(web3Properties.getBaseUrl())
-                ? webClient
-                : webClient.mutate().baseUrl(web3Properties.getBaseUrl()).build();
-        var properties = acceptanceTestProperties.getRestPollingProperties();
-        retrySpec = Retry.backoff(properties.getMaxAttempts(), properties.getMinBackoff())
-                .maxBackoff(properties.getMaxBackoff())
-                .filter(properties::shouldRetry);
-        /*
-         * RetryBackoffSpec is immutable. Starting with the configuration of retrySpec, define a new spec
-         * with a different filter that prevents retry of NOT_FOUND in addition to BAD_REQUEST.
-         */
-        retrySpecWithNotFound = retrySpec.filter(t -> !(t instanceof WebClientResponseException wcre
-                && (wcre.getStatusCode() == HttpStatus.BAD_REQUEST || wcre.getStatusCode() == HttpStatus.NOT_FOUND)));
+                ? restClient
+                : restClientBuilder.baseUrl(web3Properties.getBaseUrl()).build();
+        var properties = acceptanceTestProperties.getRestProperties();
+        this.retryTemplate = RetryTemplate.builder()
+                .customPolicy(new MaxAttemptsRetryPolicy(properties.getMaxAttempts()) {
+                    @Override
+                    public boolean canRetry(RetryContext context) {
+                        return super.canRetry(context) && properties.shouldRetry(context.getLastThrowable());
+                    }
+                })
+                .exponentialBackoff(properties.getMinBackoff(), 2.0, properties.getMaxBackoff())
+                .build();
+
+        var virtualThreadFactory = Thread.ofVirtual().name("awaitility", 1).factory();
+        var executorService = Executors.newThreadPerTaskExecutor(virtualThreadFactory);
+        Awaitility.pollExecutorService(executorService);
     }
 
     public SubscriptionResponse subscribeToTopic(SDKClient sdkClient, TopicMessageQuery topicMessageQuery)
@@ -203,7 +207,7 @@ public class MirrorNodeClient {
 
     public ContractResponse getContractInfoWithNotFound(String contractId) {
         log.debug("Verify contract '{}' is not found", contractId);
-        return callRestEndpointWithNotFound("/contracts/{contractId}", ContractResponse.class, contractId);
+        return callRestEndpointNoRetry("/contracts/{contractId}", ContractResponse.class, contractId);
     }
 
     public ContractResultsResponse getContractResultsById(String contractId) {
@@ -333,39 +337,16 @@ public class MirrorNodeClient {
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
-        return webClient
-                .get()
-                .uri(uri.replace("/api/v1", ""), uriVariables)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(classType)
-                .retryWhen(retrySpec)
-                .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
-                .block();
+        return retryTemplate.execute(
+                x -> restClient.get().uri(uri, uriVariables).retrieve().body(classType));
     }
 
-    private <T> T callRestEndpointWithNotFound(String uri, Class<T> classType, Object... uriVariables) {
-        return webClient
-                .get()
-                .uri(uri.replace("/api/v1", ""), uriVariables)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(classType)
-                .retryWhen(retrySpecWithNotFound)
-                .doOnError(x -> log.debug("Expected endpoint failure, returning: {}", x.getMessage()))
-                .block();
+    private <T> T callRestEndpointNoRetry(String uri, Class<T> classType, Object... uriVariables) {
+        return restClient.get().uri(uri, uriVariables).retrieve().body(classType);
     }
 
     private <T, R> T callPostRestEndpoint(String uri, Class<T> classType, R request) {
-        return web3Client
-                .post()
-                .uri(uri)
-                .body(Mono.just(request), request.getClass())
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(classType)
-                .retryWhen(retrySpec)
-                .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
-                .block();
+        return retryTemplate.execute(
+                x -> web3Client.post().uri(uri).body(request).retrieve().body(classType));
     }
 }

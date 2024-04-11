@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.config;
 
-import static com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties.URL_SUFFIX;
+import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_SUFFIX;
 
 import jakarta.inject.Named;
 import lombok.Data;
