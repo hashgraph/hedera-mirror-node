@@ -80,7 +80,6 @@ ingress:
       paths:
         # the rest of /api/v1/contracts will still be handled by the REST API logic, except for this one address
         - "/api/v1/contracts/call"
-        - "/web3"
   tls:
     enabled: false
     secretName: ""
