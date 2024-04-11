@@ -23,6 +23,12 @@ plugins {
     id("jacoco")
 }
 
+node {
+    download = true
+    version = "18.18.0"
+    workDir = rootDir.resolve(".gradle").resolve("nodejs")
+}
+
 tasks.register("clean") { layout.buildDirectory.asFile.get().deleteRecursively() }
 
 tasks.register<NpmTask>("run") {
