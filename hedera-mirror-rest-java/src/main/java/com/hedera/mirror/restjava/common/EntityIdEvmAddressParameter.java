@@ -22,6 +22,7 @@ import org.apache.commons.codec.binary.Hex;
 
 import java.util.regex.Pattern;
 
+@SuppressWarnings("java:S6218")
 public record EntityIdEvmAddressParameter(long shard, long realm, byte[] evmAddress) implements EntityIdParameter {
 
     public static final String EVM_ADDRESS_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?(0x)?([A-Fa-f0-9]{40})$";

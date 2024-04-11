@@ -20,6 +20,7 @@ import com.google.common.io.BaseEncoding;
 
 import java.util.regex.Pattern;
 
+@SuppressWarnings("java:S6218")
 public record EntityIdAliasParameter(long shard, long realm, byte[] alias) implements EntityIdParameter {
 
     public static final String ACCOUNT_ALIAS_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?([A-Z2-7]+)$";

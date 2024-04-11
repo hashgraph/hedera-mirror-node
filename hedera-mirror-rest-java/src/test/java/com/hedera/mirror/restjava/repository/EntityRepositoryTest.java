@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor
-public class EntityRepositoryTest extends RestJavaIntegrationTest {
+ class EntityRepositoryTest extends RestJavaIntegrationTest {
 
     private final EntityRepository entityRepository;
 

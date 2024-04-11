@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
+class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
 
     @LocalServerPort
     private int port;
