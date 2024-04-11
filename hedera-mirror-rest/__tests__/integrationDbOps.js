@@ -120,6 +120,7 @@ const getConnectionUri = async () => {
     logger.info(`Using existing container port ${postgresPort} for jest worker ${workerId}`);
   } else {
     connectionUri = await createDbContainer();
+    //await new Promise((resolve) => setTimeout(resolve, 10000));
     await flywayMigrate(connectionUri);
   }
 
@@ -173,7 +174,7 @@ const flywayMigrate = async (connectionUri) => {
       "placeholders.shardCount": 2,
       "placeholders.tempSchema": "temporary",
       "target": "latest",
-      "url": "jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}",
+      "url": "jdbc:postgresql://0.0.0.0:${dbConnectionParams.port}/${dbName}",
       "user": "${ownerUser}"
     },
     "version": "9.22.3",
@@ -195,6 +196,7 @@ const flywayMigrate = async (connectionUri) => {
       logger.info(
         `Attempting flyway migration for jest worker ${workerId} using: jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}`
       );
+      logger.info(`Flyway config for jest worker ${workerId}: ${flywayConfig}`);
       execSync(`node ${exePath} -c ${flywayConfigPath} migrate`);
       logger.info(`Successfully executed all Flyway migrations for jest worker ${workerId}`);
       break;
