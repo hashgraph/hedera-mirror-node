@@ -206,8 +206,7 @@ const flywayMigrate = async (connectionUri) => {
         `Attempting flyway migration for jest worker ${workerId} using: jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}`
       );
       logger.info(`Flyway config for jest worker ${workerId}: ${flywayConfig}`);
-      const flywayOutput = execSync(`node ${exePath} -c ${flywayConfigPath} migrate`);
-      logger.info(`Flyway output for jest worker ${workerId}: ${flywayOutput}`);
+      execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
       logger.info(`Successfully executed all Flyway migrations for jest worker ${workerId}`);
       break;
     } catch (e) {
