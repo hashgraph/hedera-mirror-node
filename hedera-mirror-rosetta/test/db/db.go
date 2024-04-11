@@ -39,9 +39,10 @@ import (
 )
 
 const (
-	dbCleanupScript = "hedera-mirror-common/src/test/resources/cleanup.sql"
-	dbMigrationPath = "hedera-mirror-importer/src/main/resources/db/migration/v1"
+	dbCleanupScript = "../hedera-mirror-common/src/test/resources/cleanup.sql"
+	dbMigrationPath = "../hedera-mirror-importer/src/main/resources/db/migration/v1"
 	dbName          = "mirror_node"
+	initScript      = "../hedera-mirror-importer/src/main/resources/db/scripts/init.sh"
 	ownerUsername   = "mirror_node"
 	poolMaxWait     = 5 * time.Minute
 )
@@ -121,7 +122,7 @@ func (d dbParams) toConfig() config.Db {
 
 // CleanupDb cleans the data written to the db during tests
 func CleanupDb(db *sql.DB) {
-	filename := filepath.Clean(path.Join(moduleRoot, "..", dbCleanupScript))
+	filename := filepath.Clean(path.Join(moduleRoot, dbCleanupScript))
 	script, err := os.ReadFile(filename)
 	if err != nil {
 		log.Fatalf("Failed to read cleanup.sql: %s", err)
@@ -205,7 +206,7 @@ func createPostgresDb(pool *dockertest.Pool, network *dockertest.Network) (*dock
 		Repository: "postgres",
 		Tag:        "14-alpine",
 		Env:        env,
-		Mounts:     []string{fmt.Sprintf("%s/../hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh", moduleRoot)},
+		Mounts:     []string{filepath.Clean(path.Join(moduleRoot, initScript)) + ":/docker-entrypoint-initdb.d/init.sh"},
 		Networks:   []*dockertest.Network{network},
 	}
 	resource, err := pool.RunWithOptions(options)
@@ -221,7 +222,7 @@ func createPostgresDb(pool *dockertest.Pool, network *dockertest.Network) (*dock
 }
 
 func runFlywayMigration(pool *dockertest.Pool, network *dockertest.Network, params dbParams) {
-	migrationPath := path.Join(moduleRoot, "..", dbMigrationPath)
+	migrationPath := filepath.Clean(path.Join(moduleRoot, dbMigrationPath))
 	// run the container with tty and entrypoint "bin/sh" so it will stay alive in background
 	options := &dockertest.RunOptions{
 		Repository: "flyway/flyway",
