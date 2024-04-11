@@ -2947,7 +2947,7 @@ components:
           description: whether the nft or the token it belongs to has been deleted
           type: boolean
         metadata:
-          description: base64 encoded binary data
+          description: Arbitrary binary data associated with this NFT encoded in base64.
           type: string
           format: byte
         modified_timestamp:
@@ -3270,7 +3270,7 @@ components:
           format: int64
           type: integer
         metadata:
-          description: base64 encoded binary data
+          description: Arbitrary binary data associated with this token class encoded in base64.
           type: string
           format: byte
         name:
@@ -3383,11 +3383,13 @@ components:
           type: string
           example: "9223372036854775807"
         metadata:
-          description: base64 encoded binary data
+          description: Arbitrary binary data associated with this token class encoded in base64.
           type: string
           format: byte
         metadata_key:
-          $ref: "#/components/schemas/Key"
+          allOf:
+          - $ref: "#/components/schemas/Key"
+          - description: The key which can change the metadata of a token and individual NFTs.
         modified_timestamp:
           $ref: "#/components/schemas/Timestamp"
         name:
