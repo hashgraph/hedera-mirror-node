@@ -180,10 +180,10 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                     """
             select count(*)
             from nft as n
-            left join entity e on e.id = n.token_id
+            left join entity as e on e.id = n.token_id
             where token_id = :tokenId and
               n.created_timestamp <= :blockTimestamp and
-              n.deleted is false and
+              (n.deleted is false or lower(n.timestamp_range) > :blockTimestamp) and
               (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
             """,
             nativeQuery = true)
