@@ -22,8 +22,6 @@
         "token_id": "0.0.1500",
         "symbol": "FIRSTMOVERLPDJH",
         "created_timestamp": "1234567890000000003",
-        "metadata": "token metadata",
-        "metadata_key": "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96x",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
       {
