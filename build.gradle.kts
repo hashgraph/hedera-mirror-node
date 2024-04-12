@@ -35,6 +35,7 @@ extra.apply {
     // with the next springboot release
     set("jooq.version", "3.19.6")
     set("mapStructVersion", "1.5.5.Final")
+    set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.7")
@@ -142,8 +143,9 @@ idea {
 
 // Spotless uses Prettier and it requires Node.js
 node {
+    val nodeJsVersion: String by rootProject.extra
     download = true
-    version = "18.18.0"
+    version = nodeJsVersion
     workDir = rootDir.resolve(".gradle").resolve("nodejs")
 }
 

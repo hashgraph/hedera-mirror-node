@@ -72,7 +72,6 @@
         "y": 0
       },
       "id": 13,
-      "links": [],
       "options": {
         "colorMode": "background",
         "graphMode": "area",
@@ -85,10 +84,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61469",
+      "pluginVersion": "11.1.0-69051",
       "targets": [
         {
           "datasource": {
@@ -157,7 +158,6 @@
         "y": 0
       },
       "id": 167,
-      "links": [],
       "options": {
         "colorMode": "background",
         "graphMode": "area",
@@ -170,10 +170,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61469",
+      "pluginVersion": "11.1.0-69051",
       "targets": [
         {
           "datasource": {
@@ -236,7 +238,6 @@
         "y": 0
       },
       "id": 18,
-      "links": [],
       "options": {
         "colorMode": "background",
         "graphMode": "area",
@@ -249,10 +250,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61469",
+      "pluginVersion": "11.1.0-69051",
       "targets": [
         {
           "datasource": {
@@ -315,7 +318,6 @@
         "y": 0
       },
       "id": 30,
-      "links": [],
       "options": {
         "colorMode": "background",
         "graphMode": "area",
@@ -328,10 +330,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61469",
+      "pluginVersion": "11.1.0-69051",
       "targets": [
         {
           "datasource": {
@@ -396,7 +400,6 @@
         "y": 0
       },
       "id": 91,
-      "links": [],
       "options": {
         "colorMode": "background",
         "graphMode": "area",
@@ -409,10 +412,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61469",
+      "pluginVersion": "11.1.0-69051",
       "targets": [
         {
           "datasource": {
@@ -476,7 +481,6 @@
         "y": 0
       },
       "id": 92,
-      "links": [],
       "options": {
         "colorMode": "background",
         "graphMode": "area",
@@ -489,10 +493,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.2.0-61469",
+      "pluginVersion": "11.1.0-69051",
       "targets": [
         {
           "datasource": {
@@ -557,7 +563,6 @@
         "y": 0
       },
       "id": 293,
-      "links": [],
       "options": {
         "colorMode": "background",
         "graphMode": "area",
@@ -570,11 +575,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.3.0-64082",
+      "pluginVersion": "11.1.0-69051",
       "targets": [
         {
           "datasource": {
@@ -3354,7 +3360,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 161
+        "y": 145
       },
       "id": 35,
       "panels": [],
@@ -3529,7 +3535,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 162
+        "y": 146
       },
       "id": 5,
       "options": {
@@ -3577,7 +3583,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 170
+        "y": 154
       },
       "id": 54,
       "links": [
@@ -3620,7 +3626,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 180
+        "y": 164
       },
       "id": 37,
       "panels": [
@@ -3636,6 +3642,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -3674,7 +3681,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3690,7 +3698,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 124
+            "y": 165
           },
           "id": 39,
           "options": {
@@ -3740,6 +3748,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -3778,7 +3787,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3794,7 +3804,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 132
+            "y": 173
           },
           "id": 44,
           "options": {
@@ -3844,6 +3854,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -3882,7 +3893,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -3898,7 +3910,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 140
+            "y": 181
           },
           "id": 45,
           "options": {
@@ -3949,6 +3961,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -3987,7 +4000,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4003,7 +4017,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 148
+            "y": 189
           },
           "id": 46,
           "options": {
@@ -4053,6 +4067,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4091,7 +4106,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4107,7 +4123,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 156
+            "y": 197
           },
           "id": 40,
           "options": {
@@ -4157,6 +4173,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4195,7 +4212,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4211,7 +4229,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 164
+            "y": 205
           },
           "id": 43,
           "options": {
@@ -4261,6 +4279,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4299,7 +4318,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4315,7 +4335,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 172
+            "y": 213
           },
           "id": 47,
           "options": {
@@ -4365,6 +4385,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4403,7 +4424,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4419,7 +4441,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 180
+            "y": 221
           },
           "id": 41,
           "options": {
@@ -4469,6 +4491,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4507,7 +4530,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4523,7 +4547,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 188
+            "y": 229
           },
           "id": 48,
           "options": {
@@ -4573,6 +4597,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4611,7 +4636,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4627,7 +4653,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 196
+            "y": 237
           },
           "id": 49,
           "options": {
@@ -4675,6 +4701,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4713,7 +4740,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4729,7 +4757,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 204
+            "y": 245
           },
           "id": 50,
           "options": {
@@ -4779,6 +4807,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4817,7 +4846,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4833,7 +4863,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 212
+            "y": 253
           },
           "id": 51,
           "options": {
@@ -4883,6 +4913,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -4921,7 +4952,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -4937,7 +4969,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 220
+            "y": 261
           },
           "id": 52,
           "options": {
@@ -4987,6 +5019,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -5025,7 +5058,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -5041,7 +5075,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 228
+            "y": 269
           },
           "id": 55,
           "options": {
@@ -5091,6 +5125,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -5129,7 +5164,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -5145,7 +5181,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 236
+            "y": 277
           },
           "id": 11,
           "options": {
@@ -5195,6 +5231,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -5233,7 +5270,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -5249,7 +5287,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 244
+            "y": 285
           },
           "id": 147,
           "options": {
@@ -5299,6 +5337,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -5337,7 +5376,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -5353,7 +5393,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 252
+            "y": 293
           },
           "id": 128,
           "options": {
@@ -5403,6 +5443,7 @@
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisGridShow": false,
@@ -5441,7 +5482,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -5457,7 +5499,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 260
+            "y": 301
           },
           "id": 90,
           "options": {
@@ -5494,6 +5536,113 @@
           ],
           "title": "Parser Latency",
           "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${prometheus}"
+          },
+          "description": "The overall amount of time the importer took to process a stream file",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisGridShow": false,
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "hue",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": 3600000,
+                "lineInterpolation": "smooth",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 309
+          },
+          "id": 313,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "max",
+                "mean"
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Mean",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "10.2.0-59422pre",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${prometheus}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(hedera_mirror_importer_duration_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) > 0 / sum(rate(hedera_mirror_importer_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\",type=~\"$stream\"}[$__rate_interval])) > 0",
+              "hide": false,
+              "interval": "1m",
+              "legendFormat": " ",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Total Duration",
+          "type": "timeseries"
         }
       ],
       "repeat": "stream",
@@ -5511,8 +5660,7 @@
     }
   ],
   "refresh": "",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": [
@@ -5691,6 +5839,7 @@
     "from": "now-3h",
     "to": "now"
   },
+  "timeRangeUpdatedDuringEditOrView": false,
   "timepicker": {
     "refresh_intervals": [
       "10s",
@@ -5707,6 +5856,6 @@
   "timezone": "",
   "title": "Hedera / Mirror / Importer",
   "uid": "dfca62a1-9d6c-4f21-9933-b60e8cdac7d2",
-  "version": 3,
+  "version": 4,
   "weekStart": ""
 }
