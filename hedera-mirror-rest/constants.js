@@ -23,6 +23,8 @@ const AUTO_RENEW_PERIOD_MULTIPLE = BigInt(1e9);
 const DECIMALS_IN_HBARS = 8;
 const EVM_ADDRESS_LENGTH = 20;
 
+const apiPrefix = '/api/v1';
+
 // url query filer keys
 const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
@@ -93,11 +95,8 @@ const keyTypes = {
   PROTOBUF: 'ProtobufEncoded',
 };
 
-const transactionColumns = {
-  TYPE: 'type',
-};
-
 const requestIdLabel = 'requestId';
+const requestPathLabel = 'requestPath';
 const requestStartTime = 'requestStartTime';
 const responseContentType = 'responseContentType';
 const responseDataLabel = 'responseData';
@@ -225,6 +224,7 @@ export {
   MAX_LONG,
   ONE_DAY_IN_NS,
   ZERO_UINT256,
+  apiPrefix,
   characterEncoding,
   cloudProviders,
   cryptoTransferType,
@@ -242,11 +242,11 @@ export {
   queryParamOperatorPatterns,
   recordStreamPrefix,
   requestIdLabel,
+  requestPathLabel,
   requestStartTime,
   responseContentType,
   responseDataLabel,
   tokenTypeFilter,
-  transactionColumns,
   transactionResultFilter,
   zeroRandomPageCostQueryHint,
   EvmAddressType,
