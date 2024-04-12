@@ -90,6 +90,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
             throw new WrongTypeException("Trying to map an account/contract from a different type");
         }
 
+        var tokenAccountBalances = getNumberOfAllAndPositiveBalanceTokenAssociations(entity.getId(), timestamp);
+
         return new Account(
                 entity.getEvmAddress() != null && entity.getEvmAddress().length > 0
                         ? ByteString.copyFrom(entity.getEvmAddress())
@@ -106,8 +108,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 getCryptoAllowances(entity.getId(), timestamp),
                 getFungibleTokenAllowances(entity.getId(), timestamp),
                 getApproveForAllNfts(entity.getId(), timestamp),
-                getAllBalanceTokenAssociations(entity.getId(), timestamp),
-                getPositiveBalanceTokenAssociations(entity.getId(), timestamp),
+                () -> tokenAccountBalances.get().all(),
+                () -> tokenAccountBalances.get().positive(),
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
                 entity.getType().equals(CONTRACT),
@@ -186,18 +188,6 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
 
     private EntityNum entityNumFromId(EntityId entityId) {
         return EntityNum.fromLong(entityId.getNum());
-    }
-
-    private Supplier<Integer> getAllBalanceTokenAssociations(long accountId, final Optional<Long> timestamp) {
-        return Suppliers.memoize(() -> getNumberOfAllAndPositiveBalanceTokenAssociations(accountId, timestamp)
-                .get()
-                .all());
-    }
-
-    private Supplier<Integer> getPositiveBalanceTokenAssociations(long accountId, final Optional<Long> timestamp) {
-        return Suppliers.memoize(() -> getNumberOfAllAndPositiveBalanceTokenAssociations(accountId, timestamp)
-                .get()
-                .positive());
     }
 
     private Supplier<TokenAccountBalances> getNumberOfAllAndPositiveBalanceTokenAssociations(

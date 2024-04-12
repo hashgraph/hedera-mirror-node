@@ -456,7 +456,7 @@ class AccountDatabaseAccessorTest {
                 .returns(POSITIVE_BALANCES + NEGATIVE_BALANCES, Account::getNumAssociations)
                 .returns(POSITIVE_BALANCES, Account::getNumPositiveBalances));
 
-        verify(tokenAccountRepository, times(2))
+        verify(tokenAccountRepository, times(1))
                 .countByAccountIdAndAssociatedGroupedByBalanceIsPositive(entity.getId());
     }
 }

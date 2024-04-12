@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,8 @@
 
 package com.hedera.mirror.web3.utils;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
-import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.CheckForNull;
-import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class Suppliers {
     private Suppliers() {}
@@ -53,45 +49,5 @@ public class Suppliers {
             value.set(newValue);
             return newValue;
         };
-    }
-
-    /** Returns a supplier that always supplies {@code instance}. */
-    public static <T extends @Nullable Object> Supplier<T> ofInstance(T instance) {
-        return new SupplierOfInstance<>(instance);
-    }
-
-    @SuppressWarnings("java:S4738")
-    private static class SupplierOfInstance<T extends @Nullable Object> implements Supplier<T>, Serializable {
-        final transient T instance;
-
-        SupplierOfInstance(T instance) {
-            this.instance = instance;
-        }
-
-        @Override
-        public T get() {
-            return instance;
-        }
-
-        @Override
-        public boolean equals(@CheckForNull Object obj) {
-            if (obj instanceof SupplierOfInstance) {
-                SupplierOfInstance<?> that = (SupplierOfInstance<?>) obj;
-                return Objects.equal(instance, that.instance);
-            }
-            return false;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(instance);
-        }
-
-        @Override
-        public String toString() {
-            return "Suppliers.ofInstance(" + instance + ")";
-        }
-
-        private static final long serialVersionUID = 0;
     }
 }
