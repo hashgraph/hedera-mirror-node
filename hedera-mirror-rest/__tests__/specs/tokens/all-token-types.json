@@ -39,6 +39,7 @@
         "token_id": "0.0.1",
         "symbol": "FIRSTMOVERLPDJH",
         "created_timestamp": "1234567890000000001",
+        "metadata": null,
         "decimals": 1,
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"

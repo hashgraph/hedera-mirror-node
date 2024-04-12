@@ -113,6 +113,7 @@
           }
         ],
         "created_timestamp": "1234567890000000002",
+        "metadata": null,
         "type": "FUNGIBLE_COMMON"
       },
       {

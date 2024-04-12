@@ -41,6 +41,7 @@
           }
         ],
         "created_timestamp": "1234567890000000002",
+        "metadata": null,
         "type": "NON_FUNGIBLE_UNIQUE",
         "pause_status": "PAUSED",
         "pause_key": "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96x"
