@@ -356,20 +356,51 @@ class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
                     "AABBCC22"
             })
     void nftAllowancesNotFoundException(String accountId) {
+        validateErrorMessage(callUri, accountId, "No account found for the given ID",HttpClientErrorException.NotFound.class, "Not Found");
+    }
 
-        assertThatThrownBy(() -> restClient
-                .get()
-                .uri(callUri, accountId)
-                .retrieve()
-                .body(NftAllowancesResponse.class)
+    @Test
+    void nftAllowancesTokenIdValidation() {
+
+        String uriParams = "?owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
+        var entity = domainBuilder.entity().persist();
+
+        // Creating nft allowances
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
+
+        // Performing the GET operation
+        validateErrorMessage(uriParams, EntityId.of(allowance1.getOwner()).toString(), "token.id parameter must have account.id present", HttpClientErrorException.BadRequest.class, "Bad Request");
+    }
+
+    @Test
+    void nftAllowancesEntityIdRangeOperatorValidation() {
+
+        String uriParams = "?owner=true&account.id=gte:0.0.1000&token.id=ne:0.0.1000&limit=1&order=asc";
+        var entity = domainBuilder.entity().persist();
+
+        // Creating nft allowances
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
+
+        // Performing the GET operation
+        validateErrorMessage(uriParams, EntityId.of(allowance1.getOwner()).toString(), "Invalid range operator ne. This operator is not supported",HttpClientErrorException.BadRequest.class, "Bad Request");
+    }
+
+    private void validateErrorMessage(String uriParams, String accountId, String expected, Class<? extends HttpClientErrorException> clazz, String description) {
+        assertThatThrownBy(() -> restClient.get().uri(uriParams, accountId).retrieve().body(NftAllowancesResponse.class)
         )
-                .isInstanceOf(HttpClientErrorException.NotFound.class)
-                .hasMessageContaining("Not Found")
-                .asInstanceOf(InstanceOfAssertFactories.type(HttpClientErrorException.NotFound.class))
+                .isInstanceOf(clazz)
+                .hasMessageContaining(description)
+                .asInstanceOf(InstanceOfAssertFactories.type(clazz))
                 .extracting(r -> r.getResponseBodyAs(Error.class).getStatus().getMessages().get(0))
                 .returns(null, ErrorStatusMessagesInner::getData)
                 .returns(null, ErrorStatusMessagesInner::getDetail)
-                .returns("No account found for the given ID", ErrorStatusMessagesInner::getMessage);
+                .returns(expected, ErrorStatusMessagesInner::getMessage);
     }
 
 }
