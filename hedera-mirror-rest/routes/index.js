@@ -31,7 +31,7 @@ import NetworkRoutes from './networkRoute';
 const recordRequestPath = async (req, res) => {
   const path = req.route?.path;
   if (path && !path.startsWith(apiPrefix) && !res.locals[requestPathLabel]) {
-    res.locals[requestPathLabel] = `${req.baseUrl}${req.route.path}`;
+    res.locals[requestPathLabel] = `${req.baseUrl}${req.route.path}`.replace(/\/+$/g, '');
   }
 };
 
