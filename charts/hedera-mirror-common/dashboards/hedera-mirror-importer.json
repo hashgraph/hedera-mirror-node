@@ -589,7 +589,7 @@
           "refId": "A"
         }
       ],
-      "title": "Database Size",
+      "title": "Uncompressed Database Size",
       "type": "stat"
     },
     {
