@@ -60,8 +60,9 @@ public class Suppliers {
         return new SupplierOfInstance<>(instance);
     }
 
+    @SuppressWarnings("java:S4738")
     private static class SupplierOfInstance<T extends @Nullable Object> implements Supplier<T>, Serializable {
-        final T instance;
+        final transient T instance;
 
         SupplierOfInstance(T instance) {
             this.instance = instance;

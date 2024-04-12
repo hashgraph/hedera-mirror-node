@@ -147,32 +147,30 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
     }
 
     private Supplier<SortedMap<EntityNum, Long>> getCryptoAllowances(Long ownerId, final Optional<Long> timestamp) {
-        return Suppliers.memoize(
-                () -> Collections.unmodifiableSortedMap((SortedMap<EntityNum, ? extends Long>) timestamp
-                        .map(t -> cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
-                        .orElseGet(() -> cryptoAllowanceRepository.findByOwner(ownerId))
-                        .stream()
-                        .collect(Collectors.toMap(
-                                cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender())),
-                                CryptoAllowance::getAmount,
-                                NO_DUPLICATE_MERGE_FUNCTION,
-                                TreeMap::new))));
+        return Suppliers.memoize(() -> Collections.unmodifiableSortedMap((SortedMap<EntityNum, Long>) timestamp
+                .map(t -> cryptoAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
+                .orElseGet(() -> cryptoAllowanceRepository.findByOwner(ownerId))
+                .stream()
+                .collect(Collectors.toMap(
+                        cryptoAllowance -> entityNumFromId(EntityId.of(cryptoAllowance.getSpender())),
+                        CryptoAllowance::getAmount,
+                        NO_DUPLICATE_MERGE_FUNCTION,
+                        TreeMap::new))));
     }
 
     private Supplier<SortedMap<FcTokenAllowanceId, Long>> getFungibleTokenAllowances(
             Long ownerId, final Optional<Long> timestamp) {
-        return Suppliers.memoize(
-                () -> Collections.unmodifiableSortedMap((SortedMap<FcTokenAllowanceId, ? extends Long>) timestamp
-                        .map(t -> tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
-                        .orElseGet(() -> tokenAllowanceRepository.findByOwner(ownerId))
-                        .stream()
-                        .collect(Collectors.toMap(
-                                tokenAllowance -> new FcTokenAllowanceId(
-                                        entityNumFromId(EntityId.of(tokenAllowance.getTokenId())),
-                                        entityNumFromId(EntityId.of(tokenAllowance.getSpender()))),
-                                AbstractTokenAllowance::getAmount,
-                                NO_DUPLICATE_MERGE_FUNCTION,
-                                TreeMap::new))));
+        return Suppliers.memoize(() -> Collections.unmodifiableSortedMap((SortedMap<FcTokenAllowanceId, Long>) timestamp
+                .map(t -> tokenAllowanceRepository.findByOwnerAndTimestamp(ownerId, t))
+                .orElseGet(() -> tokenAllowanceRepository.findByOwner(ownerId))
+                .stream()
+                .collect(Collectors.toMap(
+                        tokenAllowance -> new FcTokenAllowanceId(
+                                entityNumFromId(EntityId.of(tokenAllowance.getTokenId())),
+                                entityNumFromId(EntityId.of(tokenAllowance.getSpender()))),
+                        AbstractTokenAllowance::getAmount,
+                        NO_DUPLICATE_MERGE_FUNCTION,
+                        TreeMap::new))));
     }
 
     private Supplier<SortedSet<FcTokenAllowanceId>> getApproveForAllNfts(Long ownerId, final Optional<Long> timestamp) {
