@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.web3.utils;
 
-import com.google.common.base.Supplier;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 public class Suppliers {
     private Suppliers() {}
