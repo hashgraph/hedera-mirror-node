@@ -32,6 +32,21 @@ the hosting node with `root` user.
 - `/opt/backup/base` is where a base backup is stored
 - `/opt/backup/wal` is where WAL segments backup is stored
 
+## Query Citus
+Citus is deployed within the cluster and there is no postgres utility to query the database. In order to query the database,
+you can run a temporary container with the below commands. The example shown is for a read only user but if you need a read/write connection,
+you can set `DB_USER="mirror_node`
+
+```bash
+NAMESPACE=citus
+HELM_RELEASE=mirror
+DB_NAME=$(kubectl get secrets -n ${NAMESPACE} -o yaml ${HELM_RELEASE}-passwords |ksd | yq ".stringData.HEDERA_MIRROR_REST_DB_NAME")
+DB_HOST=$(kubectl get secrets -n ${NAMESPACE} -o yaml ${HELM_RELEASE}-passwords |ksd | yq ".stringData.HEDERA_MIRROR_REST_DB_HOST")
+DB_USER="mirror_grpc"
+PASSWORD_KEY="HEDERA_$(echo ${DB_USER} | tr '[:lower:]' '[:upper:]')_DB_PASSWORD"
+DB_PASSWORD=$(kubectl get secrets -n ${NAMESPACE} -o yaml ${HELM_RELEASE}-passwords |ksd | yq ".stringData.${PASSWORD_KEY}")
+kubectl run -n ${NAMESPACE} psql-util -it --rm --image=bitnami/postgresql:16 --env="PGPASSWORD=${DB_PASSWORD}" --command -- psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME}
+```
 ## Create a backup
 
 A PostgreSQL database backup is composed of a base backup and the WAL segments to replay the changes from the
