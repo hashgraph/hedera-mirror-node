@@ -16,17 +16,19 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-
 import com.hedera.mirror.rest.model.Error;
 import com.hedera.mirror.rest.model.ErrorStatus;
 import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
 import lombok.CustomLog;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 @ControllerAdvice
 @CustomLog
@@ -34,17 +36,16 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GenericControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
-    @ResponseStatus(INTERNAL_SERVER_ERROR)
-    private Error genericError(final Exception e) {
+    private ResponseEntity<Error> genericError(final Exception e) {
         log.error("Generic error: ", e);
-        return errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase());
+        return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase(),INTERNAL_SERVER_ERROR);
     }
 
-    private Error errorResponse(final String e) {
+    private ResponseEntity<Error> errorResponse(final String e, HttpStatus statusCode) {
         var errorMessage = new ErrorStatusMessagesInner();
         errorMessage.setMessage(e);
         var errorStatus = new ErrorStatus().addMessagesItem(errorMessage);
         var error = new Error();
-        return error.status(errorStatus);
+        return  new ResponseEntity<>(error.status(errorStatus), statusCode);
     }
 }
