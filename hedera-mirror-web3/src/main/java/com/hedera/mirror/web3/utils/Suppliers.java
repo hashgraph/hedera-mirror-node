@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.google.common.base;
+package com.hedera.mirror.web3.utils;
 
+import com.google.common.base.Objects;
+import com.google.common.base.Supplier;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.CheckForNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-@ElementTypesAreNonnullByDefault
 public class Suppliers {
     private Suppliers() {}
 
@@ -55,20 +56,18 @@ public class Suppliers {
     }
 
     /** Returns a supplier that always supplies {@code instance}. */
-    public static <T extends @Nullable Object> Supplier<T> ofInstance(@ParametricNullness T instance) {
+    public static <T extends @Nullable Object> Supplier<T> ofInstance(T instance) {
         return new SupplierOfInstance<>(instance);
     }
 
     private static class SupplierOfInstance<T extends @Nullable Object> implements Supplier<T>, Serializable {
-        @ParametricNullness
         final T instance;
 
-        SupplierOfInstance(@ParametricNullness T instance) {
+        SupplierOfInstance(T instance) {
             this.instance = instance;
         }
 
         @Override
-        @ParametricNullness
         public T get() {
             return instance;
         }
