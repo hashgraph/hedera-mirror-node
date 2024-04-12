@@ -39,6 +39,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.fees.usage.token.TokenOpsUsage;
@@ -98,11 +99,14 @@ class AccessorBasedUsagesTest {
     @Mock
     private CryptoOpsUsage cryptoOpsUsage;
 
+    @Mock
+    private MirrorNodeEvmProperties mirrorNodeEvmProperties;
+
     private AccessorBasedUsages subject;
 
     @BeforeEach
     void setUp() {
-        subject = new AccessorBasedUsages(tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper);
+        subject = new AccessorBasedUsages(tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, mirrorNodeEvmProperties);
     }
 
     @Test
@@ -116,11 +120,12 @@ class AccessorBasedUsagesTest {
 
     @Test
     void worksAsExpectedForCryptoTransfer() {
-        final int multiplier = 1;
+        final int multiplier = 30;
         final var baseMeta = new BaseTransactionMeta(100, 2);
         final var xferMeta = new CryptoTransferMeta(1, 3, 7, 4);
         final var usageAccumulator = new UsageAccumulator();
 
+        given(mirrorNodeEvmProperties.feesTokenTransferUsageMultiplier()).willReturn(multiplier);
         given(txnAccessor.getFunction()).willReturn(CryptoTransfer);
         given(txnAccessor.availXferUsageMeta()).willReturn(xferMeta);
         given(txnAccessor.baseUsageMeta()).willReturn(baseMeta);
