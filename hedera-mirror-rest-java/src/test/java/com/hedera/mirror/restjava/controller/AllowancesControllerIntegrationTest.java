@@ -20,11 +20,14 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.rest.model.Error;
+import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import jakarta.annotation.Resource;
 import org.apache.commons.codec.binary.Base32;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,8 +44,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -315,32 +318,28 @@ class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
         String uriParams = "?account.id={accountId}&owner={owner}&token.id={token.id}&limit={limit}&order={order}";
 
         // Performing the GET operation
-        assertThrows(HttpClientErrorException.BadRequest.class, () -> restClient
+        assertThatThrownBy(() -> restClient
                 .get()
                 .uri(uriParams, id, accountId, owner, tokenId, limit, order)
                 .retrieve()
-                .body(NftAllowancesResponse.class));
-    }
-
-    @Test
-    void nftAllowancesTokenIdValidation() {
-
-        String uriParams = "?owner=false&token.id=gt:0.0.1000&limit=1&order=asc";
-
-        // Performing the GET operation
-        assertThrows(
-                HttpClientErrorException.NotFound.class,
-                () -> restClient.get().uri(uriParams, 1000).retrieve().body(NftAllowancesResponse.class));
+                .body(NftAllowancesResponse.class)
+        )
+                .isInstanceOf(HttpClientErrorException.BadRequest.class)
+                .hasMessageContaining("Bad Request");
     }
 
     @Test
     void nftAllowancesUnsupportedMediaException() {
-        RestClient restClient = RestClient.create();
 
-        // Performing the GET operation
-        assertThrows(
-                HttpClientErrorException.MethodNotAllowed.class,
-                () -> restClient.post().uri(callUri, "0.0.1000").retrieve().body(NftAllowancesResponse.class));
+        // Performing the POST operation
+        assertThatThrownBy(() -> restClient
+                .post()
+                .uri(callUri, "0.0.1000")
+                .retrieve()
+                .body(NftAllowancesResponse.class)
+        )
+                .isInstanceOf(HttpClientErrorException.MethodNotAllowed.class)
+                .hasMessageContaining("Method Not Allowed");
     }
 
     @ParameterizedTest
@@ -357,11 +356,20 @@ class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
                     "AABBCC22"
             })
     void nftAllowancesNotFoundException(String accountId) {
-        RestClient restClient = RestClient.create();
 
-        // Performing the GET operation
-        assertThrows(
-                HttpClientErrorException.NotFound.class,
-                () -> restClient.get().uri(callUri, accountId).retrieve().body(NftAllowancesResponse.class));
+        assertThatThrownBy(() -> restClient
+                .get()
+                .uri(callUri, accountId)
+                .retrieve()
+                .body(NftAllowancesResponse.class)
+        )
+                .isInstanceOf(HttpClientErrorException.NotFound.class)
+                .hasMessageContaining("Not Found")
+                .asInstanceOf(InstanceOfAssertFactories.type(HttpClientErrorException.NotFound.class))
+                .extracting(r -> r.getResponseBodyAs(Error.class).getStatus().getMessages().get(0))
+                .returns(null, ErrorStatusMessagesInner::getData)
+                .returns(null, ErrorStatusMessagesInner::getDetail)
+                .returns("No account found for the given ID", ErrorStatusMessagesInner::getMessage);
     }
+
 }

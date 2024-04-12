@@ -16,24 +16,26 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
-
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.rest.model.Error;
 import com.hedera.mirror.rest.model.ErrorStatus;
 import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
 import jakarta.persistence.EntityNotFoundException;
-import java.net.BindException;
 import lombok.CustomLog;
+import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.dao.QueryTimeoutException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 
 @CustomLog
 @ControllerAdvice
@@ -42,40 +44,39 @@ public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler()
     @ResponseStatus(NOT_FOUND)
-    private Error notFound(final EntityNotFoundException e) {
-        return errorResponse(e.getMessage());
+    private ResponseEntity<Error> notFound(final EntityNotFoundException e) {
+        return errorResponse(e.getMessage(),NOT_FOUND);
     }
-
     @ExceptionHandler()
     @ResponseStatus(BAD_REQUEST)
-    private Error inputValidationError(final InvalidEntityException e) {
-        return errorResponse(e.getMessage());
+    private ResponseEntity<Error> inputValidationError(final InvalidEntityException e) {
+        return errorResponse(e.getMessage(), BAD_REQUEST);
     }
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Error inputValidationError(final IllegalArgumentException e) {
-        return errorResponse(e.getMessage());
+    private ResponseEntity<Error> inputValidationError(final IllegalArgumentException e) {
+        return errorResponse(e.getMessage(), BAD_REQUEST);
     }
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Error bindError(final BindException e) {
-        return errorResponse(e.getMessage());
+    private ResponseEntity<Error> bindError(final BindException e) {
+        return errorResponse(e.getMessage(), BAD_REQUEST);
     }
 
     @ExceptionHandler
     @ResponseStatus(SERVICE_UNAVAILABLE)
-    private Error queryTimeout(final QueryTimeoutException e) {
+    private ResponseEntity<Error> queryTimeout(final QueryTimeoutException e) {
         log.error("Query timed out: {}", e.getMessage());
-        return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase());
+        return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase(), SERVICE_UNAVAILABLE);
     }
 
-    private Error errorResponse(final String e) {
+    private ResponseEntity<Error> errorResponse(final String e, HttpStatus statusCode) {
         var errorMessage = new ErrorStatusMessagesInner();
         errorMessage.setMessage(e);
         var errorStatus = new ErrorStatus().addMessagesItem(errorMessage);
         var error = new Error();
-        return error.status(errorStatus);
+        return  new ResponseEntity<>(error.status(errorStatus), statusCode);
     }
 }
