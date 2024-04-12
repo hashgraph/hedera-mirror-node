@@ -63,7 +63,7 @@ public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     private ResponseEntity<Error> queryTimeout(final QueryTimeoutException e) {
         log.error("Query timed out: {}", e.getMessage());
-        return errorResponse(e.getMessage(), SERVICE_UNAVAILABLE);
+        return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase(), SERVICE_UNAVAILABLE);
     }
 
     private ResponseEntity<Error> errorResponse(final String e, HttpStatus statusCode) {
