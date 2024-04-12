@@ -40,8 +40,6 @@ const responseHandler = async (req, res, next) => {
     res.set(headers.default);
     res.set(headers.path[path]);
 
-    logger.info(`path - ${path}`);
-
     const code = res.locals.statusCode;
     const contentType = res.locals[responseContentType] || APPLICATION_JSON;
     const linksNext = res.locals.responseData.links?.next;
