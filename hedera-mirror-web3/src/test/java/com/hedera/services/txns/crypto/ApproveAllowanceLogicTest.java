@@ -123,20 +123,22 @@ class ApproveAllowanceLogicTest {
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
 
+        final var accountsChanged = new TreeMap<Long, Account>();
         subject.approveAllowance(
                 store,
-                new TreeMap<>(),
+                accountsChanged,
                 new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
                 fromGrpcAccount(payerId).asGrpcAccount());
 
-        assertEquals(1, ownerAccount.getCryptoAllowances().size());
-        assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
-        assertEquals(1, ownerAccount.getApproveForAllNfts().size());
+        final var updatedAccount = accountsChanged.get(ownerAccount.getId().num());
+        assertEquals(1, updatedAccount.getCryptoAllowances().size());
+        assertEquals(1, updatedAccount.getFungibleTokenAllowances().size());
+        assertEquals(1, updatedAccount.getApproveForAllNfts().size());
 
-        verify(store).updateAccount(ownerAccount);
+        verify(store).updateAccount(updatedAccount);
     }
 
     @Test
@@ -158,18 +160,23 @@ class ApproveAllowanceLogicTest {
         assertEquals(0, payerAccount.getFungibleTokenAllowances().size());
         assertEquals(0, payerAccount.getApproveForAllNfts().size());
 
+        final var accountsChanged = new TreeMap<Long, Account>();
         subject.approveAllowance(
                 store,
-                new TreeMap<>(),
+                accountsChanged,
                 new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
                 fromGrpcAccount(payerId).asGrpcAccount());
 
-        assertEquals(1, payerAccount.getCryptoAllowances().size());
-        assertEquals(1, payerAccount.getFungibleTokenAllowances().size());
-        assertEquals(1, payerAccount.getApproveForAllNfts().size());
+        final var updatedAccount = accountsChanged.get(payerAccount.getId().num());
+
+        verify(store).updateAccount(updatedAccount);
+
+        assertEquals(1, updatedAccount.getCryptoAllowances().size());
+        assertEquals(1, updatedAccount.getFungibleTokenAllowances().size());
+        assertEquals(1, updatedAccount.getApproveForAllNfts().size());
     }
 
     @Test
@@ -187,20 +194,22 @@ class ApproveAllowanceLogicTest {
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
 
+        final var accountsChanged = new TreeMap<Long, Account>();
         subject.approveAllowance(
                 store,
-                new TreeMap<>(),
+                accountsChanged,
                 new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
                 fromGrpcAccount(payerId).asGrpcAccount());
 
-        assertEquals(1, ownerAccount.getCryptoAllowances().size());
-        assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
-        assertEquals(1, ownerAccount.getApproveForAllNfts().size());
+        final var updatedAccount = accountsChanged.get(ownerAccount.getId().num());
+        assertEquals(1, updatedAccount.getCryptoAllowances().size());
+        assertEquals(1, updatedAccount.getFungibleTokenAllowances().size());
+        assertEquals(1, updatedAccount.getApproveForAllNfts().size());
 
-        verify(store).updateAccount(ownerAccount);
+        verify(store).updateAccount(updatedAccount);
     }
 
     @Test
@@ -327,9 +336,16 @@ class ApproveAllowanceLogicTest {
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
 
-        subject.applyNftAllowances(store, new TreeMap<>(), new TreeMap<>(), nftAllowances, ownerAcccount);
+        final var accountsChanged = new TreeMap<Long, Account>();
+        subject.applyNftAllowances(store, accountsChanged, new TreeMap<>(), nftAllowances, ownerAcccount);
 
-        assertEquals(1, ownerAcccount.getApproveForAllNfts().size());
+        final var approveForAllNfts = new TreeSet<FcTokenAllowanceId>();
+        approveForAllNfts.add(
+                FcTokenAllowanceId.from(EntityNum.fromTokenId(token2), EntityNum.fromAccountId(spender1)));
+
+        final var updatedAccount = ownerAccount.setApproveForAllNfts(approveForAllNfts);
+
+        assertEquals(updatedAccount, accountsChanged.get(ownerAcccount.getId().num()));
     }
 
     @Test
@@ -367,31 +383,36 @@ class ApproveAllowanceLogicTest {
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial2), OnMissing.THROW))
                 .willReturn(nft2);
 
+        final var accountsChanged = new TreeMap<Long, Account>();
         subject.approveAllowance(
                 store,
-                new TreeMap<>(),
+                accountsChanged,
                 new TreeMap<>(),
                 op.getCryptoAllowancesList(),
                 op.getTokenAllowancesList(),
                 op.getNftAllowancesList(),
                 fromGrpcAccount(payerId).asGrpcAccount());
 
-        assertEquals(1, ownerAccount.getCryptoAllowances().size());
-        assertEquals(1, ownerAccount.getFungibleTokenAllowances().size());
-        assertEquals(1, ownerAccount.getApproveForAllNfts().size());
+        final var updatedAccount = accountsChanged.get(ownerAccount.getId().num());
+        assertEquals(1, updatedAccount.getCryptoAllowances().size());
+        assertEquals(1, updatedAccount.getFungibleTokenAllowances().size());
+        assertEquals(1, updatedAccount.getApproveForAllNfts().size());
         assertEquals(
                 10,
-                ownerAccount.getCryptoAllowances().get(fromAccountId(spender1)).intValue());
+                updatedAccount
+                        .getCryptoAllowances()
+                        .get(fromAccountId(spender1))
+                        .intValue());
         assertEquals(
                 10,
-                ownerAccount
+                updatedAccount
                         .getFungibleTokenAllowances()
                         .get(FcTokenAllowanceId.from(fromTokenId(token1), fromAccountId(spender1)))
                         .intValue());
-        assertTrue(ownerAccount
+        assertTrue(updatedAccount
                 .getApproveForAllNfts()
                 .contains(FcTokenAllowanceId.from(fromTokenId(token1), fromAccountId(spender1))));
-        assertFalse(ownerAccount
+        assertFalse(updatedAccount
                 .getApproveForAllNfts()
                 .contains(FcTokenAllowanceId.from(fromTokenId(token2), fromAccountId(spender1))));
     }
