@@ -116,8 +116,8 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                 (
                     select token_id
                     from nft_history
-                    where account_id = :accountId
-                        and :blockTimestamp >= lower(timestamp_range) and :blockTimestamp < upper(timestamp_range)
+                    where account_id = cast(:accountId as bigint) -- cast to utilize the btree_gist index
+                        and timestamp_range @> :blockTimestamp
                         and deleted is not true
                 )
             ) as n
@@ -154,7 +154,7 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
                 (
                     select token_id
                     from nft_history
-                    where account_id = :accountId
+                    where account_id = cast(:accountId as bigint) -- cast to utilize the btree_gist index
                         and token_id = :tokenId
                         and timestamp_range @> :blockTimestamp
                         and deleted is not true
@@ -179,25 +179,12 @@ public interface NftRepository extends CrudRepository<Nft, AbstractNft.Id> {
             value =
                     """
             select count(*)
-            from (
-                (
-                    select token_id
-                    from nft
-                    where token_id = :tokenId
-                        and timestamp_range @> :blockTimestamp
-                        and deleted is not true
-                )
-                union all
-                (
-                    select token_id
-                    from nft_history
-                    where token_id = :tokenId
-                        and timestamp_range @> :blockTimestamp
-                        and deleted is not true
-                )
-            ) as n
-            join entity e on e.id = n.token_id
-            where (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
+            from nft as n
+            left join entity as e on e.id = n.token_id
+            where token_id = :tokenId and
+              n.created_timestamp <= :blockTimestamp and
+              (n.deleted is false or lower(n.timestamp_range) > :blockTimestamp) and
+              (e.deleted is not true or lower(e.timestamp_range) > :blockTimestamp)
             """,
             nativeQuery = true)
     long findNftTotalSupplyByTokenIdAndTimestamp(long tokenId, long blockTimestamp);

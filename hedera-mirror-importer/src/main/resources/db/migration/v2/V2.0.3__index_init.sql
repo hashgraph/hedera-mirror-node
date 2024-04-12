@@ -161,9 +161,10 @@ create index if not exists nft__allowance on nft (account_id, spender, token_id,
     where account_id is not null and spender is not null;
 
 -- nft history
+create index if not exists nft_history__account_timestamp_range
+    on nft_history using gist (account_id, timestamp_range);
 create index if not exists nft_history__token_serial_lower_timestamp
     on nft_history (token_id, serial_number, lower(timestamp_range));
-create index if not exists nft_history__timestamp_range on nft_history using gist (timestamp_range);
 
 -- nft_allowance
 alter table if exists nft_allowance
