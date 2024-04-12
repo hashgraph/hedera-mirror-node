@@ -57,6 +57,7 @@
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
         "decimals": 3,
+        "metadata": null,
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -97,7 +98,7 @@
           {
             "admin_key": null,
             "decimals": 2,
-            "metadata": null,
+            "metadata": "",
             "name": "Original",
             "symbol": "ORIGINALRDKSE",
             "token_id": "0.0.1135",
@@ -106,7 +107,7 @@
           {
             "admin_key": null,
             "decimals": 3,
-            "metadata": null,
+            "metadata": "",
             "name": "Mirror",
             "symbol": "MIRRORTOKEN",
             "token_id": "0.7.25301",
@@ -135,7 +136,7 @@
           {
             "admin_key": null,
             "decimals": 2,
-            "metadata": null,
+            "metadata": "",
             "name": "Original",
             "symbol": "ORIGINALRDKSE",
             "token_id": "0.0.1135",
@@ -144,7 +145,7 @@
           {
             "admin_key": null,
             "decimals": 3,
-            "metadata": null,
+            "metadata": "",
             "name": "Mirror",
             "symbol": "MIRRORTOKEN",
             "token_id": "0.7.25301",
@@ -153,7 +154,7 @@
           {
             "admin_key": null,
             "decimals": 4,
-            "metadata": null,
+            "metadata": "",
             "name": "Hedera",
             "symbol": "HEDERACOIN",
             "token_id": "0.23.45678",

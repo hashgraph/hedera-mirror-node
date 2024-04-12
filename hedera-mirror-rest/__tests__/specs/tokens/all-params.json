@@ -110,7 +110,7 @@
           "key": "030303"
         },
         "decimals": 3,
-        "metadata": null,
+        "metadata": "",
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       }

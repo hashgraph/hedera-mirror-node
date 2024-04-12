@@ -44,7 +44,7 @@ describe('token formatTokenRow tests', () => {
       key: '030303',
     },
     decimals: 10,
-    metadata: null,
+    metadata: '',
     name: 'Token name',
     type: 'FUNGIBLE_COMMON',
   };
@@ -858,7 +858,7 @@ describe('token formatTokenInfoRow tests', () => {
     },
     max_supply: '9000000',
     memo: 'token.memo',
-    metadata: null,
+    metadata: '',
     metadata_key: null,
     modified_timestamp: '1603394416.676293000',
     name: 'Token name',
@@ -926,6 +926,11 @@ describe('token formatTokenInfoRow tests', () => {
     },
   };
 
+  const rowInputWithEmptyMetadata = {
+    ...rowInput,
+    metadata: []
+  };
+
   const rowInputWithMetadataAndKey = {
     ...rowInput,
     metadata: Uint8Array.of(1,2,3),
@@ -943,6 +948,11 @@ describe('token formatTokenInfoRow tests', () => {
 
   test('Verify formatTokenRow', () => {
     const actual = tokens.formatTokenInfoRow(rowInput);
+    expect(actual).toEqual(expected);
+  });
+
+  test('Verify formatTokenRowWithEmptyMetadata', () => {
+    const actual = tokens.formatTokenInfoRow(rowInputWithEmptyMetadata);
     expect(actual).toEqual(expected);
   });
 

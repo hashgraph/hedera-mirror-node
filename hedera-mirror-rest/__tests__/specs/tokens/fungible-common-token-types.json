@@ -81,7 +81,7 @@
           "key": "010101"
         },
         "decimals": 1,
-        "metadata": null,
+        "metadata": "",
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },

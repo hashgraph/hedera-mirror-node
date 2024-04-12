@@ -120,7 +120,7 @@
         "symbol": "FIRSTMOVERLPDJH",
         "admin_key": null,
         "decimals": 3,
-        "metadata": null,
+        "metadata": "",
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
