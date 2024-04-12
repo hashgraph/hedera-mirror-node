@@ -30,7 +30,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -43,33 +42,28 @@ import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 public class ExceptionControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler()
-    @ResponseStatus(NOT_FOUND)
     private ResponseEntity<Error> notFound(final EntityNotFoundException e) {
         return errorResponse(e.getMessage(),NOT_FOUND);
     }
     @ExceptionHandler()
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<Error> inputValidationError(final InvalidEntityException e) {
         return errorResponse(e.getMessage(), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<Error> inputValidationError(final IllegalArgumentException e) {
         return errorResponse(e.getMessage(), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<Error> bindError(final BindException e) {
         return errorResponse(e.getMessage(), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    @ResponseStatus(SERVICE_UNAVAILABLE)
     private ResponseEntity<Error> queryTimeout(final QueryTimeoutException e) {
         log.error("Query timed out: {}", e.getMessage());
-        return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase(), SERVICE_UNAVAILABLE);
+        return errorResponse(e.getMessage(), SERVICE_UNAVAILABLE);
     }
 
     private ResponseEntity<Error> errorResponse(final String e, HttpStatus statusCode) {

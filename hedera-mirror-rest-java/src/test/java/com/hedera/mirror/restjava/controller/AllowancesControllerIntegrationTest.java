@@ -28,6 +28,7 @@ import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import jakarta.annotation.Resource;
 import org.apache.commons.codec.binary.Base32;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -356,7 +357,13 @@ class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
                     "AABBCC22"
             })
     void nftAllowancesNotFoundException(String accountId) {
-        validateErrorMessage(callUri, accountId, "No account found for the given ID",HttpClientErrorException.NotFound.class, "Not Found");
+        validateError(() -> restClient.get()
+                        .uri(callUri, accountId)
+                        .retrieve()
+                        .body(NftAllowancesResponse.class)
+                , HttpClientErrorException.NotFound.class
+                ,  "No account found for the given ID"
+                , "Not Found");
     }
 
     @Test
@@ -372,7 +379,13 @@ class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
                 .persist();
 
         // Performing the GET operation
-        validateErrorMessage(uriParams, EntityId.of(allowance1.getOwner()).toString(), "token.id parameter must have account.id present", HttpClientErrorException.BadRequest.class, "Bad Request");
+        validateError(() -> restClient.get()
+                        .uri(uriParams, allowance1.getOwner())
+                        .retrieve()
+                        .body(NftAllowancesResponse.class)
+                , HttpClientErrorException.BadRequest.class
+                , "token.id parameter must have account.id present"
+                , "Bad Request");
     }
 
     @Test
@@ -388,19 +401,24 @@ class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest {
                 .persist();
 
         // Performing the GET operation
-        validateErrorMessage(uriParams, EntityId.of(allowance1.getOwner()).toString(), "Invalid range operator ne. This operator is not supported",HttpClientErrorException.BadRequest.class, "Bad Request");
+        validateError(() -> restClient.get()
+                        .uri(uriParams, allowance1.getOwner())
+                        .retrieve()
+                        .body(NftAllowancesResponse.class)
+       , HttpClientErrorException.BadRequest.class
+                , "Invalid range operator ne. This operator is not supported"
+                , "Bad Request");
     }
 
-    private void validateErrorMessage(String uriParams, String accountId, String expected, Class<? extends HttpClientErrorException> clazz, String description) {
-        assertThatThrownBy(() -> restClient.get().uri(uriParams, accountId).retrieve().body(NftAllowancesResponse.class)
-        )
-                .isInstanceOf(clazz)
+
+    private void validateError(ThrowableAssert.ThrowingCallable callable, Class<? extends HttpClientErrorException> clazz, String message, String description) {
+        assertThatThrownBy(callable).isInstanceOf(clazz)
                 .hasMessageContaining(description)
                 .asInstanceOf(InstanceOfAssertFactories.type(clazz))
                 .extracting(r -> r.getResponseBodyAs(Error.class).getStatus().getMessages().get(0))
                 .returns(null, ErrorStatusMessagesInner::getData)
                 .returns(null, ErrorStatusMessagesInner::getDetail)
-                .returns(expected, ErrorStatusMessagesInner::getMessage);
+                .returns(message, ErrorStatusMessagesInner::getMessage);
     }
 
 }
