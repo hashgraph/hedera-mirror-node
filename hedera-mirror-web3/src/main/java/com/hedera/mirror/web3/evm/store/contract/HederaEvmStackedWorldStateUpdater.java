@@ -223,4 +223,22 @@ public class HederaEvmStackedWorldStateUpdater
         store.updateAccount(ghostAcc);
         return createAccount(address, 0, Wei.ZERO);
     }
+
+    public boolean contractIsTokenTreasury(final Address addressOrAlias) {
+        final var address = mirrorEvmContractAliases.resolveForEvm(addressOrAlias);
+        com.hedera.services.store.models.Account account = store.getAccount(address, OnMissing.THROW);
+        return account.getNumTreasuryTitles() > 0;
+    }
+
+    public boolean contractHasAnyBalance(final Address addressOrAlias) {
+        final var address = mirrorEvmContractAliases.resolveForEvm(addressOrAlias);
+        com.hedera.services.store.models.Account account = store.getAccount(address, OnMissing.THROW);
+        return account.getNumPositiveBalances() > 0;
+    }
+
+    public boolean contractOwnsNfts(final Address addressOrAlias) {
+        final var address = mirrorEvmContractAliases.resolveForEvm(addressOrAlias);
+        com.hedera.services.store.models.Account account = store.getAccount(address, OnMissing.THROW);
+        return account.getOwnedNfts() > 0;
+    }
 }
