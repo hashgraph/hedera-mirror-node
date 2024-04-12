@@ -100,6 +100,7 @@ const tokensSelectQuery = `select
     t.freeze_status,
     e.key,
     t.kyc_status,
+    t.metadata,
     t.name,
     t.symbol,
     t.token_id,
@@ -126,6 +127,8 @@ const tokenInfoSelectFields = [
   'kyc_status',
   'max_supply',
   'e.memo',
+  'metadata',
+  'metadata_key',
   'lower(t.timestamp_range) as modified_timestamp',
   'name',
   'pause_key',
@@ -199,6 +202,7 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
 const formatTokenRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
+    metadata: utils.encodeBase64(row.metadata),
     name: row.name,
     symbol: row.symbol,
     token_id: EntityId.parse(row.token_id).toString(),
@@ -250,6 +254,8 @@ const formatTokenInfoRow = (row) => {
     kyc_key: utils.encodeKey(row.kyc_key),
     max_supply: `${row.max_supply}`,
     memo: row.memo,
+    metadata: utils.encodeBase64(row.metadata),
+    metadata_key: utils.encodeKey(row.metadata_key),
     modified_timestamp: utils.nsToSecNs(row.modified_timestamp),
     name: row.name,
     pause_key: utils.encodeKey(row.pause_key),
@@ -904,7 +910,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
   return utils.buildPgSqlObject(query, params, order, limit);
 };
 
-const formatNftHistoryRow = (row) => {
+const formatNftTransactionHistoryRow = (row) => {
   const transactionModel = new Transaction(row);
   return new NftTransactionHistoryViewModel(transactionModel);
 };
@@ -928,7 +934,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
   const {rows} = await pool.queryQuietly(query, params);
   const response = {
-    transactions: rows.map(formatNftHistoryRow),
+    transactions: rows.map(formatNftTransactionHistoryRow),
     links: {
       next: null,
     },
@@ -1006,7 +1012,7 @@ if (utils.isTestEnv()) {
     extractSqlFromTokenBalancesRequest,
     extractSqlFromTokenInfoRequest,
     extractSqlFromTokenRequest,
-    formatNftHistoryRow,
+    formatNftTransactionHistoryRow,
     formatTokenBalanceRow,
     formatTokenInfoRow,
     formatTokenRow,
