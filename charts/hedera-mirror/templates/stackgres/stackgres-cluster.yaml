@@ -16,6 +16,7 @@ spec:
         - sgScript: {{ include "hedera-mirror.stackgres" . }}-coordinator
     pods:
       disableMetricsExporter: {{ not .Values.stackgres.coordinator.enableMetricsExporter }}
+      disablePostgresUtil: true
       persistentVolume: {{ .Values.stackgres.coordinator.persistentVolume | toYaml | nindent 8 }}
       resources:
         disableResourcesRequestsSplitFromTotal: {{ .Values.stackgres.dedicatedResourcesRequests }}
