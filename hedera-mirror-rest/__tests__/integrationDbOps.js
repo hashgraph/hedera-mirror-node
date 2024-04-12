@@ -111,8 +111,6 @@ const getContainerPort = async () => {
 
 const createPool = async () => {
   const containerPort = await getContainerPort();
-  logger.info(`Using dbPort ${containerPort} for jest worker ${workerId}`);
-
   const dbConnectionParams = {
     database: dbName,
     host: '0.0.0.0',
