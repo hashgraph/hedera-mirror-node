@@ -78,7 +78,7 @@
           "key": "020202"
         },
         "decimals": 0,
-        "metadata": null,
+        "metadata": "",
         "name": "Original",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
@@ -90,7 +90,7 @@
           "key": "040404"
         },
         "decimals": 0,
-        "metadata": null,
+        "metadata": "",
         "name": "Hedera",
         "type": "NON_FUNGIBLE_UNIQUE"
       }

@@ -1347,7 +1347,7 @@ const tokenDefaults = {
   kyc_key: null,
   kyc_status: 0,
   max_supply: '9223372036854775807', // max long, cast to string to avoid error from JavaScript Number cast
-  metadata: null,
+  metadata: [],
   metadata_key: null,
   name: 'Token name',
   pause_key: null,

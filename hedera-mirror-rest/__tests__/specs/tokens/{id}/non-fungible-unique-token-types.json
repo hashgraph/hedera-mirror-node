@@ -73,7 +73,7 @@
     "kyc_key": null,
     "max_supply": "9223372036854775807",
     "memo": "token.0.0.1135",
-    "metadata": null,
+    "metadata": "",
     "metadata_key": null,
     "modified_timestamp": "1234567890.000000002",
     "name": "Token name",
