@@ -53,7 +53,6 @@ public class AllowancesController {
     private final NftAllowanceMapper nftAllowanceMapper;
 
     @GetMapping(value = "/nfts")
-    @SuppressWarnings("java:S5122")
     NftAllowancesResponse getNftAllowancesByAccountId(
             @PathVariable EntityIdParameter id,
             @RequestParam(name = ACCOUNT_ID, required = false) EntityIdRangeParameter accountId,

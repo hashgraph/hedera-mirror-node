@@ -49,6 +49,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 class GenericControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ModelAttribute
+    @SuppressWarnings("java:S5122")
     private void corsHeader(HttpServletResponse response) {
         response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
     }
