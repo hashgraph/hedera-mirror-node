@@ -515,7 +515,7 @@
         "type": "prometheus",
         "uid": "${prometheus}"
       },
-      "description": "The amount of storage used for the database.",
+      "description": "The uncompressed amount of storage used for the database. To see the compressed size, please see the ZFS dashboard.",
       "fieldConfig": {
         "defaults": {
           "mappings": [

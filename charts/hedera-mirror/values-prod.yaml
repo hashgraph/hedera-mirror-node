@@ -150,6 +150,7 @@ stackgres:
     persistentVolume:
       size: 3000Gi
       storageClass: zfs
+
 web3:
   alertmanager:
     inhibitRules:
