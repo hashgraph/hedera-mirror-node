@@ -17,15 +17,13 @@
 package com.hedera.mirror.restjava.common;
 
 import com.google.common.io.BaseEncoding;
-
 import java.util.regex.Pattern;
 
 @SuppressWarnings("java:S6218")
 public record EntityIdAliasParameter(long shard, long realm, byte[] alias) implements EntityIdParameter {
 
-    public static final String ACCOUNT_ALIAS_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?([A-Z2-7]+)$";
-
-    public static final Pattern ALIAS_PATTERN = Pattern.compile(ACCOUNT_ALIAS_REGEX);
+    public static final String ALIAS_REGEX = "^((\\d{1,5})\\.)?((\\d{1,5})\\.)?([A-Z2-7]+)$";
+    public static final Pattern ALIAS_PATTERN = Pattern.compile(ALIAS_REGEX);
     private static final BaseEncoding BASE32 = BaseEncoding.base32().omitPadding();
 
     public static EntityIdAliasParameter valueOf(String id) {
@@ -37,18 +35,16 @@ public record EntityIdAliasParameter(long shard, long realm, byte[] alias) imple
 
         long shard = DEFAULT_SHARD;
         long realm = 0;
-
         String realmString;
+
         if ((realmString = aliasMatcher.group(4)) != null) {
-            // This gets the shard and realm value
             realm = Long.parseLong(realmString);
             shard = Long.parseLong(aliasMatcher.group(2));
-
         } else if ((realmString = aliasMatcher.group(2)) != null) {
-            // This gets the realm value and shard will be null
             realm = Long.parseLong(realmString);
         }
 
-        return new EntityIdAliasParameter(shard, realm, BASE32.decode(aliasMatcher.group(5)));
+        var alias = BASE32.decode(aliasMatcher.group(5));
+        return new EntityIdAliasParameter(shard, realm, alias);
     }
 }
