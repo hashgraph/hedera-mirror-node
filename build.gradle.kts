@@ -58,7 +58,7 @@ dependencies {
         api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.5")
-        api("org.bouncycastle:bcprov-jdk15to18:1.78")
+        api("org.bouncycastle:bcprov-jdk18on:1.78")
         api("com.bucket4j:bucket4j-core:8.10.1")
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.1.2")
         api("com.google.guava:guava:33.1.0-jre")
