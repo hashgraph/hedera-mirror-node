@@ -74,5 +74,5 @@ spec:
       image:
         registry: docker.io/ssheehy
         repository: hedera-mirror-test
-        tag: latest
+        tag: 0.103.0-SNAPSHOT
 
