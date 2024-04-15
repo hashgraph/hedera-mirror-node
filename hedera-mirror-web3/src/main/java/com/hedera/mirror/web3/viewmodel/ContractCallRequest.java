@@ -63,6 +63,6 @@ public class ContractCallRequest {
 
     @AssertTrue(message = "must not be empty")
     private boolean hasTo() {
-        return estimate || StringUtils.isNotEmpty(to);
+        return (value > 0 && from != null) ? StringUtils.isNotEmpty(to) : true;
     }
 }

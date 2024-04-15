@@ -508,6 +508,17 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     @Test
+    void ethCallForContractDeploy() {
+        final var serviceParameters = serviceParametersForTopLevelContractCreate(
+                ADDRESS_THIS_CONTRACT_INIT_BYTES_PATH, ETH_CALL, SENDER_ADDRESS);
+
+        String result = contractCallService.processCall(serviceParameters);
+        assertThat(result)
+                .isEqualTo(Bytes.wrap(functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_BYTES_PATH))
+                        .toHexString());
+    }
+
+    @Test
     void nestedContractStateChangesWork() {
         final var stateChangeHash =
                 "0x51fecdca000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000004ed00000000000000000000000000000000000000000000000000000000000000046976616e00000000000000000000000000000000000000000000000000000000";
