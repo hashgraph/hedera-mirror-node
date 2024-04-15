@@ -92,7 +92,7 @@ class ContractController {
 
         Address receiver;
 
-        /*When performing estimateGas with an empty "to" field, we set a default value of the zero address
+        /*In case of an empty "to" field, we set a default value of the zero address
         to avoid any potential NullPointerExceptions throughout the process.*/
         if (request.getTo() == null || request.getTo().isEmpty()) {
             receiver = Address.ZERO;
