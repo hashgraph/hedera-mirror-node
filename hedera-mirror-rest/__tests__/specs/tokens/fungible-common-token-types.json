@@ -54,6 +54,7 @@
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
         "decimals": 3,
+        "metadata": [1, 1],
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -80,6 +81,7 @@
           "key": "010101"
         },
         "decimals": 1,
+        "metadata": "",
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
@@ -91,6 +93,7 @@
           "key": "030303"
         },
         "decimals": 3,
+        "metadata": "AQE=",
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       }

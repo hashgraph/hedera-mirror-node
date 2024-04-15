@@ -39,6 +39,7 @@
         "token_id": "0.0.1",
         "symbol": "FIRSTMOVERLPDJH",
         "created_timestamp": "1234567890000000001",
+        "metadata": null,
         "decimals": 1,
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
@@ -47,6 +48,7 @@
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
+        "metadata": [],
         "name": "Original",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
@@ -55,6 +57,7 @@
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
         "decimals": 2,
+        "metadata": [1, 1],
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -62,6 +65,7 @@
         "token_id": "0.23.45678",
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
+        "metadata": [2, 2],
         "name": "Hedera",
         "type": "NON_FUNGIBLE_UNIQUE"
       }
@@ -83,6 +87,7 @@
           "key": "010101"
         },
         "decimals": 1,
+        "metadata": "",
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
@@ -94,6 +99,7 @@
           "key": "020202"
         },
         "decimals": 0,
+        "metadata": "",
         "name": "Original",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
@@ -105,6 +111,7 @@
           "key": "030303"
         },
         "decimals": 2,
+        "metadata": "AQE=",
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -116,6 +123,7 @@
           "key": "040404"
         },
         "decimals": 0,
+        "metadata": "AgI=",
         "name": "Hedera",
         "type": "NON_FUNGIBLE_UNIQUE"
       }

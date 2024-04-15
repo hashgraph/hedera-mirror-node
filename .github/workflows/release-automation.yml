@@ -109,7 +109,7 @@ jobs:
           MILESTONE_NUMBER: ${{ steps.milestone.outputs.milestone_id }}
 
       - name: Commit and Tag
-        uses: stefanzweifel/git-auto-commit-action@8756aa072ef5b4a080af5dc8fef36c5d586e521d # v5.0.0
+        uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 # v5.0.1
         with:
           commit_author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           commit_message: Bump versions for ${{ env.RELEASE_TAG }}
@@ -178,7 +178,7 @@ jobs:
         run: ./gradlew release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@70a41aba780001da0a30141984ae2a0c95d8704e # v6.0.2
+        uses: peter-evans/create-pull-request@c55203cfde3e5c11a452d352b4393e68b85b4533 # v6.0.3
         with:
           body: ""
           branch: create-pull-request/${{ env.RELEASE_BRANCH }}

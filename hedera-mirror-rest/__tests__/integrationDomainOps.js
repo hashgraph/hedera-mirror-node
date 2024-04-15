@@ -1347,6 +1347,8 @@ const tokenDefaults = {
   kyc_key: null,
   kyc_status: 0,
   max_supply: '9223372036854775807', // max long, cast to string to avoid error from JavaScript Number cast
+  metadata: [],
+  metadata_key: null,
   name: 'Token name',
   pause_key: null,
   pause_status: 'NOT_APPLICABLE',
@@ -1380,6 +1382,7 @@ const addToken = async (custom) => {
   token.token_id = EntityId.parse(token.token_id).getEncodedId();
   token.treasury_account_id = EntityId.parse(token.treasury_account_id).getEncodedId();
 
+  convertByteaFields(['metadata'], token);
   const table = getTableName('token', token);
   await insertDomainObject(table, insertFields, token);
 
