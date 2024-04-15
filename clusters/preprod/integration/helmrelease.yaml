@@ -71,8 +71,4 @@ spec:
       enabled: true
       git:
         branch: main
-      image:
-        registry: docker.io/ssheehy
-        repository: hedera-mirror-test
-        tag: 0.103.0-SNAPSHOT
 
