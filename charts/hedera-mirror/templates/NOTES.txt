@@ -39,7 +39,7 @@ To access the Java REST API:
 {{- else if contains "ClusterIP" .Values.restjava.service.type }}
   kubectl port-forward "service/{{ .Release.Name }}-rest-java" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.rest.service.port }}:80 &
 {{- end }}
-  curl -s "http://${REST_IP:-127.0.0.1}:{{.Values.restjava.service.port}}/api/v1/dummy"
+  curl -s "http://${REST_IP:-127.0.0.1}:{{.Values.restjava.service.port}}/api/v1/accounts/0.0.2/allowances/nfts"
 {{- end }}
 
 {{- if and .Values.rosetta.enabled .Values.rosetta.service }}

@@ -10,7 +10,7 @@
 			"name": "Positive tests",
 			"item": [
 				{
-					"name": "Get hello world",
+					"name": "Get NFT Allowances for Account ID",
 					"event": [
 						{
 							"listen": "test",
@@ -18,12 +18,10 @@
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {",
 									"    pm.response.to.have.status(200);",
-									"});",
-									"pm.test(\"Body matches string\", function () {",
-									"    pm.expect(pm.response.text()).to.include(\"Hello world\");",
 									"});"
 								],
-								"type": "text/javascript"
+								"type": "text/javascript",
+								"packages": {}
 							}
 						}
 					],
@@ -31,14 +29,17 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/dummy",
+							"raw": "{{baseUrl}}/api/v1/accounts/{{accountId}}/allowances/nfts",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"v1",
-								"dummy"
+								"accounts",
+								"{{accountId}}",
+								"allowances",
+								"nfts"
 							]
 						}
 					},
@@ -50,7 +51,11 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:8084"
+			"value": "http://localhost:8545"
+		},
+		{
+			"key": "accountId",
+			"value": "0.0.2"
 		}
 	]
 }
