@@ -35,6 +35,11 @@ spec:
           limits:
             memory: 512Mi
     prometheus:
+      kube-state-metrics:
+        resources:
+          limits:
+            cpu: 20m
+            memory: 128Mi
       prometheus:
         prometheusSpec:
           externalLabels:
