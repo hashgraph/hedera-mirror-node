@@ -29,7 +29,7 @@ dependencies {
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("javax.inject:javax.inject:1")
     implementation("net.java.dev.jna:jna")
-    implementation("org.bouncycastle:bcprov-jdk15to18")
+    implementation("org.bouncycastle:bcprov-jdk18on")
     implementation("org.springframework:spring-context-support")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
