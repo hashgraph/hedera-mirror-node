@@ -51,7 +51,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:8545"
+			"value": "http://localhost:8084"
 		},
 		{
 			"key": "accountId",
