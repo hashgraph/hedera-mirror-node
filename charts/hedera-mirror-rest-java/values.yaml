@@ -79,7 +79,7 @@ ingress:
     - host: ""
       paths:
         # the rest of /api/v1/* is still handled by the Node.js based REST API logic, except for these paths
-        - "/api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/nfts"
+        - "/api/v1/accounts/{id}/allowances/nfts"
   tls:
     enabled: false
     secretName: ""
