@@ -30,9 +30,11 @@ import com.hedera.mirror.rest.model.ContractCallRequest;
 import com.hedera.mirror.rest.model.NetworkExchangeRateSetResponse;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionDetail;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.NodeNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.EncoderDecoderFacade;
+import com.hedera.mirror.test.e2e.acceptance.client.EthereumClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.NetworkAdapter;
@@ -60,6 +62,12 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
 
     @Autowired
     protected ContractClient contractClient;
+
+    @Autowired
+    protected EthereumClient ethereumClient;
+
+    @Autowired
+    protected AccountClient accountClient;
 
     @Autowired
     protected FileClient fileClient;
