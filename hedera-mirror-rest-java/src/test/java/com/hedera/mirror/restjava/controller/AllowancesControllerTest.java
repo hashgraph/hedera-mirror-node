@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.Error;

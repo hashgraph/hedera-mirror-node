@@ -8,6 +8,6 @@ Java and the two modules can be merged.
 ## Technologies
 
 This module uses [Spring Boot](https://spring.io/projects/spring-boot) for its application framework. To serve the
-APIs, [Spring WebFlux](https://docs.spring.io/spring-framework/docs/current/reference/html/web-reactive.html)
+APIs, [Spring Web](https://docs.spring.io/spring-boot/docs/current/reference/html/web.html)
 is used with annotation-based controllers. [Spring Data JPA](https://spring.io/projects/spring-data-jpa) with Hibernate
 is used for the persistence layer.
