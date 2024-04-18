@@ -118,7 +118,7 @@ When parsing pending airdrops,
 Optional Filters
 
 - `limit` - The maximum number of airdrops to return in the response. Defaults to `25` with a max of `100`.
-- `order` - The direction to sort the items in the response. Can be `asc` or `desc` with a default of `asc`.
+- `order` - The direction to sort the items by `token_id` in the response. Can be `asc` or `desc` with a default of `asc`.
 - `receiver.id` - The receiver account the outstanding airdrop was intended for.
 - `serialnumber` - The specific serial number associated with airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `token.id` - The token ID this airdrop is associated with. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
@@ -161,7 +161,7 @@ Optional Filters
 Optional Filters
 
 - `limit` - The maximum number of airdrops to return in the response. Defaults to `25` with a max of `100`.
-- `order` - The direction to sort the items in the response. Can be `asc` or `desc` with a default of `asc`.
+- `order` - The direction to sort the items by `token_id` in the response. Can be `asc` or `desc` with a default of `asc`.
 - `sender.id` - The sender account that initiated the pending airdrop.
 - `serialnumber` - The specific serial number associated with airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `token.id` - The token ID this airdrop is associated with. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
