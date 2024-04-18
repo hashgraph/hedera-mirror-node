@@ -54,7 +54,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
-        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
     }
 
     @Test
@@ -82,7 +82,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
         var response = service.getNftAllowances(request);
 
-        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
     }
 
     @Test
@@ -110,7 +110,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
         var response = service.getNftAllowances(request);
 
-        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
     }
 
     @Test
@@ -138,7 +138,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
-        assertThat(response).containsExactlyInAnyOrder(nftAllowance1);
+        assertThat(response).containsExactly(nftAllowance1);
     }
 
     @Test
@@ -158,8 +158,7 @@ public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(false)
                 .limit(2)
                 .accountId(new EntityIdParameter(accountId))
-                .ownerOrSpenderId(
-                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender())))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getOwner())))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
                 .order(Sort.Direction.ASC)
                 .build();

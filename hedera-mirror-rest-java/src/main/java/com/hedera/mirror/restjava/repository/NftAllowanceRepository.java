@@ -21,7 +21,7 @@ import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
 
-public interface NftAllowanceRepositoryCustom {
+public interface NftAllowanceRepository {
 
     /**
      * Find all NftAllowance matching the filters with the given limit, sort order, and byOwner flag

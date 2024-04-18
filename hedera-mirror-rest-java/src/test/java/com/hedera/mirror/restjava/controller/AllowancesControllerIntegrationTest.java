@@ -123,7 +123,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     void successWithNoOperators() {
         // Creating nft allowances
         var allowance1 = domainBuilder.nftAllowance().persist();
-        var allowance2 = domainBuilder
+        domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
                 .persist();
@@ -132,8 +132,8 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
                 .formatted(
                         allowance1.getOwner(),
-                        EntityId.of(allowance2.getSpender()),
-                        EntityId.of(allowance2.getTokenId()));
+                        EntityId.of(allowance1.getSpender()),
+                        EntityId.of(allowance1.getTokenId()));
 
         // Performing the GET operation
         var result = restClient
@@ -144,7 +144,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
         // This test will need to change after the new repository layer is integrated to return the correct result for
         // spenderId = allowance.spender()
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2)));
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
         assertThat(result.getLinks().getNext()).isEqualTo(nextLink);
     }
 

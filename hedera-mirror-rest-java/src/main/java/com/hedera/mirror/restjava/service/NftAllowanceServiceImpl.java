@@ -19,7 +19,7 @@ package com.hedera.mirror.restjava.service;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.repository.NftAllowanceRepositoryCustom;
+import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
@@ -28,11 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class NftAllowanceServiceImpl implements NftAllowanceService {
 
-    private final NftAllowanceRepositoryCustom repository;
-
-    private static final String TOKEN_ID = "token_id";
-    private static final String OWNER = "owner";
-    private static final String SPENDER = "spender";
+    private final NftAllowanceRepository repository;
 
     public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
@@ -41,15 +37,13 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
-        //  LT,LTE,EQ,NE are not supported right now. Default is GT.
-        verifyRangeId(request.getTokenId());
-        verifyRangeId(request.getOwnerOrSpenderId());
-        // Set the value depending on the owner flag
+        verifyRangeId(token);
+        verifyRangeId(ownerOrSpenderId);
+
         return repository.findAll(request);
     }
 
     private static void verifyRangeId(EntityIdRangeParameter idParam) {
-        // Setting default to 0.static queries will return all values with ids > 0 .
         if (idParam != null && idParam.operator() == RangeOperator.NE) {
             throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
         }
