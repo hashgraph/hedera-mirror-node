@@ -48,6 +48,8 @@ spec:
           enabled: false
         MonitorSubscribeLatency:
           enabled: false
+    stackgres:
+      postgresVersion: "16"
     test:
       enabled: true
     web3:
