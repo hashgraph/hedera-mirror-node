@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava.converter;
 
 import jakarta.inject.Named;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;

@@ -38,6 +38,8 @@ class Token {
     this.kycKey = token.kyc_key;
     this.maxSupply = BigInt(token.max_supply);
     this.memo = token.memo;
+    this.metadata = token.metadata;
+    this.metadataKey = token.metadata_key;
     this.modifiedTimestamp = BigInt(token.modified_timestamp);
     this.name = token.name;
     this.pauseKey = token.pause_key;

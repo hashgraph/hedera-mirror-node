@@ -191,8 +191,6 @@ class StoreImplTest {
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
-        when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
-                .thenReturn(associationsCount);
         final var account = subject.getAccount(ACCOUNT_ADDRESS, OnMissing.DONT_THROW);
         assertThat(account.getId()).isEqualTo(new Id(0, 0, 12));
     }
@@ -372,8 +370,6 @@ class StoreImplTest {
         when(accountModel.getId()).thenReturn(12L);
         when(accountModel.getNum()).thenReturn(12L);
         when(accountModel.getType()).thenReturn(EntityType.ACCOUNT);
-        when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(12L))
-                .thenReturn(associationsCount);
         var accountId = EntityIdUtils.accountIdFromEvmAddress(ACCOUNT_ADDRESS);
         var tokenId = EntityIdUtils.tokenIdFromEvmAddress(TOKEN_ADDRESS);
         assertThat(subject.hasApprovedForAll(Address.ZERO, accountId, tokenId)).isFalse();

@@ -15,7 +15,7 @@
  */
 
 import config from '../config';
-import {requestStartTime, responseContentType, responseDataLabel} from '../constants';
+import {requestPathLabel, requestStartTime, responseContentType, responseDataLabel} from '../constants';
 import {NotFoundError} from '../errors';
 import {JSONStringify} from '../utils';
 
@@ -26,7 +26,7 @@ const {
 const CONTENT_TYPE_HEADER = 'Content-Type';
 const APPLICATION_JSON = 'application/json; charset=utf-8';
 const LINK_NEXT_HEADER = 'Link';
-const linkNextHeaderValue = (linksNext) => `<${linksNext}>; rel="next"`
+const linkNextHeaderValue = (linksNext) => `<${linksNext}>; rel="next"`;
 
 // Response middleware that pulls response data passed through request and sets in response.
 // Next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
@@ -36,8 +36,9 @@ const responseHandler = async (req, res, next) => {
     // unmatched route will have no response data, pass NotFoundError to next middleware
     throw new NotFoundError();
   } else {
+    const path = res.locals[requestPathLabel] ?? req.route.path;
     res.set(headers.default);
-    res.set(headers.path[req.route.path]);
+    res.set(headers.path[path]);
 
     const code = res.locals.statusCode;
     const contentType = res.locals[responseContentType] || APPLICATION_JSON;

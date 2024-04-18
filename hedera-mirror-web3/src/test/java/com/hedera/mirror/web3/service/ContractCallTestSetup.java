@@ -1344,11 +1344,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var ownerEntityId = ownerEntityPersistHistorical();
         final var senderEntityId = senderEntityPersistHistorical();
         final var spenderEntityId = spenderEntityPersistHistorical();
-        final var autoRenewEntityId = autoRenewAccountPersistHistorical();
+        autoRenewAccountPersistHistorical();
 
         // Fungible token
         final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS_HISTORICAL.toArrayUnsafe());
-        final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
         balancePersistHistorical(
                 FUNGIBLE_TOKEN_ADDRESS_HISTORICAL,
@@ -1366,7 +1365,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
         // NFT
         final var nftEntityId = fromEvmAddress(NFT_ADDRESS_HISTORICAL.toArrayUnsafe());
-        final var nftEvmAddress = toEvmAddress(nftEntityId);
         nftPersistHistorical(
                 NFT_ADDRESS_HISTORICAL,
                 AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL,
@@ -1387,7 +1385,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         // Contracts
         final var contractEntityId = fromEvmAddress(ERC_CONTRACT_ADDRESS.toArrayUnsafe());
         final var precompileTestContractId = fromEvmAddress(PRECOMPILE_TEST_CONTRACT_ADDRESS.toArrayUnsafe());
-        final var precompileContractEvmAddress = toEvmAddress(precompileTestContractId);
 
         // Token allowances
         tokenAllowancePersistHistorical(tokenEntityId, senderEntityId, senderEntityId, spenderEntityId, 13L);
@@ -2196,6 +2193,32 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .timestampRange(Range.openClosed(
                                 historicalBlock.lowerEndpoint() - 1, historicalBlock.upperEndpoint() + 1)))
                 .persist();
+
+        // nft table
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .createdTimestamp(1475067194949034022L)
+                        .serialNumber(1L)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .deleted(false)
+                        .timestampRange(Range.atLeast(historicalBlock.upperEndpoint() + 1)))
+                .persist();
+
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .createdTimestamp(1475067194949034022L)
+                        .serialNumber(3L)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .deleted(false)
+                        .timestampRange(Range.atLeast(historicalBlock.upperEndpoint() + 1)))
+                .persist();
+
         return nftEntityId;
     }
 

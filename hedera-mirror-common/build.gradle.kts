@@ -28,7 +28,6 @@ dependencies {
     api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
     api("io.hypersistence:hypersistence-utils-hibernate-63")
     api("commons-codec:commons-codec")
-    api("io.projectreactor:reactor-core")
     api("org.apache.commons:commons-lang3")
     api("org.apache.tuweni:tuweni-bytes")
     api("org.jetbrains:annotations")

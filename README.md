@@ -51,32 +51,13 @@ expose the data. This approach provides the following advantages:
   hash chain.
 - Record files can then be processed and transactions and records processed for long term storage.
 
-In addition, nodes regularly generate
-a [balance file](https://github.com/hashgraph/hedera-protobufs/blob/main/streams/account_balance_file.proto). The
-balance file contains the list of Hedera accounts and their corresponding HBAR and token balances. This file is
-processed by the mirror node in a similar fashion as outlined above.
-
 ## Getting Started
-
-### Technologies
-
-Multiple technologies are utilized in the mirror node. The following topics are areas where basic knowledge is valuable
-to understanding the mirror node operations.
-
-- [Docker](https://docs.docker.com/engine/reference/commandline/docker/)
-- [Git](https://git-scm.com/about)
-- [Go](https://golang.org/)
-- [Gradle](http://gradle.com/)
-- [Helm](https://helm.sh)
-- [Node.js](https://nodejs.org/en/about/)
-- [PostgreSQL](https://www.postgresql.org/docs)
-- [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)
 
 ### Prerequisite Tools
 
 Ensure these tools are installed (note minimum versions) prior to running the mirror node:
 
-- [Docker Desktop 4.3+](https://www.docker.com/products/docker-desktop)
+- [Docker Desktop 4.28+](https://www.docker.com/products/docker-desktop)
 
 ### Running
 
@@ -108,7 +89,9 @@ a [public network](#public-networks) then wipe the database and restart the mirr
 To access data from real Hedera networks,
 [AWS](https://docs.aws.amazon.com/AmazonS3/latest/dev/RequesterPaysBuckets.html) or
 [GCS](https://cloud.google.com/storage/docs/requester-pays) requester pays credentials must be used. The charges
-associated with the downloading of stream files are paid for by the requester and not the bucket owner.
+associated with the downloading of stream files are paid for by the requester and not the bucket owner. See
+the [Run Your Own Mirror Node](https://docs.hedera.com/hedera/core-concepts/mirror-nodes/run-your-own-beta-mirror-node)
+documentation for more information.
 
 ## Documentation
 
@@ -121,8 +104,9 @@ associated with the downloading of stream files are paid for by the requester an
   - [REST Java API](docs/rest-java/README.md)
   - [Rosetta API](docs/rosetta/README.md)
   - [Web3 API](docs/web3/README.md)
-- [Installation](docs/installation.md)
 - [Configuration](docs/configuration.md)
+- [Contributing](docs/contributing.md)
+- [Installation](docs/installation.md)
 - [Troubleshooting](docs/troubleshooting.md)
 
 ## Releasing
@@ -136,9 +120,7 @@ If you have a question on how to use the product, please see our
 
 ## Contributing
 
-Contributions are welcome. Please see the
-[contributing guide](https://github.com/hashgraph/.github/blob/main/CONTRIBUTING.md)
-to see how you can get involved.
+Contributions are welcome. Please see the [contributing guide](docs/contributing.md) to see how you can get involved.
 
 ## Code of Conduct
 

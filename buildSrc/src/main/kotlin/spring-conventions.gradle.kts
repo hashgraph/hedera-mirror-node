@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-import org.openapitools.generator.gradle.plugin.extensions.OpenApiGeneratorGenerateExtension
-
 plugins {
     id("com.gorylenko.gradle-git-properties")
     id("docker-conventions")
@@ -29,4 +27,12 @@ springBoot {
 }
 
 tasks.named("dockerBuild") { dependsOn(tasks.bootJar) }
+
 tasks.register("run") { dependsOn(tasks.bootRun) }
+
+tasks.bootBuildImage {
+    // The default builder does not support arm64
+    if (System.getProperty("os.arch").lowercase().startsWith("aarch")) {
+        builder = "dashaun/builder:tiny"
+    }
+}

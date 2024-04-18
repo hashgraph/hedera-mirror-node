@@ -590,11 +590,7 @@ public class TokenClient extends AbstractNetworkClient {
     @Getter
     public enum TokenNameEnum {
         // also used in call.feature
-        FUNGIBLE(
-                "fungible",
-                TokenType.FUNGIBLE_COMMON,
-                TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.Unfrozen),
+        FUNGIBLE("fungible", TokenType.FUNGIBLE_COMMON, TokenKycStatus.KycNotApplicable, TokenFreezeStatus.Unfrozen),
         FUNGIBLEHISTORICAL(
                 "fungible_historical", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
         FUNGIBLE_DELETABLE(
@@ -618,11 +614,7 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable),
-        NFT(
-                "non_fungible",
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.Unfrozen),
+        NFT("non_fungible", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.KycNotApplicable, TokenFreezeStatus.Unfrozen),
         NFT_FOR_ETH_CALL(
                 "non_fungible",
                 TokenType.NON_FUNGIBLE_UNIQUE,

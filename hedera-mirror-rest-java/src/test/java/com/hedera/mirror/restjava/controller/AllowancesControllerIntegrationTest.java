@@ -16,10 +16,6 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
@@ -27,9 +23,6 @@ import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import jakarta.annotation.Resource;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,6 +34,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -123,7 +124,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
     void successWithNoOperators() {
         // Creating nft allowances
         var allowance1 = domainBuilder.nftAllowance().persist();
-        domainBuilder
+        var allowance2 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
                 .persist();
@@ -132,8 +133,8 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
                 .formatted(
                         allowance1.getOwner(),
-                        EntityId.of(allowance1.getSpender()),
-                        EntityId.of(allowance1.getTokenId()));
+                        EntityId.of(allowance2.getSpender()),
+                        EntityId.of(allowance2.getTokenId()));
 
         // Performing the GET operation
         var result = restClient
@@ -142,9 +143,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
-        // This test will need to change after the new repository layer is integrated to return the correct result for
-        // spenderId = allowance.spender()
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2)));
         assertThat(result.getLinks().getNext()).isEqualTo(nextLink);
     }
 

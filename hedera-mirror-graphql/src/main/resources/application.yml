@@ -41,7 +41,7 @@ server:
     enabled: true
   http2:
     enabled: true
-  max-http-request-header-size: 1KB
+  max-http-request-header-size: 2KB
   netty:
     connection-timeout: 3s
   port: 8083

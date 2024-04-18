@@ -20,7 +20,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/ory/dockertest/v3"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -40,10 +39,11 @@ import (
 )
 
 const (
-	dbCleanupScript = "hedera-mirror-common/src/test/resources/cleanup.sql"
-	dbMigrationPath = "hedera-mirror-importer/src/main/resources/db/migration/v1"
+	dbCleanupScript = "../hedera-mirror-common/src/test/resources/cleanup.sql"
+	dbMigrationPath = "../hedera-mirror-importer/src/main/resources/db/migration/v1"
 	dbName          = "mirror_node"
-	dbUsername      = "mirror_rosetta_integration"
+	initScript      = "../hedera-mirror-importer/src/main/resources/db/scripts/init.sh"
+	ownerUsername   = "mirror_node"
 	poolMaxWait     = 5 * time.Minute
 )
 
@@ -91,18 +91,16 @@ func (d DbResource) GetGormDb() *gorm.DB {
 }
 
 type dbParams struct {
-	endpoint string
-	name     string
-	username string
-	password string
+	endpoint      string
+	ownerPassword string
 }
 
 func (d dbParams) toDsn() string {
-	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", d.username, d.password, d.endpoint, d.name)
+	return fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", ownerUsername, d.ownerPassword, d.endpoint, dbName)
 }
 
 func (d dbParams) toJdbcUrl(endpoint string) string {
-	return fmt.Sprintf("jdbc:postgresql://%s/%s", endpoint, d.name)
+	return fmt.Sprintf("jdbc:postgresql://%s/%s", endpoint, dbName)
 }
 
 func (d dbParams) toConfig() config.Db {
@@ -110,22 +108,22 @@ func (d dbParams) toConfig() config.Db {
 	port, _ := strconv.ParseUint(hostPort[1], 10, 16)
 	return config.Db{
 		Host:     hostPort[0],
-		Name:     d.name,
-		Password: d.password,
+		Name:     dbName,
+		Password: d.ownerPassword,
 		Pool: config.Pool{
 			MaxIdleConnections: 20,
 			MaxLifetime:        30,
 			MaxOpenConnections: 100,
 		},
 		Port:     uint16(port),
-		Username: d.username,
+		Username: ownerUsername,
 	}
 }
 
 // CleanupDb cleans the data written to the db during tests
 func CleanupDb(db *sql.DB) {
-	filename := filepath.Clean(path.Join(moduleRoot, "..", dbCleanupScript))
-	script, err := ioutil.ReadFile(filename)
+	filename := filepath.Clean(path.Join(moduleRoot, dbCleanupScript))
+	script, err := os.ReadFile(filename)
 	if err != nil {
 		log.Fatalf("Failed to read cleanup.sql: %s", err)
 	}
@@ -197,11 +195,10 @@ func TearDownDb(dbResource DbResource) {
 }
 
 func createPostgresDb(pool *dockertest.Pool, network *dockertest.Network) (*dockertest.Resource, dbParams) {
-	dbPassword := randstr.Hex(12)
+	ownerPassword := randstr.Hex(12)
 	env := []string{
-		"POSTGRES_DB=" + dbName,
-		"POSTGRES_USER=" + dbUsername,
-		"POSTGRES_PASSWORD=" + dbPassword,
+		"OWNER_PASSWORD=" + ownerPassword,
+		"POSTGRES_PASSWORD=postgres_password",
 	}
 
 	options := &dockertest.RunOptions{
@@ -209,6 +206,7 @@ func createPostgresDb(pool *dockertest.Pool, network *dockertest.Network) (*dock
 		Repository: "postgres",
 		Tag:        "14-alpine",
 		Env:        env,
+		Mounts:     []string{filepath.Clean(path.Join(moduleRoot, initScript)) + ":/docker-entrypoint-initdb.d/init.sh"},
 		Networks:   []*dockertest.Network{network},
 	}
 	resource, err := pool.RunWithOptions(options)
@@ -218,15 +216,13 @@ func createPostgresDb(pool *dockertest.Pool, network *dockertest.Network) (*dock
 
 	return resource, dbParams{
 		// use IPv4 local address, 'localhost' may resolve to IPv6 local address in github CI
-		endpoint: "127.0.0.1:" + resource.GetPort("5432/tcp"),
-		name:     dbName,
-		username: dbUsername,
-		password: dbPassword,
+		endpoint:      "127.0.0.1:" + resource.GetPort("5432/tcp"),
+		ownerPassword: ownerPassword,
 	}
 }
 
 func runFlywayMigration(pool *dockertest.Pool, network *dockertest.Network, params dbParams) {
-	migrationPath := path.Join(moduleRoot, "..", dbMigrationPath)
+	migrationPath := filepath.Clean(path.Join(moduleRoot, dbMigrationPath))
 	// run the container with tty and entrypoint "bin/sh" so it will stay alive in background
 	options := &dockertest.RunOptions{
 		Repository: "flyway/flyway",
@@ -243,17 +239,17 @@ func runFlywayMigration(pool *dockertest.Pool, network *dockertest.Network, para
 	}
 
 	args := map[string]string{
-		"password":                                      params.password,
+		"password":                                      params.ownerPassword,
 		"placeholders.api-password":                     "mirror_api",
 		"placeholders.api-user":                         "mirror_api_password",
 		"placeholders.partitionStartDate":               "'1970-01-01'",
 		"placeholders.partitionTimeInterval":            "'10 years'",
-		"placeholders.db-name":                          params.name,
-		"placeholders.db-user":                          params.username,
+		"placeholders.db-name":                          dbName,
+		"placeholders.db-user":                          ownerUsername,
 		"placeholders.topicRunningHashV2AddedTimestamp": "0",
 		"target": "latest",
 		"url":    params.toJdbcUrl(getDbHostname(network.Network) + ":5432"),
-		"user":   params.username,
+		"user":   ownerUsername,
 	}
 
 	cmd := []string{"flyway"}

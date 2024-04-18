@@ -28,8 +28,15 @@ function cleanup() {
   echo "Cleanup complete"
 }
 
+function ensure_extensions() {
+  echo "Ensuring required extensions are installed"
+  /etc/init.d/postgresql start
+  psql -d mirror_node -U mirror_node -c 'create extension if not exists btree_gist;'
+  /etc/init.d/postgresql stop
+}
+
 function init_temp_schema() {
-  echo "Checking temp schema";
+  echo "Checking temp schema"
   /etc/init.d/postgresql start
   su postgres -c 'PATH=/usr/lib/postgresql/${PG_VERSION}/bin:${PATH} /app/scripts/init-temp-schema.sh'
   /etc/init.d/postgresql stop
@@ -46,6 +53,7 @@ function init_db() {
     su postgres -c 'cp /app/pg_hba.conf ${PGDATA}'
     echo "Database is already initialized"
 
+    ensure_extensions
     init_temp_schema
     return
   fi

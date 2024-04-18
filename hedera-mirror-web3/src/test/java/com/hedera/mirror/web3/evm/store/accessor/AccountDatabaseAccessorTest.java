@@ -20,6 +20,9 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -196,8 +199,12 @@ class AccountDatabaseAccessorTest {
         long ownedNfts = 20;
         when(nftRepository.countByAccountIdNotDeleted(any())).thenReturn(ownedNfts);
 
+        verify(nftRepository, never()).countByAccountIdNotDeleted(entity.getId());
+
         assertThat(accountAccessor.get(ADDRESS, Optional.empty()))
                 .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, Account::getOwnedNfts));
+
+        verify(nftRepository).countByAccountIdNotDeleted(entity.getId());
     }
 
     @Test
@@ -207,8 +214,12 @@ class AccountDatabaseAccessorTest {
         when(nftRepository.countByAccountIdAndTimestampNotDeleted(entity.getId(), timestamp.get()))
                 .thenReturn(ownedNfts);
 
+        verify(nftRepository, never()).countByAccountIdAndTimestampNotDeleted(entity.getId(), timestamp.get());
+
         assertThat(accountAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(account -> assertThat(account).returns(ownedNfts, Account::getOwnedNfts));
+
+        verify(nftRepository).countByAccountIdAndTimestampNotDeleted(entity.getId(), timestamp.get());
     }
 
     @Test
@@ -218,8 +229,13 @@ class AccountDatabaseAccessorTest {
         when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
                 .thenReturn(Optional.of(balance));
 
+        verify(accountBalanceRepository, never())
+                .findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get());
+
         assertThat(accountAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
+
+        verify(accountBalanceRepository).findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get());
     }
 
     @Test
@@ -239,8 +255,14 @@ class AccountDatabaseAccessorTest {
         long balance = 0;
         when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
                 .thenReturn(Optional.of(balance));
+
+        verify(accountBalanceRepository, never())
+                .findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get());
+
         assertThat(accountAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
+
+        verify(accountBalanceRepository).findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get());
     }
 
     @Test
@@ -250,8 +272,14 @@ class AccountDatabaseAccessorTest {
         entity.setCreatedTimestamp(null);
         when(accountBalanceRepository.findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get()))
                 .thenReturn(Optional.of(balance));
+
+        verify(accountBalanceRepository, never())
+                .findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get());
+
         assertThat(accountAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(account -> assertThat(account).returns(balance, Account::getBalance));
+
+        verify(accountBalanceRepository).findHistoricalAccountBalanceUpToTimestamp(entity.getId(), timestamp.get());
     }
 
     @Test
@@ -274,8 +302,12 @@ class AccountDatabaseAccessorTest {
         allowancesMap.put(EntityNum.fromLong(firstAllowance.getSpender()), firstAllowance.getAmount());
         allowancesMap.put(EntityNum.fromLong(secondAllowance.getSpender()), secondAllowance.getAmount());
 
+        verify(cryptoAllowanceRepository, never()).findByOwner(entity.getId());
+
         assertThat(accountAccessor.get(ADDRESS, Optional.empty())).hasValueSatisfying(account -> assertThat(account)
                 .returns(allowancesMap, Account::getCryptoAllowances));
+
+        verify(cryptoAllowanceRepository).findByOwner(entity.getId());
     }
 
     @Test
@@ -298,8 +330,12 @@ class AccountDatabaseAccessorTest {
         allowancesMap.put(EntityNum.fromLong(firstAllowance.getSpender()), firstAllowance.getAmount());
         allowancesMap.put(EntityNum.fromLong(secondAllowance.getSpender()), secondAllowance.getAmount());
 
+        verify(cryptoAllowanceRepository, never()).findByOwnerAndTimestamp(entity.getId(), timestamp.get());
+
         assertThat(accountAccessor.get(ADDRESS, timestamp)).hasValueSatisfying(account -> assertThat(account)
                 .returns(allowancesMap, Account::getCryptoAllowances));
+
+        verify(cryptoAllowanceRepository).findByOwnerAndTimestamp(entity.getId(), timestamp.get());
     }
 
     @Test
@@ -332,8 +368,12 @@ class AccountDatabaseAccessorTest {
                         EntityNum.fromLong(secondAllowance.getSpender())),
                 secondAllowance.getAmount());
 
+        verify(tokenAllowanceRepository, never()).findByOwner(entity.getId());
+
         assertThat(accountAccessor.get(ADDRESS, Optional.empty())).hasValueSatisfying(account -> assertThat(account)
                 .returns(allowancesMap, Account::getFungibleTokenAllowances));
+
+        verify(tokenAllowanceRepository).findByOwner(entity.getId());
     }
 
     @Test
@@ -366,8 +406,12 @@ class AccountDatabaseAccessorTest {
                         EntityNum.fromLong(secondAllowance.getSpender())),
                 secondAllowance.getAmount());
 
+        verify(tokenAllowanceRepository, never()).findByOwnerAndTimestamp(entity.getId(), timestamp.get());
+
         assertThat(accountAccessor.get(ADDRESS, timestamp)).hasValueSatisfying(account -> assertThat(account)
                 .returns(allowancesMap, Account::getFungibleTokenAllowances));
+
+        verify(tokenAllowanceRepository).findByOwnerAndTimestamp(entity.getId(), timestamp.get());
     }
 
     @Test
@@ -392,8 +436,12 @@ class AccountDatabaseAccessorTest {
         allowancesSet.add(new FcTokenAllowanceId(
                 EntityNum.fromLong(secondAllowance.getTokenId()), EntityNum.fromLong(secondAllowance.getSpender())));
 
+        verify(nftAllowanceRepository, never()).findByOwnerAndApprovedForAllIsTrue(entity.getId());
+
         assertThat(accountAccessor.get(ADDRESS, Optional.empty())).hasValueSatisfying(account -> assertThat(account)
                 .returns(allowancesSet, Account::getApproveForAllNfts));
+
+        verify(nftAllowanceRepository).findByOwnerAndApprovedForAllIsTrue(entity.getId());
     }
 
     @Test
@@ -402,8 +450,13 @@ class AccountDatabaseAccessorTest {
         when(tokenAccountRepository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(anyLong()))
                 .thenReturn(associationsCount);
 
+        verify(tokenAccountRepository, never()).countByAccountIdAndAssociatedGroupedByBalanceIsPositive(entity.getId());
+
         assertThat(accountAccessor.get(ADDRESS, Optional.empty())).hasValueSatisfying(account -> assertThat(account)
                 .returns(POSITIVE_BALANCES + NEGATIVE_BALANCES, Account::getNumAssociations)
                 .returns(POSITIVE_BALANCES, Account::getNumPositiveBalances));
+
+        verify(tokenAccountRepository, times(1))
+                .countByAccountIdAndAssociatedGroupedByBalanceIsPositive(entity.getId());
     }
 }

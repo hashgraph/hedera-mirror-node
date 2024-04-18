@@ -80,7 +80,7 @@ public class StartupProbe {
         do {
             startTime = System.currentTimeMillis();
             submitMessage(client, stopwatch, topicId);
-        } while (System.currentTimeMillis() - startTime > 30_000);
+        } while (System.currentTimeMillis() - startTime > 10_000);
 
         log.info("Startup probe successful");
     }
