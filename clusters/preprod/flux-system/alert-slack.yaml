@@ -13,19 +13,13 @@ spec:
       namespace: common
     - kind: HelmRelease
       name: '*'
+      namespace: dev
+    - kind: HelmRelease
+      name: '*'
       namespace: integration
     - kind: HelmRelease
       name: '*'
       namespace: integration-docker
-    - kind: HelmRelease
-      name: '*'
-      namespace: previewnet
-    - kind: HelmRelease
-      name: '*'
-      namespace: dev
-    - kind: HelmRelease
-      name: '*'
-      namespace: previewnet
     - kind: Kustomization
       name: '*'
       namespace: flux-system

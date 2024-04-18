@@ -12,6 +12,9 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: previewnet
+    - kind: HelmRelease
+      name: '*'
+      namespace: previewnet-citus
     - kind: Kustomization
       name: '*'
       namespace: flux-system
