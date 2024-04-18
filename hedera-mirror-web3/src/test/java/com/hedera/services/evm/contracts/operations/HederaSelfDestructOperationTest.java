@@ -16,7 +16,7 @@
 
 package com.hedera.services.evm.contracts.operations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -114,6 +114,47 @@ class HederaSelfDestructOperationTest {
         final var opResult = subject.execute(frame, evm);
 
         assertEquals(HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
+    }
+
+    @Test
+    void rejectsSelfDestructIfTreasury() {
+        givenRubberstampValidator();
+
+        given(frame.getStackItem(0)).willReturn(BENEFICIARY);
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ETH_ADDRESS);
+        given(worldUpdater.contractIsTokenTreasury(EIP_1014_ETH_ADDRESS)).willReturn(true);
+
+        final var opResult = subject.execute(frame, evm);
+
+        assertEquals(HederaExceptionalHaltReason.CONTRACT_IS_TREASURY, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
+    }
+
+    @Test
+    void rejectsSelfDestructIfContractHasAnyTokenBalance() {
+        givenRubberstampValidator();
+        given(frame.getStackItem(0)).willReturn(BENEFICIARY);
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ETH_ADDRESS);
+        given(worldUpdater.contractHasAnyBalance(EIP_1014_ETH_ADDRESS)).willReturn(true);
+
+        final var opResult = subject.execute(frame, evm);
+
+        assertEquals(HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES, opResult.getHaltReason());
+        assertEquals(2L, opResult.getGasCost());
+    }
+
+    @Test
+    void rejectsSelfDestructIfContractHasAnyNfts() {
+        givenRubberstampValidator();
+
+        given(frame.getStackItem(0)).willReturn(BENEFICIARY);
+        given(frame.getRecipientAddress()).willReturn(EIP_1014_ETH_ADDRESS);
+        given(worldUpdater.contractOwnsNfts(EIP_1014_ETH_ADDRESS)).willReturn(true);
+
+        final var opResult = subject.execute(frame, evm);
+
+        assertEquals(HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS, opResult.getHaltReason());
         assertEquals(2L, opResult.getGasCost());
     }
 
