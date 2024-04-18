@@ -589,8 +589,6 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 | Name                                         | Default                                               | Description                                                                              |
 |----------------------------------------------|-------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `hedera.mirror.restJava.cache.enabled`       | true                                                  | Whether caching should be enabled at all.                                                |
-| `hedera.mirror.restJava.cache.entity`        | maximumSize=100000,expireAfterWrite=10s,recordStats   | The Caffeine cache specification for the entity.                                         |
 | `hedera.mirror.restJava.db.host`             | 127.0.0.1                                             | The IP or hostname used to connect to the database                                       |
 | `hedera.mirror.restJava.db.name`             | mirror_node                                           | The name of the database                                                                 |
 | `hedera.mirror.restJava.db.password`         | mirror_rest_java_pass                                 | The database password used to connect to the database                                    |
