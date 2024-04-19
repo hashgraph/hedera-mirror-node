@@ -71,10 +71,14 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .build();
     }
 
-    @Test
-    void nftAllowancesEntityId() {
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void nftAllowancesEntityId(boolean persistEntity) {
         // Given
-        var entity = domainBuilder.entity().persist();
+        var entityBuilder = domainBuilder.entity();
+        // Whether or not entity is present in entity table
+        var entity = persistEntity ? entityBuilder.persist() : entityBuilder.get();
+
         var allowance1 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(entity.getId()))
@@ -361,9 +365,6 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                "0.0.1000",
-                "0.1000",
-                "1000",
                 "0.0x000000000000000000000000000000000186Fb1b",
                 "0.0.0x000000000000000000000000000000000186Fb1b",
                 "0x000000000000000000000000000000000186Fb1b",
