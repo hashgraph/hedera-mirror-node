@@ -37,6 +37,93 @@ readFifo() {
   done
 }
 
+insertCursors() {
+  local query="
+  select exists (
+     select from information_schema.tables
+     where  table_schema = 'public'
+     and    table_name   = 'async_migration_status'
+     );
+  ";
+  local hasTable=$(queryTarget "${query}")
+  if [[ "${hasTable}" = "t" ]]; then
+    return
+  fi
+
+  local tableDDL="
+  create table if not exists async_migration_status (
+  the_table     varchar(100),
+  cursor_id     int,
+  cursor_range  int8range,
+  last_processed bigint);"
+  queryTarget "${tableDDL}"
+
+  log "Getting cursor conditions"
+
+  local conditions
+  getCursorConditions conditions
+  local cursorId=1
+  for value in "${conditions[@]}"; do
+    for table in $(echo "${ASYNC_TABLES[@]}" | tr "," "\n"); do
+      local insertSql="insert into async_migration_status (the_table, cursor_id, cursor_range) values (${table}, ${cursorId}, ${value});"
+      log "Inserting cursor sql: ${insertSql}"
+      queryTarget "${insertSql}"
+    done
+    ((cursorId++))
+  done
+}
+
+getCursorConditions() {
+  local query="
+  with record_file_stats as (
+    select date_trunc('month', to_timestamp(consensus_end / 1000000000)) start_timestamp, sum(count) as record_count from record_file group by 1 order by 2 desc
+  ),
+  total_records as (
+    select sum(record_count) as total_record_count
+    from record_file_stats
+  )
+  select
+  (100 * (1.0 * rfs.record_count) / tr.total_record_count) as pct_of_total,
+  (extract(epoch from rfs.start_timestamp) * 1000000000)::bigint as lower_bound,
+  (extract(epoch from (rfs.start_timestamp + INTERVAL '1 month')) * 1000000000)::bigint as upper_bound
+  from record_file_stats rfs, total_records tr
+  order by 3 desc
+  "
+
+  local upperBound=$MAX_TIMESTAMP
+  local lowerBound=$(querySource "select min(consensus_timestamp) from transaction;")
+  local pctPerCursor=$((100 / CONCURRENT_CURSORS_PER_TABLE))
+  local totalPct=0
+  local -n cursors=$1 # Init array to hold cursor definitions
+
+  local stats=$(PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q --csv -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}" -c "${query}")
+  while IFS="," read -r pct_of_total lower_bound upper_bound
+  do
+  local newTotal=$(echo "(${totalPct} + ${pct_of_total})" | bc)
+  if (($(echo "${newTotal} < ${pctPerCursor}" | bc))); then
+    totalPct=$newTotal
+    upperBound=$((upperBound > upper_bound ? upperBound : upper_bound))
+    lowerBound=$lower_bound
+  else
+    difference=$(echo "${newTotal} - ${pctPerCursor}" |bc)
+    groupRange=$((upper_bound - lower_bound))
+    cursorLowerBound=$(echo "${upper_bound} - ((100 - ${difference}) / 100) * ${groupRange}" | bc)
+    cursors+=("'(${cursorLowerBound}, ${upperBound}]'")
+
+    lowerBound=$lower_bound
+    upperBound=$cursorLowerBound
+    totalPct=$difference
+
+  if (($(echo "(${#cursors[@]} + 1) == ${CONCURRENT_CURSORS_PER_TABLE}" | bc))); then
+    cursors+=("'(,${cursorLowerBound}]'")
+    break;
+  fi
+  fi
+  done <<< "${stats}"
+
+  echo "${cursors[@]}"
+}
+
 migrateTableBinary() {
   local table="${1}"
   local tmpDir="/tmp/migrate-${table}-$$"
@@ -118,7 +205,7 @@ executeCursor() {
     echo "\o ${outputFile}" >"${source}"
 
     # Listen to data on output pipe
-    queryTarget "\copy ${table}(${columns}) FROM program 'cat ${outputFile}' WITH CSV DELIMITER ',';" &&
+    queryTarget "\copy ${table}(${columns//mt./}) FROM program 'cat ${outputFile}' WITH CSV DELIMITER ',';" &&
     rm "${outputFile}" && \
     log "Finished batch. Progress for ${table} cursor ${crsrId}: $((count * CURSOR_COPY_BATCH_SIZE)) records processed" &
 
@@ -134,6 +221,7 @@ executeCursor() {
   done
 
   echo "\q" >"${source}"
+  jobs
   wait
   log "Finished copying '${table}' for crsr ${crsrId}"
 }
@@ -144,18 +232,11 @@ migrateTableCursor() {
 
   mkdir -m 700 "${tmpDir}" || die "Couldn't make safe tmp ${tmpDir}"
   pushd "${tmpDir}" || die "Couldn't change directory to tmp ${tmpDir}"
-
-  local has_data=$(echo "select exists (select * from ${table} limit 1)" | queryTarget)
   local maxTimestamp=${MAX_TIMESTAMP:-$2}
   local query="
       select string_agg(column_name, ', ' order by ordinal_position)
       from information_schema.columns
       where table_schema = '${SOURCE_DB_SCHEMA}' and table_name = '${table}';"
-
-  if [[ "${has_data}" = "t" ]]; then
-    log "Skipping '${table}' table since it contains existing data"
-    return
-  fi
 
   local columns=$(querySource "${query}")
   columns="${columns#"${columns%%[![:space:]]*}"}" # Trim leading whitespace
@@ -164,28 +245,33 @@ migrateTableCursor() {
   local migrationRangeNs=$((2**64-1))
   if [[ "${columns}" =~ consensus_timestamp ]]; then
     minConsensusTimestamp=$(querySource "select min(consensus_timestamp) from ${table};")
-    migrationRangeNs=$((MAX_TIMESTAMP - minConsensusTimestamp))
+    migrationRangeNs=$((maxTimestamp - minConsensusTimestamp))
     orderby="order by consensus_timestamp desc"
   fi
 
   local crsrRangeNs=$((migrationRangeNs / CONCURRENT_CURSORS_PER_TABLE))
-  log "Cursor will process from ${MAX_TIMESTAMP} to ${minConsensusTimestamp} with each cursor processing ${crsrRangeNs} ns of timestamps for total range of ${migrationRangeNs} ns pid $$"
-  for i in $(seq 1 "${CONCURRENT_CURSORS_PER_TABLE}"); do
-    local factor=$((i - 1))
-    local upperBound="$((MAX_TIMESTAMP - (factor * crsrRangeNs)))"
-    local lowerBound="$((upperBound - crsrRangeNs))"
+  log "Migration will process from  ${minConsensusTimestamp} to ${maxTimestamp} with each cursor processing ${crsrRangeNs} ns of timestamps for total range of ${migrationRangeNs} ns pid $$"
+
+  local cursorQuery="SELECT cursor_id, lower(cursor_range), least(last_processed - 1, upper(cursor_range)) FROM async_migration_status WHERE the_table = '${table}' ORDER BY cursor_id asc;"
+  local tableCursors=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" -c "${cursorQuery}")
+  log "The table cursors are ${tableCursors}"
+  while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound
+  do
     if [[ "${columns}" =~ consensus_timestamp ]]; then
-      if [[ "${i}" -eq "${CONCURRENT_CURSORS_PER_TABLE}" ]]; then
-        where="where consensus_timestamp <= ${upperBound}"
+      if [[ "${cursor_id}" -eq "${CONCURRENT_CURSORS_PER_TABLE}" ]]; then
+        where="where mt.consensus_timestamp <= ${cursor_upper_bound}"
       else
-        where="where consensus_timestamp <= ${upperBound} and consensus_timestamp > ${lowerBound}"
+        where="where mt.consensus_timestamp <= ${cursor_upper_bound} and mt.consensus_timestamp > ${cursor_lower_bound}"
       fi
     fi
+    if [[ "${table}" = "topic_message" ]]; then
+      join="join transaction jt on mt.topic_id = jt.entity_id and mt.consensus_timestamp = mt.consensus_timestamp"
+    fi
 
-    local cursorDef="DECLARE crsr CURSOR FOR select ${columns} from ${table} ${where} ${orderby};"
-    executeCursor "${cursorDef}" "${i}" "${tmpDir}" &
+    local cursorDef="DECLARE crsr CURSOR FOR select ${columns} from ${table} mt ${join} ${where} ${orderby};"
+    executeCursor "${cursorDef}" "${cursor_id}" "${tmpDir}" &
     log "Created cursor with definition: ${cursorDef} pid $!"
-  done
+  done <<< "${tableCursors}"
 
   log "waiting for ${table} jobs to finish"
   wait
@@ -281,6 +367,8 @@ COUNT=$(echo "${TABLES}" | wc -l)
 log "Migrating ${COUNT} async tables from ${SOURCE_DB_HOST}:${SOURCE_DB_PORT} to ${TARGET_DB_HOST}:${TARGET_DB_PORT}. Tables: ${TABLES}"
 #echo "${TABLES}" | xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTableBinary "$@"' _ {}
 #echo "${ASYNC_TABLES}" | xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTableCursor "$@"' _ {}
+
+insertCursors
 time migrateTableCursor transaction
 
 log "Migration completed in $SECONDS seconds"
