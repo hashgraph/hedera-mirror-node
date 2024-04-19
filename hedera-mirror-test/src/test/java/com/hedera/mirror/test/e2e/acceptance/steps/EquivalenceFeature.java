@@ -46,7 +46,7 @@ public class EquivalenceFeature extends AbstractFeature {
 
     private static final String OBTAINER_SAME_CONTRACT_ID_EXCEPTION = "OBTAINER_SAME_CONTRACT_ID";
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
-    private static final String BAD_REQUEST = "400 Bad Request";
+    private static final String BAD_REQUEST = "400 ";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
 
     private final AcceptanceTestProperties acceptanceTestProperties;
@@ -112,11 +112,11 @@ public class EquivalenceFeature extends AbstractFeature {
         final var message = functionResult.getResultAsText();
 
         if (extractAccountNumber(beneficiary) < 751) {
-            var condition = message.startsWith("400 Bad Request") || message.equals(INVALID_SOLIDITY_ADDRESS_EXCEPTION);
-            assertThat(condition).isTrue();
+            var condition = message.startsWith(BAD_REQUEST) || message.equals(INVALID_SOLIDITY_ADDRESS_EXCEPTION);
+            assertThat(condition).as("Unexpected error '%s'", message).isTrue();
         } else {
             var condition = functionResult.getResult().equals("0x") || message.equals(TRANSACTION_SUCCESSFUL_MESSAGE);
-            assertThat(condition).isTrue();
+            assertThat(condition).as("Unexpected error '%s'", message).isTrue();
         }
     }
 
@@ -180,7 +180,7 @@ public class EquivalenceFeature extends AbstractFeature {
         }
         var message = functionResult.getResultAsText();
         var condition = message.startsWith(BAD_REQUEST) || message.equals(OBTAINER_SAME_CONTRACT_ID_EXCEPTION);
-        assertThat(condition).isTrue();
+        assertThat(condition).as("Unexpected error '%s'", message).isTrue();
     }
 
     @Getter

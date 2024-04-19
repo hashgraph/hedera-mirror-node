@@ -45,6 +45,7 @@
         "token_id": "0.0.1135",
         "symbol": "ORIGINALRDKSE",
         "created_timestamp": "1234567890000000002",
+        "metadata": null,
         "name": "Original",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
@@ -78,6 +79,7 @@
           "key": "020202"
         },
         "decimals": 0,
+        "metadata": "",
         "name": "Original",
         "type": "NON_FUNGIBLE_UNIQUE"
       },
@@ -89,6 +91,7 @@
           "key": "040404"
         },
         "decimals": 0,
+        "metadata": "",
         "name": "Hedera",
         "type": "NON_FUNGIBLE_UNIQUE"
       }

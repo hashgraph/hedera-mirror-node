@@ -34,6 +34,8 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 /**
  *  Copied Logic type from hedera-services. Differences with the original:
@@ -91,7 +93,7 @@ public class ApproveAllowanceLogic {
         for (final var allowance : cryptoAllowances) {
             final var owner = allowance.getOwner();
             var accountToApprove = fetchOwnerAccount(owner, payerAccount, store, accountsChanged);
-            final var cryptoMap = accountToApprove.getCryptoAllowances();
+            final var cryptoMap = new TreeMap<>(accountToApprove.getCryptoAllowances());
 
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
             final var amount = allowance.getAmount();
@@ -140,7 +142,7 @@ public class ApproveAllowanceLogic {
         for (final var allowance : tokenAllowances) {
             final var owner = allowance.getOwner();
             var accountToApprove = fetchOwnerAccount(owner, payerAccount, store, accountsChanged);
-            final var tokensMap = accountToApprove.getFungibleTokenAllowances();
+            final var tokensMap = new TreeMap<>(accountToApprove.getFungibleTokenAllowances());
 
             final var spender = Id.fromGrpcAccount(allowance.getSpender());
             final var amount = allowance.getAmount();
@@ -187,7 +189,7 @@ public class ApproveAllowanceLogic {
             final var tokenId = Id.fromGrpcToken(allowance.getTokenId());
 
             if (allowance.hasApprovedForAll()) {
-                final var approveForAllNfts = approvingAccount.getApproveForAllNfts();
+                final var approveForAllNfts = new TreeSet<>(approvingAccount.getApproveForAllNfts());
                 final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
                 if (allowance.getApprovedForAll().getValue()) {
                     // Validate the spender/operator account
@@ -200,7 +202,7 @@ public class ApproveAllowanceLogic {
                 final var accountWithUpdatedApproveForAllNfts =
                         approvingAccount.setApproveForAllNfts(approveForAllNfts);
                 if (!accountWithUpdatedApproveForAllNfts.equals(approvingAccount)) {
-                    accountsChanged.put(approvingAccount.getId().num(), approvingAccount);
+                    accountsChanged.put(approvingAccount.getId().num(), accountWithUpdatedApproveForAllNfts);
                 }
             }
 

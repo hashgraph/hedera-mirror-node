@@ -21,7 +21,10 @@ const ONE_DAY_IN_NS = 86_400_000_000_000n;
 const ZERO_UINT256 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const AUTO_RENEW_PERIOD_MULTIPLE = BigInt(1e9);
 const DECIMALS_IN_HBARS = 8;
+const EMPTY_STRING = '';
 const EVM_ADDRESS_LENGTH = 20;
+
+const apiPrefix = '/api/v1';
 
 // url query filer keys
 const filterKeys = {
@@ -93,11 +96,8 @@ const keyTypes = {
   PROTOBUF: 'ProtobufEncoded',
 };
 
-const transactionColumns = {
-  TYPE: 'type',
-};
-
 const requestIdLabel = 'requestId';
+const requestPathLabel = 'requestPath';
 const requestStartTime = 'requestStartTime';
 const responseContentType = 'responseContentType';
 const responseDataLabel = 'responseData';
@@ -219,12 +219,14 @@ const queryParamOperatorPatterns = {
 export {
   AUTO_RENEW_PERIOD_MULTIPLE,
   DECIMALS_IN_HBARS,
+  EMPTY_STRING,
   EVM_ADDRESS_LENGTH,
   NANOSECONDS_PER_MILLISECOND,
   MAX_INT32,
   MAX_LONG,
   ONE_DAY_IN_NS,
   ZERO_UINT256,
+  apiPrefix,
   characterEncoding,
   cloudProviders,
   cryptoTransferType,
@@ -242,11 +244,11 @@ export {
   queryParamOperatorPatterns,
   recordStreamPrefix,
   requestIdLabel,
+  requestPathLabel,
   requestStartTime,
   responseContentType,
   responseDataLabel,
   tokenTypeFilter,
-  transactionColumns,
   transactionResultFilter,
   zeroRandomPageCostQueryHint,
   EvmAddressType,

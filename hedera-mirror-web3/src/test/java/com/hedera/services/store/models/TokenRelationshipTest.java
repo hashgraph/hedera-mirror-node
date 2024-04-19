@@ -64,7 +64,7 @@ class TokenRelationshipTest {
                 false,
                 TokenType.FUNGIBLE_COMMON,
                 TokenSupplyType.FINITE,
-                defaultIntValue,
+                () -> defaultLongValue,
                 21_000_000,
                 null,
                 null,
@@ -88,31 +88,31 @@ class TokenRelationshipTest {
                 10,
                 defaultLongValue,
                 defaultLongValue,
-                Collections.emptyList());
+                Collections::emptyList);
 
         account = new Account(
                 ByteString.EMPTY,
                 0L,
                 accountId,
                 defaultLongValue,
-                defaultLongValue,
+                () -> defaultLongValue,
                 false,
-                defaultLongValue,
+                () -> defaultLongValue,
                 defaultLongValue,
                 Id.DEFAULT,
                 defaultIntValue,
                 null,
                 null,
                 null,
-                3,
-                defaultIntValue,
+                () -> 3,
+                () -> defaultIntValue,
                 defaultIntValue,
                 0L,
                 false,
                 null,
                 0L);
 
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
     }
 
     @Test
@@ -143,13 +143,8 @@ class TokenRelationshipTest {
     @Test
     void toStringAsExpected() {
         // given:
-        final var desired = "TokenRelationship{notYetPersisted=true, account=Account{id=1.0.4321,"
-                + " expiry=0, balance=0, deleted=false, ownedNfts=0, alreadyUsedAutoAssociations=0, maxAutoAssociations=0,"
-                + " alias=, cryptoAllowances=null, fungibleTokenAllowances=null, approveForAllNfts=null, numAssociations=3,"
-                + " numPositiveBalances=0}, token=Token{id=0.0.1234, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=null,"
-                + " autoRenewAccount=null, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, currentSerialNumber=0,"
-                + " pauseKey=null, paused=false}, balance=1234, balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=true}";
-
+        final var desired =
+                "TokenRelationship{notYetPersisted=true, account=Account{entityId=0, id=1.0.4321, alias=, address=0x00000000000000000000000000000000000010e1, expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=0.0.0, accountAddress=0x00000000000000000000000000000000000010e1, autoAssociationMetadata=0, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=3, numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, token=Token{id=0.0.1234, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=null, accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=0, numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, autoRenewAccount=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=null, accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=0, numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, currentSerialNumber=0, pauseKey=null, paused=false}, balance=1234, balanceChange=0, frozen=false, kycGranted=false, isAutomaticAssociation=true}";
         // expect:
         assertEquals(desired, subject.toString());
     }
@@ -162,10 +157,10 @@ class TokenRelationshipTest {
 
     @Test
     void automaticAssociationSetterWorks() {
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, false, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, false, 0);
         assertFalse(subject.isAutomaticAssociation());
 
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
         assertTrue(subject.isAutomaticAssociation());
     }
 
@@ -173,7 +168,7 @@ class TokenRelationshipTest {
     void cannotChangeBalanceIfFrozenForToken() {
         // given:
         token = token.setFreezeKey(freezeKey);
-        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, true, false, false, true, true, 0);
 
         assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_FROZEN_FOR_TOKEN);
     }
@@ -182,7 +177,7 @@ class TokenRelationshipTest {
     void canChangeBalanceIfFrozenForDeletedToken() {
         token = token.setFreezeKey(freezeKey);
         token = token.setIsDeleted(true);
-        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, true, false, false, true, true, 0);
 
         subject = subject.setBalance(0);
         assertEquals(-balance, subject.getBalanceChange());
@@ -203,7 +198,7 @@ class TokenRelationshipTest {
     @Test
     void canChangeBalanceIfNoFreezeKey() {
         // given:
-        subject = new TokenRelationship(token, account, balance, true, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, true, false, false, true, true, 0);
 
         // when:
         subject = subject.setBalance(balance + 1);
@@ -216,7 +211,7 @@ class TokenRelationshipTest {
     void cannotChangeBalanceIfKycNotGranted() {
         // given:
         token = token.setKycKey(kycKey);
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
         // verify
         assertFailsWith(() -> subject.setBalance(balance + 1), ACCOUNT_KYC_NOT_GRANTED_FOR_TOKEN);
     }
@@ -225,7 +220,7 @@ class TokenRelationshipTest {
     void canChangeBalanceIfKycGranted() {
         // given:
         token = token.setKycKey(kycKey);
-        subject = new TokenRelationship(token, account, balance, false, true, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, true, false, true, true, 0);
 
         // when:
         subject = subject.setBalance(balance + 1);
@@ -250,7 +245,7 @@ class TokenRelationshipTest {
         token = token.setFreezeKey(freezeKey);
 
         // when:
-        subject = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
         subject = subject.changeFrozenState(true);
 
         // then:
@@ -280,7 +275,7 @@ class TokenRelationshipTest {
 
     @Test
     void testHashCode() {
-        var rel = new TokenRelationship(token, account, balance, false, false, false, true, true, 0);
+        var rel = new TokenRelationship(token, account, () -> balance, false, false, false, true, true, 0);
         assertEquals(rel.hashCode(), subject.hashCode());
     }
 
@@ -290,7 +285,7 @@ class TokenRelationshipTest {
         token.setKycKey(kycKey);
 
         // when:
-        subject = new TokenRelationship(token, account, balance, false, true, false, true, true, 0);
+        subject = new TokenRelationship(token, account, () -> balance, false, true, false, true, true, 0);
 
         // then:
         assertTrue(subject.isKycGranted());

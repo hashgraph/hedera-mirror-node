@@ -24,8 +24,9 @@ plugins {
 }
 
 node {
+    val nodeJsVersion: String by rootProject.extra
     download = true
-    version = "18.18.0"
+    version = nodeJsVersion
     workDir = rootDir.resolve(".gradle").resolve("nodejs")
 }
 

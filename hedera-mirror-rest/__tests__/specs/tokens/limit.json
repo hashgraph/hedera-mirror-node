@@ -40,6 +40,7 @@
         "symbol": "FIRSTMOVERLPDJH",
         "created_timestamp": "1234567890000000001",
         "decimals": 1,
+        "metadata": [1, 1],
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
@@ -56,6 +57,7 @@
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
         "decimals": 3,
+        "metadata": null,
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -87,6 +89,7 @@
           {
             "admin_key": null,
             "decimals": 1,
+            "metadata": "AQE=",
             "name": "First Mover",
             "symbol": "FIRSTMOVERLPDJH",
             "token_id": "0.0.1",
@@ -95,6 +98,7 @@
           {
             "admin_key": null,
             "decimals": 2,
+            "metadata": "",
             "name": "Original",
             "symbol": "ORIGINALRDKSE",
             "token_id": "0.0.1135",
@@ -103,6 +107,7 @@
           {
             "admin_key": null,
             "decimals": 3,
+            "metadata": "",
             "name": "Mirror",
             "symbol": "MIRRORTOKEN",
             "token_id": "0.7.25301",
@@ -122,6 +127,7 @@
           {
             "admin_key": null,
             "decimals": 1,
+            "metadata": "AQE=",
             "name": "First Mover",
             "symbol": "FIRSTMOVERLPDJH",
             "token_id": "0.0.1",
@@ -130,6 +136,7 @@
           {
             "admin_key": null,
             "decimals": 2,
+            "metadata": "",
             "name": "Original",
             "symbol": "ORIGINALRDKSE",
             "token_id": "0.0.1135",
@@ -138,6 +145,7 @@
           {
             "admin_key": null,
             "decimals": 3,
+            "metadata": "",
             "name": "Mirror",
             "symbol": "MIRRORTOKEN",
             "token_id": "0.7.25301",
@@ -146,6 +154,7 @@
           {
             "admin_key": null,
             "decimals": 4,
+            "metadata": "",
             "name": "Hedera",
             "symbol": "HEDERACOIN",
             "token_id": "0.23.45678",
