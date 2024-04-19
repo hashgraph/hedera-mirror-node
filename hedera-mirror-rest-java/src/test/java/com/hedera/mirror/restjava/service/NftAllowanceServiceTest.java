@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RequiredArgsConstructor
-public class NftAllowanceServiceTest extends RestJavaIntegrationTest {
+ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     private final NftAllowanceService service;
 

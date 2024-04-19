@@ -25,7 +25,7 @@ import java.util.Collection;
 public interface NftAllowanceRepository {
 
     /**
-     * Find all NftAllowance matching the filters with the given limit, sort order, and byOwner flag
+     * Find all NftAllowance matching the request parameters with the given limit, sort order, and byOwner flag
      *
      * @param request   Request object for NftAllowance
      * @param accountId
