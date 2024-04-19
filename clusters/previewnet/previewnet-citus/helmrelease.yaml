@@ -14,7 +14,7 @@ spec:
         - values.yaml
         - values-prod.yaml
         - values-v2.yml
-      version: '0.103.0-rc2'
+      version: '0.103.0-rc3'
   dependsOn:
     - name: mirror
       namespace: common
@@ -36,6 +36,7 @@ spec:
         HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_ENTITYTRANSACTIONS: "false"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
+        HEDERA_MIRROR_IMPORTER_STARTDATE: "2024-04-12T18:51:51Z"
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
@@ -48,8 +49,6 @@ spec:
           enabled: false
         MonitorSubscribeLatency:
           enabled: false
-    stackgres:
-      postgresVersion: "16"
     test:
       enabled: true
     web3:
