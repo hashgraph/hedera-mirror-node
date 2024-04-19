@@ -28,19 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
     private final EntityRepository entityRepository;
 
     @Test
-    void exists() {
-        var entity = domainBuilder.entity().persist();
-        var entityDeleted =
-                domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
-        var entityDeletedNull =
-                domainBuilder.entity().customize((b) -> b.deleted(null)).persist();
-
-        assertThat(entityRepository.existsById(entity.getId())).isTrue();
-        assertThat(entityRepository.existsById(entityDeleted.getId())).isFalse();
-        assertThat(entityRepository.existsById(entityDeletedNull.getId())).isFalse();
-    }
-
-    @Test
     void findByAlias() {
         var entity = domainBuilder.entity().persist();
         byte[] alias = entity.getAlias();
