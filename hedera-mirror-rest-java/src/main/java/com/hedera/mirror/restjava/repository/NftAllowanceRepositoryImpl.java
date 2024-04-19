@@ -16,9 +16,7 @@
 
 package com.hedera.mirror.restjava.repository;
 
-import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
-import static org.jooq.impl.DSL.noCondition;
-
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
@@ -26,9 +24,6 @@ import com.hedera.mirror.restjava.jooq.domain.tables.records.NftAllowanceRecord;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import jakarta.inject.Named;
 import jakarta.validation.constraints.NotNull;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -36,6 +31,13 @@ import org.jooq.Field;
 import org.jooq.SortField;
 import org.jooq.TableField;
 import org.springframework.data.domain.Sort.Direction;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
+import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
+import static org.jooq.impl.DSL.noCondition;
 
 @Named
 @RequiredArgsConstructor
@@ -52,7 +54,7 @@ class NftAllowanceRepositoryImpl implements NftAllowanceRepository {
     @NotNull
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<NftAllowance> findAll(NftAllowanceRequest request) {
+    public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId) {
         boolean byOwner = request.isOwner();
         int limit = request.getLimit();
         Direction order = request.getOrder();
@@ -60,12 +62,11 @@ class NftAllowanceRepositoryImpl implements NftAllowanceRepository {
         var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
 
-        var accountId = request.getAccountId();
         var primarySortParam = request.getOwnerOrSpenderId();
         var tokenParam = request.getTokenId();
 
         Condition commonCondition =
-                getCondition(primaryField, RangeOperator.EQ, accountId.value().getId());
+                getCondition(primaryField, RangeOperator.EQ, accountId.getId());
         var baseCondition = getBaseCondition(primarySortParam, tokenParam, primarySortField);
         var secondaryCondition = getSecondaryCondition(primarySortParam, tokenParam, primarySortField);
         var condition = commonCondition.and(baseCondition.or(secondaryCondition));

@@ -139,7 +139,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
         // Performing the GET operation
         var result = restClient
                 .get()
-                .uri(uriParams, allowance1.getOwner(), EntityId.of(allowance1.getSpender()))
+                .uri(uriParams, allowance2.getOwner(), EntityId.of(allowance2.getSpender()))
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
@@ -257,7 +257,7 @@ public class AllowancesControllerIntegrationTest extends RestJavaIntegrationTest
 
         // Performing the GET operation
         assertThrows(
-                HttpClientErrorException.NotFound.class,
+                HttpClientErrorException.BadRequest.class,
                 () -> restClient.get().uri(uriParams, 1000).retrieve().body(NftAllowancesResponse.class));
     }
 

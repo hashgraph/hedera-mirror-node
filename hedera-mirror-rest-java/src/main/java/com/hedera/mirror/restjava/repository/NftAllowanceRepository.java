@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.repository;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import jakarta.validation.constraints.NotNull;
@@ -25,9 +26,11 @@ public interface NftAllowanceRepository {
 
     /**
      * Find all NftAllowance matching the filters with the given limit, sort order, and byOwner flag
-     * @param request Request object for NftAllowance
+     *
+     * @param request   Request object for NftAllowance
+     * @param accountId
      * @return The matching nft allowances
      */
     @NotNull
-    Collection<NftAllowance> findAll(NftAllowanceRequest request);
+    Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId);
 }

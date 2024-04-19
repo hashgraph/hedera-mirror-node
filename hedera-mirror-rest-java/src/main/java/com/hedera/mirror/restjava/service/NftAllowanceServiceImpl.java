@@ -21,26 +21,29 @@ import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
-import java.util.Collection;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Collection;
 
 @Named
 @RequiredArgsConstructor
 public class NftAllowanceServiceImpl implements NftAllowanceService {
 
     private final NftAllowanceRepository repository;
+    private final EntityService entityService;
 
     public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
         var ownerOrSpenderId = request.getOwnerOrSpenderId();
         var token = request.getTokenId();
+        var id = entityService.lookup(request.getAccountId());
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
         verifyRangeId(token);
         verifyRangeId(ownerOrSpenderId);
 
-        return repository.findAll(request);
+        return repository.findAll(request, id);
     }
 
     private static void verifyRangeId(EntityIdRangeParameter idParam) {
