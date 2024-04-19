@@ -19,6 +19,8 @@ package com.hedera.mirror.restjava.service;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
+import com.hedera.mirror.restjava.common.EntityIdAliasParameter;
+import com.hedera.mirror.restjava.common.EntityIdEvmAddressParameter;
 import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
@@ -55,6 +57,47 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 .build();
         var response = service.getNftAllowances(request);
         assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
+    }
+
+
+    @Test
+    void getNftAllowancesWithAlias() {
+        var entity = domainBuilder.entity().persist();
+        var accountId = entity.toEntityId();
+
+        var nftAllowance1 = saveNftAllowance(accountId, true);
+        var nftAllowance2 = saveNftAllowance(accountId, true);
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(true)
+                .limit(2)
+                .accountId(new EntityIdAliasParameter(0, 0, entity.getAlias()))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .order(Sort.Direction.ASC)
+                .build();
+        var response = service.getNftAllowances(request);
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+    }
+
+    @Test
+    void getNftAllowancesWithEvmAddress() {
+        var entity = domainBuilder.entity().persist();
+        var accountId = entity.toEntityId();
+
+        var nftAllowance1 = saveNftAllowance(accountId, true);
+        var nftAllowance2 = saveNftAllowance(accountId, true);
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(true)
+                .limit(2)
+                .accountId(new EntityIdEvmAddressParameter(0, 0, entity.getEvmAddress()))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .order(Sort.Direction.ASC)
+                .build();
+        var response = service.getNftAllowances(request);
+        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
     }
 
     @Test
