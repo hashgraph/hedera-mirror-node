@@ -41,6 +41,7 @@
           }
         ],
         "created_timestamp": "1234567890000000002",
+        "metadata": null,
         "type": "NON_FUNGIBLE_UNIQUE",
         "pause_status": "PAUSED",
         "pause_key": "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96x"
@@ -73,6 +74,8 @@
     "kyc_key": null,
     "max_supply": "9223372036854775807",
     "memo": "token.0.0.1135",
+    "metadata": "",
+    "metadata_key": null,
     "modified_timestamp": "1234567890.000000002",
     "name": "Token name",
     "pause_key": {

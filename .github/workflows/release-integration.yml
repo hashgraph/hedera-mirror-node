@@ -47,7 +47,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@1168cd3d07c1876a65e1724114de42ccbdfa7b78 # v3.2.1
+        uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # v3.3.1
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
@@ -98,6 +98,6 @@ jobs:
       - name: Update integration deployment configuration
         run: 'sed -i "s/git.commit: .*/git.commit: ${GITHUB_SHA}/" clusters/preprod/integration/helmrelease.yaml'
 
-      - uses: stefanzweifel/git-auto-commit-action@8756aa072ef5b4a080af5dc8fef36c5d586e521d # v5.0.0
+      - uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 # v5.0.1
         with:
           commit_message: Upgrade integration to main ${{ github.sha }}

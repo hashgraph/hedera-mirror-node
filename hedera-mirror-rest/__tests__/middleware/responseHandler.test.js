@@ -26,7 +26,7 @@ const {
 } = config;
 
 describe('Response middleware', () => {
-  let mockRequest, mockResponse, responseData
+  let mockRequest, mockResponse, responseData;
 
   beforeEach(() => {
     responseData = {transactions: [], links: {next: null}};
@@ -65,7 +65,7 @@ describe('Response middleware', () => {
   });
 
   test('Default headers', async () => {
-    mockRequest.route.path = '/api/v1/transactions';
+    mockRequest.route.path = '/api/v1/accounts';
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
@@ -86,9 +86,9 @@ describe('Response middleware', () => {
   });
 
   test('should set the Link next header and confirm it exists', async () => {
-    const MOCK_URL = 'http://mock.url/next'
+    const MOCK_URL = 'http://mock.url/next';
     mockResponse.locals.responseData.links.next = MOCK_URL;
-    const assertNextValue = `<${MOCK_URL}>; rel=\"next\"`
+    const assertNextValue = `<${MOCK_URL}>; rel=\"next\"`;
     await responseHandler(mockRequest, mockResponse, null);
     expect(mockResponse.set).toHaveBeenNthCalledWith(4, 'Link', assertNextValue);
   });

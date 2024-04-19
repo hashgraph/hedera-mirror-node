@@ -49,6 +49,7 @@
         "symbol": "MIRRORTOKEN",
         "created_timestamp": "1234567890000000003",
         "decimals": 5,
+        "metadata": [1, 1],
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -57,6 +58,7 @@
         "symbol": "HEDERACOIN",
         "created_timestamp": "1234567890000000004",
         "decimals": 6,
+        "metadata": [2, 2],
         "name": "Hedera",
         "type": "FUNGIBLE_COMMON"
       }
@@ -118,6 +120,7 @@
         "symbol": "FIRSTMOVERLPDJH",
         "admin_key": null,
         "decimals": 3,
+        "metadata": "",
         "name": "First Mover",
         "type": "FUNGIBLE_COMMON"
       },
@@ -126,6 +129,7 @@
         "symbol": "MIRRORTOKEN",
         "admin_key": null,
         "decimals": 5,
+        "metadata": "AQE=",
         "name": "Mirror",
         "type": "FUNGIBLE_COMMON"
       },
@@ -134,6 +138,7 @@
         "symbol": "HEDERACOIN",
         "admin_key": null,
         "decimals": 6,
+        "metadata": "AgI=",
         "name": "Hedera",
         "type": "FUNGIBLE_COMMON"
       }

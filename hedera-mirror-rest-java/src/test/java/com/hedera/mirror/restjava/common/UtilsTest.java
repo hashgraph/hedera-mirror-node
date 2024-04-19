@@ -16,28 +16,13 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
-import static com.hedera.mirror.restjava.common.Utils.getPaginationLink;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -45,6 +30,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
+import static com.hedera.mirror.restjava.common.Utils.getPaginationLink;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UtilsTest {
@@ -65,51 +59,6 @@ class UtilsTest {
     @AfterEach
     void closeMocks() {
         context.close();
-    }
-
-    @ParameterizedTest
-    @NullSource
-    @ValueSource(
-            strings = {
-                "0.1.x",
-                "x.1",
-                "0.1.2.3",
-                "a",
-                "a.b.c",
-                "-1.-1.-1",
-                "-1",
-                "0.0.-1",
-                "100000.65535.000000001",
-                "100000.000000001",
-                "0x",
-                "0x00000001000000000000000200000000000000034",
-                "0x2540be3f6001fffffffffffff001fffffffffffff",
-                "0x10000000000000000000000000000000000000000",
-                "2.3.0000000100000000000000020000000000000007",
-                "9223372036854775807"
-            })
-    @DisplayName("EntityId parse from string tests, negative cases")
-    void entityParseFromStringFailure(String inputId) {
-        assertThrows(IllegalArgumentException.class, () -> Utils.parseId(inputId));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"0.0.4294967296", "32768.65536.4294967296"})
-    @DisplayName("EntityId parse from string tests, negative cases for ID having valid format")
-    void testInvalidEntity(String input) {
-        assertThrows(InvalidEntityException.class, () -> Utils.parseId(input));
-    }
-
-    @Test
-    @DisplayName("EntityId parse from string tests")
-    void entityParseFromString() {
-        assertThat(EntityId.of(0, 0, 0)).isEqualTo(Utils.parseId("0.0.0"));
-        assertThat(EntityId.of(0, 0, 0)).isEqualTo(Utils.parseId("0"));
-        assertThat(EntityId.of(0, 0, 4294967295L)).isEqualTo(Utils.parseId("0.0.4294967295"));
-        assertThat(EntityId.of(0, 65535, 1)).isEqualTo(Utils.parseId("65535.000000001"));
-        assertThat(EntityId.of(32767, 65535, 4294967295L)).isEqualTo(Utils.parseId("32767.65535.4294967295"));
-        assertThat(EntityId.of(0, 0, 4294967295L)).isEqualTo(Utils.parseId("4294967295"));
-        assertThat(EntityId.of(0, 0, 1)).isEqualTo(Utils.parseId("0.1"));
     }
 
     @Test
@@ -157,18 +106,18 @@ class UtilsTest {
     void getEmptyPaginationLinks() {
         LinkedHashMap<String, String> lastValues = new LinkedHashMap<>(Map.of(ACCOUNT_ID, "0.0.2000"));
         // When the last element has already been returned
-        assertNull(getPaginationLink(true, lastValues, Sort.Direction.ASC));
+        assertThat(getPaginationLink(true, lastValues, Sort.Direction.ASC)).isNull();
         // When the lastValues map is null
-        assertNull(getPaginationLink(false, null, Sort.Direction.ASC));
+        assertThat(getPaginationLink(false, null, Sort.Direction.ASC)).isNull();
         // When the no lastValues have been passed
-        assertNull(getPaginationLink(false, new LinkedHashMap<>(Map.of()), Sort.Direction.ASC));
+        assertThat(getPaginationLink(false, new LinkedHashMap<>(Map.of()), Sort.Direction.ASC)).isNull();
     }
 
     @Test
     @DisplayName("No request object available")
     void nullRequestObject() {
         context.when(RequestContextHolder::getRequestAttributes).thenReturn(null);
-        assertNull(getPaginationLink(false, getLastValues(), Sort.Direction.ASC));
+        assertThat(getPaginationLink(false, getLastValues(), Sort.Direction.ASC)).isNull();
     }
 
     @NotNull

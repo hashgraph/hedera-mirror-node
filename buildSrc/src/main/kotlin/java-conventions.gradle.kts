@@ -85,9 +85,7 @@ tasks.test {
     useJUnitPlatform { excludeTags("performance") }
 }
 
-tasks.register<Test>("performanceTest") {
-    useJUnitPlatform { includeTags("performance") }
-}
+tasks.register<Test>("performanceTest") { useJUnitPlatform { includeTags("performance") } }
 
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
