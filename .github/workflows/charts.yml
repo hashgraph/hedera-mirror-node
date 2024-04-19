@@ -11,9 +11,13 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0

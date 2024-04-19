@@ -7,9 +7,13 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   images:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, large, ephemeral]
     strategy:
       matrix:
         module:
