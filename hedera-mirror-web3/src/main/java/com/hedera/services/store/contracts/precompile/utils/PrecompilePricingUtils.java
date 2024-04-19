@@ -153,19 +153,19 @@ public class PrecompilePricingUtils {
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    public long computeViewFunctionGas(final Timestamp now, final long minimumTinybarCost) {
+    public long computeViewFunctionGas(final Timestamp now, final long minimumGasCost) {
         final var usagePrices = resourceCosts.defaultPricesGiven(TokenGetInfo, now);
         final var fees = feeCalculator.estimatePayment(SYNTHETIC_REDIRECT_QUERY, usagePrices, now, ANSWER_ONLY);
 
         final long gasPriceInTinybars = feeCalculator.estimatedGasPriceInTinybars(ContractCall, now);
         final long calculatedFeeInTinybars = fees.getNetworkFee() + fees.getNodeFee() + fees.getServiceFee();
-        final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
+        //final long actualFeeInTinybars = Math.max(minimumTinybarCost, calculatedFeeInTinybars);
 
         // convert to gas cost
-        final long baseGasCost = (actualFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
+        final long baseGasCost = (calculatedFeeInTinybars + gasPriceInTinybars - 1L) / gasPriceInTinybars;
 
-        // charge premium
-        return baseGasCost + (baseGasCost / 5L);
+        // return larger of minimum or gas charge plus premium
+        return Math.max(minimumGasCost, baseGasCost + (baseGasCost / 5L));
     }
 
     public long computeGasRequirement(
