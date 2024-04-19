@@ -37,9 +37,9 @@ To access the Java REST API:
 {{- if contains "LoadBalancer" .Values.restjava.service.type }}
   REST_IP="$(kubectl get "service/{{ .Release.Name }}-restjava" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 {{- else if contains "ClusterIP" .Values.restjava.service.type }}
-  kubectl port-forward "service/{{ .Release.Name }}-restjava" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.rest.service.port }}:80 &
+  kubectl port-forward "service/{{ .Release.Name }}-restjava" -n {{ include "hedera-mirror.namespace" . }} 8084:80 &
 {{- end }}
-  curl -s "http://${REST_IP:-127.0.0.1}:{{.Values.restjava.service.port}}/api/v1/accounts/0.0.2/allowances/nfts"
+  curl -s "http://${REST_IP:-127.0.0.1}:8084/api/v1/accounts/0.0.2/allowances/nfts"
 {{- end }}
 
 {{- if and .Values.rosetta.enabled .Values.rosetta.service }}
