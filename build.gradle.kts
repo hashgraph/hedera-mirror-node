@@ -218,7 +218,13 @@ spotless {
         palantirJavaFormat()
         licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
         target("**/*.java")
-        targetExclude("**/build/**", "hedera-mirror-rest/**", "hedera-mirror-rosetta/**")
+        targetExclude(
+            "**/build/**",
+            "hedera-mirror-rest/**",
+            "hedera-mirror-rosetta/**",
+            // Known issue with Java 21: https://github.com/palantir/palantir-java-format/issues/933
+            "hedera-mirror-rest-java/**/EntityServiceImpl.java"
+        )
         toggleOffOn()
     }
     kotlin {
