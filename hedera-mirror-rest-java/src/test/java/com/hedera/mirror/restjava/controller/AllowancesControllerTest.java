@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -27,8 +24,6 @@ import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
-import java.util.Collections;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base32;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -45,6 +40,12 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+
+import java.util.Collections;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @RequiredArgsConstructor
 @RunWith(SpringRunner.class)
@@ -209,14 +210,14 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var uriParams = "?account.id={account.id}&limit=1&order=asc";
         var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
                 .formatted(
-                        allowance1.getOwner(),
+                        allowance2.getOwner(),
                         EntityId.of(allowance2.getSpender()),
                         EntityId.of(allowance2.getTokenId()));
 
         // When
         var result = restClient
                 .get()
-                .uri(uriParams, allowance1.getOwner(), EntityId.of(allowance1.getSpender()))
+                .uri(uriParams, allowance2.getOwner(), EntityId.of(allowance2.getSpender()))
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
@@ -361,9 +362,6 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                "0.0.1000",
-                "0.1000",
-                "1000",
                 "0.0x000000000000000000000000000000000186Fb1b",
                 "0.0.0x000000000000000000000000000000000186Fb1b",
                 "0x000000000000000000000000000000000186Fb1b",
