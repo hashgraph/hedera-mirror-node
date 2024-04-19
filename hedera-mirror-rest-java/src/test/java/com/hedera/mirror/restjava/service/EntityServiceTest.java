@@ -56,7 +56,6 @@ class EntityServiceTest extends RestJavaIntegrationTest {
     @SuppressWarnings("java:S5778")
     void lookupEntityNotPresent() {
 
-        assertThrows(EntityNotFoundException.class, () -> service.lookup(getEntityId("0.0.5000")));
         assertThrows(
                 EntityNotFoundException.class,
                 () -> service.lookup(

@@ -21,10 +21,9 @@ import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
-import java.util.Collection;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
+
+import java.util.Collection;
 
 @Named
 @RequiredArgsConstructor
@@ -33,51 +32,24 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
     private final NftAllowanceRepository repository;
     private final EntityService entityService;
 
-    private static final String TOKEN_ID = "token_id";
-    private static final String OWNER = "owner";
-    private static final String SPENDER = "spender";
-    public static final Sort OWNER_TOKEN_ASC_ORDER = sort(Sort.Direction.ASC, OWNER);
-    public static final Sort OWNER_TOKEN_DESC_ORDER = sort(Sort.Direction.DESC, OWNER);
-    public static final Sort SPENDER_TOKEN_ASC_ORDER = sort(Sort.Direction.ASC, SPENDER);
-    public static final Sort SPENDER_TOKEN_DESC_ORDER = sort(Sort.Direction.DESC, SPENDER);
-
     public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
-        var accountId = request.getAccountId();
-        var limit = request.getLimit();
-        var order = request.getOrder();
         var ownerOrSpenderId = request.getOwnerOrSpenderId();
         var token = request.getTokenId();
-        var id = entityService.lookup(accountId);
+        var id = entityService.lookup(request.getAccountId());
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
-        //  LT,LTE,EQ,NE are not supported right now. Default is GT.
-        var tokenId = verifyAndGetRangeId(token);
-        var filterId = verifyAndGetRangeId(ownerOrSpenderId);
-        // Set the value depending on the owner flag
-        if (request.isOwner()) {
-            var pageable =
-                    PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
-            return repository.findByOwnerAndFilterBySpenderAndToken(id.getId(), filterId, tokenId, pageable);
+        verifyRangeId(token);
+        verifyRangeId(ownerOrSpenderId);
 
-        } else {
-            var pageable =
-                    PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
-            return repository.findBySpenderAndFilterByOwnerAndToken(id.getId(), filterId, tokenId, pageable);
-        }
+        return repository.findAll(request, id);
     }
 
-    private static long verifyAndGetRangeId(EntityIdRangeParameter idParam) {
-        long id = 0;
-        // Setting default to 0.static queries will return all values with ids > 0 .
-        if (idParam != null) {
-            if (idParam.operator() == RangeOperator.NE) {
-                throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
-            }
-            id = getUpdatedEntityId(idParam);
+    private static void verifyRangeId(EntityIdRangeParameter idParam) {
+        if (idParam != null && idParam.operator() == RangeOperator.NE) {
+            throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
         }
-        return id;
     }
 
     private static void checkOwnerSpenderParamValidity(
@@ -85,17 +57,5 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         if (ownerOrSpenderId == null && token != null) {
             throw new IllegalArgumentException("token.id parameter must have account.id present");
         }
-    }
-
-    private static long getUpdatedEntityId(EntityIdRangeParameter idParam) {
-        long id = idParam.value().getId();
-        if (idParam.operator() == RangeOperator.GTE) {
-            id = id > 0 ? id - 1 : id;
-        }
-        return id;
-    }
-
-    private static Sort sort(Sort.Direction direction, String account) {
-        return Sort.by(direction, account).and(Sort.by(direction, TOKEN_ID));
     }
 }

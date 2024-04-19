@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void getNftAllowancesForOrderAsc(boolean owner) {
-        var accountId = domainBuilder.entity().persist().toEntityId();
+        var accountId = EntityId.of(1000L);
 
         var nftAllowance1 = saveNftAllowance(accountId, owner);
         var nftAllowance2 = saveNftAllowance(accountId, owner);
@@ -56,8 +56,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
-        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
     }
+
 
     @Test
     void getNftAllowancesWithAlias() {
@@ -101,7 +102,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
     @Test
     void getNftAllowancesForOrderDescOwner() {
-        var accountId = domainBuilder.entity().persist().toEntityId();
+        var accountId = EntityId.of(1000L);
         var id = accountId.getId();
 
         var nftAllowance1 = domainBuilder
@@ -124,12 +125,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
         var response = service.getNftAllowances(request);
 
-        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
     }
 
     @Test
     void getNftAllowancesForOrderDescSpender() {
-        var accountId = domainBuilder.entity().persist().toEntityId();
+        var accountId = EntityId.of(1000L);
         var id = accountId.getId();
 
         var nftAllowance1 = domainBuilder
@@ -152,12 +153,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
         var response = service.getNftAllowances(request);
 
-        assertThat(response).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
     }
 
     @Test
     void getNftAllowancesForGteOwner() {
-        var accountId = domainBuilder.entity().persist().toEntityId();
+        var accountId = EntityId.of(1001L);
 
         var nftAllowance1 = saveNftAllowance(accountId, true);
 
@@ -180,12 +181,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
-        assertThat(response).containsExactlyInAnyOrder(nftAllowance1);
+        assertThat(response).containsExactly(nftAllowance1);
     }
 
     @Test
     void getNftAllowancesForGteSpender() {
-        var accountId = domainBuilder.entity().persist().toEntityId();
+        var accountId = EntityId.of(1001L);
 
         var nftAllowance1 = saveNftAllowance(accountId, false);
 
@@ -200,8 +201,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
                 .isOwner(false)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(accountId))
-                .ownerOrSpenderId(
-                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender())))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getOwner())))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
                 .order(Sort.Direction.ASC)
                 .build();
@@ -211,7 +211,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
     @Test
     void getNftAllowancesForOwnerOrSpenderIdNotPresent() {
-        var accountId = domainBuilder.entity().persist().toEntityId();
+        var accountId = EntityId.of(1001L);
 
         var nftAllowance1 = saveNftAllowance(accountId, false);
 
@@ -234,7 +234,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
     @Test
     void getNftAllowancesForInvalidOperatorPresent() {
-        var accountId = domainBuilder.entity().persist().toEntityId();
+        var accountId = EntityId.of(1001L);
 
         var nftAllowance1 = saveNftAllowance(accountId, false);
 

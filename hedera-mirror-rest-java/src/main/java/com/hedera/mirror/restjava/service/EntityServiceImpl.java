@@ -50,7 +50,7 @@ public class EntityServiceImpl implements EntityService {
 
         Optional<Long> id =
                 switch (accountId) {
-                    case EntityIdNumParameter(EntityId num) -> entityRepository.existsById(num.getId()) ? Optional.of(num.getId()) : Optional.empty();
+                    case EntityIdNumParameter(EntityId num) -> Optional.of(num.getId());
                     case EntityIdAliasParameter p -> entityRepository.findByAlias(p.alias());
                     case EntityIdEvmAddressParameter p -> entityRepository.findByEvmAddress(p.evmAddress());
             };
