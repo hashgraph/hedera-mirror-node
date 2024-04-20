@@ -47,18 +47,12 @@ public class EntityServiceImpl implements EntityService {
             throw new IllegalArgumentException("ID %s has invalid realm".formatted(accountId));
         }
 
-        Optional<Long> id;
-        switch (accountId) {
-            case EntityIdNumParameter p -> {
-                return p.id();
-            }
-            case EntityIdAliasParameter p -> id = entityRepository.findByAlias(p.alias());
-            case EntityIdEvmAddressParameter p -> id = entityRepository.findByEvmAddress(p.evmAddress());
-        }
+        var id = switch (accountId) {
+            case EntityIdNumParameter p -> Optional.of(p.id());
+            case EntityIdAliasParameter p -> entityRepository.findByAlias(p.alias()).map(EntityId::of);
+            case EntityIdEvmAddressParameter p -> entityRepository.findByEvmAddress(p.evmAddress()).map(EntityId::of);
+        };
 
-        if (id.isEmpty()) {
-            throw new EntityNotFoundException("No account found for the given ID");
-        }
-        return EntityId.of(id.get());
+        return id.orElseThrow(() -> new EntityNotFoundException("No account found for the given ID"));
     }
 }
