@@ -57,8 +57,6 @@ spec:
           enabled: false
     postgresql:
       enabled: false
-    restjava:
-      enabled: true
     rosetta:
       enabled: true
     test:
