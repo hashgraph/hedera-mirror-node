@@ -64,12 +64,13 @@ insertCursors() {
   getCursorConditions conditions
   local cursorId=1
   for value in "${conditions[@]}"; do
+    #TODO can use IFS here instead
     for table in $(echo "${ASYNC_TABLES[@]}" | tr "," "\n"); do
       local insertSql="insert into async_migration_status (the_table, cursor_id, cursor_range) values (${table}, ${cursorId}, ${value});"
       log "Inserting cursor sql: ${insertSql}"
       queryTarget "${insertSql}"
     done
-    ((cursorId++))
+    cursorId=$((cursorId + 1))
   done
 }
 
@@ -96,26 +97,25 @@ getCursorConditions() {
   local -n cursors=$1 # Init array to hold cursor definitions
 
   local stats=$(PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q --csv -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}" -c "${query}")
-  while IFS="," read -r pct_of_total lower_bound upper_bound
-  do
-  local newTotal=$(echo "(${totalPct} + ${pct_of_total})" | bc)
-  if (($(echo "${newTotal} < ${pctPerCursor}" | bc))); then
-    totalPct=$newTotal
-    upperBound=$((upperBound > upper_bound ? upperBound : upper_bound))
-  else
-    difference=$(echo "${newTotal} - ${pctPerCursor}" |bc)
-    groupRange=$((upper_bound - lower_bound))
-    cursorLowerBound=$(echo "${upper_bound} - ((100 - ${difference}) / 100) * ${groupRange}" | bc)
-    cursors+=("'(${cursorLowerBound}, ${upperBound}]'")
+  while IFS="," read -r pct_of_total lower_bound upper_bound; do
+    local newTotal=$(echo "(${totalPct} + ${pct_of_total})" | bc)
+    if (($(echo "${newTotal} < ${pctPerCursor}" | bc))); then
+      totalPct=$newTotal
+      upperBound=$((upperBound > upper_bound ? upperBound : upper_bound))
+    else
+      difference=$(echo "${newTotal} - ${pctPerCursor}" | bc)
+      groupRange=$((upper_bound - lower_bound))
+      cursorLowerBound=$(echo "${upper_bound} - ((100 - ${difference}) / 100) * ${groupRange}" | bc)
+      cursors+=("'(${cursorLowerBound}, ${upperBound}]'")
 
-    upperBound=$cursorLowerBound
-    totalPct=$difference
-  if (($(echo "(${#cursors[@]} + 1) == ${CONCURRENT_CURSORS_PER_TABLE}" | bc))); then
-    cursors+=("'(,${cursorLowerBound}]'")
-    break;
-  fi
-  fi
-  done <<< "${stats}"
+      upperBound=$cursorLowerBound
+      totalPct=$difference
+      if (($(echo "(${#cursors[@]} + 1) == ${CONCURRENT_CURSORS_PER_TABLE}" | bc))); then
+        cursors+=("'(,${cursorLowerBound}]'")
+        break
+      fi
+    fi
+  done <<<"${stats}"
 }
 
 migrateTableBinary() {
@@ -125,7 +125,7 @@ migrateTableBinary() {
   pushd "${tmpDir}" || die "Couldn't pushd ${tmpDir}"
 
   trap "handlePipeError 'for table ${table} (BINARY)'" SIGPIPE
-#TODO how to get rid of this and make the querysource function available
+  #TODO how to get rid of this and make the querysource function available
   cat >querySource.sh <<EOF
 #!/usr/bin/env bash
 set > $tmpDir/env
@@ -173,29 +173,45 @@ handleExit() {
 
 executeBookmark() {
   local bookMarkFile="${outputFile}-bookmark"
+  local bookMarkFileTmp="${bookMarkFile}.tmp"
   mkfifo "${bookMarkFile}"
   echo "\o ${bookMarkFile}" >"${source}"
+
+  cat "${bookMarkFile}" >"${bookMarkFileTmp}" &
   echo "fetch 1 from crsr;" >"${source}"
+  log "Waiting for bookmark ${table} ${crsrId}"
   echo "\o /dev/null" >"${source}"
+  wait "$!" # batch call is issued first. Wait here on bookmark will ensure batch copy has already completed
 
-  # Wait for file to be written
-  local row=$(<"${bookMarkFile}")
-
-  local insertSql="
-        with insert as (
-        insert into ${table}(${columns//mt./}) values (${row})) returning consensus_timestamp)
-        update async_migration_status set last_processed=(select consensus_timestamp from insert)
-        where the_table=${table} and cursor_id=${crsrId};"
   rm "${bookMarkFile}"
+  local row=$(<"${bookMarkFileTmp}")
+  rm "${bookMarkFileTmp}"
+  IFS=',' read -r -a rowArray <<<"${row}"
+
+  if [[ -z "${timestampIndex}" ]]; then
+    IFS=', ' read -r -a columnArray <<<"$columns"
+    timestampIndex=0
+    for column in "${columnArray[@]}"; do
+      if [[ "${column}" =~ ^mt\.consensus_timestamp$ ]]; then
+        break
+      fi
+      timestampIndex=$((timestampIndex + 1))
+    done
+    log "Found timestamp column index ${timestampIndex} for table ${table}"
+  fi
 
   if [[ -z "${row}" ]]; then
-    log "No more data for cursor ${crsrId}"
+    log "Finished copying '${table}' for crsr ${crsrId}"
     echo "\q" >"${source}"
     exit 0
   fi
 
-  queryTarget "${insertSql}"
-  log "Updated bookmark with ${row} for cursor ${crsrId}"
+  local sql="\\copy ${table}(${columns//mt./}) from program 'echo ${row}' with csv delimiter ',';
+  update async_migration_status set last_processed=${rowArray[$timestampIndex]} where the_table='${table}' and cursor_id=${crsrId};"
+  log "Executing update sql ${sql} for cursor ${crsrId} and table ${table}"
+  queryTarget "${sql}"
+
+  log "Updated bookmark with ${rowArray[$timestampIndex]} for ${table} on cursor ${crsrId}"
 }
 
 executeCursor() {
@@ -210,9 +226,12 @@ executeCursor() {
 
   # Initialize psql session for source
   log "Starting to copy '${table}' for crsr ${crsrId} on pid $!"
+  sleep 1 # starting too many psql connections to quickly sometimes causes session init failures
   readFifo "${source}" | sourcePipe &
-  jobs -p
   jobs
+
+  # Give postgres pipe time to open and be ready
+  sleep 5
 
   #Initialize the cursor
   if [[ "${table}" != "topic_message" ]]; then
@@ -220,20 +239,12 @@ executeCursor() {
     echo "set cursor_tuple_fraction = 1;" >"${source}"
   fi
 
-  echo "BEGIN;" >"${source}"
-  echo "${crsrDef}" >"${source}"
+  echo "BEGIN; ${crsrDef}" >"${source}"
 
   local count=0
   #TODO exit on bookmark call empty
   while [[ count -le 1000 ]]; do
     count=$((count + 1))
-
-    #Allow an additional process to start to prepare connection and initiate batch
-    ACTIVE_COPIES=$(find . -maxdepth 1 -name "output-${crsrId}*" -printf '.' | wc -m)
-    while [[ "${ACTIVE_COPIES}" -ge 2 ]]; do
-      sleep .5
-      ACTIVE_COPIES=$(find . -maxdepth 1 -name "output-${crsrId}*" -printf '.' | wc -m)
-    done
 
     # Setup output pipe
     local outputFile="${tmpDir}/output-${crsrId}-$(uuidgen)"
@@ -241,10 +252,9 @@ executeCursor() {
     echo "\o ${outputFile}" >"${source}"
 
     # Listen to data on output pipe
-    queryTarget "\copy ${table}(${columns//mt./}) FROM program 'cat ${outputFile}' WITH CSV DELIMITER ',';" && \
-    rm "${outputFile}" && \
-    log "Finished batch. Progress for ${table} cursor ${crsrId}: $((count * CURSOR_COPY_BATCH_SIZE)) records processed" && \
-    executeBookmark &
+    queryTarget "\copy ${table}(${columns//mt./}) from program 'cat ${outputFile}' with csv delimiter ',';" &&
+      rm "${outputFile}" &&
+      log "Finished batch. Progress for ${table} cursor ${crsrId}: $((count * CURSOR_COPY_BATCH_SIZE)) records processed" &
 
     # Retrieve the next batch
     echo "FETCH ${CURSOR_COPY_BATCH_SIZE} FROM crsr;" >"${source}"
@@ -253,13 +263,9 @@ executeCursor() {
 
     # Terminate the output pipe
     echo "\o /dev/null" >"${source}"
-  done
 
-  jobs
-  log "Waiting for ${table} cursor ${crsrId} to finish"
-  wait
-  log "Finished copying '${table}' for crsr ${crsrId}"
-  exit 0
+    executeBookmark
+  done
 }
 
 migrateTableCursor() {
@@ -287,8 +293,7 @@ migrateTableCursor() {
   local cursorQuery="SELECT cursor_id, lower(cursor_range), least(last_processed - 1, upper(cursor_range)) FROM async_migration_status WHERE the_table = '${table}' ORDER BY cursor_id asc;"
   local tableCursors=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" -c "${cursorQuery}")
   log "The table cursors are ${tableCursors}"
-  while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound
-  do
+  while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound; do
     if [[ "${columns}" =~ consensus_timestamp ]]; then
       if [[ -z "${cursor_lower_bound}" ]]; then
         where="where mt.consensus_timestamp <= ${cursor_upper_bound}"
@@ -305,7 +310,7 @@ migrateTableCursor() {
     local cursorDef="DECLARE crsr CURSOR FOR select ${columns} from ${table} mt ${join} ${where} ${orderby};"
     executeCursor "${cursorDef}" "${cursor_id}" "${tmpDir}" &
     log "Created cursor with definition: ${cursorDef} pid $!"
-  done <<< "${tableCursors}"
+  done <<<"${tableCursors}"
 
   log "waiting for ${table} jobs to finish"
   wait
@@ -314,7 +319,7 @@ migrateTableCursor() {
   jobs
 }
 # Export the functions so they can be invoked via parallel xargs
-export -f log querySource queryTarget migrateTableBinary migrateTableCursor executeCursor handlePipeError sourcePipe readFifo
+export -f log querySource queryTarget migrateTableBinary migrateTableCursor executeBookmark executeCursor handlePipeError sourcePipe readFifo
 
 SECONDS=0
 SCRIPTS_DIR="./"
@@ -375,7 +380,7 @@ if [[ "${CREATE_INDEXES_BEFORE_MIGRATION}" = "true" ]]; then
 else
   cp "${MIGRATIONS_DIR}/V2.0."[0-2]* "${FLYWAY_DIR}"/sql/
 fi
-cat > "${FLYWAY_DIR}/conf/flyway.conf" <<EOF
+cat >"${FLYWAY_DIR}/conf/flyway.conf" <<EOF
 flyway.password=${TARGET_DB_PASSWORD}
 flyway.placeholders.hashShardCount=6
 flyway.placeholders.maxEntityId=5000000
@@ -406,8 +411,11 @@ echo "${TABLES}" | xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTableBin
 log "Starting async migration"
 insertCursors
 ASYNC_TABLES=$(echo "${ASYNC_TABLES//[\']/}" | tr "," "\n")
-echo "${ASYNC_TABLES}" |  xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTableCursor "$@"' _ {}
+echo "${ASYNC_TABLES}" | xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTableCursor "$@"' _ {}
 
 log "Migration completed in $SECONDS seconds"
 
 exit 0
+
+#jobs -pr | kill 2>/dev/null
+#TODO trap SIGINT and ensure in flight copies complete?
