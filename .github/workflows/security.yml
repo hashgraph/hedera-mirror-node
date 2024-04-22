@@ -2,14 +2,14 @@ name: Security
 on:
   pull_request:
     branches:
-      - "main"
-      - "release/**"
+      - 'main'
+      - 'release/**'
   push:
     branches:
-      - "main"
-      - "release/**"
+      - 'main'
+      - 'release/**'
     tags:
-      - "v*"
+      - 'v*'
 
 defaults:
   run:
