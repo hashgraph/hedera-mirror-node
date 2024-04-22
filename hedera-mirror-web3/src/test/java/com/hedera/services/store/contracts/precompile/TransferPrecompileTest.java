@@ -556,7 +556,7 @@ class TransferPrecompileTest {
         given(precompileContext.getSenderAddress()).willReturn(contractAddress);
         given(worldUpdater.getStore()).willReturn(store);
         final var lazyCreationFee = 500L;
-        when(autoCreationLogic.create(any(), any(), any(), any()))
+        when(autoCreationLogic.create(any(), any(), any(), any(), any()))
                 .thenReturn(Pair.of(MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED, lazyCreationFee));
 
         // when:

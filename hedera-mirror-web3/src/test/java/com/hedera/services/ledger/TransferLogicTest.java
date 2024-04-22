@@ -135,7 +135,7 @@ class TransferLogicTest {
         final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var changes = List.of(failingTrigger);
 
-        given(autoCreationLogic.create(eq(failingTrigger), any(), eq(store), eq(ids)))
+        given(autoCreationLogic.create(eq(failingTrigger), any(), eq(store), eq(ids), eq(changes)))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
 
         assertFailsWith(() -> subject.doZeroSum(changes, store, ids, hederaTokenStore), INSUFFICIENT_ACCOUNT_BALANCE);
@@ -159,13 +159,13 @@ class TransferLogicTest {
                 .willReturn(account);
         var nft = getEmptyUniqueToken();
         given(store.getUniqueToken(any(), eq(OnMissing.THROW))).willReturn(nft);
-        given(autoCreationLogic.create(eq(nftTransfer), any(), eq(store), eq(ids)))
+        given(autoCreationLogic.create(eq(nftTransfer), any(), eq(store), eq(ids), eq(changes)))
                 .willReturn(Pair.of(OK, 100L));
         given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
         subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-        verify(autoCreationLogic).create(eq(nftTransfer), any(), eq(store), eq(ids));
+        verify(autoCreationLogic).create(eq(nftTransfer), any(), eq(store), eq(ids), eq(changes));
     }
 
     @Test
@@ -179,16 +179,16 @@ class TransferLogicTest {
         final var changes = List.of(fungibleTransfer, anotherFungibleTransfer);
 
         given(store.getAccount(asTypedEvmAddress(payer), OnMissing.THROW)).willReturn(account);
-        given(autoCreationLogic.create(eq(fungibleTransfer), any(), eq(store), eq(ids)))
+        given(autoCreationLogic.create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes)))
                 .willReturn(Pair.of(OK, 100L));
-        given(autoCreationLogic.create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids)))
+        given(autoCreationLogic.create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(changes)))
                 .willReturn(Pair.of(OK, 100L));
         given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
         subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-        verify(autoCreationLogic).create(eq(fungibleTransfer), any(), eq(store), eq(ids));
-        verify(autoCreationLogic).create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids));
+        verify(autoCreationLogic).create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes));
+        verify(autoCreationLogic).create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(changes));
     }
 
     @Test
@@ -218,8 +218,8 @@ class TransferLogicTest {
 
             subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-            verify(autoCreationLogic, never()).create(eq(fungibleTransfer), any(), eq(store), eq(ids));
-            verify(autoCreationLogic, never()).create(eq(nftTransfer), any(), eq(store), eq(ids));
+            verify(autoCreationLogic, never()).create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes));
+            verify(autoCreationLogic, never()).create(eq(nftTransfer), any(), eq(store), eq(ids), eq(changes));
         }
     }
 
