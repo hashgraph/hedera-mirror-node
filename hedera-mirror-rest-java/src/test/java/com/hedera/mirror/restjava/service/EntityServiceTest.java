@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.restjava.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.google.common.io.BaseEncoding;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
@@ -30,9 +33,6 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @RequiredArgsConstructor
 class EntityServiceTest extends RestJavaIntegrationTest {
@@ -94,7 +94,8 @@ class EntityServiceTest extends RestJavaIntegrationTest {
 
     @NotNull
     private static EntityIdAliasParameter getEntityIdAliasParameter(String id, Long shard, Long realm) {
-        return new EntityIdAliasParameter(shard, realm, BaseEncoding.base32().omitPadding().decode(id));
+        return new EntityIdAliasParameter(
+                shard, realm, BaseEncoding.base32().omitPadding().decode(id));
     }
 
     @NotNull

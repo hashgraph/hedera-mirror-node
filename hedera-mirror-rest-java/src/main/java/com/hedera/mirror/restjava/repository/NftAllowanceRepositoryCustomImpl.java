@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.restjava.repository;
 
+import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
+import static org.jooq.impl.DSL.noCondition;
+
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
@@ -24,6 +27,9 @@ import com.hedera.mirror.restjava.jooq.domain.tables.records.NftAllowanceRecord;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import jakarta.inject.Named;
 import jakarta.validation.constraints.NotNull;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -32,16 +38,9 @@ import org.jooq.SortField;
 import org.jooq.TableField;
 import org.springframework.data.domain.Sort.Direction;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
-import static org.jooq.impl.DSL.noCondition;
-
 @Named
 @RequiredArgsConstructor
-class NftAllowanceRepositoryImpl implements NftAllowanceRepository {
+class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
     private static final Map<OrderSpec, List<SortField<?>>> SORT_ORDERS = Map.of(
             new OrderSpec(true, Direction.ASC), List.of(NFT_ALLOWANCE.SPENDER.asc(), NFT_ALLOWANCE.TOKEN_ID.asc()),
@@ -57,7 +56,7 @@ class NftAllowanceRepositoryImpl implements NftAllowanceRepository {
     public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId) {
         boolean byOwner = request.isOwner();
         int limit = request.getLimit();
-        Direction order = request.getOrder();
+        var order = request.getOrder();
 
         var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
@@ -65,8 +64,7 @@ class NftAllowanceRepositoryImpl implements NftAllowanceRepository {
         var primarySortParam = request.getOwnerOrSpenderId();
         var tokenParam = request.getTokenId();
 
-        Condition commonCondition =
-                getCondition(primaryField, RangeOperator.EQ, accountId.getId());
+        var commonCondition = getCondition(primaryField, RangeOperator.EQ, accountId.getId());
         var baseCondition = getBaseCondition(primarySortParam, tokenParam, primarySortField);
         var secondaryCondition = getSecondaryCondition(primarySortParam, tokenParam, primarySortField);
         var condition = commonCondition.and(baseCondition.or(secondaryCondition));

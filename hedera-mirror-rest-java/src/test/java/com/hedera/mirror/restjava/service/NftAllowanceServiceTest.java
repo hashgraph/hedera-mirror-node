@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.restjava.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
@@ -30,35 +33,31 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.domain.Sort;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @RequiredArgsConstructor
- class NftAllowanceServiceTest extends RestJavaIntegrationTest {
+class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     private final NftAllowanceService service;
+    private static final EntityId ACCOUNT_ID = EntityId.of(1000L);
 
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void getNftAllowancesForOrderAsc(boolean owner) {
-        var accountId = EntityId.of(1000L);
 
-        var nftAllowance1 = saveNftAllowance(accountId, owner);
-        var nftAllowance2 = saveNftAllowance(accountId, owner);
-        saveNftAllowance(accountId, owner);
-        saveNftAllowance(accountId, owner);
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, owner);
+        var nftAllowance2 = saveNftAllowance(ACCOUNT_ID, owner);
+        saveNftAllowance(ACCOUNT_ID, owner);
+        saveNftAllowance(ACCOUNT_ID, owner);
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(owner)
                 .limit(2)
-                .accountId(new EntityIdNumParameter(accountId))
-                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
-                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
         assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
     }
-
 
     @Test
     void getNftAllowancesWithAlias() {
@@ -102,8 +101,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
     @Test
     void getNftAllowancesForOrderDescOwner() {
-        var accountId = EntityId.of(1000L);
-        var id = accountId.getId();
+
+        var id = ACCOUNT_ID.getId();
 
         var nftAllowance1 = domainBuilder
                 .nftAllowance()
@@ -117,9 +116,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(true)
                 .limit(2)
-                .accountId(new EntityIdNumParameter(accountId))
-                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
-                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID))
                 .order(Sort.Direction.DESC)
                 .build();
 
@@ -130,8 +129,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
     @Test
     void getNftAllowancesForOrderDescSpender() {
-        var accountId = EntityId.of(1000L);
-        var id = accountId.getId();
+
+        var id = ACCOUNT_ID.getId();
 
         var nftAllowance1 = domainBuilder
                 .nftAllowance()
@@ -145,9 +144,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(false)
                 .limit(2)
-                .accountId(new EntityIdNumParameter(accountId))
-                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
-                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, accountId))
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
+                .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID))
+                .tokenId(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID))
                 .order(Sort.Direction.DESC)
                 .build();
 
@@ -188,11 +187,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
     void getNftAllowancesForGteSpender() {
         var accountId = EntityId.of(1001L);
 
-        var nftAllowance1 = saveNftAllowance(accountId, false);
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
 
         domainBuilder
                 .nftAllowance()
-                .customize(e -> e.spender(accountId.getId())
+                .customize(e -> e.spender(ACCOUNT_ID.getId())
                         .owner(nftAllowance1.getOwner() - 2)
                         .tokenId(nftAllowance1.getTokenId() - 2))
                 .persist();
@@ -200,7 +199,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(false)
                 .limit(2)
-                .accountId(new EntityIdNumParameter(accountId))
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
                 .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getOwner())))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
                 .order(Sort.Direction.ASC)
@@ -213,11 +212,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
     void getNftAllowancesForOwnerOrSpenderIdNotPresent() {
         var accountId = EntityId.of(1001L);
 
-        var nftAllowance1 = saveNftAllowance(accountId, false);
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
 
         domainBuilder
                 .nftAllowance()
-                .customize(e -> e.spender(accountId.getId())
+                .customize(e -> e.spender(ACCOUNT_ID.getId())
                         .owner(nftAllowance1.getOwner() - 2)
                         .tokenId(nftAllowance1.getTokenId() - 2))
                 .persist();
@@ -225,7 +224,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(false)
                 .limit(2)
-                .accountId(new EntityIdNumParameter(accountId))
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
                 .order(Sort.Direction.ASC)
                 .build();
@@ -236,11 +235,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
     void getNftAllowancesForInvalidOperatorPresent() {
         var accountId = EntityId.of(1001L);
 
-        var nftAllowance1 = saveNftAllowance(accountId, false);
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
 
         domainBuilder
                 .nftAllowance()
-                .customize(e -> e.spender(accountId.getId())
+                .customize(e -> e.spender(ACCOUNT_ID.getId())
                         .owner(nftAllowance1.getOwner() - 2)
                         .tokenId(nftAllowance1.getTokenId() - 2))
                 .persist();
@@ -248,7 +247,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(false)
                 .limit(2)
-                .accountId(new EntityIdNumParameter(accountId))
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
                 .ownerOrSpenderId(new EntityIdRangeParameter(RangeOperator.NE, EntityId.of(nftAllowance1.getSpender())))
                 .order(Sort.Direction.ASC)
                 .build();

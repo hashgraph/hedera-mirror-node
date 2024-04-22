@@ -19,17 +19,16 @@ package com.hedera.mirror.restjava.service;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
+import com.hedera.mirror.restjava.repository.NftAllowanceRepositoryCustom;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
-
 import java.util.Collection;
+import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
 public class NftAllowanceServiceImpl implements NftAllowanceService {
 
-    private final NftAllowanceRepository repository;
+    private final NftAllowanceRepositoryCustom repository;
     private final EntityService entityService;
 
     public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {

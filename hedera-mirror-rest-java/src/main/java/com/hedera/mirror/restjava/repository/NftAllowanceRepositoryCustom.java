@@ -16,8 +16,21 @@
 
 package com.hedera.mirror.restjava.repository;
 
-import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
-import org.springframework.data.repository.CrudRepository;
+import com.hedera.mirror.restjava.service.NftAllowanceRequest;
+import jakarta.validation.constraints.NotNull;
+import java.util.Collection;
 
-public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {}
+public interface NftAllowanceRepositoryCustom {
+
+    /**
+     * Find all NftAllowance matching the request parameters with the given limit, sort order, and byOwner flag
+     *
+     * @param request   Request object for NftAllowance
+     * @param accountId
+     * @return The matching nft allowances
+     */
+    @NotNull
+    Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId);
+}
