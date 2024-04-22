@@ -35,9 +35,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Sort.Direction;
 
 @RequiredArgsConstructor
-class NftAllowanceRepositoryCustomTest extends RestJavaIntegrationTest {
+class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
 
-    private final NftAllowanceRepositoryCustom nftAllowanceRepositoryCustom;
+    private final NftAllowanceRepository nftAllowanceRepository;
 
     private Map<Tuple, NftAllowance> nftAllowances;
     private Map<NftAllowanceRequest, List<Tuple>> nftAllowanceRequests;
@@ -63,7 +63,7 @@ class NftAllowanceRepositoryCustomTest extends RestJavaIntegrationTest {
         setupNftAllowances();
 
         // when, then
-        assertThat(nftAllowanceRepositoryCustom.findAll(
+        assertThat(nftAllowanceRepository.findAll(
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(2) + 1)))
@@ -74,7 +74,7 @@ class NftAllowanceRepositoryCustomTest extends RestJavaIntegrationTest {
                 .isEmpty();
 
         // when, then
-        assertThat(nftAllowanceRepositoryCustom.findAll(
+        assertThat(nftAllowanceRepository.findAll(
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
@@ -87,7 +87,7 @@ class NftAllowanceRepositoryCustomTest extends RestJavaIntegrationTest {
                 .isEmpty();
 
         // when, then
-        assertThat(nftAllowanceRepositoryCustom.findAll(
+        assertThat(nftAllowanceRepository.findAll(
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
@@ -101,7 +101,7 @@ class NftAllowanceRepositoryCustomTest extends RestJavaIntegrationTest {
                 .isEmpty();
 
         // when, then
-        assertThat(nftAllowanceRepositoryCustom.findAll(
+        assertThat(nftAllowanceRepository.findAll(
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
@@ -115,7 +115,7 @@ class NftAllowanceRepositoryCustomTest extends RestJavaIntegrationTest {
                 .isEmpty();
 
         // when, then
-        assertThat(nftAllowanceRepositoryCustom.findAll(
+        assertThat(nftAllowanceRepository.findAll(
                         NftAllowanceRequest.builder()
                                 .isOwner(true)
                                 .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
@@ -270,7 +270,7 @@ class NftAllowanceRepositoryCustomTest extends RestJavaIntegrationTest {
                     entry.getValue().stream().map(nftAllowances::get).toList();
 
             var key = entry.getKey();
-            assertThat(nftAllowanceRepositoryCustom.findAll(key, ((EntityIdNumParameter) key.getAccountId()).id()))
+            assertThat(nftAllowanceRepository.findAll(key, ((EntityIdNumParameter) key.getAccountId()).id()))
                     .containsExactlyElementsOf(expectedNftAllowances);
         }
     }
