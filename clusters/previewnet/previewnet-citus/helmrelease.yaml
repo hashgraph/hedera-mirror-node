@@ -55,7 +55,7 @@ spec:
       image:
         pullPolicy: Always
         registry: docker.io
-        repository: ssheehy
+        repository: ssheehy/hedera-mirror-test
         tag: 0.103.0-rc3
     web3:
       env:
