@@ -50,7 +50,13 @@ spec:
         MonitorSubscribeLatency:
           enabled: false
     test:
+      cucumberTags: "@equivalence"
       enabled: true
+      image:
+        pullPolicy: Always
+        registry: docker.io
+        repository: ssheehy
+        tag: 0.103.0-rc3
     web3:
       env:
         HEDERA_MIRROR_WEB3_EVM_NETWORK: PREVIEWNET
