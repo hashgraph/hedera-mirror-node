@@ -45,7 +45,7 @@ public class TokenDeleteResourceUsage extends AbstractTokenResourceUsage impleme
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo) throws Exception {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj svo) {
         final var sigUsage = new SigUsage(svo.getTotalSigCount(), svo.getSignatureSize(), svo.getPayerAcctSigCount());
         final var estimate = factory.apply(txn, estimatorFactory.get(sigUsage, txn, ESTIMATOR_UTILS));
         return estimate.get();
