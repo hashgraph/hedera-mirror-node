@@ -157,15 +157,14 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForGteOwner() {
-        var accountId = EntityId.of(1001L);
 
-        var nftAllowance1 = saveNftAllowance(accountId, true);
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, true);
 
         // Setting the account.id and token id to 2 less than allowance1 in order to test GTE.
         // This should return only the first allowance.
         domainBuilder
                 .nftAllowance()
-                .customize(e -> e.owner(accountId.getId())
+                .customize(e -> e.owner(ACCOUNT_ID.getId())
                         .spender(nftAllowance1.getSpender() - 2)
                         .tokenId(nftAllowance1.getTokenId() - 2))
                 .persist();
@@ -173,7 +172,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         NftAllowanceRequest request = NftAllowanceRequest.builder()
                 .isOwner(true)
                 .limit(2)
-                .accountId(new EntityIdNumParameter(accountId))
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
                 .ownerOrSpenderId(
                         new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender())))
                 .tokenId(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))
@@ -185,7 +184,6 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForGteSpender() {
-        var accountId = EntityId.of(1001L);
 
         var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
 
@@ -210,7 +208,6 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForOwnerOrSpenderIdNotPresent() {
-        var accountId = EntityId.of(1001L);
 
         var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
 
@@ -233,7 +230,6 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
     @Test
     void getNftAllowancesForInvalidOperatorPresent() {
-        var accountId = EntityId.of(1001L);
 
         var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
 

@@ -181,7 +181,7 @@ curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
 To access the Java REST API:
 
 ```shell script
-curl -s "http://${SERVICE_IP}/api/v1/dummy"
+curl -s "http://${SERVICE_IP}/api/v1/accounts/{id}/allowances/nfts"
 ```
 
 To access the Rosetta API:

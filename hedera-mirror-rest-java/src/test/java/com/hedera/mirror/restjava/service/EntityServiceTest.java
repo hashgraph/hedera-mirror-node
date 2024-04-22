@@ -50,6 +50,10 @@ class EntityServiceTest extends RestJavaIntegrationTest {
                 .isEqualTo(id);
         assertThat(service.lookup(new EntityIdAliasParameter(0, 0, entity.getAlias())))
                 .isEqualTo(id);
+
+        // Valid numeric account IDs are not looked up in the entity table in support of partial mirror nodes.
+        var unknownAccountId = getEntityId("0.0.5000");
+        assertThat(service.lookup(unknownAccountId)).isEqualTo(unknownAccountId.id());
     }
 
     @Test

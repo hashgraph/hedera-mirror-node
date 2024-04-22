@@ -42,9 +42,8 @@ public interface TxnResourceUsageEstimator {
      * @param txn      the txn in question
      * @param sigUsage the signature usage
      * @return the estimated resource usage
-     * @throws Exception            if the txn is malformed
      * @throws NullPointerException or analogous if the estimator does not apply to the txn
      */
     @SuppressWarnings("java:S112")
-    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage) throws Exception;
+    FeeData usageGiven(TransactionBody txn, SigValueObj sigUsage);
 }

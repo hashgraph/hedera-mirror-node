@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.restjava.controller;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -24,6 +27,8 @@ import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
+import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base32;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -40,12 +45,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
-
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @RequiredArgsConstructor
 @RunWith(SpringRunner.class)
@@ -72,10 +71,14 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .build();
     }
 
-    @Test
-    void nftAllowancesEntityId() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void nftAllowancesEntityId(boolean persistEntity) {
         // Given
-        var entity = domainBuilder.entity().persist();
+        var entityBuilder = domainBuilder.entity();
+        // Whether or not entity is present in entity table
+        var entity = persistEntity ? entityBuilder.persist() : entityBuilder.get();
+
         var allowance1 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(entity.getId()))
