@@ -521,8 +521,9 @@ public class ServicesConfiguration {
     AccessorBasedUsages accessorBasedUsages(
             final TokenOpsUsage tokenOpsUsage,
             final CryptoOpsUsage cryptoOpsUsage,
-            final OpUsageCtxHelper opUsageCtxHelper) {
-        return new AccessorBasedUsages(tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper);
+            final OpUsageCtxHelper opUsageCtxHelper,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new AccessorBasedUsages(tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, mirrorNodeEvmProperties);
     }
 
     @Bean

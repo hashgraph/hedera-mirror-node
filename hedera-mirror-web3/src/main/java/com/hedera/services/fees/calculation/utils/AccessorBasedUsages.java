@@ -32,6 +32,7 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenRevoke
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnfreezeAccount;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenUnpause;
 
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.services.fees.usage.state.UsageAccumulator;
 import com.hedera.services.fees.usage.token.TokenOpsUsage;
 import com.hedera.services.hapi.fees.usage.BaseTransactionMeta;
@@ -39,12 +40,17 @@ import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.EnumSet;
 
 /**
  *  Copied Logic type from hedera-services. Differences with the original:
  *  1. Remove FeeSchedule, UtilPrng, File logic
  */
+@Singleton
 public class AccessorBasedUsages {
 
     public static final long THREE_MONTHS_IN_SECONDS = 7776000L;
@@ -68,12 +74,18 @@ public class AccessorBasedUsages {
     private final TokenOpsUsage tokenOpsUsage;
     private final CryptoOpsUsage cryptoOpsUsage;
     private final OpUsageCtxHelper opUsageCtxHelper;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
+    @Inject
     public AccessorBasedUsages(
-            TokenOpsUsage tokenOpsUsage, CryptoOpsUsage cryptoOpsUsage, OpUsageCtxHelper opUsageCtxHelper) {
+            TokenOpsUsage tokenOpsUsage,
+            CryptoOpsUsage cryptoOpsUsage,
+            OpUsageCtxHelper opUsageCtxHelper,
+            MirrorNodeEvmProperties mirrorNodeEvmProperties) {
         this.tokenOpsUsage = tokenOpsUsage;
         this.cryptoOpsUsage = cryptoOpsUsage;
         this.opUsageCtxHelper = opUsageCtxHelper;
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
     }
 
     public void assess(SigUsage sigUsage, TxnAccessor accessor, UsageAccumulator into) {
@@ -119,6 +131,7 @@ public class AccessorBasedUsages {
     private void estimateCryptoTransfer(
             SigUsage sigUsage, TxnAccessor accessor, BaseTransactionMeta baseMeta, UsageAccumulator into) {
         final var xferMeta = accessor.availXferUsageMeta();
+        xferMeta.setTokenMultiplier(mirrorNodeEvmProperties.feesTokenTransferUsageMultiplier());
         cryptoOpsUsage.cryptoTransferUsage(sigUsage, xferMeta, baseMeta, into);
     }
 
