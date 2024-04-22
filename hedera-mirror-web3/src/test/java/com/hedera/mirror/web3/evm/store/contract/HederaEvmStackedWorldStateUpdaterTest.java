@@ -18,11 +18,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.when;
@@ -113,11 +109,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
 
     @Test
     void commitsNewlyCreatedAccountToStackedStateFrames() {
-        when(mirrorEvmContractAliases.resolveForEvm(address)).thenReturn(address);
-        store.wrap();
-        subject.createAccount(address, aNonce, Wei.of(aBalance));
-        subject.commit();
-        final var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
+        final var accountFromTopFrame = createTestAccount(address);
         assertThat(accountFromTopFrame.getAccountAddress()).isEqualTo(address);
     }
 
@@ -177,8 +169,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
         var accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
         assertNotEquals(com.hedera.services.store.models.Account.getEmptyAccount(), accountFromTopFrame);
         subject.commit();
-        subject.revert();
-        subject.deleteAccount(address);
+        deleteTestAccount(address);
         accountFromTopFrame = store.getAccount(address, OnMissing.DONT_THROW);
         assertEquals(com.hedera.services.store.models.Account.getEmptyAccount(), accountFromTopFrame);
     }
@@ -280,6 +271,64 @@ class HederaEvmStackedWorldStateUpdaterTest {
         given(tokenAccessor.canonicalAddress(alias)).willReturn(alias2);
 
         assertArrayEquals(new byte[20], subject.unaliased(alias.toArrayUnsafe()));
+    }
+
+    @Test
+    void recognizesTreasuryAccount() {
+        final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+        var account = createTestAccount(treasuryAddress);
+        account = account.setNumTreasuryTitles(4);
+        store.updateAccount(account);
+        assertThat(account.getAccountAddress()).isEqualTo(treasuryAddress);
+        assertTrue(subject.contractIsTokenTreasury(treasuryAddress));
+        account = account.setNumTreasuryTitles(0);
+        store.updateAccount(account);
+        assertFalse(subject.contractIsTokenTreasury(treasuryAddress));
+        assertTrue(true);
+        deleteTestAccount(treasuryAddress);
+    }
+
+    @Test
+    void recognizesNonZeroTokenBalanceAccount() {
+        final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+        var account = createTestAccount(treasuryAddress);
+        account = account.setNumPositiveBalances(2);
+        store.updateAccount(account);
+        assertThat(account.getAccountAddress()).isEqualTo(treasuryAddress);
+        assertTrue(subject.contractHasAnyBalance(treasuryAddress));
+        account = account.setNumPositiveBalances(0);
+        store.updateAccount(account);
+        assertFalse(subject.contractHasAnyBalance(treasuryAddress));
+        assertTrue(true);
+        deleteTestAccount(treasuryAddress);
+    }
+
+    @Test
+    void recognizesAccountWhoStillOwnsNfts() {
+        final var treasuryAddress = Address.BLS12_MAP_FP2_TO_G2;
+        var account = createTestAccount(treasuryAddress);
+        account = account.setOwnedNfts(2);
+        store.updateAccount(account);
+        assertThat(account.getAccountAddress()).isEqualTo(treasuryAddress);
+        assertTrue(subject.contractOwnsNfts(treasuryAddress));
+        account = account.setOwnedNfts(0);
+        store.updateAccount(account);
+        assertFalse(subject.contractHasAnyBalance(treasuryAddress));
+        assertTrue(true);
+        deleteTestAccount(treasuryAddress);
+    }
+
+    private void deleteTestAccount(Address treasuryAddress) {
+        subject.revert();
+        subject.deleteAccount(treasuryAddress);
+    }
+
+    private com.hedera.services.store.models.Account createTestAccount(Address treasuryAddress) {
+        when(mirrorEvmContractAliases.resolveForEvm(treasuryAddress)).thenReturn(treasuryAddress);
+        store.wrap();
+        subject.createAccount(treasuryAddress, aNonce, Wei.of(aBalance));
+        subject.commit();
+        return store.getAccount(treasuryAddress, OnMissing.THROW);
     }
 
     private void givenForRedirect() {

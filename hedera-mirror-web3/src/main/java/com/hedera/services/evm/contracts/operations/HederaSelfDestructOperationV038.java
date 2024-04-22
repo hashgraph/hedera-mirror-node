@@ -69,7 +69,7 @@ public class HederaSelfDestructOperationV038 extends SelfDestructOperation {
         }
         final var beneficiary = updater.get(beneficiaryAddress);
 
-        final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress, updater, frame);
+        final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress, updater);
         if (exceptionalHaltReason != null) {
             return reversionWith(beneficiary, exceptionalHaltReason);
         }
@@ -80,8 +80,7 @@ public class HederaSelfDestructOperationV038 extends SelfDestructOperation {
     @Nullable
     private ExceptionalHaltReason reasonToHalt(final Address toBeDeleted,
                                                final Address beneficiaryAddress,
-                                               final HederaEvmStackedWorldStateUpdater updater,
-                                               final MessageFrame frame) {
+                                               final HederaEvmStackedWorldStateUpdater updater) {
         if (toBeDeleted.equals(beneficiaryAddress)) {
             return HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
         }

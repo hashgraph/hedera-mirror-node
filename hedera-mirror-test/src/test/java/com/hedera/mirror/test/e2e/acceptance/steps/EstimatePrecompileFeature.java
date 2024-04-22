@@ -2024,7 +2024,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         TRANSFER_NFT("transferNFTExternal", 53751),
         TRANSFER_NFTS("transferNFTsExternal", 57015),
         TRANSFER_TOKEN("transferTokenExternal", 39666),
-        TRANSFER_TOKENS("transferTokensExternal", 42480),
+        TRANSFER_TOKENS("transferTokensExternal", 43314),
         UNFREEZE_TOKEN("unfreezeTokenExternal", 39323),
         WIPE_TOKEN_ACCOUNT("wipeTokenAccountExternal", 39496),
         WIPE_NFT_ACCOUNT("wipeTokenAccountNFTExternal", 40394),

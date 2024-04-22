@@ -70,7 +70,7 @@ public class HederaSelfDestructOperationV046 extends SelfDestructOperation {
         }
         final var beneficiary = updater.get(beneficiaryAddress);
 
-        final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress);
+        final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress, updater);
         if (exceptionalHaltReason != null) {
             return reversionWith(beneficiary, exceptionalHaltReason);
         }
@@ -79,9 +79,22 @@ public class HederaSelfDestructOperationV046 extends SelfDestructOperation {
     }
 
     @Nullable
-    private ExceptionalHaltReason reasonToHalt(final Address toBeDeleted, final Address beneficiaryAddress) {
+    private ExceptionalHaltReason reasonToHalt(final Address toBeDeleted,
+                                               final Address beneficiaryAddress,
+                                               final HederaEvmStackedWorldStateUpdater updater) {
         if (toBeDeleted.equals(beneficiaryAddress)) {
             return HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
+        }
+
+        if (updater.contractIsTokenTreasury(toBeDeleted)) {
+            return HederaExceptionalHaltReason.CONTRACT_IS_TREASURY;
+        }
+
+        if (updater.contractHasAnyBalance(toBeDeleted)) {
+            return HederaExceptionalHaltReason.TRANSACTION_REQUIRES_ZERO_TOKEN_BALANCES;
+        }
+        if (updater.contractOwnsNfts(toBeDeleted)) {
+            return HederaExceptionalHaltReason.CONTRACT_STILL_OWNS_NFTS;
         }
         return null;
     }
