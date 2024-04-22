@@ -587,15 +587,16 @@ to configure the application.
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
-| Name                                         | Default               | Description                                                                              |
-| -------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------- |
-| `hedera.mirror.restJava.db.host`             | 127.0.0.1             | The IP or hostname used to connect to the database                                       |
-| `hedera.mirror.restJava.db.name`             | mirror_node           | The name of the database                                                                 |
-| `hedera.mirror.restJava.db.password`         | mirror_rest_java_pass | The database password used to connect to the database                                    |
-| `hedera.mirror.restJava.db.port`             | 5432                  | The port used to connect to the database                                                 |
-| `hedera.mirror.restJava.db.sslMode`          | DISABLE               | The SSL level. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. |
-| `hedera.mirror.restJava.db.statementTimeout` | 10000                 | The number of milliseconds to wait before timing out a query statement                   |
-| `hedera.mirror.restJava.db.username`         | mirror_rest_java      | The username used to connect to the database                                             |
+| Name                                         | Default                                               | Description                                                                              |
+|----------------------------------------------|-------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `hedera.mirror.restJava.db.host`             | 127.0.0.1                                             | The IP or hostname used to connect to the database                                       |
+| `hedera.mirror.restJava.db.name`             | mirror_node                                           | The name of the database                                                                 |
+| `hedera.mirror.restJava.db.password`         | mirror_rest_java_pass                                 | The database password used to connect to the database                                    |
+| `hedera.mirror.restJava.db.port`             | 5432                                                  | The port used to connect to the database                                                 |
+| `hedera.mirror.restJava.db.sslMode`          | DISABLE                                               | The SSL level. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. |
+| `hedera.mirror.restJava.db.statementTimeout` | 10000                                                 | The number of milliseconds to wait before timing out a query statement                   |
+| `hedera.mirror.restJava.db.username`         | mirror_rest_java                                      | The username used to connect to the database                                             |
+| `hedera.mirror.restJava.shard`               | 0                                                     | The default shard number that this mirror node participates in                           |
 
 ## Rosetta API
 

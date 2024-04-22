@@ -16,10 +16,8 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static com.hedera.mirror.restjava.common.Constants.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.Constants.DEFAULT_LIMIT;
-import static com.hedera.mirror.restjava.common.Constants.MAX_LIMIT;
-import static com.hedera.mirror.restjava.common.Constants.TOKEN_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
@@ -28,7 +26,6 @@ import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.Utils;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
-import com.hedera.mirror.restjava.service.NftAllowanceRequest.NftAllowanceRequestBuilder;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
@@ -37,7 +34,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,17 +41,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @CustomLog
-@RequiredArgsConstructor
 @RequestMapping("/api/v1/accounts/{id}/allowances")
+@RequiredArgsConstructor
 @RestController
 public class AllowancesController {
+
+    private static final int MAX_LIMIT = 100;
+    private static final String DEFAULT_LIMIT = "25";
 
     private final NftAllowanceService service;
     private final NftAllowanceMapper nftAllowanceMapper;
 
-    @CrossOrigin(origins = "*")
     @GetMapping(value = "/nfts")
-    @SuppressWarnings("java:S5122")
     NftAllowancesResponse getNftAllowancesByAccountId(
             @PathVariable EntityIdParameter id,
             @RequestParam(name = ACCOUNT_ID, required = false) EntityIdRangeParameter accountId,
@@ -64,7 +61,7 @@ public class AllowancesController {
             @RequestParam(defaultValue = "true") boolean owner,
             @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId) {
 
-        NftAllowanceRequestBuilder requestBuilder = NftAllowanceRequest.builder()
+        var builder = NftAllowanceRequest.builder()
                 .accountId(id)
                 .isOwner(owner)
                 .limit(limit)
@@ -72,20 +69,21 @@ public class AllowancesController {
                 .ownerOrSpenderId(accountId)
                 .tokenId(tokenId);
 
-        var serviceResponse = service.getNftAllowances(requestBuilder.build());
+        var serviceResponse = service.getNftAllowances(builder.build());
 
-        NftAllowancesResponse response = new NftAllowancesResponse();
+        var response = new NftAllowancesResponse();
         response.setAllowances(nftAllowanceMapper.map(serviceResponse));
-
         var last = CollectionUtils.lastElement(response.getAllowances());
         String next = null;
+
         if (last != null && serviceResponse.size() == limit) {
             var lastAccountId = owner ? last.getSpender() : last.getOwner();
-            LinkedHashMap<String, String> lastValues = new LinkedHashMap<>();
+            var lastValues = new LinkedHashMap<String, String>();
             lastValues.put(ACCOUNT_ID, lastAccountId);
             lastValues.put(TOKEN_ID, last.getTokenId());
             next = Utils.getPaginationLink(false, lastValues, order);
         }
+
         response.links(new Links().next(next));
         return response;
     }

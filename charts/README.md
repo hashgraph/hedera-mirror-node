@@ -181,7 +181,7 @@ curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
 To access the Java REST API:
 
 ```shell script
-curl -s "http://${SERVICE_IP}/api/v1/dummy"
+curl -s "http://${SERVICE_IP}/api/v1/accounts/{id}/allowances/nfts"
 ```
 
 To access the Rosetta API:
@@ -261,7 +261,8 @@ kubectl exec -it "${RELEASE}-postgres-postgresql-0" -c postgresql -- psql -d mir
 V2:
 
 ```shell
-kubectl exec -it "${RELEASE}-citus-coord-0" -c postgres-util -- psql -d mirror_node -U mirror_node
+DB_PASSWORD="$(kubectl get secrets -o yaml ${RELEASE}-passwords |ksd | yq '.stringData.HEDERA_MIRROR_REST_DB_PASSWORD')"
+kubectl run psql-util -it --rm --image=bitnami/postgresql:16 --env="PGPASSWORD=${DB_PASSWORD}" --command -- psql -h "${RELEASE}-citus-reads" -U mirror_rest -d mirror_node
 ```
 
 The Stackgres Admin UI can be [exposed](https://stackgres.io/doc/latest/administration/adminui/) to monitor and

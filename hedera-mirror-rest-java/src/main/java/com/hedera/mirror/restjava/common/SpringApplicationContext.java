@@ -13,19 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.mirror.restjava.common;
 
 import jakarta.inject.Named;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
-import org.springframework.core.convert.converter.Converter;
-import org.springframework.data.domain.Sort;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 @Named
-@ConfigurationPropertiesBinding
-public class OrderConverter implements Converter<String, Sort.Direction> {
-    @Override
-    public Sort.Direction convert(String order) {
-        return Sort.Direction.fromString(order);
+public class SpringApplicationContext implements ApplicationContextAware {
+
+   private static final AtomicReference<ApplicationContext> CONTEXT = new AtomicReference<>();
+
+    public static <T extends Object> T getBean(Class<T> beanClass) {
+        return CONTEXT.get().getBean(beanClass);
     }
+
+    @Override
+    public void setApplicationContext(ApplicationContext context) throws BeansException {
+        CONTEXT.set(context);
+    }
+
 }

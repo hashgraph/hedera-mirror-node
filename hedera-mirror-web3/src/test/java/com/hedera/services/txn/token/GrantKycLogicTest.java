@@ -26,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.web3.evm.store.Store;
@@ -42,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class GrantKycLogicTest {
@@ -113,7 +113,8 @@ class GrantKycLogicTest {
         final TokenRelationship tokenRelationship = TokenRelationship.getEmptyTokenRelationship();
 
         // given:
-        given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW)).willReturn(tokenRelationship);
+        given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
+                .willReturn(tokenRelationship);
 
         // expect:
         assertFalse(tokenRelationship.getToken().hasKycKey());

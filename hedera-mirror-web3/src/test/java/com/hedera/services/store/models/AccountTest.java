@@ -20,6 +20,8 @@ import static com.swirlds.common.utility.CommonUtils.unhex;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
@@ -45,17 +47,17 @@ class AccountTest {
                 0L,
                 subjectId,
                 defaultLongValue,
-                defaultLongValue,
+                () -> defaultLongValue,
                 false,
-                ownedNfts,
+                () -> ownedNfts,
                 defaultLongValue,
                 Id.DEFAULT,
                 alreadyUsedAutoAssociations,
                 null,
                 null,
                 null,
-                numAssociations,
-                numPositiveBalances,
+                () -> numAssociations,
+                () -> numPositiveBalances,
                 numTreasuryTitles,
                 0L,
                 false,
@@ -75,9 +77,9 @@ class AccountTest {
         assertEquals(ownedNfts, subject.getOwnedNfts());
         assertEquals(Id.DEFAULT, subject.getProxy());
         assertEquals(subjectId.asEvmAddress(), subject.getAccountAddress());
-        assertNull(subject.getCryptoAllowances());
-        assertNull(subject.getFungibleTokenAllowances());
-        assertNull(subject.getApproveForAllNfts());
+        assertEquals(subject.getCryptoAllowances(), new TreeMap<>());
+        assertEquals(subject.getFungibleTokenAllowances(), new TreeMap<>());
+        assertEquals(subject.getApproveForAllNfts(), new TreeSet<>());
         assertEquals(numTreasuryTitles, subject.getNumTreasuryTitles());
     }
 
@@ -118,10 +120,8 @@ class AccountTest {
 
     @Test
     void toStringAsExpected() {
-        final var desired = "Account{id=0.0.12345, expiry=0, balance=0, deleted=false, ownedNfts=5,"
-                + " alreadyUsedAutoAssociations=0, maxAutoAssociations=123, alias=,"
-                + " cryptoAllowances=null, fungibleTokenAllowances=null,"
-                + " approveForAllNfts=null, numAssociations=3, numPositiveBalances=2}";
+        final var desired =
+                "Account{entityId=0, id=0.0.12345, alias=, address=0x0000000000000000000000000000000000003039, expiry=0, balance=0, deleted=false, ownedNfts=5, autoRenewSecs=0, proxy=0.0.0, accountAddress=0x0000000000000000000000000000000000003039, autoAssociationMetadata=123, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=3, numPositiveBalances=2, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}";
 
         // expect:
         assertEquals(desired, subject.toString());
