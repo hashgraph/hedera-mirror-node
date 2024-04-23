@@ -1,4 +1,4 @@
-# HIP-336 Approval and Allowance
+# HIP-904 Frictionless Airdrops
 
 ## Purpose
 
@@ -7,7 +7,6 @@
 ## Goals
 
 - Ingest the following transactions and persist to the database:
-  - `PendingAirdrop`
   - `TokenAirdrop`
   - `TokenCancelAirdrop`
   - `TokenClaimAirdrop`
@@ -26,20 +25,28 @@
 #### Pending Airdrops
 
 ```sql
-create type airdrop_resolution_state as enum ('PENDING', 'CANCEL', 'CLAIM');
+create type airdrop_state as enum ('PENDING', 'CANCELLED', 'CLAIMED');
 
-create table if not exists token_pending_airdrop
+create table if not exists token_airdrop
 (
-    account_id          bigint                   not null,
     amount              bigint,
-    resolution_state    airdrop_resolution_state not null default 'PENDING',
-    payer_account_id    bigint                   not null,
+    receiver_account_id bigint         not null,
+    sender_account_id   bigint         not null,
     serial_number       bigint,
-    timestamp_range     int8range                not null,
-    token_id            bigint                   not null
+    state               airdrop_state  not null default 'PENDING',
+    timestamp_range     int8range      not null,
+    token_id            bigint         not null
 );
 
-create index if not exists token_pending__airdrop on token_pending_airdrop (account_id, payer_account_id);
+create index if not exists token__airdrop on token_airdrop (sender_account_id, receiver_account_id, token_id, serial_number);
+
+create table if not exists token_airdrop_history
+(
+  like token_airdrop including defaults
+);
+
+create index if not exists token_airdrop_history__token_serial_lower_timestamp
+  on token_airdrop_history using gist (timestamp_range);
 ```
 
 ### Importer
@@ -48,32 +55,29 @@ create index if not exists token_pending__airdrop on token_pending_airdrop (acco
 
 When parsing pending airdrops,
 
-- Persist pending airdrops to the `token_pending_airdrop` table.
-- If an entry already exists for a fungible token, the timestamp range of the existing entry should be closed and a new entry should be added with `amount` set to the sum of the existing amount and the new amount.
+- Persist airdrops to the `token_airdrop` table.
+- If a `TokenAirdrop` transaction occurs when an entry already exists for a fungible token in the `PENDING` state, an entry should be made in the `token_airdrop_history` table (just as with a change of state to `CANCELLED` or `CLAIMED`), and the `token_airdrop` table should be updated with `amount` set to the sum of the existing amount and the new amount.
 
 #### Domain
 
-- Add an `TokenAirdrop` domain object with the same fields as `accountId`, `amount`, `payerAccountId`, `tokenId`, and `serialNumber`.
-- Add an `TokenCancelAirdrop` domain object which contains the fields `accountId`, `payerAccountId`, `tokenId`, and `serialNumber`.
-- Add an `TokenClaimAirdrop` domain object which contains the fields `accountId`, `payerAccountId`, `tokenId`, and `serialNumber`.
-- Add an `TokenReject` domain object which contains the fields `accountId`, `tokenId`, and `serialNumber`.
-- Add an `TokenPendingAirdrop` domain object with the same fields as the schema.
+- Add an `TokenAirdrop` domain object with the same fields as the schema.
+- Add an `TokenCancelAirdrop` domain object which contains the fields `receiverAccountId`, `senderAccountId`, `serialNumber` and `tokenId`.
+- Add an `TokenClaimAirdrop` domain object which contains the fields `receiverAccountId`, `senderAccountId`, `serialNumber` and `tokenId`.
+- Add an `TokenReject` domain object which contains the fields `receiverAccountId`, `serialNumber` and `tokenId`.
 
 #### Entity Listener
 
-- Add `onCancelAirdrop` to handle setting the `resolution_state` and closing the `timestamp_range` on the `token_pending_airdrop` table.
-- Add `onClaimAirdrop` to handle setting the `resolution_state` flag and closing the `timestamp_range` on the `token_pending_airdrop` table.
-- Add `onTokenPendingAirdrop` to handle inserts to the `token_pending_airdrop` table.
-- Add `onTokenReject` which will be similar to `onCryptoTransfer` except the balance will be zero.
-- Add `onTokenAirdrop` which will be similar to `onCryptoTransfer`.
+- Add `onCancelAirdrop` to handle setting the `state` to `CANCELLED`. Updates the `token_airdrop` table and the `token_airdrop_history` table.
+- Add `onClaimAirdrop` to handle setting the `state` to `CLAIMED`. Updates the `token_airdrop` table and the `token_airdrop_history` table.
+- Add `onTokenAirdrop` to handle inserts to the `token_airdrop` table.
+- Add `onTokenReject` which will be similar to `onCryptoTransfer` except the balance will be zero. Does not affect the `token_airdrop` table.
 
 #### Transaction Handlers
 
-- Add `TokenAirdropTransactionHandler` which will be similar to `CryptoTransferTransactionHandler`
-- Add `TokenCancelAirdropTransactionHandler` which will set the resolution state of the pending airdrop to `CANCEL`
-- Add `TokenClaimAirdropTransactionHandler` which will set the resolution state of the pending airdrop to `CLAIM`
-- Add `TokenPendingAirdropTransactionHandler`
-- Add `TokenRejectTransactionHandler` which will be similar to `CryptoTransferTransactionHandler`
+- Add `TokenAirdropTransactionHandler` which will add a new entry to the `token_airdrop` table with the default state of `PENDING`.
+- Add `TokenCancelAirdropTransactionHandler` which will set the state of the airdrop to `CANCELLED`
+- Add `TokenClaimAirdropTransactionHandler` which will set the state of the airdrop to `CLAIMED`
+- Add `TokenRejectTransactionHandler`
 
 #### Support unlimited Max Automatic Token Associations
 
