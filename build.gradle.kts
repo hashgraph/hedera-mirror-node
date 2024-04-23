@@ -67,7 +67,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:21.0")
         api("com.hedera.evm:hedera-evm:0.47.1")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.48.3")
-        api("com.hedera.hashgraph:sdk:2.30.0")
+        api("com.hedera.hashgraph:sdk:2.32.0-beta.1")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.5")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
