@@ -39,23 +39,27 @@ import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.assertj.core.api.Assertions;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class EquivalenceFeature extends AbstractFeature {
-    private final AcceptanceTestProperties acceptanceTestProperties;
+
     private static final String OBTAINER_SAME_CONTRACT_ID_EXCEPTION = "OBTAINER_SAME_CONTRACT_ID";
     private static final String INVALID_SOLIDITY_ADDRESS_EXCEPTION = "INVALID_SOLIDITY_ADDRESS";
-    private static final String BAD_REQUEST = "400 Bad Request";
+    private static final String BAD_REQUEST = "400 ";
     private static final String TRANSACTION_SUCCESSFUL_MESSAGE = "Transaction successful";
 
+    private final AcceptanceTestProperties acceptanceTestProperties;
     private DeployedContract equivalenceDestructContract;
     private DeployedContract equivalenceCallContract;
 
     private String equivalenceDestructContractSolidityAddress;
     private String equivalenceCallContractSolidityAddress;
+
+    public static long extractAccountNumber(String account) {
+        String[] parts = account.split("\\.");
+        return Long.parseLong(parts[parts.length - 1]);
+    }
 
     @Given("I successfully create selfdestruct contract")
     public void createNewSelfDestructContract() {
@@ -85,8 +89,8 @@ public class EquivalenceFeature extends AbstractFeature {
 
     private void verifyContractDeployed(String contractAddress) {
         var response = mirrorClient.getContractInfo(contractAddress);
-        Assertions.assertThat(response.getBytecode()).isNotBlank();
-        Assertions.assertThat(response.getRuntimeBytecode()).isNotBlank();
+        assertThat(response.getBytecode()).isNotBlank();
+        assertThat(response.getRuntimeBytecode()).isNotBlank();
     }
 
     @Then("I execute selfdestruct and set beneficiary to {string} address")
@@ -108,11 +112,11 @@ public class EquivalenceFeature extends AbstractFeature {
         final var message = functionResult.getResultAsText();
 
         if (extractAccountNumber(beneficiary) < 751) {
-            var condition = message.startsWith("400 Bad Request") || message.equals(INVALID_SOLIDITY_ADDRESS_EXCEPTION);
-            assertThat(condition).isTrue();
+            var condition = message.startsWith(BAD_REQUEST) || message.equals(INVALID_SOLIDITY_ADDRESS_EXCEPTION);
+            assertThat(condition).as("Unexpected error '%s'", message).isTrue();
         } else {
             var condition = functionResult.getResult().equals("0x") || message.equals(TRANSACTION_SUCCESSFUL_MESSAGE);
-            assertThat(condition).isTrue();
+            assertThat(condition).as("Unexpected error '%s'", message).isTrue();
         }
     }
 
@@ -123,7 +127,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, asAddress(accountId));
         var functionResult =
                 callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
-        assertThat(BigInteger.ZERO).isEqualTo(functionResult.getResultAsNumber());
+        assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
     }
 
     @Then("I execute balance opcode against a contract with balance")
@@ -132,7 +136,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var data = encodeData(EQUIVALENCE_CALL, GET_BALANCE, asAddress(equivalenceDestructContract.contractId()));
         var functionResult =
                 callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_BALANCE, data, BIG_INTEGER_TUPLE);
-        assertThat(new BigInteger("10000")).isEqualTo(functionResult.getResultAsNumber());
+        assertThat(functionResult.getResultAsNumber()).isEqualTo(new BigInteger("10000"));
     }
 
     @Then("I verify extcodesize opcode against a system account {string} address returns 0")
@@ -142,7 +146,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var data = encodeData(EQUIVALENCE_CALL, GET_CODE_SIZE, asAddress(accountId));
         var functionResult =
                 callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_SIZE, data, BIG_INTEGER_TUPLE);
-        assertThat(BigInteger.ZERO).isEqualTo(functionResult.getResultAsNumber());
+        assertThat(functionResult.getResultAsNumber()).isEqualTo(BigInteger.ZERO);
     }
 
     @Then("I verify extcodecopy opcode against a system account {string} address returns empty bytes")
@@ -151,7 +155,7 @@ public class EquivalenceFeature extends AbstractFeature {
         final var accountId = new AccountId(extractAccountNumber(address));
         var data = encodeData(EQUIVALENCE_CALL, COPY_CODE, asAddress(accountId));
         var functionResult = callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, COPY_CODE, data, BYTES_TUPLE);
-        assertThat("").isEqualTo(functionResult.getResultAsText());
+        assertThat(functionResult.getResultAsText()).isEmpty();
     }
 
     @Then("I verify extcodehash opcode against a system account {string} address returns empty bytes")
@@ -161,7 +165,7 @@ public class EquivalenceFeature extends AbstractFeature {
         var data = encodeData(EQUIVALENCE_CALL, GET_CODE_HASH, asAddress(accountId));
         var functionResult =
                 callContract(nodeType, StringUtils.EMPTY, EQUIVALENCE_CALL, GET_CODE_HASH, data, BYTES_TUPLE);
-        assertThat(new byte[0]).isEqualTo(functionResult.getResultAsBytes().toArray());
+        assertThat(functionResult.getResultAsBytes().toArray()).isEmpty();
     }
 
     @Then("I execute selfdestruct and set beneficiary to the deleted contract address")
@@ -176,12 +180,7 @@ public class EquivalenceFeature extends AbstractFeature {
         }
         var message = functionResult.getResultAsText();
         var condition = message.startsWith(BAD_REQUEST) || message.equals(OBTAINER_SAME_CONTRACT_ID_EXCEPTION);
-        assertThat(condition).isTrue();
-    }
-
-    public static long extractAccountNumber(String account) {
-        String[] parts = account.split("\\.");
-        return Long.parseLong(parts[parts.length - 1]);
+        assertThat(condition).as("Unexpected error '%s'", message).isTrue();
     }
 
     @Getter

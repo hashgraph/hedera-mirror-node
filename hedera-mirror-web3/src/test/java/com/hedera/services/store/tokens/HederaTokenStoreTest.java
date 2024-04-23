@@ -21,6 +21,7 @@ import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAsso
 import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.IdUtils.asToken;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_AMOUNT_TRANSFERS_ONLY_ALLOWED_FOR_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_EXPIRED_AND_PENDING_REMOVAL;
@@ -86,6 +87,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -107,6 +109,8 @@ class HederaTokenStoreTest {
             .setEd25519(ByteString.copyFromUtf8("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"))
             .build();
 
+    private final JKey kycKey = asFcKeyUnchecked(
+            Key.newBuilder().setKeyList(KeyList.getDefaultInstance()).build());
     private static final int associatedTokensCount = 2;
     private static final int numPositiveBalances = 1;
     public static final long CONSENSUS_NOW = 1_234_567L;
@@ -826,10 +830,10 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void refusesToAdjustRevokedKycRelationship() {
+    void refusesToAdjustRevokedKycRelationship() throws InvalidKeyException {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
-        var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account).setKycGranted(false);
+        var token = new Token(Id.fromGrpcToken(misc)).setKycKey(kycKey);
+        var tokenRelationship = new TokenRelationship(token, account).changeKycState(false);
 
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.THROW)).willReturn(account);
         given(store.getAccount(asTypedEvmAddress(treasury), OnMissing.DONT_THROW))
@@ -982,8 +986,9 @@ class HederaTokenStoreTest {
                 .setNumAssociations(5)
                 .setNumPositiveBalances(2);
         var token = new Token(Id.fromGrpcToken(misc)).setDecimals(2);
+        token = token.setKycKey(kycKey);
         var tokenRelationship =
-                new TokenRelationship(token, account).setFrozen(false).setKycGranted(true);
+                new TokenRelationship(token, account).setFrozen(false).changeKycState(true);
 
         final var aa =
                 AccountAmount.newBuilder().setAccountID(sponsor).setAmount(100).build();
@@ -1548,7 +1553,7 @@ class HederaTokenStoreTest {
                 .setType(TokenType.NON_FUNGIBLE_UNIQUE);
         var tokenRelationshipKey = asTokenRelationshipKey(newTreasury, nonfungible);
         var tokenRelationship =
-                new TokenRelationship(token, account).setKycGranted(true).setBalance(1L);
+                new TokenRelationship(token, account).changeKycState(true).setBalance(1L);
         final var op = updateWith(ALL_KEYS, nonfungible, true, true, true).toBuilder()
                 .setExpiry(Timestamp.newBuilder().setSeconds(0))
                 .build();

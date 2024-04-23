@@ -175,7 +175,7 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-      tag: 14.10.0-debian-11-r16
+      tag: 14.11.0-debian-12-r8
     initdbScriptsCM: "{{ .Release.Name }}-init"
     maxConnections: 200
     password: ""  # Randomly generated if left blank
@@ -255,7 +255,7 @@ restjava:
   db:
     password: ""  # Randomly generated if left blank
     username: mirror_rest_java
-  enabled: false
+  enabled: true
   envFrom:
     - secretRef:
         name: mirror-passwords

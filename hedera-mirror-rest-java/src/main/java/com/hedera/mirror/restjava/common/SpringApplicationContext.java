@@ -17,15 +17,22 @@
 package com.hedera.mirror.restjava.common;
 
 import jakarta.inject.Named;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
-import org.springframework.core.convert.converter.Converter;
-import org.springframework.data.domain.Sort;
+import java.util.concurrent.atomic.AtomicReference;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 
 @Named
-@ConfigurationPropertiesBinding
-public class OrderConverter implements Converter<String, Sort.Direction> {
+public class SpringApplicationContext implements ApplicationContextAware {
+
+    private static final AtomicReference<ApplicationContext> CONTEXT = new AtomicReference<>();
+
+    public static <T extends Object> T getBean(Class<T> beanClass) {
+        return CONTEXT.get().getBean(beanClass);
+    }
+
     @Override
-    public Sort.Direction convert(String order) {
-        return Sort.Direction.fromString(order);
+    public void setApplicationContext(ApplicationContext context) throws BeansException {
+        CONTEXT.set(context);
     }
 }

@@ -16,6 +16,7 @@ spec:
         - sgScript: {{ include "hedera-mirror.stackgres" . }}-coordinator
     pods:
       disableMetricsExporter: {{ not .Values.stackgres.coordinator.enableMetricsExporter }}
+      disablePostgresUtil: true
       persistentVolume: {{ .Values.stackgres.coordinator.persistentVolume | toYaml | nindent 8 }}
       resources:
         disableResourcesRequestsSplitFromTotal: {{ .Values.stackgres.dedicatedResourcesRequests }}
@@ -36,7 +37,7 @@ spec:
     disableClusterPodAntiAffinity: {{ not .Values.stackgres.podAntiAffinity }}
   postgres:
     extensions: {{ .Values.stackgres.extensions | toYaml | nindent 6 }}
-    version: {{ .Values.stackgres.postgresVersion }}
+    version: {{ .Values.stackgres.postgresVersion | quote }}
   prometheusAutobind: {{ .Values.stackgres.prometheus }}
   replication:
     mode: async  # We might consider setting coordinator to sync or the proposed sync-all in the future

@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+package com.hedera.mirror.restjava;
 
-import org.jooq.Condition;
-import org.jooq.Field;
+import jakarta.validation.constraints.Min;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-public record Filter<T>(Field<T> field, RangeOperator operator, T value) {
+@Data
+@Validated
+@ConfigurationProperties("hedera.mirror.rest-java")
+public class RestJavaProperties {
 
-    public Condition getCondition() {
-        return operator.getFunction().apply(field, value);
-    }
+    @Min(0)
+    private long shard = 0L;
 }

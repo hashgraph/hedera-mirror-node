@@ -30,11 +30,12 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.62.2")
+    set("grpcVersion", "1.63.0")
     // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
     // with the next springboot release
     set("jooq.version", "3.19.6")
     set("mapStructVersion", "1.5.5.Final")
+    set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.7")
@@ -56,34 +57,34 @@ dependencies {
 
         api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
-        api("com.github.vertical-blank:sql-formatter:2.0.4")
-        api("org.bouncycastle:bcprov-jdk15to18:1.77")
+        api("com.github.vertical-blank:sql-formatter:2.0.5")
+        api("org.bouncycastle:bcprov-jdk18on:1.78.1")
         api("com.bucket4j:bucket4j-core:8.10.1")
         api("com.google.cloud:spring-cloud-gcp-dependencies:5.1.2")
         api("com.google.guava:guava:33.1.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
-        api("com.graphql-java:graphql-java-extended-scalars:21.0")
-        api("com.graphql-java:graphql-java-extended-validation:21.0")
-        api("com.hedera.evm:hedera-evm:0.47.1")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.48.3")
-        api("com.hedera.hashgraph:sdk:2.32.0-beta.1")
+        api("com.graphql-java:graphql-java-extended-scalars:22.0")
+        api("com.graphql-java:graphql-java-extended-validation:22.0")
+        api("com.hedera.evm:hedera-evm:0.48.0")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.49.0")
+        api("com.hedera.hashgraph:2.32.0-beta.1")
         api("com.ongres.scram:client:2.1")
-        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.5")
+        api("com.playtika.testcontainers:embedded-google-pubsub:3.1.6")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
-        api("commons-io:commons-io:2.15.1")
-        api("io.cucumber:cucumber-bom:7.16.1")
+        api("commons-io:commons-io:2.16.1")
+        api("io.cucumber:cucumber-bom:7.17.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
-        api("io.projectreactor:reactor-core-micrometer:1.1.4")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.4")
+        api("io.projectreactor:reactor-core-micrometer:1.1.5")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
-        api("net.devh:grpc-spring-boot-starter:3.0.0.RELEASE")
+        api("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
         api("net.java.dev.jna:jna:5.14.0")
         api("org.apache.commons:commons-compress:1.26.1")
         api("org.apache.commons:commons-math3:3.6.1")
@@ -101,7 +102,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.1")
         api("org.testcontainers:junit-jupiter:1.19.7")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.21")
+        api("software.amazon.awssdk:bom:2.25.35")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }
@@ -115,6 +116,7 @@ allprojects {
             property("sonar.host.url", "https://sonarcloud.io")
             property("sonar.organization", "hashgraph")
             property("sonar.projectKey", "hedera-mirror-node")
+            property("sonar.sourceEncoding", "UTF-8")
             property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5,e6")
             property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
@@ -141,8 +143,9 @@ idea {
 
 // Spotless uses Prettier and it requires Node.js
 node {
+    val nodeJsVersion: String by rootProject.extra
     download = true
-    version = "18.18.0"
+    version = nodeJsVersion
     workDir = rootDir.resolve(".gradle").resolve("nodejs")
 }
 
@@ -215,7 +218,13 @@ spotless {
         palantirJavaFormat()
         licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
         target("**/*.java")
-        targetExclude("**/build/**", "hedera-mirror-rest/**", "hedera-mirror-rosetta/**")
+        targetExclude(
+            "**/build/**",
+            "hedera-mirror-rest/**",
+            "hedera-mirror-rosetta/**",
+            // Known issue with Java 21: https://github.com/palantir/palantir-java-format/issues/933
+            "hedera-mirror-rest-java/**/EntityServiceImpl.java"
+        )
         toggleOffOn()
     }
     kotlin {

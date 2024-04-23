@@ -17,10 +17,16 @@
 package com.hedera.services.txn.token;
 
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
+import static com.hedera.services.utils.TxnUtils.assertFailsWith;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_KYC_KEY;
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.web3.evm.store.Store;
@@ -70,13 +76,13 @@ public class RevokeKycLogicTest {
                 .willReturn(tokenRelationship);
 
         TokenRelationship tokenRelationshipResult = mock(TokenRelationship.class);
-        given(tokenRelationship.setKycGranted(false)).willReturn(tokenRelationshipResult);
+        given(tokenRelationship.changeKycState(false)).willReturn(tokenRelationshipResult);
 
         // when:
         subject.revokeKyc(idOfToken, idOfAccount, store);
 
         // then:
-        verify(tokenRelationship).setKycGranted(false);
+        verify(tokenRelationship).changeKycState(false);
         verify(store).updateTokenRelationship(tokenRelationshipResult);
     }
 
@@ -102,6 +108,22 @@ public class RevokeKycLogicTest {
 
         // expect:
         assertEquals(INVALID_ACCOUNT_ID, subject.validate(tokenRevokeKycBody));
+    }
+
+    @Test
+    void rejectChangeKycStateWithoutTokenKYCKey() {
+        final TokenRelationship tokenRelationship = TokenRelationship.getEmptyTokenRelationship();
+
+        // given:
+        given(store.getTokenRelationship(tokenRelationshipKey, Store.OnMissing.THROW))
+                .willReturn(tokenRelationship);
+
+        // expect:
+        assertFalse(tokenRelationship.getToken().hasKycKey());
+        assertFailsWith(() -> subject.revokeKyc(idOfToken, idOfAccount, store), TOKEN_HAS_NO_KYC_KEY);
+
+        // verify:
+        verify(store, never()).updateTokenRelationship(tokenRelationship);
     }
 
     private void givenValidTxnCtx() {

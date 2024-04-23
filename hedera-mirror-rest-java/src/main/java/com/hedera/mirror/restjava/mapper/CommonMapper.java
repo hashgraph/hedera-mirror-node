@@ -23,10 +23,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
 
-import static com.hedera.mirror.restjava.common.Constants.NANO_DIGITS;
-
 @Mapper(mappingInheritanceStrategy = MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG)
 public interface CommonMapper {
+
+    int NANO_DIGITS = 9;
 
     default String mapEntityId(Long source) {
         if (source == null || source == 0) {

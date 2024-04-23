@@ -1,13 +1,13 @@
 module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 
-go 1.21
+go 1.22
 
 require (
-	github.com/Code-Hex/go-generics-cache v1.3.1
-	github.com/coinbase/rosetta-sdk-go v0.8.4
+	github.com/Code-Hex/go-generics-cache v1.5.1
+	github.com/coinbase/rosetta-sdk-go v0.8.5
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
 	github.com/cucumber/godog v0.14.0
-	github.com/ethereum/go-ethereum v1.13.14
+	github.com/ethereum/go-ethereum v1.13.15
 	github.com/go-playground/validator/v10 v10.19.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20230720072335-ed5726877e99
 	github.com/hashgraph/hedera-sdk-go/v2 v2.34.1
@@ -122,11 +122,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
-	golang.org/x/crypto v0.20.0 // indirect
+	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.17.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240108191215-35c7eff3a6b1 // indirect

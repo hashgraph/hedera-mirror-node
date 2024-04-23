@@ -14,7 +14,7 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 ## Requirements
 
 - [Helm 3+](https://helm.sh)
-- [Kubernetes 1.28+](https://kubernetes.io)
+- [Kubernetes 1.29+](https://kubernetes.io)
 
 Set environment variables that will be used for the remainder of the document:
 
@@ -92,8 +92,8 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
        --create-subnetwork="" \
        --network=default \
        --zone=us-central1-a \
-       --cluster-version=1.28 \
-       --machine-type=n1-standard-4
+       --cluster-version=1.29 \
+       --machine-type=n2-custom-6-15360
    ```
 
 2. Configure Traefik to use the external load balancer.
@@ -181,7 +181,7 @@ curl -s "http://${SERVICE_IP}/api/v1/transactions?limit=1"
 To access the Java REST API:
 
 ```shell script
-curl -s "http://${SERVICE_IP}/api/v1/dummy"
+curl -s "http://${SERVICE_IP}/api/v1/accounts/{id}/allowances/nfts"
 ```
 
 To access the Rosetta API:
@@ -261,8 +261,12 @@ kubectl exec -it "${RELEASE}-postgres-postgresql-0" -c postgresql -- psql -d mir
 V2:
 
 ```shell
-kubectl exec -it "${RELEASE}-citus-coord-0" -c postgres-util -- psql -d mirror_node -U mirror_node
+DB_PASSWORD="$(kubectl get secrets -o yaml ${RELEASE}-passwords |ksd | yq '.stringData.HEDERA_MIRROR_REST_DB_PASSWORD')"
+kubectl run psql-util -it --rm --image=bitnami/postgresql:16 --env="PGPASSWORD=${DB_PASSWORD}" --command -- psql -h "${RELEASE}-citus-reads" -U mirror_rest -d mirror_node
 ```
+
+The Stackgres Admin UI can be [exposed](https://stackgres.io/doc/latest/administration/adminui/) to monitor and
+troubleshoot problems with Citus.
 
 A thread dump can be taken by sending a `QUIT` signal to the java process inside the container. The thread dump output
 will be visible via container logs.

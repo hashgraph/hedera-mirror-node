@@ -579,10 +579,9 @@ class NftRepositoryTest extends Web3IntegrationTest {
         domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
         domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
 
-        assertThat(nftRepository
-                        .nftBalanceByAccountIdTokenIdAndTimestamp(
-                                nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower() + 1)
-                        .get())
+        assertThat(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(
+                        nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower() + 1))
+                .get()
                 .isEqualTo(1L);
     }
 
@@ -596,10 +595,9 @@ class NftRepositoryTest extends Web3IntegrationTest {
         domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
         domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
 
-        assertThat(nftRepository
-                        .nftBalanceByAccountIdTokenIdAndTimestamp(
-                                nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower())
-                        .get())
+        assertThat(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(
+                        nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower()))
+                .get()
                 .isEqualTo(1L);
     }
 
@@ -613,11 +611,9 @@ class NftRepositoryTest extends Web3IntegrationTest {
         domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
         domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
 
-        assertThat(nftRepository
-                        .nftBalanceByAccountIdTokenIdAndTimestamp(
-                                nft.getAccountId().getId(), nft.getTokenId(), nft.getTimestampLower() - 1)
-                        .get())
-                .isZero();
+        assertThat(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(
+                        nft.getAccountId().getId(), nft.getTokenId(), nft.getTimestampLower() - 1))
+                .contains(0L);
     }
 
     @Test
@@ -631,10 +627,9 @@ class NftRepositoryTest extends Web3IntegrationTest {
         domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
         domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
 
-        assertThat(nftRepository
-                        .nftBalanceByAccountIdTokenIdAndTimestamp(
-                                nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower())
-                        .get())
+        assertThat(nftRepository.nftBalanceByAccountIdTokenIdAndTimestamp(
+                        nft2.getAccountId().getId(), nft2.getTokenId(), nft2.getTimestampLower()))
+                .get()
                 .isEqualTo(1L);
     }
 
@@ -671,13 +666,18 @@ class NftRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findNftTotalSupplyByTokenIdAndTimestampNftDeleted() {
-        var nft =
-                domainBuilder.nft().customize(n -> n.tokenId(1L).deleted(true)).persist();
-        var nft2 = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        var nft = domainBuilder.nft().customize(n -> n.tokenId(1L)).persist();
+        var nft2 = domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(1L).deleted(true).timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .persist();
         domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
 
         assertThat(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(nft2.getTokenId(), nft2.getTimestampLower()))
                 .isEqualTo(1L);
+        assertThat(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(
+                        nft2.getTokenId(), nft2.getTimestampLower() - 1))
+                .isEqualTo(2L);
     }
 
     @Test

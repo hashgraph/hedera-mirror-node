@@ -82,10 +82,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @CustomLog
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@RequiredArgsConstructor
 public class HistoricalFeature extends AbstractEstimateFeature {
     private final AccountClient accountClient;
     private final TokenClient tokenClient;

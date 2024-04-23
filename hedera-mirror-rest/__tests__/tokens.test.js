@@ -31,6 +31,7 @@ describe('token formatTokenRow tests', () => {
     symbol: 'YBTJBOAZ',
     token_id: '7',
     decimals: 10,
+    metadata: null,
     name: 'Token name',
     type: 'FUNGIBLE_COMMON',
   };
@@ -43,6 +44,7 @@ describe('token formatTokenRow tests', () => {
       key: '030303',
     },
     decimals: 10,
+    metadata: '',
     name: 'Token name',
     type: 'FUNGIBLE_COMMON',
   };
@@ -66,6 +68,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
         t.freeze_status,
         e.key,
         t.kyc_status,
+        t.metadata,
         t.name,
         t.symbol,
         t.token_id,
@@ -117,6 +120,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
             t.freeze_status,
             e.key,
             t.kyc_status,
+            t.metadata,
             t.name,
             t.symbol,
             t.token_id,
@@ -158,6 +162,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
         t.freeze_status,
         e.key,
         t.kyc_status,
+        t.metadata,
         t.name,
         t.symbol,
         t.token_id,
@@ -210,6 +215,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              t.freeze_status,
                              e.key,
                              t.kyc_status,
+                             t.metadata,
                              t.name,
                              t.symbol,
                              t.token_id,
@@ -264,6 +270,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              t.freeze_status,
                              e.key,
                              t.kyc_status,
+                             t.metadata,
                              t.name,
                              t.symbol,
                              t.token_id,
@@ -334,6 +341,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              t.freeze_status,
                              e.key,
                              t.kyc_status,
+                             t.metadata,
                              t.name,
                              t.symbol,
                              t.token_id,
@@ -397,7 +405,7 @@ const verifyExtractSqlFromTokenRequest = (
   expect(limit).toStrictEqual(expectedLimit);
 };
 
-describe('token formatNftHistoryRow', () => {
+describe('token formatNftTransactionHistoryRow', () => {
   const defaultRow = {
     consensus_timestamp: 123456000987654,
     nonce: 0,
@@ -469,7 +477,7 @@ describe('token formatNftHistoryRow', () => {
 
   for (const testSpec of testSpecs) {
     test(testSpec.name, () => {
-      expect(tokens.formatNftHistoryRow(testSpec.row)).toEqual(testSpec.expected);
+      expect(tokens.formatNftTransactionHistoryRow(testSpec.row)).toEqual(testSpec.expected);
     });
   }
 });
@@ -771,6 +779,7 @@ describe('token formatTokenInfoRow tests', () => {
     kyc_key: [2, 2, 2],
     fee_schedule_key: [6, 6, 6],
     freeze_key: [3, 3, 3],
+    metadata_key: null,
     pause_key: [7, 7, 7],
     pause_status: 'UNPAUSED',
     supply_key: [4, 4, 4],
@@ -789,6 +798,7 @@ describe('token formatTokenInfoRow tests', () => {
     max_supply: '9000000',
     supply_type: 'FINITE',
     memo: 'token.memo',
+    metadata: null,
     custom_fee: {
       created_timestamp: 10,
       fixed_fees: [
@@ -848,6 +858,8 @@ describe('token formatTokenInfoRow tests', () => {
     },
     max_supply: '9000000',
     memo: 'token.memo',
+    metadata: '',
+    metadata_key: null,
     modified_timestamp: '1603394416.676293000',
     name: 'Token name',
     pause_key: {
@@ -914,9 +926,39 @@ describe('token formatTokenInfoRow tests', () => {
     },
   };
 
+  const rowInputWithEmptyMetadata = {
+    ...rowInput,
+    metadata: [],
+  };
+
+  const rowInputWithMetadataAndKey = {
+    ...rowInput,
+    metadata: Uint8Array.of(1, 2, 3),
+    metadata_key: [8, 8, 8],
+  };
+
+  const expectedWithMetadataAndKey = {
+    ...expected,
+    metadata: '1,2,3',
+    metadata_key: {
+      _type: 'ProtobufEncoded',
+      key: '080808',
+    },
+  };
+
   test('Verify formatTokenRow', () => {
     const actual = tokens.formatTokenInfoRow(rowInput);
     expect(actual).toEqual(expected);
+  });
+
+  test('Verify formatTokenRowWithEmptyMetadata', () => {
+    const actual = tokens.formatTokenInfoRow(rowInputWithEmptyMetadata);
+    expect(actual).toEqual(expected);
+  });
+
+  test('Verify formatTokenRowWithMetadataAndKey', () => {
+    const actual = tokens.formatTokenInfoRow(rowInputWithMetadataAndKey);
+    expect(actual).toEqual(expectedWithMetadataAndKey);
   });
 });
 
@@ -1428,6 +1470,8 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    kyc_status,
                    max_supply,
                    e.memo,
+                   metadata,
+                   metadata_key,
                    lower(t.timestamp_range) as modified_timestamp,
                    name,
                    pause_key,

@@ -16,20 +16,34 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static com.hedera.mirror.restjava.common.Utils.parseId;
+import com.hedera.mirror.restjava.RestJavaProperties;
+import org.apache.commons.lang3.StringUtils;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import org.jooq.tools.StringUtils;
+public sealed interface EntityIdParameter
+        permits EntityIdNumParameter, EntityIdEvmAddressParameter, EntityIdAliasParameter {
 
-public record EntityIdParameter(EntityId value) {
-    public static final EntityIdParameter EMPTY = new EntityIdParameter(null);
+    Long DEFAULT_SHARD =
+            SpringApplicationContext.getBean(RestJavaProperties.class).getShard();
 
-    public static EntityIdParameter valueOf(String entityIdParam) {
+    long shard();
 
-        if (StringUtils.isBlank(entityIdParam)) {
-            return EMPTY;
+    long realm();
+
+    static EntityIdParameter valueOf(String id) {
+
+        if (StringUtils.isBlank(id)) {
+            throw new IllegalArgumentException("ID '%s' has an invalid format".formatted(id));
         }
 
-        return new EntityIdParameter(parseId(entityIdParam));
+        EntityIdParameter entityId;
+        if ((entityId = EntityIdNumParameter.valueOf(id)) != null) {
+            return entityId;
+        } else if ((entityId = EntityIdEvmAddressParameter.valueOf(id)) != null) {
+            return entityId;
+        } else if ((entityId = EntityIdAliasParameter.valueOf(id)) != null) {
+            return entityId;
+        } else {
+            throw new IllegalArgumentException("ID '%s' format is invalid".formatted(id));
+        }
     }
 }

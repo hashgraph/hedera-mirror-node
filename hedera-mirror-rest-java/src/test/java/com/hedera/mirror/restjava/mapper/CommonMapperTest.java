@@ -16,13 +16,13 @@
 
 package com.hedera.mirror.restjava.mapper;
 
-import static com.hedera.mirror.restjava.common.Constants.NANOS_PER_SECOND;
+import static com.hedera.mirror.restjava.mapper.CommonMapper.NANO_DIGITS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.TimestampRange;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
@@ -33,21 +33,23 @@ class CommonMapperTest {
     @Test
     void mapEntityId() {
         var entityId = com.hedera.mirror.common.domain.entity.EntityId.of("1.2.3");
-        assertNull(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null));
+        assertThat(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null))
+                .isNull();
         assertThat(commonMapper.mapEntityId(entityId))
                 .isEqualTo(EntityId.of(1L, 2L, 3L).toString());
     }
 
     @Test
     void mapEntityIdLong() {
-        assertNull(commonMapper.mapEntityId((Long) null));
-        assertNull(commonMapper.mapEntityId(0L));
+        assertThat(commonMapper.mapEntityId((Long) null)).isNull();
+        assertThat(commonMapper.mapEntityId(0L)).isNull();
     }
 
     @Test
     void mapRange() {
         var range = new TimestampRange();
         var now = System.nanoTime();
+        var timestampString = StringUtils.leftPad(String.valueOf(now), 10, '0');
 
         // test1
         assertThat(commonMapper.mapRange(null)).isNull();
@@ -57,7 +59,8 @@ class CommonMapperTest {
         assertThat(commonMapper.mapRange(Range.atLeast(0L)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
-        range.setTo(Math.floorDiv(now, NANOS_PER_SECOND) + "." + Math.floorMod(now, NANOS_PER_SECOND));
+        range.setTo(timestampString.substring(0, timestampString.length() - NANO_DIGITS) + "."
+                + timestampString.substring(timestampString.length() - NANO_DIGITS));
         assertThat(commonMapper.mapRange(Range.openClosed(0L, now)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);

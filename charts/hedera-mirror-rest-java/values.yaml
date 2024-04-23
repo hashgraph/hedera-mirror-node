@@ -78,8 +78,8 @@ ingress:
   hosts:
     - host: ""
       paths:
-        # the rest of /api/v1/* will still be handled by the REST API logic, except for this one path
-        - "/api/v1/dummy"
+        # the rest of /api/v1/* is still handled by the Node.js based REST API logic, except for these paths
+        - "/api/v1/accounts/{id}/allowances/nfts"
   tls:
     enabled: false
     secretName: ""
@@ -257,8 +257,8 @@ resources:
     cpu: 2
     memory: 2048Mi
   requests:
-    cpu: 100m
-    memory: 128Mi
+    cpu: 1
+    memory: 1024Mi
 
 revisionHistoryLimit: 3
 
@@ -292,7 +292,7 @@ test:
   image:
     pullPolicy: IfNotPresent
     repository: postman/newman
-    tag: 6.1.0-alpine
+    tag: 6.1.1-alpine
   postman: ""  # Custom postman.json in base64 encoding
 
 tolerations: []

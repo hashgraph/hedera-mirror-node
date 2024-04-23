@@ -23,8 +23,8 @@ repositories {
 
 dependencies {
     val dockerJavaVersion = "3.3.6"
-    val flywayVersion = "10.10.0"
-    val jooqVersion = "3.19.6"
+    val flywayVersion = "10.11.1"
+    val jooqVersion = "3.19.7"
 
     // Add docker-java dependencies before gradle-docker-plugin to avoid the docker-java jars
     // embedded in the plugin being used by testcontainers-postgresql
@@ -38,7 +38,7 @@ dependencies {
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.4")
-    implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.5.1")
+    implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.6.1")
     implementation("gradle.plugin.org.flywaydb:gradle-plugin-publishing:$flywayVersion")
     implementation("io.freefair.gradle:lombok-plugin:8.6")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.4")
@@ -47,10 +47,10 @@ dependencies {
     implementation("org.gradle:test-retry-gradle-plugin:1.5.8")
     implementation("org.jooq:jooq-codegen-gradle:$jooqVersion")
     implementation("org.jooq:jooq-meta:$jooqVersion")
-    implementation("org.openapitools:openapi-generator-gradle-plugin:7.4.0")
-    implementation("org.owasp:dependency-check-gradle:8.4.3")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.4.1.3373")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.4")
+    implementation("org.openapitools:openapi-generator-gradle-plugin:7.5.0")
+    implementation("org.owasp:dependency-check-gradle:9.1.0")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.0.0.4638")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.5")
     implementation("org.testcontainers:postgresql:1.19.7")
 }
 

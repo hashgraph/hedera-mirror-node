@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.converter;
 
-import java.io.Serial;
+import jakarta.inject.Named;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.data.domain.Sort;
 
-@SuppressWarnings("java:S110")
-public class MismatchedTypeException extends RestJavaException {
-
-    private static final String MESSAGE = "Expected type %s but got %s";
-
-    @Serial
-    private static final long serialVersionUID = -1216734672367851011L;
-
-    public MismatchedTypeException(Class<?> expected, Class<?> actual) {
-        super(MESSAGE.formatted(expected.getName(), actual.getName()));
+@Named
+@ConfigurationPropertiesBinding
+public class OrderConverter implements Converter<String, Sort.Direction> {
+    @Override
+    public Sort.Direction convert(String order) {
+        return Sort.Direction.fromString(order);
     }
 }

@@ -29,6 +29,7 @@ dependencies {
     implementation("commons-io:commons-io")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
+    implementation("io.projectreactor:reactor-core")
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("net.java.dev.jna:jna")
     implementation("org.apache.commons:commons-compress")

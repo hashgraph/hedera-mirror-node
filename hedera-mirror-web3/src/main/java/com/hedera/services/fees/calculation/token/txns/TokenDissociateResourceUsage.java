@@ -47,7 +47,7 @@ public class TokenDissociateResourceUsage extends AbstractTokenResourceUsage imp
     }
 
     @Override
-    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo) throws Exception {
+    public FeeData usageGiven(final TransactionBody txn, final SigValueObj svo) {
         final var op = txn.getTokenDissociate();
         final var account = store.getAccount(EntityIdUtils.asTypedEvmAddress(op.getAccount()), OnMissing.DONT_THROW);
         if (account == null) {

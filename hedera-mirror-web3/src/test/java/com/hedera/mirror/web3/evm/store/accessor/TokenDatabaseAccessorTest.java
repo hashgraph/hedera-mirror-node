@@ -22,7 +22,10 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -150,8 +153,13 @@ class TokenDatabaseAccessorTest {
         when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
         when(customFeeDatabaseAccessor.get(entity.getId(), Optional.empty())).thenReturn(Optional.of(customFees));
 
+        tokenDatabaseAccessor.get(ADDRESS, Optional.empty());
+
+        verify(customFeeDatabaseAccessor, never()).get(any(), any());
+
         assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty()))
                 .hasValueSatisfying(token -> assertThat(token.getCustomFees()).isEqualTo(customFees));
+        verify(customFeeDatabaseAccessor).get(any(), any());
     }
 
     @Test
@@ -179,10 +187,15 @@ class TokenDatabaseAccessorTest {
                         databaseToken.getTreasuryAccountId().getId()))
                 .thenReturn(Optional.of(treasuryEntity));
 
+        verify(entityRepository, never()).findByIdAndDeletedIsFalse(anyLong());
+
         assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty()))
                 .hasValueSatisfying(token -> assertThat(token.getTreasury())
                         .returns(new Id(11, 12, 13), Account::getId)
                         .returns(14L, Account::getBalance));
+
+        verify(entityRepository)
+                .findByIdAndDeletedIsFalse(databaseToken.getTreasuryAccountId().getId());
     }
 
     @Test
@@ -198,14 +211,46 @@ class TokenDatabaseAccessorTest {
         when(entityRepository.findActiveByIdAndTimestamp(treasuryEntity.getId(), timestamp.get()))
                 .thenReturn(Optional.of(treasuryEntity));
 
+        tokenDatabaseAccessor.get(ADDRESS, timestamp);
+
+        verify(entityRepository, never()).findActiveByIdAndTimestamp(anyLong(), anyLong());
+
         assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(token -> assertThat(token.getTreasury())
                         .returns(new Id(11, 12, 13), Account::getId)
                         .returns(14L, Account::getBalance));
+
+        verify(entityRepository).findActiveByIdAndTimestamp(treasuryEntity.getId(), timestamp.get());
     }
 
     @Test
-    void getAutoRenewHistorical() {
+    void getAutoRenewAccount() {
+        setupToken(Optional.empty());
+
+        Entity autorenewEntity = mock(Entity.class);
+        when(entityDatabaseAccessor.get(ADDRESS, Optional.empty())).thenReturn(Optional.ofNullable(entity));
+        entity.setAutoRenewAccountId(10L);
+        when(autorenewEntity.getShard()).thenReturn(11L);
+        when(autorenewEntity.getRealm()).thenReturn(12L);
+        when(autorenewEntity.getNum()).thenReturn(13L);
+        when(autorenewEntity.getBalance()).thenReturn(14L);
+        when(entityRepository.findByIdAndDeletedIsFalse(entity.getAutoRenewAccountId()))
+                .thenReturn(Optional.of(autorenewEntity));
+
+        tokenDatabaseAccessor.get(ADDRESS, Optional.empty());
+
+        verify(entityRepository, never()).findByIdAndDeletedIsFalse(anyLong());
+
+        assertThat(tokenDatabaseAccessor.get(ADDRESS, Optional.empty()))
+                .hasValueSatisfying(token -> assertThat(token.getAutoRenewAccount())
+                        .returns(new Id(11, 12, 13), Account::getId)
+                        .returns(14L, Account::getBalance));
+
+        verify(entityRepository).findByIdAndDeletedIsFalse(entity.getAutoRenewAccountId());
+    }
+
+    @Test
+    void getAutoRenewAccountHistorical() {
         setupToken(timestamp);
 
         Entity autorenewEntity = mock(Entity.class);
@@ -215,16 +260,19 @@ class TokenDatabaseAccessorTest {
         when(autorenewEntity.getRealm()).thenReturn(12L);
         when(autorenewEntity.getNum()).thenReturn(13L);
         when(autorenewEntity.getBalance()).thenReturn(14L);
-        when(entityRepository.findActiveByIdAndTimestamp(
-                        databaseToken.getTreasuryAccountId().getId(), timestamp.get()))
-                .thenReturn(Optional.of(autorenewEntity));
         when(entityRepository.findActiveByIdAndTimestamp(entity.getAutoRenewAccountId(), timestamp.get()))
                 .thenReturn(Optional.of(autorenewEntity));
+
+        tokenDatabaseAccessor.get(ADDRESS, timestamp);
+
+        verify(entityRepository, never()).findActiveByIdAndTimestamp(anyLong(), anyLong());
 
         assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(token -> assertThat(token.getAutoRenewAccount())
                         .returns(new Id(11, 12, 13), Account::getId)
                         .returns(14L, Account::getBalance));
+
+        verify(entityRepository).findActiveByIdAndTimestamp(entity.getAutoRenewAccountId(), timestamp.get());
     }
 
     @Test
@@ -241,8 +289,15 @@ class TokenDatabaseAccessorTest {
         when(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get()))
                 .thenReturn(historicalSupply);
 
+        tokenDatabaseAccessor.get(ADDRESS, timestamp);
+
+        verify(tokenRepository, never()).findFungibleTotalSupplyByTokenIdAndTimestamp(anyLong(), anyLong());
+
         assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(token -> assertThat(token.getTotalSupply()).isEqualTo(historicalSupply));
+
+        verify(tokenRepository)
+                .findFungibleTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get());
     }
 
     @Test
@@ -257,8 +312,12 @@ class TokenDatabaseAccessorTest {
         when(nftRepository.findNftTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get()))
                 .thenReturn(historicalSupply);
 
+        verify(nftRepository, never()).findNftTotalSupplyByTokenIdAndTimestamp(anyLong(), anyLong());
+
         assertThat(tokenDatabaseAccessor.get(ADDRESS, timestamp))
                 .hasValueSatisfying(token -> assertThat(token.getTotalSupply()).isEqualTo(historicalSupply));
+
+        verify(nftRepository).findNftTotalSupplyByTokenIdAndTimestamp(databaseToken.getTokenId(), timestamp.get());
     }
 
     @Test
@@ -277,11 +336,11 @@ class TokenDatabaseAccessorTest {
                         .returns(emptyList(), Token::removedUniqueTokens)
                         .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
                         .returns(false, Token::hasChangedSupply)
-                        .returns(null, Token::getTreasury)
-                        .returns(null, Token::getAutoRenewAccount)
+                        .returns(Account.getEmptyAccount(), Token::getTreasury)
+                        .returns(Account.getEmptyAccount(), Token::getAutoRenewAccount)
                         .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
                         .returns(false, Token::isNew)
-                        .returns(null, Token::getTreasury)
+                        .returns(Account.getEmptyAccount(), Token::getTreasury)
                         .returns(0L, Token::getLastUsedSerialNumber)
                         .returns(emptyList(), Token::getCustomFees));
     }
@@ -300,11 +359,11 @@ class TokenDatabaseAccessorTest {
                 .returns(emptyList(), Token::removedUniqueTokens)
                 .returns(Collections.emptyMap(), Token::getLoadedUniqueTokens)
                 .returns(false, Token::hasChangedSupply)
-                .returns(null, Token::getTreasury)
-                .returns(null, Token::getAutoRenewAccount)
+                .returns(Account.getEmptyAccount(), Token::getTreasury)
+                .returns(Account.getEmptyAccount(), Token::getAutoRenewAccount)
                 .returns(false, Token::isBelievedToHaveBeenAutoRemoved)
                 .returns(false, Token::isNew)
-                .returns(null, Token::getTreasury)
+                .returns(Account.getEmptyAccount(), Token::getTreasury)
                 .returns(0L, Token::getLastUsedSerialNumber)
                 .returns(emptyList(), Token::getCustomFees));
     }
