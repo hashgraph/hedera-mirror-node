@@ -277,6 +277,18 @@ Following are the prerequisites and steps for migrating V1 data to V2.
 7. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
 8. Update the mirror node configuration to point to the new Citus DB and start it.
 
+### Migration notes
+1. It is recommended to run the migration script in a screen/tmux session and pipe stderr and stdout to separate log files.
+2. The migration script runs in two parts. The first part of the migration will migrate all tables except for `crypto_transfer, transaction, and topic_message. The second part  attempts to bookmark its place to resume where it left off in case of a failure. However, the bookmark process follows behind the batch process and there may be a committed batch without a bookmark. You must verify the saved values and update the async_migration_status table if incorrect before resuming the migration
+
 ## Citus Backup and Restore
 
 Please refer to this [document](/docs/database/citus.md) for the steps.
+
+with topic_message_positions as (
+select min(t.consensus_timestamp), b.the_table, b.cursor_id 
+from async_migration_status b
+join topic_message t on t.consensus_timestamp < COALESCE(b.last_processed_timestamp, upper(b.cursor_range)) and t.consensus_timestamp > lower(b.cursor_range)
+where b.the_table = 'topic_message' group by b.the_table, b.cursor_id)
+
+
