@@ -107,6 +107,7 @@ class ContractControllerTest {
     void estimateGas(String to) throws Exception {
         final var request = request();
         request.setEstimate(true);
+        request.setValue(0);
         request.setTo(to);
         contractCall(request).andExpect(status().isOk());
     }
@@ -135,7 +136,6 @@ class ContractControllerTest {
         contractCall(request()).andExpect(status().isTooManyRequests());
     }
 
-    @NullAndEmptySource
     @ValueSource(
             strings = {
                 " ",
@@ -149,7 +149,17 @@ class ContractControllerTest {
     @ParameterizedTest
     void callInvalidTo(String to) throws Exception {
         final var request = request();
+        request.setValue(0);
         request.setTo(to);
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(new StringContains("to field")));
+    }
+
+    @Test
+    void callInvalidToDueToTransfer() throws Exception {
+        final var request = request();
+        request.setTo(null);
         contractCall(request)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(new StringContains("to field")));
@@ -218,6 +228,7 @@ class ContractControllerTest {
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
         request.setTo(null);
+        request.setValue(0);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
