@@ -39,6 +39,7 @@ import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TokenUnfreezeTransaction;
 import com.hedera.hashgraph.sdk.TokenUnpauseTransaction;
+import com.hedera.hashgraph.sdk.TokenUpdateNftsTransaction;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 import com.hedera.hashgraph.sdk.TransferTransaction;
@@ -55,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -65,6 +67,7 @@ public class TokenClient extends AbstractNetworkClient {
 
     private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TokenAccount, NetworkTransactionResponse> associations = new ConcurrentHashMap<>();
+    private PrivateKey metadataKey = PrivateKey.generateED25519();
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -263,6 +266,14 @@ public class TokenClient extends AbstractNetworkClient {
                 maxSupply,
                 customFees);
 
+        // TODO: Only for NFTs right now. Current state of SDK does not allow for FT token metadata
+        // or metadata_key.
+        tokenCreateTransaction.setMetadataKey(metadataKey);
+        log.info(
+                "Creating token with metadata key: {} [{}]",
+                metadataKey.getPublicKey(),
+                Hex.encodeHexString(metadataKey.getPublicKey().toBytes()));
+
         var keyList = KeyList.of(treasuryAccount.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, keyList);
         var tokenId = response.getReceipt().tokenId;
@@ -319,6 +330,21 @@ public class TokenClient extends AbstractNetworkClient {
 
         var response = executeTransactionAndRetrieveReceipt(tokenMintTransaction);
         log.info("Minted {} tokens to {} via {}", amount, tokenId, response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse updateNftMetadata(TokenId tokenId, List<Long> serialNumbers, byte[] metadata) {
+        var tokenUpdateNftsTransaction = new TokenUpdateNftsTransaction()
+                .setTokenId(tokenId)
+                .setSerials(serialNumbers)
+                .setMetadata(metadata);
+
+        var response = executeTransactionAndRetrieveReceipt(tokenUpdateNftsTransaction, KeyList.of(metadataKey));
+        log.info(
+                "Updated NFT metadata on {} NFTs for token {} via {}",
+                serialNumbers.size(),
+                tokenId,
+                response.getTransactionId());
         return response;
     }
 
@@ -477,6 +503,25 @@ public class TokenClient extends AbstractNetworkClient {
 
         var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
         log.info("Updated token {} with new symbol '{}' via {}", tokenId, newSymbol, response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse updateTokenMetadataKey(TokenId tokenId, ExpandedAccountId expandedAccountId) {
+        PublicKey publicKey = expandedAccountId.getPublicKey();
+        metadataKey = PrivateKey.generateECDSA();
+
+        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
+                .setAdminKey(publicKey)
+                .setMetadataKey(metadataKey)
+                .setTokenId(tokenId);
+
+        var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
+        log.info(
+                "Updated token {} with new metadata key {} [{}] via {}",
+                tokenId,
+                metadataKey.getPublicKey(),
+                Hex.encodeHexString(metadataKey.getPublicKey().toBytes()),
+                response.getTransactionId());
         return response;
     }
 
