@@ -42,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
 import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
@@ -123,22 +124,24 @@ public abstract class AbstractAutoCreationLogic {
         }
 
         final var newId = ids.getNewAccountId();
+        final Supplier<Long> zeroLongSupplier = () -> 0L;
+        final Supplier<Integer> zeroIntegerSupplier = () -> 0;
         final var account = new Account(
                 alias,
                 0L,
                 Id.fromGrpcAccount(newId),
                 0L,
-                () -> 0L,
+                zeroLongSupplier,
                 false,
-                () -> 0L,
+                zeroLongSupplier,
                 0L,
                 null,
                 maxAutoAssociations,
                 Collections::emptySortedMap,
                 Collections::emptySortedMap,
                 Collections::emptySortedSet,
-                () -> 0,
-                () -> 0,
+                zeroIntegerSupplier,
+                zeroIntegerSupplier,
                 0,
                 0L,
                 false,
