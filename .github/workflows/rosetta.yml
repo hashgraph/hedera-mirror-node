@@ -1,6 +1,5 @@
 name: Rosetta API
 on:
-  workflow_dispatch:
   schedule:
     - cron: "0 1 * * *" # Daily at 1:00 AM
   push:
