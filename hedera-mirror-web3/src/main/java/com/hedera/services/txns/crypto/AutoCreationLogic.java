@@ -16,11 +16,6 @@
 
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
-import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
-
-import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -28,12 +23,12 @@ import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
-import com.hedera.services.store.models.Id;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-import java.util.Map;
-import java.util.Set;
+import static com.hedera.services.utils.EntityIdUtils.isAliasSizeGreaterThanEvmAddress;
+import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 
 /**
  * Responsible for creating accounts during a crypto transfer that sends hbar to a previously unused alias.
@@ -77,10 +72,5 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
             // if the alias is derived from ECDSA public key
             mirrorEvmContractAliases.link(Address.wrap(Bytes.wrap(alias.toByteArray())), address);
         }
-    }
-
-    @VisibleForTesting
-    public Map<ByteString, Set<Id>> getTokenAliasMap() {
-        return tokenAliasMap;
     }
 }

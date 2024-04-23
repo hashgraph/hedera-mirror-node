@@ -16,13 +16,6 @@
 
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -33,13 +26,30 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.*;
-
-import java.util.*;
-
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.synthAccessorFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * Copied Logic type from hedera-services. Differences with the original:
  * 1. Use abstraction for the state by introducing {@link Store} interface
@@ -56,7 +66,6 @@ public abstract class AbstractAutoCreationLogic {
     private final FeeCalculator feeCalculator;
     private final EvmProperties evmProperties;
     private final SyntheticTxnFactory syntheticTxnFactory;
-    protected final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
 
     protected AbstractAutoCreationLogic(
             final FeeCalculator feeCalculator,
@@ -98,7 +107,7 @@ public abstract class AbstractAutoCreationLogic {
         // checks tokenAliasMap if the change consists an alias that is already used in previous
         // iteration of the token transfer list. This map is used to count number of
         // maxAutoAssociations needed on auto created account
-        analyzeTokenTransferCreations(changes);
+        final Map<ByteString, Set<Id>> tokenAliasMap = analyzeTokenTransferCreations(changes);
         final var maxAutoAssociations = tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         final var isAliasEVMAddress = alias.size() == EVM_ADDRESS_SIZE;
         if (isAliasEVMAddress) {
@@ -124,7 +133,7 @@ public abstract class AbstractAutoCreationLogic {
                 () -> 0L,
                 0L,
                 null,
-                0,
+                maxAutoAssociations,
                 Collections::emptySortedMap,
                 Collections::emptySortedMap,
                 Collections::emptySortedSet,
@@ -166,7 +175,8 @@ public abstract class AbstractAutoCreationLogic {
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    private void analyzeTokenTransferCreations(final List<BalanceChange> changes) {
+    private Map<ByteString, Set<Id>> analyzeTokenTransferCreations(final List<BalanceChange> changes) {
+        final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
         for (final var change : changes) {
             if (change.isForHbar()) {
                 continue;
@@ -183,12 +193,6 @@ public abstract class AbstractAutoCreationLogic {
                 }
             }
         }
-    }
-
-    /**
-     * Clears any state related to provisionally created accounts.
-     */
-    public void reset() {
-        tokenAliasMap.clear();
+        return tokenAliasMap;
     }
 }
