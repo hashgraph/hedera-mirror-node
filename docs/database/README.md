@@ -268,27 +268,17 @@ Following are the prerequisites and steps for migrating V1 data to V2.
 
 1. Create a Citus cluster with enough resources (Disk, CPU and memory). For GKE, an e2-custom-6-32768 can be used.
 2. Ensure the source and target schemas are compatible by deploying the same version to both.
-3. Create a VM with a disk big enough to contain the source data and checkout the source code to it.
-4. Populate correct values for the source and target configuration in the
+3. Populate correct values for the source and target configuration in the
    [migration.config](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.config).
-5. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and
+4. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and
    update it in the `FLYWAY_URL` field in the `migration.config` file. The default is set to the linux version.
-6. Stop the [Importer](/docs/importer/README.md) process.
-7. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
-8. Update the mirror node configuration to point to the new Citus DB and start it.
+5. Stop the [Importer](/docs/importer/README.md) process. 
+6. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script. 
+7. Update the mirror node configuration to point to the new Citus DB and start it.
 
 ### Migration notes
-1. It is recommended to run the migration script in a screen/tmux session and pipe stderr and stdout to separate log files.
-2. The migration script runs in two parts. The first part of the migration will migrate all tables except for `crypto_transfer, transaction, and topic_message. The second part  attempts to bookmark its place to resume where it left off in case of a failure. However, the bookmark process follows behind the batch process and there may be a committed batch without a bookmark. You must verify the saved values and update the async_migration_status table if incorrect before resuming the migration
+1. It is recommended to run the migration script in a screen/tmux session and pipe stderr and stdout to separate locations.
 
 ## Citus Backup and Restore
 
 Please refer to this [document](/docs/database/citus.md) for the steps.
-
-with topic_message_positions as (
-select min(t.consensus_timestamp), b.the_table, b.cursor_id 
-from async_migration_status b
-join topic_message t on t.consensus_timestamp < COALESCE(b.last_processed_timestamp, upper(b.cursor_range)) and t.consensus_timestamp > lower(b.cursor_range)
-where b.the_table = 'topic_message' group by b.the_table, b.cursor_id)
-
-

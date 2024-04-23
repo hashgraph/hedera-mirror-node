@@ -6,11 +6,6 @@ log() {
   echo "$(date --iso-8601=seconds) ${1}"
 }
 
-# Open pipe to issue commands to the source database from a session
-sourcePipe() {
-  PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q --csv -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}"
-}
-
 # Query the source database and return the response
 querySource() {
   local query="${1}"
@@ -21,7 +16,7 @@ querySource() {
 # Query the target database and return the response
 queryTarget() {
   local query="${1}"
-  local result=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" -c "${query}" | xargs)
+  local result=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" --single-transaction -c "${query}" | xargs)
   echo "${result}"
 }
 
@@ -30,11 +25,17 @@ die() {
   exit 1
 }
 
-readFifo() {
-  while (true); do
-    # Wait for the next line of input
-    cat "${1}"
-  done
+handlePipeError() {
+  log "ERROR: pid: $! on $$ SIGPIPE received on pipe $!{EPIPE} msg: ${1}"
+  exit 1
+}
+
+handleExit() {
+  local error_code=$?
+  local error_line="${BASH_LINENO[*]}"
+  local error_command=$BASH_COMMAND
+  log "ERROR: pid: $! on $$ Received non zero exit code: (${error_code}) ${1} at ${error_line}: ${error_command}"
+  exit 1
 }
 
 targetTableExists() {
@@ -46,7 +47,7 @@ targetTableExists() {
 
 getColumns() {
   local table="${1}"
-  local query="select string_agg(concat('mt.', column_name), ', ' order by ordinal_position) from information_schema.columns where table_schema = '${SOURCE_DB_SCHEMA}' and table_name = '${table}';"
+  local query="select string_agg(concat('', column_name), ', ' order by ordinal_position) from information_schema.columns where table_schema = '${SOURCE_DB_SCHEMA}' and table_name = '${table}';"
   local columns
   columns=$(querySource "${query}")
   columns="${columns#"${columns%%[![:space:]]*}"}" # Trim leading whitespace
@@ -67,21 +68,20 @@ insertCursors() {
   the_table                varchar(100),
   cursor_id                int,
   cursor_range             int8range,
-  last_processed_timestamp bigint,
-  last_processed_entity    bigint);"
-  queryTarget "${tableDDL}"
+  processed_timestamp timestamptz);"
 
   local conditions
   getCursorConditions conditions
-  local cursorId=1
+  log "The cursor conditions are: ${conditions[*]}"
+  cursorId=1
+  local statements=("${tableDDL}")
   for value in "${conditions[@]}"; do
     for table in $(echo "${ASYNC_TABLES[@]}" | tr "," "\n"); do
-      local insertSql="insert into async_migration_status (the_table, cursor_id, cursor_range) values (${table}, ${cursorId}, ${value});"
-      log "Inserting cursor sql: ${insertSql}"
-      queryTarget "${insertSql}"
+      statements+=("insert into async_migration_status (the_table, cursor_id, cursor_range) values ('${table}', ${cursorId}, ${value});")
     done
     cursorId=$((cursorId + 1))
   done
+  queryTarget "${statements[*]}"
 }
 
 getCursorConditions() {
@@ -94,45 +94,116 @@ getCursorConditions() {
     from record_file_stats
   )
   select
-  (100 * (1.0 * rfs.record_count) / tr.total_record_count) as pct_of_total,
+  100 * ((1.0 * rfs.record_count) / tr.total_record_count) as pct_of_total,
   (extract(epoch from rfs.start_timestamp) * 1000000000)::bigint as lower_bound,
-  (extract(epoch from (rfs.start_timestamp + INTERVAL '1 month')) * 1000000000)::bigint as upper_bound
+  LEAST(${MAX_TIMESTAMP}, (extract(epoch from (rfs.start_timestamp + INTERVAL '1 month')) * 1000000000)::bigint) as upper_bound
   from record_file_stats rfs, total_records tr
   order by 3 desc
   "
 
   local upperBound=$MAX_TIMESTAMP
-  local pctPerCursor=$((100 / CONCURRENT_CURSORS_PER_TABLE))
+  local pctPerCursor=$(echo "scale=8; 100 / ${ASYNC_TABLE_SPLITS}" | bc)
   local totalPct=0
   local -n cursors=$1 # Init array to hold cursor definitions
-
   local stats=$(PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q --csv -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}" -c "${query}")
-  while IFS="," read -r pct_of_total lower_bound upper_bound; do
-    local newTotal=$(echo "(${totalPct} + ${pct_of_total})" | bc)
-    if (($(echo "${newTotal} < ${pctPerCursor}" | bc))); then
-      totalPct=$newTotal
-      upperBound=$((upperBound > upper_bound ? upperBound : upper_bound))
-    else
-      difference=$(echo "${newTotal} - ${pctPerCursor}" | bc)
-      groupRange=$((upper_bound - lower_bound))
-      cursorLowerBound=$(echo "${upper_bound} - ((100 - ${difference}) / 100) * ${groupRange}" | bc)
-      cursors+=("'(${cursorLowerBound}, ${upperBound}]'")
 
+  while IFS="," read -r pct_of_total lower_bound upper_bound; do
+    upperBound=$((upper_bound > upperBound ? upper_bound : upperBound))
+    local groupRange=$((upperBound - lower_bound))
+    local rangeToTake=$(echo "scale=0; ${pctPerCursor} * ${groupRange}" | bc)
+    totalPct=$(echo "(${totalPct} + ${pct_of_total})" | bc)
+    while (($(echo "${totalPct} >= ${pctPerCursor}" | bc) )); do
+      totalPct=$(echo "${totalPct} - ${pctPerCursor}" | bc)
+      cursorLowerBound=$(echo "scale=0; (${upperBound} - ${rangeToTake}) / 1" | bc)
+      cursors+=("int8Range(${cursorLowerBound},${upperBound},'(]'")
       upperBound=$cursorLowerBound
-      totalPct=$difference
-      if (($(echo "(${#cursors[@]} + 1) == ${CONCURRENT_CURSORS_PER_TABLE}" | bc))); then
-        cursors+=("'(,${cursorLowerBound}]'")
-        break
-      fi
-    fi
-  done <<<"${stats}"
+    done
+  done <<< "${stats}"
+
+  if (( $(echo "${totalPct} > 0" | bc) )); then
+    cursors+=("int8Range(null,${upperBound}, '(]'")
+  fi
 }
 
 migrateTableBinary() {
   local table="${1}"
-  local maxTimestamp=${MAX_TIMESTAMP:-$2}
+  local columns="${2}"
+
+  local has_data=$(queryTarget "select exists (select * from ${table}  limit 1)")
+  if [[ "${has_data}" = "t" ]]; then
+    log "Skipping '${table}' table since it contains existing data"
+    return
+  fi
+
+  if [[ "${table}" != "topic_message" && "${columns}" =~ $TS_COLUMN_REGEX ]]; then
+    where="where consensus_timestamp \<= ${MAX_TIMESTAMP}"
+  # handle address book.
+  elif [[ "${columns}" =~ \<consensus_timestamp_start\> ]]; then
+    where="where consensus_timestamp_end \<= ${MAX_TIMESTAMP}"
+  fi
+
+  log "Starting to copy '${table}' table with sql: \\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
+
+  queryTarget "\\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
+
+  log "Copied '${table}' table in ${SECONDS}s"
+}
+
+migrateTableAsyncBinary() {
+  local table="${1}"
+  local columns="${2}"
+  local tmpDir="${3}"
+
+  if ! [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
+    log "ERROR: Table ${table} does not have a timestamp column and can not be migrated asynchronously."
+    exit 1
+  fi
+
+  local cursorQuery="SELECT cursor_id, lower(cursor_range), upper(cursor_range) FROM async_migration_status WHERE the_table = '${table}' and processed_timestamp IS NULL ORDER BY upper(cursor_range) desc;"
+  local tableCursors=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" -c "${cursorQuery}")
+
+  while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound; do
+    ACTIVE_COPIES=$(find . -maxdepth 1 -name "process-${table}*" -printf '.' | wc -m)
+    while [[ "${ACTIVE_COPIES}" -ge ${CONCURRENT_COPIES_PER_TABLE} ]]; do
+      sleep 30
+      ACTIVE_COPIES=$(find . -maxdepth 1 -name "process-${table}*" -printf '.' | wc -m)
+    done
+
+    if [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
+      if [[ -z "${cursor_lower_bound}" ]]; then
+        where="where consensus_timestamp \<= ${cursor_upper_bound}"
+      else
+        where="where consensus_timestamp \<= ${cursor_upper_bound} and consensus_timestamp \> ${cursor_lower_bound}"
+      fi
+    fi
+
+    log "Starting to copy '${table}' table with sql:${cursorDef}"
+
+    local processMarker="${tmpDir}/process-${table}-$(uuidgen)"
+    touch "${processMarker}"
+
+    local cursorDef="\\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
+    local bookmarkSql="update async_migration_status set processed_timestamp=now() where the_table='${table}' and cursor_id=${cursor_id};"
+    queryTarget "${cursorDef} ${bookmarkSql}" && rm "${processMarker}" &
+
+    log "Created cursor with definition: ${cursorDef} pid $!"
+  done <<<"${tableCursors}"
+
+  wait
+  log "Copied '${table}' table in ${SECONDS}s"
+  jobs
+  popd || die "Couldn't change directory back to the original directory"
+  rm -r "${tmpDir}"
+}
+
+migrateTable() {
+  local table="${1}"
+  local tmpDir="/tmp/migrate-${table}-$$"
+  mkdir -m 700 "${tmpDir}" || die "Couldn't make safe tmp ${tmpDir}"
+  pushd "${tmpDir}" || die "Couldn't change directory to tmp ${tmpDir}"
 
   trap "handlePipeError 'for table ${table} (BINARY)'" SIGPIPE
+  trap "handleExit 'for table ${table} (BINARY)'" ERR
 
   local tableExists="f"
   tableExists=$(targetTableExists "${table}")
@@ -141,210 +212,26 @@ migrateTableBinary() {
     return
   fi
 
-  local has_data=$(queryTarget "select exists (select * from ${table}  limit 1)")
-  if [[ "${has_data}" = "t" ]]; then
-    log "Skipping '${table}' table since it contains existing data"
-    return
-  fi
+  cat >querySource.sh <<EOF
+#!/usr/bin/env bash
+PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}"
+EOF
+  chmod +x querySource.sh
 
   local columns
   columns=$(getColumns "${table}")
 
-  if [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
-    where="where consensus_timestamp \<= ${maxTimestamp}"
-  elif [[ "${columns}" =~ \<consensus_timestamp_start\> ]]; then
-    where="where consensus_timestamp \<= ${maxTimestamp} and type=27"
-  fi
+  log "Comparing ${ASYNC_TABLES} to ${table}"
 
-  log "Starting to copy '${table}' table with sql: \\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
-
-  queryTarget "\\copy ${table}(${columns//mt./}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} mt ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
-
-  log "Copied '${table}' table in ${SECONDS}s"
-}
-
-handlePipeError() {
-  log "SIGPIPE received for pid $$ on pipe $!{EPIPE} msg: ${1}"
-  exit 1
-}
-
-handleExit() {
-  local error_code=$?
-  local error_line="${BASH_LINENO[*]}"
-  local error_command=$BASH_COMMAND
-  log "pid: $! on $$ Received non zero exit code: (${error_code}) ${1} at ${error_line}: ${error_command}"
-  exit 1
-}
-
-executeBookmark() {
-  local count="${1}"
-  local bookMarkFile="${outputFile}-bookmark"
-  local bookMarkFileTmp="${bookMarkFile}.tmp"
-  mkfifo "${bookMarkFile}"
-  echo "\o ${bookMarkFile}" >"${source}"
-
-  cat "${bookMarkFile}" >"${bookMarkFileTmp}" &
-  echo "fetch 1 from crsr;" >"${source}"
-  log "Waiting for bookmark for batch ${count} on ${table} for cursorId ${cursorId}"
-  echo "\o /dev/null" >"${source}"
-  wait "$!" # batch call is issued first. Wait here on bookmark will ensure batch copy and bookmark has already completed
-
-  rm "${bookMarkFile}"
-  local row
-  row=$(<"${bookMarkFileTmp}")
-  rm "${bookMarkFileTmp}"
-
-  local entityIdColumn
-
-  if [[ "${table}" = "topic_message" ]]; then
-    entityIdColumn="topic_id"
-  elif [[ "${table}" = "transaction" ]]; then
-    entityIdColumn="payer_account_id"
-  elif [[ "${table}" = "crypto_transfer" ]]; then
-    entityIdColumn="entity_id"
+  if [[ "${ASYNC_TABLES}" =~ $table ]]; then
+    migrateTableAsyncBinary "${table}" "${columns}" "${tmpDir}" &
   else
-    logError "Unknown entity id column for ${table}"
-    exit 1
+    migrateTableBinary "${table}" "${columns}" "${tmpDir}"
   fi
-
-  if [[ -z "${timestampIndex}" ]]; then
-    IFS=', ' read -r -a columnArray <<<"$columns"
-    timestampIndex=0
-    for column in "${columnArray[@]}"; do
-      if [[ "${column}" =~ $TS_COLUMN_REGEX ]]; then
-        break;
-      fi
-      timestampIndex=$((timestampIndex + 1))
-    done
-  fi
-
-  if [[ -z "${entityIdIndex}" ]]; then
-    IFS=', ' read -r -a columnArray <<<"$columns"
-    entityIdIndex=0
-    for column in "${columnArray[@]}"; do
-      if [[ "${column}" =~ $entityIdColumn ]]; then
-        break;
-      fi
-      entityIdIndex=$((entityIdIndex + 1))
-    done
-  fi
-
-  if [[ -z "${row}" ]]; then
-    log "Finished copying '${table}' for crsr ${cursorId} in $SECONDS seconds"
-    echo "\\q" >"${source}"
-    queryTarget "update async_migration_status set last_processed_timestamp=lower(cursor_range) where the_table='${table}' and cursor_id=${cursorId};"
-    exit 0
-  fi
-
-  IFS=',' read -r -a rowArray <<<"${row}"
-  local sql="\\copy ${table}(${columns//mt./}) from program 'echo ${row}' with csv delimiter ',';
-  update async_migration_status set last_processed_timestamp=${rowArray[$timestampIndex]}, last_processed_entity=${rowArray[$entityIdIndex]} where the_table='${table}' and cursor_id=${cursorId};"
-  queryTarget "${sql}"
-
-  log "Updated bookmark for batch ${count} with timestamp: ${rowArray[$timestampIndex]} entity_id: ${rowArray[$entityIdIndex]} for ${table} on cursor ${cursorId}"
-}
-
-executeCursor() {
-  local crsrDef="${1}"
-  local cursorId="${2}"
-  local tmpDir="${3}"
-  local source="${tmpDir}/source${cursorId}"
-  trap "handlePipeError 'for crsr ${cursorId} with def ${crsrDef}'" SIGPIPE
-  trap "handleExit" ERR
-
-  mkfifo "${source}"
-
-  # Initialize psql session for source
-  log "Starting to copy '${table}' for crsr ${cursorId} on pid $!"
-  readFifo "${source}" | sourcePipe &
-
-  local startSql="BEGIN; ${crsrDef}"
-  if [[ "${table}" != "topic_message" ]]; then
-    startSql="set cursor_tuple_fraction = 1; ${startSql}"
-  fi
-  local batchSql="FETCH ${CURSOR_COPY_BATCH_SIZE} FROM crsr;"
-  local count=0
-  while true; do
-    SECONDS=0
-    count=$((count + 1))
-
-    # Setup output pipe
-    local outputFile="${tmpDir}/output-${cursorId}-$(uuidgen)"
-    mkfifo "${outputFile}"
-    echo "\o ${outputFile}" >"${source}"
-
-    # Listen to data on output pipe
-    queryTarget "\copy ${table}(${columns//mt./}) from program 'cat ${outputFile}' with csv delimiter ',';" &
-
-    # Retrieve the next batch
-    if [[ "${count}" -eq 1 ]]; then
-      echo "${startSql} ${batchSql}" >"${source}"
-    else
-      echo "${batchSql}" >"${source}"
-    fi
-
-    log "Requested batch ${count} on table ${table} for cursor ${cursorId}"
-
-    # Terminate the output pipe
-    echo "\o /dev/null" >"${source}"
-
-    executeBookmark "${count}"
-    rm "${outputFile}"
-    log "Finished batch ${count} in $SECONDS seconds on ${table} for cursor ${cursorId} $((count * CURSOR_COPY_BATCH_SIZE)) total records processed"
-  done
-}
-
-migrateTableCursor() {
-  local table="${1}"
-  local tmpDir="/tmp/migrate-${table}-$$"
-
-  mkdir -m 700 "${tmpDir}" || die "Couldn't make safe tmp ${tmpDir}"
-  pushd "${tmpDir}" || die "Couldn't change directory to tmp ${tmpDir}"
-  local maxTimestamp=${MAX_TIMESTAMP:-$2}
-
-  local columns
-  columns=$(getColumns "${table}")
-  if [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
-    orderby="order by mt.consensus_timestamp desc"
-  fi
-
-  local cursorQuery="SELECT cursor_id, lower(cursor_range), least(last_processed_timestamp - 1, upper(cursor_range)), last_processed_entity FROM async_migration_status WHERE the_table = '${table}' ORDER BY cursor_id asc;"
-  #TODO make existing function work
-  local tableCursors=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" -c "${cursorQuery}")
-  log "The table cursors are ${tableCursors}"
-  while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound last_entity; do
-    orderby=""
-    where=""
-    join=""
-    if [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
-      if [[ -z "${cursor_lower_bound}" ]]; then
-        where="where mt.consensus_timestamp <= ${cursor_upper_bound}"
-      else
-        where="where mt.consensus_timestamp <= ${cursor_upper_bound} and mt.consensus_timestamp > ${cursor_lower_bound}"
-      fi
-    fi
-    if [[ "${table}" = "topic_message" ]]; then
-      join="join transaction jt on mt.topic_id = jt.entity_id and mt.consensus_timestamp = jt.consensus_timestamp"
-      where="${where//mt./jt.} and jt.type=27"
-      orderby="${orderby//mt./jt.}"
-    elif [[ "${table}" = "crypto_transfer" ]]; then
-      orderby="${orderby}, mt.entity_id desc"
-    fi
-
-    local cursorDef="DECLARE crsr NO SCROLL CURSOR FOR select ${columns} from ${table} mt ${join} ${where} ${orderby} FOR READ ONLY;"
-    executeCursor "${cursorDef}" "${cursor_id}" "${tmpDir}" &
-    log "Created cursor with definition: ${cursorDef} pid $!"
-  done <<<"${tableCursors}"
-
-  log "waiting for ${table} jobs to finish"
-  wait
-
-  log "Copied '${table}' table in ${SECONDS}s"
-  jobs
 }
 
 # Export the functions so they can be invoked via parallel xargs
-export -f log querySource queryTarget migrateTableBinary migrateTableCursor executeBookmark executeCursor handlePipeError handleExit sourcePipe readFifo targetTableExists getColumns
+export -f log querySource queryTarget migrateTable migrateTableBinary migrateTableAsyncBinary handlePipeError handleExit targetTableExists getColumns
 
 SECONDS=0
 SCRIPTS_DIR="./"
@@ -354,8 +241,8 @@ export PATH="${FLYWAY_DIR}/:$PATH"
 source "${SCRIPTS_DIR}/migration.config"
 
 export CONCURRENCY=${CONCURRENCY:-5}
-export CONCURRENT_CURSORS_PER_TABLE=${CONCURRENT_CURSORS_PER_TABLE:-5}
-export CURSOR_COPY_BATCH_SIZE=${CURSOR_COPY_BATCH_SIZE:-1000000}
+export CONCURRENT_COPIES_PER_TABLE=${CONCURRENT_COPIES_PER_TABLE:-5}
+export ASYNC_TABLE_SPLITS=${ASYNC_TABLE_SPLITS:-1000}
 export CREATE_INDEXES_BEFORE_MIGRATION=${CREATE_INDEXES_BEFORE_MIGRATION:-true}
 export MAX_TIMESTAMP="${MAX_TIMESTAMP:-$(querySource "select max(consensus_end) from record_file;")}"
 export SOURCE_DB_HOST="${SOURCE_DB_HOST:-127.0.0.1}"
@@ -391,35 +278,37 @@ if [[ "${TARGET_DB_HEALTHY}" != "t" ]]; then
   echo "Unable to verify the state of the target database."
   exit 1
 fi
-#mkdir -p "${FLYWAY_DIR}" || die "Couldn't create directory ${FLYWAY_DIR}"
-#cd "${FLYWAY_DIR}" || die "Couldn't change directory to ${FLYWAY_DIR}"
-#
-#log "Installing Flyway"
-#wget -qO- ${FLYWAY_URL} | tar -xz && mv flyway-* flyway
-#log "Flyway installed"
-#
-#log "Copying Flyway configuration"
-#
-#if [[ "${CREATE_INDEXES_BEFORE_MIGRATION}" = "true" ]]; then
-#  cp "${MIGRATIONS_DIR}/V2.0."* "${FLYWAY_DIR}"/sql/
-#else
-#  cp "${MIGRATIONS_DIR}/V2.0."[0-2]* "${FLYWAY_DIR}"/sql/
-#fi
-#cat >"${FLYWAY_DIR}/conf/flyway.conf" <<EOF
-#flyway.password=${TARGET_DB_PASSWORD}
-#flyway.placeholders.hashShardCount=6
-#flyway.placeholders.maxEntityId=5000000
-#flyway.placeholders.maxEntityIdRatio=2.0
-#flyway.placeholders.partitionStartDate='2019-09-01'
-#flyway.placeholders.partitionTimeInterval='1 month'
-#flyway.placeholders.schema=${TARGET_DB_SCHEMA}
-#flyway.placeholders.shardCount=16
-#flyway.url=jdbc:postgresql://${TARGET_DB_HOST}:${TARGET_DB_PORT}/${TARGET_DB_NAME}
-#flyway.user=${TARGET_DB_USER}
-#EOF
-#
-#log "Running Flyway migrate"
-#flyway migrate
+
+mkdir -p "${FLYWAY_DIR}" || die "Couldn't create directory ${FLYWAY_DIR}"
+cd "${FLYWAY_DIR}" || die "Couldn't change directory to ${FLYWAY_DIR}"
+
+log "Installing Flyway"
+wget -qO- ${FLYWAY_URL} | tar -xz && mv flyway-* flyway
+log "Flyway installed"
+
+log "Copying Flyway configuration"
+
+if [[ "${CREATE_INDEXES_BEFORE_MIGRATION}" = "true" ]]; then
+  cp "${MIGRATIONS_DIR}/V2.0."* "${FLYWAY_DIR}"/sql/
+else
+  cp "${MIGRATIONS_DIR}/V2.0."[0-2]* "${FLYWAY_DIR}"/sql/
+fi
+
+cat >"${FLYWAY_DIR}/conf/flyway.conf" <<EOF
+flyway.password=${TARGET_DB_PASSWORD}
+flyway.placeholders.hashShardCount=6
+flyway.placeholders.maxEntityId=5000000
+flyway.placeholders.maxEntityIdRatio=2.0
+flyway.placeholders.partitionStartDate='2019-09-01'
+flyway.placeholders.partitionTimeInterval='1 month'
+flyway.placeholders.schema=${TARGET_DB_SCHEMA}
+flyway.placeholders.shardCount=16
+flyway.url=jdbc:postgresql://${TARGET_DB_HOST}:${TARGET_DB_PORT}/${TARGET_DB_NAME}
+flyway.user=${TARGET_DB_USER}
+EOF
+
+log "Running Flyway migrate"
+flyway migrate
 
 TABLES_QUERY="
 select pc.relname from pg_class pc
@@ -431,25 +320,23 @@ and pc.relname not in (${ASYNC_TABLES})
 order by pg_total_relation_size(psu.relid) asc NULLS LAST;"
 
 TABLES=$(querySource "${TABLES_QUERY}" | tr " " "\n")
-COUNT=$(echo "${TABLES}" | wc -l)
-
-#TODO how to get rid of this and make the querysource function available
-cat >querySource.sh <<EOF
-#!/usr/bin/env bash
-PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}"
-EOF
-chmod +x querySource.sh
-
-log "Migrating ${COUNT} tables from ${SOURCE_DB_HOST}:${SOURCE_DB_PORT} to ${TARGET_DB_HOST}:${TARGET_DB_PORT}. Tables: ${TABLES}"
-echo "${TABLES}" | xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTableBinary "$@"' _ {}
-rm querySource.sh
-
-log "Synchronous migration completed in $SECONDS seconds. Starting async migration for tables: ${ASYNC_TABLES}"
-insertCursors
-SECONDS=0
 ASYNC_TABLES=$(echo "${ASYNC_TABLES//[\']/}" | tr "," "\n")
-echo "${ASYNC_TABLES}" | xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTableCursor "$@"' _ {}
-log "Async migration completed in $SECONDS seconds"
+
+export ASYNC_TABLES
+
+declare tablesArray
+IFS=" " readarray -t tablesArray <<< "${TABLES}"
+tablesArray+=("topic_message")
+tablesArray+=("${ASYNC_TABLES[@]}")
+
+COUNT="${#tablesArray[@]}"
+insertCursors
+
+log "Migrating ${COUNT} tables from ${SOURCE_DB_HOST}:${SOURCE_DB_PORT} to ${TARGET_DB_HOST}:${TARGET_DB_PORT}. Tables: ${TABLES[*]}"
+
+echo "${tablesArray[*]}" | tr " " "\n" | xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTable "$@"' _ {}
+
+log "migration completed in $SECONDS seconds."
 
 exit 0
 
