@@ -58,7 +58,7 @@ dependencies {
     testImplementation("org.springframework.retry:spring-retry")
     testImplementation("org.apache.tuweni:tuweni-bytes")
     testImplementation("commons-codec:commons-codec")
-    testImplementation("org.bouncycastle:bcprov-jdk18on:1.77")
+    testImplementation("org.bouncycastle:bcprov-jdk18on:1.78")
 }
 
 // Disable the default test task and only run acceptance tests during the standalone "acceptance"
