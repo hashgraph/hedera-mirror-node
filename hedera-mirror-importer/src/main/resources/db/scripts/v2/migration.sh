@@ -56,32 +56,37 @@ getColumns() {
 
 insertCursors() {
   local hasTable="f"
+  local sqlTemp="/tmp/cursors-$$.csv"
+  local tableDDL="
+    create table if not exists async_migration_status (
+    the_table                varchar(100),
+    cursor_id                int,
+    cursor_range             int8range,
+    processed_timestamp timestamptz);"
+
   hasTable=$(targetTableExists "async_migration_status")
   if [[ "${hasTable}" = "t" ]]; then
+    log "Skipping async_migration_status table creation since it already exists"
     return
   else
     log "Creating async_migration_status table"
+    queryTarget "${tableDDL}"
   fi
-
-  local tableDDL="
-  create table if not exists async_migration_status (
-  the_table                varchar(100),
-  cursor_id                int,
-  cursor_range             int8range,
-  processed_timestamp timestamptz);"
 
   local conditions
   getCursorConditions conditions
-  log "The cursor conditions are: ${conditions[*]}"
+
   cursorId=1
-  local statements=("${tableDDL}")
+  local insertSql="\\copy async_migration_status(the_table, cursor_id, cursor_range) from program 'cat ${sqlTemp}' with csv delimiter ',';"
+  local values=()
   for value in "${conditions[@]}"; do
     for table in $(echo "${ASYNC_TABLES[@]}" | tr "," "\n"); do
-      statements+=("insert into async_migration_status (the_table, cursor_id, cursor_range) values ('${table}', ${cursorId}, ${value});")
+      values+=("${table},${cursorId},${value}")
     done
     cursorId=$((cursorId + 1))
   done
-  queryTarget "${statements[*]}"
+  IFS=$'\n'; echo "${values[*]}" > "${sqlTemp}"
+  queryTarget "${insertSql}"
 }
 
 getCursorConditions() {
@@ -115,13 +120,13 @@ getCursorConditions() {
     while (($(echo "${totalPct} >= ${pctPerCursor}" | bc) )); do
       totalPct=$(echo "${totalPct} - ${pctPerCursor}" | bc)
       cursorLowerBound=$(echo "scale=0; (${upperBound} - ${rangeToTake}) / 1" | bc)
-      cursors+=("int8Range(${cursorLowerBound},${upperBound},'(]'")
+      cursors+=("\"(${cursorLowerBound},${upperBound}]\"")
       upperBound=$cursorLowerBound
     done
   done <<< "${stats}"
 
   if (( $(echo "${totalPct} > 0" | bc) )); then
-    cursors+=("int8Range(null,${upperBound}, '(]'")
+    cursors+=("\"(,${upperBound}]\"")
   fi
 }
 
@@ -142,9 +147,11 @@ migrateTableBinary() {
     where="where consensus_timestamp_end \<= ${MAX_TIMESTAMP}"
   fi
 
-  log "Starting to copy '${table}' table with sql: \\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
+  local sql="\\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
 
-  queryTarget "\\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
+  log "Starting to copy '${table}' table with sql: ${sql}"
+
+  queryTarget "${sql}"
 
   log "Copied '${table}' table in ${SECONDS}s"
 }
@@ -165,28 +172,24 @@ migrateTableAsyncBinary() {
   while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound; do
     ACTIVE_COPIES=$(find . -maxdepth 1 -name "process-${table}*" -printf '.' | wc -m)
     while [[ "${ACTIVE_COPIES}" -ge ${CONCURRENT_COPIES_PER_TABLE} ]]; do
-      sleep 30
+      sleep 10
       ACTIVE_COPIES=$(find . -maxdepth 1 -name "process-${table}*" -printf '.' | wc -m)
     done
 
-    if [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
-      if [[ -z "${cursor_lower_bound}" ]]; then
-        where="where consensus_timestamp \<= ${cursor_upper_bound}"
-      else
-        where="where consensus_timestamp \<= ${cursor_upper_bound} and consensus_timestamp \> ${cursor_lower_bound}"
-      fi
+    if [[ -z "${cursor_lower_bound}" ]]; then
+      where="where consensus_timestamp \<= ${cursor_upper_bound}"
+    else
+      where="where consensus_timestamp \<= ${cursor_upper_bound} and consensus_timestamp \> ${cursor_lower_bound}"
     fi
-
-    log "Starting to copy '${table}' table with sql:${cursorDef}"
 
     local processMarker="${tmpDir}/process-${table}-$(uuidgen)"
     touch "${processMarker}"
 
-    local cursorDef="\\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
+    local copyDef="\\copy ${table}(${columns}) from program 'echo copy \(select ${columns} from ${table} ${where}\) to stdout with binary|./querySource.sh' with binary;"
     local bookmarkSql="update async_migration_status set processed_timestamp=now() where the_table='${table}' and cursor_id=${cursor_id};"
-    queryTarget "${cursorDef} ${bookmarkSql}" && rm "${processMarker}" &
+    queryTarget "${copyDef} ${bookmarkSql}" && rm "${processMarker}" &
 
-    log "Created cursor with definition: ${cursorDef} pid $!"
+    log "Starting to copy table ${table} with sql: ${copyDef} pid $!"
   done <<<"${tableCursors}"
 
   wait
@@ -221,8 +224,6 @@ EOF
   local columns
   columns=$(getColumns "${table}")
 
-  log "Comparing ${ASYNC_TABLES} to ${table}"
-
   if [[ "${ASYNC_TABLES}" =~ $table ]]; then
     migrateTableAsyncBinary "${table}" "${columns}" "${tmpDir}" &
   else
@@ -240,10 +241,9 @@ MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 export PATH="${FLYWAY_DIR}/:$PATH"
 source "${SCRIPTS_DIR}/migration.config"
 
+ASYNC_TABLE_SPLITS=${ASYNC_TABLE_SPLITS:-10000}
 export CONCURRENCY=${CONCURRENCY:-5}
 export CONCURRENT_COPIES_PER_TABLE=${CONCURRENT_COPIES_PER_TABLE:-5}
-export ASYNC_TABLE_SPLITS=${ASYNC_TABLE_SPLITS:-1000}
-export CREATE_INDEXES_BEFORE_MIGRATION=${CREATE_INDEXES_BEFORE_MIGRATION:-true}
 export MAX_TIMESTAMP="${MAX_TIMESTAMP:-$(querySource "select max(consensus_end) from record_file;")}"
 export SOURCE_DB_HOST="${SOURCE_DB_HOST:-127.0.0.1}"
 export SOURCE_DB_NAME="${SOURCE_DB_NAME:-mirror_node}"
@@ -288,6 +288,7 @@ log "Flyway installed"
 
 log "Copying Flyway configuration"
 
+CREATE_INDEXES_BEFORE_MIGRATION=${CREATE_INDEXES_BEFORE_MIGRATION:-true}
 if [[ "${CREATE_INDEXES_BEFORE_MIGRATION}" = "true" ]]; then
   cp "${MIGRATIONS_DIR}/V2.0."* "${FLYWAY_DIR}"/sql/
 else
@@ -322,8 +323,6 @@ order by pg_total_relation_size(psu.relid) asc NULLS LAST;"
 TABLES=$(querySource "${TABLES_QUERY}" | tr " " "\n")
 ASYNC_TABLES=$(echo "${ASYNC_TABLES//[\']/}" | tr "," "\n")
 
-export ASYNC_TABLES
-
 declare tablesArray
 IFS=" " readarray -t tablesArray <<< "${TABLES}"
 tablesArray+=("topic_message")
@@ -334,7 +333,7 @@ insertCursors
 
 log "Migrating ${COUNT} tables from ${SOURCE_DB_HOST}:${SOURCE_DB_PORT} to ${TARGET_DB_HOST}:${TARGET_DB_PORT}. Tables: ${TABLES[*]}"
 
-echo "${tablesArray[*]}" | tr " " "\n" | xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTable "$@"' _ {}
+echo "${tablesArray[*]}" | tr " " "\n" |ASYNC_TABLES=$ASYNC_TABLES xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTable "$@"' _ {}
 
 log "migration completed in $SECONDS seconds."
 
