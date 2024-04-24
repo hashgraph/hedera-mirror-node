@@ -92,7 +92,10 @@ insertCursors() {
 getCursorConditions() {
   local query="
   with record_file_stats as (
-    select date_trunc('month', to_timestamp(consensus_end / 1000000000)) start_timestamp, sum(count) as record_count from record_file group by 1 order by 1 desc
+    select date_trunc('month', to_timestamp(consensus_end / 1000000000)) start_timestamp,
+           sum(count) as record_count from record_file
+    where consensus_end <= ${MAX_TIMESTAMP}
+    group by 1 order by 1 desc
   ),
   total_records as (
     select sum(record_count) as total_record_count
@@ -107,7 +110,7 @@ getCursorConditions() {
   "
 
   local upperBound=$MAX_TIMESTAMP
-  local pctPerCursor=$(echo "scale=8; 100 / ${ASYNC_TABLE_SPLITS}" | bc)
+  local pctPerCursor=$(echo "scale=10; 100 / ${ASYNC_TABLE_SPLITS}" | bc)
   local totalPct=0
   local -n cursors=$1 # Init array to hold cursor definitions
   local stats=$(PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q --csv -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}" -c "${query}")
@@ -115,7 +118,7 @@ getCursorConditions() {
   while IFS="," read -r pct_of_total lower_bound upper_bound; do
     upperBound=$((upper_bound > upperBound ? upper_bound : upperBound))
     local groupRange=$((upperBound - lower_bound))
-    local rangeToTake=$(echo "scale=0; ${pctPerCursor} * ${groupRange}" | bc)
+    local rangeToTake=$(echo "scale=10; (${pctPerCursor} / 100) * ${groupRange}" | bc)
     totalPct=$(echo "(${totalPct} + ${pct_of_total})" | bc)
     while (($(echo "${totalPct} >= ${pctPerCursor}" | bc) )); do
       totalPct=$(echo "${totalPct} - ${pctPerCursor}" | bc)
@@ -140,6 +143,7 @@ migrateTableBinary() {
     return
   fi
 
+  local where
   if [[ "${table}" != "topic_message" && "${columns}" =~ $TS_COLUMN_REGEX ]]; then
     where="where consensus_timestamp \<= ${MAX_TIMESTAMP}"
   # handle address book.
@@ -166,20 +170,43 @@ migrateTableAsyncBinary() {
     exit 1
   fi
 
-  local cursorQuery="SELECT cursor_id, lower(cursor_range), upper(cursor_range) FROM async_migration_status WHERE the_table = '${table}' and processed_timestamp IS NULL ORDER BY upper(cursor_range) desc;"
+  local cursorQuery="SELECT cursor_id,
+                            lower(cursor_range),
+                            upper(cursor_range),
+                            lower_inc(cursor_range),
+                            upper_inc(cursor_range)
+                     FROM async_migration_status
+                     WHERE the_table = '${table}' and
+                           processed_timestamp IS NULL
+                     ORDER BY upper(cursor_range) desc;"
+
   local tableCursors=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" -c "${cursorQuery}")
 
-  while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound; do
+  while IFS="," read -r cursor_lower_bound cursor_upper_bound lower_inc upper_inc; do
     ACTIVE_COPIES=$(find . -maxdepth 1 -name "process-${table}*" -printf '.' | wc -m)
     while [[ "${ACTIVE_COPIES}" -ge ${CONCURRENT_COPIES_PER_TABLE} ]]; do
-      sleep 10
+      sleep .5
       ACTIVE_COPIES=$(find . -maxdepth 1 -name "process-${table}*" -printf '.' | wc -m)
     done
+    local lowerOperator
+    local upperOperator
 
+    if [[ "${lower_inc}" == "t" ]]; then
+      lowerOperator=">="
+    else
+      lowerOperator=">"
+    fi
+
+    if [[ "${upper_inc}" == "t" ]]; then
+      upperOperator="<="
+    else
+      upperOperator="<"
+    fi
+    local where
     if [[ -z "${cursor_lower_bound}" ]]; then
       where="where consensus_timestamp \<= ${cursor_upper_bound}"
     else
-      where="where consensus_timestamp \<= ${cursor_upper_bound} and consensus_timestamp \> ${cursor_lower_bound}"
+      where="where consensus_timestamp \\${upperOperator} ${cursor_upper_bound} and consensus_timestamp \\${lowerOperator} ${cursor_lower_bound}"
     fi
 
     local processMarker="${tmpDir}/process-${table}-$(uuidgen)"
@@ -235,13 +262,13 @@ EOF
 export -f log querySource queryTarget migrateTable migrateTableBinary migrateTableAsyncBinary handlePipeError handleExit targetTableExists getColumns
 
 SECONDS=0
-SCRIPTS_DIR="./"
+SCRIPTS_DIR="$(pwd)"
 FLYWAY_DIR="/tmp/flyway"
 MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 export PATH="${FLYWAY_DIR}/:$PATH"
 source "${SCRIPTS_DIR}/migration.config"
 
-ASYNC_TABLE_SPLITS=${ASYNC_TABLE_SPLITS:-10000}
+ASYNC_TABLE_SPLITS=${ASYNC_TABLE_SPLITS:-1000}
 export CONCURRENCY=${CONCURRENCY:-5}
 export CONCURRENT_COPIES_PER_TABLE=${CONCURRENT_COPIES_PER_TABLE:-5}
 export MAX_TIMESTAMP="${MAX_TIMESTAMP:-$(querySource "select max(consensus_end) from record_file;")}"
@@ -279,11 +306,12 @@ if [[ "${TARGET_DB_HEALTHY}" != "t" ]]; then
   exit 1
 fi
 
+rm -rf "${FLYWAY_DIR}"
 mkdir -p "${FLYWAY_DIR}" || die "Couldn't create directory ${FLYWAY_DIR}"
-cd "${FLYWAY_DIR}" || die "Couldn't change directory to ${FLYWAY_DIR}"
+pushd "${FLYWAY_DIR}" || die "Couldn't change directory to ${FLYWAY_DIR}"
 
 log "Installing Flyway"
-wget -qO- ${FLYWAY_URL} | tar -xz && mv flyway-* flyway
+wget -qO- "${FLYWAY_URL}" | tar -xz && mv flyway-*/* .
 log "Flyway installed"
 
 log "Copying Flyway configuration"
@@ -337,5 +365,5 @@ echo "${tablesArray[*]}" | tr " " "\n" |ASYNC_TABLES=$ASYNC_TABLES xargs -n 1 -P
 
 log "migration completed in $SECONDS seconds."
 
+popd || die "Couldn't change directory back to ${SCRIPTS_DIR}"
 exit 0
-
