@@ -14,7 +14,7 @@ defaults:
 
 jobs:
   images:
-    runs-on: [self-hosted, Linux, large, ephemeral]
+    runs-on: [self-hosted, Linux, medium, ephemeral]
     strategy:
       matrix:
         module:
