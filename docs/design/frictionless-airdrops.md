@@ -61,23 +61,21 @@ When parsing pending airdrops,
 #### Domain
 
 - Add an `TokenAirdrop` domain object with the same fields as the schema.
-- Add an `TokenCancelAirdrop` domain object which contains the fields `receiverAccountId`, `senderAccountId`, `serialNumber` and `tokenId`.
-- Add an `TokenClaimAirdrop` domain object which contains the fields `receiverAccountId`, `senderAccountId`, `serialNumber` and `tokenId`.
-- Add an `TokenReject` domain object which contains the fields `receiverAccountId`, `serialNumber` and `tokenId`.
+- Add an `TokenCancelAirdrop` domain object with the same fields as the schema.
+- Add an `TokenClaimAirdrop` domain object with the same fields as the schema.
 
 #### Entity Listener
 
 - Add `onCancelAirdrop` to handle setting the `state` to `CANCELLED`. Updates the `token_airdrop` table and the `token_airdrop_history` table.
 - Add `onClaimAirdrop` to handle setting the `state` to `CLAIMED`. Updates the `token_airdrop` table and the `token_airdrop_history` table.
 - Add `onTokenAirdrop` to handle inserts to the `token_airdrop` table.
-- Add `onTokenReject` which will be similar to `onCryptoTransfer` except the balance will be zero. Does not affect the `token_airdrop` table.
 
 #### Transaction Handlers
 
 - Add `TokenAirdropTransactionHandler` which will add a new entry to the `token_airdrop` table with the default state of `PENDING`.
 - Add `TokenCancelAirdropTransactionHandler` which will set the state of the airdrop to `CANCELLED`
 - Add `TokenClaimAirdropTransactionHandler` which will set the state of the airdrop to `CLAIMED`
-- Add `TokenRejectTransactionHandler`
+- Add `TokenRejectTransactionHandler` which will be similar to `CryptoTransferTransactionHandler`.
 
 #### Support unlimited Max Automatic Token Associations
 
