@@ -131,6 +131,14 @@ stackgres:
       memory: 24Gi
       requests:
         containers:
+          cluster-controller:
+            cpu: 300m
+          envoy:
+            cpu: 750m
+          patroni:
+            cpu: 7350m
+          pgbouncer:
+            cpu: 300m
           prometheus-postgres-exporter:
             cpu: 100m
     persistentVolume:
@@ -145,6 +153,14 @@ stackgres:
       memory: 24Gi
       requests:
         containers:
+          cluster-controller:
+            cpu: 300m
+          envoy:
+            cpu: 750m
+          patroni:
+            cpu: 7350m
+          pgbouncer:
+            cpu: 300m
           prometheus-postgres-exporter:
             cpu: 100m
     persistentVolume:
