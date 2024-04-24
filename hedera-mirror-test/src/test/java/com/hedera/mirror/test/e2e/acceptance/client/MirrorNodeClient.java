@@ -38,6 +38,7 @@ import com.hedera.mirror.rest.model.NetworkNode;
 import com.hedera.mirror.rest.model.NetworkNodesResponse;
 import com.hedera.mirror.rest.model.NetworkStakeResponse;
 import com.hedera.mirror.rest.model.Nft;
+import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.rest.model.NftTransactionHistory;
 import com.hedera.mirror.rest.model.Schedule;
 import com.hedera.mirror.rest.model.TokenAllowancesResponse;
@@ -182,6 +183,34 @@ public class MirrorNodeClient {
                 "/accounts/{accountId}/allowances/crypto?spender.id={spenderId}",
                 CryptoAllowancesResponse.class,
                 accountId,
+                spenderId);
+    }
+
+    public NftAllowancesResponse getAccountNftAllowanceByOwner(String accountId, String tokenId, String ownerId) {
+        log.debug(
+                "Verify spender account '{}''s nft allowance for owner {} and token {} is returned by Mirror Node",
+                accountId,
+                ownerId,
+                tokenId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/allowances/nfts?token.id={tokenId}&account.id={ownerId}&owner=false",
+                NftAllowancesResponse.class,
+                accountId,
+                tokenId,
+                ownerId);
+    }
+
+    public NftAllowancesResponse getAccountNftAllowanceBySpender(String accountId, String tokenId, String spenderId) {
+        log.debug(
+                "Verify owner account '{}''s nft allowance for spender {} and token {} is returned by Mirror Node",
+                accountId,
+                spenderId,
+                tokenId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/allowances/nfts?token.id={tokenId}&account.id={spenderId}&owner=true",
+                NftAllowancesResponse.class,
+                accountId,
+                tokenId,
                 spenderId);
     }
 
