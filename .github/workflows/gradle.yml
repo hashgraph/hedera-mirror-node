@@ -24,7 +24,6 @@ env:
 
 jobs:
   build:
-    name: Build
     runs-on: [ self-hosted, Linux, large, ephemeral ]
     strategy:
       matrix:
