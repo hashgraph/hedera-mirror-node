@@ -132,7 +132,7 @@ stackgres:
       requests:
         containers:
           cluster-controller:
-            cpu: 300m
+            cpu: 500m
           envoy:
             cpu: 750m
           patroni:
@@ -154,7 +154,7 @@ stackgres:
       requests:
         containers:
           cluster-controller:
-            cpu: 300m
+            cpu: 500m
           envoy:
             cpu: 750m
           patroni:
