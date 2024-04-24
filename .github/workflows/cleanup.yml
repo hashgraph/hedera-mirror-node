@@ -1,6 +1,7 @@
 name: Cleanup
 
 on:
+  workflow_dispatch: # enabled for test
   schedule:
     - cron: "0 0 * * *" # Daily at midnight
 
@@ -13,7 +14,7 @@ defaults:
 
 jobs:
   images:
-    runs-on: [self-hosted, Linux, medium, ephemeral]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     strategy:
       matrix:
         module:
