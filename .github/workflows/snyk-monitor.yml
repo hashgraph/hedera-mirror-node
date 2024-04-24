@@ -1,4 +1,4 @@
-name: Monitor
+name: Snyk Monitor
 on:
   push:
     branches:
