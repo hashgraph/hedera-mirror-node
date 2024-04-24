@@ -1,8 +1,6 @@
 name: Cleanup
 
 on:
-  workflow_dispatch: # enabled for testing
-
   schedule:
     - cron: "0 0 * * *" # Daily at midnight
 

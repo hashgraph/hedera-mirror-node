@@ -1,7 +1,6 @@
 name: Charts
 
 on:
-  workflow_dispatch: # enabled for testing
   pull_request:
     branches: [main, release/**]
     paths: [charts/**]
