@@ -71,10 +71,14 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .build();
     }
 
-    @Test
-    void nftAllowancesEntityId() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void nftAllowancesEntityId(boolean persistEntity) {
         // Given
-        var entity = domainBuilder.entity().persist();
+        var entityBuilder = domainBuilder.entity();
+        // Whether or not entity is present in entity table
+        var entity = persistEntity ? entityBuilder.persist() : entityBuilder.get();
+
         var allowance1 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(entity.getId()))
@@ -209,14 +213,14 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var uriParams = "?account.id={account.id}&limit=1&order=asc";
         var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
                 .formatted(
-                        allowance1.getOwner(),
+                        allowance2.getOwner(),
                         EntityId.of(allowance2.getSpender()),
                         EntityId.of(allowance2.getTokenId()));
 
         // When
         var result = restClient
                 .get()
-                .uri(uriParams, allowance1.getOwner(), EntityId.of(allowance1.getSpender()))
+                .uri(uriParams, allowance2.getOwner(), EntityId.of(allowance2.getSpender()))
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
@@ -361,9 +365,6 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                "0.0.1000",
-                "0.1000",
-                "1000",
                 "0.0x000000000000000000000000000000000186Fb1b",
                 "0.0.0x000000000000000000000000000000000186Fb1b",
                 "0x000000000000000000000000000000000186Fb1b",
