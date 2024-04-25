@@ -4,6 +4,13 @@ on:
   push:
     tags: [v*]
 
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   image:
     strategy:
@@ -25,14 +32,15 @@ jobs:
       CONTEXT: hedera-mirror-${{ matrix.module }}
       IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
     name: Publish images
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
+      - name: Checkout Code
+        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4.1.3
 
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
@@ -86,7 +94,7 @@ jobs:
   chart:
     name: Publish charts
     needs: image
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
@@ -109,7 +117,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     timeout-minutes: 15
     env:
       MPDEV: "/home/runner/mpdev"
