@@ -28,6 +28,8 @@ import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -45,6 +47,8 @@ import com.hedera.mirror.rest.model.NftTransactionTransfer;
 import com.hedera.mirror.rest.model.TokenAllowance;
 import com.hedera.mirror.rest.model.TokenInfo;
 import com.hedera.mirror.rest.model.TokenInfo.PauseStatusEnum;
+import com.hedera.mirror.rest.model.TokenInfoMetadataKey;
+import com.hedera.mirror.rest.model.TokenInfoMetadataKey.TypeEnum;
 import com.hedera.mirror.rest.model.TokenRelationship;
 import com.hedera.mirror.rest.model.TokenRelationship.FreezeStatusEnum;
 import com.hedera.mirror.rest.model.TokenRelationship.KycStatusEnum;
@@ -58,6 +62,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnu
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -68,7 +73,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.Builder;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
@@ -80,21 +87,18 @@ import org.springframework.util.CollectionUtils;
 @RequiredArgsConstructor
 public class TokenFeature extends AbstractFeature {
 
-    private static final int INITIAL_SUPPLY = 1_000_000;
-    private static final int MAX_SUPPLY = 1;
-
     private final TokenClient tokenClient;
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
 
-    private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
+    private final Map<TokenId, List<IndividualNftInfo>> tokenNftInfoMap = new HashMap<>();
 
     private List<CustomFee> customFees = List.of();
+
+    @Getter
     private TokenId tokenId;
 
-    public TokenId getTokenId() {
-        return tokenId;
-    }
+    private TokenResponse tokenResponse;
 
     @Given("I ensure token {token} has been created")
     public void createNamedToken(TokenNameEnum tokenName) {
@@ -126,6 +130,14 @@ public class TokenFeature extends AbstractFeature {
         var balanceDecimals = balancesResponse.get(0).getDecimals();
         assertThat(balanceDecimals).isEqualTo(tokenDecimals);
         log.debug("Get token balances for token {}: {}", tokenId, balancesResponse);
+    }
+
+    @Given("I ensure token has the expected metadata and key")
+    public void ensureTokenInfoProperties() {
+        var tokenInfo = mirrorClient.getTokenInfo(tokenId.toString());
+        assertThat(tokenInfo.getMetadata()).isEqualTo(this.tokenResponse.metadata());
+        assertMetadataKey(
+                tokenInfo.getMetadataKey(), this.tokenResponse.metadataKey().getPublicKey());
     }
 
     @Given("I associate account {account} with token {token}")
@@ -242,25 +254,25 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I successfully create a new token with custom fees schedule")
     public void createNewToken(List<CustomFee> customFees) {
-        final var result = tokenClient.getToken(TokenNameEnum.FUNGIBLE_WITH_CUSTOM_FEES, customFees);
-        this.tokenId = result.tokenId();
-        this.networkTransactionResponse = result.response();
+        this.tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLE_WITH_CUSTOM_FEES, customFees);
+        this.tokenId = tokenResponse.tokenId();
+        this.networkTransactionResponse = tokenResponse.response();
         this.customFees = customFees;
     }
 
     @Given("I successfully create a new unfrozen and granted kyc token")
     public void createNewToken() {
-        final var response = tokenClient.getToken(TokenNameEnum.FUNGIBLE_KYC_UNFROZEN_2);
-        this.tokenId = response.tokenId();
-        this.networkTransactionResponse = response.response();
+        this.tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLE_KYC_UNFROZEN_2);
+        this.tokenId = tokenResponse.tokenId();
+        this.networkTransactionResponse = tokenResponse.response();
     }
 
     @Given("I successfully create a new nft with infinite supplyType")
     public void createNewNft() {
-        final var result = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE);
-        this.networkTransactionResponse = result.response();
-        this.tokenId = result.tokenId();
-        tokenSerialNumbers.put(tokenId, new ArrayList<>());
+        this.tokenResponse = tokenClient.getToken(TokenNameEnum.NFT_DELETABLE);
+        this.networkTransactionResponse = tokenResponse.response();
+        this.tokenId = tokenResponse.tokenId();
+        tokenNftInfoMap.put(tokenId, new ArrayList<>());
     }
 
     @Given("I associate {account} with token")
@@ -288,7 +300,13 @@ public class TokenFeature extends AbstractFeature {
     public void transferNftsToRecipient(int serialNumberIndex, AccountNameEnum accountName) {
         ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         transferNfts(
-                tokenId, tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex)), payer, accountName);
+                tokenId,
+                tokenNftInfoMap
+                        .get(tokenId)
+                        .get(getIndexOrDefault(serialNumberIndex))
+                        .serialNumber(),
+                payer,
+                accountName);
     }
 
     @Then("{account} transfers {int} tokens to {account} with fractional fee {int}")
@@ -319,12 +337,27 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @Given("I update the token metadata to {string}")
+    public void updateTokenMetadata(String metadata) {
+        var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        var metadataBytes = decodeMetadataString(metadata);
+        networkTransactionResponse =
+                tokenClient.updateTokenMetadata(tokenId, operatorId, tokenResponse.metadataKey(), metadataBytes);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        this.tokenResponse =
+                this.tokenResponse.toBuilder().metadata(metadataBytes).build();
+    }
+
     @Given("I update the token metadata key")
     public void updateTokenMetadataKey() {
         var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = tokenClient.updateTokenMetadataKey(tokenId, operatorId);
+        var newMetadataKey = PrivateKey.generateED25519();
+        networkTransactionResponse = tokenClient.updateTokenMetadataKey(tokenId, operatorId, newMetadataKey);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+        this.tokenResponse =
+                this.tokenResponse.toBuilder().metadataKey(newMetadataKey).build();
     }
 
     @Given("I update the treasury of token to operator")
@@ -361,7 +394,7 @@ public class TokenFeature extends AbstractFeature {
     @Given("I burn serial number {int} from token")
     public void burnNft(int serialNumberIndex) {
         networkTransactionResponse = tokenClient.burnNonFungible(
-                tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex));
+                tokenId, tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -403,7 +436,7 @@ public class TokenFeature extends AbstractFeature {
     @Given("I wipe serial number {int} from token")
     public void wipeNft(int serialNumberIndex) {
         networkTransactionResponse = tokenClient.wipeNonFungible(
-                tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex), getRecipientAccountId());
+                tokenId, tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber(), getRecipientAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -447,8 +480,10 @@ public class TokenFeature extends AbstractFeature {
     @Then("the mirror node REST API should return the transaction for token serial number {int} transaction flow")
     @RetryAsserts
     public void verifyMirrorNftTransactionsAPIResponses(Integer serialNumberIndex) {
-        Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
+        var tokenNftInfo = tokenNftInfoMap.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
+        var serialNumber = tokenNftInfo.serialNumber();
         verifyTransactions();
+        verifyNft(tokenId, serialNumber, tokenNftInfo.metadata());
         verifyNftTransactions(tokenId, serialNumber);
     }
 
@@ -473,10 +508,11 @@ public class TokenFeature extends AbstractFeature {
     @Then("the mirror node REST API should return the transaction for token serial number {int} full flow")
     @RetryAsserts
     public void verifyMirrorNftFundFlow(Integer serialNumberIndex) {
-        Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
+        var tokenNftInfo = tokenNftInfoMap.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
+        var serialNumber = tokenNftInfo.serialNumber();
         verifyTransactions();
         verifyToken(tokenId);
-        verifyNft(tokenId, serialNumber);
+        verifyNft(tokenId, serialNumber, tokenNftInfo.metadata());
         verifyNftTransfers(tokenId, serialNumber);
         verifyNftTransactions(tokenId, serialNumber);
     }
@@ -637,7 +673,7 @@ public class TokenFeature extends AbstractFeature {
         assertThat(receipt.serials.size()).isOne();
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
-        tokenSerialNumbers.get(tokenId).add(serialNumber);
+        tokenNftInfoMap.get(tokenId).add(new IndividualNftInfo(serialNumber, metadata));
     }
 
     private TransactionDetail verifyTransactions() {
@@ -687,13 +723,13 @@ public class TokenFeature extends AbstractFeature {
         return mirrorToken;
     }
 
-    private Nft verifyNft(TokenId tokenId, Long serialNumber) {
+    private Nft verifyNft(TokenId tokenId, Long serialNumber, byte[] metadata) {
         Nft mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
 
         assertNotNull(mirrorNft);
         assertThat(mirrorNft.getTokenId()).isEqualTo(tokenId.toString());
         assertThat(mirrorNft.getSerialNumber()).isEqualTo(serialNumber);
-
+        assertThat(mirrorNft.getMetadata()).isEqualTo(metadata);
         return mirrorNft;
     }
 
@@ -852,24 +888,45 @@ public class TokenFeature extends AbstractFeature {
         assertThat(mirrorTokenRelationship.getLinks().getNext()).isNull();
     }
 
+    private void assertMetadataKey(TokenInfoMetadataKey tokenInfoMetadataKey, PublicKey clientMetadataKey) {
+        if (clientMetadataKey.isED25519()) {
+            assertThat(tokenInfoMetadataKey.getType()).isEqualTo(TypeEnum.ED25519);
+        } else {
+            assertThat(tokenInfoMetadataKey.getType()).isEqualTo(TypeEnum.ECDSA_SECP256K1);
+        }
+        assertThat(tokenInfoMetadataKey.getKey()).isEqualTo(clientMetadataKey.toStringRaw());
+    }
+
     private void updateNftMetadataForSerials(String metadata, int... serialNumberIndices) {
-        var serialsForToken = tokenSerialNumbers.get(tokenId);
+        var nftInfoForToken = tokenNftInfoMap.get(tokenId);
         var serialNumbers = Arrays.stream(serialNumberIndices)
-                .mapToObj(serialsForToken::get)
+                .mapToObj(nftInfoForToken::get)
+                .map(IndividualNftInfo::serialNumber)
                 .toList();
+        var metadataBytes = decodeMetadataString(metadata);
         networkTransactionResponse =
-                tokenClient.updateNftMetadata(tokenId, serialNumbers, decodeMetadataString(metadata));
+                tokenClient.updateNftMetadata(tokenId, serialNumbers, tokenResponse.metadataKey(), metadataBytes);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);
+
+        Arrays.stream(serialNumberIndices)
+                .forEach(idx -> nftInfoForToken.set(
+                        idx,
+                        nftInfoForToken.get(idx).toBuilder()
+                                .metadata(metadataBytes)
+                                .build()));
     }
 
     private byte[] decodeMetadataString(String metadata) {
         try {
-            return Hex.decodeHex(metadata);
+            return Hex.decodeHex(metadata.replaceFirst("0x", ""));
         } catch (DecoderException e) {
             throw new RuntimeException("Failed to decode hexadecimal metadata string", e);
         }
     }
+
+    @Builder(toBuilder = true)
+    private record IndividualNftInfo(Long serialNumber, byte[] metadata) {}
 }

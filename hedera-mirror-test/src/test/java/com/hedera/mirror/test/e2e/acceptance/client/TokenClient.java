@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static com.esaulpaugh.headlong.util.Strings.EMPTY_BYTE_ARRAY;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
+
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
@@ -54,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
@@ -67,7 +71,8 @@ public class TokenClient extends AbstractNetworkClient {
 
     private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TokenAccount, NetworkTransactionResponse> associations = new ConcurrentHashMap<>();
-    private PrivateKey metadataKey = PrivateKey.generateED25519();
+    private final PrivateKey initialMetadataKey = PrivateKey.generateED25519();
+    private final byte[] initialMetadata = nextBytes(32);
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -96,7 +101,17 @@ public class TokenClient extends AbstractNetworkClient {
             var operator = sdkClient.getExpandedOperatorAccountId();
             try {
                 var networkTransactionResponse = createToken(tokenNameEnum, operator, customFees);
-                return new TokenResponse(networkTransactionResponse.getReceipt().tokenId, networkTransactionResponse);
+                return tokenNameEnum.createWithMetadata
+                        ? new TokenResponse(
+                                networkTransactionResponse.getReceipt().tokenId,
+                                networkTransactionResponse,
+                                initialMetadataKey,
+                                initialMetadata)
+                        : new TokenResponse(
+                                networkTransactionResponse.getReceipt().tokenId,
+                                networkTransactionResponse,
+                                null,
+                                EMPTY_BYTE_ARRAY);
             } catch (Exception e) {
                 log.warn("Issue creating additional token: {}, operator: {}, ex: {}", tokenNameEnum, operator, e);
                 return null;
@@ -114,10 +129,8 @@ public class TokenClient extends AbstractNetworkClient {
     private NetworkTransactionResponse createToken(
             TokenNameEnum tokenNameEnum, ExpandedAccountId expandedAccountId, List<CustomFee> customFees) {
         return createToken(
+                tokenNameEnum,
                 expandedAccountId,
-                tokenNameEnum.symbol,
-                tokenNameEnum.tokenFreezeStatus.getNumber(),
-                tokenNameEnum.tokenKycStatus.getNumber(),
                 expandedAccountId,
                 1_000_000,
                 TokenSupplyType.INFINITE,
@@ -127,10 +140,8 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse createToken(
+            TokenNameEnum tokenNameEnum,
             ExpandedAccountId expandedAccountId,
-            String symbol,
-            int freezeStatus,
-            int kycStatus,
             ExpandedAccountId treasuryAccount,
             long initialSupply,
             TokenSupplyType tokenSupplyType,
@@ -140,10 +151,8 @@ public class TokenClient extends AbstractNetworkClient {
 
         if (tokenType == TokenType.FUNGIBLE_COMMON) {
             return createFungibleToken(
+                    tokenNameEnum,
                     expandedAccountId,
-                    symbol,
-                    freezeStatus,
-                    kycStatus,
                     treasuryAccount,
                     initialSupply,
                     tokenSupplyType,
@@ -151,22 +160,13 @@ public class TokenClient extends AbstractNetworkClient {
                     customFees);
         } else {
             return createNonFungibleToken(
-                    expandedAccountId,
-                    symbol,
-                    freezeStatus,
-                    kycStatus,
-                    treasuryAccount,
-                    tokenSupplyType,
-                    maxSupply,
-                    customFees);
+                    tokenNameEnum, expandedAccountId, treasuryAccount, tokenSupplyType, maxSupply, customFees);
         }
     }
 
     private TokenCreateTransaction getTokenCreateTransaction(
+            TokenNameEnum tokenNameEnum,
             ExpandedAccountId expandedAccountId,
-            String symbol,
-            int freezeStatus,
-            int kycStatus,
             ExpandedAccountId treasuryAccount,
             TokenType tokenType,
             TokenSupplyType tokenSupplyType,
@@ -178,9 +178,9 @@ public class TokenClient extends AbstractNetworkClient {
                 .setAutoRenewAccountId(expandedAccountId.getAccountId())
                 .setAutoRenewPeriod(Duration.ofSeconds(6_999_999L))
                 .setTokenMemo(memo)
-                .setTokenName(symbol + "_name")
+                .setTokenName(tokenNameEnum.symbol + "_name")
                 .setSupplyType(tokenSupplyType)
-                .setTokenSymbol(symbol)
+                .setTokenSymbol(tokenNameEnum.symbol)
                 .setTokenType(tokenType)
                 .setTreasuryAccountId(treasuryAccount.getAccountId())
                 .setTransactionMemo(memo);
@@ -197,12 +197,14 @@ public class TokenClient extends AbstractNetworkClient {
                     .setWipeKey(adminKey);
         }
 
+        var freezeStatus = tokenNameEnum.tokenFreezeStatus.getNumber();
         if (freezeStatus > 0 && adminKey != null) {
             transaction
                     .setFreezeDefault(freezeStatus == TokenFreezeStatus.Frozen_VALUE)
                     .setFreezeKey(adminKey);
         }
 
+        var kycStatus = tokenNameEnum.tokenKycStatus.getNumber();
         if (kycStatus > 0 && adminKey != null) {
             transaction.setKycKey(adminKey);
         }
@@ -210,24 +212,26 @@ public class TokenClient extends AbstractNetworkClient {
         if (customFees != null && adminKey != null) {
             transaction.setCustomFees(customFees).setFeeScheduleKey(adminKey);
         }
+
+        if (tokenNameEnum.createWithMetadata) {
+            transaction.setMetadataKey(initialMetadataKey.getPublicKey());
+            transaction.setTokenMetadata(initialMetadata);
+        }
+
         return transaction;
     }
 
     public NetworkTransactionResponse createFungibleToken(
+            TokenNameEnum tokenNameEnum,
             ExpandedAccountId expandedAccountId,
-            String symbol,
-            int freezeStatus,
-            int kycStatus,
             ExpandedAccountId treasuryAccount,
             long initialSupply,
             TokenSupplyType tokenSupplyType,
             long maxSupply,
             List<CustomFee> customFees) {
         TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(
+                        tokenNameEnum,
                         expandedAccountId,
-                        symbol,
-                        freezeStatus,
-                        kycStatus,
                         treasuryAccount,
                         TokenType.FUNGIBLE_COMMON,
                         tokenSupplyType,
@@ -239,45 +243,38 @@ public class TokenClient extends AbstractNetworkClient {
         var keyList = KeyList.of(treasuryAccount.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, keyList);
         var tokenId = response.getReceipt().tokenId;
-        log.info("Created new fungible token {} with symbol {} via {}", tokenId, symbol, response.getTransactionId());
+        log.info(
+                "Created new fungible token {} with symbol {} via {}",
+                tokenId,
+                tokenNameEnum.symbol,
+                response.getTransactionId());
         tokenIds.add(tokenId);
         associations.put(new TokenAccount(tokenId, treasuryAccount), response);
         return response;
     }
 
     public NetworkTransactionResponse createNonFungibleToken(
+            TokenNameEnum tokenNameEnum,
             ExpandedAccountId expandedAccountId,
-            String symbol,
-            int freezeStatus,
-            int kycStatus,
             ExpandedAccountId treasuryAccount,
             TokenSupplyType tokenSupplyType,
             long maxSupply,
             List<CustomFee> customFees) {
-        log.debug("Create new non-fungible token {}", symbol);
+        log.debug("Create new non-fungible token {}", tokenNameEnum.symbol);
         TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(
+                tokenNameEnum,
                 expandedAccountId,
-                symbol,
-                freezeStatus,
-                kycStatus,
                 treasuryAccount,
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 tokenSupplyType,
                 maxSupply,
                 customFees);
 
-        // TODO: Only for NFTs right now. Current state of SDK does not allow for FT token metadata
-        // or metadata_key.
-        tokenCreateTransaction.setMetadataKey(metadataKey);
-        log.info(
-                "Creating token with metadata key: {} [{}]",
-                metadataKey.getPublicKey(),
-                Hex.encodeHexString(metadataKey.getPublicKey().toBytes()));
-
         var keyList = KeyList.of(treasuryAccount.getPrivateKey());
         var response = executeTransactionAndRetrieveReceipt(tokenCreateTransaction, keyList);
         var tokenId = response.getReceipt().tokenId;
-        log.info("Created new NFT {} with symbol {} via {}", tokenId, symbol, response.getTransactionId());
+        log.info(
+                "Created new NFT {} with symbol {} via {}", tokenId, tokenNameEnum.symbol, response.getTransactionId());
         tokenIds.add(tokenId);
         associations.put(new TokenAccount(tokenId, treasuryAccount), response);
         return response;
@@ -333,7 +330,9 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse updateNftMetadata(TokenId tokenId, List<Long> serialNumbers, byte[] metadata) {
+    public NetworkTransactionResponse updateNftMetadata(
+            TokenId tokenId, List<Long> serialNumbers, PrivateKey metadataKey, byte[] metadata) {
+
         var tokenUpdateNftsTransaction = new TokenUpdateNftsTransaction()
                 .setTokenId(tokenId)
                 .setSerials(serialNumbers)
@@ -506,21 +505,40 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse updateTokenMetadataKey(TokenId tokenId, ExpandedAccountId expandedAccountId) {
-        PublicKey publicKey = expandedAccountId.getPublicKey();
-        metadataKey = PrivateKey.generateECDSA();
+    public NetworkTransactionResponse updateTokenMetadataKey(
+            TokenId tokenId, ExpandedAccountId expandedAccountId, PrivateKey newMetadataKey) {
+        var publicKey = expandedAccountId.getPublicKey();
+        var metadataPublicKey = newMetadataKey.getPublicKey();
 
         TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
                 .setAdminKey(publicKey)
-                .setMetadataKey(metadataKey)
+                .setMetadataKey(metadataPublicKey)
                 .setTokenId(tokenId);
 
         var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
         log.info(
                 "Updated token {} with new metadata key {} [{}] via {}",
                 tokenId,
-                metadataKey.getPublicKey(),
-                Hex.encodeHexString(metadataKey.getPublicKey().toBytes()),
+                metadataPublicKey,
+                Hex.encodeHexString(metadataPublicKey.toBytes()),
+                response.getTransactionId());
+        return response;
+    }
+
+    public NetworkTransactionResponse updateTokenMetadata(
+            TokenId tokenId, ExpandedAccountId expandedAccountId, PrivateKey metadataKey, byte[] newMetadata) {
+        var publicKey = expandedAccountId.getPublicKey();
+
+        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
+                .setAdminKey(publicKey)
+                .setTokenMetadata(newMetadata)
+                .setTokenId(tokenId);
+
+        var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, KeyList.of(metadataKey));
+        log.info(
+                "Updated token {} with new metadata [{}] via {}",
+                tokenId,
+                Hex.encodeHexString(newMetadata),
                 response.getTransactionId());
         return response;
     }
@@ -635,80 +653,115 @@ public class TokenClient extends AbstractNetworkClient {
     @Getter
     public enum TokenNameEnum {
         // also used in call.feature
-        FUNGIBLE("fungible", TokenType.FUNGIBLE_COMMON, TokenKycStatus.KycNotApplicable, TokenFreezeStatus.Unfrozen),
+        FUNGIBLE(
+                "fungible",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.Unfrozen,
+                false),
         FUNGIBLEHISTORICAL(
-                "fungible_historical", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
+                "fungible_historical",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.Granted,
+                TokenFreezeStatus.Unfrozen,
+                false),
         FUNGIBLE_DELETABLE(
                 "fungible_deletable",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
+                TokenFreezeStatus.FreezeNotApplicable,
+                false),
         FUNGIBLE_FOR_ETH_CALL(
                 "fungible",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
+                TokenFreezeStatus.FreezeNotApplicable,
+                false),
         // used in tokenAllowance.feature and not using snake_case because cucumber cannot detect the enum
         ALLOWANCEFUNGIBLE(
                 "allowance_fungible",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
+                TokenFreezeStatus.FreezeNotApplicable,
+                false),
         FUNGIBLE_WITH_CUSTOM_FEES(
                 "fungible_custom_fees",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
-        NFT("non_fungible", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.KycNotApplicable, TokenFreezeStatus.Unfrozen),
+                TokenFreezeStatus.FreezeNotApplicable,
+                false),
+        NFT(
+                "non_fungible",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.Unfrozen,
+                false),
         NFT_FOR_ETH_CALL(
                 "non_fungible",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
+                TokenFreezeStatus.FreezeNotApplicable,
+                false),
         NFT_ERC(
                 "non_fungible_erc",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
+                TokenFreezeStatus.FreezeNotApplicable,
+                false),
         NFTHISTORICAL(
                 "non_fungible_historical",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.Granted,
-                TokenFreezeStatus.Unfrozen),
+                TokenFreezeStatus.Unfrozen,
+                false),
         NFT_DELETABLE(
                 "non_fungible_deletable",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.FreezeNotApplicable),
+                TokenFreezeStatus.FreezeNotApplicable,
+                true),
         FUNGIBLE_KYC_UNFROZEN(
-                "fungible_kyc_unfrozen", TokenType.FUNGIBLE_COMMON, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen),
+                "fungible_kyc_unfrozen",
+                TokenType.FUNGIBLE_COMMON,
+                TokenKycStatus.Granted,
+                TokenFreezeStatus.Unfrozen,
+                false),
         FUNGIBLE_KYC_UNFROZEN_2(
                 "fungible_kyc_unfrozen_2",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.Granted,
-                TokenFreezeStatus.Unfrozen),
+                TokenFreezeStatus.Unfrozen,
+                true),
         FUNGIBLE_KYC_UNFROZEN_FOR_ETH_CALL(
                 "fungible_kyc_unfrozen_for_eth_call",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.Granted,
-                TokenFreezeStatus.Unfrozen),
+                TokenFreezeStatus.Unfrozen,
+                false),
         FUNGIBLE_KYC_NOT_APPLICABLE_UNFROZEN(
                 "fungible_kyc_not_applicable_unfrozen",
                 TokenType.FUNGIBLE_COMMON,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.Unfrozen),
+                TokenFreezeStatus.Unfrozen,
+                false),
         NFT_KYC_NOT_APPLICABLE_UNFROZEN(
                 "nft_kyc_not_applicable_unfrozen",
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenKycStatus.KycNotApplicable,
-                TokenFreezeStatus.Unfrozen),
+                TokenFreezeStatus.Unfrozen,
+                false),
         NFT_KYC_UNFROZEN(
-                "nft_kyc_unfrozen", TokenType.NON_FUNGIBLE_UNIQUE, TokenKycStatus.Granted, TokenFreezeStatus.Unfrozen);
+                "nft_kyc_unfrozen",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.Granted,
+                TokenFreezeStatus.Unfrozen,
+                false);
 
         private final String symbol;
         private final TokenType tokenType;
         private final TokenKycStatus tokenKycStatus;
         private final TokenFreezeStatus tokenFreezeStatus;
+        private final boolean createWithMetadata;
 
         @Override
         public String toString() {
@@ -716,7 +769,9 @@ public class TokenClient extends AbstractNetworkClient {
         }
     }
 
-    public record TokenResponse(TokenId tokenId, NetworkTransactionResponse response) {}
+    @Builder(toBuilder = true)
+    public record TokenResponse(
+            TokenId tokenId, NetworkTransactionResponse response, PrivateKey metadataKey, byte[] metadata) {}
 
     private record TokenAccount(TokenId tokenId, ExpandedAccountId accountId) {}
 }

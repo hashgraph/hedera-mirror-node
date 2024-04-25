@@ -41,29 +41,39 @@ Feature: HTS Base Coverage Feature
   Scenario Outline: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
     Given I successfully create a new nft with infinite supplyType
     Then the mirror node REST API should return the transaction
-    Then I ensure token has the correct properties
-    When I associate ALICE with token
-    And the mirror node REST API should return the transaction
-    Then the mirror node REST API should return the token relationship for nft
-    Then I mint a serial number from the token with metadata "0001"
-    And the mirror node REST API should return the transaction for token serial number 0 transaction flow
-    Then I transfer serial number 0 to ALICE
-    Given I update the metadata to "0002" for serial number 0
+    And I ensure token has the correct properties
+    And I ensure token has the expected metadata and key
     Given I update the token metadata key
-    Then I mint a serial number from the token with metadata "0101"
+    Then the mirror node REST API should return the transaction
+    And I ensure token has the expected metadata and key
+    Given I update the token metadata to "0xffee"
+    Then the mirror node REST API should return the transaction
+    And I ensure token has the expected metadata and key
+    When I associate ALICE with token
+    Then the mirror node REST API should return the transaction
+    And the mirror node REST API should return the token relationship for nft
+    Given I mint a serial number from the token with metadata "0x0001"
+    Then the mirror node REST API should return the transaction for token serial number 0 transaction flow
+    Given I transfer serial number 0 to ALICE
+    Then the mirror node REST API should return the transaction for token serial number 0 full flow
+    Given I update the metadata to "0x0002" for serial number 0
+    Then the mirror node REST API should return the transaction for token serial number 0 transaction flow
+    Given I mint a serial number from the token with metadata "0x0101"
+    Then the mirror node REST API should return the transaction for token serial number 1 transaction flow
+    Given I update the metadata to "0xdeadbeef" for serial numbers 0 and 1
+    Then the mirror node REST API should return the transaction for token serial number 0 transaction flow
     And the mirror node REST API should return the transaction for token serial number 1 transaction flow
-    Given I update the metadata to "deadbeef" for serial numbers 0 and 1
-    And the mirror node REST API should return the transaction for token serial number 0 full flow
-    Then I wipe serial number 0 from token
-    And the mirror node REST API should return the transaction for token serial number 0 transaction flow
-    Then I burn serial number 1 from token
-    And the mirror node REST API should return the transaction for token serial number 1 transaction flow
+    Given I wipe serial number 0 from token
+    Then the mirror node REST API should return the transaction for token serial number 0 transaction flow
+    Given I burn serial number 1 from token
+    Then the mirror node REST API should return the transaction for token serial number 1 transaction flow
         #TODO This test should be updated when services enables the ability to change NFT treasury accounts.
-    Then I update the treasury of token to ALICE
-    And the mirror node REST API should return the transaction
-    Then I update the treasury of token to operator
-    Then I delete the token
-    And the mirror node REST API should return the transaction for token serial number 1 transaction flow
+    Given I update the treasury of token to ALICE
+    Then the mirror node REST API should return the transaction
+    Given I update the treasury of token to operator
+    Then the mirror node REST API should return the transaction
+    Given I delete the token
+    Then the mirror node REST API should return the transaction for token serial number 1 transaction flow
 
   @customfees
   Scenario Outline: Validate Base Token Flow with Custom Fees Schedule - Create, Associate, Fund, Transfer
