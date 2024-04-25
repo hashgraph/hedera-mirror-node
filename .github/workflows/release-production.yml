@@ -2,7 +2,8 @@ name: Release Production
 
 on:
   push:
-    tags: [v*]
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -10,6 +11,9 @@ permissions:
 defaults:
   run:
     shell: bash
+
+env:
+  LC_ALL: C.UTF-8
 
 jobs:
   image:
@@ -95,13 +99,15 @@ jobs:
     name: Publish charts
     needs: image
     runs-on: [self-hosted, linux, large, ephemeral]
+    permissions:
+      contents: write
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
         with:
           egress-policy: audit
 
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
 
       - name: Publish helm chart

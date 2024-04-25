@@ -14,6 +14,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  LC_ALL: C.UTF-8
+
 jobs:
   release:
     name: Release
