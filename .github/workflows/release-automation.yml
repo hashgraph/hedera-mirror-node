@@ -7,10 +7,17 @@ on:
         description: "Version (semver)"
         required: true
 
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     env:
       RELEASE_NOTES_FILENAME: release_notes
     outputs:
@@ -132,7 +139,7 @@ jobs:
 
   create_pr:
     name: Create PR
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     needs: release
     if: ${{ needs.release.outputs.create_pr == 'true' }}
     env:
