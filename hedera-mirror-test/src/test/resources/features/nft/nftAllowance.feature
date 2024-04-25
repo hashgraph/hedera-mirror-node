@@ -13,7 +13,7 @@ Feature: Account NFT Allowance Coverage Feature
     Given <spender> transfers serial number 0 to <recipient>
     Then the mirror node REST API should confirm the approved transfer of serial number 0 and confirm the new owner is <recipient>
     When I delete the allowance on NFT <tokenName> for <spender>
-    Then the mirror node REST API should confirm the approved allowance for NFT <tokenName> and <spender> no longer exists
+    Then the mirror node REST API should confirm the approved allowance for NFT <tokenName> and <spender> is no longer available
     Examples:
       | tokenName      | spender | recipient |
       | ALLOWANCENONFUNGIBLE  | BOB  | ALICE     |

@@ -143,7 +143,7 @@ public class NftFeature extends AbstractFeature {
     }
 
     @Then(
-            "the mirror node REST API should confirm the approved allowance for NFT {token} and {account} no longer exists")
+            "the mirror node REST API should confirm the approved allowance for NFT {token} and {account} is no longer available")
     @RetryAsserts
     public void verifyTokenAllowanceDelete(
             TokenClient.TokenNameEnum tokenName, AccountClient.AccountNameEnum spenderName) {
@@ -152,9 +152,7 @@ public class NftFeature extends AbstractFeature {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var spender = accountClient.getAccount(spenderName);
 
-        // Once we change this API to not return approved_for_all=false this test will change to check for an empty
-        // list.
-
+        // Once we change this API to not return approved_for_all=false this test will change to check for an empty list
         verifyMirrorAPIApprovedNftAllowanceResponse(tokenId, spender, false, true);
     }
 
