@@ -76,7 +76,7 @@ insertCursors() {
   local conditions
   getCursorConditions conditions
 
-  cursorId=1
+  local cursorId=1
   local insertSql="\\copy async_migration_status(the_table, cursor_id, cursor_range) from program 'cat ${sqlTemp}' with csv delimiter ',';"
   local values=()
   for value in "${conditions[@]}"; do
@@ -144,7 +144,7 @@ migrateTableBinary() {
   fi
 
   local where
-  if [[ "${table}" != "topic_message" && "${columns}" =~ $TS_COLUMN_REGEX ]]; then
+  if [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
     where="where consensus_timestamp \<= ${MAX_TIMESTAMP}"
   # handle address book.
   elif [[ "${columns}" =~ \<consensus_timestamp_start\> ]]; then
@@ -182,7 +182,7 @@ migrateTableAsyncBinary() {
 
   local tableCursors=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" -c "${cursorQuery}")
 
-  while IFS="," read -r cursor_lower_bound cursor_upper_bound lower_inc upper_inc; do
+  while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound lower_inc upper_inc; do
     ACTIVE_COPIES=$(find . -maxdepth 1 -name "process-${table}*" -printf '.' | wc -m)
     while [[ "${ACTIVE_COPIES}" -ge ${CONCURRENT_COPIES_PER_TABLE} ]]; do
       sleep .5
@@ -202,9 +202,10 @@ migrateTableAsyncBinary() {
     else
       upperOperator="<"
     fi
+
     local where
     if [[ -z "${cursor_lower_bound}" ]]; then
-      where="where consensus_timestamp \<= ${cursor_upper_bound}"
+      where="where consensus_timestamp \\${upperOperator} ${cursor_upper_bound}"
     else
       where="where consensus_timestamp \\${upperOperator} ${cursor_upper_bound} and consensus_timestamp \\${lowerOperator} ${cursor_lower_bound}"
     fi
@@ -314,8 +315,6 @@ log "Installing Flyway"
 wget -qO- "${FLYWAY_URL}" | tar -xz && mv flyway-*/* .
 log "Flyway installed"
 
-log "Copying Flyway configuration"
-
 CREATE_INDEXES_BEFORE_MIGRATION=${CREATE_INDEXES_BEFORE_MIGRATION:-true}
 if [[ "${CREATE_INDEXES_BEFORE_MIGRATION}" = "true" ]]; then
   cp "${MIGRATIONS_DIR}/V2.0."* "${FLYWAY_DIR}"/sql/
@@ -323,6 +322,7 @@ else
   cp "${MIGRATIONS_DIR}/V2.0."[0-2]* "${FLYWAY_DIR}"/sql/
 fi
 
+log "Copying Flyway configuration"
 cat >"${FLYWAY_DIR}/conf/flyway.conf" <<EOF
 flyway.password=${TARGET_DB_PASSWORD}
 flyway.placeholders.hashShardCount=6
@@ -353,17 +353,14 @@ ASYNC_TABLES=$(echo "${ASYNC_TABLES//[\']/}" | tr "," "\n")
 
 declare tablesArray
 IFS=" " readarray -t tablesArray <<< "${TABLES}"
-tablesArray+=("topic_message")
 tablesArray+=("${ASYNC_TABLES[@]}")
-
 COUNT="${#tablesArray[@]}"
+
 insertCursors
 
 log "Migrating ${COUNT} tables from ${SOURCE_DB_HOST}:${SOURCE_DB_PORT} to ${TARGET_DB_HOST}:${TARGET_DB_PORT}. Tables: ${TABLES[*]}"
-
 echo "${tablesArray[*]}" | tr " " "\n" |ASYNC_TABLES=$ASYNC_TABLES xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTable "$@"' _ {}
 
 log "migration completed in $SECONDS seconds."
-
 popd || die "Couldn't change directory back to ${SCRIPTS_DIR}"
 exit 0
