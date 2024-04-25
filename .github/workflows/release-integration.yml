@@ -2,14 +2,18 @@ name: Release Integration
 
 on:
   push:
-    branches: [main]
+    branches:
+      - 'main'
 
 permissions:
-  contents: read
+  contents: write
 
 defaults:
   run:
     shell: bash
+
+env:
+  LC_ALL: C.UTF-8
 
 jobs:
   publish:
