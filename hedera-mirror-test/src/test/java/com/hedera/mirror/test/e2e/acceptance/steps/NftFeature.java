@@ -124,8 +124,8 @@ public class NftFeature extends AbstractFeature {
             int serialNumberIndex,
             AccountClient.AccountNameEnum accountName) {
         // spender needs to transfer so they need to sign the transaction.
-        ExpandedAccountId payer = accountClient.getAccount(spenderName);
-        transferNfts(tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex), payer, accountName);
+        ExpandedAccountId spender = accountClient.getAccount(spenderName);
+        transferNfts(tokenId, tokenSerialNumbers.get(tokenId).get(serialNumberIndex), spender, accountName);
     }
 
     @Then(
@@ -171,12 +171,12 @@ public class NftFeature extends AbstractFeature {
     }
 
     private void transferNfts(
-            TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountClient.AccountNameEnum accountName) {
+            TokenId tokenId, long serialNumber, ExpandedAccountId spender, AccountClient.AccountNameEnum accountName) {
         var receiver = accountClient.getAccount(accountName).getAccountId();
         // Operator will pay for this transfer
         ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.transferNonFungibleToken(
-                tokenId, payer, receiver, List.of(serialNumber), sender.getPrivateKey());
+                tokenId, payer, receiver, List.of(serialNumber), spender.getPrivateKey());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
