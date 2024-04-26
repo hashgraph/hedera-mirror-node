@@ -78,36 +78,45 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     }
 
     private Condition getBaseCondition(
-            EntityIdRangeParameter primarySortParam,
-            EntityIdRangeParameter tokenParam,
+            List<EntityIdRangeParameter> primarySortParams,
+            List<EntityIdRangeParameter> tokenParams,
             TableField<NftAllowanceRecord, Long> primarySortField) {
-        if (primarySortParam == null) {
+
+        if (primarySortParams == null) {
             return noCondition();
         }
 
-        var primaryCondition = getCondition(
-                primarySortField,
-                primarySortParam.operator(),
-                primarySortParam.value().getId());
+        Condition primaryCondition = noCondition();
 
-        if (tokenParam == null) {
+        for (EntityIdRangeParameter primarySortParam : primarySortParams) {
+            primaryCondition = primaryCondition.and(getCondition(
+                    primarySortField,
+                    primarySortParam.operator(),
+                    primarySortParam.value().getId()));
+        }
+
+        if (tokenParams == null) {
             return primaryCondition;
         }
 
-        var tokenCondition = getCondition(
-                NFT_ALLOWANCE.TOKEN_ID,
-                tokenParam.operator(),
-                tokenParam.value().getId());
+        Condition tokenCondition = noCondition();
+        for (EntityIdRangeParameter tokenParam : tokenParams) {
+            tokenCondition = tokenCondition.and(getCondition(
+                    NFT_ALLOWANCE.TOKEN_ID,
+                    tokenParam.operator(),
+                    tokenParam.value().getId()));
+        }
 
-        if (primarySortParam.operator() == RangeOperator.EQ) {
+        // There can only be one query param with operator eq for primary sort param
+        if (primarySortParams.get(0).operator() == RangeOperator.EQ) {
             return primaryCondition.and(tokenCondition);
         }
 
         // Get the condition for primary field with EQ operator
-        long value = primarySortParam.value().getId();
-        if (primarySortParam.operator() == RangeOperator.GT) {
+        long value = primarySortParams.get(0).value().getId();
+        if (primarySortParams.operator() == RangeOperator.GT) {
             value += 1L;
-        } else if (primarySortParam.operator() == RangeOperator.LT) {
+        } else if (primarySortParams.operator() == RangeOperator.LT) {
             value -= 1L;
         }
 

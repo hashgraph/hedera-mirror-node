@@ -18,6 +18,7 @@ package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Sort;
@@ -37,7 +38,7 @@ public class NftAllowanceRequest {
     @Builder.Default
     private boolean isOwner = true;
 
-    private EntityIdRangeParameter ownerOrSpenderId;
+    private List<EntityIdRangeParameter> ownerOrSpenderId;
 
-    private EntityIdRangeParameter tokenId;
+    private List<EntityIdRangeParameter> tokenId;
 }
