@@ -89,6 +89,8 @@ Feature: HTS Base Coverage Feature
       | 50     |           |             | ALICE     |         |         |       |
       | 20     |           |             | CAROL     |         |         |       |
     Then the mirror node REST API should confirm token with custom fees schedule
+    # Token metadata and key were not set for this token
+    And I ensure token has the expected metadata and key
     # Create ALICE as hbar fee collector, CAROL as fractional fee collector, and DAVE as token transfer recipient
     Given I associate ALICE with token
     And the mirror node REST API should return the transaction

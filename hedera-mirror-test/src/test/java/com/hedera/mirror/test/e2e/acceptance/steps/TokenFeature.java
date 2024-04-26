@@ -29,7 +29,6 @@ import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -136,8 +135,7 @@ public class TokenFeature extends AbstractFeature {
     public void ensureTokenInfoProperties() {
         var tokenInfo = mirrorClient.getTokenInfo(tokenId.toString());
         assertThat(tokenInfo.getMetadata()).isEqualTo(this.tokenResponse.metadata());
-        assertMetadataKey(
-                tokenInfo.getMetadataKey(), this.tokenResponse.metadataKey().getPublicKey());
+        assertMetadataKey(tokenInfo.getMetadataKey(), this.tokenResponse.metadataKey());
     }
 
     @Given("I associate account {account} with token {token}")
@@ -880,13 +878,20 @@ public class TokenFeature extends AbstractFeature {
         assertThat(mirrorTokenRelationship.getLinks().getNext()).isNull();
     }
 
-    private void assertMetadataKey(TokenInfoMetadataKey tokenInfoMetadataKey, PublicKey clientMetadataKey) {
+    private void assertMetadataKey(TokenInfoMetadataKey tokenInfoMetadataKey, PrivateKey clientMetadataKey) {
+        if (tokenInfoMetadataKey == null && clientMetadataKey == null) {
+            return;
+        }
+        assertThat(tokenInfoMetadataKey).isNotNull();
+        assertThat(clientMetadataKey).isNotNull();
+
         if (clientMetadataKey.isED25519()) {
             assertThat(tokenInfoMetadataKey.getType()).isEqualTo(TypeEnum.ED25519);
         } else {
             assertThat(tokenInfoMetadataKey.getType()).isEqualTo(TypeEnum.ECDSA_SECP256K1);
         }
-        assertThat(tokenInfoMetadataKey.getKey()).isEqualTo(clientMetadataKey.toStringRaw());
+        assertThat(tokenInfoMetadataKey.getKey())
+                .isEqualTo(clientMetadataKey.getPublicKey().toStringRaw());
     }
 
     private void updateNftMetadataForSerials(int... serialNumberIndices) {
