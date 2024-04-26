@@ -14,6 +14,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  LC_ALL: C.UTF-8
+
 jobs:
   release:
     name: Release
@@ -80,7 +83,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # v3.3.1
+        uses: gradle/actions/setup-gradle@db19848a5fa7950289d3668fb053140cf3028d43 # v3.3.2
 
       - name: Create and Switch to Release Branch
         run: |
@@ -174,7 +177,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # v3.3.1
+        uses: gradle/actions/setup-gradle@db19848a5fa7950289d3668fb053140cf3028d43 # v3.3.2
 
       - name: Reset main to release branch
         run: |
@@ -185,7 +188,7 @@ jobs:
         run: ./gradlew release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83 # v6.0.4
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
         with:
           body: ""
           branch: create-pull-request/${{ env.RELEASE_BRANCH }}
