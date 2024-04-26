@@ -20,8 +20,32 @@ queryTarget() {
   echo "${result}"
 }
 
+getMaxTimestamp() {
+  local migrationEnv="$(dirname ${0})/migration.env"
+
+  if [[ -f "${migrationEnv}" ]]; then
+    # shellcheck source=/dev/null
+    source "${migrationEnv}"
+  fi
+
+  if [[ -z "${MAX_TIMESTAMP}" ]]; then
+    local query="select max(consensus_end) from record_file;"
+    local maxTimestamp=$(querySource "${query}")
+
+    if [[ -z "${maxTimestamp}" ]]; then
+      die "Unable to determine the max timestamp from the source database"
+    fi
+
+    echo "MAX_TIMESTAMP=${maxTimestamp}" > "${migrationEnv}"
+    echo "${maxTimestamp}"
+  else
+    echo "${MAX_TIMESTAMP}"
+  fi
+
+}
+
 die() {
-  echo "$@"
+  log "$@"
   exit 1
 }
 
@@ -54,14 +78,24 @@ getColumns() {
   echo "${columns}"
 }
 
+getCopySql() {
+  local table="${1}"
+  local columns="${2}"
+  local where="${3}"
+
+  local sourceSql="PGPASSWORD=${SOURCE_DB_PASSWORD} psql -q -t -h ${SOURCE_DB_HOST} -d ${SOURCE_DB_NAME} -p ${SOURCE_DB_PORT} -U ${SOURCE_DB_USER} -c \"copy (select ${columns} from ${table} ${where}) to stdout with binary\""
+  local sql="\\copy ${table}(${columns}) from program '${sourceSql}' with binary;"
+  echo "${sql}"
+}
+
 insertCursors() {
   local hasTable="f"
   local sqlTemp="/tmp/cursors-$$.csv"
   local tableDDL="
     create table if not exists async_migration_status (
-    the_table                varchar(100),
-    cursor_id                int,
-    cursor_range             int8range,
+    table_name          varchar(100),
+    cursor_id           int,
+    cursor_range        int8range,
     processed_timestamp timestamptz);"
 
   hasTable=$(targetTableExists "async_migration_status")
@@ -77,7 +111,7 @@ insertCursors() {
   getCursorConditions conditions
 
   local cursorId=1
-  local insertSql="\\copy async_migration_status(the_table, cursor_id, cursor_range) from program 'cat ${sqlTemp}' with csv delimiter ',';"
+  local insertSql="\\copy async_migration_status(table_name, cursor_id, cursor_range) from program 'cat ${sqlTemp}' with csv delimiter ',';"
   local values=()
   for value in "${conditions[@]}"; do
     for table in $(echo "${ASYNC_TABLES[@]}" | tr "," "\n"); do
@@ -145,17 +179,16 @@ migrateTableBinary() {
 
   local where
   if [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
-    where="where consensus_timestamp \<= ${MAX_TIMESTAMP}"
+    where="where consensus_timestamp <= ${MAX_TIMESTAMP}"
+
   # handle address book.
   elif [[ "${columns}" =~ \<consensus_timestamp_start\> ]]; then
-    where="where consensus_timestamp_end \<= ${MAX_TIMESTAMP}"
+    where="where consensus_timestamp_start <= ${MAX_TIMESTAMP}"
   fi
 
-  local sql="\\copy ${table}(${columns}) FROM PROGRAM 'echo copy \(select ${columns} from ${table} ${where}\) to STDOUT with BINARY|./querySource.sh' WITH BINARY;"
+  log "Starting to copy '${table}' with filter: ${where}"
 
-  log "Starting to copy '${table}' table with sql: ${sql}"
-
-  queryTarget "${sql}"
+  queryTarget "$(getCopySql "${table}" "${columns}" "${where}")"
 
   log "Copied '${table}' table in ${SECONDS}s"
 }
@@ -163,7 +196,9 @@ migrateTableBinary() {
 migrateTableAsyncBinary() {
   local table="${1}"
   local columns="${2}"
-  local tmpDir="${3}"
+  local tmpDir="/tmp/migrate-${table}-$$"
+  mkdir -m 700 "${tmpDir}" || die "Couldn't make safe tmp ${tmpDir}"
+  pushd "${tmpDir}" || die "Couldn't change directory to tmp ${tmpDir}"
 
   if ! [[ "${columns}" =~ $TS_COLUMN_REGEX ]]; then
     log "ERROR: Table ${table} does not have a timestamp column and can not be migrated asynchronously."
@@ -176,7 +211,7 @@ migrateTableAsyncBinary() {
                             lower_inc(cursor_range),
                             upper_inc(cursor_range)
                      FROM async_migration_status
-                     WHERE the_table = '${table}' and
+                     WHERE table_name = '${table}' and
                            processed_timestamp IS NULL
                      ORDER BY upper(cursor_range) desc;"
 
@@ -205,19 +240,18 @@ migrateTableAsyncBinary() {
 
     local where
     if [[ -z "${cursor_lower_bound}" ]]; then
-      where="where consensus_timestamp \\${upperOperator} ${cursor_upper_bound}"
+      where="where consensus_timestamp ${upperOperator} ${cursor_upper_bound}"
     else
-      where="where consensus_timestamp \\${upperOperator} ${cursor_upper_bound} and consensus_timestamp \\${lowerOperator} ${cursor_lower_bound}"
+      where="where consensus_timestamp ${upperOperator} ${cursor_upper_bound} and consensus_timestamp ${lowerOperator} ${cursor_lower_bound}"
     fi
 
     local processMarker="${tmpDir}/process-${table}-$(uuidgen)"
     touch "${processMarker}"
 
-    local copyDef="\\copy ${table}(${columns}) from program 'echo copy \(select ${columns} from ${table} ${where}\) to stdout with binary|./querySource.sh' with binary;"
-    local bookmarkSql="update async_migration_status set processed_timestamp=now() where the_table='${table}' and cursor_id=${cursor_id};"
-    queryTarget "${copyDef} ${bookmarkSql}" && rm "${processMarker}" &
+    local bookmarkSql="update async_migration_status set processed_timestamp=now() where table_name='${table}' and cursor_id=${cursor_id};"
+    queryTarget "$(getCopySql "${table}" "${columns}" "${where}") ${bookmarkSql}" && rm "${processMarker}" &
 
-    log "Starting to copy table ${table} with sql: ${copyDef} pid $!"
+    log "Starting to copy table ${table} with filter: ${where} on pid $!"
   done <<<"${tableCursors}"
 
   wait
@@ -229,9 +263,6 @@ migrateTableAsyncBinary() {
 
 migrateTable() {
   local table="${1}"
-  local tmpDir="/tmp/migrate-${table}-$$"
-  mkdir -m 700 "${tmpDir}" || die "Couldn't make safe tmp ${tmpDir}"
-  pushd "${tmpDir}" || die "Couldn't change directory to tmp ${tmpDir}"
 
   trap "handlePipeError 'for table ${table} (BINARY)'" SIGPIPE
   trap "handleExit 'for table ${table} (BINARY)'" ERR
@@ -243,24 +274,18 @@ migrateTable() {
     return
   fi
 
-  cat >querySource.sh <<EOF
-#!/usr/bin/env bash
-PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}"
-EOF
-  chmod +x querySource.sh
-
   local columns
   columns=$(getColumns "${table}")
 
   if [[ "${ASYNC_TABLES}" =~ $table ]]; then
-    migrateTableAsyncBinary "${table}" "${columns}" "${tmpDir}" &
+    migrateTableAsyncBinary "${table}" "${columns}" &
   else
-    migrateTableBinary "${table}" "${columns}" "${tmpDir}"
+    migrateTableBinary "${table}" "${columns}"
   fi
 }
 
 # Export the functions so they can be invoked via parallel xargs
-export -f log querySource queryTarget migrateTable migrateTableBinary migrateTableAsyncBinary handlePipeError handleExit targetTableExists getColumns
+export -f log querySource queryTarget migrateTable migrateTableBinary migrateTableAsyncBinary handlePipeError handleExit targetTableExists getColumns getCopySql
 
 SECONDS=0
 SCRIPTS_DIR="$(pwd)"
@@ -269,10 +294,10 @@ MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 export PATH="${FLYWAY_DIR}/:$PATH"
 source "${SCRIPTS_DIR}/migration.config"
 
-ASYNC_TABLE_SPLITS=${ASYNC_TABLE_SPLITS:-1000}
+export ASYNC_TABLE_SPLITS=${ASYNC_TABLE_SPLITS:-1000}
 export CONCURRENCY=${CONCURRENCY:-5}
 export CONCURRENT_COPIES_PER_TABLE=${CONCURRENT_COPIES_PER_TABLE:-5}
-export MAX_TIMESTAMP="${MAX_TIMESTAMP:-$(querySource "select max(consensus_end) from record_file;")}"
+export MAX_TIMESTAMP="${MAX_TIMESTAMP:-$(getMaxTimestamp)}"
 export SOURCE_DB_HOST="${SOURCE_DB_HOST:-127.0.0.1}"
 export SOURCE_DB_NAME="${SOURCE_DB_NAME:-mirror_node}"
 export SOURCE_DB_PASSWORD="${SOURCE_DB_PASSWORD:-mirror_node_pass}"
@@ -286,7 +311,7 @@ export TARGET_DB_PASSWORD="${TARGET_DB_PASSWORD:-mirror_node_pass}"
 export TARGET_DB_PORT="${TARGET_DB_PORT:-5432}"
 export TARGET_DB_SCHEMA="${TARGET_DB_SCHEMA:-public}"
 export TARGET_DB_USER="${TARGET_DB_USER:-mirror_node}"
-export TS_COLUMN_REGEX="${TS_COLUMN_REGEX:-\<consensus_timestamp\>}"
+export TS_COLUMN_REGEX="\<consensus_timestamp\>"
 
 SOURCE_QUERY="
 select exists
@@ -307,37 +332,32 @@ if [[ "${TARGET_DB_HEALTHY}" != "t" ]]; then
   exit 1
 fi
 
-rm -rf "${FLYWAY_DIR}"
-mkdir -p "${FLYWAY_DIR}" || die "Couldn't create directory ${FLYWAY_DIR}"
-pushd "${FLYWAY_DIR}" || die "Couldn't change directory to ${FLYWAY_DIR}"
+#rm -rf "${FLYWAY_DIR}"
+#mkdir -p "${FLYWAY_DIR}" || die "Couldn't create directory ${FLYWAY_DIR}"
+#pushd "${FLYWAY_DIR}" || die "Couldn't change directory to ${FLYWAY_DIR}"
+#
+#log "Installing Flyway"
+#wget -qO- "${FLYWAY_URL}" | tar -xz && mv flyway-*/* .
+#log "Flyway installed"
+#
+#cp "${MIGRATIONS_DIR}/V2.0."* "${FLYWAY_DIR}"/sql/
+#
+#log "Copying Flyway configuration"
+#cat >"${FLYWAY_DIR}/conf/flyway.conf" <<EOF
+#flyway.password=${TARGET_DB_PASSWORD}
+#flyway.placeholders.hashShardCount=6
+#flyway.placeholders.maxEntityId=5000000
+#flyway.placeholders.maxEntityIdRatio=2.0
+#flyway.placeholders.partitionStartDate='2019-09-01'
+#flyway.placeholders.partitionTimeInterval='1 month'
+#flyway.placeholders.schema=${TARGET_DB_SCHEMA}
+#flyway.placeholders.shardCount=16
+#flyway.url=jdbc:postgresql://${TARGET_DB_HOST}:${TARGET_DB_PORT}/${TARGET_DB_NAME}
+#flyway.user=${TARGET_DB_USER}
+#EOF
 
-log "Installing Flyway"
-wget -qO- "${FLYWAY_URL}" | tar -xz && mv flyway-*/* .
-log "Flyway installed"
-
-CREATE_INDEXES_BEFORE_MIGRATION=${CREATE_INDEXES_BEFORE_MIGRATION:-true}
-if [[ "${CREATE_INDEXES_BEFORE_MIGRATION}" = "true" ]]; then
-  cp "${MIGRATIONS_DIR}/V2.0."* "${FLYWAY_DIR}"/sql/
-else
-  cp "${MIGRATIONS_DIR}/V2.0."[0-2]* "${FLYWAY_DIR}"/sql/
-fi
-
-log "Copying Flyway configuration"
-cat >"${FLYWAY_DIR}/conf/flyway.conf" <<EOF
-flyway.password=${TARGET_DB_PASSWORD}
-flyway.placeholders.hashShardCount=6
-flyway.placeholders.maxEntityId=5000000
-flyway.placeholders.maxEntityIdRatio=2.0
-flyway.placeholders.partitionStartDate='2019-09-01'
-flyway.placeholders.partitionTimeInterval='1 month'
-flyway.placeholders.schema=${TARGET_DB_SCHEMA}
-flyway.placeholders.shardCount=16
-flyway.url=jdbc:postgresql://${TARGET_DB_HOST}:${TARGET_DB_PORT}/${TARGET_DB_NAME}
-flyway.user=${TARGET_DB_USER}
-EOF
-
-log "Running Flyway migrate"
-flyway migrate
+#log "Running Flyway migrate"
+#flyway migrate
 
 TABLES_QUERY="
 select pc.relname from pg_class pc
@@ -358,7 +378,7 @@ COUNT="${#tablesArray[@]}"
 
 insertCursors
 
-log "Migrating ${COUNT} tables from ${SOURCE_DB_HOST}:${SOURCE_DB_PORT} to ${TARGET_DB_HOST}:${TARGET_DB_PORT}. Tables: ${TABLES[*]}"
+log "Migrating ${COUNT} tables from ${SOURCE_DB_HOST}:${SOURCE_DB_PORT} to ${TARGET_DB_HOST}:${TARGET_DB_PORT}. With max consensus_timestamp ${MAX_TIMESTAMP} and Tables: ${tablesArray[*]}"
 echo "${tablesArray[*]}" | tr " " "\n" |ASYNC_TABLES=$ASYNC_TABLES xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTable "$@"' _ {}
 
 log "migration completed in $SECONDS seconds."

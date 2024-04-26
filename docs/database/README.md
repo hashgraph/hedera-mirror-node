@@ -273,11 +273,14 @@ Following are the prerequisites and steps for migrating V1 data to V2.
 4. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and
    update it in the `FLYWAY_URL` field in the `migration.config` file. The default is set to the linux version.
 5. Stop the [Importer](/docs/importer/README.md) process. 
-6. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script. 
+6. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script. Due to the time it will take to complete the migration, 
+   it is recommended to run the script in a way that doesn't require your terminal session to remain open.`: 
+   - run and redirect the output `./migration.sh > migrationout.txt 2> migration-error.txt &`
+   - Pause job `ctrl-z`
+   - Run in background `bg`
+   - Run `jobs` to get the correct job id 
+   - Disown the process `disown -h %1`. Replace 1 with the correct job id.
 7. Update the mirror node configuration to point to the new Citus DB and start it.
-
-### Migration notes
-1. It is recommended to run the migration script in a screen/tmux session and pipe stderr and stdout to separate locations.
 
 ## Citus Backup and Restore
 
