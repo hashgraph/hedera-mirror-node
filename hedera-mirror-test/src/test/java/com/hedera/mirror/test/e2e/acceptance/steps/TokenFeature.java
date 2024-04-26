@@ -76,8 +76,6 @@ import lombok.Builder;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
@@ -338,13 +336,13 @@ public class TokenFeature extends AbstractFeature {
     @Given("I update the token metadata")
     public void updateTokenMetadata() {
         var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        var metadataBytes = nextBytes(4);
+        var newMetadata = nextBytes(4);
         networkTransactionResponse =
-                tokenClient.updateTokenMetadata(tokenId, operatorId, tokenResponse.metadataKey(), metadataBytes);
+                tokenClient.updateTokenMetadata(tokenId, operatorId, tokenResponse.metadataKey(), newMetadata);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         this.tokenResponse =
-                this.tokenResponse.toBuilder().metadata(metadataBytes).build();
+                this.tokenResponse.toBuilder().metadata(newMetadata).build();
     }
 
     @Given("I update the token metadata key")
@@ -895,14 +893,14 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private void updateNftMetadataForSerials(int... serialNumberIndices) {
-        var metadata = nextBytes(4);
+        var newMetadata = nextBytes(4);
         var nftInfoForToken = tokenNftInfoMap.get(tokenId);
         var serialNumbers = Arrays.stream(serialNumberIndices)
                 .mapToObj(nftInfoForToken::get)
                 .map(IndividualNftInfo::serialNumber)
                 .toList();
         networkTransactionResponse =
-                tokenClient.updateNftMetadata(tokenId, serialNumbers, tokenResponse.metadataKey(), metadata);
+                tokenClient.updateNftMetadata(tokenId, serialNumbers, tokenResponse.metadataKey(), newMetadata);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
@@ -911,15 +909,9 @@ public class TokenFeature extends AbstractFeature {
         Arrays.stream(serialNumberIndices)
                 .forEach(idx -> nftInfoForToken.set(
                         idx,
-                        nftInfoForToken.get(idx).toBuilder().metadata(metadata).build()));
-    }
-
-    private byte[] decodeMetadataString(String metadata) {
-        try {
-            return Hex.decodeHex(metadata.replaceFirst("0x", ""));
-        } catch (DecoderException e) {
-            throw new RuntimeException("Failed to decode hexadecimal metadata string", e);
-        }
+                        nftInfoForToken.get(idx).toBuilder()
+                                .metadata(newMetadata)
+                                .build()));
     }
 
     @Builder(toBuilder = true)
