@@ -38,7 +38,8 @@ create table if not exists token_airdrop
     token_id            bigint         not null
 );
 
-create index if not exists token__airdrop on token_airdrop (sender_account_id, receiver_account_id, token_id, serial_number);
+create index if not exists token_airdrop__sender_id on token_airdrop (sender_account_id, receiver_account_id, token_id, serial_number);
+create index if not exists token_airdrop__receiver_id on token_airdrop (receiver_account_id, sender_account_id, token_id, serial_number);
 
 create table if not exists token_airdrop_history
 (
@@ -61,13 +62,9 @@ When parsing pending airdrops,
 #### Domain
 
 - Add an `TokenAirdrop` domain object with the same fields as the schema.
-- Add an `TokenCancelAirdrop` domain object with the same fields as the schema.
-- Add an `TokenClaimAirdrop` domain object with the same fields as the schema.
 
 #### Entity Listener
 
-- Add `onCancelAirdrop` to handle setting the `state` to `CANCELLED`. Updates the `token_airdrop` table and the `token_airdrop_history` table.
-- Add `onClaimAirdrop` to handle setting the `state` to `CLAIMED`. Updates the `token_airdrop` table and the `token_airdrop_history` table.
 - Add `onTokenAirdrop` to handle inserts to the `token_airdrop` table.
 
 #### Transaction Handlers
@@ -81,20 +78,25 @@ When parsing pending airdrops,
 
 - Add test(s) for the `-1` value for `maxAutomaticTokenAssociations`.
 
-### WEB3
+### Web3 API
 
 #### Support unlimited Max Automatic Token Associations
 
-- Update Web3 `CryptoOpsUsage` and `SyntheticTxnFactory` to handle `-1` values for `maxAutomaticTokenAssociations`.
+- Update Web3 `CryptoOpsUsage` and `SyntheticTxnFactory` to handle `-1` values for `maxAutomaticTokenAssociations` for protobuf versions greater than or equal to the version that implements HIP-904. If the HAPI protobuf version is less than that version then the methods should use the existing behavior.
 
 ### REST API
 
-- Add the new endpoints to Java REST.
+Add the new endpoints to Java REST. Going forward new endpoints will be added to the Rest-Java module rather than the Javascript module.
 
-#### List of outstanding airdrops sent by senderIdOrEvmAddress which have not been claimed by recipients
+#### List Outstanding Airdrops
 
 `/api/v1/accounts/{senderIdOrEvmAddress}/airdrops/outstanding`
 
+List of outstanding airdrops in the `PENDING` state. The primary use case is for the sender of the airdrop. All information returned to the requester will be queried from the `token_airdrop` table and should be performant based on the `token_airdrop__sender_id` index.
+Input validation will be applied to the `senderIdOrEvmAddress` path parameter and the optional query parameters. An error code response of `400` will be returned if any parameters fail validation.
+
+Response:
+
 ```json
 {
   "airdrops": [
@@ -130,13 +132,18 @@ Optional Filters
 
 - `limit` - The maximum number of airdrops to return in the response. Defaults to `25` with a max of `100`.
 - `order` - The direction to sort the items by `token_id` in the response. Can be `asc` or `desc` with a default of `asc`.
-- `receiver.id` - The receiver account the outstanding airdrop was intended for.
+- `receiver.id` - The receiver account the outstanding airdrop was intended for. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `serialnumber` - The specific serial number associated with airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `token.id` - The token ID this airdrop is associated with. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 
-#### List of pending airdrops that receiverIdOrEvmAddress has not yet claimed
+#### List Unclaimed Airdrops
 
 `/api/v1/accounts/{receiverIdOrEvmAddress}/airdrops/pending`
+
+List of airdrops in the `PENDING` state. The primary use case is for the receiver of the airdrop. All information returned to the requester will be queried from the `token_airdrop` table and should be performant based on the `token_airdrop__receiver_id` index.
+Input validation will be applied to the `receiverIdOrEvmAddress` path parameter and the optional query parameters. An error code response of `400` will be returned if any parameters fail validation.
+
+Response:
 
 ```json
 {
@@ -173,7 +180,7 @@ Optional Filters
 
 - `limit` - The maximum number of airdrops to return in the response. Defaults to `25` with a max of `100`.
 - `order` - The direction to sort the items by `token_id` in the response. Can be `asc` or `desc` with a default of `asc`.
-- `sender.id` - The sender account that initiated the pending airdrop.
+- `sender.id` - The sender account that initiated the pending airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `serialnumber` - The specific serial number associated with airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `token.id` - The token ID this airdrop is associated with. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 
