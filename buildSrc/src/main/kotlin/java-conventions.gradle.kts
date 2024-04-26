@@ -75,6 +75,7 @@ tasks.withType<Test> {
     minHeapSize = "1024m"
     systemProperty("user.timezone", "UTC")
     systemProperty("spring.test.constructor.autowire.mode", "ALL")
+    systemProperty("spring.main.cloud-platform", "NONE")
 }
 
 tasks.test {
