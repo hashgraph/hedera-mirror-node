@@ -16,12 +16,6 @@
 
 package com.hedera.mirror.web3.evm.store;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
-
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
@@ -36,13 +30,24 @@ import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import jakarta.inject.Named;
+import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import org.hyperledger.besu.datatypes.Address;
+
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 @Named
 public class StoreImpl implements Store {
@@ -286,6 +291,29 @@ public class StoreImpl implements Store {
                 .map(DatabaseBackedStateFrame.class::cast)
                 // return the timestamp
                 .flatMap(databaseBackedStateFrame -> databaseBackedStateFrame.timestamp);
+    }
+
+    /**
+     * Returns a {@link Account} model with loaded account from the state and throws the given code if an exception occurs due
+     * to an invalid account.
+     *
+     * @param evmAddress of the account to load
+     * @param code the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
+     * @return a usable model of the account if available
+     */
+    @Override
+    public Account loadAccountOrFailWith(final Address evmAddress, @Nullable ResponseCodeEnum code) {
+        final var account = getAccount(evmAddress, OnMissing.DONT_THROW);
+        validateUsable(account, code, INVALID_ACCOUNT_ID, ACCOUNT_DELETED);
+        return account;
+    }
+
+    private void validateUsable(final Account account,
+                                @Nullable final ResponseCodeEnum explicitResponse,
+                                final ResponseCodeEnum nonExistingCode,
+                                final ResponseCodeEnum deletedCode) {
+        validateTrue(account != null, explicitResponse != null ? explicitResponse : nonExistingCode);
+        validateFalse(account.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
     }
 
     /**
