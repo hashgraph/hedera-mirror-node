@@ -23,10 +23,13 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.hyperledger.besu.datatypes.Address;
+
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
-import org.hyperledger.besu.datatypes.Address;
 
 /**
  * An interface which serves as a facade over the mirror-node specific in-memory state. This interface is used by components
@@ -95,6 +98,8 @@ public interface Store {
     boolean exists(Address accountID);
 
     Optional<Long> getHistoricalTimestamp();
+
+    Account loadAccountOrFailWith(final Address evmAddress, @Nullable final ResponseCodeEnum responseCodeEnum);
 
     enum OnMissing {
         THROW,

@@ -16,17 +16,6 @@
 
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.store.models.Id.fromGrpcAccount;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromTokenId;
-import static com.hedera.services.utils.IdUtils.asAccount;
-import static com.hedera.services.utils.IdUtils.asToken;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 import com.google.protobuf.BoolValue;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -47,6 +36,11 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,10 +48,19 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+
+import static com.hedera.services.store.models.Id.fromGrpcAccount;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class ApproveAllowanceLogicTest {
@@ -114,7 +117,7 @@ class ApproveAllowanceLogicTest {
 
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial1), OnMissing.THROW))
@@ -185,7 +188,7 @@ class ApproveAllowanceLogicTest {
 
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial1), OnMissing.THROW))
@@ -241,7 +244,7 @@ class ApproveAllowanceLogicTest {
     void doesntAddAllowancesWhenAmountIsZero() {
         givenTxnCtxWithZeroAmount();
 
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
@@ -280,7 +283,7 @@ class ApproveAllowanceLogicTest {
 
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial1), OnMissing.THROW))
@@ -325,7 +328,7 @@ class ApproveAllowanceLogicTest {
 
         givenValidTxnCtx();
 
-        given(store.getAccount(spenderId1.asEvmAddress(), OnMissing.THROW)).willReturn(payerAccount);
+        given(store.loadAccountOrFailWith(spenderId1.asEvmAddress(), INVALID_ALLOWANCE_SPENDER_ID)).willReturn(payerAccount);
         ownerAcccount.setCryptoAllowance(new TreeMap<>());
         ownerAcccount.setFungibleTokenAllowances(new TreeMap<>());
         ownerAcccount.setApproveForAllNfts(new TreeSet<>());
@@ -358,7 +361,9 @@ class ApproveAllowanceLogicTest {
         assertEquals(2, ownerAccount.getApproveForAllNfts().size());
         assertEquals(
                 20,
-                ownerAccount.getCryptoAllowances().get(fromAccountId(spender1)).intValue());
+                ownerAccount.getCryptoAllowances()
+                        .get(fromAccountId(spender1))
+                        .intValue());
         assertEquals(
                 20,
                 ownerAccount
@@ -374,7 +379,7 @@ class ApproveAllowanceLogicTest {
 
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial1), OnMissing.THROW))
