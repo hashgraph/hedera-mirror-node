@@ -46,21 +46,21 @@ Feature: HTS Base Coverage Feature
     Given I update the token metadata key
     Then the mirror node REST API should return the transaction
     And I ensure token has the expected metadata and key
-    Given I update the token metadata to "0xffee"
+    Given I update the token metadata
     Then the mirror node REST API should return the transaction
     And I ensure token has the expected metadata and key
     When I associate ALICE with token
     Then the mirror node REST API should return the transaction
     And the mirror node REST API should return the token relationship for nft
-    Given I mint a serial number from the token with metadata "0x0001"
+    Given I mint a serial number from the token
     Then the mirror node REST API should return the transaction for token serial number 0 transaction flow
     Given I transfer serial number 0 to ALICE
     Then the mirror node REST API should return the transaction for token serial number 0 full flow
-    Given I update the metadata to "0x0002" for serial number 0
+    Given I update the metadata for serial number 0
     Then the mirror node REST API should return the transaction for token serial number 0 transaction flow
-    Given I mint a serial number from the token with metadata "0x0101"
+    Given I mint a serial number from the token
     Then the mirror node REST API should return the transaction for token serial number 1 transaction flow
-    Given I update the metadata to "0xdeadbeef" for serial numbers 0 and 1
+    Given I update the metadata for serial numbers 0 and 1
     Then the mirror node REST API should return the transaction for token serial number 0 transaction flow
     And the mirror node REST API should return the transaction for token serial number 1 transaction flow
     Given I wipe serial number 0 from token

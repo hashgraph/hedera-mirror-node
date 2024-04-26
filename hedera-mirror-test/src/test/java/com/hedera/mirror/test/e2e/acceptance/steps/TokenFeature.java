@@ -337,10 +337,10 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I update the token metadata to {string}")
-    public void updateTokenMetadata(String metadata) {
+    @Given("I update the token metadata")
+    public void updateTokenMetadata() {
         var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        var metadataBytes = decodeMetadataString(metadata);
+        var metadataBytes = nextBytes(4);
         networkTransactionResponse =
                 tokenClient.updateTokenMetadata(tokenId, operatorId, tokenResponse.metadataKey(), metadataBytes);
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -408,22 +408,25 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I mint a serial number from the token")
     public void mintNftToken() {
-        mintNftTokenWithMetadata(nextBytes(4));
+        var metadata = nextBytes(4);
+        networkTransactionResponse = tokenClient.mint(tokenId, metadata);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        TransactionReceipt receipt = networkTransactionResponse.getReceipt();
+        assertNotNull(receipt);
+        assertThat(receipt.serials.size()).isOne();
+        long serialNumber = receipt.serials.get(0);
+        assertThat(serialNumber).isPositive();
+        tokenNftInfoMap.get(tokenId).add(new IndividualNftInfo(serialNumber, metadata));
     }
 
-    @Given("I mint a serial number from the token with metadata {string}")
-    public void mintNftToken(String metadata) {
-        mintNftTokenWithMetadata(decodeMetadataString(metadata));
+    @Given("I update the metadata for serial numbers {int} and {int}")
+    public void updateNftMetadata(int serialNumberIndex1, int serialNumberIndex2) {
+        updateNftMetadataForSerials(serialNumberIndex1, serialNumberIndex2);
     }
 
-    @Given("I update the metadata to {string} for serial numbers {int} and {int}")
-    public void updateNftMetadata(String metadata, int serialNumberIndex1, int serialNumberIndex2) {
-        updateNftMetadataForSerials(metadata, serialNumberIndex1, serialNumberIndex2);
-    }
-
-    @Given("I update the metadata to {string} for serial number {int}")
-    public void updateNftMetadata(String metadata, int serialNumberIndex) {
-        updateNftMetadataForSerials(metadata, serialNumberIndex);
+    @Given("I update the metadata for serial number {int}")
+    public void updateNftMetadata(int serialNumberIndex) {
+        updateNftMetadataForSerials(serialNumberIndex);
     }
 
     @Given("I wipe {int} from the token")
@@ -665,17 +668,6 @@ public class TokenFeature extends AbstractFeature {
         assertThat(getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + 1);
     }
 
-    private void mintNftTokenWithMetadata(byte[] metadata) {
-        networkTransactionResponse = tokenClient.mint(tokenId, metadata);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        TransactionReceipt receipt = networkTransactionResponse.getReceipt();
-        assertNotNull(receipt);
-        assertThat(receipt.serials.size()).isOne();
-        long serialNumber = receipt.serials.get(0);
-        assertThat(serialNumber).isPositive();
-        tokenNftInfoMap.get(tokenId).add(new IndividualNftInfo(serialNumber, metadata));
-    }
-
     private TransactionDetail verifyTransactions() {
         return verifyTransactions(Collections.emptyList());
     }
@@ -897,15 +889,15 @@ public class TokenFeature extends AbstractFeature {
         assertThat(tokenInfoMetadataKey.getKey()).isEqualTo(clientMetadataKey.toStringRaw());
     }
 
-    private void updateNftMetadataForSerials(String metadata, int... serialNumberIndices) {
+    private void updateNftMetadataForSerials(int... serialNumberIndices) {
+        var metadata = nextBytes(4);
         var nftInfoForToken = tokenNftInfoMap.get(tokenId);
         var serialNumbers = Arrays.stream(serialNumberIndices)
                 .mapToObj(nftInfoForToken::get)
                 .map(IndividualNftInfo::serialNumber)
                 .toList();
-        var metadataBytes = decodeMetadataString(metadata);
         networkTransactionResponse =
-                tokenClient.updateNftMetadata(tokenId, serialNumbers, tokenResponse.metadataKey(), metadataBytes);
+                tokenClient.updateNftMetadata(tokenId, serialNumbers, tokenResponse.metadataKey(), metadata);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
@@ -914,9 +906,7 @@ public class TokenFeature extends AbstractFeature {
         Arrays.stream(serialNumberIndices)
                 .forEach(idx -> nftInfoForToken.set(
                         idx,
-                        nftInfoForToken.get(idx).toBuilder()
-                                .metadata(metadataBytes)
-                                .build()));
+                        nftInfoForToken.get(idx).toBuilder().metadata(metadata).build()));
     }
 
     private byte[] decodeMetadataString(String metadata) {

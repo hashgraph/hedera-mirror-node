@@ -72,7 +72,7 @@ public class TokenClient extends AbstractNetworkClient {
     private final Map<TokenNameEnum, TokenResponse> tokenMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<TokenAccount, NetworkTransactionResponse> associations = new ConcurrentHashMap<>();
     private final PrivateKey initialMetadataKey = PrivateKey.generateED25519();
-    private final byte[] initialMetadata = nextBytes(32);
+    private final byte[] initialMetadata = nextBytes(4);
 
     public TokenClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
