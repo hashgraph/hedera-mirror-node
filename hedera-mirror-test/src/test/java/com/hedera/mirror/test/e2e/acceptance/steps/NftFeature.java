@@ -16,10 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.rest.model.NftAllowance;
@@ -35,14 +31,19 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -88,6 +89,14 @@ public class NftFeature extends AbstractFeature {
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
         tokenSerialNumbers.get(tokenId).add(serialNumber);
+    }
+
+    @Given("the mirror node REST API should return the transaction for token serial number {int}")
+    @RetryAsserts
+    public void verifyMirrorNftTransactionsAPIResponses(Integer serialNumberIndex) {
+        Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
+        verifyTransactions();
+        verifyNftTransactions(tokenId, serialNumber);
     }
 
     @Given("I approve {account} to all serials of the NFT")
@@ -208,7 +217,7 @@ public class NftFeature extends AbstractFeature {
                 .satisfies(t -> assertThat(t.getTo()).isBlank());
     }
 
-    private NftTransactionTransfer verifyNftTransactions(TokenId tokenId, Long serialNumber) {
+    private void verifyNftTransactions(TokenId tokenId, Long serialNumber) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         NftTransactionHistory mirrorTransactionsResponse = mirrorClient.getNftTransactions(tokenId, serialNumber);
 
@@ -217,8 +226,6 @@ public class NftFeature extends AbstractFeature {
         assertThat(transactions).isNotEmpty();
         NftTransactionTransfer mirrorTransaction = transactions.get(0);
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
-
-        return mirrorTransaction;
     }
 
     private void verifyNftTransfers(TokenId tokenId, Long serialNumber, ExpandedAccountId accountId) {
@@ -242,7 +249,7 @@ public class NftFeature extends AbstractFeature {
         assertThat(nftInfo.getAccountId()).isEqualTo(accountId.toString());
     }
 
-    private TransactionDetail verifyTransactions() {
+    private void verifyTransactions() {
 
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         TransactionByIdResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
@@ -255,6 +262,5 @@ public class NftFeature extends AbstractFeature {
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
         assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
-        return mirrorTransaction;
     }
 }

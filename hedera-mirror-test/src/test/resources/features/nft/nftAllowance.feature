@@ -7,6 +7,7 @@ Feature: Account NFT Allowance Coverage Feature
     And I associate account <recipient> with NFT <tokenName>
     Then the mirror node REST API should return the transaction for the NFTs
     Then I mint a serial number from the NFT
+    And the mirror node REST API should return the transaction for token serial number 0
     Given I approve <spender> to all serials of the NFT
     Then the mirror node REST API should confirm the approved allowance of NFT <tokenName> and <spender> when owner is "true"
     And the mirror node REST API should confirm the approved allowance of NFT <tokenName> and <spender> when owner is "false"
