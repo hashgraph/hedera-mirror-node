@@ -332,32 +332,32 @@ if [[ "${TARGET_DB_HEALTHY}" != "t" ]]; then
   exit 1
 fi
 
-#rm -rf "${FLYWAY_DIR}"
-#mkdir -p "${FLYWAY_DIR}" || die "Couldn't create directory ${FLYWAY_DIR}"
-#pushd "${FLYWAY_DIR}" || die "Couldn't change directory to ${FLYWAY_DIR}"
-#
-#log "Installing Flyway"
-#wget -qO- "${FLYWAY_URL}" | tar -xz && mv flyway-*/* .
-#log "Flyway installed"
-#
-#cp "${MIGRATIONS_DIR}/V2.0."* "${FLYWAY_DIR}"/sql/
-#
-#log "Copying Flyway configuration"
-#cat >"${FLYWAY_DIR}/conf/flyway.conf" <<EOF
-#flyway.password=${TARGET_DB_PASSWORD}
-#flyway.placeholders.hashShardCount=6
-#flyway.placeholders.maxEntityId=5000000
-#flyway.placeholders.maxEntityIdRatio=2.0
-#flyway.placeholders.partitionStartDate='2019-09-01'
-#flyway.placeholders.partitionTimeInterval='1 month'
-#flyway.placeholders.schema=${TARGET_DB_SCHEMA}
-#flyway.placeholders.shardCount=16
-#flyway.url=jdbc:postgresql://${TARGET_DB_HOST}:${TARGET_DB_PORT}/${TARGET_DB_NAME}
-#flyway.user=${TARGET_DB_USER}
-#EOF
+rm -rf "${FLYWAY_DIR}"
+mkdir -p "${FLYWAY_DIR}" || die "Couldn't create directory ${FLYWAY_DIR}"
+pushd "${FLYWAY_DIR}" || die "Couldn't change directory to ${FLYWAY_DIR}"
 
-#log "Running Flyway migrate"
-#flyway migrate
+log "Installing Flyway"
+wget -qO- "${FLYWAY_URL}" | tar -xz && mv flyway-*/* .
+log "Flyway installed"
+
+cp "${MIGRATIONS_DIR}/V2.0."* "${FLYWAY_DIR}"/sql/
+
+log "Copying Flyway configuration"
+cat >"${FLYWAY_DIR}/conf/flyway.conf" <<EOF
+flyway.password=${TARGET_DB_PASSWORD}
+flyway.placeholders.hashShardCount=6
+flyway.placeholders.maxEntityId=5000000
+flyway.placeholders.maxEntityIdRatio=2.0
+flyway.placeholders.partitionStartDate='2019-09-01'
+flyway.placeholders.partitionTimeInterval='1 month'
+flyway.placeholders.schema=${TARGET_DB_SCHEMA}
+flyway.placeholders.shardCount=16
+flyway.url=jdbc:postgresql://${TARGET_DB_HOST}:${TARGET_DB_PORT}/${TARGET_DB_NAME}
+flyway.user=${TARGET_DB_USER}
+EOF
+
+log "Running Flyway migrate"
+flyway migrate
 
 TABLES_QUERY="
 select pc.relname from pg_class pc
