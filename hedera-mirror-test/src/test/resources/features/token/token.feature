@@ -6,6 +6,13 @@ Feature: HTS Base Coverage Feature
     Given I successfully create a new unfrozen and granted kyc token
     Then the mirror node REST API should return the transaction
     Then I ensure token has the correct properties
+    And I ensure token has the expected metadata and key
+    Given I update the token metadata key
+    Then the mirror node REST API should return the transaction
+    And I ensure token has the expected metadata and key
+    Given I update the token metadata
+    Then the mirror node REST API should return the transaction
+    And I ensure token has the expected metadata and key
     When I associate ALICE with token
     Then the mirror node REST API should return the transaction
     Then the mirror node REST API should return the token relationship for token
