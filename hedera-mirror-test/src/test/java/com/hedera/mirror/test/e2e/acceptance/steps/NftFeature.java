@@ -16,6 +16,10 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.rest.model.NftAllowance;
@@ -31,19 +35,14 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -93,8 +92,8 @@ public class NftFeature extends AbstractFeature {
 
     @Given("the mirror node REST API should return the transaction for token serial number {int}")
     @RetryAsserts
-    public void verifyMirrorNftTransactionsAPIResponses(Integer serialNumberIndex) {
-        Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
+    public void verifyMirrorNftTransactionsAPIResponses(int serialNumberIndex) {
+        Long serialNumber = tokenSerialNumbers.get(tokenId).get(serialNumberIndex);
         verifyTransactions();
         verifyNftTransactions(tokenId, serialNumber);
     }
@@ -169,10 +168,6 @@ public class NftFeature extends AbstractFeature {
         networkTransactionResponse = tokenClient.associate(accountId, tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private int getIndexOrDefault(Integer index) {
-        return index != null ? index : 0;
     }
 
     private void transferNfts(
