@@ -88,7 +88,7 @@ public class TokenFeature extends AbstractFeature {
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
 
-    private final Map<TokenId, List<IndividualNftInfo>> tokenNftInfoMap = new HashMap<>();
+    private final Map<TokenId, List<NftInfo>> tokenNftInfoMap = new HashMap<>();
 
     private List<CustomFee> customFees = List.of();
 
@@ -335,10 +335,8 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I update the token metadata")
     public void updateTokenMetadata() {
-        var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         var newMetadata = nextBytes(4);
-        networkTransactionResponse =
-                tokenClient.updateTokenMetadata(tokenId, operatorId, tokenResponse.metadataKey(), newMetadata);
+        networkTransactionResponse = tokenClient.updateTokenMetadata(tokenId, tokenResponse.metadataKey(), newMetadata);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         this.tokenResponse =
@@ -347,9 +345,8 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I update the token metadata key")
     public void updateTokenMetadataKey() {
-        var operatorId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         var newMetadataKey = PrivateKey.generateED25519();
-        networkTransactionResponse = tokenClient.updateTokenMetadataKey(tokenId, operatorId, newMetadataKey);
+        networkTransactionResponse = tokenClient.updateTokenMetadataKey(tokenId, newMetadataKey);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         this.tokenResponse =
@@ -412,7 +409,7 @@ public class TokenFeature extends AbstractFeature {
         assertThat(receipt.serials.size()).isOne();
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
-        tokenNftInfoMap.get(tokenId).add(new IndividualNftInfo(serialNumber, metadata));
+        tokenNftInfoMap.get(tokenId).add(new NftInfo(serialNumber, metadata));
     }
 
     @Given("I update the metadata for serial numbers {int} and {int}")
@@ -897,7 +894,7 @@ public class TokenFeature extends AbstractFeature {
         var nftInfoForToken = tokenNftInfoMap.get(tokenId);
         var serialNumbers = Arrays.stream(serialNumberIndices)
                 .mapToObj(nftInfoForToken::get)
-                .map(IndividualNftInfo::serialNumber)
+                .map(NftInfo::serialNumber)
                 .toList();
         networkTransactionResponse =
                 tokenClient.updateNftMetadata(tokenId, serialNumbers, tokenResponse.metadataKey(), newMetadata);
@@ -915,5 +912,5 @@ public class TokenFeature extends AbstractFeature {
     }
 
     @Builder(toBuilder = true)
-    private record IndividualNftInfo(Long serialNumber, byte[] metadata) {}
+    private record NftInfo(Long serialNumber, byte[] metadata) {}
 }

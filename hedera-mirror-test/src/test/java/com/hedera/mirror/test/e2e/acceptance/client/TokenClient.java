@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
-import static com.esaulpaugh.headlong.util.Strings.EMPTY_BYTE_ARRAY;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractId;
@@ -101,17 +101,13 @@ public class TokenClient extends AbstractNetworkClient {
             var operator = sdkClient.getExpandedOperatorAccountId();
             try {
                 var networkTransactionResponse = createToken(tokenNameEnum, operator, customFees);
-                return tokenNameEnum.createWithMetadata
-                        ? new TokenResponse(
-                                networkTransactionResponse.getReceipt().tokenId,
-                                networkTransactionResponse,
-                                initialMetadataKey,
-                                initialMetadata)
-                        : new TokenResponse(
-                                networkTransactionResponse.getReceipt().tokenId,
-                                networkTransactionResponse,
-                                null,
-                                EMPTY_BYTE_ARRAY);
+                var metadata = tokenNameEnum.createWithMetadata ? initialMetadata : EMPTY_BYTE_ARRAY;
+                var metadataKey = tokenNameEnum.createWithMetadata ? initialMetadataKey : null;
+                return new TokenResponse(
+                        networkTransactionResponse.getReceipt().tokenId,
+                        networkTransactionResponse,
+                        metadataKey,
+                        metadata);
             } catch (Exception e) {
                 log.warn("Issue creating additional token: {}, operator: {}, ex: {}", tokenNameEnum, operator, e);
                 return null;
@@ -260,7 +256,7 @@ public class TokenClient extends AbstractNetworkClient {
             TokenSupplyType tokenSupplyType,
             long maxSupply,
             List<CustomFee> customFees) {
-        log.debug("Create new non-fungible token {}", tokenNameEnum.symbol);
+        log.debug("Create new non-fungible token with symbol {}", tokenNameEnum.symbol);
         TokenCreateTransaction tokenCreateTransaction = getTokenCreateTransaction(
                 tokenNameEnum,
                 expandedAccountId,
@@ -340,8 +336,8 @@ public class TokenClient extends AbstractNetworkClient {
 
         var response = executeTransactionAndRetrieveReceipt(tokenUpdateNftsTransaction, KeyList.of(metadataKey));
         log.info(
-                "Updated NFT metadata on {} NFTs for token {} via {}",
-                serialNumbers.size(),
+                "Updated NFT metadata on NFT serial numbers {} for token {} via {}",
+                serialNumbers,
                 tokenId,
                 response.getTransactionId());
         return response;
@@ -505,15 +501,11 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse updateTokenMetadataKey(
-            TokenId tokenId, ExpandedAccountId expandedAccountId, PrivateKey newMetadataKey) {
-        var publicKey = expandedAccountId.getPublicKey();
+    public NetworkTransactionResponse updateTokenMetadataKey(TokenId tokenId, PrivateKey newMetadataKey) {
         var metadataPublicKey = newMetadataKey.getPublicKey();
 
-        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
-                .setAdminKey(publicKey)
-                .setMetadataKey(metadataPublicKey)
-                .setTokenId(tokenId);
+        TokenUpdateTransaction tokenUpdateTransaction =
+                new TokenUpdateTransaction().setMetadataKey(metadataPublicKey).setTokenId(tokenId);
 
         var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction);
         log.info(
@@ -525,14 +517,10 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    public NetworkTransactionResponse updateTokenMetadata(
-            TokenId tokenId, ExpandedAccountId expandedAccountId, PrivateKey metadataKey, byte[] newMetadata) {
-        var publicKey = expandedAccountId.getPublicKey();
+    public NetworkTransactionResponse updateTokenMetadata(TokenId tokenId, PrivateKey metadataKey, byte[] newMetadata) {
 
-        TokenUpdateTransaction tokenUpdateTransaction = new TokenUpdateTransaction()
-                .setAdminKey(publicKey)
-                .setTokenMetadata(newMetadata)
-                .setTokenId(tokenId);
+        TokenUpdateTransaction tokenUpdateTransaction =
+                new TokenUpdateTransaction().setTokenMetadata(newMetadata).setTokenId(tokenId);
 
         var response = executeTransactionAndRetrieveReceipt(tokenUpdateTransaction, KeyList.of(metadataKey));
         log.info(
