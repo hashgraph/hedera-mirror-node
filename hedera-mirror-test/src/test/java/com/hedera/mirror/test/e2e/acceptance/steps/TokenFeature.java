@@ -499,7 +499,7 @@ public class TokenFeature extends AbstractFeature {
         verifyTransactions();
     }
 
-    @Then("the mirror node REST API should return the transaction for token serial number {int} transaction flow")
+    @Then("the mirror node REST API should return the transaction for token serial number index {int} transaction flow")
     @RetryAsserts
     public void verifyMirrorNftTransactionsAPIResponses(Integer serialNumberIndex) {
         Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
@@ -608,11 +608,10 @@ public class TokenFeature extends AbstractFeature {
                 .contains(expectedTokenTransfer));
     }
 
-    @Then(
-            "the mirror node REST API should confirm the approved transfer of serial number {int} and confirm the new owner is {account}")
+    @Then("the mirror node REST API should confirm the approved transfer of NFT and confirm the new owner is {account}")
     @RetryAsserts
-    public void verifyMirrorNftTransfer(int serialNumberIndex, AccountClient.AccountNameEnum accountName) {
-        Long serialNumber = tokenSerialNumbers.get(tokenId).get(serialNumberIndex);
+    public void verifyMirrorNftTransfer(AccountClient.AccountNameEnum accountName) {
+        Long serialNumber = tokenSerialNumbers.get(tokenId).get(0);
         var recipientId = accountClient.getAccount(accountName);
         verifyTransactions();
         verifyNftTransfers(tokenId, serialNumber, recipientId);
