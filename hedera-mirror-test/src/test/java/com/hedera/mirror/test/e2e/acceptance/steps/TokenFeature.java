@@ -29,6 +29,7 @@ import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -46,8 +47,6 @@ import com.hedera.mirror.rest.model.NftTransactionTransfer;
 import com.hedera.mirror.rest.model.TokenAllowance;
 import com.hedera.mirror.rest.model.TokenInfo;
 import com.hedera.mirror.rest.model.TokenInfo.PauseStatusEnum;
-import com.hedera.mirror.rest.model.TokenInfoMetadataKey;
-import com.hedera.mirror.rest.model.TokenInfoMetadataKey.TypeEnum;
 import com.hedera.mirror.rest.model.TokenRelationship;
 import com.hedera.mirror.rest.model.TokenRelationship.FreezeStatusEnum;
 import com.hedera.mirror.rest.model.TokenRelationship.KycStatusEnum;
@@ -132,8 +131,14 @@ public class TokenFeature extends AbstractFeature {
     @Given("I ensure token has the expected metadata and key")
     public void ensureTokenInfoProperties() {
         var tokenInfo = mirrorClient.getTokenInfo(tokenId.toString());
+        var tokenInfoMetadataKey = tokenInfo.getMetadataKey() != null
+                ? PublicKey.fromString(tokenInfo.getMetadataKey().getKey())
+                : null;
+        var responseMetadataKey = this.tokenResponse.metadataKey() != null
+                ? this.tokenResponse.metadataKey().getPublicKey()
+                : null;
+        assertThat(tokenInfoMetadataKey).isEqualTo(responseMetadataKey);
         assertThat(tokenInfo.getMetadata()).isEqualTo(this.tokenResponse.metadata());
-        assertMetadataKey(tokenInfo.getMetadataKey(), this.tokenResponse.metadataKey());
     }
 
     @Given("I associate account {account} with token {token}")
@@ -871,22 +876,6 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(mirrorTokenRelationship.getLinks());
         assertNotEquals(0, mirrorTokenRelationship.getTokens().size());
         assertThat(mirrorTokenRelationship.getLinks().getNext()).isNull();
-    }
-
-    private void assertMetadataKey(TokenInfoMetadataKey tokenInfoMetadataKey, PrivateKey clientMetadataKey) {
-        if (tokenInfoMetadataKey == null && clientMetadataKey == null) {
-            return;
-        }
-        assertThat(tokenInfoMetadataKey).isNotNull();
-        assertThat(clientMetadataKey).isNotNull();
-
-        if (clientMetadataKey.isED25519()) {
-            assertThat(tokenInfoMetadataKey.getType()).isEqualTo(TypeEnum.ED25519);
-        } else {
-            assertThat(tokenInfoMetadataKey.getType()).isEqualTo(TypeEnum.ECDSA_SECP256K1);
-        }
-        assertThat(tokenInfoMetadataKey.getKey())
-                .isEqualTo(clientMetadataKey.getPublicKey().toStringRaw());
     }
 
     private void updateNftMetadataForSerials(int... serialNumberIndices) {
