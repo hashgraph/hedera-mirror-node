@@ -186,7 +186,7 @@ public class MirrorNodeClient {
                 spenderId);
     }
 
-    public NftAllowancesResponse getAccountNftAllowanceByOwner(String accountId, String tokenId, String ownerId) {
+    public NftAllowancesResponse getAccountNftAllowanceBySpender(String accountId, String tokenId, String ownerId) {
         log.debug(
                 "Verify spender account '{}''s nft allowance for owner {} and token {} is returned by Mirror Node",
                 accountId,
@@ -200,7 +200,7 @@ public class MirrorNodeClient {
                 ownerId);
     }
 
-    public NftAllowancesResponse getAccountNftAllowanceBySpender(String accountId, String tokenId, String spenderId) {
+    public NftAllowancesResponse getAccountNftAllowanceByOwner(String accountId, String tokenId, String spenderId) {
         log.debug(
                 "Verify owner account '{}''s nft allowance for spender {} and token {} is returned by Mirror Node",
                 accountId,

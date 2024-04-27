@@ -308,7 +308,12 @@ public class AccountClient extends AbstractNetworkClient {
         var transaction =
                 new AccountAllowanceApproveTransaction().deleteTokenNftAllowanceAllSerials(tokenId, owner, spender);
         var response = executeTransactionAndRetrieveReceipt(transaction);
-        log.info("Deleted allowance for owner {} on {} via {}", owner, tokenId, response.getTransactionId());
+        log.info(
+                "Deleted allowance for owner {} and spender {} on {} via {}",
+                owner,
+                spender,
+                tokenId,
+                response.getTransactionId());
         return response;
     }
 

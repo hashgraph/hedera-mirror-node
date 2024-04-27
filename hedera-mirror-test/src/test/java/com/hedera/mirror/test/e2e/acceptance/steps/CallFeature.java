@@ -187,7 +187,9 @@ public class CallFeature extends AbstractFeature {
                 tokenClient.getSdkClient().getExpandedOperatorAccountId(),
                 receiverAccountId.getAccountId(),
                 List.of(1L),
-                receiverAccountId.getPrivateKey());
+                receiverAccountId.getPrivateKey(),
+                null,
+                false);
     }
 
     @And("I associate FUNGIBLE token to receiver account")
@@ -220,7 +222,9 @@ public class CallFeature extends AbstractFeature {
                 receiverAccountId,
                 AccountId.fromString(precompileContractAddress),
                 List.of(1L),
-                null);
+                null,
+                null,
+                false);
     }
 
     // ETHCALL-017
@@ -348,7 +352,7 @@ public class CallFeature extends AbstractFeature {
         var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_N_TIMES_SELECTOR, new BigInteger("15"));
         var response = callContract(data, estimateContractAddress);
 
-        assertEquals(String.valueOf(response.getResultAsNumber()), "14");
+        assertEquals("14", String.valueOf(response.getResultAsNumber()));
     }
 
     @Then("I call function with nested deploy using create function")
@@ -396,9 +400,9 @@ public class CallFeature extends AbstractFeature {
         var response = callContract(data, estimateContractAddress);
         String[] balances = splitAddresses(response.getResult());
         // verify initial balance
-        assertEquals(Integer.parseInt(balances[0], 16), 1000000);
+        assertEquals(1000000, Integer.parseInt(balances[0], 16));
         // verify balance after transfer of 10,000
-        assertEquals(Integer.parseInt(balances[1], 16), 990000);
+        assertEquals(990000, Integer.parseInt(balances[1], 16));
     }
 
     @Then("I directly call Ethereum precompile 0x01")
