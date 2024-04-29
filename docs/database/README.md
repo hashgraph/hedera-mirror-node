@@ -268,14 +268,14 @@ Following are the prerequisites and steps for migrating V1 data to V2.
 
 1. Create a Citus cluster with enough resources (Disk, CPU and memory). For GKE, an e2-custom-6-32768 can be used.
 2. Ensure the source and target schemas are compatible by deploying the same version to both.
-3. Create a VM with a disk big enough to contain the source data and checkout the source code to it.
-4. Populate correct values for the source and target configuration in the
+3. Populate correct values for the source and target configuration in the
    [migration.config](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.config).
-5. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and
+4. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and
    update it in the `FLYWAY_URL` field in the `migration.config` file. The default is set to the linux version.
-6. Stop the [Importer](/docs/importer/README.md) process.
-7. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
-8. Update the mirror node configuration to point to the new Citus DB and start it.
+5. Stop the [Importer](/docs/importer/README.md) process. 
+6. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script. Due to the time it will take to complete the migration, 
+   it is recommended to run the script in a way that doesn't require your terminal session to remain open (e.g. `./migration.sh > migration.log 2> migration-error.log & disown`)
+7. Update the mirror node configuration to point to the new Citus DB and start it.
 
 ## Citus Backup and Restore
 
