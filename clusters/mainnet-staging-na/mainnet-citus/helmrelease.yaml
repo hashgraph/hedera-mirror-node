@@ -50,8 +50,6 @@ spec:
           enabled: false
         MonitorSubscribeLatency:
           enabled: false
-    redis:
-      enabled: false
     rest:
       env:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
