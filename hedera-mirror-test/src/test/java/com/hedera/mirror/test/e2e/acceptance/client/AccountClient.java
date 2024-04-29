@@ -303,6 +303,20 @@ public class AccountClient extends AbstractNetworkClient {
         return response;
     }
 
+    public NetworkTransactionResponse deleteNftAllowance(TokenId tokenId, AccountId owner, AccountId spender) {
+
+        var transaction =
+                new AccountAllowanceApproveTransaction().deleteTokenNftAllowanceAllSerials(tokenId, owner, spender);
+        var response = executeTransactionAndRetrieveReceipt(transaction);
+        log.info(
+                "Deleted allowance for owner {} and spender {} on {} via {}",
+                owner,
+                spender,
+                tokenId,
+                response.getTransactionId());
+        return response;
+    }
+
     @RequiredArgsConstructor
     public enum AccountNameEnum {
         ALICE(false, Key.KeyCase.ED25519),
