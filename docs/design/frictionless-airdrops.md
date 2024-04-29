@@ -57,7 +57,7 @@ create index if not exists token_airdrop_history__token_serial_lower_timestamp
 When parsing pending airdrops,
 
 - Persist airdrops to the `token_airdrop` table.
-- If a `TokenAirdrop` transaction occurs when an entry already exists for a fungible token in the `PENDING` state, an entry should be made in the `token_airdrop_history` table (just as with a change of state to `CANCELLED` or `CLAIMED`), and the `token_airdrop` table should be updated with `amount` set to the sum of the existing amount and the new amount.
+- If a `TokenAirdrop` transaction occurs when an entry already exists then the existing entry should be moved in the `token_airdrop_history` table. If the existing entry is a fungible token in the state of `PENDING` then the new entry should be updated with `amount` set to the sum of the existing amount and the new amount. If the existing entry is in any other state, then the `amount` should be set to the amount of the new entry. Updates to NFT tokens that are `PENDING` will update the timestamp range and generate a history row.
 
 #### Domain
 
@@ -102,6 +102,7 @@ Response:
   "airdrops": [
     {
       "amount": 333,
+      "consensus_timestamp": "1111111111.111111111",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
@@ -109,6 +110,7 @@ Response:
     },
     {
       "amount": 555,
+      "consensus_timestamp": "1111111111.111111112",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
@@ -116,6 +118,7 @@ Response:
     },
     {
       "amount": null,
+      "consensus_timestamp": "1111111111.111111113",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": 888,
@@ -131,7 +134,7 @@ Response:
 Optional Filters
 
 - `limit` - The maximum number of airdrops to return in the response. Defaults to `25` with a max of `100`.
-- `order` - The direction to sort the items by `token_id` in the response. Can be `asc` or `desc` with a default of `asc`.
+- `order` - The direction to sort the items by `consensus_timestamp` in the response. Can be `asc` or `desc` with a default of `asc`.
 - `receiver.id` - The receiver account the outstanding airdrop was intended for. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `serialnumber` - The specific serial number associated with airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `token.id` - The token ID this airdrop is associated with. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
@@ -150,6 +153,7 @@ Response:
   "airdrops": [
     {
       "amount": 333,
+      "consensus_timestamp": "1111111111.111111111",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
@@ -157,6 +161,7 @@ Response:
     },
     {
       "amount": 555,
+      "consensus_timestamp": "1111111111.111111112",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
@@ -164,6 +169,7 @@ Response:
     },
     {
       "amount": null,
+      "consensus_timestamp": "1111111111.111111113",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": 888,
@@ -179,7 +185,7 @@ Response:
 Optional Filters
 
 - `limit` - The maximum number of airdrops to return in the response. Defaults to `25` with a max of `100`.
-- `order` - The direction to sort the items by `token_id` in the response. Can be `asc` or `desc` with a default of `asc`.
+- `order` - The direction to sort the items by `consensus_timestamp` in the response. Can be `asc` or `desc` with a default of `asc`.
 - `sender.id` - The sender account that initiated the pending airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `serialnumber` - The specific serial number associated with airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `token.id` - The token ID this airdrop is associated with. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
@@ -187,3 +193,19 @@ Optional Filters
 ## Non-Functional Requirements
 
 - Ingest new transaction types at the same rate as consensus nodes
+
+## Acceptance Tests
+
+Add acceptance tests for the token feature that use an existing set of accounts and a token_id from the existing acceptance tests and performs the following:
+
+- Send two airdrops, a fungible and nft airdrop to an account that has been associated with the tokens and verify that the airdrops are transferred to the account and that the two REST APIs do not list the airdrops.
+- Reject the set of airdrops and verify that the account no longer has a balance of the fungible token and does not own the nft.
+- Send a fungible and nft airdrop to an account that has not been associated with the tokens and has no open slots for automatic associations and verify that the airdrops are listed by the two REST APIs.
+- Cancel the pending airdrops and verify that they are no longer listed by the two REST APIs.
+- Send a fungible and nft airdrop to an account that has not been associated with the tokens and has no open slots for automatic associations and verify that the airdrop is listed in the two REST APIs.
+- Claim the airdrops and verify that they are no longer listed in the two REST APIs.
+
+## K6 Tests
+
+- Setup and ensure the staging environment has a pending airdrop sent by one of the configurable default accounts and received by another.
+- Add the two new endpoints to the K6 test suite.
