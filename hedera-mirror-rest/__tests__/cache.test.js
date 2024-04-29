@@ -17,25 +17,30 @@
 import config from '../config';
 import {Cache} from '../cache';
 import {RedisContainer} from '@testcontainers/redis';
-import {defaultBeforeAllTimeoutMillis} from "./integrationUtils.js";
+import {defaultBeforeAllTimeoutMillis} from './integrationUtils.js';
 
 let cache;
 let redisContainer;
 
 beforeAll(async () => {
+  config.redis.enabled = true;
   redisContainer = await new RedisContainer().withStartupTimeout(20000).start();
   logger.info('Started Redis container');
 }, defaultBeforeAllTimeoutMillis);
 
 afterAll(async () => {
-  redisContainer.stop({signal: "TERM", t: 5});
-  logger.info("Stopped Redis container");
+  await redisContainer.stop({signal: 'SIGKILL', t: 5});
+  logger.info('Stopped Redis container');
 });
 
 beforeEach(async () => {
   config.redis.uri = `0.0.0.0:${redisContainer.getMappedPort(6379)}`;
   cache = new Cache();
   await cache.clear();
+});
+
+afterEach(async () => {
+  await cache.stop();
 });
 
 const loader = (keys) => keys.map((key) => `v${key}`);

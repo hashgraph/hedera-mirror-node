@@ -106,4 +106,8 @@ export class Cache {
 
     return values;
   }
+
+  async stop() {
+    return this.redis.quit();
+  }
 }
