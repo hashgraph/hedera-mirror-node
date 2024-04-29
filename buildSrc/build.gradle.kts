@@ -36,7 +36,7 @@ dependencies {
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.github.node-gradle:gradle-node-plugin:7.0.2")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
-    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
+    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.2")
     implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.4")
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.6.1")
     implementation("gradle.plugin.org.flywaydb:gradle-plugin-publishing:$flywayVersion")
