@@ -34,6 +34,7 @@ spec:
     global:
       hostname: "*.mirrornode.hedera-ops.com"
     importer:
+      enabled: false
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TRANSACTIONHASH: "true"
