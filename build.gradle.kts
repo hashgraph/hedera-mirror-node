@@ -41,9 +41,6 @@ extra.apply {
     set("vertxVersion", "4.5.7")
 }
 
-// Temporarily override json version until snyk/gradle-plugin has an update with a fix
-configurations["dataFiles"].dependencies.add(dependencies.create("org.json:json:20240205"))
-
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
 // using a dependency
 dependencies {
