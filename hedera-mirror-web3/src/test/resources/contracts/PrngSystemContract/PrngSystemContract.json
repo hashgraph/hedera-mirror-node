@@ -13,8 +13,14 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getPseudorandomSeedPayable",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "callValue",
+        "type": "uint256"
+      }
+    ],
+    "name": "getPseudorandomSeedWithValue",
     "outputs": [
       {
         "internalType": "bytes32",

@@ -12,8 +12,8 @@ contract PrngSystemContract {
         randomBytes = abi.decode(result, (bytes32));
     }
 
-    function getPseudorandomSeedPayable() external returns (bytes32 randomBytes) {
-        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value : 1}(
+    function getPseudorandomSeedWithValue(uint256 callValue) external returns (bytes32 randomBytes) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value : callValue}(
             abi.encodeWithSelector(IPrngSystemContract.getPseudorandomSeed.selector));
         require(success);
         randomBytes = abi.decode(result, (bytes32));

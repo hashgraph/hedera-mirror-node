@@ -57,6 +57,7 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_DUO = "(address,address)";
     private static final String ADDRESS_DUO_BOOL = "(address,address,bool)";
     private static final String INT = "(int256)";
+    private static final String UINT256_UINT256 = "(uint256,uint256)";
     private static final String INT64 = "(int64)";
     private static final String TRIPLE_ADDRESS = "(address,address,address)";
     private static final String ADDRESS_UINT = "(address,uint256)";
@@ -309,6 +310,8 @@ public class FunctionEncodeDecoder {
             case TOKEN_INFO -> Tuple.of(encodeTokenInfo(parameters));
             case FUNGIBLE_TOKEN_INFO -> Tuple.of(Tuple.of(encodeTokenInfo((Object[]) parameters[0]), parameters[1]));
             case NFT_TOKEN_INFO -> Tuple.of(encodeNftTokenInfo(parameters));
+            case UINT256_UINT256 -> Tuple.of(
+                    BigInteger.valueOf((long) parameters[0]), BigInteger.valueOf((long) parameters[1]));
 
             default -> Tuple.EMPTY;
         };

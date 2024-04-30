@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.crypto.Hash;
 import com.swirlds.common.utility.CommonUtils;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Supplier;

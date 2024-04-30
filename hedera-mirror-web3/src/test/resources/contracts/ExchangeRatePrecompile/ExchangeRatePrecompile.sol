@@ -22,15 +22,15 @@ contract ExchangeRatePrecompile {
         tinycents = abi.decode(result, (uint256));
     }
 
-    function tinycentsToTinybarsPayable(uint256 tinycents) external returns (uint256 tinybars) {
-        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value : 1}(
+    function tinycentsToTinybarsWithValue(uint256 tinycents, uint256 callValue) external returns (uint256 tinybars) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value: callValue}(
             abi.encodeWithSelector(TINYCENTS_TO_TINYBARS, tinycents));
         require(success);
         tinybars = abi.decode(result, (uint256));
     }
 
-    function tinybarsToTinycentsPayable(uint256 tinybars) external returns (uint256 tinycents) {
-        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value : 1}(
+    function tinybarsToTinycentsWithValue(uint256 tinybars, uint256 callValue) external returns (uint256 tinycents) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value: callValue}(
             abi.encodeWithSelector(TINYBARS_TO_TINYCENTS, tinybars));
         require(success);
         tinycents = abi.decode(result, (uint256));

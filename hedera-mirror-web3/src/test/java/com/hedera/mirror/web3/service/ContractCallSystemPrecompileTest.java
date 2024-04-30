@@ -67,8 +67,9 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ExchangeRatePayableFunctions.class)
-    void exchangeRatePrecompilePayableFunctionsTestEthCallRevertExecution(final ExchangeRatePayableFunctions contractFunc) {
+    @EnumSource(ExchangeRateFunctionsWithValue.class)
+    void exchangeRatePrecompileFunctionsTestEthCallWithValueRevertExecution(
+            final ExchangeRateFunctionsWithValue contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(
@@ -81,8 +82,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @MethodSource("exchangeRateFunctionsProviderHistorical")
-    void exchangeRateFunctionsTestEthCallHistorical(
-            final ExchangeRateFunctions contractFunc, BlockType blockNumber) {
+    void exchangeRateFunctionsTestEthCallHistorical(final ExchangeRateFunctions contractFunc, BlockType blockNumber) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(
@@ -109,8 +109,9 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ExchangeRatePayableFunctions.class)
-    void exchangeRatePrecompilePayableFunctionsTestEthEstimateGasRevertExecution(final ExchangeRatePayableFunctions contractFunc) {
+    @EnumSource(ExchangeRateFunctionsWithValue.class)
+    void exchangeRatePrecompileFunctionsTestEthEstimateGasWithValueRevertExecution(
+            final ExchangeRateFunctionsWithValue contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(
@@ -136,9 +137,9 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     }
 
     @Test
-    void pseudoRandomGeneratorPayablePrecompileFunctionsTestEthEstimateGas() {
-        final var functionName = "getPseudorandomSeedPayable";
-        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
+    void pseudoRandomGeneratorPrecompileFunctionsTestEthEstimateGasWithValueRevertExecution() {
+        final var functionName = "getPseudorandomSeedWithValue";
+        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH, 100L);
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, PRNG_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
@@ -161,9 +162,9 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     }
 
     @Test
-    void pseudoRandomGeneratorPrecompilePayableFunctionsTestEthCallRevertExecution() {
-        final var functionName = "getPseudorandomSeedPayable";
-        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
+    void pseudoRandomGeneratorPrecompileFunctionsTestEthCallWithValueRevertExecution() {
+        final var functionName = "getPseudorandomSeedWithValue";
+        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH, 100L);
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
@@ -197,9 +198,9 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     }
 
     @RequiredArgsConstructor
-    enum ExchangeRatePayableFunctions {
-        TINYCENTS_TO_TINYBARS("tinycentsToTinybarsPayable", new Object[] {100L}),
-        TINYBARS_TO_TINYCENTS("tinybarsToTinycentsPayable", new Object[] {1550L});
+    enum ExchangeRateFunctionsWithValue {
+        TINYCENTS_TO_TINYBARS("tinycentsToTinybarsWithValue", new Object[] {100L, 100L}),
+        TINYBARS_TO_TINYCENTS("tinybarsToTinycentsWithValue", new Object[] {1550L, 100L});
 
         private final String name;
         private final Object[] functionParameters;

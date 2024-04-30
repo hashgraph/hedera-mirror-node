@@ -24,9 +24,14 @@
         "internalType": "uint256",
         "name": "tinybars",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "callValue",
+        "type": "uint256"
       }
     ],
-    "name": "tinybarsToTinycentsPayable",
+    "name": "tinybarsToTinycentsWithValue",
     "outputs": [
       {
         "internalType": "uint256",
@@ -62,9 +67,14 @@
         "internalType": "uint256",
         "name": "tinycents",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "callValue",
+        "type": "uint256"
       }
     ],
-    "name": "tinycentsToTinybarsPayable",
+    "name": "tinycentsToTinybarsWithValue",
     "outputs": [
       {
         "internalType": "uint256",
