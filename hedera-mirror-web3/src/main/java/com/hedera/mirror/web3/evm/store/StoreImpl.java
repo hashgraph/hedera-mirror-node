@@ -28,6 +28,7 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -43,10 +44,12 @@ import java.util.Set;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 @Named
@@ -54,8 +57,11 @@ public class StoreImpl implements Store {
 
     private final StackedStateFrames stackedStateFrames;
 
-    public StoreImpl(final StackedStateFrames stackedStateFrames) {
+    private final OptionValidator validator;
+
+    public StoreImpl(final StackedStateFrames stackedStateFrames, final OptionValidator validator) {
         this.stackedStateFrames = stackedStateFrames;
+        this.validator = validator;
     }
 
     @Override
@@ -314,6 +320,8 @@ public class StoreImpl implements Store {
                                 final ResponseCodeEnum deletedCode) {
         validateTrue(account != null, explicitResponse != null ? explicitResponse : nonExistingCode);
         validateFalse(account.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
+        final var expiryStatus = validator.expiryStatusGiven(this, accountIdFromEvmAddress(account.getAccountAddress()));
+        validateTrue(expiryStatus == OK, expiryStatus);
     }
 
     /**

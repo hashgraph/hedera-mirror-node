@@ -34,6 +34,7 @@ import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -104,6 +105,9 @@ class AutoCreationLogicTest {
     @Mock
     private EvmProperties evmProperties;
 
+    @Mock
+    private OptionValidator validator;
+
     private AutoCreationLogic subject;
 
     @BeforeEach
@@ -111,7 +115,7 @@ class AutoCreationLogicTest {
         final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        store = new StoreImpl(stackedStateFrames);
+        store = new StoreImpl(stackedStateFrames, validator);
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory, aliasManager);
     }
 
