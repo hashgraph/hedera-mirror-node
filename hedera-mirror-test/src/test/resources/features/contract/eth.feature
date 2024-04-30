@@ -24,28 +24,28 @@ Feature: Ethereum transactions Coverage Feature
   Given I successfully created a signer account with an EVM address alias
   Then validate the signer account and its balance
 
-  Given I successfully create parent contract by ethereum transaction
+  Given I successfully create parent contract by ethereum transaction and verify gasConsumed
   Then the mirror node REST API should return status <httpStatusCode> for the eth contract creation transaction
   And the mirror node REST API should verify the deployed contract entity by eth call
 
-  When I successfully call the child creation function using EIP-1559 ethereum transaction
+  When I successfully call the child creation function using EIP-1559 ethereum transaction and verify gasConsumed
   Then the mirror node REST API should return status <httpStatusCode> for the ethereum transaction
   And the mirror node REST API should verify the child creation ethereum transaction
 
-  Given I call the parent contract to retrieve child's bytecode by Legacy ethereum transaction
+  Given I call the parent contract to retrieve child's bytecode by Legacy ethereum transaction and verify gasConsumed
   Then the mirror node REST API should return status <httpStatusCode> for the ethereum transaction
   And the mirror node REST API should verify the ethereum called contract function
 
-  When I call the parent contract evm address function with the bytecode of the child with EIP-2930 ethereum transaction
+  When I call the parent contract evm address function with the bytecode of the child with EIP-2930 ethereum transaction and verify gasConsumed
   Then the mirror node REST API should return status <httpStatusCode> for the ethereum transaction
   And the mirror node REST API should verify the ethereum called contract function
-
+  
   And I create a hollow account using CryptoTransfer of <transferAmount> to the child's evm address
   Then the mirror node REST API should return status <httpStatusCode> for the transfer transaction
   And the mirror node REST API should verify the account is hollow and has <transferAmount>
   And the mirror node REST API should not find a contract when using child's evm address
 
-  When I create a child contract by calling the parent contract function to deploy using CREATE2 with EIP-1559
+  When I create a child contract by calling the parent contract function to deploy using CREATE2 with EIP-1559 and verify gasConsumed
   Then the mirror node REST API should return status <httpStatusCode> for the ethereum transaction
   And the mirror node REST API should retrieve the contract when using child's evm address
   And the mirror node REST API should verify that the account is not hollow

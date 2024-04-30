@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.CustomLog;
 import lombok.Getter;
@@ -141,7 +142,11 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
                                 : Hbar.fromTinybars(contractResource.initialBalance),
                         null);
                 ContractId contractId = verifyCreateContractNetworkResponse();
-                return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
+                return new DeployedContract(
+                        fileId,
+                        contractId,
+                        compiledSolidityArtifact,
+                        Optional.of(networkTransactionResponse.getTransactionIdStringNoCheckSum()));
             } catch (IOException e) {
                 log.warn("Issue creating contract: {}, ex: {}", contractResource, e);
                 throw new RuntimeException(e);
@@ -261,5 +266,8 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
     }
 
     public record DeployedContract(
-            FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {}
+            FileId fileId,
+            ContractId contractId,
+            CompiledSolidityArtifact compiledSolidityArtifact,
+            Optional<String> txId) {}
 }

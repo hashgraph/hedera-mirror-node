@@ -18,6 +18,11 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.rest.model.TransactionTypes.*;
 import static com.hedera.mirror.rest.model.TransactionTypes.CONTRACTCREATEINSTANCE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PARENT_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.CREATE_2_DEPLOY;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.CREATE_CHILD;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.GET_ADDRESS;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.GET_BYE_CODE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,12 +45,14 @@ import java.math.BigInteger;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import lombok.CustomLog;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
 @CustomLog
-public class EthCallFeature extends AbstractFeature {
+public class EthCallFeature extends AbstractEstimateFeature {
 
     private static final int EVM_ADDRESS_SALT = 42;
     private static final String ACCOUNT_EMPTY_KEYLIST = "3200";
@@ -100,10 +107,17 @@ public class EthCallFeature extends AbstractFeature {
         assertThat(createAccountTransaction.getConsensusTimestamp()).isEqualTo(accountInfo.getCreatedTimestamp());
     }
 
-    @Given("I successfully create parent contract by ethereum transaction")
+    @Given("I successfully create parent contract by ethereum transaction and verify gasConsumed")
     public void createNewERCtestContract() {
-        deployedParentContract = ethereumContractCreate(ContractResource.PARENT_CONTRACT);
+        deployedParentContract = ethereumContractCreate(PARENT_CONTRACT);
         deployedParentContract.contractId().toSolidityAddress();
+
+        String txId = deployedParentContract.txId().get();
+        var successfulInitByteCode = Objects.requireNonNull(mirrorClient
+                .getContractInfo(deployedParentContract.contractId().toSolidityAddress())
+                .getBytecode());
+
+        verifyGasConsumed(txId, successfulInitByteCode);
     }
 
     @Then("the mirror node REST API should return status {int} for the eth contract creation transaction")
@@ -127,7 +141,7 @@ public class EthCallFeature extends AbstractFeature {
         verifyContractExecutionResultsByTransactionId(true);
     }
 
-    @Given("I successfully call the child creation function using EIP-1559 ethereum transaction")
+    @Given("I successfully call the child creation function using EIP-1559 ethereum transaction and verify gasConsumed")
     public void callContract() {
         ContractFunctionParameters parameters = new ContractFunctionParameters().addUint256(BigInteger.valueOf(1000));
 
@@ -137,6 +151,9 @@ public class EthCallFeature extends AbstractFeature {
                 parameters,
                 null,
                 EthTxData.EthTransactionType.EIP1559);
+
+        var selector = encodeDataToByteArray(PARENT_CONTRACT, CREATE_CHILD, BigInteger.valueOf(1000));
+        verifyGasConsumed(networkTransactionResponse.getTransactionIdStringNoCheckSum(), selector);
     }
 
     @Then("the mirror node REST API should verify the child creation ethereum transaction")
@@ -153,7 +170,8 @@ public class EthCallFeature extends AbstractFeature {
         verifyContractExecutionResultsByTransactionId(false);
     }
 
-    @Given("I call the parent contract to retrieve child's bytecode by Legacy ethereum transaction")
+    @Given(
+            "I call the parent contract to retrieve child's bytecode by Legacy ethereum transaction and verify gasConsumed")
     public void getChildBytecode() {
         var executeContractResult = executeEthereumTransaction(
                 deployedParentContract.contractId(),
@@ -165,10 +183,13 @@ public class EthCallFeature extends AbstractFeature {
         childContractBytecodeFromParent =
                 executeContractResult.contractFunctionResult().getBytes(0);
         assertNotNull(childContractBytecodeFromParent);
+
+        var selector = encodeDataToByteArray(PARENT_CONTRACT, GET_BYE_CODE);
+        verifyGasConsumed(networkTransactionResponse.getTransactionIdStringNoCheckSum(), selector);
     }
 
     @When(
-            "I call the parent contract evm address function with the bytecode of the child with EIP-2930 ethereum transaction")
+            "I call the parent contract evm address function with the bytecode of the child with EIP-2930 ethereum transaction and verify gasConsumed")
     public void getChildAddress() {
         ContractFunctionParameters parameters = new ContractFunctionParameters()
                 .addBytes(childContractBytecodeFromParent)
@@ -185,6 +206,10 @@ public class EthCallFeature extends AbstractFeature {
                 executeContractResult.contractFunctionResult().getAddress(0);
         create2ChildContractAccountId = AccountId.fromEvmAddress(create2ChildContractEvmAddress);
         create2ChildContractContractId = ContractId.fromEvmAddress(0, 0, create2ChildContractEvmAddress);
+
+        var selector = encodeDataToByteArray(
+                PARENT_CONTRACT, GET_ADDRESS, childContractBytecodeFromParent, BigInteger.valueOf(EVM_ADDRESS_SALT));
+        verifyGasConsumed(networkTransactionResponse.getTransactionIdStringNoCheckSum(), selector);
     }
 
     @And("I create a hollow account using CryptoTransfer of {int} to the child's evm address")
@@ -228,7 +253,8 @@ public class EthCallFeature extends AbstractFeature {
         }
     }
 
-    @When("I create a child contract by calling the parent contract function to deploy using CREATE2 with EIP-1559")
+    @When(
+            "I create a child contract by calling the parent contract function to deploy using CREATE2 with EIP-1559 and verify gasConsumed")
     public void createChildContractUsingCreate2() {
         ContractFunctionParameters parameters = new ContractFunctionParameters()
                 .addBytes(childContractBytecodeFromParent)
@@ -239,6 +265,13 @@ public class EthCallFeature extends AbstractFeature {
                 parameters,
                 null,
                 EthTxData.EthTransactionType.EIP1559);
+
+        var selector = encodeDataToByteArray(
+                PARENT_CONTRACT,
+                CREATE_2_DEPLOY,
+                childContractBytecodeFromParent,
+                BigInteger.valueOf(EVM_ADDRESS_SALT));
+        verifyGasConsumed(networkTransactionResponse.getTransactionIdStringNoCheckSum(), selector);
     }
 
     @And("the mirror node REST API should retrieve the contract when using child's evm address")
@@ -323,7 +356,11 @@ public class EthCallFeature extends AbstractFeature {
                             : Hbar.fromTinybars(contractResource.getInitialBalance()),
                     null);
             ContractId contractId = verifyCreateContractNetworkResponse();
-            return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
+            return new DeployedContract(
+                    fileId,
+                    contractId,
+                    compiledSolidityArtifact,
+                    Optional.of(networkTransactionResponse.getTransactionIdStringNoCheckSum()));
         } catch (IOException e) {
             log.warn("Issue creating contract: {}, ex: {}", contractResource, e);
             throw new RuntimeException(e);

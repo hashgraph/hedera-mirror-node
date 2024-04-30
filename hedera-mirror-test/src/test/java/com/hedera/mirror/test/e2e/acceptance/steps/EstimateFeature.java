@@ -61,15 +61,11 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeat
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.extractTransactionId;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.mirror.rest.model.ContractAction;
-import com.hedera.mirror.rest.model.ContractActionsResponse;
-import com.hedera.mirror.rest.model.ContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
@@ -82,14 +78,11 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 
@@ -681,18 +674,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
         verifyGasConsumed(txId, successfulInitByteCode);
     }
 
-    private void verifyGasConsumed(String txId, Object data) {
-        int totalGasFee;
-        try {
-            totalGasFee = calculateIntrinsicValue(data);
-        } catch (DecoderException e) {
-            throw new RuntimeException("Failed to decode hexadecimal string.", e);
-        }
-        var gasConsumed = getGasConsumedByTransactionId(txId);
-        var gasUsed = getGasFromActions(txId);
-        assertThat(gasConsumed).isEqualTo(gasUsed + totalGasFee);
-    }
-
     private String executeContractTransaction(
             DeployedContract deployedContract, SelectorInterface contractMethods, byte[] parameters) {
 
@@ -774,56 +755,6 @@ public class EstimateFeature extends AbstractEstimateFeature {
                         .getMaxContractFunctionGas());
     }
 
-    private Long getGasConsumedByTransactionId(String transactionId) {
-        ContractResult contractResult = mirrorClient.getContractResultByTransactionId(transactionId);
-        return contractResult.getGasConsumed();
-    }
-
-    private long getGasFromActions(String transactionId) {
-        return Optional.ofNullable(mirrorClient.getContractResultActionsByTransactionId(transactionId))
-                .map(ContractActionsResponse::getActions)
-                .filter(actions -> !actions.isEmpty())
-                .map(List::getFirst)
-                .map(ContractAction::getGasUsed)
-                .orElse(0L); // Provide a default value in case any step results in null
-    }
-
-    /**
-     * Calculates the total intrinsic gas required for a given operation, taking into account the
-     * operation type and the data involved. This method adjusts the gas calculation based
-     * on the type of operation: contract creation (CREATE) operations, indicated by a hexadecimal
-     * string input, include an additional fee on top of the base gas fee. The intrinsic gas for
-     * the data payload is calculated by adding a specific gas amount for each byte in the payload,
-     * with different amounts for zero and non-zero bytes.
-     *
-     * @param data The operation data, which can be a hexadecimal string for CREATE operations or
-     *             a byte array for contract call operations.
-     * @return The total intrinsic gas calculated for the operation
-     * @throws DecoderException If the data parameter is a String and cannot be decoded from hexadecimal
-     *                          format, indicating an issue with the input format.
-     * @throws IllegalArgumentException If the data parameter is not an instance of String or byte[],
-     *                                  indicating that the provided data type is unsupported for gas
-     *                                  calculation in the context of this method and tests.
-     */
-    private int calculateIntrinsicValue(Object data) throws DecoderException {
-        int total = BASE_GAS_FEE;
-        byte[] values;
-        if (data instanceof String) {
-            values = Hex.decodeHex(((String) data).replaceFirst("0x", ""));
-            total += ADDITIONAL_FEE_FOR_CREATE;
-        } else if (data instanceof byte[]) {
-            values = (byte[]) data;
-        } else {
-            throw new IllegalArgumentException("Unsupported data type for gas calculation.");
-        }
-
-        // Calculates the intrinsic value by adding 4 for each 0 bytes and 16 for non-zero bytes
-        for (byte value : values) {
-            total += (value == 0) ? 4 : 16;
-        }
-        return total;
-    }
-
     /**
      * Estimate gas values are hardcoded at this moment until we get better solution such as actual gas used returned
      * from the consensus node. It will be changed in future PR when actualGasUsed field is added to the protobufs.
@@ -868,7 +799,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
         IERC20_TOKEN_TRANSFER("transfer(address,uint256)", 38193),
         IERC20_TOKEN_APPROVE("approve(address,uint256)", 728550),
         IERC20_TOKEN_ASSOCIATE("associate()", 728033),
-        IERC20_TOKEN_DISSOCIATE("dissociate()", 728033);
+        IERC20_TOKEN_DISSOCIATE("dissociate()", 728033),
+        CREATE_CHILD("createChild", 0),
+        GET_BYE_CODE("getBytecode", 0),
+        GET_ADDRESS("getAddress", 0),
+        CREATE_2_DEPLOY("create2Deploy", 0),
+        VACATE_ADDRESS("vacateAddress", 0);
 
         private final String selector;
         private final int actualGas;
