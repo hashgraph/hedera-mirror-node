@@ -49,6 +49,7 @@ import com.hedera.mirror.rest.model.TokensResponse;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.config.RestJavaProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
 import com.hedera.mirror.test.e2e.acceptance.props.Order;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
@@ -74,15 +75,20 @@ public class MirrorNodeClient {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final RestClient restClient;
+    private final RestClient restJavaClient;
     private final RetryTemplate retryTemplate;
     private final RestClient web3Client;
 
     public MirrorNodeClient(
             AcceptanceTestProperties acceptanceTestProperties,
             RestClient.Builder restClientBuilder,
+            RestJavaProperties restJavaProperties,
             Web3Properties web3Properties) {
         this.acceptanceTestProperties = acceptanceTestProperties;
         this.restClient = restClientBuilder.build();
+        this.restJavaClient = StringUtils.isBlank(restJavaProperties.getBaseUrl())
+                ? restClient
+                : restClientBuilder.baseUrl(restJavaProperties.getBaseUrl()).build();
         this.web3Client = StringUtils.isBlank(web3Properties.getBaseUrl())
                 ? restClient
                 : restClientBuilder.baseUrl(web3Properties.getBaseUrl()).build();
@@ -192,7 +198,7 @@ public class MirrorNodeClient {
                 accountId,
                 ownerId,
                 tokenId);
-        return callRestEndpoint(
+        return callRestJavaEndpoint(
                 "/accounts/{accountId}/allowances/nfts?token.id={tokenId}&account.id={ownerId}&owner=false",
                 NftAllowancesResponse.class,
                 accountId,
@@ -206,7 +212,7 @@ public class MirrorNodeClient {
                 accountId,
                 spenderId,
                 tokenId);
-        return callRestEndpoint(
+        return callRestJavaEndpoint(
                 "/accounts/{accountId}/allowances/nfts?token.id={tokenId}&account.id={spenderId}&owner=true",
                 NftAllowancesResponse.class,
                 accountId,
@@ -368,6 +374,11 @@ public class MirrorNodeClient {
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
         return retryTemplate.execute(
                 x -> restClient.get().uri(uri, uriVariables).retrieve().body(classType));
+    }
+
+    private <T> T callRestJavaEndpoint(String uri, Class<T> classType, Object... uriVariables) {
+        return retryTemplate.execute(
+                x -> restJavaClient.get().uri(uri, uriVariables).retrieve().body(classType));
     }
 
     private <T> T callRestEndpointNoRetry(String uri, Class<T> classType, Object... uriVariables) {
