@@ -360,6 +360,8 @@ test:
             mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
             rest:
               baseUrl: "http://{{ .Release.Name }}-rest"
+            restJava:
+              baseUrl: "http://{{ .Release.Name }}-restjava"
             web3:
               baseUrl: "http://{{ .Release.Name }}-web3"
   cucumberTags: "@acceptance"

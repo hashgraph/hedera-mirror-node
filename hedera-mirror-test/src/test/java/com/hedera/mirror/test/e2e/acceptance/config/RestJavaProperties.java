@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,12 +24,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.web3")
+@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.rest-java")
 @Data
 @Named
 @RequiredArgsConstructor
 @Validated
-public class Web3Properties {
+public class RestJavaProperties {
 
     private String baseUrl;
 
