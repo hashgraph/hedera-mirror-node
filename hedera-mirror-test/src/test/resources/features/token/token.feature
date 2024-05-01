@@ -46,21 +46,21 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should return the transaction
     Then the mirror node REST API should return the token relationship for nft
     Then I mint a serial number from the token
-    And the mirror node REST API should return the transaction for token serial number 0 transaction flow
+    And the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     Then I transfer serial number 0 to ALICE
     And the mirror node REST API should return the transaction for token serial number 0 full flow
     Then I wipe serial number 0 from token
-    And the mirror node REST API should return the transaction for token serial number 0 transaction flow
+    And the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     Then I mint a serial number from the token
-    And the mirror node REST API should return the transaction for token serial number 1 transaction flow
+    And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
     Then I burn serial number 1 from token
-    And the mirror node REST API should return the transaction for token serial number 1 transaction flow
+    And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
         #TODO This test should be updated when services enables the ability to change NFT treasury accounts.
     Then I update the treasury of token to ALICE
     And the mirror node REST API should return the transaction
     Then I update the treasury of token to operator
     Then I delete the token
-    And the mirror node REST API should return the transaction for token serial number 1 transaction flow
+    And the mirror node REST API should return the transaction for token serial number index 1 transaction flow
 
   @customfees
   Scenario Outline: Validate Base Token Flow with Custom Fees Schedule - Create, Associate, Fund, Transfer

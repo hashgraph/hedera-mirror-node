@@ -366,7 +366,13 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         } else {
             tokenClient.mint(tokenId, "TEST_metadata".getBytes());
             networkTransactionResponse = tokenClient.transferNonFungibleToken(
-                    tokenId, admin, receiverAccountId.getAccountId(), List.of(2L), receiverAccountId.getPrivateKey());
+                    tokenId,
+                    admin,
+                    receiverAccountId.getAccountId(),
+                    List.of(2L),
+                    receiverAccountId.getPrivateKey(),
+                    null,
+                    false);
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
@@ -588,7 +594,13 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         waitForNextBlock();
 
         networkTransactionResponse = tokenClient.transferNonFungibleToken(
-                tokenId, admin, receiverAccountId.getAccountId(), List.of(1L), receiverAccountId.getPrivateKey());
+                tokenId,
+                admin,
+                receiverAccountId.getAccountId(),
+                List.of(1L),
+                receiverAccountId.getPrivateKey(),
+                null,
+                false);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
         var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress);
         var historicalOwner = historicalResponse.getResultAsAddress();
@@ -703,7 +715,7 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             case "burn" -> networkTransactionResponse = tokenClient.burnNonFungible(tokenId, 4L);
             case "wipe" -> {
                 tokenClient.transferNonFungibleToken(
-                        tokenId, admin, receiverAccountId.getAccountId(), List.of(5L), null);
+                        tokenId, admin, receiverAccountId.getAccountId(), List.of(5L), null, null, false);
                 networkTransactionResponse = tokenClient.wipeNonFungible(tokenId, 5L, receiverAccountId);
             }
         }
