@@ -66,14 +66,7 @@ spec:
             test:
               acceptance:
                 network: OTHER
-                restJava:
-                  baseUrl: "http://{{ .Release.Name }}-restjava"
       enabled: true
       git:
         branch: main
-      image:
-        pullPolicy: Always
-        registry: ssheehy
-        repository: hedera-mirror-test
-        tag: 0.104.0-SNAPSHOT
 
