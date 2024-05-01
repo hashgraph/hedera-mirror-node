@@ -74,6 +74,6 @@ spec:
       image:
         pullPolicy: Always
         registry: ssheehy
-        repository: hedera-mirror-rest
+        repository: hedera-mirror-test
         tag: 0.104.0-SNAPSHOT
 
