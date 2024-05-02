@@ -8,29 +8,15 @@ contract ExchangeRatePrecompile {
     bytes4 constant TINYCENTS_TO_TINYBARS = bytes4(keccak256("tinycentsToTinybars(uint256)"));
     bytes4 constant TINYBARS_TO_TINYCENTS = bytes4(keccak256("tinybarsToTinycents(uint256)"));
 
-    function tinycentsToTinybars(uint256 tinycents) external returns (uint256 tinybars) {
-        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
+    function tinycentsToTinybars(uint256 tinycents) external payable returns (uint256 tinybars) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value : msg.value}(
             abi.encodeWithSelector(TINYCENTS_TO_TINYBARS, tinycents));
         require(success);
         tinybars = abi.decode(result, (uint256));
     }
 
-    function tinybarsToTinycents(uint256 tinybars) external returns (uint256 tinycents) {
-        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call(
-            abi.encodeWithSelector(TINYBARS_TO_TINYCENTS, tinybars));
-        require(success);
-        tinycents = abi.decode(result, (uint256));
-    }
-
-    function tinycentsToTinybarsWithValue(uint256 tinycents, uint256 callValue) external returns (uint256 tinybars) {
-        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value: callValue}(
-            abi.encodeWithSelector(TINYCENTS_TO_TINYBARS, tinycents));
-        require(success);
-        tinybars = abi.decode(result, (uint256));
-    }
-
-    function tinybarsToTinycentsWithValue(uint256 tinybars, uint256 callValue) external returns (uint256 tinycents) {
-        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value: callValue}(
+    function tinybarsToTinycents(uint256 tinybars) external payable returns (uint256 tinycents) {
+        (bool success, bytes memory result) = PRECOMPILE_ADDRESS.call{value : msg.value}(
             abi.encodeWithSelector(TINYBARS_TO_TINYCENTS, tinybars));
         require(success);
         tinycents = abi.decode(result, (uint256));

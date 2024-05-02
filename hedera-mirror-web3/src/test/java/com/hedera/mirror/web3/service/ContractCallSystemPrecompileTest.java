@@ -67,13 +67,12 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ExchangeRateFunctionsWithValue.class)
-    void exchangeRatePrecompileFunctionsTestEthCallWithValueRevertExecution(
-            final ExchangeRateFunctionsWithValue contractFunc) {
+    @EnumSource(ExchangeRateFunctions.class)
+    void exchangeRatePrecompileFunctionsTestEthCallWithValueRevertExecution(final ExchangeRateFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(
-                functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+                functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_CALL, 100L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -109,13 +108,13 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ExchangeRateFunctionsWithValue.class)
+    @EnumSource(ExchangeRateFunctions.class)
     void exchangeRatePrecompileFunctionsTestEthEstimateGasWithValueRevertExecution(
-            final ExchangeRateFunctionsWithValue contractFunc) {
+            final ExchangeRateFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParametersForExecution(
-                functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+                functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 100L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -138,10 +137,10 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
     @Test
     void pseudoRandomGeneratorPrecompileFunctionsTestEthEstimateGasWithValueRevertExecution() {
-        final var functionName = "getPseudorandomSeedWithValue";
-        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH, 100L);
+        final var functionName = "getPseudorandomSeed";
+        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
         final var serviceParameters = serviceParametersForExecution(
-                functionHash, PRNG_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+                functionHash, PRNG_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 100L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -163,10 +162,10 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
 
     @Test
     void pseudoRandomGeneratorPrecompileFunctionsTestEthCallWithValueRevertExecution() {
-        final var functionName = "getPseudorandomSeedWithValue";
-        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH, 100L);
+        final var functionName = "getPseudorandomSeed";
+        final var functionHash = functionEncodeDecoder.functionHashFor(functionName, PRNG_PRECOMPILE_ABI_PATH);
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+                serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 100L, BlockType.LATEST);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
@@ -195,14 +194,5 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
-    }
-
-    @RequiredArgsConstructor
-    enum ExchangeRateFunctionsWithValue {
-        TINYCENTS_TO_TINYBARS("tinycentsToTinybarsWithValue", new Object[] {100L, 100L}),
-        TINYBARS_TO_TINYCENTS("tinybarsToTinycentsWithValue", new Object[] {1550L, 100L});
-
-        private final String name;
-        private final Object[] functionParameters;
     }
 }

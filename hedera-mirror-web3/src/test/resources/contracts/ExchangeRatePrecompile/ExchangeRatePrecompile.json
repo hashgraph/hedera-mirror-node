@@ -15,31 +15,7 @@
         "type": "uint256"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tinybars",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "callValue",
-        "type": "uint256"
-      }
-    ],
-    "name": "tinybarsToTinycentsWithValue",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "tinycents",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -58,31 +34,7 @@
         "type": "uint256"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tinycents",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "callValue",
-        "type": "uint256"
-      }
-    ],
-    "name": "tinycentsToTinybarsWithValue",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "tinybars",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   }
 ]
