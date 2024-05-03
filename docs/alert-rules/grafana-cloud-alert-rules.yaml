@@ -97,7 +97,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: "{{ $value | humanizePercentage }} gRPC {{ $labels.statusCode }} error rate for {{ $labels.namespace }}/{{ $labels.pod }}"
+          description: '{{ (index $values "A").Value | humanizePercentage }} gRPC {{ $labels.statusCode }} error rate for {{ $labels.namespace }}/{{ $labels.pod }}'
           summary: Mirror gRPC API error rate exceeds 5%
         labels:
           application: hedera-mirror-grpc
@@ -125,7 +125,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror gRPC API CPU usage exceeds 80%
         labels:
           application: hedera-mirror-grpc
@@ -154,7 +154,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} is using {{ (index $values "A").Value | humanizePercentage }} of available database connections'
           summary: Mirror gRPC API database connection utilization exceeds 75%
         labels:
           application: hedera-mirror-grpc
@@ -183,7 +183,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror gRPC API file descriptor usage exceeds 80%
         labels:
           application: hedera-mirror-grpc
@@ -212,7 +212,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: High latency of {{ $value | humanizeDuration }} between the main nodes and {{ $labels.namespace }}/{{ $labels.pod }}
+          description: High latency of {{ (index $values "A").Value | humanizeDuration }} between the main nodes and {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror gRPC API consensus to delivery (C2MD) latency exceeds 15s
         labels:
           application: hedera-mirror-grpc
@@ -240,7 +240,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror gRPC API memory usage exceeds 80%
         labels:
           application: hedera-mirror-grpc
@@ -269,7 +269,7 @@ groups:
         execErrState: Error
         for: 3m
         annotations:
-          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period
+          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ index $values "A" }} error messages/s in a 3m period
           summary: High rate of log errors
         labels:
           application: hedera-mirror-grpc
@@ -297,7 +297,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }} has {{ $value }} subscribers for {{ $labels.type }}"
+          description: '{{ $labels.namespace }} has {{ index $values "A" }} subscribers for {{ $labels.type }}'
           summary: Mirror gRPC API has no subscribers
         labels:
           application: hedera-mirror-grpc
@@ -325,7 +325,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: High average database query latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: High average database query latency of {{ (index $values "A").Value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror gRPC API query latency exceeds 1s
         labels:
           application: hedera-mirror-grpc
@@ -358,7 +358,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: Averaging {{ $value | humanizeDuration }} trying to parse balance stream files for {{ index $labels  "namespace" }}/{{ $labels.pod }}
+          description: Averaging {{ (index $values "A").Value | humanizeDuration }} trying to parse balance stream files for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Took longer than 2m to parse balance stream files
         labels:
           application: hedera-mirror-importer
@@ -388,7 +388,7 @@ groups:
         execErrState: Error
         for: 3m
         annotations:
-          description: The difference between the file timestamp and when it was processed is {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: The difference between the file timestamp and when it was processed is {{ (index $values "A").Value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror Importer balance stream processing has fallen behind
         labels:
           application: hedera-mirror-importer
@@ -418,7 +418,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: Averaging {{ $value | humanizePercentage }} error rate trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Averaging {{ (index $values "A").Value | humanizePercentage }} error rate trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Cloud storage error rate exceeds 5%
         labels:
           application: hedera-mirror-importer
@@ -447,7 +447,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: Averaging {{ $value | humanizeDuration }} cloud storage latency trying to {{ if ne $labels.action "list" }} retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Averaging {{ (index $values "A").Value | humanizeDuration }} cloud storage latency trying to {{ if ne $labels.action "list" }}retrieve{{ end }} {{ $labels.action }} {{ $labels.type }} files from cloud storage for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Cloud storage latency exceeds 2s
         labels:
           application: hedera-mirror-importer
@@ -476,7 +476,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: Error rate of {{ $value | humanizePercentage }} trying to download and verify {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Error rate of {{ (index $values "A").Value | humanizePercentage }} trying to download and verify {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: "{{ $labels.type }} file verification error rate exceeds 5%"
         labels:
           application: hedera-mirror-importer
@@ -505,7 +505,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Importer CPU usage exceeds 80%
         labels:
           application: hedera-mirror-importer
@@ -534,7 +534,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} is using {{ (index $values "A").Value | humanizePercentage }} of available database connections'
           summary: Mirror Importer database connection utilization exceeds 75%
         labels:
           application: hedera-mirror-importer
@@ -563,7 +563,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Importer file descriptor usage exceeds 80%
         labels:
           application: hedera-mirror-importer
@@ -592,7 +592,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Importer memory usage exceeds 80%
         labels:
           application: hedera-mirror-importer
@@ -621,7 +621,7 @@ groups:
         execErrState: Error
         for: 3m
         annotations:
-          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period
+          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ index $values "A" }} error messages/s in a 3m period
           summary: High rate of log errors
         labels:
           application: hedera-mirror-importer
@@ -680,7 +680,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: "{{ $labels.namespace }} only able to achieve {{ $value | humanizePercentage }} consensus during {{ $labels.type }} stream signature verification"
+          description: '{{ $labels.namespace }} only able to achieve {{ (index $values "A").Value | humanizePercentage }} consensus during {{ $labels.type }} stream signature verification'
           summary: Unable to verify {{ $labels.type }} stream signatures
         labels:
           application: hedera-mirror-importer
@@ -709,7 +709,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: Record stream TPS has dropped to {{ $value }} for {{ $labels.namespace }}. This may be because importer is down, can't connect to cloud storage, main nodes are not uploading, error parsing the streams, no traffic, etc.
+          description: Record stream TPS has dropped to {{ index $values "A" }} for {{ $labels.namespace }}. This may be because importer is down, can't connect to cloud storage, main nodes are not uploading, error parsing the streams, no traffic, etc.
           summary: No transactions seen for 2m
         labels:
           application: hedera-mirror-importer
@@ -739,7 +739,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: Encountered {{ $value | humanizePercentage }} errors trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Encountered {{ (index $values "A").Value| humanizePercentage }} errors trying to parse {{ $labels.type }} stream files for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Error rate parsing {{ $labels.type }} exceeds 5%
         labels:
           application: hedera-mirror-importer
@@ -768,7 +768,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: Took {{ $value | humanizeDuration }} to publish {{ $labels.entity }}s to {{ $labels.type }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Took {{ (index $values "A").Value| humanizeDuration }} to publish {{ $labels.entity }}s to {{ $labels.type }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Slow {{ $labels.type }} publishing
         labels:
           application: hedera-mirror-importer
@@ -797,7 +797,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: High average database query latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: High average database query latency of {{ (index $values "A").Value| humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror Importer query latency exceeds 1s
         labels:
           application: hedera-mirror-importer
@@ -853,7 +853,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: Averaging {{ $value | humanizeDuration }} trying to parse record stream files for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Averaging {{ (index $values "A").Value| humanizeDuration }} trying to parse record stream files for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Took longer than 2s to parse record stream files
         labels:
           application: hedera-mirror-importer
@@ -883,7 +883,7 @@ groups:
         execErrState: Error
         for: 3m
         annotations:
-          description: The difference between the file timestamp and when it was processed is {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: The difference between the file timestamp and when it was processed is {{ (index $values "A").Value| humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror Importer record stream processing has fallen behind
         labels:
           application: hedera-mirror-importer
@@ -913,7 +913,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} file stream should close every 2s but is actually {{ $value | humanizeDuration }}. This could just be due to the lack of traffic in the environment, but it could potentially be something more serious to look into."
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} file stream should close every 2s but is actually {{ (index $values "A").Value | humanizeDuration }}. This could just be due to the lack of traffic in the environment, but it could potentially be something more serious to look into.'
           summary: Record stream close interval exceeds 10s
         labels:
           application: hedera-mirror-importer
@@ -948,7 +948,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Monitor CPU usage exceeds 80%
         labels:
           application: hedera-mirror-monitor
@@ -977,7 +977,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Monitor memory usage exceeds 80%
         labels:
           application: hedera-mirror-monitor
@@ -1006,7 +1006,7 @@ groups:
         execErrState: Error
         for: 3m
         annotations:
-          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period
+          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ index $values "A" }} error messages/s in a 3m period
           summary: High rate of log errors
         labels:
           application: hedera-mirror-monitor
@@ -1035,7 +1035,7 @@ groups:
         execErrState: Error
         for: 3m
         annotations:
-          description: Averaging {{ $value | humanizePercentage }} error rate publishing '{{ $labels.scenario }}' scenario from {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Averaging {{ (index $values "A").Value | humanizePercentage }} error rate publishing '{{ $labels.scenario }}' scenario from {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Publish error rate exceeds 50%
         labels:
           application: hedera-mirror-monitor
@@ -1064,7 +1064,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: Averaging {{ $value | humanizeDuration }} publish latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Averaging {{ (index $values "A").Value | humanizeDuration }} publish latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Publish latency exceeds 7s
         labels:
           application: hedera-mirror-monitor
@@ -1093,7 +1093,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: Averaging {{ $value | humanizePercentage }} PLATFORM_NOT_ACTIVE or UNAVAILABLE errors while attempting to publish in {{ $labels.namespace }}
+          description: Averaging {{ (index $values "A").Value | humanizePercentage }} PLATFORM_NOT_ACTIVE or UNAVAILABLE errors while attempting to publish in {{ $labels.namespace }}
           summary: Platform is not active
         labels:
           application: hedera-mirror-monitor
@@ -1122,7 +1122,7 @@ groups:
         execErrState: Error
         for: 0s
         annotations:
-          description: Publish TPS dropped to {{ $value }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Publish TPS dropped to {{ index $values "A" }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Publishing stopped
         labels:
           application: hedera-mirror-monitor
@@ -1151,7 +1151,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: Averaging {{ $value | humanizeDuration }} transaction latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: Averaging {{ (index $values "A").Value | humanizeDuration }} transaction latency for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Submit to transaction being handled latency exceeds 11s
         labels:
           application: hedera-mirror-monitor
@@ -1180,7 +1180,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "Latency averaging {{ $value | humanizeDuration }} for '{{ $labels.scenario }}' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+          description: 'Latency averaging {{ (index $values "A").Value | humanizeDuration }} for ''{{ $labels.scenario }}'' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}'
           summary: End to end latency exceeds 14s
         labels:
           application: hedera-mirror-monitor
@@ -1208,7 +1208,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "TPS dropped to {{ $value }} for '{{ $labels.scenario }}' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
+          description: 'TPS dropped to {{ index $values "A" }} for ''{{ $labels.scenario }}'' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}'
           summary: Subscription stopped
         labels:
           application: hedera-mirror-monitor
@@ -1241,7 +1241,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: REST API 5xx error rate for {{ $labels.namespace }} is {{ $value | humanizePercentage }}
+          description: REST API 5xx error rate for {{ $labels.namespace }} is {{ (index $values "A").Value | humanizePercentage }}
           summary: Mirror REST API error rate exceeds 1%
         labels:
           application: hedera-mirror-rest
@@ -1258,7 +1258,7 @@ groups:
             datasourceUid: grafanacloud-prom
             model:
               editorMode: code
-              expr: sum by (cluster, namespace, pod) (nodejs_process_cpu_usage_percentage{container="rest"}) > 80
+              expr: sum by (cluster, namespace, pod) (nodejs_process_cpu_usage_percentage{container="rest"}) / 100 > 0.8
               instant: true
               intervalMs: 1000
               legendFormat: __auto
@@ -1269,7 +1269,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror REST API CPU usage exceeds 80%
         labels:
           application: hedera-mirror-rest
@@ -1359,7 +1359,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: "{{ $value | humanizePercentage }} Java REST API error rate for {{ $labels.namespace }}/{{ $labels.pod }}"
+          description: '{{ (index $values "A").Value | humanizePercentage }} Java REST API error rate for {{ $labels.namespace }}/{{ $labels.pod }}'
           summary: Mirror Java REST API error rate exceeds 5%
         labels:
           application: hedera-mirror-rest-java
@@ -1387,7 +1387,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Java REST API CPU usage exceeds 80%
         labels:
           application: hedera-mirror-rest-java
@@ -1415,7 +1415,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} is using {{ (index $values "A").Value | humanizePercentage }} of available database connections'
           summary: Mirror Java REST API database connection utilization exceeds 75%
         labels:
           application: hedera-mirror-rest-java
@@ -1444,7 +1444,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Java REST API file descriptor usage exceeds 80%
         labels:
           application: hedera-mirror-rest-java
@@ -1473,7 +1473,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Java REST API memory usage exceeds 80%
         labels:
           application: hedera-mirror-rest-java
@@ -1502,7 +1502,7 @@ groups:
         execErrState: Error
         for: 3m
         annotations:
-          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period
+          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ index $values "A" }} error messages/s in a 3m period
           summary: High rate of log errors
         labels:
           application: hedera-mirror-rest-java
@@ -1558,7 +1558,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: High average database query latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: High average database query latency of {{ (index $values "A").Value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror Java REST API query latency exceeds 1s
         labels:
           application: hedera-mirror-rest-java
@@ -1586,7 +1586,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: High average request latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: High average request latency of {{ (index $values "A").Value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror Rest Java API request latency exceeds 2s
         labels:
           application: hedera-mirror-rest-java
@@ -1619,7 +1619,7 @@ groups:
         execErrState: Error
         for: 2m
         annotations:
-          description: "{{ $value | humanizePercentage }} Web3 server error rate for {{ $labels.namespace }}/{{ $labels.pod }}"
+          description: '{{ (index $values "A").Value  | humanizePercentage }} Web3 server error rate for {{ $labels.namespace }}/{{ $labels.pod }}'
           summary: Mirror Web3 API error rate exceeds 5%
         labels:
           application: hedera-mirror-web3
@@ -1647,7 +1647,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Web3 API CPU usage exceeds 80%
         labels:
           application: hedera-mirror-web3
@@ -1675,7 +1675,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} is using {{ (index $values "A").Value | humanizePercentage }} of available database connections'
           summary: Mirror Web3 API database connection utilization exceeds 75%
         labels:
           application: hedera-mirror-web3
@@ -1704,7 +1704,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Web3 API memory usage exceeds 80%
         labels:
           application: hedera-mirror-web3
@@ -1733,7 +1733,7 @@ groups:
         execErrState: Error
         for: 3m
         annotations:
-          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period
+          description: Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ index $values "A" }} error messages/s in a 3m period
           summary: High rate of log errors
         labels:
           application: hedera-mirror-web3
@@ -1789,7 +1789,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: High average database query latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: High average database query latency of {{ (index $values "A").Value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror Web3 API query latency exceeds 1s
         labels:
           application: hedera-mirror-web3
@@ -1817,7 +1817,7 @@ groups:
         execErrState: Error
         for: 1m
         annotations:
-          description: High average request latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
+          description: High average request latency of {{ (index $values "A").Value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}
           summary: Mirror Web3 API request latency exceeds 2s
         labels:
           application: hedera-mirror-web3
@@ -1845,7 +1845,7 @@ groups:
         execErrState: Error
         for: 5m
         annotations:
-          description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
+          description: '{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ (index $values "A").Value | humanizePercentage }}'
           summary: Mirror Web3 API file descriptor usage exceeds 80%
         labels:
           application: hedera-mirror-web3
