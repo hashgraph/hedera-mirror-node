@@ -32,6 +32,7 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.services.txns.validation.OptionValidator;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -40,7 +41,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
 import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -88,6 +91,9 @@ class HederaEvmStackedWorldStateUpdaterTest {
     @Mock
     private EntityRepository entityRepository;
 
+    @Mock
+    private OptionValidator validator;
+
     private Store store;
 
     private HederaEvmStackedWorldStateUpdater subject;
@@ -99,7 +105,7 @@ class HederaEvmStackedWorldStateUpdaterTest {
                 entityDatabaseAccessor,
                 new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        store = new StoreImpl(stackedStateFrames);
+        store = new StoreImpl(stackedStateFrames, validator);
         subject = new HederaEvmStackedWorldStateUpdater(
                 updater,
                 accountAccessor,

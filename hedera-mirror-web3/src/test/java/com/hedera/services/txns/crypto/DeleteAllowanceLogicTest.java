@@ -16,20 +16,6 @@
 
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.store.models.Id.fromGrpcToken;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.EntityNum.fromTokenId;
-import static com.hedera.services.utils.IdUtils.asAccount;
-import static com.hedera.services.utils.IdUtils.asToken;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -47,16 +33,32 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.function.Executable;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
+import static com.hedera.services.store.models.Id.fromGrpcToken;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.EntityNum.fromTokenId;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class DeleteAllowanceLogicTest {
@@ -100,7 +102,7 @@ class DeleteAllowanceLogicTest {
         givenValidTxnCtx();
         ownerAccount = addExistingAllowances(ownerAccount);
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
-        given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
+        given(store.loadAccountOrFailWith(asTypedEvmAddress(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(ownerAccount);
 
         token2Model = token2Model.setTreasury(ownerAccount);
         final var nftId2 = new NftId(token2.getShardNum(), token2.getRealmNum(), token2.getTokenNum(), 12L);
@@ -122,7 +124,7 @@ class DeleteAllowanceLogicTest {
         givenValidTxnCtx();
         ownerAccount = addExistingAllowances(ownerAccount);
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
-        given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
+        given(store.loadAccountOrFailWith(asTypedEvmAddress(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(ownerAccount);
         token2Model = token2Model.setTreasury(ownerAccount);
         final var nftId2 = new NftId(token2.getShardNum(), token2.getRealmNum(), token2.getTokenNum(), 12L);
         given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(uniqueToken2);
@@ -143,7 +145,7 @@ class DeleteAllowanceLogicTest {
         givenValidTxnCtx();
 
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
-        given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
+        given(store.loadAccountOrFailWith(asTypedEvmAddress(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(ownerAccount);
         token2Model = token2Model.setTreasury(payerAccount);
         final var nftId2 = new NftId(token2.getShardNum(), token2.getRealmNum(), token2.getTokenNum(), 12L);
         given(store.getUniqueToken(nftId2, OnMissing.THROW)).willReturn(uniqueToken2);
@@ -169,7 +171,7 @@ class DeleteAllowanceLogicTest {
         op = cryptoDeleteAllowanceTxn.getCryptoDeleteAllowance();
 
         given(store.getAccount(asTypedEvmAddress(payerId), OnMissing.THROW)).willReturn(payerAccount);
-        given(store.getAccount(asTypedEvmAddress(ownerId), OnMissing.THROW)).willReturn(ownerAccount);
+        given(store.loadAccountOrFailWith(asTypedEvmAddress(ownerId), INVALID_ALLOWANCE_OWNER_ID)).willReturn(ownerAccount);
 
         subject.deleteAllowance(store, new ArrayList<>(), op.getNftAllowancesList(), payerId);
 
