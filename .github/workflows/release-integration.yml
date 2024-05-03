@@ -3,7 +3,7 @@ name: Release Integration
 on:
   push:
     branches:
-      - 'main'
+      - "main"
 
 permissions:
   contents: write
@@ -19,22 +19,20 @@ jobs:
   publish:
     strategy:
       matrix:
-        module:
-          [
-            graphql,
-            grpc,
-            importer,
-            monitor,
-            rest,
-            rest-java,
-            rest-monitor,
-            rosetta,
-            test,
-            web3,
-          ]
+        project:
+          - graphql
+          - grpc
+          - importer
+          - monitor
+          - rest
+          - rest-java
+          - rest-monitor
+          - rosetta
+          - test
+          - web3
     env:
-      CONTEXT: hedera-mirror-${{ matrix.module }}
-      IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
+      CONTEXT: hedera-mirror-${{ matrix.project }}
+      IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.project }}
     runs-on: [self-hosted, linux, large, ephemeral]
     steps:
       - name: Harden Runner
@@ -49,7 +47,7 @@ jobs:
         run: echo "VERSION=$(grep -oP 'version=\K.+' gradle.properties)" >> $GITHUB_ENV
 
       - name: Custom monitor path
-        if: matrix.module == 'rest-monitor'
+        if: matrix.project == 'rest-monitor'
         run: echo "CONTEXT=hedera-mirror-rest/monitoring" >> $GITHUB_ENV
 
       - name: Install JDK
@@ -73,8 +71,8 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build
-        if: matrix.module != 'rest' && matrix.module != 'rest-monitor' && matrix.module != 'rosetta'
-        run: ./gradlew build -x test
+        if: matrix.project != 'rest' && matrix.project != 'rest-monitor' && matrix.project != 'rosetta'
+        run: ./gradlew :${{matrix.project}}:build -x test
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
@@ -92,7 +90,7 @@ jobs:
           platforms: linux/amd64, linux/arm64
           provenance: false
           push: true
-          tags: ${{env.IMAGE}}:${{env.VERSION}},${{env.IMAGE}}:main,${{env.IMAGE}}:main-${{ github.sha }}
+          tags: "${{env.IMAGE}}:${{env.VERSION}},${{env.IMAGE}}:main,${{env.IMAGE}}:main-${{ github.sha }}"
 
   deploy:
     needs: publish
