@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
 import java.util.Optional;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
@@ -71,8 +72,12 @@ public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcess
         final var timestamp = Timestamp.newBuilder()
                 .setSeconds(frame.getBlockValues().getTimestamp())
                 .build();
-        final var lazyCreateResult =
-                autoCreationLogic.create(syntheticBalanceChange, timestamp, updater.getStore(), entityAddressSequencer);
+        final var lazyCreateResult = autoCreationLogic.create(
+                syntheticBalanceChange,
+                timestamp,
+                updater.getStore(),
+                entityAddressSequencer,
+                List.of(syntheticBalanceChange));
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {
             haltFrameAndTraceCreationResult(frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
         } else {
