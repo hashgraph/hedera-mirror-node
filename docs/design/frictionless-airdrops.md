@@ -105,7 +105,7 @@ Response:
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
-      "timestamp": { "from": 1, "to": null },
+      "timestamp": "1111111111.111111111",
       "token_id": "0.0.111"
     },
     {
@@ -113,7 +113,7 @@ Response:
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
-      "timestamp": { "from": 2, "to": null },
+      "timestamp": "1111111111.111111112",
       "token_id": "0.0.444"
     },
     {
@@ -121,7 +121,7 @@ Response:
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": 888,
-      "timestamp": { "from": 3, "to": null },
+      "timestamp": "1111111111.111111113",
       "token_id": "0.0.666"
     }
   ],
@@ -156,7 +156,7 @@ Response:
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
-      "timestamp": { "from": 1, "to": null },
+      "timestamp": "1111111111.111111111",
       "token_id": "0.0.111"
     },
     {
@@ -164,7 +164,7 @@ Response:
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
-      "timestamp": { "from": 2, "to": null },
+      "timestamp": "1111111111.111111112",
       "token_id": "0.0.444"
     },
     {
@@ -172,7 +172,7 @@ Response:
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": 888,
-      "timestamp": { "from": 3, "to": null },
+      "timestamp": "1111111111.111111113",
       "token_id": "0.0.666"
     }
   ],
