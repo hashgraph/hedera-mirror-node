@@ -86,7 +86,7 @@ When parsing pending airdrops,
 
 ### REST API
 
-Add the new endpoints to Java REST. Going forward new endpoints will be added to the Rest-Java module rather than the Javascript module.
+Add the new endpoints to Java REST. Going forward new endpoints will be added to the Rest-Java module rather than the Javascript module. Queries used by the API need to be performant on v1 and also on v2 with consideration for Citus partitioning.
 
 #### List Outstanding Airdrops
 
@@ -102,26 +102,26 @@ Response:
   "airdrops": [
     {
       "amount": 333,
-      "consensus_timestamp": "1111111111.111111111",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
+      "timestamp": { "from": 1, "to": null },
       "token_id": "0.0.111"
     },
     {
       "amount": 555,
-      "consensus_timestamp": "1111111111.111111112",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
+      "timestamp": { "from": 2, "to": null },
       "token_id": "0.0.444"
     },
     {
       "amount": null,
-      "consensus_timestamp": "1111111111.111111113",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": 888,
+      "timestamp": { "from": 3, "to": null },
       "token_id": "0.0.666"
     }
   ],
@@ -153,26 +153,26 @@ Response:
   "airdrops": [
     {
       "amount": 333,
-      "consensus_timestamp": "1111111111.111111111",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
+      "timestamp": { "from": 1, "to": null },
       "token_id": "0.0.111"
     },
     {
       "amount": 555,
-      "consensus_timestamp": "1111111111.111111112",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": null,
+      "timestamp": { "from": 2, "to": null },
       "token_id": "0.0.444"
     },
     {
       "amount": null,
-      "consensus_timestamp": "1111111111.111111113",
       "receiver_id": "0.0.999",
       "sender_id": "0.0.222",
       "serial_number": 888,
+      "timestamp": { "from": 3, "to": null },
       "token_id": "0.0.666"
     }
   ],
