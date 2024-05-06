@@ -143,7 +143,7 @@ Response:
 Optional Filters
 
 - `limit` - The maximum number of airdrops to return in the response. Defaults to `25` with a max of `100`.
-- `order` - The direction to sort the items by `consensus_timestamp` in the response. Can be `asc` or `desc` with a default of `asc`.
+- `order` - The direction to sort the items in the response. Sorted by the `token_airdrop__sender_id` index. Can be `asc` or `desc` with a default of `asc`.
 - `receiver.id` - The receiver account the outstanding airdrop was intended for. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `serialnumber` - The specific serial number associated with airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `token.id` - The token ID this airdrop is associated with. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
@@ -203,7 +203,7 @@ Response:
 Optional Filters
 
 - `limit` - The maximum number of airdrops to return in the response. Defaults to `25` with a max of `100`.
-- `order` - The direction to sort the items by `consensus_timestamp` in the response. Can be `asc` or `desc` with a default of `asc`.
+- `order` - The direction to sort the items in the response. Sorting by the `token_airdrop__receiver_id` index. Can be `asc` or `desc` with a default of `asc`.
 - `sender.id` - The sender account that initiated the pending airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `serialnumber` - The specific serial number associated with airdrop. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
 - `token.id` - The token ID this airdrop is associated with. Supports `eq`, `gt`, `gte`, `lt`, and `lte` operators. Only one occurrence is allowed.
@@ -216,12 +216,12 @@ Optional Filters
 
 Add acceptance tests for the token feature that use an existing set of accounts and a token_id from the existing acceptance tests and performs the following:
 
-- Send two airdrops, a fungible and nft airdrop to an account that has been associated with the tokens and verify that the airdrops are transferred to the account and that the two REST APIs do not list the airdrops.
-- Reject the set of airdrops and verify that the account no longer has a balance of the fungible token and does not own the nft.
-- Send a fungible and nft airdrop to an account that has not been associated with the tokens and has no open slots for automatic associations and verify that the airdrops are listed by the two REST APIs.
+- Send two airdrops, a fungible and nft airdrop to an account that has been associated with the tokens and verify that the airdrops are transferred to the account and that the two REST APIs do not list the airdrops. Verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`, and `/tokens/{id}/nfts/{serial}`) show the account as the owner of the tokens.
+- Reject the tokens and verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`) do not show the account as the owner of the tokens. Verify that the tokens have been returned to their treasury account (`/accounts/{treasury account id}/nfts`, `/accounts/{treasury account id}/tokens`, and `/tokens/{id}/nfts/{serial}`).
+- Send a fungible and nft airdrop to an account that has not been associated with the tokens and has no open slots for automatic associations and verify that the airdrops are listed by the two REST APIs. Verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`, and `/tokens/{id}/nfts/{serial}`) do not show the account as the owner of the tokens.
 - Cancel the pending airdrops and verify that they are no longer listed by the two REST APIs.
-- Send a fungible and nft airdrop to an account that has not been associated with the tokens and has no open slots for automatic associations and verify that the airdrop is listed in the two REST APIs.
-- Claim the airdrops and verify that they are no longer listed in the two REST APIs.
+- Send a fungible and nft airdrop to an account that has not been associated with the tokens and has no open slots for automatic associations and verify that the airdrop is listed in the two REST APIs. Verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`, and `/tokens/{id}/nfts/{serial}`) do not show the account as the owner of the tokens.
+- Claim the airdrops and verify that they are no longer listed in the two REST APIs. Verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`, and `/tokens/{id}/nfts/{serial}`) show the account as the owner of the tokens.
 
 ## K6 Tests
 
