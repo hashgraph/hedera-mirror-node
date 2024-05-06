@@ -419,10 +419,20 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public TransferTransaction getNonFungibleTokenTransferTransaction(
-            TokenId tokenId, AccountId sender, AccountId recipient, List<Long> serialNumbers) {
+            TokenId tokenId,
+            AccountId sender,
+            AccountId recipient,
+            List<Long> serialNumbers,
+            boolean isApproval,
+            AccountId owner) {
         TransferTransaction transaction = getTransferTransaction();
         for (Long serialNumber : serialNumbers) {
-            transaction.addNftTransfer(new NftId(tokenId, serialNumber), sender, recipient);
+            var nftId = new NftId(tokenId, serialNumber);
+            if (isApproval) {
+                transaction.addApprovedNftTransfer(nftId, owner, recipient);
+            } else {
+                transaction.addNftTransfer(nftId, sender, recipient);
+            }
         }
         return transaction;
     }
@@ -464,18 +474,21 @@ public class TokenClient extends AbstractNetworkClient {
             ExpandedAccountId sender,
             AccountId recipient,
             List<Long> serialNumbers,
-            PrivateKey privateKey) {
-        var transaction =
-                getNonFungibleTokenTransferTransaction(tokenId, sender.getAccountId(), recipient, serialNumbers);
+            PrivateKey privateKey,
+            AccountId owner,
+            boolean isApproval) {
+        var transaction = getNonFungibleTokenTransferTransaction(
+                tokenId, sender.getAccountId(), recipient, serialNumbers, isApproval, owner);
         var response = executeTransactionAndRetrieveReceipt(
                 transaction, privateKey == null ? null : KeyList.of(privateKey), sender);
         log.info(
-                "Transferred serial numbers {} of token {} from {} to {} via {}",
+                "Transferred serial numbers {} of token {} from {} to {} via {}, isApproval {}",
                 serialNumbers,
                 tokenId,
                 sender,
                 recipient,
-                response.getTransactionId());
+                response.getTransactionId(),
+                isApproval);
         return response;
     }
 

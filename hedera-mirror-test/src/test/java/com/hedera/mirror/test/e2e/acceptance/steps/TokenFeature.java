@@ -19,6 +19,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static com.hedera.hashgraph.sdk.Status.CURRENT_TREASURY_STILL_OWNS_NFTS;
 import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOTRANSFER;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,6 +43,8 @@ import com.hedera.mirror.rest.model.FixedFee;
 import com.hedera.mirror.rest.model.FractionalFee;
 import com.hedera.mirror.rest.model.FractionalFeeAmount;
 import com.hedera.mirror.rest.model.Nft;
+import com.hedera.mirror.rest.model.NftAllowance;
+import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.rest.model.NftTransactionHistory;
 import com.hedera.mirror.rest.model.NftTransactionTransfer;
 import com.hedera.mirror.rest.model.TokenAllowance;
@@ -107,11 +110,19 @@ public class TokenFeature extends AbstractFeature {
         log.debug("Get token info for token {}: {}", tokenName, tokenInfo);
     }
 
+    @Given("I ensure NFT {token} has been created")
+    public void createNonFungibleToken(TokenClient.TokenNameEnum tokenName) {
+        final var result = tokenClient.getToken(tokenName);
+        this.networkTransactionResponse = result.response();
+        this.tokenId = result.tokenId();
+        tokenNftInfoMap.put(tokenId, new ArrayList<>());
+    }
+
     @Given("I ensure token has the correct properties")
     public void ensureTokenProperties() {
         var tokensResponse = mirrorClient.getTokens(tokenId.toString()).getTokens();
         assertThat(tokensResponse).isNotNull().hasSize(1);
-        var token = tokensResponse.get(0);
+        var token = tokensResponse.getFirst();
         var tokenDecimals = token.getDecimals();
         if (token.getType().equals(TokenType.NON_FUNGIBLE_UNIQUE.toString())) {
             assertThat(tokenDecimals).isZero();
@@ -123,7 +134,7 @@ public class TokenFeature extends AbstractFeature {
 
         var balancesResponse = mirrorClient.getTokenBalances(tokenId.toString()).getBalances();
         assertThat(balancesResponse).isNotNull().hasSize(1);
-        var balanceDecimals = balancesResponse.get(0).getDecimals();
+        var balanceDecimals = balancesResponse.getFirst().getDecimals();
         assertThat(balanceDecimals).isEqualTo(tokenDecimals);
         log.debug("Get token balances for token {}: {}", tokenId, balancesResponse);
     }
@@ -157,6 +168,15 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @Given("I approve {account} to all serials of the NFT")
+    public void setNonFungibleTokenAllowance(AccountClient.AccountNameEnum accountName) {
+        var spenderAccountId = accountClient.getAccount(accountName).getAccountId();
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, spenderAccountId);
+        associateWithToken(accountClient.getAccount(accountName), tokenId);
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+    }
+
     @Then("the mirror node REST API should confirm the approved allowance {long} of {token} for {account}")
     @RetryAsserts
     public void verifyMirrorAPIApprovedTokenAllowanceResponse(
@@ -164,6 +184,17 @@ public class TokenFeature extends AbstractFeature {
         var tokenId = tokenClient.getToken(tokenName).tokenId();
         var spenderAccountId = accountClient.getAccount(accountName);
         verifyMirrorAPIApprovedTokenAllowanceResponse(tokenId, spenderAccountId, approvedAmount, 0);
+    }
+
+    @Then(
+            "the mirror node REST API should confirm the approved allowance of NFT {token} and {account} when owner is {string}")
+    @RetryAsserts
+    public void verifyMirrorAPIApprovedTokenAllowanceResponse(
+            TokenClient.TokenNameEnum tokenName, AccountClient.AccountNameEnum accountName, String owner) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var spenderId = accountClient.getAccount(accountName);
+        var isOwner = owner.equalsIgnoreCase("true");
+        verifyMirrorAPIApprovedNftAllowanceResponse(tokenId, spenderId, true, isOwner);
     }
 
     @Then("the mirror node REST API should confirm the approved allowance for {token} and {account} no longer exists")
@@ -177,6 +208,20 @@ public class TokenFeature extends AbstractFeature {
 
         var mirrorTokenAllowanceResponse = mirrorClient.getAccountTokenAllowanceBySpender(owner, token, spender);
         assertThat(mirrorTokenAllowanceResponse.getAllowances()).isEmpty();
+    }
+
+    @Then(
+            "the mirror node REST API should confirm the approved allowance for NFT {token} and {account} is no longer available")
+    @RetryAsserts
+    public void verifyNftAllowanceDelete(
+            TokenClient.TokenNameEnum tokenName, AccountClient.AccountNameEnum spenderName) {
+        verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
+
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var spender = accountClient.getAccount(spenderName);
+
+        // Once we change this API to not return approved_for_all=false this test will change to check for an empty list
+        verifyMirrorAPIApprovedNftAllowanceResponse(tokenId, spender, false, true);
     }
 
     @Then("the mirror node REST API should confirm the debit of {long} from {token} allowance of {long} for {account}")
@@ -253,6 +298,17 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @Given("I delete the allowance on NFT {token} for spender {account}")
+    public void deleteNonFungibleTokenAllowance(
+            TokenClient.TokenNameEnum tokenName, AccountClient.AccountNameEnum spenderAccountName) {
+        var tokenId = tokenClient.getToken(tokenName).tokenId();
+        var owner = accountClient.getClient().getOperatorAccountId();
+        var spenderAccountId = accountClient.getAccount(spenderAccountName);
+        networkTransactionResponse = accountClient.deleteNftAllowance(tokenId, owner, spenderAccountId.getAccountId());
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+    }
+
     @Given("I successfully create a new token with custom fees schedule")
     public void createNewToken(List<CustomFee> customFees) {
         this.tokenResponse = tokenClient.getToken(TokenNameEnum.FUNGIBLE_WITH_CUSTOM_FEES, customFees);
@@ -297,17 +353,24 @@ public class TokenFeature extends AbstractFeature {
         transferTokens(tokenId, amount, null, accountName);
     }
 
-    @Then("I transfer serial number {int} to {account}")
-    public void transferNftsToRecipient(int serialNumberIndex, AccountNameEnum accountName) {
-        ExpandedAccountId payer = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        transferNfts(
-                tokenId,
-                tokenNftInfoMap
-                        .get(tokenId)
-                        .get(getIndexOrDefault(serialNumberIndex))
-                        .serialNumber(),
-                payer,
-                accountName);
+    @Then("I transfer serial number index {int} to {account}")
+    public void transferNftsToRecipient(int serialNumberIndex, AccountNameEnum recipient) {
+        var ownerAccountId = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        var serialNumbers =
+                List.of(tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber());
+        var recipientAccountId = accountClient.getAccount(recipient).getAccountId();
+
+        transferNfts(this.tokenId, serialNumbers, ownerAccountId, recipientAccountId, false);
+    }
+
+    @Then("{account} transfers NFT {token} to {account}")
+    public void transferNftsToRecipient(AccountNameEnum spender, TokenNameEnum token, AccountNameEnum recipient) {
+        var nftTokenId = tokenClient.getToken(token).tokenId();
+        var serialNumbers = getSerialsForToken(nftTokenId);
+        var spenderAccountId = accountClient.getAccount(spender);
+        var recipientAccountId = accountClient.getAccount(recipient).getAccountId();
+
+        transferNfts(nftTokenId, serialNumbers, spenderAccountId, recipientAccountId, true);
     }
 
     @Then("{account} transfers {int} tokens to {account} with fractional fee {int}")
@@ -389,7 +452,7 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I burn serial number {int} from token")
+    @Given("I burn serial number index {int} from token")
     public void burnNft(int serialNumberIndex) {
         networkTransactionResponse = tokenClient.burnNonFungible(
                 tokenId, tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber());
@@ -412,17 +475,17 @@ public class TokenFeature extends AbstractFeature {
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);
         assertThat(receipt.serials.size()).isOne();
-        long serialNumber = receipt.serials.get(0);
+        long serialNumber = receipt.serials.getFirst();
         assertThat(serialNumber).isPositive();
         tokenNftInfoMap.get(tokenId).add(new NftInfo(serialNumber, metadata));
     }
 
-    @Given("I update the metadata for serial numbers {int} and {int}")
+    @Given("I update the metadata for serial number indices {int} and {int}")
     public void updateNftMetadata(int serialNumberIndex1, int serialNumberIndex2) {
         updateNftMetadataForSerials(serialNumberIndex1, serialNumberIndex2);
     }
 
-    @Given("I update the metadata for serial number {int}")
+    @Given("I update the metadata for serial number index {int}")
     public void updateNftMetadata(int serialNumberIndex) {
         updateNftMetadataForSerials(serialNumberIndex);
     }
@@ -434,7 +497,7 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I wipe serial number {int} from token")
+    @Given("I wipe serial number index {int} from token")
     public void wipeNft(int serialNumberIndex) {
         networkTransactionResponse = tokenClient.wipeNonFungible(
                 tokenId, tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber(), getRecipientAccountId());
@@ -478,7 +541,7 @@ public class TokenFeature extends AbstractFeature {
         verifyTransactions();
     }
 
-    @Then("the mirror node REST API should return the transaction for token serial number {int} transaction flow")
+    @Then("the mirror node REST API should return the transaction for token serial number index {int} transaction flow")
     @RetryAsserts
     public void verifyMirrorNftTransactionsAPIResponses(Integer serialNumberIndex) {
         var tokenNftInfo = tokenNftInfoMap.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
@@ -506,7 +569,7 @@ public class TokenFeature extends AbstractFeature {
         verifyTokenTransfers(tokenId);
     }
 
-    @Then("the mirror node REST API should return the transaction for token serial number {int} full flow")
+    @Then("the mirror node REST API should return the transaction for token serial number index {int} full flow")
     @RetryAsserts
     public void verifyMirrorNftFundFlow(Integer serialNumberIndex) {
         var tokenNftInfo = tokenNftInfoMap.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
@@ -532,7 +595,7 @@ public class TokenFeature extends AbstractFeature {
         List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        TransactionDetail mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.getFirst();
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionIdString);
 
         if (status == HttpStatus.OK.value()) {
@@ -553,7 +616,7 @@ public class TokenFeature extends AbstractFeature {
         TokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
         // Asserting values
         assertTokenRelationship(mirrorTokenRelationship);
-        TokenRelationship token = mirrorTokenRelationship.getTokens().get(0);
+        TokenRelationship token = mirrorTokenRelationship.getTokens().getFirst();
         assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
         assertThat(token.getFreezeStatus()).isEqualTo(FreezeStatusEnum.UNFROZEN);
         assertThat(token.getKycStatus()).isEqualTo(KycStatusEnum.REVOKED);
@@ -566,7 +629,7 @@ public class TokenFeature extends AbstractFeature {
         TokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
         // Asserting values
         assertTokenRelationship(mirrorTokenRelationship);
-        TokenRelationship token = mirrorTokenRelationship.getTokens().get(0);
+        TokenRelationship token = mirrorTokenRelationship.getTokens().getFirst();
         assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
         assertThat(token.getFreezeStatus()).isEqualTo(FreezeStatusEnum.NOT_APPLICABLE);
         assertThat(token.getKycStatus()).isEqualTo(KycStatusEnum.NOT_APPLICABLE);
@@ -588,6 +651,16 @@ public class TokenFeature extends AbstractFeature {
         var transactions = mirrorTransactionsResponse.getTransactions();
         assertThat(transactions).hasSize(1).first().satisfies(t -> assertThat(t.getTokenTransfers())
                 .contains(expectedTokenTransfer));
+    }
+
+    @Then("the mirror node REST API should confirm the approved transfer of NFT and confirm the new owner is {account}")
+    @RetryAsserts
+    public void verifyMirrorNftTransfer(AccountClient.AccountNameEnum accountName) {
+        Long serialNumber = tokenNftInfoMap.get(tokenId).getFirst().serialNumber();
+        var recipientId = accountClient.getAccount(accountName);
+        verifyTransactions();
+        verifyNftTransfers(tokenId, serialNumber, recipientId);
+        verifyNftTransactions(tokenId, serialNumber);
     }
 
     public ExpandedAccountId getRecipientAccountId() {
@@ -651,19 +724,30 @@ public class TokenFeature extends AbstractFeature {
         var tokenRelationships =
                 mirrorClient.getTokenRelationships(accountId, tokenId).getTokens();
         assertThat(tokenRelationships).isNotNull().hasSize(1);
-        return tokenRelationships.get(0).getBalance();
+        return tokenRelationships.getFirst().getBalance();
     }
 
     private void transferNfts(
-            TokenId tokenId, long serialNumber, ExpandedAccountId sender, AccountNameEnum accountName) {
-        var receiver = accountClient.getAccount(accountName).getAccountId();
-        long startingBalance = getTokenBalance(receiver, tokenId);
-        networkTransactionResponse =
-                tokenClient.transferNonFungibleToken(tokenId, sender, receiver, List.of(serialNumber), null);
+            TokenId tokenId,
+            List<Long> serialNumbers,
+            ExpandedAccountId senderAccountId,
+            AccountId recipientAccountId,
+            boolean isApproval) {
+        var ownerAccountId = accountClient.getClient().getOperatorAccountId();
+        long startingBalance = getTokenBalance(recipientAccountId, tokenId);
 
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + 1);
+        networkTransactionResponse = tokenClient.transferNonFungibleToken(
+                tokenId,
+                senderAccountId,
+                recipientAccountId,
+                serialNumbers,
+                senderAccountId.getPrivateKey(),
+                ownerAccountId,
+                isApproval);
+
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+        assertThat(getTokenBalance(recipientAccountId, tokenId)).isEqualTo(startingBalance + serialNumbers.size());
     }
 
     private TransactionDetail verifyTransactions() {
@@ -677,7 +761,7 @@ public class TokenFeature extends AbstractFeature {
         List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        TransactionDetail mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.getFirst();
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
@@ -698,7 +782,7 @@ public class TokenFeature extends AbstractFeature {
         List<NftTransactionTransfer> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        NftTransactionTransfer mirrorTransaction = transactions.get(0);
+        NftTransactionTransfer mirrorTransaction = transactions.getFirst();
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
 
         return mirrorTransaction;
@@ -730,7 +814,7 @@ public class TokenFeature extends AbstractFeature {
         List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        TransactionDetail mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.getFirst();
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
@@ -756,7 +840,7 @@ public class TokenFeature extends AbstractFeature {
         List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
         assertNotNull(transactions);
         assertThat(transactions).isNotEmpty();
-        TransactionDetail mirrorTransaction = transactions.get(0);
+        TransactionDetail mirrorTransaction = transactions.getFirst();
         assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
         assertThat(mirrorTransaction.getValidStartTimestamp())
                 .isEqualTo(networkTransactionResponse.getValidStartString());
@@ -765,6 +849,13 @@ public class TokenFeature extends AbstractFeature {
                 .filteredOn(transfer -> tokenId.toString().equals(transfer.getTokenId()))
                 .map(TransactionNftTransfersInner::getSerialNumber)
                 .containsExactly(serialNumber);
+    }
+
+    private void verifyNftTransfers(TokenId tokenId, Long serialNumber, ExpandedAccountId accountId) {
+        verifyNftTransfers(tokenId, serialNumber);
+
+        var nftInfo = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
+        assertThat(nftInfo.getAccountId()).isEqualTo(accountId.toString());
     }
 
     private void verifyTokenUpdate(TokenId tokenId) {
@@ -861,6 +952,37 @@ public class TokenFeature extends AbstractFeature {
                 .satisfies(t -> assertThat(t.getTo()).isBlank());
     }
 
+    private void verifyMirrorAPIApprovedNftAllowanceResponse(
+            TokenId tokenId, ExpandedAccountId spenderId, boolean approvedForAll, boolean isOwner) {
+        verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
+
+        NftAllowancesResponse mirrorNftAllowanceResponse;
+
+        var owner = accountClient.getClient().getOperatorAccountId().toString();
+        var spender = spenderId.getAccountId().toString();
+        var token = tokenId.toString();
+
+        if (isOwner) {
+            mirrorNftAllowanceResponse = mirrorClient.getAccountNftAllowanceByOwner(owner, token, spender);
+        } else {
+            mirrorNftAllowanceResponse = mirrorClient.getAccountNftAllowanceBySpender(spender, token, owner);
+        }
+
+        // verify valid set of allowance
+        assertThat(mirrorNftAllowanceResponse.getAllowances())
+                .isNotEmpty()
+                .first()
+                .isNotNull()
+                .returns(approvedForAll, NftAllowance::getApprovedForAll)
+                .returns(owner, NftAllowance::getOwner)
+                .returns(spender, NftAllowance::getSpender)
+                .returns(token, NftAllowance::getTokenId)
+                .extracting(NftAllowance::getTimestamp)
+                .isNotNull()
+                .satisfies(t -> assertThat(t.getFrom()).isNotBlank())
+                .satisfies(t -> assertThat(t.getTo()).isBlank());
+    }
+
     private int getIndexOrDefault(Integer index) {
         return index != null ? index : 0;
     }
@@ -898,6 +1020,13 @@ public class TokenFeature extends AbstractFeature {
                         nftInfoForToken.get(idx).toBuilder()
                                 .metadata(newMetadata)
                                 .build()));
+    }
+
+    private List<Long> getSerialsForToken(TokenId tokenId) {
+        var nftInfoForToken = tokenNftInfoMap.get(tokenId);
+        return nftInfoForToken == null
+                ? emptyList()
+                : nftInfoForToken.stream().map(NftInfo::serialNumber).toList();
     }
 
     @Builder(toBuilder = true)

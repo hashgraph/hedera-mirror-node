@@ -2,14 +2,14 @@ name: Security
 on:
   pull_request:
     branches:
-      - 'main'
-      - 'release/**'
+      - "main"
+      - "release/**"
   push:
     branches:
-      - 'main'
-      - 'release/**'
+      - "main"
+      - "release/**"
     tags:
-      - 'v*'
+      - "v*"
 
 defaults:
   run:
@@ -28,7 +28,7 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
@@ -76,7 +76,7 @@ jobs:
     runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
@@ -97,12 +97,12 @@ jobs:
           node-version: 21
 
       - name: Setup GoLang
-        uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
         with:
           go-version: 1.22
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@09d62bd630fbf484860addc88871a0dd755e8b56 # master
+        uses: securego/gosec@cf29d543e241f74432305ac938071eac9e36da7f # master
         with:
           args: ./...
 
@@ -112,7 +112,7 @@ jobs:
     runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
@@ -154,7 +154,7 @@ jobs:
     runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
@@ -201,7 +201,7 @@ jobs:
     runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
