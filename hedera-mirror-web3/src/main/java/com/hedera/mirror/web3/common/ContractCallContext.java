@@ -20,14 +20,13 @@ import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
-
-import java.lang.reflect.Array;
-import java.util.ArrayList;
-import java.util.EmptyStackException;
-import java.util.Optional;
-import java.util.function.Function;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.EmptyStackException;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 @Getter
 @SuppressWarnings("preview")
@@ -54,7 +53,7 @@ public class ContractCallContext {
 
     @Setter
     @Getter
-    private ArrayList<Opcode> opcodes;
+    private List<Opcode> opcodes;
 
     private ContractCallContext() {}
 

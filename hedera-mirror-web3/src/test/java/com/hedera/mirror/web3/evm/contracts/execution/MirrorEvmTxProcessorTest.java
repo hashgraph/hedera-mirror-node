@@ -16,18 +16,8 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_30;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_34;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.EVM_VERSION_0_38;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.hedera.mirror.web3.ContextExtension;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -49,12 +39,6 @@ import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Account;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.utility.SemanticVersion;
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
-import javax.inject.Provider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -81,6 +65,23 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import javax.inject.Provider;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.*;
+import static com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType.OPERATION;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
@@ -182,7 +183,7 @@ class MirrorEvmTxProcessorTest {
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
-                mirrorOperationTracer,
+                Map.of(OPERATION, () -> mirrorOperationTracer),
                 store,
                 new EntityAddressSequencer(),
                 tokenAccessor);
@@ -210,7 +211,12 @@ class MirrorEvmTxProcessorTest {
                 .isStatic(true)
                 .isEstimate(isEstimate)
                 .build();
-        var result = mirrorEvmTxProcessor.execute(params, params.getGas());
+
+        var result = ContractCallContext.run(ctx -> {
+            ctx.setTracerType(OPERATION.name());
+            ctx.setOpcodes(List.of());
+            return mirrorEvmTxProcessor.execute(params, params.getGas(), OPERATION, ctx);
+        });
 
         assertThat(result)
                 .isNotNull()

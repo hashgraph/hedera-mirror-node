@@ -16,23 +16,15 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
-import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
-
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorImpl;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hederahashgraph.api.proto.java.ContractCall;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.utility.SemanticVersion;
-import java.time.Instant;
-import java.util.Map;
-import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -43,6 +35,12 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
+
+import javax.inject.Provider;
+import java.time.Instant;
+import java.util.Map;
+
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 
 /**
  * Stateless invariant copy of its hedera-services counterpart. It is used to process EVM transactions in
@@ -64,7 +62,7 @@ public class HederaEvmTxProcessor {
     protected final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps;
 
     //TODO: do not import TRACER_TYPE from ProcessorImpl
-    protected final Map<MirrorEvmTxProcessorImpl.TRACER_TYPE, Provider<HederaEvmOperationTracer>> tracerMap;
+    protected final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap;
     protected final EvmProperties dynamicProperties;
 
     @SuppressWarnings("java:S107")
@@ -76,7 +74,7 @@ public class HederaEvmTxProcessor {
             final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps,
             final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
-            final Map<MirrorEvmTxProcessorImpl.TRACER_TYPE, Provider<HederaEvmOperationTracer>> tracerMap) {
+            final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
         this.dynamicProperties = dynamicProperties;
@@ -114,7 +112,7 @@ public class HederaEvmTxProcessor {
             final boolean isStatic,
             final Address mirrorReceiver,
             final boolean contractCreation,
-            final MirrorEvmTxProcessorImpl.TRACER_TYPE tracerType,
+            final TracerType tracerType,
             final ContractCallContext contractCallContext) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
@@ -162,21 +160,21 @@ public class HederaEvmTxProcessor {
 
         tracer.finalizeOperation(initialFrame);
 
-        if (tracerType == MirrorEvmTxProcessorImpl.TRACER_TYPE.OPCODE) {
-            contractCallContext.setOpcodes(((OpcodeTracer) tracer).getOpcodes());
+        if (tracer instanceof OpcodeTracer opcodeTracer) {
+            contractCallContext.setOpcodes(opcodeTracer.getOpcodes());
         }
         // Externalise result
-            if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-                return HederaEvmTransactionProcessingResult.successful(
-                        initialFrame.getLogs(), gasUsed, sbhRefund, gasPrice, initialFrame.getOutputData(), mirrorReceiver);
-            } else {
-                return HederaEvmTransactionProcessingResult.failed(
-                        gasUsed,
-                        sbhRefund,
-                        gasPrice,
-                        initialFrame.getRevertReason(),
-                        initialFrame.getExceptionalHaltReason());
-            }
+        if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
+            return HederaEvmTransactionProcessingResult.successful(
+                    initialFrame.getLogs(), gasUsed, sbhRefund, gasPrice, initialFrame.getOutputData(), mirrorReceiver);
+        } else {
+            return HederaEvmTransactionProcessingResult.failed(
+                    gasUsed,
+                    sbhRefund,
+                    gasPrice,
+                    initialFrame.getRevertReason(),
+                    initialFrame.getExceptionalHaltReason());
+        }
     }
 
     protected long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
@@ -223,7 +221,12 @@ public class HederaEvmTxProcessor {
         };
     }
 
-    private HederaEvmOperationTracer getTracer(MirrorEvmTxProcessorImpl.TRACER_TYPE tracerType) {
+    private HederaEvmOperationTracer getTracer(TracerType tracerType) {
         return tracerMap.get(tracerType).get();
+    }
+
+    public enum TracerType {
+        OPCODE,
+        OPERATION
     }
 }

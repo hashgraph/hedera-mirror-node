@@ -18,18 +18,12 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
-import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.*;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
@@ -39,9 +33,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.utility.SemanticVersion;
 import jakarta.inject.Named;
-import java.time.Instant;
-import java.util.Map;
-import javax.inject.Provider;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -52,6 +43,10 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import javax.inject.Provider;
+import java.time.Instant;
+import java.util.Map;
+
 @Named
 public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements MirrorEvmTxProcessor {
 
@@ -60,11 +55,6 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
     private final Store store;
     private final EntityAddressSequencer entityAddressSequencer;
     private final TokenAccessor tokenAccessor;
-
-    public enum TRACER_TYPE {
-        OPCODE,
-        OPERATION
-    }
 
     @SuppressWarnings("java:S107")
     public MirrorEvmTxProcessorImpl(
@@ -77,10 +67,10 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
-            final Map<TRACER_TYPE, Provider<HederaEvmOperationTracer>> tracerMap,
+            final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap,
             final Store store,
             final EntityAddressSequencer entityAddressSequencer,
-            TokenAccessor tokenAccessor) {
+            final TokenAccessor tokenAccessor) {
         super(
                 worldState,
                 pricesAndFeesProvider,
@@ -98,7 +88,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.tokenAccessor = tokenAccessor;
     }
 
-    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas, TRACER_TYPE tracerType, ContractCallContext ctx) {
+    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas, TracerType tracerType, ContractCallContext ctx) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();

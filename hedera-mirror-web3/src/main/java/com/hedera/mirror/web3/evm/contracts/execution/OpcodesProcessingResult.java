@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,14 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import lombok.Builder;
 
-public interface MirrorEvmTxProcessor {
-    HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas, MirrorEvmTxProcessorImpl.TracerType tracerType, ContractCallContext ctx);
+import java.util.List;
+
+@Builder
+public record OpcodesProcessingResult(
+        HederaEvmTransactionProcessingResult transactionProcessingResult,
+        List<Opcode> opcodes) {
 }
