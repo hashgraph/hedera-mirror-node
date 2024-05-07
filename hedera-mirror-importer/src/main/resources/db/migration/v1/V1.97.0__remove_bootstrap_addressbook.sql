@@ -1,0 +1,1 @@
+delete from file_data where consensus_timestamp=0 and entity_id=102;
