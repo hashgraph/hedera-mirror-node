@@ -385,15 +385,9 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         process(recordItem);
 
         // Then
-        final var contractResult = contractResultRepository
-                .findById(recordItem.getConsensusTimestamp())
-                .orElse(null);
-
-        assertThat(contractResult)
-                .isNotNull()
-                .extracting(ContractResult::getGasConsumed)
-                .isNotNull()
-                .isEqualTo(22074L);
+        assertThat(contractResultRepository.findById(recordItem.getConsensusTimestamp()))
+                .get()
+                .returns(22074L, ContractResult::getGasConsumed);
     }
 
     @Test
@@ -839,7 +833,7 @@ class ContractResultServiceImplIntegrationTest extends ImporterIntegrationTest {
         var contractFunctionResult = getFunctionResult(recordItem);
         var listAssert = assertThat(contractLogRepository.findAll()).hasSize(contractFunctionResult.getLogInfoCount());
         var transactionHash = getTransactionHash(recordItem);
-        Integer transactionIndex = transaction.getIndex();
+        var transactionIndex = recordItem.getTransactionIndex();
 
         if (contractFunctionResult.getLogInfoCount() > 0) {
             var blooms = new ArrayList<byte[]>();
