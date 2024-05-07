@@ -20,7 +20,6 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorImpl;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
@@ -168,7 +167,7 @@ public class ContractCallService {
 
     private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params,
                                                                long estimatedGas,
-                                                               MirrorEvmTxProcessorImpl.TracerType tracerType,
+                                                               HederaEvmTxProcessor.TracerType tracerType,
                                                                ContractCallContext ctx) throws MirrorEvmTransactionException {
         try {
             return mirrorEvmTxProcessor.execute(params, estimatedGas, tracerType, ctx);
