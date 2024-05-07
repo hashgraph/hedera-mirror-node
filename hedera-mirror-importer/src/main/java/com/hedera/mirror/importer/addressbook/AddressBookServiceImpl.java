@@ -319,7 +319,11 @@ public class AddressBookServiceImpl implements AddressBookService {
                 fileData.getEntityId(),
                 fileData.getTransactionType()));
         if (addressBook != null) {
-            addressBook = addressBookRepository.save(addressBook);
+            if (fileData.getConsensusTimestamp() > 0) {
+                addressBook = addressBookRepository.save(addressBook);
+                // update previous addressBook
+                updatePreviousAddressBook(fileData);
+            }
             var nodeIds = addressBook.getEntries().stream()
                     .map(AddressBookEntry::getNodeId)
                     .collect(Collectors.toCollection(TreeSet::new));
@@ -328,9 +332,6 @@ public class AddressBookServiceImpl implements AddressBookService {
                     addressBook.getEndConsensusTimestamp(),
                     addressBook.getNodeCount(),
                     nodeIds);
-
-            // update previous addressBook
-            updatePreviousAddressBook(fileData);
         }
 
         return addressBook;
