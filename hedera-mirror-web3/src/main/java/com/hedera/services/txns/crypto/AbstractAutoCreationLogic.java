@@ -68,6 +68,9 @@ public abstract class AbstractAutoCreationLogic {
     private final EvmProperties evmProperties;
     private final SyntheticTxnFactory syntheticTxnFactory;
 
+    private static final Supplier<Long> zeroLongSupplier = () -> 0L;
+    private static final Supplier<Integer> zeroIntegerSupplier = () -> 0;
+
     protected AbstractAutoCreationLogic(
             final FeeCalculator feeCalculator,
             final EvmProperties evmProperties,
@@ -124,8 +127,6 @@ public abstract class AbstractAutoCreationLogic {
         }
 
         final var newId = ids.getNewAccountId();
-        final Supplier<Long> zeroLongSupplier = () -> 0L;
-        final Supplier<Integer> zeroIntegerSupplier = () -> 0;
         final var account = new Account(
                 alias,
                 0L,
