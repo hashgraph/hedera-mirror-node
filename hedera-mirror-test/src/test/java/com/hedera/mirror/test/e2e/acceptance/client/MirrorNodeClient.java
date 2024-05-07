@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
-import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_SUFFIX;
+import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_PREFIX;
 import static org.awaitility.Awaitility.await;
 
 import com.google.common.base.Stopwatch;
@@ -373,19 +373,19 @@ public class MirrorNodeClient {
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
-        String uriNoVersion = removeVersion(uri);
-        return retryTemplate.execute(
-                x -> restClient.get().uri(uriNoVersion, uriVariables).retrieve().body(classType));
+        String normalizedUri = normalizeUri(uri);
+        return retryTemplate.execute(x ->
+                restClient.get().uri(normalizedUri, uriVariables).retrieve().body(classType));
     }
 
     private <T> T callRestJavaEndpoint(String uri, Class<T> classType, Object... uriVariables) {
-        String uriNoVersion = removeVersion(uri);
+        String normalizedUri = normalizeUri(uri);
         return retryTemplate.execute(x ->
-                restJavaClient.get().uri(uriNoVersion, uriVariables).retrieve().body(classType));
+                restJavaClient.get().uri(normalizedUri, uriVariables).retrieve().body(classType));
     }
 
     private <T> T callRestEndpointNoRetry(String uri, Class<T> classType, Object... uriVariables) {
-        return restClient.get().uri(removeVersion(uri), uriVariables).retrieve().body(classType);
+        return restClient.get().uri(normalizeUri(uri), uriVariables).retrieve().body(classType);
     }
 
     private <T, R> T callPostRestEndpoint(String uri, Class<T> classType, R request) {
@@ -393,11 +393,11 @@ public class MirrorNodeClient {
                 x -> web3Client.post().uri(uri).body(request).retrieve().body(classType));
     }
 
-    private String removeVersion(String uri) {
-        if (uri.startsWith(URL_SUFFIX)) {
-            return uri.substring(URL_SUFFIX.length());
+    private String normalizeUri(String uri) {
+        if (uri == null || !uri.startsWith(URL_PREFIX)) {
+            return uri;
         }
 
-        return uri;
+        return uri.substring(URL_PREFIX.length());
     }
 }
