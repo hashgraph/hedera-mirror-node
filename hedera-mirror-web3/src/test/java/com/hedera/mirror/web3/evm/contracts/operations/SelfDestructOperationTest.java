@@ -24,7 +24,7 @@ public class SelfDestructOperationTest extends ContractCallTestSetup {
 
     @Test
     void testExecuteWithInvalidOwner() {
-        final var destroyContractInput = "0x9a0313ab000000000000000000000000" + SENDER_ADDRESS.toUnprefixedHexString();
+        final var destroyContractInput = "0x9a0313ab000000000000000000000000" + SYSTEM_ACCOUNT_ADDRESS.toUnprefixedHexString();
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(destroyContractInput), SELF_DESTRUCT_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
