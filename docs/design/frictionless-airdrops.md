@@ -38,7 +38,7 @@ create table if not exists token_airdrop
     token_id            bigint         not null
 );
 
-create index if not exists token_airdrop__sender_id on token_airdrop (sender_account_id, receiver_account_id, token_id, serial_number);
+create unique index if not exists token_airdrop__sender_id on token_airdrop (sender_account_id, receiver_account_id, token_id, serial_number);
 create index if not exists token_airdrop__receiver_id on token_airdrop (receiver_account_id, sender_account_id, token_id, serial_number);
 
 create table if not exists token_airdrop_history
@@ -57,7 +57,8 @@ create index if not exists token_airdrop_history__token_serial_lower_timestamp
 When parsing pending airdrops,
 
 - Persist airdrops to the `token_airdrop` table.
-- If a `TokenAirdrop` transaction occurs when an entry already exists then the existing entry should be moved in the `token_airdrop_history` table. If the existing entry is a fungible token in the state of `PENDING` then the new entry should be updated with `amount` set to the sum of the existing amount and the new amount. If the existing entry is in any other state, then the `amount` should be set to the amount of the new entry. Updates to NFT tokens that are `PENDING` will update the timestamp range and generate a history row.
+- If a `TokenAirdrop` transaction occurs for a fungible token that already exists in the `token_airdrop` table then the existing entry should have the timestamp range closed, and it should be moved into the `token_airdrop_history` table. If the entry was in the `PENDING` state, then the new entry should be updated with `amount` set to the sum of the existing amount and the new amount. If the existing entry is in any other state, then the `amount` should be set to the amount of the new entry.
+- If a `TokenAirdrop` transaction occurs for a nft that already exists in the `token_airdrop` table i.e matching sender, receiver, token_id and serial_number, then the existing entry should have the timestamp range closed, and it should be moved into the `token_airdrop_history` table.
 
 #### Domain
 
@@ -217,11 +218,11 @@ Optional Filters
 Add acceptance tests for the token feature that use an existing set of accounts and a token_id from the existing acceptance tests and performs the following:
 
 - Send two airdrops, a fungible and nft airdrop to an account that has been associated with the tokens and verify that the airdrops are transferred to the account and that the two REST APIs do not list the airdrops. Verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`, and `/tokens/{id}/nfts/{serial}`) show the account as the owner of the tokens.
-- Reject the tokens and verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`) do not show the account as the owner of the tokens. Verify that the tokens have been returned to their treasury account (`/accounts/{treasury account id}/nfts`, `/accounts/{treasury account id}/tokens`, and `/tokens/{id}/nfts/{serial}`).
 - Send a fungible and nft airdrop to an account that has not been associated with the tokens and has no open slots for automatic associations and verify that the airdrops are listed by the two REST APIs. Verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`, and `/tokens/{id}/nfts/{serial}`) do not show the account as the owner of the tokens.
-- Cancel the pending airdrops and verify that they are no longer listed by the two REST APIs.
+- Cancel the pending airdrops and verify that they are no longer listed by the two REST APIs. Verify that the receiver does not own the tokens and that the sender does own them (`/accounts/{receiver/senderId}/nfts`, `/accounts/{receiver/senderId}/tokens`, and `/tokens/{receiver/senderId}/nfts/{serial}`).
 - Send a fungible and nft airdrop to an account that has not been associated with the tokens and has no open slots for automatic associations and verify that the airdrop is listed in the two REST APIs. Verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`, and `/tokens/{id}/nfts/{serial}`) do not show the account as the owner of the tokens.
 - Claim the airdrops and verify that they are no longer listed in the two REST APIs. Verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens`, and `/tokens/{id}/nfts/{serial}`) show the account as the owner of the tokens.
+- Reject the tokens that were just claimed and verify that related endpoints for the account (`/accounts/{id}/nfts`, `/accounts/{id}/tokens` and `/tokens/{id}/nfts/{serial}`) do not show the account as the owner of the tokens. Verify that the tokens have been returned to their treasury account (`/accounts/{treasury account id}/nfts`, `/accounts/{treasury account id}/tokens`, and `/tokens/{id}/nfts/{serial}`).
 
 ## K6 Tests
 
