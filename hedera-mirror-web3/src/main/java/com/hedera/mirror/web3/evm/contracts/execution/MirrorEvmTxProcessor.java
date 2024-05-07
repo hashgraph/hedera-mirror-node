@@ -16,10 +16,10 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 
 public interface MirrorEvmTxProcessor {
-
-    HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas);
+    HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas, MirrorEvmTxProcessorImpl.TRACER_TYPE tracerType, ContractCallContext ctx);
 }

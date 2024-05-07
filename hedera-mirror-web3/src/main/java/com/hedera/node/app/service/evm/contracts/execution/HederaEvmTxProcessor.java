@@ -18,11 +18,16 @@ package com.hedera.node.app.service.evm.contracts.execution;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorImpl;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hederahashgraph.api.proto.java.ContractCall;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.utility.SemanticVersion;
 import java.time.Instant;
@@ -57,7 +62,9 @@ public class HederaEvmTxProcessor {
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps;
     protected final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps;
-    protected final HederaEvmOperationTracer tracer;
+
+    //TODO: do not import TRACER_TYPE from ProcessorImpl
+    protected final Map<MirrorEvmTxProcessorImpl.TRACER_TYPE, Provider<HederaEvmOperationTracer>> tracerMap;
     protected final EvmProperties dynamicProperties;
 
     @SuppressWarnings("java:S107")
@@ -69,7 +76,7 @@ public class HederaEvmTxProcessor {
             final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps,
             final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
-            final HederaEvmOperationTracer tracer) {
+            final Map<MirrorEvmTxProcessorImpl.TRACER_TYPE, Provider<HederaEvmOperationTracer>> tracerMap) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
         this.dynamicProperties = dynamicProperties;
@@ -77,7 +84,7 @@ public class HederaEvmTxProcessor {
         this.mcps = mcps;
         this.ccps = ccps;
         this.blockMetaSource = blockMetaSource;
-        this.tracer = tracer;
+        this.tracerMap = tracerMap;
     }
 
     /**
@@ -106,7 +113,9 @@ public class HederaEvmTxProcessor {
             final Bytes payload,
             final boolean isStatic,
             final Address mirrorReceiver,
-            final boolean contractCreation) {
+            final boolean contractCreation,
+            final MirrorEvmTxProcessorImpl.TRACER_TYPE tracerType,
+            final ContractCallContext contractCallContext) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
         final var gasAvailable = gasLimit - intrinsicGas;
@@ -140,7 +149,7 @@ public class HederaEvmTxProcessor {
 
         final var initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         final var messageFrameStack = initialFrame.getMessageFrameStack();
-
+        HederaEvmOperationTracer tracer = this.getTracer(tracerType);
         tracer.init(initialFrame);
 
         final var evmVersion = ((MirrorNodeEvmProperties) dynamicProperties).getSemanticEvmVersion();
@@ -153,18 +162,21 @@ public class HederaEvmTxProcessor {
 
         tracer.finalizeOperation(initialFrame);
 
-        // Externalise result
-        if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
-            return HederaEvmTransactionProcessingResult.successful(
-                    initialFrame.getLogs(), gasUsed, sbhRefund, gasPrice, initialFrame.getOutputData(), mirrorReceiver);
-        } else {
-            return HederaEvmTransactionProcessingResult.failed(
-                    gasUsed,
-                    sbhRefund,
-                    gasPrice,
-                    initialFrame.getRevertReason(),
-                    initialFrame.getExceptionalHaltReason());
+        if (tracerType == MirrorEvmTxProcessorImpl.TRACER_TYPE.OPCODE) {
+            contractCallContext.setOpcodes(((OpcodeTracer) tracer).getOpcodes());
         }
+        // Externalise result
+            if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
+                return HederaEvmTransactionProcessingResult.successful(
+                        initialFrame.getLogs(), gasUsed, sbhRefund, gasPrice, initialFrame.getOutputData(), mirrorReceiver);
+            } else {
+                return HederaEvmTransactionProcessingResult.failed(
+                        gasUsed,
+                        sbhRefund,
+                        gasPrice,
+                        initialFrame.getRevertReason(),
+                        initialFrame.getExceptionalHaltReason());
+            }
     }
 
     protected long calculateGasUsedByTX(final long txGasLimit, final MessageFrame initialFrame) {
@@ -209,5 +221,9 @@ public class HederaEvmTxProcessor {
             case MESSAGE_CALL -> mcps.get(evmVersion).get();
             case CONTRACT_CREATION -> ccps.get(evmVersion).get();
         };
+    }
+
+    private HederaEvmOperationTracer getTracer(MirrorEvmTxProcessorImpl.TRACER_TYPE tracerType) {
+        return tracerMap.get(tracerType).get();
     }
 }

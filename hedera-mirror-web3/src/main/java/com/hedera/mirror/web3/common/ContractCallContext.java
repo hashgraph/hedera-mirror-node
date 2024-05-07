@@ -16,9 +16,13 @@
 
 package com.hedera.mirror.web3.common;
 
+import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.Optional;
 import java.util.function.Function;
@@ -44,6 +48,13 @@ public class ContractCallContext {
 
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     private CachingStateFrame<Object> stackBase;
+
+    @Setter
+    private String tracerType;
+
+    @Setter
+    @Getter
+    private ArrayList<Opcode> opcodes;
 
     private ContractCallContext() {}
 

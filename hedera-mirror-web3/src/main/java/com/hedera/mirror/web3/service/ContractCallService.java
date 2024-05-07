@@ -26,6 +26,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorImpl;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
@@ -44,6 +45,7 @@ import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
+import org.aspectj.weaver.ast.Call;
 
 @CustomLog
 @Named
@@ -95,7 +97,7 @@ public class ContractCallService {
                     // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
                     // if the call is historical
                     ctx.initializeStackFrames(store.getStackedStateFrames());
-                    final var ethCallTxnResult = doProcessCall(params, params.getGas());
+                    final var ethCallTxnResult = doProcessCall(params, params.getGas(), MirrorEvmTxProcessorImpl.TRACER_TYPE.OPERATION, ctx);
 
                     validateResult(ethCallTxnResult, params.getCallType());
 
@@ -111,6 +113,29 @@ public class ContractCallService {
         });
     }
 
+    public String processOpcodeCall(final CallServiceParameters params) {
+        return ContractCallContext.run(ctx -> {
+            Bytes result;
+            BlockType block = params.getBlock();
+            // if we have historical call then set corresponding file record
+            if (block != BlockType.LATEST) {
+                var recordFileOptional =
+                        findRecordFileByBlock(block).orElseThrow(BlockNumberNotFoundException::new);
+                ctx.setRecordFile(recordFileOptional);
+            }
+            // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
+            // if the call is historical
+            ctx.initializeStackFrames(store.getStackedStateFrames());
+            final var ethCallTxnResult = doProcessCall(params, params.getGas(), MirrorEvmTxProcessorImpl.TRACER_TYPE.OPCODE, ctx);
+
+            validateResult(ethCallTxnResult, params.getCallType());
+
+            result = Objects.requireNonNullElse(ethCallTxnResult.getOutput(), Bytes.EMPTY);
+
+            return result.toHexString();
+        });
+    }
+
     /**
      * This method estimates the amount of gas required to execute a smart contract function. The estimation process
      * involves two steps:
@@ -123,7 +148,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final CallServiceParameters params) {
-        final var processingResult = doProcessCall(params, params.getGas());
+        final var processingResult = doProcessCall(params, params.getGas(), MirrorEvmTxProcessorImpl.TRACER_TYPE.OPERATION, null);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -135,16 +160,16 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas),
+                gas -> doProcessCall(params, gas, MirrorEvmTxProcessorImpl.TRACER_TYPE.OPERATION, null),
                 gasUsedByInitialCall,
                 params.getGas());
 
         return Bytes.ofUnsignedLong(estimatedGas);
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params, long estimatedGas) {
+    private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params, long estimatedGas, MirrorEvmTxProcessorImpl.TRACER_TYPE tracerType, ContractCallContext ctx) {
         try {
-            return mirrorEvmTxProcessor.execute(params, estimatedGas);
+            return mirrorEvmTxProcessor.execute(params, estimatedGas, tracerType, ctx);
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
         }
