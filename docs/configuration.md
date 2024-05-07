@@ -533,6 +533,14 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.query.maxTransactionsTimestampRange`           | 60d                     | The maximum timestamp range to list transactions.                                                                                                                                             |
 | `hedera.mirror.rest.query.strictTimestampParam`                    | true                    | Enables strict checking of timestamp query param (currently only effects /api/v1/accounts/{id}?timestamp={timestamp}                                                                          |
 | `hedera.mirror.rest.query.topicMessageLookup`                      | false                   | Enables topic message lookup querying                                                                                                                                                         |
+| `hedera.mirror.rest.redis.commandTimeout`                          | 10000                   | The amount of time in milliseconds to wait before a Redis command will timeout                                                                                                                |
+| `hedera.mirror.rest.redis.connectTimeout`                          | 10000                   | The amount of time in milliseconds to wait for a connection to Redis                                                                                                                          |
+| `hedera.mirror.rest.redis.enabled`                                 | true                    | Whether Redis should be used as a caching layer for the database                                                                                                                              |
+| `hedera.mirror.rest.redis.maxBackoff`                              | 128000                  | The maximum amount of time in milliseconds to wait in between retrying Redis connection errors                                                                                                |
+| `hedera.mirror.rest.redis.maxMemory`                               | 250Mb                   | The maximum amount of memory that Redis should be configured to use for caching                                                                                                               |
+| `hedera.mirror.rest.redis.maxMemoryPolicy`                         | allkeys-lfu             | The key eviction policy Redis should use when the max memory threshold has been reached                                                                                                       |
+| `hedera.mirror.rest.redis.maxRetriesPerRequest`                    | 1                       | The maximum number of times that the Redis command should be retried                                                                                                                          |
+| `hedera.mirror.rest.redis.uri`                                     | redis://127.0.0.1:6379  | The URI to use when connecting to Redis                                                                                                                                                       |
 | `hedera.mirror.rest.response.compression`                          | true                    | Whether content negotiation should occur to compress response bodies if requested                                                                                                             |
 | `hedera.mirror.rest.response.headers.default`                      | See application.yml     | The default headers to add to every response.                                                                                                                                                 |
 | `hedera.mirror.rest.response.headers.path`                         | See application.yml     | The per path headers to add to every response. The key is the route name and the value is a header map.                                                                                       |
@@ -587,16 +595,16 @@ to configure the application.
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
-| Name                                         | Default                                               | Description                                                                              |
-|----------------------------------------------|-------------------------------------------------------|------------------------------------------------------------------------------------------|
-| `hedera.mirror.restJava.db.host`             | 127.0.0.1                                             | The IP or hostname used to connect to the database                                       |
-| `hedera.mirror.restJava.db.name`             | mirror_node                                           | The name of the database                                                                 |
-| `hedera.mirror.restJava.db.password`         | mirror_rest_java_pass                                 | The database password used to connect to the database                                    |
-| `hedera.mirror.restJava.db.port`             | 5432                                                  | The port used to connect to the database                                                 |
-| `hedera.mirror.restJava.db.sslMode`          | DISABLE                                               | The SSL level. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. |
-| `hedera.mirror.restJava.db.statementTimeout` | 10000                                                 | The number of milliseconds to wait before timing out a query statement                   |
-| `hedera.mirror.restJava.db.username`         | mirror_rest_java                                      | The username used to connect to the database                                             |
-| `hedera.mirror.restJava.shard`               | 0                                                     | The default shard number that this mirror node participates in                           |
+| Name                                         | Default               | Description                                                                              |
+| -------------------------------------------- | --------------------- | ---------------------------------------------------------------------------------------- |
+| `hedera.mirror.restJava.db.host`             | 127.0.0.1             | The IP or hostname used to connect to the database                                       |
+| `hedera.mirror.restJava.db.name`             | mirror_node           | The name of the database                                                                 |
+| `hedera.mirror.restJava.db.password`         | mirror_rest_java_pass | The database password used to connect to the database                                    |
+| `hedera.mirror.restJava.db.port`             | 5432                  | The port used to connect to the database                                                 |
+| `hedera.mirror.restJava.db.sslMode`          | DISABLE               | The SSL level. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. |
+| `hedera.mirror.restJava.db.statementTimeout` | 10000                 | The number of milliseconds to wait before timing out a query statement                   |
+| `hedera.mirror.restJava.db.username`         | mirror_rest_java      | The username used to connect to the database                                             |
+| `hedera.mirror.restJava.shard`               | 0                     | The default shard number that this mirror node participates in                           |
 
 ## Rosetta API
 

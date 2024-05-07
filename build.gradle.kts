@@ -41,9 +41,6 @@ extra.apply {
     set("vertxVersion", "4.5.7")
 }
 
-// Temporarily override json version until snyk/gradle-plugin has an update with a fix
-configurations["dataFiles"].dependencies.add(dependencies.create("org.json:json:20240205"))
-
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
 // using a dependency
 dependencies {
@@ -58,14 +55,14 @@ dependencies {
         api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.5")
-        api("org.bouncycastle:bcprov-jdk18on:1.78")
+        api("org.bouncycastle:bcprov-jdk18on:1.78.1")
         api("com.bucket4j:bucket4j-core:8.10.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.1.2")
-        api("com.google.guava:guava:33.1.0-jre")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.2.0")
+        api("com.google.guava:guava:33.2.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
-        api("com.graphql-java:graphql-java-extended-scalars:21.0")
-        api("com.graphql-java:graphql-java-extended-validation:21.0")
+        api("com.graphql-java:graphql-java-extended-scalars:22.0")
+        api("com.graphql-java:graphql-java-extended-validation:22.0")
         api("com.hedera.evm:hedera-evm:0.48.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.49.0")
         api("com.hedera.hashgraph:sdk:2.30.0")
@@ -75,10 +72,10 @@ dependencies {
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.16.1")
-        api("io.cucumber:cucumber-bom:7.16.1")
+        api("io.cucumber:cucumber-bom:7.17.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.5")
         api("io.projectreactor:reactor-core-micrometer:1.1.5")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -102,7 +99,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.1")
         api("org.testcontainers:junit-jupiter:1.19.7")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.31")
+        api("software.amazon.awssdk:bom:2.25.45")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }
@@ -218,7 +215,13 @@ spotless {
         palantirJavaFormat()
         licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
         target("**/*.java")
-        targetExclude("**/build/**", "hedera-mirror-rest/**", "hedera-mirror-rosetta/**")
+        targetExclude(
+            "**/build/**",
+            "hedera-mirror-rest/**",
+            "hedera-mirror-rosetta/**",
+            // Known issue with Java 21: https://github.com/palantir/palantir-java-format/issues/933
+            "hedera-mirror-rest-java/**/EntityServiceImpl.java"
+        )
         toggleOffOn()
     }
     kotlin {

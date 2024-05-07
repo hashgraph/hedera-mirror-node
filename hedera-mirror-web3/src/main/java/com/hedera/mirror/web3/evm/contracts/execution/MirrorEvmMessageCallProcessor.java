@@ -72,8 +72,12 @@ public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcess
         final var timestamp = Timestamp.newBuilder()
                 .setSeconds(frame.getBlockValues().getTimestamp())
                 .build();
-        final var lazyCreateResult =
-                autoCreationLogic.create(syntheticBalanceChange, timestamp, updater.getStore(), entityAddressSequencer, List.of(syntheticBalanceChange));
+        final var lazyCreateResult = autoCreationLogic.create(
+                syntheticBalanceChange,
+                timestamp,
+                updater.getStore(),
+                entityAddressSequencer,
+                List.of(syntheticBalanceChange));
         if (lazyCreateResult.getLeft() != ResponseCodeEnum.OK) {
             haltFrameAndTraceCreationResult(frame, operationTracer, FAILURE_DURING_LAZY_ACCOUNT_CREATE);
         } else {

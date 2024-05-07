@@ -16,14 +16,14 @@
 
 package com.hedera.mirror.restjava.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @RequiredArgsConstructor
- class EntityRepositoryTest extends RestJavaIntegrationTest {
+class EntityRepositoryTest extends RestJavaIntegrationTest {
 
     private final EntityRepository entityRepository;
 

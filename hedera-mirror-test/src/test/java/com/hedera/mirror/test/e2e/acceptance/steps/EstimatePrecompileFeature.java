@@ -812,7 +812,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 admin,
                 receiverAccount.getAccountId(),
                 Collections.singletonList(firstNftSerialNumber),
-                receiverAccount.getPrivateKey());
+                receiverAccount.getPrivateKey(),
+                null,
+                false);
     }
 
     @Then("I call estimateGas with WipeNFTAccount function")
@@ -1884,7 +1886,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 receiverAccount,
                 AccountId.fromString(precompileTestContractSolidityAddress),
                 List.of(1L),
-                null);
+                null,
+                null,
+                false);
     }
 
     @Then("I call estimateGas with mintToken function for fungible token and verify the estimated gas against HAPI")

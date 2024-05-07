@@ -108,11 +108,10 @@ public abstract class AbstractAutoCreationLogic {
         }
 
         TransactionBody.Builder syntheticCreation;
-        // checks tokenAliasMap if the change consists an alias that is already used in previous
-        // iteration of the token transfer list. This map is used to count number of
-        // maxAutoAssociations needed on auto created account
-        final Map<ByteString, Set<Id>> tokenAliasMap = analyzeTokenTransferCreations(changes);
-        final var maxAutoAssociations = tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+        // This map is used to count number of maxAutoAssociations needed on auto created account
+        final var tokenAliasMap = analyzeTokenTransferCreations(changes);
+        final var maxAutoAssociations =
+                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         final var isAliasEVMAddress = alias.size() == EVM_ADDRESS_SIZE;
         if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L, maxAutoAssociations);

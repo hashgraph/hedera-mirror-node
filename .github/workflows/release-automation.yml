@@ -7,10 +7,21 @@ on:
         description: "Version (semver)"
         required: true
 
+permissions:
+  contents: write
+  
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  LC_ALL: C.UTF-8
+
 jobs:
   release:
     name: Release
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     env:
       RELEASE_NOTES_FILENAME: release_notes
     outputs:
@@ -21,7 +32,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
@@ -50,7 +61,7 @@ jobs:
           EOF
 
       - name: Checkout Repository
-        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           fetch-depth: 0
           ref: main
@@ -73,7 +84,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # v3.3.1
+        uses: gradle/actions/setup-gradle@db19848a5fa7950289d3668fb053140cf3028d43 # v3.3.2
 
       - name: Create and Switch to Release Branch
         run: |
@@ -132,7 +143,7 @@ jobs:
 
   create_pr:
     name: Create PR
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     needs: release
     if: ${{ needs.release.outputs.create_pr == 'true' }}
     env:
@@ -141,12 +152,12 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           ref: main
 
@@ -167,7 +178,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # v3.3.1
+        uses: gradle/actions/setup-gradle@db19848a5fa7950289d3668fb053140cf3028d43 # v3.3.2
 
       - name: Reset main to release branch
         run: |
@@ -178,7 +189,7 @@ jobs:
         run: ./gradlew release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@9153d834b60caba6d51c9b9510b087acf9f33f83 # v6.0.4
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
         with:
           body: ""
           branch: create-pull-request/${{ env.RELEASE_BRANCH }}

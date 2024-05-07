@@ -17,6 +17,7 @@
 import _ from 'lodash';
 import {Range} from 'pg-range';
 
+import {Cache} from './cache';
 import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
@@ -44,6 +45,8 @@ const {
     limit: {default: defaultResponseLimit},
   },
 } = config;
+
+const cache = new Cache();
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
@@ -248,13 +251,13 @@ const getStakingRewardTransferList = async (stakingRewardTimestamps) => {
 
   const positions = _.range(1, stakingRewardTimestamps.length + 1).map((position) => `$${position}`);
   const query = `
-    select ${StakingRewardTransfer.CONSENSUS_TIMESTAMP},
-           json_agg(json_build_object(
-             'account', ${StakingRewardTransfer.ACCOUNT_ID},
-             '${StakingRewardTransfer.AMOUNT}', ${StakingRewardTransfer.AMOUNT})) as staking_reward_transfers
-    from ${StakingRewardTransfer.tableName}
-    where ${StakingRewardTransfer.CONSENSUS_TIMESTAMP} in (${positions})
-    group by ${StakingRewardTransfer.CONSENSUS_TIMESTAMP}`;
+      select ${StakingRewardTransfer.CONSENSUS_TIMESTAMP},
+             json_agg(json_build_object(
+                     'account', ${StakingRewardTransfer.ACCOUNT_ID},
+                     '${StakingRewardTransfer.AMOUNT}', ${StakingRewardTransfer.AMOUNT})) as staking_reward_transfers
+      from ${StakingRewardTransfer.tableName}
+      where ${StakingRewardTransfer.CONSENSUS_TIMESTAMP} in (${positions})
+      group by ${StakingRewardTransfer.CONSENSUS_TIMESTAMP}`;
 
   const {rows} = await pool.queryQuietly(query, stakingRewardTimestamps);
   return rows;
@@ -288,9 +291,9 @@ const getFirstTransactionTimestamp = (() => {
   const func = async () => {
     if (timestamp === undefined) {
       const {rows} = await pool.queryQuietly(`select consensus_timestamp
-        from transaction
-        order by consensus_timestamp
-        limit 1`);
+                                              from transaction
+                                              order by consensus_timestamp
+                                              limit 1`);
       if (rows.length !== 1) {
         return 0n; // fallback to 0
       }
@@ -389,14 +392,10 @@ const getTransferDistinctTimestampsQuery = (
   );
 
   return `
-    select distinct on (${fullTimestampColumn})
-      ${fullTimestampColumn} as consensus_timestamp,
-      ${fullPayerAccountIdColumn} as payer_account_id
-    from ${tableName} as ${tableAlias}
-    ${joinClause}
-    ${whereClause}
-    order by ${fullTimestampColumn} ${order}
-    ${limitQuery}`;
+      select distinct on (${fullTimestampColumn}) ${fullTimestampColumn}      as consensus_timestamp,
+                                                  ${fullPayerAccountIdColumn} as payer_account_id
+      from ${tableName} as ${tableAlias} ${joinClause} ${whereClause}
+      order by ${fullTimestampColumn} ${order} ${limitQuery}`;
 };
 
 // the condition to exclude synthetic transactions attached to a user submitted transaction
@@ -553,10 +552,10 @@ const getTransactionTimestampsQuery = (
     transactionTypeQuery
   );
   const transactionOnlyQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}
-    from ${Transaction.tableName} as ${Transaction.tableAlias}
-    ${transactionWhereClause}
-    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
-    ${limitQuery}`;
+                                from ${Transaction.tableName} as ${Transaction.tableAlias} ${transactionWhereClause}
+                                order by ${Transaction.getFullName(
+                                  Transaction.CONSENSUS_TIMESTAMP
+                                )} ${order} ${limitQuery}`;
 
   if (creditDebitQuery || accountQuery) {
     const cryptoTransferQuery = getTransferDistinctTimestampsQuery(
@@ -587,29 +586,27 @@ const getTransactionTimestampsQuery = (
       // credit/debit filter applies to crypto_transfer.amount and token_transfer.amount, a full outer join is needed to get
       // transactions that only have a crypto_transfer or a token_transfer
       return `
-        select
-          coalesce(ctl.consensus_timestamp, ttl.consensus_timestamp) as consensus_timestamp,
-          coalesce(ctl.payer_account_id, ttl.payer_account_id) as payer_account_id
-        from (${cryptoTransferQuery}) as ctl
-        full outer join (${tokenTransferQuery}) as ttl
-          on ctl.consensus_timestamp = ttl.consensus_timestamp
-        order by consensus_timestamp ${order}
-        ${limitQuery}`;
+          select coalesce(ctl.consensus_timestamp, ttl.consensus_timestamp) as consensus_timestamp,
+                 coalesce(ctl.payer_account_id, ttl.payer_account_id)       as payer_account_id
+          from (${cryptoTransferQuery}) as ctl
+                   full outer join (${tokenTransferQuery}) as ttl
+                                   on ctl.consensus_timestamp = ttl.consensus_timestamp
+          order by consensus_timestamp ${order}
+              ${limitQuery}`;
     }
 
     // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id,
     // and token_transfer.account_id, a full outer join between the four tables is needed to get rows that may only exist in one.
     return `
-      select
-        coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) as consensus_timestamp,
-        coalesce(t.payer_account_id, ctl.payer_account_id, ttl.payer_account_id) as payer_account_id
-      from (${transactionOnlyQuery}) as t
-      full outer join (${cryptoTransferQuery}) as ctl
-        on t.consensus_timestamp = ctl.consensus_timestamp
-      full outer join (${tokenTransferQuery}) as ttl
-        on coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
-      order by consensus_timestamp ${order}
-      ${limitQuery}`;
+        select coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) as consensus_timestamp,
+               coalesce(t.payer_account_id, ctl.payer_account_id, ttl.payer_account_id)          as payer_account_id
+        from (${transactionOnlyQuery}) as t
+                 full outer join (${cryptoTransferQuery}) as ctl
+                                 on t.consensus_timestamp = ctl.consensus_timestamp
+                 full outer join (${tokenTransferQuery}) as ttl
+                                 on coalesce(t.consensus_timestamp, ctl.consensus_timestamp) = ttl.consensus_timestamp
+        order by consensus_timestamp ${order}
+            ${limitQuery}`;
   }
 
   return transactionOnlyQuery;
@@ -640,30 +637,33 @@ const getTransactionsDetails = async (payerAndTimestamps, order) => {
   const outerPayerAccountIdsCondition = 't.' + payerAccountIdsCondition;
   const outerTimestampsCondition = 't.' + timestampsCondition;
 
-  const query = `with c_list as (
-      select
-        consensus_timestamp,
-        payer_account_id,
-        ${cryptoTransferJsonAgg} as crypto_transfer_list
-      from crypto_transfer
-      where ${payerAccountIdsCondition} and ${timestampsCondition}
-      group by consensus_timestamp, payer_account_id
-    ), t_list as (
-      select
-        consensus_timestamp,
-        payer_account_id,
-        ${tokenTransferJsonAgg} as token_transfer_list
-      from token_transfer
-      where ${payerAccountIdsCondition} and ${timestampsCondition}
-      group by consensus_timestamp, payer_account_id
-    )
-    select
-      ${transactionFullFields},
-      (select crypto_transfer_list from c_list where consensus_timestamp = t.consensus_timestamp and payer_account_id = t.payer_account_id),
-      (select token_transfer_list from t_list where consensus_timestamp = t.consensus_timestamp and payer_account_id = t.payer_account_id)
-    from transaction as t
-    where ${outerPayerAccountIdsCondition} and ${outerTimestampsCondition}
-    order by t.consensus_timestamp ${order}`;
+  const query = `with c_list as (select consensus_timestamp,
+                                        payer_account_id,
+                                        ${cryptoTransferJsonAgg} as crypto_transfer_list
+                                 from crypto_transfer
+                                 where ${payerAccountIdsCondition}
+                                   and ${timestampsCondition}
+                                 group by consensus_timestamp, payer_account_id),
+                      t_list as (select consensus_timestamp,
+                                        payer_account_id,
+                                        ${tokenTransferJsonAgg} as token_transfer_list
+                                 from token_transfer
+                                 where ${payerAccountIdsCondition}
+                                   and ${timestampsCondition}
+                                 group by consensus_timestamp, payer_account_id)
+                 select ${transactionFullFields},
+                        (select crypto_transfer_list
+                         from c_list
+                         where consensus_timestamp = t.consensus_timestamp
+                           and payer_account_id = t.payer_account_id),
+                        (select token_transfer_list
+                         from t_list
+                         where consensus_timestamp = t.consensus_timestamp
+                           and payer_account_id = t.payer_account_id)
+                 from transaction as t
+                 where ${outerPayerAccountIdsCondition}
+                   and ${outerTimestampsCondition}
+                 order by t.consensus_timestamp ${order}`;
 
   return pool.queryQuietly(query, params);
 };
@@ -682,6 +682,14 @@ const getTransactions = async (req, res) => {
   res.locals[constants.responseDataLabel] = await doGetTransactions(filters, req, timestampRange);
 };
 
+const keyMapper = (key) => {
+  let timestamp = key.consensus_timestamp;
+  if (typeof timestamp === 'string') {
+    timestamp = timestamp.replace('.', '');
+  }
+  return `transaction:${timestamp}`;
+};
+
 /**
  * Get transactions per the http request.
  *
@@ -691,10 +699,12 @@ const getTransactions = async (req, res) => {
  * @returns {Promise<{links: {next: String}, transactions: *}>}
  */
 const doGetTransactions = async (filters, req, timestampRange) => {
-  const {limit, order, rows: payAndTimestamps} = await getTransactionTimestamps(filters, timestampRange);
-  const {rows} = await getTransactionsDetails(payAndTimestamps, order);
+  const {limit, order, rows: payerAndTimestamps} = await getTransactionTimestamps(filters, timestampRange);
 
-  const transactions = await formatTransactionRows(rows);
+  const loader = (keys) => getTransactionsDetails(keys, order).then((result) => formatTransactionRows(result.rows));
+
+  const transactions = await cache.get(payerAndTimestamps, loader, keyMapper);
+
   const next = utils.getPaginationLink(
     req,
     transactions.length !== limit,
@@ -703,6 +713,7 @@ const doGetTransactions = async (filters, req, timestampRange) => {
     },
     order
   );
+
   return {
     transactions,
     links: {next},
@@ -717,10 +728,10 @@ const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
 const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 
 const transactionHashQuery = `
-  select ${TransactionHash.CONSENSUS_TIMESTAMP}, ${TransactionHash.PAYER_ACCOUNT_ID}
-  from ${TransactionHash.tableName}
-  where ${TransactionHash.HASH} = $1
-  order by ${TransactionHash.CONSENSUS_TIMESTAMP}`;
+    select ${TransactionHash.CONSENSUS_TIMESTAMP}, ${TransactionHash.PAYER_ACCOUNT_ID}
+    from ${TransactionHash.tableName}
+    where ${TransactionHash.HASH} = $1
+    order by ${TransactionHash.CONSENSUS_TIMESTAMP}`;
 
 const transactionHashShardedQuery = `select ${TransactionHash.CONSENSUS_TIMESTAMP}, ${TransactionHash.PAYER_ACCOUNT_ID}
                                      from get_transaction_info_by_hash($1)`;
@@ -734,8 +745,8 @@ const transactionHashShardedQueryEnabled = (() => {
       }
 
       const {rows} = await pool.queryQuietly(`select count(*) > 0 as enabled
-                       from pg_proc
-                       where proname = 'get_transaction_info_by_hash'`);
+                                              from pg_proc
+                                              where proname = 'get_transaction_info_by_hash'`);
       result = rows[0].enabled;
       return result;
     })();
@@ -751,26 +762,22 @@ const transactionHashShardedQueryEnabled = (() => {
  */
 const getTransactionQuery = (mainCondition, subQueryCondition) => {
   return `
-    select
-    ${transactionFullFields},
-    (
-      select ${cryptoTransferJsonAgg}
-      from ${CryptoTransfer.tableName}
-      where ${CryptoTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
-    ) as crypto_transfer_list,
-    (
-      select ${tokenTransferJsonAgg}
-      from ${TokenTransfer.tableName}
-      where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
-    ) as token_transfer_list,
-    (
-      select ${assessedCustomFeeJsonAgg}
-      from ${AssessedCustomFee.tableName}
-      where ${AssessedCustomFee.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
-    ) as assessed_custom_fees
-  from ${Transaction.tableName} ${Transaction.tableAlias}
-  where ${mainCondition}
-  order by ${Transaction.CONSENSUS_TIMESTAMP}`;
+      select ${transactionFullFields},
+             (select ${cryptoTransferJsonAgg}
+              from ${CryptoTransfer.tableName}
+              where ${CryptoTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp
+                and ${subQueryCondition}) as crypto_transfer_list,
+             (select ${tokenTransferJsonAgg}
+              from ${TokenTransfer.tableName}
+              where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp
+                and ${subQueryCondition}) as token_transfer_list,
+             (select ${assessedCustomFeeJsonAgg}
+              from ${AssessedCustomFee.tableName}
+              where ${AssessedCustomFee.CONSENSUS_TIMESTAMP} = t.consensus_timestamp
+                and ${subQueryCondition}) as assessed_custom_fees
+      from ${Transaction.tableName} ${Transaction.tableAlias}
+      where ${mainCondition}
+      order by ${Transaction.CONSENSUS_TIMESTAMP}`;
 };
 
 /**

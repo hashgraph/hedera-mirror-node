@@ -2,42 +2,52 @@ name: Release Integration
 
 on:
   push:
-    branches: [main]
+    branches:
+      - "main"
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  LC_ALL: C.UTF-8
 
 jobs:
   publish:
     strategy:
       matrix:
-        module:
-          [
-            graphql,
-            grpc,
-            importer,
-            monitor,
-            rest,
-            rest-java,
-            rest-monitor,
-            rosetta,
-            test,
-            web3,
-          ]
+        project:
+          - graphql
+          - grpc
+          - importer
+          - monitor
+          - rest
+          - rest-java
+          - rest-monitor
+          - rosetta
+          - test
+          - web3
     env:
-      CONTEXT: hedera-mirror-${{ matrix.module }}
-      IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
-    runs-on: ubuntu-latest
+      CONTEXT: hedera-mirror-${{ matrix.project }}
+      IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.project }}
+    runs-on: [self-hosted, linux, large, ephemeral]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - name: Checkout Code
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
 
       - name: Get version
         run: echo "VERSION=$(grep -oP 'version=\K.+' gradle.properties)" >> $GITHUB_ENV
 
       - name: Custom monitor path
-        if: matrix.module == 'rest-monitor'
+        if: matrix.project == 'rest-monitor'
         run: echo "CONTEXT=hedera-mirror-rest/monitoring" >> $GITHUB_ENV
 
       - name: Install JDK
@@ -47,7 +57,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@750cdda3edd6d51b7fdfc069d2e2818cf3c44f4c # v3.3.1
+        uses: gradle/actions/setup-gradle@db19848a5fa7950289d3668fb053140cf3028d43 # v3.3.2
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@55bd3a7c6e2ae7cf1877fd1ccb9d54c0503c457c # v2.1.2
@@ -61,8 +71,8 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build
-        if: matrix.module != 'rest' && matrix.module != 'rest-monitor' && matrix.module != 'rosetta'
-        run: ./gradlew build -x test
+        if: matrix.project != 'rest' && matrix.project != 'rest-monitor' && matrix.project != 'rosetta'
+        run: ./gradlew :${{matrix.project}}:build -x test
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
@@ -80,24 +90,26 @@ jobs:
           platforms: linux/amd64, linux/arm64
           provenance: false
           push: true
-          tags: ${{env.IMAGE}}:${{env.VERSION}},${{env.IMAGE}}:main,${{env.IMAGE}}:main-${{ github.sha }}
+          tags: "${{env.IMAGE}}:${{env.VERSION}},${{env.IMAGE}}:main,${{env.IMAGE}}:main-${{ github.sha }}"
 
   deploy:
     needs: publish
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, large, ephemeral]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+      - name: Checkout code
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
         with:
           ref: deploy
 
       - name: Update integration deployment configuration
         run: 'sed -i "s/git.commit: .*/git.commit: ${GITHUB_SHA}/" clusters/preprod/integration/helmrelease.yaml'
 
-      - uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 # v5.0.1
+      - name: Auto-Commit
+        uses: stefanzweifel/git-auto-commit-action@8621497c8c39c72f3e2a999a26b4ca1b5058a842 # v5.0.1
         with:
           commit_message: Upgrade integration to main ${{ github.sha }}
