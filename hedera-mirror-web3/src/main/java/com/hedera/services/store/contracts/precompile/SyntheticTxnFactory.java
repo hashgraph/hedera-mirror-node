@@ -106,8 +106,8 @@ public class SyntheticTxnFactory {
         return TransactionBody.newBuilder().setTokenMint(builder);
     }
 
-    public TransactionBody.Builder createHollowAccount(
-            final ByteString alias, final long balance, final int maxAutoAssociations) {
+
+    public TransactionBody.Builder createHollowAccount(final ByteString alias, final long balance, final int maxAutoAssociations) {
         final var baseBuilder = createAccountBase(balance);
         baseBuilder
                 .setKey(asKeyUnchecked(EMPTY_KEY))
