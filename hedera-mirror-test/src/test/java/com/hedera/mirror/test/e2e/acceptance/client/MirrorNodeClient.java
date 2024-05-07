@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_SUFFIX;
 import static org.awaitility.Awaitility.await;
 
 import com.google.common.base.Stopwatch;
@@ -372,21 +373,31 @@ public class MirrorNodeClient {
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
+        String uriNoVersion = removeVersion(uri);
         return retryTemplate.execute(
-                x -> restClient.get().uri(uri, uriVariables).retrieve().body(classType));
+                x -> restClient.get().uri(uriNoVersion, uriVariables).retrieve().body(classType));
     }
 
     private <T> T callRestJavaEndpoint(String uri, Class<T> classType, Object... uriVariables) {
-        return retryTemplate.execute(
-                x -> restJavaClient.get().uri(uri, uriVariables).retrieve().body(classType));
+        String uriNoVersion = removeVersion(uri);
+        return retryTemplate.execute(x ->
+                restJavaClient.get().uri(uriNoVersion, uriVariables).retrieve().body(classType));
     }
 
     private <T> T callRestEndpointNoRetry(String uri, Class<T> classType, Object... uriVariables) {
-        return restClient.get().uri(uri, uriVariables).retrieve().body(classType);
+        return restClient.get().uri(removeVersion(uri), uriVariables).retrieve().body(classType);
     }
 
     private <T, R> T callPostRestEndpoint(String uri, Class<T> classType, R request) {
         return retryTemplate.execute(
                 x -> web3Client.post().uri(uri).body(request).retrieve().body(classType));
+    }
+
+    private String removeVersion(String uri) {
+        if (uri.startsWith(URL_SUFFIX)) {
+            return uri.substring(URL_SUFFIX.length());
+        }
+
+        return uri;
     }
 }
