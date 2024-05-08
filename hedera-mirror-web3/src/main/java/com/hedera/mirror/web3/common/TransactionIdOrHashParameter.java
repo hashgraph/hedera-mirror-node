@@ -20,12 +20,11 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.utils.TransactionUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import lombok.SneakyThrows;
-import org.apache.commons.codec.DecoderException;
 import org.springframework.util.StringUtils;
 
 public record TransactionIdOrHashParameter(TransactionID transactionID, ByteString hash) {
 
-    @SneakyThrows(DecoderException.class)
+    @SneakyThrows(NumberFormatException.class)
     public static TransactionIdOrHashParameter valueOf(String transactionIdOrHash) {
         if (!StringUtils.hasText(transactionIdOrHash)) {
             throw new IllegalArgumentException("Transaction ID or hash is required");

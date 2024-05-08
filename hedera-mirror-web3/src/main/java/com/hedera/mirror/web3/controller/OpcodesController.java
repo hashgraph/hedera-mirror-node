@@ -25,6 +25,8 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.rest.model.Opcode;
+import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
@@ -32,7 +34,6 @@ import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.mirror.web3.service.TransactionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.mirror.web3.viewmodel.OpcodesResponse;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -80,7 +81,7 @@ class OpcodesController {
         final var params = constructServiceParameters(transactionIdOrHash);
         final var result = contractCallService.processOpcodeCall(params);
 
-        return OpcodesResponse.builder()
+        return new OpcodesResponse()
                 // TODO: Not sure if this is the correct way to get the contractId here
                 .contractId(result.transactionProcessingResult()
                         .getRecipient()
@@ -95,7 +96,7 @@ class OpcodesController {
                 .failed(!result.transactionProcessingResult().isSuccessful())
                 .returnValue(result.transactionProcessingResult().getOutput().toHexString())
                 .opcodes(result.opcodes().stream()
-                        .map(opcode -> OpcodesResponse.Opcode.builder()
+                        .map(opcode -> new Opcode()
                                 .pc(opcode.pc())
                                 .op(opcode.op())
                                 .gas(opcode.gas())
@@ -117,10 +118,8 @@ class OpcodesController {
                                                         Map.Entry::getKey,
                                                         entry -> entry.getValue().toHexString())) :
                                         Map.of())
-                                .reason(opcode.reason())
-                                .build())
-                        .toList())
-                .build();
+                                .reason(opcode.reason()))
+                        .toList());
     }
 
     private CallServiceParameters constructServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {

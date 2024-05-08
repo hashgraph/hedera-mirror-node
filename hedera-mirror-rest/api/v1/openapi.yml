@@ -611,6 +611,45 @@ paths:
           $ref: "#/components/responses/NotFoundError"
       tags:
         - contracts
+  /api/v1/contracts/results/{transactionIdOrHash}/opcodes:
+    get:
+      summary: Get the opcode traces for a historical transaction on the network with the given transactionId or ethereum transaction hash
+      description: |
+        Returns a result containing detailed information for the transaction execution with stack, memory and storage.
+      
+        For providing output formatted by opcodeLogger, the transaction is re-executed using 
+        the state from the contract_state_changes sidecars produced by the consensus nodes. 
+        
+        In this way, we can have a track on all of the storage/memory information and 
+        the entire trace of opcodes that were executed during the replay.
+
+        Note: The output generated from the opcodeLogger is very verbose. 
+        The /opcodes endpoint will be disabled by default and can be enabled by 
+        users of the Hedera Local node or users running their own Mirror Nodes.
+      operationId: getContractOpcodesByTransactionIdOrHash
+      parameters:
+        - $ref: "#/components/parameters/transactionIdOrEthHashPathParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpcodesResponse"
+        400:
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        429:
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      tags:
+        - contracts
   /api/v1/contracts/{contractIdOrAddress}/results/logs:
     get:
       summary: List contract logs from a contract on the network
@@ -1500,6 +1539,55 @@ components:
           $ref: "#/components/schemas/NftAllowances"
         links:
           $ref: "#/components/schemas/Links"
+    OpcodesResponse:
+      type: object
+      properties:
+        address:
+          type: string
+        contract_id:
+          type: string
+        gas:
+          type: integer
+          format: int64
+        failed:
+          type: boolean
+        return_value:
+          type: string
+        opcodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Opcode"
+    Opcode:
+      type: object
+      properties:
+        pc:
+          type: integer
+          format: int32
+        op:
+          type: string
+        gas:
+          type: integer
+          format: int64
+        gas_cost:
+          type: integer
+          format: int64
+        depth:
+          type: integer
+          format: int32
+        stack:
+          type: array
+          items:
+            type: string
+        memory:
+          type: array
+          items:
+            type: string
+        storage:
+          type: object
+          additionalProperties:
+            type: string
+        reason:
+          type: string
     SchedulesResponse:
       type: object
       properties:

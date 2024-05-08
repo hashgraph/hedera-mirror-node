@@ -1,12 +1,9 @@
 package com.hedera.mirror.common.domain.transaction;
 
-import lombok.Getter;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.util.List;
 import java.util.Map;
+import org.apache.tuweni.bytes.Bytes;
 
-@Getter
 public record Opcode(int pc,
                      String op,
                      long gas,
