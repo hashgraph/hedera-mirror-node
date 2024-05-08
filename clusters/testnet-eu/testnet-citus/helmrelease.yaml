@@ -60,6 +60,9 @@ spec:
     rest:
       ingress:
         enabled: false
+    restjava:
+      ingress:
+        enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
