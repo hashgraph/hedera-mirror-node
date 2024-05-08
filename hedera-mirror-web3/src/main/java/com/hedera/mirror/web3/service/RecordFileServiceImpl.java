@@ -36,6 +36,8 @@ public class RecordFileServiceImpl implements RecordFileService {
     public Optional<RecordFile> findRecordFileByBlock(BlockType block) {
         if (block == BlockType.EARLIEST) {
             return recordFileRepository.findEarliest();
+        } else if (block == BlockType.LATEST) {
+            return recordFileRepository.findLatest();
         }
 
         long latestBlock = recordFileRepository
