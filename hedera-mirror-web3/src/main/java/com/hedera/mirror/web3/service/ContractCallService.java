@@ -16,16 +16,21 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
+import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType.OPCODE;
+import static com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType.OPERATION;
+import static org.apache.logging.log4j.util.Strings.EMPTY;
+
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
-import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
@@ -36,46 +41,35 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
+import java.util.Objects;
 import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
-
-import java.util.Objects;
-import java.util.Optional;
-
-import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
-import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType.OPCODE;
-import static com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType.OPERATION;
-import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 @CustomLog
 @Named
 public class ContractCallService {
 
     static final String GAS_METRIC = "hedera.mirror.web3.call.gas";
-    private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
 
     private final BinaryGasEstimator binaryGasEstimator;
     private final MeterProvider<Counter> gasCounter;
     private final Store store;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
-    private final RecordFileRepository recordFileRepository;
+    private final RecordFileService recordFileService;
 
     public ContractCallService(
             MeterRegistry meterRegistry,
             BinaryGasEstimator binaryGasEstimator,
             Store store,
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
-            RecordFileRepository recordFileRepository) {
+            RecordFileService recordFileService) {
         this.binaryGasEstimator = binaryGasEstimator;
         this.gasCounter = Counter.builder(GAS_METRIC)
                 .description("The amount of gas consumed by the EVM")
                 .withRegistry(meterRegistry);
         this.store = store;
         this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
-        this.recordFileRepository = recordFileRepository;
+        this.recordFileService = recordFileService;
     }
 
     public String processCall(final CallServiceParameters params) {
@@ -121,12 +115,11 @@ public class ContractCallService {
     private HederaEvmTransactionProcessingResult getCallTxnResult(CallServiceParameters params,
                                                                   HederaEvmTxProcessor.TracerType tracerType,
                                                                   ContractCallContext ctx) throws MirrorEvmTransactionException {
-        BlockType block = params.getBlock();
         // if we have historical call then set corresponding file record
-        if (block != BlockType.LATEST) {
-            var recordFileOptional =
-                    findRecordFileByBlock(block).orElseThrow(BlockNumberNotFoundException::new);
-            ctx.setRecordFile(recordFileOptional);
+        if (params.getBlock() != BlockType.LATEST) {
+            ctx.setRecordFile(recordFileService
+                    .findRecordFileByBlock(params.getBlock())
+                    .orElseThrow(BlockNumberNotFoundException::new));
         }
         // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
         // if the call is historical
@@ -191,20 +184,5 @@ public class ContractCallService {
         gasCounter
                 .withTags("type", callType.toString(), "iteration", String.valueOf(iterations))
                 .increment(gasUsed);
-    }
-
-    private Optional<RecordFile> findRecordFileByBlock(BlockType block) {
-        if (block == BlockType.EARLIEST) {
-            return recordFileRepository.findEarliest();
-        }
-
-        long latestBlock = recordFileRepository
-                .findLatestIndex()
-                .orElseThrow(() -> new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER));
-
-        if (block.number() > latestBlock) {
-            throw new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER);
-        }
-        return recordFileRepository.findByIndex(block.number());
     }
 }

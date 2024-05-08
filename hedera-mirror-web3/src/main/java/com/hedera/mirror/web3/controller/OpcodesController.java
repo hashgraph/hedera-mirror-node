@@ -16,12 +16,20 @@
 
 package com.hedera.mirror.web3.controller;
 
-import com.google.protobuf.ByteString;
+import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.web3.evm.utils.TransactionUtils;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.RecordFileService;
+import com.hedera.mirror.web3.service.TransactionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.OpcodesResponse;
@@ -30,23 +38,22 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.github.bucket4j.Bucket;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.web.bind.annotation.*;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
-import static com.hedera.mirror.web3.evm.utils.TransactionUtils.isValidEthHash;
-import static com.hedera.mirror.web3.evm.utils.TransactionUtils.isValidTransactionId;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @CustomLog
 @RestController
@@ -55,13 +62,14 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 @ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
 class OpcodesController {
 
+    private final TransactionService transactionService;
     private final ContractCallService contractCallService;
     private final Bucket bucket;
-    private final EthereumTransactionRepository transactionRepository;
+    private final RecordFileService recordFileService;
 
     @CrossOrigin(origins = "*")
     @PostMapping(value = "/{transactionIdOrHash}/opcodes")
-    OpcodesResponse opcodes(@PathVariable String transactionIdOrHash,
+    OpcodesResponse opcodes(@PathVariable TransactionIdOrHashParameter transactionIdOrHash,
                             @RequestParam(required = false, defaultValue = "true") boolean stack,
                             @RequestParam(required = false, defaultValue = "false") boolean memory,
                             @RequestParam(required = false, defaultValue = "false") boolean storage) {
@@ -79,7 +87,6 @@ class OpcodesController {
                         .map(EntityIdUtils::contractIdFromEvmAddress)
                         .map(ContractID::toString)
                         .orElse(null))
-                // TODO: Not sure if this is the correct way to get the address here
                 .address(result.transactionProcessingResult()
                         .getRecipient()
                         .map(Address::toHexString)
@@ -116,37 +123,77 @@ class OpcodesController {
                 .build();
     }
 
-    private CallServiceParameters constructServiceParameters(@NonNull String transactionIdOrHash) {
-        EthereumTransaction ethTransaction;
-        if (isValidEthHash(transactionIdOrHash)) {
-            // TODO: Need to get the transaction by hash here (not sure if this is the correct way to do it)
-            final var transactionHash = ByteString.fromHex(transactionIdOrHash).toByteArray();
-            ethTransaction = transactionRepository
-                    .findByHash(transactionHash)
+    private CallServiceParameters constructServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
+        final Bytes receiverAddress;
+        final long consensusTimestamp;
+
+        if (transactionIdOrHash.isHash()) {
+            final EthereumTransaction ethTransaction = transactionService
+                    .findByEthHash(transactionIdOrHash.hash().toByteArray())
                     .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
-        } else if (isValidTransactionId(transactionIdOrHash)) {
-            // TODO: Need to get the transaction by ID here (not sure if this is the correct way to do it)
-            final var transactionId = TransactionUtils.parseTransactionId(transactionIdOrHash);
-            final var transactionValidStart = Objects.requireNonNull(transactionId.transactionValidStart());
-            ethTransaction = transactionRepository
-                    .findById(convertToNanosMax(transactionValidStart.seconds(), transactionValidStart.nanos()))
+            receiverAddress = Bytes.of(ethTransaction.getToAddress());
+            consensusTimestamp = ethTransaction.getConsensusTimestamp();
+        } else if (transactionIdOrHash.isTransactionId()) {
+            final Transaction transaction = transactionService
+                    .findByTransactionId(transactionIdOrHash.transactionID())
                     .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+            receiverAddress = Bytes.of(toEvmAddress(transaction.getEntityId()));
+            consensusTimestamp = transaction.getConsensusTimestamp();
         } else {
             throw new IllegalArgumentException("Invalid transaction ID or hash");
         }
 
+        final RecordFile recordFile = recordFileService.findRecordFileForTimestamp(consensusTimestamp)
+                .orElseThrow(() -> new IllegalArgumentException("Record file with transaction not found"));
+
+        final RecordItem recordItem = recordFile.getRecordItem(consensusTimestamp)
+                .orElseThrow(() -> new IllegalArgumentException("Record item for transaction not found"));
+
         return CallServiceParameters.builder()
+                .sender(new HederaEvmAccount(getSenderAddress(recordItem)))
+                .receiver(Address.fromHexString(receiverAddress.toHexString()))
+                .gas(getGasLimit(recordItem))
+                .value(getValue(recordItem).longValue())
+                .callData(getCallData(recordItem))
                 .isStatic(false)
                 .callType(ETH_CALL)
                 .isEstimate(false)
-                // TODO: Need to get block number somehow from the fetched transaction above
-                .block(BlockType.LATEST)
-                // TODO: Need to get sender address somehow from the fetched transaction above
-                .sender(new HederaEvmAccount(Address.ZERO))
-                .receiver(Address.fromHexString(Bytes.of(ethTransaction.getToAddress()).toHexString()))
-                .gas(ethTransaction.getGasLimit())
-                .value(new BigInteger(ethTransaction.getValue()).longValue())
-                .callData(Bytes.of(ethTransaction.getCallData()))
+                .block(BlockType.of(recordFile.getIndex().toString()))
                 .build();
+    }
+
+    private Long getGasLimit(RecordItem recordItem) {
+        return Optional.ofNullable(recordItem.getEthereumTransaction())
+                .map(EthereumTransaction::getGasLimit)
+                .orElse(0L);
+    }
+
+    private BigInteger getValue(RecordItem recordItem) {
+        return Optional.ofNullable(recordItem.getEthereumTransaction())
+                .map(EthereumTransaction::getValue)
+                .map(BigInteger::new)
+                .orElse(BigInteger.ZERO);
+    }
+
+    private Bytes getCallData(RecordItem recordItem) {
+        return Optional.ofNullable(recordItem.getEthereumTransaction())
+                .map(EthereumTransaction::getCallData)
+                .map(Bytes::of)
+                .orElse(Bytes.EMPTY);
+    }
+
+    private Address getSenderAddress(RecordItem recordItem) {
+        final EntityId senderId;
+        if (recordItem.getTransactionRecord().hasContractCreateResult()
+                && recordItem.getTransactionRecord().getContractCreateResult().hasSenderId()) {
+            senderId = EntityId.of(recordItem.getTransactionRecord().getContractCreateResult().getSenderId());
+        } else if (recordItem.getTransactionRecord().hasContractCallResult()
+                && recordItem.getTransactionRecord().getContractCallResult().hasSenderId()) {
+            senderId = EntityId.of(recordItem.getTransactionRecord().getContractCallResult().getSenderId());
+        } else {
+            senderId = recordItem.getPayerAccountId();
+        }
+
+        return Address.fromHexString(Bytes.of(DomainUtils.toEvmAddress(senderId)).toHexString());
     }
 }

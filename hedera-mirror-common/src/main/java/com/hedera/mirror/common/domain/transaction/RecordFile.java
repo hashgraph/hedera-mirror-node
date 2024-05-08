@@ -28,6 +28,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Transient;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -139,6 +140,13 @@ public class RecordFile implements StreamFile<RecordItem> {
     @JsonIgnore
     public StreamType getType() {
         return StreamType.RECORD;
+    }
+
+    @JsonIgnore
+    public Optional<RecordItem> getRecordItem(long consensusTimestamp) {
+        return items.stream()
+                .filter(item -> item.getConsensusTimestamp() == consensusTimestamp)
+                .findFirst();
     }
 
     private Version hapiVersion() {

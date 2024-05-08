@@ -16,13 +16,12 @@
 
 package com.hedera.mirror.web3.evm.utils;
 
-import com.hedera.hapi.node.base.AccountID;
-import com.hedera.hapi.node.base.Timestamp;
-import com.hedera.hapi.node.base.TransactionID;
-import lombok.experimental.UtilityClass;
-
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class TransactionUtils {
@@ -67,14 +66,14 @@ public class TransactionUtils {
         }
 
         return TransactionID.newBuilder()
-                .accountID(AccountID.newBuilder()
-                        .shardNum(shard)
-                        .realmNum(realm)
-                        .accountNum(num)
+                .setAccountID(AccountID.newBuilder()
+                        .setShardNum(shard)
+                        .setRealmNum(realm)
+                        .setAccountNum(num)
                         .build())
-                .transactionValidStart(Timestamp.newBuilder()
-                        .seconds(seconds)
-                        .nanos(nanos)
+                .setTransactionValidStart(Timestamp.newBuilder()
+                        .setSeconds(seconds)
+                        .setNanos(nanos)
                         .build())
                 .build();
     }

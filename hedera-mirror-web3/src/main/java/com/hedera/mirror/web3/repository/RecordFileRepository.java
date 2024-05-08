@@ -52,4 +52,7 @@ public interface RecordFileRepository extends PagingAndSortingRepository<RecordF
             unless = "#result == null")
     @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)
     Optional<RecordFile> findLatest();
+
+    @Query("select r from RecordFile r where r.consensusStart <= ?1 and r.consensusEnd >= ?1")
+    Optional<RecordFile> findByTimestamp(long timestamp);
 }
