@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.config;
 
-import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_SUFFIX;
+import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_PREFIX;
 
 import jakarta.inject.Named;
 import lombok.Data;
@@ -36,8 +36,8 @@ public class Web3Properties {
     private boolean enabled = false;
 
     public String getBaseUrl() {
-        if (baseUrl != null && !baseUrl.endsWith(URL_SUFFIX)) {
-            return baseUrl + URL_SUFFIX;
+        if (baseUrl != null && !baseUrl.endsWith(URL_PREFIX)) {
+            return baseUrl + URL_PREFIX;
         }
         return baseUrl;
     }

@@ -36,7 +36,7 @@ import org.springframework.web.client.HttpClientErrorException;
 @Validated
 public class RestProperties {
 
-    public static final String URL_SUFFIX = "/api/v1";
+    public static final String URL_PREFIX = "/api/v1";
 
     @NotBlank
     private String baseUrl;
@@ -59,8 +59,8 @@ public class RestProperties {
     }
 
     public String getBaseUrl() {
-        if (baseUrl != null && !baseUrl.endsWith(URL_SUFFIX)) {
-            return baseUrl + URL_SUFFIX;
+        if (baseUrl != null && !baseUrl.endsWith(URL_PREFIX)) {
+            return baseUrl + URL_PREFIX;
         }
         return baseUrl;
     }
