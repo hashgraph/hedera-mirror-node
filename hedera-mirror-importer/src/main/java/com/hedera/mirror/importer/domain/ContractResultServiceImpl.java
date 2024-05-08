@@ -176,7 +176,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(
                         EntityId.of(action.getRecipientContract()));
                 case TARGETED_ADDRESS -> contractAction.setRecipientAddress(
-                        action.getTargetedAddress().toByteArray());
+                        DomainUtils.toBytes(action.getTargetedAddress()));
                 default -> {
                     // ContractCreate transaction has no recipient
                 }

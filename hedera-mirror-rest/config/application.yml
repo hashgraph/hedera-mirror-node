@@ -68,6 +68,15 @@ hedera:
         maxTransactionsTimestampRange: 60d
         strictTimestampParam: true
         topicMessageLookup: false
+      redis:
+        commandTimeout: 10000
+        connectTimeout: 10000
+        enabled: true
+        maxBackoff: 128000
+        maxMemory: 250Mb
+        maxMemoryPolicy: allkeys-lfu
+        maxRetriesPerRequest: 1
+        uri: redis://127.0.0.1:6379
       response:
         compression: true
         headers:

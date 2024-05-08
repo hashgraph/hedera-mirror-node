@@ -256,7 +256,7 @@ public class RecordItemBuilder {
         ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
                 .setAmount(5_000L)
                 .setContractID(contractId)
-                .setFunctionParameters(bytes(64))
+                .setFunctionParameters(nonZeroBytes(64))
                 .setGas(10_000L);
 
         return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
@@ -847,6 +847,16 @@ public class RecordItemBuilder {
 
     public ByteString bytes(int length) {
         byte[] bytes = randomBytes(length);
+        return ByteString.copyFrom(bytes);
+    }
+
+    public ByteString nonZeroBytes(int length) {
+        byte[] bytes = randomBytes(length);
+        for (int i = 0; i < length; i++) {
+            if (bytes[i] == 0) {
+                bytes[i] = (byte) random.nextInt(1, Byte.MAX_VALUE);
+            }
+        }
         return ByteString.copyFrom(bytes);
     }
 

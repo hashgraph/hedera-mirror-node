@@ -3,7 +3,7 @@ name: Release Production
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 permissions:
   contents: read
@@ -19,38 +19,36 @@ jobs:
   image:
     strategy:
       matrix:
-        module:
-          [
-            graphql,
-            grpc,
-            importer,
-            monitor,
-            rest,
-            rest-java,
-            rest-monitor,
-            rosetta,
-            test,
-            web3,
-          ]
+        project:
+          - graphql
+          - grpc
+          - importer
+          - monitor
+          - rest
+          - rest-java
+          - rest-monitor
+          - rosetta
+          - test
+          - web3
     env:
-      CONTEXT: hedera-mirror-${{ matrix.module }}
-      IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
+      CONTEXT: hedera-mirror-${{ matrix.project }}
+      IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.project }}
     name: Publish images
     runs-on: [self-hosted, linux, large, ephemeral]
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
 
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
       - name: Custom monitor path
-        if: matrix.module == 'rest-monitor'
+        if: matrix.project == 'rest-monitor'
         run: echo "CONTEXT=hedera-mirror-rest/monitoring" >> $GITHUB_ENV
 
       - name: Install JDK
@@ -74,8 +72,8 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build
-        if: matrix.module != 'rest' && matrix.module != 'rest-monitor' && matrix.module != 'rosetta'
-        run: ./gradlew build -x test
+        if: matrix.project != 'rest' && matrix.project != 'rest-monitor' && matrix.project != 'rosetta'
+        run: ./gradlew :${{matrix.project}}:build -x test
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
@@ -93,7 +91,7 @@ jobs:
           platforms: linux/amd64, linux/arm64
           provenance: false
           push: true
-          tags: ${{env.IMAGE}}:${{env.TAG}},${{env.IMAGE}}:latest
+          tags: "${{env.IMAGE}}:${{env.TAG}},${{env.IMAGE}}:latest"
 
   chart:
     name: Publish charts
@@ -103,12 +101,12 @@ jobs:
       contents: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
 
       - name: Publish helm chart
         uses: stefanprodan/helm-gh-pages@0ad2bb377311d61ac04ad9eb6f252fb68e207260 # v1.7.0
@@ -129,12 +127,12 @@ jobs:
       MPDEV: "/home/runner/mpdev"
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2.7.0
+        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # v4.1.4
+        uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
 
       - name: Authenticate to Google Cloud
         id: google-auth
