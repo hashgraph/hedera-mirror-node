@@ -98,3 +98,11 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Acceptance Test Labels
+*/}}
+{{- define "hedera-mirror-acceptance.labels" -}}
+{{ include "hedera-mirror.labels" . }}
+test-trigger: rest-trigger
+{{- end -}}
