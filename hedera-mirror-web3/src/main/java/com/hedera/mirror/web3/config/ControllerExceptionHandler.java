@@ -16,6 +16,15 @@
 
 package com.hedera.mirror.web3.config;
 
+import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
+import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
+import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
+import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -31,9 +40,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ServerWebInputException;
-
-import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
-import static org.springframework.http.HttpStatus.*;
 
 @CustomLog
 @ControllerAdvice
@@ -68,6 +74,13 @@ public class ControllerExceptionHandler {
     private GenericErrorResponse inputValidationError(final InvalidInputException e) {
         log.warn("Input validation error: {}", e.getMessage());
         return new GenericErrorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(BAD_REQUEST)
+    private GenericErrorResponse invalidArgumentError(final IllegalArgumentException e) {
+        log.warn("Invalid argument error: {}", e.getMessage());
+        return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler
