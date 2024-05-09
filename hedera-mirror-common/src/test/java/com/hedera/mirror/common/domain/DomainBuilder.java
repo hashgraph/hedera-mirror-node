@@ -1081,6 +1081,16 @@ public class DomainBuilder {
         return id.incrementAndGet();
     }
 
+    public byte[] nonZeroBytes(int length) {
+        var bytes = bytes(length);
+        for (int i = 0; i < length; i++) {
+            if (bytes[i] == 0) {
+                bytes[i] = (byte) random.nextInt(1, Byte.MAX_VALUE);
+            }
+        }
+        return bytes;
+    }
+
     public String text(int characters) {
         return RandomStringUtils.randomAlphanumeric(characters);
     }
