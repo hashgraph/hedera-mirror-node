@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.controller;
 
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -37,6 +36,7 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.github.bucket4j.Bucket;
 import java.math.BigInteger;
@@ -123,20 +123,17 @@ class OpcodesController {
     }
 
     private CallServiceParameters constructServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
-        final Bytes receiverAddress;
         final long consensusTimestamp;
 
         if (transactionIdOrHash.isHash()) {
             final EthereumTransaction ethTransaction = transactionService
                     .findByEthHash(transactionIdOrHash.hash().toByteArray())
                     .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
-            receiverAddress = Bytes.of(ethTransaction.getToAddress());
             consensusTimestamp = ethTransaction.getConsensusTimestamp();
         } else if (transactionIdOrHash.isTransactionId()) {
             final Transaction transaction = transactionService
                     .findByTransactionId(transactionIdOrHash.transactionID())
                     .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
-            receiverAddress = Bytes.of(toEvmAddress(transaction.getEntityId()));
             consensusTimestamp = transaction.getConsensusTimestamp();
         } else {
             throw new IllegalArgumentException("Invalid transaction ID or hash");
@@ -150,7 +147,7 @@ class OpcodesController {
 
         return CallServiceParameters.builder()
                 .sender(new HederaEvmAccount(getSenderAddress(recordItem)))
-                .receiver(Address.fromHexString(receiverAddress.toHexString()))
+                .receiver(getReceiverAddress(recordItem))
                 .gas(getGasLimit(recordItem))
                 .value(getValue(recordItem).longValue())
                 .callData(getCallData(recordItem))
@@ -164,21 +161,51 @@ class OpcodesController {
     private Long getGasLimit(RecordItem recordItem) {
         return Optional.ofNullable(recordItem.getEthereumTransaction())
                 .map(EthereumTransaction::getGasLimit)
-                .orElse(0L);
+                .orElse(getGasLimit(recordItem.getTransactionBody()));
+    }
+
+    private Long getGasLimit(TransactionBody transactionBody) {
+        if (transactionBody.hasContractCall()) {
+            return transactionBody.getContractCall().getGas();
+        }
+        if (transactionBody.hasContractCreateInstance()) {
+            return transactionBody.getContractCreateInstance().getGas();
+        }
+        return 0L;
     }
 
     private BigInteger getValue(RecordItem recordItem) {
         return Optional.ofNullable(recordItem.getEthereumTransaction())
                 .map(EthereumTransaction::getValue)
                 .map(BigInteger::new)
-                .orElse(BigInteger.ZERO);
+                .orElse(getValue(recordItem.getTransactionBody()));
+    }
+
+    private BigInteger getValue(TransactionBody transactionBody) {
+        if (transactionBody.hasContractCall()) {
+            return BigInteger.valueOf(transactionBody.getContractCall().getAmount());
+        }
+        if (transactionBody.hasContractCreateInstance()) {
+            return BigInteger.valueOf(transactionBody.getContractCreateInstance().getInitialBalance());
+        }
+        return BigInteger.ZERO;
     }
 
     private Bytes getCallData(RecordItem recordItem) {
         return Optional.ofNullable(recordItem.getEthereumTransaction())
                 .map(EthereumTransaction::getCallData)
                 .map(Bytes::of)
-                .orElse(Bytes.EMPTY);
+                .orElse(getCallData(recordItem.getTransactionBody()));
+    }
+
+    private Bytes getCallData(TransactionBody transactionBody) {
+        if (transactionBody.hasContractCall()) {
+            return Bytes.of(transactionBody.getContractCall().getFunctionParameters().toByteArray());
+        }
+        if (transactionBody.hasContractCreateInstance()) {
+            return Bytes.of(transactionBody.getContractCreateInstance().getConstructorParameters().toByteArray());
+        }
+        return Bytes.EMPTY;
     }
 
     private Address getSenderAddress(RecordItem recordItem) {
@@ -194,5 +221,22 @@ class OpcodesController {
         }
 
         return Address.fromHexString(Bytes.of(DomainUtils.toEvmAddress(senderId)).toHexString());
+    }
+
+    private Address getReceiverAddress(RecordItem recordItem) {
+        return Optional.ofNullable(recordItem.getEthereumTransaction())
+                .map(EthereumTransaction::getToAddress)
+                .map(Bytes::of)
+                .map(Bytes::toHexString)
+                .map(Address::fromHexString)
+                .orElse(getReceiverAddress(recordItem.getTransactionBody()));
+    }
+
+    private Address getReceiverAddress(TransactionBody transactionBody) {
+        if (transactionBody.hasContractCall()) {
+            final byte[] evmAddress = transactionBody.getContractCall().getContractID().getEvmAddress().toByteArray();
+            return Address.fromHexString(Bytes.of(evmAddress).toHexString());
+        }
+        return Address.ZERO;
     }
 }
