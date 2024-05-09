@@ -154,9 +154,8 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
             TableField<NftAllowanceRecord, Long> primarySortField) {
 
         // No secondary condition if there is no primary parameter bound or no token parameter, or the primary sort
-        // parameter's operator is EQ. Note
-        // that
-        // it's guaranteed that there must be a primary sort parameter when token parameter exists
+        // parameter's operator is EQ. Note that it's guaranteed that there must be
+        // a primary sort parameter when token parameter exists except in case of optimized Range
 
         if (primary == null || token == null || primary.operator() == RangeOperator.EQ) {
             return noCondition();
@@ -167,6 +166,8 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
 
         if (operator == RangeOperator.GT || operator == RangeOperator.GTE) {
             value += 1L;
+        } else if (operator == RangeOperator.LT || operator == RangeOperator.LTE) {
+            value -= 1L;
         }
         return getCondition(primarySortField, operator, value);
     }
