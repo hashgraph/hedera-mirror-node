@@ -16,13 +16,6 @@
 
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.*;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -33,11 +26,31 @@ import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.Id;
-import com.hederahashgraph.api.proto.java.*;
-import java.util.Collections;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Supplier;
+
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.synthAccessorFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * Copied Logic type from hedera-services. Differences with the original:
  * 1. Use abstraction for the state by introducing {@link Store} interface
@@ -54,6 +67,9 @@ public abstract class AbstractAutoCreationLogic {
     private final FeeCalculator feeCalculator;
     private final EvmProperties evmProperties;
     private final SyntheticTxnFactory syntheticTxnFactory;
+
+    private static final Supplier<Long> zeroLongSupplier = () -> 0L;
+    private static final Supplier<Integer> zeroIntegerSupplier = () -> 0;
 
     protected AbstractAutoCreationLogic(
             final FeeCalculator feeCalculator,
@@ -73,14 +89,16 @@ public abstract class AbstractAutoCreationLogic {
      * <p><b>IMPORTANT:</b> If this change was to be part of a zero-sum balance change list, then
      * after those changes are applied atomically, the returned fee must be given to the funding account!
      *
-     * @param change a triggering change with unique alias
+     * @param change  a triggering change with unique alias
+     * @param changes list of all changes need to construct tokenAliasMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
             final BalanceChange change,
             final Timestamp timestamp,
             final Store store,
-            final EntityAddressSequencer ids) {
+            final EntityAddressSequencer ids,
+            final List<BalanceChange> changes) {
         if (change.isForToken() && !evmProperties.isLazyCreationEnabled()) {
             return Pair.of(NOT_SUPPORTED, 0L);
         }
@@ -90,12 +108,16 @@ public abstract class AbstractAutoCreationLogic {
         }
 
         TransactionBody.Builder syntheticCreation;
+        // This map is used to count number of maxAutoAssociations needed on auto created account
+        final var tokenAliasMap = analyzeTokenTransferCreations(changes);
+        final var maxAutoAssociations =
+                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
         final var isAliasEVMAddress = alias.size() == EVM_ADDRESS_SIZE;
         if (isAliasEVMAddress) {
-            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L);
+            syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L, maxAutoAssociations);
         } else {
             final var key = asPrimitiveKeyUnchecked(alias);
-            syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, 0);
+            syntheticCreation = syntheticTxnFactory.createAccount(alias, key, 0L, maxAutoAssociations);
         }
 
         var fee = autoCreationFeeFor(syntheticCreation, timestamp);
@@ -109,17 +131,17 @@ public abstract class AbstractAutoCreationLogic {
                 0L,
                 Id.fromGrpcAccount(newId),
                 0L,
-                () -> 0L,
+                zeroLongSupplier,
                 false,
-                () -> 0L,
+                zeroLongSupplier,
                 0L,
                 null,
-                0,
+                maxAutoAssociations,
                 Collections::emptySortedMap,
                 Collections::emptySortedMap,
                 Collections::emptySortedSet,
-                () -> 0,
-                () -> 0,
+                zeroIntegerSupplier,
+                zeroIntegerSupplier,
                 0,
                 0L,
                 false,
@@ -154,5 +176,26 @@ public abstract class AbstractAutoCreationLogic {
         final var accessor = synthAccessorFor(cryptoCreateTxn);
         final var fees = feeCalculator.computeFee(accessor, EMPTY_KEY, timestamp);
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
+    }
+
+    private Map<ByteString, Set<Id>> analyzeTokenTransferCreations(final List<BalanceChange> changes) {
+        final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
+        for (final var change : changes) {
+            if (change.isForHbar()) {
+                continue;
+            }
+            var alias = change.getNonEmptyAliasIfPresent();
+
+            if (alias != null) {
+                if (tokenAliasMap.containsKey(alias)) {
+                    final var oldSet = tokenAliasMap.get(alias);
+                    oldSet.add(change.getToken());
+                    tokenAliasMap.put(alias, oldSet);
+                } else {
+                    tokenAliasMap.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
+                }
+            }
+        }
+        return tokenAliasMap;
     }
 }

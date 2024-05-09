@@ -147,18 +147,21 @@ getCursorConditions() {
   local pctPerCursor=$(echo "scale=10; 100 / ${ASYNC_TABLE_SPLITS}" | bc)
   local totalPct=0
   local -n cursors=$1 # Init array to hold cursor definitions
+  log "Will split data into ${pctPerCursor}% chunks"
   local stats=$(PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q --csv -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}" -c "${query}")
-
   while IFS="," read -r pct_of_total lower_bound upper_bound; do
     upperBound=$((upper_bound > upperBound ? upper_bound : upperBound))
-    local groupRange=$((upperBound - lower_bound))
-    local rangeToTake=$(echo "scale=10; (${pctPerCursor} / 100) * ${groupRange}" | bc)
     totalPct=$(echo "(${totalPct} + ${pct_of_total})" | bc)
+    local groupRange=$((upperBound - lower_bound))
+    local rangeToTake=$(echo "scale=10; ${groupRange} / (${totalPct} / ${pctPerCursor})" | bc)
     while (($(echo "${totalPct} >= ${pctPerCursor}" | bc) )); do
-      totalPct=$(echo "${totalPct} - ${pctPerCursor}" | bc)
       cursorLowerBound=$(echo "scale=0; (${upperBound} - ${rangeToTake}) / 1" | bc)
+      if (( $(echo "${cursorLowerBound} < ${lower_bound}" | bc) )); then
+        break
+      fi
+      totalPct=$(echo "${totalPct} - ${pctPerCursor}" | bc)
       cursors+=("\"(${cursorLowerBound},${upperBound}]\"")
-      upperBound=$cursorLowerBound
+      upperBound="${cursorLowerBound}"
     done
   done <<< "${stats}"
 

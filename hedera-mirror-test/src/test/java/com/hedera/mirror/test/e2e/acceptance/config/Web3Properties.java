@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.config;
 
-import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_SUFFIX;
+import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_PREFIX;
 
 import jakarta.inject.Named;
 import lombok.Data;
@@ -36,8 +36,8 @@ public class Web3Properties {
     private boolean enabled = false;
 
     public String getBaseUrl() {
-        if (baseUrl != null && !baseUrl.endsWith(URL_SUFFIX)) {
-            return baseUrl + URL_SUFFIX;
+        if (baseUrl != null && !baseUrl.endsWith(URL_PREFIX)) {
+            return baseUrl + URL_PREFIX;
         }
         return baseUrl;
     }

@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.test.e2e.acceptance.client;
 
+import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_PREFIX;
 import static org.awaitility.Awaitility.await;
 
 import com.google.common.base.Stopwatch;
@@ -49,6 +50,7 @@ import com.hedera.mirror.rest.model.TokensResponse;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.config.RestJavaProperties;
 import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
 import com.hedera.mirror.test.e2e.acceptance.props.Order;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
@@ -74,15 +76,20 @@ public class MirrorNodeClient {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final RestClient restClient;
+    private final RestClient restJavaClient;
     private final RetryTemplate retryTemplate;
     private final RestClient web3Client;
 
     public MirrorNodeClient(
             AcceptanceTestProperties acceptanceTestProperties,
             RestClient.Builder restClientBuilder,
+            RestJavaProperties restJavaProperties,
             Web3Properties web3Properties) {
         this.acceptanceTestProperties = acceptanceTestProperties;
         this.restClient = restClientBuilder.build();
+        this.restJavaClient = StringUtils.isBlank(restJavaProperties.getBaseUrl())
+                ? restClient
+                : restClientBuilder.baseUrl(restJavaProperties.getBaseUrl()).build();
         this.web3Client = StringUtils.isBlank(web3Properties.getBaseUrl())
                 ? restClient
                 : restClientBuilder.baseUrl(web3Properties.getBaseUrl()).build();
@@ -192,7 +199,7 @@ public class MirrorNodeClient {
                 accountId,
                 ownerId,
                 tokenId);
-        return callRestEndpoint(
+        return callRestJavaEndpoint(
                 "/accounts/{accountId}/allowances/nfts?token.id={tokenId}&account.id={ownerId}&owner=false",
                 NftAllowancesResponse.class,
                 accountId,
@@ -206,7 +213,7 @@ public class MirrorNodeClient {
                 accountId,
                 spenderId,
                 tokenId);
-        return callRestEndpoint(
+        return callRestJavaEndpoint(
                 "/accounts/{accountId}/allowances/nfts?token.id={tokenId}&account.id={spenderId}&owner=true",
                 NftAllowancesResponse.class,
                 accountId,
@@ -366,16 +373,31 @@ public class MirrorNodeClient {
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
-        return retryTemplate.execute(
-                x -> restClient.get().uri(uri, uriVariables).retrieve().body(classType));
+        String normalizedUri = normalizeUri(uri);
+        return retryTemplate.execute(x ->
+                restClient.get().uri(normalizedUri, uriVariables).retrieve().body(classType));
+    }
+
+    private <T> T callRestJavaEndpoint(String uri, Class<T> classType, Object... uriVariables) {
+        String normalizedUri = normalizeUri(uri);
+        return retryTemplate.execute(x ->
+                restJavaClient.get().uri(normalizedUri, uriVariables).retrieve().body(classType));
     }
 
     private <T> T callRestEndpointNoRetry(String uri, Class<T> classType, Object... uriVariables) {
-        return restClient.get().uri(uri, uriVariables).retrieve().body(classType);
+        return restClient.get().uri(normalizeUri(uri), uriVariables).retrieve().body(classType);
     }
 
     private <T, R> T callPostRestEndpoint(String uri, Class<T> classType, R request) {
         return retryTemplate.execute(
                 x -> web3Client.post().uri(uri).body(request).retrieve().body(classType));
+    }
+
+    private String normalizeUri(String uri) {
+        if (uri == null || !uri.startsWith(URL_PREFIX)) {
+            return uri;
+        }
+
+        return uri.substring(URL_PREFIX.length());
     }
 }

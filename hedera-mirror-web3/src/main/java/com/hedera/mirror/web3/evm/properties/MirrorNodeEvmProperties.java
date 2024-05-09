@@ -170,6 +170,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(100)
     private long rateLimit = 500;
 
+    @Getter
+    @Min(1)
+    private int feesTokenTransferUsageMultiplier = 380;
+
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
     }
@@ -298,6 +302,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         } else {
             return EVM_VERSION; // Return default version if no entry matches the block number
         }
+    }
+
+    public int feesTokenTransferUsageMultiplier() {
+        return feesTokenTransferUsageMultiplier;
     }
 
     @Getter

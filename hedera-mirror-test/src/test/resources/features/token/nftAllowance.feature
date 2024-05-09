@@ -1,4 +1,4 @@
-@nftallowance @allowance @fullsuite @critical @release @acceptance
+@nftallowance @allowance @fullsuite @critical @release
 Feature: Account NFT Allowance Coverage Feature
 
   Scenario Outline: Validate approval NftTransfer affect on NftAllowance
