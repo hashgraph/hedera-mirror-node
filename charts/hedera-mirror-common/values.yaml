@@ -437,13 +437,19 @@ traefik:
     type: ClusterIP
 
 zfs:
-  analytics:
-    enabled: false
   coordinator:
     initialDiskSize: 300GB
-  crd:
-    volumeSnapshot: false
   enabled: false
+  engines:
+    local:
+      lvm:
+        enabled: false
+      zfs:
+        enabled: true
+    replicated:
+      mayastor:
+        enabled: false
+  # ZFS daemonset bootstrap configuration
   init:
     arcSizeGb: 2
     diskPrefix: citus
@@ -456,6 +462,15 @@ zfs:
     serviceAccount:
       name: zfs-service-account
       iAmName: sa-name@project.iam.gserviceaccount.com
+  lvm-localpv:
+    enabled: false
+  mayastor:
+    enabled: false
+  openebs-crds:
+    csi:
+      volumeSnapshots:
+        enabled: false
+        keep: true  # Keep zfs resources when chart is uninstalled
   parameters:
     compression: zstd-6
     fstype: zfs
@@ -464,47 +479,44 @@ zfs:
   priorityClassName: critical
   worker:
     initialDiskSize: 3200GB
-  zfsController:
-    priorityClass:
-      create: true
-  zfsNode:
-    additionalVolumes:
-      node:
-        hostPath:
-          path: /
-      scripts:
-        configMap:
-          name: "{{ .Release.Name }}-zfs-init"
-          defaultMode: 0744
-    initContainers:
-      label-wait:
-        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
-        imagePullPolicy: IfNotPresent
-        command: ["/scripts/label-wait.sh"]
-        env:
-          - name: ROOT_MOUNT_DIR
-            value: /node
-        securityContext:
-          privileged: true
-        volumeMounts:
-          - name: node
-            mountPath: /node
-          - name: scripts
-            mountPath: /scripts
-    nodeSelector:
-      csi-type: zfs
-    podLabels:
-      component: openebs-zfs-node
-    priorityClass:
-      create: true
-    tolerations:
-      - effect: NoSchedule
-        key: zfs
-        operator: Equal
-        value: "true"
-  zfsPlugin:
-    image:
-      registry: gcr.io/
-      repository: mirrornode/zfs-driver
-      pullPolicy: IfNotPresent
-      tag: 2.4.1-HEDERA
+  zfs-localpv:
+    analytics:
+      enabled: false
+    zfsController:
+      priorityClass:
+        create: true
+    zfsNode:
+      additionalVolumes:
+        node:
+          hostPath:
+            path: /
+        scripts:
+          configMap:
+            name: "{{ .Release.Name }}-zfs-init"
+            defaultMode: 0744
+      initContainers:
+        label-wait:
+          image: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+          imagePullPolicy: IfNotPresent
+          command: [ "/scripts/label-wait.sh" ]
+          env:
+            - name: ROOT_MOUNT_DIR
+              value: /node
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: node
+              mountPath: /node
+            - name: scripts
+              mountPath: /scripts
+      nodeSelector:
+        csi-type: zfs
+      podLabels:
+        component: openebs-zfs-node
+      priorityClass:
+        create: true
+      tolerations:
+        - effect: NoSchedule
+          key: zfs
+          operator: Equal
+          value: "true"
