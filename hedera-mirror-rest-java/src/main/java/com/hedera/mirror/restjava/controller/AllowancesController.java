@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.restjava.controller;
 
-import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
-
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
@@ -30,8 +27,6 @@ import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import java.util.LinkedHashMap;
-import java.util.List;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -41,6 +36,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+
+import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 
 @CustomLog
 @RequestMapping("/api/v1/accounts/{id}/allowances")
@@ -61,7 +62,7 @@ public class AllowancesController {
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(defaultValue = "true") boolean owner,
-            @RequestParam(name = TOKEN_ID, required = false) List<EntityIdRangeParameter> tokenId) {
+            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenId) {
 
         var builder = NftAllowanceRequest.builder()
                 .accountId(id)
