@@ -64,6 +64,7 @@ public class EthCallFeature extends AbstractEstimateFeature {
     private String create2ChildContractEntityId;
     private AccountId create2ChildContractAccountId;
     private ContractId create2ChildContractContractId;
+    private Object gasConsumedSelector;
 
     @Given("I successfully created a signer account with an EVM address alias")
     public void createAccountWithEvmAddressAlias() {
@@ -106,18 +107,20 @@ public class EthCallFeature extends AbstractEstimateFeature {
         assertThat(createAccountTransaction.getConsensusTimestamp()).isEqualTo(accountInfo.getCreatedTimestamp());
     }
 
-    @Given("I successfully create parent contract by ethereum transaction and verify gasConsumed")
+    @Given("I successfully create parent contract by ethereum transaction")
     public void createNewERCtestContract() {
         deployedParentContract = ethereumContractCreate(PARENT_CONTRACT);
         deployedParentContract.contractId().toSolidityAddress();
 
-        String txId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-
-        var successfulInitByteCode = Objects.requireNonNull(mirrorClient
+        gasConsumedSelector = Objects.requireNonNull(mirrorClient
                 .getContractInfo(deployedParentContract.contractId().toSolidityAddress())
                 .getBytecode());
+    }
 
-        verifyGasConsumed(txId, successfulInitByteCode);
+    @Then("the gasConsumed is correct")
+    public void verifyGasConsumedIsCorrect() {
+        String txId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        verifyGasConsumed(txId, gasConsumedSelector);
     }
 
     @Then("the mirror node REST API should return status {int} for the eth contract creation transaction")
@@ -141,7 +144,7 @@ public class EthCallFeature extends AbstractEstimateFeature {
         verifyContractExecutionResultsByTransactionId(true);
     }
 
-    @Given("I successfully call the child creation function using EIP-1559 ethereum transaction and verify gasConsumed")
+    @Given("I successfully call the child creation function using EIP-1559 ethereum transaction")
     public void callContract() {
         ContractFunctionParameters parameters = new ContractFunctionParameters().addUint256(BigInteger.valueOf(1000));
 
@@ -152,8 +155,7 @@ public class EthCallFeature extends AbstractEstimateFeature {
                 null,
                 EthTxData.EthTransactionType.EIP1559);
 
-        var selector = encodeDataToByteArray(PARENT_CONTRACT, CREATE_CHILD, BigInteger.valueOf(1000));
-        verifyGasConsumed(networkTransactionResponse.getTransactionIdStringNoCheckSum(), selector);
+        gasConsumedSelector = encodeDataToByteArray(PARENT_CONTRACT, CREATE_CHILD, BigInteger.valueOf(1000));
     }
 
     @Then("the mirror node REST API should verify the child creation ethereum transaction")
@@ -170,8 +172,7 @@ public class EthCallFeature extends AbstractEstimateFeature {
         verifyContractExecutionResultsByTransactionId(false);
     }
 
-    @Given(
-            "I call the parent contract to retrieve child's bytecode by Legacy ethereum transaction and verify gasConsumed")
+    @Given("I call the parent contract to retrieve child's bytecode by Legacy ethereum transaction")
     public void getChildBytecode() {
         var executeContractResult = executeEthereumTransaction(
                 deployedParentContract.contractId(),
@@ -184,12 +185,11 @@ public class EthCallFeature extends AbstractEstimateFeature {
                 executeContractResult.contractFunctionResult().getBytes(0);
         assertNotNull(childContractBytecodeFromParent);
 
-        var selector = encodeDataToByteArray(PARENT_CONTRACT, GET_BYE_CODE);
-        verifyGasConsumed(networkTransactionResponse.getTransactionIdStringNoCheckSum(), selector);
+        gasConsumedSelector = encodeDataToByteArray(PARENT_CONTRACT, GET_BYE_CODE);
     }
 
     @When(
-            "I call the parent contract evm address function with the bytecode of the child with EIP-2930 ethereum transaction and verify gasConsumed")
+            "I call the parent contract evm address function with the bytecode of the child with EIP-2930 ethereum transaction")
     public void getChildAddress() {
         ContractFunctionParameters parameters = new ContractFunctionParameters()
                 .addBytes(childContractBytecodeFromParent)
@@ -207,9 +207,8 @@ public class EthCallFeature extends AbstractEstimateFeature {
         create2ChildContractAccountId = AccountId.fromEvmAddress(create2ChildContractEvmAddress);
         create2ChildContractContractId = ContractId.fromEvmAddress(0, 0, create2ChildContractEvmAddress);
 
-        var selector = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 PARENT_CONTRACT, GET_ADDRESS, childContractBytecodeFromParent, BigInteger.valueOf(EVM_ADDRESS_SALT));
-        verifyGasConsumed(networkTransactionResponse.getTransactionIdStringNoCheckSum(), selector);
     }
 
     @And("I create a hollow account using CryptoTransfer of {int} to the child's evm address")
@@ -253,8 +252,7 @@ public class EthCallFeature extends AbstractEstimateFeature {
         }
     }
 
-    @When(
-            "I create a child contract by calling the parent contract function to deploy using CREATE2 with EIP-1559 and verify gasConsumed")
+    @When("I create a child contract by calling the parent contract function to deploy using CREATE2 with EIP-1559")
     public void createChildContractUsingCreate2() {
         ContractFunctionParameters parameters = new ContractFunctionParameters()
                 .addBytes(childContractBytecodeFromParent)
@@ -266,12 +264,11 @@ public class EthCallFeature extends AbstractEstimateFeature {
                 null,
                 EthTxData.EthTransactionType.EIP1559);
 
-        var selector = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 PARENT_CONTRACT,
                 CREATE_2_DEPLOY,
                 childContractBytecodeFromParent,
                 BigInteger.valueOf(EVM_ADDRESS_SALT));
-        verifyGasConsumed(networkTransactionResponse.getTransactionIdStringNoCheckSum(), selector);
     }
 
     @And("the mirror node REST API should retrieve the contract when using child's evm address")
