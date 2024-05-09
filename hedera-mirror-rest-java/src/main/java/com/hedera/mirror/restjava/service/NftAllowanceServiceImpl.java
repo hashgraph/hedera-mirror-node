@@ -78,29 +78,29 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
     private static List<RangeOperator> verifyRangeId(List<EntityIdRangeParameter> idParams) {
         int countGtOperator = 0;
         int countLtOperator = 0;
+        int countEqOperator = 0;
 
         List<RangeOperator> operators = new ArrayList<>();
         for (EntityIdRangeParameter param : idParams) {
 
-            if (param == null) {
-                continue;
-            }
             if (param.operator() == RangeOperator.NE) {
                 throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
             }
-            // Considering EQ in the same category as GT,GTE as an assumption
-            if ((param.operator() == RangeOperator.GT
-                            || param.operator() == RangeOperator.GTE
-                            || param.operator() == RangeOperator.EQ)
-                    && countGtOperator == 0) {
+
+            if (param.operator() == RangeOperator.GT || param.operator() == RangeOperator.GTE) {
                 countGtOperator++;
-            } else if ((param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE)
-                    && countLtOperator == 0) {
+            } else if (param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE) {
                 countLtOperator++;
-            } else {
-                throw new IllegalArgumentException("Single occurrence only supported.");
+            } else if (param.operator() == RangeOperator.EQ) {
+                countEqOperator++;
             }
             operators.add(param.operator());
+        }
+        if (countGtOperator > 1 || countLtOperator > 1 || countEqOperator > 1) {
+            throw new IllegalArgumentException("Single occurrence only supported.");
+        }
+        if (countEqOperator == 1 && (countGtOperator != 0 || countLtOperator != 0)) {
+            throw new IllegalArgumentException("Can't support both range and equal for this parameter.");
         }
         return operators;
     }

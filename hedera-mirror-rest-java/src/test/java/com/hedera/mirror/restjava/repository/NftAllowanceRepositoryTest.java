@@ -294,6 +294,17 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(1, 0, 1)));
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
+                        .isOwner(true)
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderId(
+                                List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0)))))
+                        .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(1)))))
+                        .limit(4)
+                        .order(Direction.ASC)
+                        .build(),
+                List.of(new Tuple(1, 0, 2)));
     }
 
     private void assertNftAllowances() {
