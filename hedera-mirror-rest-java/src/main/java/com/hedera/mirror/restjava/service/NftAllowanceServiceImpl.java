@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.service;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
@@ -23,6 +24,7 @@ import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
@@ -42,7 +44,35 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
+        if (!CollectionUtils.isEmpty(ownerOrSpenderId)) {
+            var bounds = getRange(ownerOrSpenderId);
+
+            // Shortcutting when the range is invalid
+            if (bounds.lower > bounds.upper) {
+                return Collections.emptyList();
+            } else if (bounds.lower == bounds.upper) {
+                var optimizedRangeParam = new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(bounds.upper));
+                request.setOwnerOrSpenderId(List.of(optimizedRangeParam));
+            }
+        }
+
         return repository.findAll(request, id);
+    }
+
+    @SuppressWarnings({"java:S131"})
+    private Bound getRange(List<EntityIdRangeParameter> ownerOrSpenderIds) {
+        long lowerBound = 0;
+        long upperBound = Long.MAX_VALUE;
+        for (EntityIdRangeParameter param : ownerOrSpenderIds) {
+            switch (param.operator()) {
+                case LT -> upperBound = param.value().getId() - 1;
+                case GT -> lowerBound = param.value().getId() + 1;
+                case LTE -> upperBound = param.value().getId();
+                case GTE -> lowerBound = param.value().getId();
+            }
+        }
+
+        return new Bound(lowerBound, upperBound);
     }
 
     private static List<RangeOperator> verifyRangeId(List<EntityIdRangeParameter> idParams) {
@@ -51,9 +81,14 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         List<RangeOperator> operators = new ArrayList<>();
         for (EntityIdRangeParameter param : idParams) {
-            if (param != null && param.operator() == RangeOperator.NE) {
+
+            if (param == null) {
+                continue;
+            }
+            if (param.operator() == RangeOperator.NE) {
                 throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
             }
+            // Considering EQ in the same category as GT,GTE as an assumption
             if ((param.operator() == RangeOperator.GT
                             || param.operator() == RangeOperator.GTE
                             || param.operator() == RangeOperator.EQ)
@@ -73,23 +108,32 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
     private static void checkOwnerSpenderParamValidity(
             List<EntityIdRangeParameter> ownerOrSpenderParams, List<EntityIdRangeParameter> tokenParams) {
 
-        if (CollectionUtils.isEmpty(ownerOrSpenderParams) && !CollectionUtils.isEmpty(tokenParams)) {
-            throw new IllegalArgumentException("token.id parameter must have account.id present");
+        if (CollectionUtils.isEmpty(ownerOrSpenderParams)) {
+            if (!CollectionUtils.isEmpty(tokenParams)) {
+                throw new IllegalArgumentException("token.id parameter must have account.id present");
+            } else {
+                return;
+            }
         }
         var accountOperators = verifyRangeId(ownerOrSpenderParams);
-        var tokenOperators = verifyRangeId(tokenParams);
 
-        if ((tokenOperators.contains(RangeOperator.LTE) || tokenOperators.contains(RangeOperator.LT))
-                && !accountOperators.contains(RangeOperator.EQ)
-                && !accountOperators.contains(RangeOperator.LTE)) {
-            throw new IllegalArgumentException(
-                    "Single occurrence only supported.Requires the presence of an lte or eq account.id query");
-        }
-        if ((tokenOperators.contains(RangeOperator.GTE) || tokenOperators.contains(RangeOperator.GT))
-                && !accountOperators.contains(RangeOperator.EQ)
-                && !accountOperators.contains(RangeOperator.GTE)) {
-            throw new IllegalArgumentException(
-                    "Single occurrence only supported.Requires the presence of an lte or eq account.id query");
+        if (!CollectionUtils.isEmpty(tokenParams)) {
+            var tokenOperators = verifyRangeId(tokenParams);
+
+            if ((tokenOperators.contains(RangeOperator.LTE) || tokenOperators.contains(RangeOperator.LT))
+                    && !accountOperators.contains(RangeOperator.EQ)
+                    && !accountOperators.contains(RangeOperator.LTE)) {
+                throw new IllegalArgumentException(
+                        "Single occurrence only supported.Requires the presence of an lte or eq account.id query");
+            }
+            if ((tokenOperators.contains(RangeOperator.GTE) || tokenOperators.contains(RangeOperator.GT))
+                    && !accountOperators.contains(RangeOperator.EQ)
+                    && !accountOperators.contains(RangeOperator.GTE)) {
+                throw new IllegalArgumentException(
+                        "Single occurrence only supported.Requires the presence of an gte or eq account.id query");
+            }
         }
     }
+
+    private record Bound(long lower, long upper) {}
 }

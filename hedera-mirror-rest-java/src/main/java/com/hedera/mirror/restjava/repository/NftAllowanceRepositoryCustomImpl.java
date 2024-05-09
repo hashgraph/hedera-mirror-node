@@ -64,10 +64,19 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         var primarySortParam = request.getOwnerOrSpenderId();
         var tokenParam = request.getTokenId();
 
+        Bound primaryBounds = getBounds(primarySortParam);
+        Bound tokenBounds = getBounds(tokenParam);
+
         var commonCondition = getCondition(primaryField, RangeOperator.EQ, accountId.getId());
-        var baseCondition = getBaseCondition(primarySortParam, tokenParam, primarySortField);
-        var secondaryCondition = getSecondaryCondition(primarySortParam, tokenParam, primarySortField);
-        var condition = commonCondition.and(baseCondition.or(secondaryCondition));
+        var lowerCondition = getOuterBoundCondition(
+                primaryBounds.primaryLowerBoundParam(), tokenBounds.primaryLowerBoundParam, primarySortField);
+        var middleCondition = getMiddleCondition(
+                        primaryBounds.primaryLowerBoundParam, tokenBounds.primaryLowerBoundParam, primarySortField)
+                .and(getMiddleCondition(
+                        primaryBounds.primaryUpperBoundParam, tokenBounds.primaryUpperBoundParam, primarySortField));
+        var upperCondition = getOuterBoundCondition(
+                primaryBounds.primaryUpperBoundParam(), tokenBounds.primaryUpperBoundParam, primarySortField);
+        var condition = commonCondition.and(lowerCondition.or(middleCondition).or(upperCondition));
 
         return dslContext
                 .selectFrom(NFT_ALLOWANCE)
@@ -77,46 +86,61 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
                 .fetchInto(NftAllowance.class);
     }
 
-    private Condition getBaseCondition(
-            List<EntityIdRangeParameter> primarySortParams,
-            List<EntityIdRangeParameter> tokenParams,
+    private Bound getBounds(List<EntityIdRangeParameter> primarySortParam) {
+        EntityIdRangeParameter lowerBoundParam = null;
+        EntityIdRangeParameter upperBoundParam = null;
+
+        if (primarySortParam != null) {
+            for (EntityIdRangeParameter param : primarySortParam) {
+                // Considering EQ in the same category as GT,GTE as an assumption
+                if (param.operator() == RangeOperator.GT
+                        || param.operator() == RangeOperator.GTE
+                        || param.operator() == RangeOperator.EQ) {
+                    upperBoundParam = param;
+                } else if (param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE) {
+                    lowerBoundParam = param;
+                }
+            }
+        }
+        return new Bound(lowerBoundParam, upperBoundParam);
+    }
+
+    private record Bound(
+            EntityIdRangeParameter primaryLowerBoundParam, EntityIdRangeParameter primaryUpperBoundParam) {}
+
+    private Condition getOuterBoundCondition(
+            EntityIdRangeParameter primarySortParam,
+            EntityIdRangeParameter tokenParam,
             TableField<NftAllowanceRecord, Long> primarySortField) {
 
-        if (primarySortParams == null) {
+        if (primarySortParam == null) {
             return noCondition();
         }
 
-        Condition primaryCondition = noCondition();
+        var primaryCondition = getCondition(
+                primarySortField,
+                primarySortParam.operator(),
+                primarySortParam.value().getId());
 
-        for (EntityIdRangeParameter primarySortParam : primarySortParams) {
-            primaryCondition = primaryCondition.and(getCondition(
-                    primarySortField,
-                    primarySortParam.operator(),
-                    primarySortParam.value().getId()));
-        }
-
-        if (tokenParams == null) {
+        if (tokenParam == null) {
             return primaryCondition;
         }
 
-        Condition tokenCondition = noCondition();
-        for (EntityIdRangeParameter tokenParam : tokenParams) {
-            tokenCondition = tokenCondition.and(getCondition(
-                    NFT_ALLOWANCE.TOKEN_ID,
-                    tokenParam.operator(),
-                    tokenParam.value().getId()));
-        }
+        var tokenCondition = getCondition(
+                NFT_ALLOWANCE.TOKEN_ID,
+                tokenParam.operator(),
+                tokenParam.value().getId());
 
         // There can only be one query param with operator eq for primary sort param
-        if (primarySortParams.get(0).operator() == RangeOperator.EQ) {
+        if (primarySortParam.operator() == RangeOperator.EQ) {
             return primaryCondition.and(tokenCondition);
         }
 
         // Get the condition for primary field with EQ operator
-        long value = primarySortParams.get(0).value().getId();
-        if (primarySortParams.operator() == RangeOperator.GT) {
+        long value = primarySortParam.value().getId();
+        if (primarySortParam.operator() == RangeOperator.GT) {
             value += 1L;
-        } else if (primarySortParams.operator() == RangeOperator.LT) {
+        } else if (primarySortParam.operator() == RangeOperator.LT) {
             value -= 1L;
         }
 
@@ -124,25 +148,26 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         return equalCondition.and(tokenCondition);
     }
 
-    private Condition getSecondaryCondition(
-            EntityIdRangeParameter primarySortParam,
-            EntityIdRangeParameter tokenParam,
+    private Condition getMiddleCondition(
+            EntityIdRangeParameter primary,
+            EntityIdRangeParameter token,
             TableField<NftAllowanceRecord, Long> primarySortField) {
-        // No secondary condition if there is no token parameter, or the primary sort parameter's operator is EQ. Note
+
+        // No secondary condition if there is no primary parameter bound or no token parameter, or the primary sort
+        // parameter's operator is EQ. Note
         // that
         // it's guaranteed that there must be a primary sort parameter when token parameter exists
-        if (tokenParam == null || primarySortParam.operator() == RangeOperator.EQ) {
+
+        if (primary == null || token == null || primary.operator() == RangeOperator.EQ) {
             return noCondition();
         }
 
-        long value = primarySortParam.value().getId();
-        var operator = primarySortParam.operator();
+        long value = primary.value().getId();
+        var operator = primary.operator();
+
         if (operator == RangeOperator.GT || operator == RangeOperator.GTE) {
             value += 1L;
-        } else if (operator == RangeOperator.LT || operator == RangeOperator.LTE) {
-            value -= 1L;
         }
-
         return getCondition(primarySortField, operator, value);
     }
 

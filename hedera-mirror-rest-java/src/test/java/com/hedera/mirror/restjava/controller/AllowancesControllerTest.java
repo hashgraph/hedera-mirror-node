@@ -179,7 +179,8 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
                 .persist();
-        var uriParams = "?account.id=gte:0.0.1000&owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
+        var uriParams =
+                "?account.id=gte:0.0.1000&account.id=lt:0.0.1002&owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
         var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=true&token.id=gt:%s&limit=1&order=asc"
                 .formatted(
                         allowance1.getOwner(),
@@ -195,6 +196,38 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
 
         // Then
         assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
+        assertThat(result.getLinks().getNext()).isEqualTo(next);
+    }
+
+    @Test
+    void nftAllowancesAllRangeConditions() {
+        // Given
+        var entity = domainBuilder.entity().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()))
+                .persist();
+        var allowance2 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .persist();
+        var uriParams =
+                "?account.id=gte:0.0.1000&account.id=lte:0.0.1102&owner=true&token.id=gt:0.0.1000&token.id=lt:0.0.3000&limit=1&order=desc";
+        var next = "/api/v1/accounts/%s/allowances/nfts?account.id=lte:%s&owner=true&token.id=lt:%s&limit=1&order=desc"
+                .formatted(
+                        allowance1.getOwner(),
+                        EntityId.of(allowance2.getSpender()),
+                        EntityId.of(allowance2.getTokenId()));
+
+        // When
+        var result = restClient
+                .get()
+                .uri(uriParams, allowance1.getOwner())
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+
+        // Then
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2)));
         assertThat(result.getLinks().getNext()).isEqualTo(next);
     }
 

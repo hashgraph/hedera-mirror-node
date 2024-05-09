@@ -52,8 +52,6 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(owner)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID)))
-                .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID)))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
@@ -72,7 +70,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(true)
                 .limit(2)
                 .accountId(new EntityIdAliasParameter(0, 0, entity.getAlias()))
-                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GT, accountId)))
+                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GTE, accountId)))
                 .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GT, accountId)))
                 .order(Sort.Direction.ASC)
                 .build();
@@ -92,7 +90,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(true)
                 .limit(2)
                 .accountId(new EntityIdEvmAddressParameter(0, 0, entity.getEvmAddress()))
-                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GT, accountId)))
+                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GTE, accountId)))
                 .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GT, accountId)))
                 .order(Sort.Direction.ASC)
                 .build();
@@ -118,7 +116,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(true)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID)))
+                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID)))
                 .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID)))
                 .order(Sort.Direction.DESC)
                 .build();
@@ -146,8 +144,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(false)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID)))
-                .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID)))
+                .ownerOrSpenderId(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID)))
+                .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID)))
                 .order(Sort.Direction.DESC)
                 .build();
 
@@ -208,6 +206,129 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .build();
         var response = service.getNftAllowances(request);
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1);
+    }
+
+    @Test
+    void getNftAllowancesForInvalidRange() {
+
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
+
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(ACCOUNT_ID.getId())
+                        .owner(nftAllowance1.getOwner() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        assertEmptyResponse(nftAllowance1, RangeOperator.GTE, RangeOperator.LTE);
+        assertEmptyResponse(nftAllowance1, RangeOperator.GT, RangeOperator.LT);
+    }
+
+    private void assertEmptyResponse(NftAllowance nftAllowance1, RangeOperator op1, RangeOperator op2) {
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
+                .ownerOrSpenderId(List.of(
+                        new EntityIdRangeParameter(op1, EntityId.of(nftAllowance1.getOwner())),
+                        new EntityIdRangeParameter(op2, EntityId.of(nftAllowance1.getOwner() - 2))))
+                .order(Sort.Direction.ASC)
+                .build();
+        var response = service.getNftAllowances(request);
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    void getNftAllowancesForOptimizedRange() {
+
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
+
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(ACCOUNT_ID.getId())
+                        .owner(nftAllowance1.getOwner() + 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
+                .ownerOrSpenderId(List.of(
+                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getOwner())),
+                        new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(nftAllowance1.getOwner()))))
+                .tokenId(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId()))))
+                .order(Sort.Direction.ASC)
+                .build();
+        var response = service.getNftAllowances(request);
+        assertThat(response).containsExactly(nftAllowance1);
+    }
+
+    @Test
+    void getNftAllowancesForTokenNeedsOwnerOrSpenderIdEq() {
+
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(ACCOUNT_ID.getId())
+                        .owner(nftAllowance1.getOwner() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
+                .ownerOrSpenderId(
+                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner()))))
+                .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getTokenId()))))
+                .order(Sort.Direction.ASC)
+                .build();
+        assertThatThrownBy(() -> service.getNftAllowances(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(
+                        "Single occurrence only supported.Requires the presence of an lte or eq account.id query");
+
+        NftAllowanceRequest request1 = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
+                .ownerOrSpenderId(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(nftAllowance1.getOwner()))))
+                .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(nftAllowance1.getTokenId()))))
+                .order(Sort.Direction.ASC)
+                .build();
+        assertThatThrownBy(() -> service.getNftAllowances(request1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(
+                        "Single occurrence only supported.Requires the presence of an gte or eq account.id query");
+    }
+
+    @Test
+    void getNftAllowancesForRepeatedParameter() {
+
+        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
+        domainBuilder
+                .nftAllowance()
+                .customize(e -> e.spender(ACCOUNT_ID.getId())
+                        .owner(nftAllowance1.getOwner() - 2)
+                        .tokenId(nftAllowance1.getTokenId() - 2))
+                .persist();
+
+        NftAllowanceRequest request = NftAllowanceRequest.builder()
+                .isOwner(false)
+                .limit(2)
+                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
+                .ownerOrSpenderId(List.of(
+                        new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner())),
+                        new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner() + 10))))
+                .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getTokenId()))))
+                .order(Sort.Direction.ASC)
+                .build();
+        assertThatThrownBy(() -> service.getNftAllowances(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Single occurrence only supported.");
     }
 
     @Test
