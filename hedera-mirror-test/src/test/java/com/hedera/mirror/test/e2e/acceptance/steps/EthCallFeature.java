@@ -46,7 +46,6 @@ import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.CustomLog;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
@@ -112,7 +111,8 @@ public class EthCallFeature extends AbstractEstimateFeature {
         deployedParentContract = ethereumContractCreate(PARENT_CONTRACT);
         deployedParentContract.contractId().toSolidityAddress();
 
-        String txId = deployedParentContract.txId().get();
+        String txId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+
         var successfulInitByteCode = Objects.requireNonNull(mirrorClient
                 .getContractInfo(deployedParentContract.contractId().toSolidityAddress())
                 .getBytecode());
@@ -356,11 +356,7 @@ public class EthCallFeature extends AbstractEstimateFeature {
                             : Hbar.fromTinybars(contractResource.getInitialBalance()),
                     null);
             ContractId contractId = verifyCreateContractNetworkResponse();
-            return new DeployedContract(
-                    fileId,
-                    contractId,
-                    compiledSolidityArtifact,
-                    Optional.of(networkTransactionResponse.getTransactionIdStringNoCheckSum()));
+            return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
         } catch (IOException e) {
             log.warn("Issue creating contract: {}, ex: {}", contractResource, e);
             throw new RuntimeException(e);
