@@ -22,5 +22,8 @@ import lombok.experimental.UtilityClass;
 public class ParameterNames {
 
     public static final String ACCOUNT_ID = "account.id";
+    public static final String LIMIT = "limit";
+    public static final String ORDER = "order";
+    public static final String OWNER = "owner";
     public static final String TOKEN_ID = "token.id";
 }
