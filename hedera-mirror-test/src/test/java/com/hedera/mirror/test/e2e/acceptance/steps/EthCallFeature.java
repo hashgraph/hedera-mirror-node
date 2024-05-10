@@ -116,7 +116,7 @@ public class EthCallFeature extends AbstractEstimateFeature {
                 .getBytecode());
     }
 
-    @Then("the gasConsumed is correct")
+    @Then("the mirror node contract results API should return an accurate gas consumed")
     public void verifyGasConsumedIsCorrect() {
         String txId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         verifyGasConsumed(txId);
