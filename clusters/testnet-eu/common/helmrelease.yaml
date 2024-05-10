@@ -59,3 +59,5 @@ spec:
       enabled: true
       init:
         diskPrefix: testnet-eu
+      worker:
+        initialDiskSize: 1000GB
