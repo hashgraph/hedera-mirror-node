@@ -1106,11 +1106,11 @@ public class DomainBuilder {
      * @param value The timestamp to reset to
      */
     public void resetTimestamp(long value) {
-        timestampOffset = value - timestamp();
+        timestampOffset = value - timestampNoOffset();
     }
 
     public long timestamp() {
-        return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + number() + timestampOffset;
+        return timestampNoOffset() + timestampOffset;
     }
 
     private long tinybar() {
@@ -1122,6 +1122,10 @@ public class DomainBuilder {
                 .atStartOfDay()
                 .toLocalDate()
                 .toEpochDay();
+    }
+
+    private long timestampNoOffset() {
+        return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + number();
     }
 
     private int transactionIndex() {
