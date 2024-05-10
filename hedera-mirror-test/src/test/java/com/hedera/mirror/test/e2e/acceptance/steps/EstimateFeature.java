@@ -474,179 +474,179 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I execute contractCall for function that changes the contract slot and verify gasConsumed")
     public void updateContractSlotGasConsumed() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_COUNTER, new BigInteger("5"));
-        var txId = executeContractTransaction(deployedContract, UPDATE_COUNTER, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_COUNTER, new BigInteger("5"));
+        var txId = executeContractTransaction(deployedContract, UPDATE_COUNTER);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall with delegatecall and function that changes contract slot and verify gasConsumed")
     public void updateContractSlotGasConsumedViaDelegateCall() {
         var selector = encodeDataToByteArray(ESTIMATE_GAS, INCREMENT_COUNTER);
-        var data = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 ESTIMATE_GAS, DELEGATE_CALL_TO_CONTRACT, asAddress(contractSolidityAddress), selector);
-        var txId = executeContractTransaction(deployedContract, DELEGATE_CALL_TO_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        var txId = executeContractTransaction(deployedContract, DELEGATE_CALL_TO_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then(
             "I execute contractCall with delegatecall with low gas and function that changes contract slot and verify gasConsumed")
     public void updateContractSlotGasConsumedViaDelegateCallWithLowGas() {
         var selector = encodeDataToByteArray(ESTIMATE_GAS, INCREMENT_COUNTER);
-        var data = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 ESTIMATE_GAS, DELEGATE_CALL_TO_CONTRACT, asAddress(contractSolidityAddress), selector);
-        var txId = executeContractTransaction(deployedContract, 21500L, DELEGATE_CALL_TO_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        var txId = executeContractTransaction(deployedContract, 21500L, DELEGATE_CALL_TO_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall with callcode and function that changes contract slot and verify gasConsumed")
     public void updateContractSlotGasConsumedViaCallCode() {
         var selector = encodeDataToByteArray(ESTIMATE_GAS, INCREMENT_COUNTER);
-        var data = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 ESTIMATE_GAS, CALL_CODE_TO_CONTRACT, asAddress(contractSolidityAddress), selector);
-        var txId = executeContractTransaction(deployedContract, DELEGATE_CALL_TO_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        var txId = executeContractTransaction(deployedContract, DELEGATE_CALL_TO_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then(
             "I execute contractCall with callcode with low gas and function that changes contract slot and verify gasConsumed")
     public void updateContractSlotGasConsumedViaCallCodeWithLowGas() {
         var selector = encodeDataToByteArray(ESTIMATE_GAS, INCREMENT_COUNTER);
-        var data = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 ESTIMATE_GAS, CALL_CODE_TO_CONTRACT, asAddress(contractSolidityAddress), selector);
-        var txId = executeContractTransaction(deployedContract, 21500L, DELEGATE_CALL_TO_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        var txId = executeContractTransaction(deployedContract, 21500L, DELEGATE_CALL_TO_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall with static call and verify gasConsumed")
     public void getAddressViaStaticCall() {
         var selector = encodeDataToByteArray(ESTIMATE_GAS, GET_MOCK_ADDRESS);
-        var data = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 ESTIMATE_GAS, STATIC_CALL_TO_CONTRACT, asAddress(contractSolidityAddress), selector);
-        var txId = executeContractTransaction(deployedContract, STATIC_CALL_TO_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        var txId = executeContractTransaction(deployedContract, STATIC_CALL_TO_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall with static call with low gas and verify gasConsumed")
     public void getAddressViaStaticCallWithLowGas() {
         var selector = encodeDataToByteArray(ESTIMATE_GAS, GET_MOCK_ADDRESS);
-        var data = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 ESTIMATE_GAS, STATIC_CALL_TO_CONTRACT, asAddress(contractSolidityAddress), selector);
-        var txId = executeContractTransaction(deployedContract, 21500L, STATIC_CALL_TO_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        var txId = executeContractTransaction(deployedContract, 21500L, STATIC_CALL_TO_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then("I trigger fallback function with transfer and verify gasConsumed")
     public void triggerFallbackAndTransferFundsToContract() {
-        var data = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
-        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, data, Hbar.fromTinybars(100));
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
+        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, Hbar.fromTinybars(100));
+        verifyGasConsumed(txId);
     }
 
     @Then("I trigger fallback function with send and verify gasConsumed")
     public void triggerFallbackAndSendFundsToContract() {
-        var initialData = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_TYPE, new BigInteger("2"));
-        executeContractTransaction(deployedContract, UPDATE_TYPE, initialData, null);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_TYPE, new BigInteger("2"));
+        executeContractTransaction(deployedContract, UPDATE_TYPE, null);
 
-        var data = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
-        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, data, Hbar.fromTinybars(100));
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
+        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, Hbar.fromTinybars(100));
+        verifyGasConsumed(txId);
     }
 
     @Then("I trigger fallback function with call and verify gasConsumed")
     public void triggerFallWithCallToContract() {
-        var initialData = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_TYPE, new BigInteger("3"));
-        executeContractTransaction(deployedContract, UPDATE_TYPE, initialData, null);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, UPDATE_TYPE, new BigInteger("3"));
+        executeContractTransaction(deployedContract, UPDATE_TYPE, null);
 
-        var data = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
-        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, data, Hbar.fromTinybars(100));
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeData(WRONG_METHOD_SIGNATURE).getBytes();
+        var txId = executeContractTransaction(deployedContract, WRONG_METHOD_SIGNATURE, Hbar.fromTinybars(100));
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall for nested function and verify gasConsumed")
     public void nestedCalls() {
-        var data = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 ESTIMATE_GAS,
                 CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
                 new BigInteger("2"),
                 asAddress(contractSolidityAddress));
-        var txId = executeContractTransaction(deployedContract, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, data);
-        verifyGasConsumed(txId, data);
+        var txId = executeContractTransaction(deployedContract, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall for nested functions with lower gas limit and verify gasConsumed")
     public void manyNestedLowerGasLimitCalls() {
-        var data = encodeDataToByteArray(
+        gasConsumedSelector = encodeDataToByteArray(
                 ESTIMATE_GAS,
                 CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION,
                 new BigInteger("21"),
                 asAddress(contractSolidityAddress));
-        var txId = executeContractTransaction(deployedContract, 50000L, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION, data);
-        verifyGasConsumed(txId, data);
+        var txId = executeContractTransaction(deployedContract, 50000L, CALL_CODE_TO_EXTERNAL_CONTRACT_FUNCTION);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall for failing nested functions and verify gasConsumed")
     public void failingNestedFunction() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, CALL_TO_INVALID_CONTRACT, asAddress(mockAddress));
-        var txId = executeContractTransaction(deployedContract, CALL_TO_INVALID_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, CALL_TO_INVALID_CONTRACT, asAddress(mockAddress));
+        var txId = executeContractTransaction(deployedContract, CALL_TO_INVALID_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall for failing precompile function and verify gasConsumed")
     public void failingPrecompileFunction() {
-        var data = encodeDataToByteArray(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
-        var txId = executeContractTransaction(deployedPrecompileContract, 25400L, IS_TOKEN_SELECTOR, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(PRECOMPILE, IS_TOKEN_SELECTOR, asAddress(fungibleTokenId));
+        var txId = executeContractTransaction(deployedPrecompileContract, 25400L, IS_TOKEN_SELECTOR);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall for contract deploy function via create and verify gasConsumed")
     public void deployContractViaCreate() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_OPCODE);
-        var txId = executeContractTransaction(deployedContract, DEPLOY_CONTRACT_VIA_CREATE_OPCODE, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_OPCODE);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_CONTRACT_VIA_CREATE_OPCODE);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall for contract deploy function via create2 and verify gasConsumed")
     public void deployContractViaCreateTwo() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE);
-        var txId = executeContractTransaction(deployedContract, DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_CONTRACT_VIA_CREATE_2_OPCODE);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute contractCall failing to deploy contract due to low gas and verify gasConsumed")
     public void failDeployComplexContract() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_NEW_INSTANCE);
-        var txId = executeContractTransaction(deployedContract, 40000L, DEPLOY_NEW_INSTANCE, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_NEW_INSTANCE);
+        var txId = executeContractTransaction(deployedContract, 40000L, DEPLOY_NEW_INSTANCE);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute deploy and call contract and verify gasConsumed")
     public void deployAndCallContract() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_CALL_CONTRACT, new BigInteger("5"));
-        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_CALL_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_CALL_CONTRACT, new BigInteger("5"));
+        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_CALL_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute deploy and call contract that fails and verify gasConsumed")
     public void deployAndCallFailContract() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_CALL_CONTRACT, new BigInteger("11"));
-        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_CALL_CONTRACT, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_CALL_CONTRACT, new BigInteger("11"));
+        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_CALL_CONTRACT);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute deploy and selfdestruct and verify gasConsumed")
     public void deployAndSelfDestructContract() {
-        var data = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_DESTROY);
-        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_DESTROY, data);
-        verifyGasConsumed(txId, data);
+        gasConsumedSelector = encodeDataToByteArray(ESTIMATE_GAS, DEPLOY_AND_DESTROY);
+        var txId = executeContractTransaction(deployedContract, DEPLOY_AND_DESTROY);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute create operation with bad contract and verify gasConsumed")
     public void deployBadContract() {
         var contractPath = "classpath:solidity/artifacts/contracts/EstimateGasContract.sol/DummyContract.json";
         var txId = createContractAndReturnTransactionId(contractPath);
-        var initByteCode = Objects.requireNonNull(
+        gasConsumedSelector = Objects.requireNonNull(
                 mirrorClient.getContractResultByTransactionId(txId).getFailedInitcode());
-        verifyGasConsumed(txId, initByteCode);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute create operation with complex contract and verify gasConsumed")
@@ -657,9 +657,9 @@ public class EstimateFeature extends AbstractEstimateFeature {
                         mirrorClient.getTransactions(txId).getTransactions())
                 .getFirst()
                 .getEntityId();
-        var successfulInitByteCode =
+        gasConsumedSelector =
                 Objects.requireNonNull(mirrorClient.getContractInfo(contractId).getBytecode());
-        verifyGasConsumed(txId, successfulInitByteCode);
+        verifyGasConsumed(txId);
     }
 
     @Then("I execute create operation with complex contract and lower gas limit and verify gasConsumed")
@@ -669,13 +669,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
         var transactions =
                 Objects.requireNonNull(mirrorClient.getTransactions(txId).getTransactions());
         var contractId = transactions.getFirst().getEntityId();
-        var successfulInitByteCode =
+        gasConsumedSelector =
                 Objects.requireNonNull(mirrorClient.getContractInfo(contractId).getBytecode());
-        verifyGasConsumed(txId, successfulInitByteCode);
+        verifyGasConsumed(txId);
     }
 
-    private String executeContractTransaction(
-            DeployedContract deployedContract, SelectorInterface contractMethods, byte[] parameters) {
+    private String executeContractTransaction(DeployedContract deployedContract, SelectorInterface contractMethods) {
 
         return executeContractTransaction(
                 deployedContract,
@@ -685,12 +684,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
                         .getFeatureProperties()
                         .getMaxContractFunctionGas(),
                 contractMethods,
-                parameters,
+                (byte[]) gasConsumedSelector,
                 null);
     }
 
     private String executeContractTransaction(
-            DeployedContract deployedContract, SelectorInterface contractMethods, byte[] parameters, Hbar amount) {
+            DeployedContract deployedContract, SelectorInterface contractMethods, Hbar amount) {
 
         return executeContractTransaction(
                 deployedContract,
@@ -700,14 +699,14 @@ public class EstimateFeature extends AbstractEstimateFeature {
                         .getFeatureProperties()
                         .getMaxContractFunctionGas(),
                 contractMethods,
-                parameters,
+                (byte[]) gasConsumedSelector,
                 amount);
     }
 
     private String executeContractTransaction(
-            DeployedContract deployedContract, Long gas, SelectorInterface contractMethods, byte[] parameters) {
+            DeployedContract deployedContract, Long gas, SelectorInterface contractMethods) {
 
-        return executeContractTransaction(deployedContract, gas, contractMethods, parameters, null);
+        return executeContractTransaction(deployedContract, gas, contractMethods, (byte[]) gasConsumedSelector, null);
     }
 
     private String executeContractTransaction(

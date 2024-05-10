@@ -64,7 +64,6 @@ public class EthCallFeature extends AbstractEstimateFeature {
     private String create2ChildContractEntityId;
     private AccountId create2ChildContractAccountId;
     private ContractId create2ChildContractContractId;
-    private Object gasConsumedSelector;
 
     @Given("I successfully created a signer account with an EVM address alias")
     public void createAccountWithEvmAddressAlias() {
@@ -120,7 +119,7 @@ public class EthCallFeature extends AbstractEstimateFeature {
     @Then("the gasConsumed is correct")
     public void verifyGasConsumedIsCorrect() {
         String txId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
-        verifyGasConsumed(txId, gasConsumedSelector);
+        verifyGasConsumed(txId);
     }
 
     @Then("the mirror node REST API should return status {int} for the eth contract creation transaction")

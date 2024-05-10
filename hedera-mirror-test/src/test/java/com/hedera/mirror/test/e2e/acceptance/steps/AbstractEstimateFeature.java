@@ -41,6 +41,7 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
 
     protected int lowerDeviation;
     protected int upperDeviation;
+    protected Object gasConsumedSelector;
 
     @Autowired
     protected MirrorNodeClient mirrorClient;
@@ -126,10 +127,10 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
                 .isInstanceOf(HttpClientErrorException.BadRequest.class);
     }
 
-    protected void verifyGasConsumed(String txId, Object data) {
+    protected void verifyGasConsumed(String txId) {
         int totalGasFee;
         try {
-            totalGasFee = calculateIntrinsicValue(data);
+            totalGasFee = calculateIntrinsicValue(gasConsumedSelector);
         } catch (DecoderException e) {
             throw new RuntimeException("Failed to decode hexadecimal string.", e);
         }
