@@ -1,5 +1,8 @@
 hedera:
   mirror:
+    opcode:
+      tracer:
+        enabled: true
     web3:
       evm:
         evm_versions:

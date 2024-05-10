@@ -22,8 +22,32 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import lombok.SneakyThrows;
 import org.springframework.util.StringUtils;
 
+/**
+ * A class used to parse and store an input parameter for transaction ID or hash.
+ *
+ * @author vyanev
+ * @param transactionID this will be populated if the input is a valid transaction ID
+ * @param hash this will be populated if the input is a valid transaction hash
+ */
 public record TransactionIdOrHashParameter(TransactionID transactionID, ByteString hash) {
 
+    /**
+     * Parses the input parameter and returns a TransactionIdOrHashParameter object.
+     * <li>
+     *     If the input is a string representing an ethereum transaction hash,
+     *     it will be parsed and stored in the {@code hash} field.
+     * </li>
+     * <li>
+     *     If the input is a string representing a transaction ID,
+     *     it will be parsed and stored in the {@code transactionID} field.
+     * </li>
+     *
+     * @param transactionIdOrHash The input string to be parsed
+     * @return {@link TransactionIdOrHashParameter} holding the parsed transaction ID or hash
+     * @throws IllegalArgumentException if the input string is empty or has an invalid format
+     * @see TransactionUtils#isValidEthHash
+     * @see TransactionUtils#isValidTransactionId
+     */
     @SneakyThrows(NumberFormatException.class)
     public static TransactionIdOrHashParameter valueOf(String transactionIdOrHash) {
         if (!StringUtils.hasText(transactionIdOrHash)) {
@@ -31,7 +55,8 @@ public record TransactionIdOrHashParameter(TransactionID transactionID, ByteStri
         }
 
         if (TransactionUtils.isValidEthHash(transactionIdOrHash)) {
-            return new TransactionIdOrHashParameter(null, ByteString.fromHex(transactionIdOrHash));
+            final var sanitizedHash = transactionIdOrHash.replace("0x", "");
+            return new TransactionIdOrHashParameter(null, ByteString.fromHex(sanitizedHash));
         } else if (TransactionUtils.isValidTransactionId(transactionIdOrHash)) {
             return new TransactionIdOrHashParameter(TransactionUtils.parseTransactionId(transactionIdOrHash), null);
         } else {

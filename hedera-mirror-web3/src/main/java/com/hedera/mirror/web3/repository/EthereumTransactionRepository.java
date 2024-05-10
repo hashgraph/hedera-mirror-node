@@ -17,9 +17,8 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import org.springframework.data.repository.CrudRepository;
-
 import java.util.Optional;
+import org.springframework.data.repository.CrudRepository;
 
 public interface EthereumTransactionRepository extends CrudRepository<EthereumTransaction, Long> {
 

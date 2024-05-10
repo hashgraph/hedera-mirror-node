@@ -63,11 +63,24 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
 class OpcodesController {
 
+    private final RecordFileService recordFileService;
     private final TransactionService transactionService;
     private final ContractCallService contractCallService;
     private final Bucket bucket;
-    private final RecordFileService recordFileService;
 
+    /**
+     * Returns a result containing detailed information for the transaction execution with stack, memory and storage.\
+     * For providing output formatted by opcodeLogger, the transaction is re-executed using the state from the
+     * contract_state_changes sidecars produced by the consensus nodes.
+     * In this way, we can have a track on all of the storage/memory information and the entire trace of opcodes
+     * that were executed during the replay.
+     *
+     * @param transactionIdOrHash The transaction ID or hash
+     * @param stack
+     * @param memory
+     * @param storage
+     * @return
+     */
     @CrossOrigin(origins = "*")
     @PostMapping(value = "/{transactionIdOrHash}/opcodes")
     OpcodesResponse opcodes(@PathVariable TransactionIdOrHashParameter transactionIdOrHash,
@@ -94,7 +107,9 @@ class OpcodesController {
                         .orElse(Address.ZERO.toHexString()))
                 .gas(result.transactionProcessingResult().getGasPrice())
                 .failed(!result.transactionProcessingResult().isSuccessful())
-                .returnValue(result.transactionProcessingResult().getOutput().toHexString())
+                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                        .map(Bytes::toHexString)
+                        .orElse(null))
                 .opcodes(result.opcodes().stream()
                         .map(opcode -> new Opcode()
                                 .pc(opcode.pc())
@@ -136,7 +151,7 @@ class OpcodesController {
                     .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
             consensusTimestamp = transaction.getConsensusTimestamp();
         } else {
-            throw new IllegalArgumentException("Invalid transaction ID or hash");
+            throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
         }
 
         final RecordFile recordFile = recordFileService.findRecordFileForTimestamp(consensusTimestamp)
