@@ -67,7 +67,6 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
     @AfterEach
     void teardown() {
         tokens.clear();
-        ;
         tokenState.clear();
     }
 
@@ -256,18 +255,17 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
 
     private void prune(int firstRecordFileIndexToDelete, boolean isBackwards, List<RecordFile> recordFiles) {
         try {
-            long timestamp = recordFiles.get(firstRecordFileIndexToDelete).getConsensusEnd();
+            var recordFile = recordFiles.get(firstRecordFileIndexToDelete);
+            long consensusEnd = recordFile.getConsensusEnd();
             if (isBackwards) {
-                jdbcOperations.update("delete from record_file where consensus_end <= ?", timestamp);
+                jdbcOperations.update("delete from record_file where consensus_end <= ?", consensusEnd);
                 tokens = tokens.stream()
-                        .filter(t -> t.getTimestampLower() > timestamp)
+                        .filter(t -> t.getTimestampLower() > consensusEnd)
                         .collect(Collectors.toList());
             } else {
-                jdbcOperations.update("delete from record_file where consensus_end >= ?", timestamp);
-                long consensusStart =
-                        recordFiles.get(firstRecordFileIndexToDelete).getConsensusStart();
+                jdbcOperations.update("delete from record_file where consensus_end >= ?", consensusEnd);
                 tokens = tokens.stream()
-                        .filter(t -> t.getTimestampLower() < consensusStart)
+                        .filter(t -> t.getTimestampLower() < recordFile.getConsensusStart())
                         .collect(Collectors.toList());
             }
         } catch (IndexOutOfBoundsException e) {
