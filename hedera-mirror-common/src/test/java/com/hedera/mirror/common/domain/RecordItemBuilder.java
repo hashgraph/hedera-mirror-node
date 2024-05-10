@@ -115,11 +115,7 @@ public class RecordItemBuilder {
             );
 
     public Builder<?> forTransaction(com.hedera.mirror.common.domain.transaction.Transaction transaction) {
-        return lookup(TransactionType.of(transaction.getType())).apply(transaction);
-    }
-
-    public Function<com.hedera.mirror.common.domain.transaction.Transaction, Builder<?>> lookup(TransactionType type) {
-        return builders.get(type);
+        return builders.get(TransactionType.of(transaction.getType())).apply(transaction);
     }
 
     @SuppressWarnings("deprecation")
