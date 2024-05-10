@@ -145,6 +145,8 @@ public class DomainBuilder {
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
 
+    private long timestampOffset = 0;
+
     // Intended for use by unit tests that don't need persistence
     public DomainBuilder() {
         this(null, null);
@@ -1099,8 +1101,16 @@ public class DomainBuilder {
         return RandomStringUtils.random(characters, "0123456789abcdef");
     }
 
+    /**
+     * Reset the timestamp, so next call of timestamp() will return value + 1
+     * @param value The timestamp to reset to
+     */
+    public void resetTimestamp(long value) {
+        timestampOffset = value - timestampNoOffset();
+    }
+
     public long timestamp() {
-        return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + number();
+        return timestampNoOffset() + timestampOffset;
     }
 
     private long tinybar() {
@@ -1112,6 +1122,10 @@ public class DomainBuilder {
                 .atStartOfDay()
                 .toLocalDate()
                 .toEpochDay();
+    }
+
+    private long timestampNoOffset() {
+        return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + number();
     }
 
     private int transactionIndex() {

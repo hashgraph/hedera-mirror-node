@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.NOT_APPLICABLE;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.UNFROZEN;
+import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_0_49_0;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -115,7 +116,6 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         token.setFreezeDefault(freezeDefault);
         token.setInitialSupply(transactionBody.getInitialSupply());
         token.setMaxSupply(transactionBody.getMaxSupply());
-        token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata()));
         token.setName(transactionBody.getName());
         token.setSupplyType(TokenSupplyTypeEnum.fromId(transactionBody.getSupplyTypeValue()));
         token.setSymbol(transactionBody.getSymbol());
@@ -143,8 +143,14 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
             token.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         }
 
-        if (transactionBody.hasMetadataKey()) {
-            token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
+        // metadata and metadata key fields are supported from services 0.49.0. This is a workaround of the issue that
+        // services 0.48.x processes such transactions as if the fields are not present.
+        if (recordItem.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_49_0)) {
+            token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata()));
+
+            if (transactionBody.hasMetadataKey()) {
+                token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
+            }
         }
 
         if (transactionBody.hasPauseKey()) {
