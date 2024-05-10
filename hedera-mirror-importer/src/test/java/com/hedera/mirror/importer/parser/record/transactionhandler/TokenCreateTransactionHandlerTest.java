@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.converter.VersionConverter;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -47,9 +48,11 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.springframework.data.util.Version;
 
 class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -81,10 +84,11 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @CsvSource(
             textBlock =
                     """
-                            true, true, true, true, true, FROZEN, REVOKED, UNFROZEN, GRANTED
-                            false, true, false, false, true, UNFROZEN, NOT_APPLICABLE, UNFROZEN, NOT_APPLICABLE
-                            false, false, false, false, false, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE
-                            """)
+                true, true, true, true, true, 0.49.0, true, FROZEN, REVOKED, UNFROZEN, GRANTED
+                false, true, false, false, true, 0.50.0, true, UNFROZEN, NOT_APPLICABLE, UNFROZEN, NOT_APPLICABLE
+                false, false, false, false, false, 0.49.0, true, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE, NOT_APPLICABLE
+                true, true, true, true, true, 0.47.0, false, FROZEN, REVOKED, UNFROZEN, GRANTED
+                """)
     @ParameterizedTest
     void updateTransaction(
             boolean freezeDefault,
@@ -92,6 +96,8 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
             boolean hasKycKey,
             boolean hasMetadata,
             boolean hasMetadataKey,
+            @ConvertWith(VersionConverter.class) Version hapiVersion,
+            boolean shouldProcessMetadata,
             TokenFreezeStatusEnum expectedTokenFreezeStatus,
             TokenKycStatusEnum expectedTokenKycStatus,
             TokenFreezeStatusEnum expectedTokenAccountFreezeStatus,
@@ -99,6 +105,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // Given
         var recordItem = recordItemBuilder
                 .tokenCreate()
+                .recordItem(r -> r.hapiVersion(hapiVersion))
                 .transactionBody(b -> {
                     b.setFreezeDefault(freezeDefault);
                     if (!hasFreezeKey) {
@@ -142,9 +149,13 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // Then
         var expectedFreezeKey = hasFreezeKey ? transactionBody.getFreezeKey().toByteArray() : null;
         var expectedKycKey = hasKycKey ? transactionBody.getKycKey().toByteArray() : null;
-        var expectedMetadata = hasMetadata ? transactionBody.getMetadata().toByteArray() : EMPTY_BYTE_ARRAY;
-        var expectedMetadataKey =
-                hasMetadataKey ? transactionBody.getMetadataKey().toByteArray() : null;
+        byte[] expectedMetadata = null;
+        byte[] expectedMetadataKey = null;
+        if (shouldProcessMetadata) {
+            expectedMetadata = hasMetadata ? transactionBody.getMetadata().toByteArray() : EMPTY_BYTE_ARRAY;
+            expectedMetadataKey =
+                    hasMetadataKey ? transactionBody.getMetadataKey().toByteArray() : null;
+        }
         verify(entityListener).onToken(token.capture());
         verify(entityListener).onCustomFee(customFee.capture());
         verify(entityListener).onTokenAccount(tokenAccount.capture());
