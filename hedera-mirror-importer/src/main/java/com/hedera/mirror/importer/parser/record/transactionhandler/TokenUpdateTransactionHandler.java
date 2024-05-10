@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_0_49_0;
+
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -107,12 +109,16 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
             token.setKycKey(transactionBody.getKycKey().toByteArray());
         }
 
-        if (transactionBody.hasMetadata()) {
-            token.setMetadata(DomainUtils.toBytes(transactionBody.getMetadata().getValue()));
-        }
+        if (recordItem.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_49_0)) {
+            // metadata and metadata key fields are supported from services 0.49.0
+            if (transactionBody.hasMetadata()) {
+                token.setMetadata(
+                        DomainUtils.toBytes(transactionBody.getMetadata().getValue()));
+            }
 
-        if (transactionBody.hasMetadataKey()) {
-            token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
+            if (transactionBody.hasMetadataKey()) {
+                token.setMetadataKey(transactionBody.getMetadataKey().toByteArray());
+            }
         }
 
         if (!transactionBody.getName().isEmpty()) {
