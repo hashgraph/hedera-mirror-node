@@ -229,7 +229,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
         var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
 
-        domainBuilder
+        var nftAllowance2 = domainBuilder
                 .nftAllowance()
                 .customize(e -> e.spender(ACCOUNT_ID.getId())
                         .owner(nftAllowance1.getOwner() + 2)
@@ -248,7 +248,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
-        assertThat(response).containsExactly(nftAllowance1);
+        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
     }
 
     @Test

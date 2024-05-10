@@ -96,9 +96,9 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
                 if (param.operator() == RangeOperator.GT
                         || param.operator() == RangeOperator.GTE
                         || param.operator() == RangeOperator.EQ) {
-                    upperBoundParam = param;
-                } else if (param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE) {
                     lowerBoundParam = param;
+                } else if (param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE) {
+                    upperBoundParam = param;
                 }
             }
         }

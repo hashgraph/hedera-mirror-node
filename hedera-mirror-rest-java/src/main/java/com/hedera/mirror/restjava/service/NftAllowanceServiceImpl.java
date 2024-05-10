@@ -51,7 +51,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
             if (bounds.lower > bounds.upper) {
                 return Collections.emptyList();
             } else if (bounds.lower == bounds.upper) {
-                var optimizedRangeParam = new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(bounds.upper));
+                var optimizedRangeParam = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(bounds.lower));
                 request.setOwnerOrSpenderId(List.of(optimizedRangeParam));
             }
         }
