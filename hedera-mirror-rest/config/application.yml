@@ -71,7 +71,7 @@ hedera:
       redis:
         commandTimeout: 10000
         connectTimeout: 10000
-        enabled: true
+        enabled: false
         maxBackoff: 128000
         maxMemory: 250Mb
         maxMemoryPolicy: allkeys-lfu
