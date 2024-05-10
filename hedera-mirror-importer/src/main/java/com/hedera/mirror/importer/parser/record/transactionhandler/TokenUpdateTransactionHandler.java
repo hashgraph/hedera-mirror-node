@@ -109,8 +109,9 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
             token.setKycKey(transactionBody.getKycKey().toByteArray());
         }
 
+        // metadata and metadata key fields are supported from services 0.49.0. This is a workaround of the issue that
+        // services 0.48.x processes such transactions as if the fields are not present.
         if (recordItem.getHapiVersion().isGreaterThanOrEqualTo(HAPI_VERSION_0_49_0)) {
-            // metadata and metadata key fields are supported from services 0.49.0
             if (transactionBody.hasMetadata()) {
                 token.setMetadata(
                         DomainUtils.toBytes(transactionBody.getMetadata().getValue()));

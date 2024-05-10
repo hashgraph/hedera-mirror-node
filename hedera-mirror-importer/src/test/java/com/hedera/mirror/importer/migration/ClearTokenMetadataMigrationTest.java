@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -56,6 +57,7 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
 
     private static final long CREATE = -1;
     private static final Predicate<Token> IS_CURRENT = t -> t.getTimestampUpper() == null;
+    private static final long LAST_HAPI_0_46_TIMESTAMP = 1709229598938101716L;
 
     @Value("classpath:db/migration/v1/V1.97.2__clear_token_metadata.sql")
     private final Resource migrationSql;
@@ -92,15 +94,17 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
     @ParameterizedTest
     void migrate(int firstRecordFileIndexToDelete, boolean isBackwards) {
         // given
-        var recordFiles = List.of(
-                persistRecordFile(46),
-                persistRecordFile(46),
+        // reserve 50ns for 2 HAPI 0.46 record files with each spanning 10ns
+        domainBuilder.resetTimestamp(LAST_HAPI_0_46_TIMESTAMP - 50);
+        var recordFiles = Lists.newArrayList(persistRecordFile(46), persistRecordFile(46));
+        domainBuilder.resetTimestamp(LAST_HAPI_0_46_TIMESTAMP);
+        recordFiles.addAll(List.of(
                 persistRecordFile(47), // index 2
                 persistRecordFile(47),
                 // there is no HAPI version 0.48.0 record file in the network because services still generates
                 // them with HAPI version 0.47.0 in release 0.48.x
                 persistRecordFile(49), // index 4
-                persistRecordFile(49));
+                persistRecordFile(49)));
 
         // token1 created in 0.46, without metadata / metadata key, and none of its updates will set the fields
         long timestamp = recordFiles.getFirst().getConsensusStart();
