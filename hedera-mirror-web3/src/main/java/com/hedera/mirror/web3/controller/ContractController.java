@@ -66,14 +66,15 @@ import org.springframework.web.server.ServerWebInputException;
 @RestController
 class ContractController {
     private final ContractCallService contractCallService;
-    private final Bucket bucket;
+    private final Bucket rateLimitBucket;
+    private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties evmProperties;
 
     @CrossOrigin(origins = "*")
     @PostMapping(value = "/call")
     ContractCallResponse call(@RequestBody @Valid ContractCallRequest request) {
 
-        if (!bucket.tryConsume(1)) {
+        if (!rateLimitBucket.tryConsume(1) || !gasLimitBucket.tryConsume(request.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
 

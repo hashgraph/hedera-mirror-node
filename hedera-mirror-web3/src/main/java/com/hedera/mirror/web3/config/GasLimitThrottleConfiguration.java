@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.config;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
+import io.github.bucket4j.local.SynchronizationStrategy;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -26,16 +27,20 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @RequiredArgsConstructor
-class RateLimitConfiguration {
+public class GasLimitThrottleConfiguration {
+
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Bean
-    Bucket rateLimitBucket() {
-        long rateLimit = mirrorNodeEvmProperties.getRateLimit();
+    Bucket gasLimitBucket() {
+        long gasLimit = mirrorNodeEvmProperties.getThrottleGasLimit();
         final var limit = Bandwidth.builder()
-                .capacity(rateLimit)
-                .refillGreedy(rateLimit, Duration.ofSeconds(1))
+                .capacity(gasLimit)
+                .refillGreedy(gasLimit, Duration.ofSeconds(1))
                 .build();
-        return Bucket.builder().addLimit(limit).build();
+        return Bucket.builder()
+                .withSynchronizationStrategy(SynchronizationStrategy.SYNCHRONIZED)
+                .addLimit(limit)
+                .build();
     }
 }

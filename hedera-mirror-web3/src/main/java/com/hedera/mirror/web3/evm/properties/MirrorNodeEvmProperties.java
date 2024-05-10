@@ -174,6 +174,14 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
 
+    @Getter
+    private long throttleGasLimit = 50_000_000L;
+
+    @Getter
+    @Min(0)
+    @Max(100)
+    private int throttleGasLimitRefundPercent = 20;
+
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
     }

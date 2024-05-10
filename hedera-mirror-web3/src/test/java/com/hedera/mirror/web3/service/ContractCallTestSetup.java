@@ -1009,6 +1009,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final CallType callType,
             final long value,
             final BlockType block) {
+        return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
+    }
+
+    protected CallServiceParameters serviceParametersForExecution(
+            final Bytes callData,
+            final Address contractAddress,
+            final CallType callType,
+            final long value,
+            final BlockType block,
+            final long gasLimit) {
         HederaEvmAccount sender;
         if (block != BlockType.LATEST) {
             sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
@@ -1022,7 +1032,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .value(value)
                 .receiver(contractAddress)
                 .callData(callData)
-                .gas(15_000_000L)
+                .gas(gasLimit)
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
