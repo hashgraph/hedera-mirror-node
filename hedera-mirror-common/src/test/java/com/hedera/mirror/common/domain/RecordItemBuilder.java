@@ -39,7 +39,6 @@ import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
-import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -100,12 +99,10 @@ public class RecordItemBuilder {
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
     private static final long INITIAL_ID = 1000L;
-    private static final AccountID NODE = AccountID.newBuilder().setAccountNum(3).build();
     private static final RealmID REALM_ID = RealmID.getDefaultInstance();
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
 
-    private final AtomicLong id = new AtomicLong(INITIAL_ID);
-    private final SecureRandom random = new SecureRandom();
+    private final AtomicLong entityId = new AtomicLong(INITIAL_ID);
     private final Instant now = Instant.now();
     private final Map<TransactionType, Function<com.hedera.mirror.common.domain.transaction.Transaction, Builder<?>>>
             builders = Map.of(
@@ -145,7 +142,7 @@ public class RecordItemBuilder {
 
         ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
-                .setAutoRenewAccountId(NODE)
+                .setAutoRenewAccountId(Builder.toAccountID(transaction.getNodeAccountId()))
                 .setAutoRenewPeriod(duration(30))
                 .setConstructorParameters(bytes(64))
                 .setDeclineReward(true)
@@ -155,7 +152,7 @@ public class RecordItemBuilder {
                 .setMaxAutomaticTokenAssociations(5)
                 .setMemo(text(16))
                 .setNewRealmAdminKey(key())
-                .setProxyAccountID(NODE)
+                .setProxyAccountID(Builder.toAccountID(transaction.getNodeAccountId()))
                 .setRealmID(REALM_ID)
                 .setShardID(SHARD_ID)
                 .setStakedNodeId(1L);
@@ -256,17 +253,9 @@ public class RecordItemBuilder {
         return ByteString.copyFrom(bytes);
     }
 
-    // Helper methods
-    private AccountAmount accountAmount(AccountID accountID, long amount) {
-        return AccountAmount.newBuilder()
-                .setAccountID(accountID)
-                .setAmount(amount)
-                .build();
-    }
-
     private byte[] randomBytes(int length) {
         byte[] bytes = new byte[length];
-        random.nextBytes(bytes);
+        new SecureRandom().nextBytes(bytes);
         return bytes;
     }
 
@@ -340,11 +329,11 @@ public class RecordItemBuilder {
     }
 
     private long id() {
-        return id.incrementAndGet();
+        return entityId.incrementAndGet();
     }
 
     private Key key() {
-        if (id.get() % 2 == 0) {
+        if (entityId.get() % 2 == 0) {
             return Key.newBuilder().setECDSASecp256K1(bytes(KEY_LENGTH_ECDSA)).build();
         } else {
             return Key.newBuilder().setEd25519(bytes(KEY_LENGTH_ED25519)).build();
@@ -490,10 +479,7 @@ public class RecordItemBuilder {
                             .setAccountID(toAccountID(transaction.getPayerAccountId()))
                             .setTransactionValidStart(timestamp(Instant.ofEpochSecond(0, transaction.getValidStartNs())))
                             .build())
-                    .setTransferList(TransferList.newBuilder()
-                            .addAccountAmounts(accountAmount(toAccountID(transaction.getPayerAccountId()), -3000L))
-                            .addAccountAmounts(accountAmount(toAccountID(transaction.getNodeAccountId()), 1000L))
-                            .build());
+                    .setTransferList(TransferList.getDefaultInstance());
             transactionRecord.getReceiptBuilder().setStatus(status);
             return transactionRecord;
         }
