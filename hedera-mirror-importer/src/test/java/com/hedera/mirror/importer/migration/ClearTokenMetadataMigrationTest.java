@@ -130,7 +130,7 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
 
         // token5 created in 0.49, without metadata / metadata key
         timestamp = recordFiles.get(4).getConsensusStart();
-        long token5 = createOrUpdateToken(t -> t.metadata(null).metadataKey(null), CREATE, timestamp);
+        long token5 = createOrUpdateToken(t -> t.metadata(EMPTY_BYTE_ARRAY).metadataKey(null), CREATE, timestamp);
 
         // token5 updated, still no metadata / metadata key
         createOrUpdateToken(t -> {}, token5, ++timestamp);
@@ -269,7 +269,7 @@ class ClearTokenMetadataMigrationTest extends ImporterIntegrationTest {
                         .collect(Collectors.toList());
             }
         } catch (IndexOutOfBoundsException e) {
-            // do  nothing
+            // do nothing
         }
     }
 
