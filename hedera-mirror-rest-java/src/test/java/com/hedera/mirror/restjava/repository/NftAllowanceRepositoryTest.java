@@ -299,7 +299,9 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
                         .ownerOrSpenderId(
                                 List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0)))))
-                        .tokenId(List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(1)))))
+                        .tokenId(List.of(
+                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(1))),
+                                new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(tokenIds.get(2)))))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),

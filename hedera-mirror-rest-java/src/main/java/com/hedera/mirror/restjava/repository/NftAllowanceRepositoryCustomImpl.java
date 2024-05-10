@@ -149,20 +149,20 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     }
 
     private Condition getMiddleCondition(
-            EntityIdRangeParameter primary,
-            EntityIdRangeParameter token,
+            EntityIdRangeParameter primarySortParam,
+            EntityIdRangeParameter tokenParam,
             TableField<NftAllowanceRecord, Long> primarySortField) {
 
         // No secondary condition if there is no primary parameter bound or no token parameter, or the primary sort
         // parameter's operator is EQ. Note that it's guaranteed that there must be
         // a primary sort parameter when token parameter exists except in case of optimized Range
 
-        if (primary == null || token == null || primary.operator() == RangeOperator.EQ) {
+        if (primarySortParam == null || tokenParam == null || primarySortParam.operator() == RangeOperator.EQ) {
             return noCondition();
         }
 
-        long value = primary.value().getId();
-        var operator = primary.operator();
+        long value = primarySortParam.value().getId();
+        var operator = primarySortParam.operator();
 
         if (operator == RangeOperator.GT || operator == RangeOperator.GTE) {
             value += 1L;
