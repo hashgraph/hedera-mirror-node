@@ -68,7 +68,7 @@ spec:
     stackgres:
       worker:
         persistentVolume:
-          size: 1000Gi
+          size: 900Gi
     test:
       cucumberTags: "@acceptance and not @equivalence"
       enabled: false
