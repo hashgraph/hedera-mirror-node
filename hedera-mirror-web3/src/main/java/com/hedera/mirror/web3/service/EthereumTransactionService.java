@@ -14,13 +14,22 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.web3.service;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import java.util.Optional;
-import org.springframework.data.repository.CrudRepository;
 
-public interface EthereumTransactionRepository extends CrudRepository<EthereumTransaction, Long> {
+public interface EthereumTransactionService {
 
+    /**
+     * @param transactionHash the ethereum transaction hash
+     * @return {@link EthereumTransaction} with the {@code transactionHash}
+     */
     Optional<EthereumTransaction> findByHash(byte[] transactionHash);
+
+    /**
+     * @param consensusTimestamp the consensus timestamp of the transaction
+     * @return {@link EthereumTransaction} with the {@code consensusTimestamp}
+     */
+    Optional<EthereumTransaction> findByConsensusTimestamp(long consensusTimestamp);
 }

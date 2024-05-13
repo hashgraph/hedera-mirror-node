@@ -29,6 +29,7 @@ import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.EthereumTransactionService;
 import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.mirror.web3.service.TransactionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -37,6 +38,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import io.github.bucket4j.Bucket;
 import java.math.BigInteger;
@@ -46,6 +48,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -63,11 +66,25 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
 class OpcodesController {
 
+    private final RecordFileService recordFileService;
     private final TransactionService transactionService;
+    private final EthereumTransactionService ethereumTransactionService;
     private final ContractCallService contractCallService;
     private final Bucket bucket;
-    private final RecordFileService recordFileService;
 
+    /**
+     * Returns a result containing detailed information for the transaction execution with stack, memory and storage.\
+     * For providing output formatted by opcodeLogger, the transaction is re-executed using the state from the
+     * contract_state_changes sidecars produced by the consensus nodes.
+     * In this way, we can have a track on all the storage/memory information and the entire trace of opcodes
+     * that were executed during the replay.
+     *
+     * @param transactionIdOrHash The transaction ID or hash
+     * @param stack Include stack information
+     * @param memory Include memory information
+     * @param storage Include storage information
+     * @return {@link OpcodesResponse} containing the result of the transaction execution
+     */
     @CrossOrigin(origins = "*")
     @PostMapping(value = "/{transactionIdOrHash}/opcodes")
     OpcodesResponse opcodes(@PathVariable TransactionIdOrHashParameter transactionIdOrHash,
@@ -94,7 +111,9 @@ class OpcodesController {
                         .orElse(Address.ZERO.toHexString()))
                 .gas(result.transactionProcessingResult().getGasPrice())
                 .failed(!result.transactionProcessingResult().isSuccessful())
-                .returnValue(result.transactionProcessingResult().getOutput().toHexString())
+                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                        .map(Bytes::toHexString)
+                        .orElse(null))
                 .opcodes(result.opcodes().stream()
                         .map(opcode -> new Opcode()
                                 .pc(opcode.pc())
@@ -122,28 +141,35 @@ class OpcodesController {
                         .toList());
     }
 
+    @SneakyThrows
     private CallServiceParameters constructServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
-        final long consensusTimestamp;
+        final Transaction transaction;
+        final Optional<EthereumTransaction> ethTransactionOpt;
 
         if (transactionIdOrHash.isHash()) {
-            final EthereumTransaction ethTransaction = transactionService
-                    .findByEthHash(transactionIdOrHash.hash().toByteArray())
+            final EthereumTransaction ethTransaction = ethereumTransactionService
+                    .findByHash(transactionIdOrHash.hash().toByteArray())
+                    .orElseThrow(() -> new IllegalArgumentException("EthereumTransaction not found"));
+            transaction = transactionService.findByConsensusTimestamp(ethTransaction.getConsensusTimestamp())
                     .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
-            consensusTimestamp = ethTransaction.getConsensusTimestamp();
+            ethTransactionOpt = Optional.of(ethTransaction);
         } else if (transactionIdOrHash.isTransactionId()) {
-            final Transaction transaction = transactionService
-                    .findByTransactionId(transactionIdOrHash.transactionID())
+            transaction = transactionService.findByTransactionId(transactionIdOrHash.transactionID())
                     .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
-            consensusTimestamp = transaction.getConsensusTimestamp();
+            ethTransactionOpt = ethereumTransactionService.findByConsensusTimestamp(transaction.getConsensusTimestamp());
         } else {
-            throw new IllegalArgumentException("Invalid transaction ID or hash");
+            throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
         }
 
-        final RecordFile recordFile = recordFileService.findRecordFileForTimestamp(consensusTimestamp)
+        final RecordFile recordFile = recordFileService.findRecordFileForTimestamp(transaction.getConsensusTimestamp())
                 .orElseThrow(() -> new IllegalArgumentException("Record file with transaction not found"));
 
-        final RecordItem recordItem = recordFile.getRecordItem(consensusTimestamp)
-                .orElseThrow(() -> new IllegalArgumentException("Record item for transaction not found"));
+        final RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(recordFile.getHapiVersion())
+                .transactionRecord(TransactionRecord.parseFrom(transaction.getTransactionRecordBytes()))
+                .transaction(com.hederahashgraph.api.proto.java.Transaction.parseFrom(transaction.getTransactionBytes()))
+                .ethereumTransaction(ethTransactionOpt.orElse(null))
+                .build();
 
         return CallServiceParameters.builder()
                 .sender(new HederaEvmAccount(getSenderAddress(recordItem)))

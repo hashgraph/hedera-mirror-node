@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.Optional;
@@ -30,8 +29,8 @@ public interface TransactionService {
     Optional<Transaction> findByTransactionId(TransactionID transactionId);
 
     /**
-     * @param transactionHash the ethereum transaction hash
-     * @return {@link EthereumTransaction} with the {@code transactionHash}
+     * @param consensusTimestamp the consensus timestamp of the transaction
+     * @return {@link Transaction} with the {@code consensusTimestamp}
      */
-    Optional<EthereumTransaction> findByEthHash(byte[] transactionHash);
+    Optional<Transaction> findByConsensusTimestamp(long consensusTimestamp);
 }

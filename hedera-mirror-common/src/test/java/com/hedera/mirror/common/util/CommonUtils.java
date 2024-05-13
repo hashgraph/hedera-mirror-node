@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.common.util;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hederahashgraph.api.proto.java.AccountID;
 import java.security.SecureRandom;
 import lombok.experimental.UtilityClass;
 
@@ -28,5 +30,13 @@ public class CommonUtils {
         var bytes = new byte[length];
         RANDOM.nextBytes(bytes);
         return bytes;
+    }
+
+    public static AccountID toAccountID(EntityId entityId) {
+        return AccountID.newBuilder()
+                .setShardNum(entityId.getShard())
+                .setRealmNum(entityId.getRealm())
+                .setAccountNum(entityId.getNum())
+                .build();
     }
 }
