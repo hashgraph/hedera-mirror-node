@@ -2,8 +2,12 @@ name: Release Production
 
 on:
   workflow_dispatch:
-    with:
-      tag: "v*"
+    inputs:
+      tag:
+        description: "release version:"
+        type: string
+        required: false
+        default: "v0.104.0"
   push:
     tags:
       - "v*"
