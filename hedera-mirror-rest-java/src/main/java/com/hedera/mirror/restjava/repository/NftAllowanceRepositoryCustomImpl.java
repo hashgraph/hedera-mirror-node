@@ -61,11 +61,11 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
 
-        var primarySortParam = request.getOwnerOrSpenderId();
-        var tokenParam = request.getTokenId();
+        var primarySortParams = request.getOwnerOrSpenderIds();
+        var tokenParams = request.getTokenIds();
 
-        Bound primaryBounds = getBounds(primarySortParam);
-        Bound tokenBounds = getBounds(tokenParam);
+        var primaryBounds = getBounds(primarySortParams);
+        var tokenBounds = getBounds(tokenParams);
 
         var commonCondition = getCondition(primaryField, RangeOperator.EQ, accountId.getId());
         var lowerCondition = getOuterBoundCondition(

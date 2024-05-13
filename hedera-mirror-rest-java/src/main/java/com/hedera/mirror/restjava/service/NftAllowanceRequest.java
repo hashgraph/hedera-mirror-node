@@ -38,7 +38,7 @@ public class NftAllowanceRequest {
     @Builder.Default
     private boolean isOwner = true;
 
-    private List<EntityIdRangeParameter> ownerOrSpenderId;
+    private List<EntityIdRangeParameter> ownerOrSpenderIds;
 
-    private List<EntityIdRangeParameter> tokenId;
+    private List<EntityIdRangeParameter> tokenIds;
 }

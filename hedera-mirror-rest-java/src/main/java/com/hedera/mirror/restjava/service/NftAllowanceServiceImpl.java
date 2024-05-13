@@ -38,8 +38,8 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
     public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
-        var ownerOrSpenderId = request.getOwnerOrSpenderId();
-        var token = request.getTokenId();
+        var ownerOrSpenderId = request.getOwnerOrSpenderIds();
+        var token = request.getTokenIds();
         var id = entityService.lookup(request.getAccountId());
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
@@ -52,7 +52,7 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
                 return Collections.emptyList();
             } else if (bounds.lower == bounds.upper) {
                 var optimizedRangeParam = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(bounds.lower));
-                request.setOwnerOrSpenderId(List.of(optimizedRangeParam));
+                request.setOwnerOrSpenderIds(List.of(optimizedRangeParam));
             }
         }
 

@@ -16,6 +16,9 @@
 
 package com.hedera.mirror.restjava.controller;
 
+import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
+import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
+
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
@@ -27,6 +30,8 @@ import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import java.util.LinkedHashMap;
+import java.util.List;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -36,12 +41,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.LinkedHashMap;
-import java.util.List;
-
-import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 
 @CustomLog
 @RequestMapping("/api/v1/accounts/{id}/allowances")
@@ -69,8 +68,8 @@ public class AllowancesController {
                 .isOwner(owner)
                 .limit(limit)
                 .order(order)
-                .ownerOrSpenderId(accountId)
-                .tokenId(tokenId);
+                .ownerOrSpenderIds(accountId)
+                .tokenIds(tokenId);
 
         var serviceResponse = service.getNftAllowances(builder.build());
 
