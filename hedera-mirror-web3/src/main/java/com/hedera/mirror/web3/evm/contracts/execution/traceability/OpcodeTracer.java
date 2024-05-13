@@ -1,14 +1,18 @@
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import com.hedera.mirror.common.domain.transaction.Opcode;
+import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import lombok.Getter;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.StorageEntry;
 import org.hyperledger.besu.evm.operation.Operation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -16,6 +20,8 @@ import java.util.stream.IntStream;
 public class OpcodeTracer implements HederaEvmOperationTracer {
 
     private List<Opcode> opcodes;
+
+    private Optional<TransactionSidecarRecord> transactionRecord;
 
     @Override
     public void init(MessageFrame initialFrame) {
@@ -45,5 +51,19 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
                 frame.getRevertReason().toString()
         ));
 
+    }
+
+    public void tracePrecompileCall(
+            final MessageFrame frame, final long gasRequirement, final Bytes output) {
+        //frame.getContextVariable()
+        // first checks if calls precompile
+        //
+        Optional<ContractAction> action = transactionRecord.flatMap(record -> record.getActions().getContractActionsList().stream()
+                .filter(contractAction -> contractAction.getCallOperationType().getNumber() == (frame.getCurrentOperation().getOpcode()))
+                .findFirst());
+    }
+
+    public void loadRecord(Optional<TransactionSidecarRecord> record) {
+        this.transactionRecord = record;
     }
 }
