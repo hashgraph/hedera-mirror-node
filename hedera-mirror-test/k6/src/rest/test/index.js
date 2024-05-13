@@ -28,6 +28,8 @@ import * as accountsCryptoAllowanceSpender from './accountsCryptoAllowanceSpende
 import * as accountsId from './accountsId.js';
 import * as accountsIdTimestampLte from './accountsIdTimestampLte.js';
 import * as accountsIdNe from './accountsIdNe.js';
+import * as accountsNftAllowanceOwner from './accountsNftAllowanceOwner.js';
+import * as accountsNftAllowanceSpender from './accountsNftAllowanceSpender.js';
 import * as accountsNfts from './accountsNfts.js';
 import * as accountsTokens from './accountsTokens.js';
 import * as accountsTokenAllowance from './accountsTokenAllowance.js';
@@ -89,6 +91,8 @@ const tests = {
   accountsId,
   accountsIdNe,
   accountsIdTimestampLte,
+  accountsNftAllowanceOwner,
+  accountsNftAllowanceSpender,
   accountsNfts,
   accountsTokens,
   accountsTokenAllowance,
