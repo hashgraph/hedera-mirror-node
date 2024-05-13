@@ -65,6 +65,10 @@ spec:
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
+    stackgres:
+      worker:
+        persistentVolume:
+          size: 1000Gi
     test:
       cucumberTags: "@acceptance and not @equivalence"
       enabled: false
