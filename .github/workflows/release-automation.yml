@@ -9,7 +9,10 @@ on:
 
 permissions:
   contents: write
-  
+  issues: write
+  packages: write
+  pull-requests: write
+
 
 defaults:
   run:

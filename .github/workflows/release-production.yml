@@ -6,7 +6,8 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
+  packages: write
 
 defaults:
   run:
