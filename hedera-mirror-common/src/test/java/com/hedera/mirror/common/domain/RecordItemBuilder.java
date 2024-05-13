@@ -18,6 +18,8 @@ package com.hedera.mirror.common.domain;
 
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
+import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
+import static com.hedera.mirror.common.util.CommonUtils.toAccountID;
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
@@ -26,7 +28,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Int64Value;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -58,17 +59,13 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.security.SecureRandom;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +92,7 @@ import org.springframework.stereotype.Component;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RecordItemBuilder {
 
-    public static final String LONDON_RAW_TX =
+    private static final String LONDON_RAW_TX =
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
     private static final long INITIAL_ID = 1000L;
@@ -103,7 +100,6 @@ public class RecordItemBuilder {
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
 
     private final AtomicLong entityId = new AtomicLong(INITIAL_ID);
-    private final Instant now = Instant.now();
     private final Map<TransactionType, Function<com.hedera.mirror.common.domain.transaction.Transaction, Builder<?>>>
             builders = Map.of(
                     TransactionType.CONTRACTCALL, this::contractCall,
@@ -142,7 +138,7 @@ public class RecordItemBuilder {
 
         ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
-                .setAutoRenewAccountId(Builder.toAccountID(transaction.getNodeAccountId()))
+                .setAutoRenewAccountId(toAccountID(transaction.getNodeAccountId()))
                 .setAutoRenewPeriod(duration(30))
                 .setConstructorParameters(bytes(64))
                 .setDeclineReward(true)
@@ -152,7 +148,7 @@ public class RecordItemBuilder {
                 .setMaxAutomaticTokenAssociations(5)
                 .setMemo(text(16))
                 .setNewRealmAdminKey(key())
-                .setProxyAccountID(Builder.toAccountID(transaction.getNodeAccountId()))
+                .setProxyAccountID(toAccountID(transaction.getNodeAccountId()))
                 .setRealmID(REALM_ID)
                 .setShardID(SHARD_ID)
                 .setStakedNodeId(1L);
@@ -171,10 +167,6 @@ public class RecordItemBuilder {
                     r.add(contractActions);
                 })
                 .sidecarRecords(r -> r.add(contractBytecode(contractId)));
-    }
-
-    public ContractFunctionResult.Builder contractFunctionResult() {
-        return contractFunctionResult(contractId());
     }
 
     @SuppressWarnings("deprecation")
@@ -244,21 +236,6 @@ public class RecordItemBuilder {
         return builder;
     }
 
-    public AccountID accountId() {
-        return AccountID.newBuilder().setAccountNum(id()).build();
-    }
-
-    public ByteString bytes(int length) {
-        byte[] bytes = randomBytes(length);
-        return ByteString.copyFrom(bytes);
-    }
-
-    private byte[] randomBytes(int length) {
-        byte[] bytes = new byte[length];
-        new SecureRandom().nextBytes(bytes);
-        return bytes;
-    }
-
     private TransactionSidecarRecord.Builder contractActions() {
         return TransactionSidecarRecord.newBuilder()
                 .setActions(ContractActions.newBuilder()
@@ -312,20 +289,16 @@ public class RecordItemBuilder {
                 .setValueWritten(BytesValue.of(bytes(32)));
     }
 
-    private Duration duration(int seconds) {
-        return Duration.newBuilder().setSeconds(seconds).build();
-    }
-
-    public BytesValue evmAddress() {
-        return BytesValue.of(bytes(20));
-    }
-
     private FileID fileId() {
         return FileID.newBuilder().setFileNum(id()).build();
     }
 
     private ContractID contractId() {
         return ContractID.newBuilder().setContractNum(id()).build();
+    }
+
+    public AccountID accountId() {
+        return AccountID.newBuilder().setAccountNum(id()).build();
     }
 
     private long id() {
@@ -340,7 +313,7 @@ public class RecordItemBuilder {
         }
     }
 
-    public NodeStake.Builder nodeStake() {
+    private NodeStake.Builder nodeStake() {
         long stake = id() * TINYBARS_IN_ONE_HBAR;
         long maxStake = 50_000_000_000L * TINYBARS_IN_ONE_HBAR / 26L;
         long minStake = stake / 2;
@@ -354,30 +327,27 @@ public class RecordItemBuilder {
                 .setStakeRewarded(stake - TINYBARS_IN_ONE_HBAR);
     }
 
-    public String text(int characters) {
+    private static Duration duration(int seconds) {
+        return Duration.newBuilder().setSeconds(seconds).build();
+    }
+
+    private static ByteString bytes(int length) {
+        byte[] bytes = nextBytes(length);
+        return ByteString.copyFrom(bytes);
+    }
+
+    private static String text(int characters) {
         return RandomStringUtils.randomAlphanumeric(characters);
     }
 
-    public Timestamp timestamp() {
-        return timestamp(ChronoUnit.SECONDS);
-    }
-
-    public Timestamp timestamp(TemporalUnit unit) {
-        return timestamp(now.plus(id() - INITIAL_ID, unit));
-    }
-
-    public Timestamp timestamp(Instant instant) {
+    private static Timestamp timestamp(Instant instant) {
         return Timestamp.newBuilder()
                 .setSeconds(instant.getEpochSecond())
                 .setNanos(instant.getNano())
                 .build();
     }
 
-    public TokenID tokenId() {
-        return TokenID.newBuilder().setTokenNum(id()).build();
-    }
-
-    public class Builder<T extends GeneratedMessageV3.Builder<T>> {
+    public static class Builder<T extends GeneratedMessageV3.Builder<T>> {
 
         private final T transactionBody;
         private final TransactionType type;
@@ -454,7 +424,9 @@ public class RecordItemBuilder {
 
         private SignatureMap.Builder defaultSignatureMap() {
             return SignatureMap.newBuilder()
-                    .addSigPair(SignaturePair.newBuilder().setEd25519(bytes(32)).setPubKeyPrefix(bytes(16)));
+                    .addSigPair(SignaturePair.newBuilder()
+                            .setEd25519(bytes(32))
+                            .setPubKeyPrefix(bytes(16)));
         }
 
         private TransactionBody.Builder defaultTransactionBody(com.hedera.mirror.common.domain.transaction.Transaction transaction) {
@@ -491,14 +463,6 @@ public class RecordItemBuilder {
                             .setSigMap(signatureMap)
                             .build()
                             .toByteString());
-        }
-
-        private static AccountID toAccountID(EntityId entityId) {
-            return AccountID.newBuilder()
-                    .setShardNum(entityId.getShard())
-                    .setRealmNum(entityId.getRealm())
-                    .setAccountNum(entityId.getNum())
-                    .build();
         }
     }
 }

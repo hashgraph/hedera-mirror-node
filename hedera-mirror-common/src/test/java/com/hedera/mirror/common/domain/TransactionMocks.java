@@ -1,5 +1,6 @@
 package com.hedera.mirror.common.domain;
 
+import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 import static com.hedera.mirror.common.util.CommonUtils.toAccountID;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 
@@ -10,7 +11,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.security.SecureRandom;
 import java.util.List;
 import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
@@ -147,6 +147,14 @@ public class TransactionMocks {
                     tx.consensusTimestamp(convertToNanosMax(
                             consensusTimestamp.getSeconds(),
                             consensusTimestamp.getNanos()));
+                    if (typeByte == EIP1559_TYPE_BYTE) {
+                        tx.maxGasAllowance(Long.MAX_VALUE);
+                        tx.maxFeePerGas(nextBytes(32));
+                        tx.maxPriorityFeePerGas(nextBytes(32));
+                    }
+                    if (typeByte == EIP2930_TYPE_BYTE) {
+                        tx.accessList(nextBytes(100));
+                    }
                 })
                 .get();
     }
@@ -180,8 +188,6 @@ public class TransactionMocks {
     }
 
     private static byte[] generateTransactionHash() {
-        byte[] bytes = new byte[32];
-        new SecureRandom().nextBytes(bytes);
-        return bytes;
+        return nextBytes(32);
     }
 }
