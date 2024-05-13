@@ -1,6 +1,7 @@
 name: Release Production
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - "v*"
@@ -153,23 +154,25 @@ jobs:
       - name: Create k3d cluster
         run: k3d cluster create mirror --agents 1 --wait --image rancher/k3s:v1.29.3-k3s1
 
-      - name: Get tag
-        run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+      #- name: Get tag
+      #  run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
       - name: Install kubectl
         run: curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
-      - name: Install mpdev
-        run:
-          docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
-          && chmod +x ${MPDEV}
+      #- name: Install mpdev
+      #  run:
+      #    docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
+      #    && chmod +x ${MPDEV}
 
       - name: Install application
-        run: kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
-
-      - name: Build images
-        run: ./release.sh "${TAG}"
-        working-directory: charts/marketplace/gcp
-
-      - name: Install marketplace app
-        run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
+        run: |
+          kubectl version
+      #  run: kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
+      #
+      #- name: Build images
+      #  run: ./release.sh "${TAG}"
+      #  working-directory: charts/marketplace/gcp
+      #
+      #- name: Install marketplace app
+      #  run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
