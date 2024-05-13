@@ -2,6 +2,8 @@ name: Release Production
 
 on:
   workflow_dispatch:
+    with:
+      tag: "v*"
   push:
     tags:
       - "v*"
