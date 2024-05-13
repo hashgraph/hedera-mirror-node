@@ -38,12 +38,11 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.util.Version;
 
-@ExtendWith(MockitoExtension.class)
 class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private static final long DEFAULT_AUTO_RENEW_ACCOUNT_NUM = 2;
@@ -76,10 +75,17 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         return EntityType.TOKEN;
     }
 
-    @Test
-    void updateTransactionSuccessful() {
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+            0.49.0, true
+            0.47.0, false
+            """)
+    void updateTransactionSuccessful(Version hapiVersion, boolean shouldProcessMetadata) {
         // Given
-        var recordItem = recordItemBuilder.tokenUpdate().build();
+        var recordItem = recordItemBuilder
+                .tokenUpdate()
+                .recordItem(r -> r.hapiVersion(hapiVersion))
+                .build();
         var body = recordItem.getTransactionBody().getTokenUpdate();
         var tokenId = EntityId.of(body.getToken());
         var timestamp = recordItem.getConsensusTimestamp();
@@ -95,6 +101,9 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
+        var expectedMetadata =
+                shouldProcessMetadata ? body.getMetadata().getValue().toByteArray() : null;
+        var expectedMetadataKey = shouldProcessMetadata ? body.getMetadataKey().toByteArray() : null;
         assertTokenUpdate(timestamp, tokenId, id -> assertEquals(autoRenewAccountId.getId(), id));
         verify(entityListener).onToken(assertArg(t -> assertThat(t)
                 .returns(body.getFeeScheduleKey().toByteArray(), Token::getFeeScheduleKey)
@@ -102,8 +111,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(body.getKycKey().toByteArray(), Token::getKycKey)
                 .returns(Range.atLeast(timestamp), Token::getTimestampRange)
                 .returns(body.getName(), Token::getName)
-                .returns(body.getMetadata().getValue().toByteArray(), Token::getMetadata)
-                .returns(body.getMetadataKey().toByteArray(), Token::getMetadataKey)
+                .returns(expectedMetadata, Token::getMetadata)
+                .returns(expectedMetadataKey, Token::getMetadataKey)
                 .returns(body.getPauseKey().toByteArray(), Token::getPauseKey)
                 .returns(body.getSupplyKey().toByteArray(), Token::getSupplyKey)
                 .returns(body.getSymbol(), Token::getSymbol)

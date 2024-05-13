@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   annotations: {{- toYaml .Values.test.annotations | nindent 4 }}
-  labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
+  labels: {{- include "hedera-mirror-acceptance.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror.fullname" . }}-acceptance
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
