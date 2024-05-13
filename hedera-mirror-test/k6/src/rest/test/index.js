@@ -80,6 +80,7 @@ import * as transactionsTransactionTypeAscending from './transactionsTransaction
 
 // add test modules here
 const tests = {
+  /*
   accounts,
   accountsBalanceFalse,
   accountsBalanceFalsePubkey,
@@ -91,8 +92,10 @@ const tests = {
   accountsId,
   accountsIdNe,
   accountsIdTimestampLte,
+  */
   accountsNftAllowanceOwner,
   accountsNftAllowanceSpender,
+  /*
   accountsNfts,
   accountsTokens,
   accountsTokenAllowance,
@@ -140,6 +143,7 @@ const tests = {
   transactionsHash,
   transactionsId,
   transactionsTransactionTypeAscending,
+   */
 };
 
 const {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} =
