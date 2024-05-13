@@ -18,8 +18,10 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -27,7 +29,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hedera.mirror.common.domain.TransactionMocks;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -35,12 +36,15 @@ import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.EthereumTransactionService;
 import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.mirror.web3.service.TransactionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.utils.TransactionMocksProvider;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -49,16 +53,13 @@ import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Optional;
 import lombok.SneakyThrows;
-import lombok.experimental.NonFinal;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -93,34 +94,12 @@ class OpcodesControllerTest {
     private TransactionService transactionService;
 
     @MockBean
+    private EthereumTransactionService ethereumTransactionService;
+
+    @MockBean
     private RecordFileService recordFileService;
 
-    private final TransactionMocks transactionMocks = new TransactionMocks();
-
-    private final List<Transaction> transactions = List.of(
-            transactionMocks.createContractTx,
-            transactionMocks.contractCallTx,
-            transactionMocks.eip1559Tx,
-            transactionMocks.eip2930Tx
-    );
-    private final List<EthereumTransaction> ethereumTransactions = List.of(
-            transactionMocks.createContractEthTx,
-            transactionMocks.contractCallEthTx,
-            transactionMocks.eip1559EthTx,
-            transactionMocks.eip2930EthTx
-    );
-    private final List<RecordFile> recordFiles = List.of(
-            transactionMocks.createContractRecordFile,
-            transactionMocks.contractCallRecordFile,
-            transactionMocks.eip1559RecordFile,
-            transactionMocks.eip2930RecordFile
-    );
-
-    @NonFinal
-    private EthereumTransaction transaction;
-
-    @BeforeEach
-    void setUp() {
+    void setUp(Transaction transaction, EthereumTransaction ethTransaction, RecordFile recordFile) {
         given(bucket.tryConsume(1)).willReturn(true);
         given(contractCallService.processOpcodeCall(any())).willAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
@@ -133,10 +112,11 @@ class OpcodesControllerTest {
                     .build();
         });
 
-        transaction = ethereumTransactions.stream().findAny().orElseThrow();
-        given(transactionService.findByEthHash(transaction.getHash())).willReturn(Optional.of(transaction));
-        given(recordFileService.findRecordFileForTimestamp(any()))
-                .willReturn(getRecordFile(transaction.getConsensusTimestamp()));
+        when(ethereumTransactionService.findByHash(any(byte[].class))).thenReturn(Optional.of(ethTransaction));
+        when(ethereumTransactionService.findByConsensusTimestamp(anyLong())).thenReturn(Optional.of(ethTransaction));
+        when(transactionService.findByTransactionId(any(TransactionID.class))).thenReturn(Optional.of(transaction));
+        when(transactionService.findByConsensusTimestamp(anyLong())).thenReturn(Optional.of(transaction));
+        when(recordFileService.findRecordFileForTimestamp(anyLong())).thenReturn(Optional.of(recordFile));
     }
 
     @SneakyThrows
@@ -151,10 +131,14 @@ class OpcodesControllerTest {
                 .contentType(MediaType.APPLICATION_JSON));
     }
 
-    @Test
-    void exceedingRateLimit() throws Exception {
-        final var transactionHash = Bytes.of(transaction.getHash()).toHexString();
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void exceedingRateLimit(Transaction transaction,
+                            EthereumTransaction ethTransaction,
+                            RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
 
+        final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
         for (var i = 0; i < 3; i++) {
             contractOpcodes(transactionHash).andExpect(status().isOk());
         }
@@ -183,12 +167,17 @@ class OpcodesControllerTest {
                 .andExpect(content().string(new StringContains(expectedMessage)));
     }
 
-    @Test
-    void callRevertMethodAndExpectDetailMessage() throws Exception {
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void callRevertMethodAndExpectDetailMessage(Transaction transaction,
+                                                EthereumTransaction ethTransaction,
+                                                RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
+
         final var detailedErrorMessage = "Custom revert message";
         final var hexDataErrorMessage =
                 "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
-        final var transactionHash = Bytes.of(transaction.getHash()).toHexString();
+        final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
 
         given(contractCallService.processOpcodeCall(any())).willThrow(
                 new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
@@ -200,52 +189,53 @@ class OpcodesControllerTest {
                                 CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage))));
     }
 
-    @NullAndEmptySource
     @ParameterizedTest
-    @ValueSource(strings = {"earliest", "latest", "0", "0x1a", "pending", "safe", "finalized"})
-    void callValidBlockType(String value) throws Exception {
-        given(recordFileService.findRecordFileForTimestamp(any()))
-                .willReturn(getRecordFile(transaction.getConsensusTimestamp())
-                        .map(file -> file.toBuilder()
-                                .index(BlockType.of(value).number())
-                                .build()));
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void callValidBlockType(Transaction transaction,
+                            EthereumTransaction ethTransaction,
+                            RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
 
-        final var transactionHash = Bytes.of(transaction.getHash()).toHexString();
-        contractOpcodes(transactionHash).andExpect(status().isOk());
+        final var blockTypeStrings =
+                new String[] { null, "", "earliest", "latest", "0", "0x1a", "pending", "safe", "finalized" };
+
+        for (String blockType : blockTypeStrings) {
+            given(recordFileService.findRecordFileForTimestamp(any()))
+                    .willReturn(Optional.of(recordFile.toBuilder()
+                            .index(BlockType.of(blockType).number())
+                            .build()));
+
+            final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
+            contractOpcodes(transactionHash).andExpect(status().isOk());
+        }
     }
 
-    @Test
-    void callWithRecordFileNotFoundExceptionTest() throws Exception {
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void callWithRecordFileNotFoundExceptionTest(Transaction transaction,
+                                                 EthereumTransaction ethTransaction,
+                                                 RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
         given(recordFileService.findRecordFileForTimestamp(any())).willReturn(Optional.empty());
 
-        final var transactionHash = Bytes.of(transaction.getHash()).toHexString();
+        final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
         contractOpcodes(transactionHash)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(convert(new GenericErrorResponse("Record file with transaction not found"))));
-    }
-
-    @Test
-    void callWithRecordItemNotFound() throws Exception {
-        given(recordFileService.findRecordFileForTimestamp(any())).willReturn(
-                getRecordFile(transaction.getConsensusTimestamp())
-                        .map(file -> file.toBuilder()
-                                .items(List.of())
-                                .build())
-        );
-
-        final var transactionHash = Bytes.of(transaction.getHash()).toHexString();
-        contractOpcodes(transactionHash)
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse("Record item for transaction not found"))));
     }
 
     /*
      * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
      * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
      */
-    @Test
-    void callSuccessCors() throws Exception {
-        final var transactionHash = Bytes.of(transaction.getHash()).toHexString();
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void callSuccessCors(Transaction transaction,
+                         EthereumTransaction ethTransaction,
+                         RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
+
+        final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
 
         mockMvc.perform(options(OPCODES_URI, transactionHash)
                         .accept(MediaType.APPLICATION_JSON)
@@ -255,13 +245,6 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "*"))
                 .andExpect(header().string("Access-Control-Allow-Methods", "POST"));
-    }
-
-    private Optional<RecordFile> getRecordFile(long consensusTimestamp) {
-        return recordFiles.stream()
-                .filter(file -> file.getItems().stream()
-                        .anyMatch(item -> item.getConsensusTimestamp() == consensusTimestamp))
-                .findFirst();
     }
 
     @TestConfiguration

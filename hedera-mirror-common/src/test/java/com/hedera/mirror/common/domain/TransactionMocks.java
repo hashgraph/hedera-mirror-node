@@ -4,13 +4,20 @@ import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 import static com.hedera.mirror.common.util.CommonUtils.toAccountID;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
+import java.time.Instant;
 import java.util.List;
 import lombok.CustomLog;
 import org.jetbrains.annotations.NotNull;
@@ -70,27 +77,26 @@ public class TransactionMocks {
 
     public TransactionMocks() {
         final var domainBuilder = new DomainBuilder();
-        final var recordItemBuilder = new RecordItemBuilder();
 
         // Legacy Transaction - Contract Create
         this.createContractTx = getTransaction(domainBuilder, CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCREATEINSTANCE);
         this.createContractEthTx = getEthereumTransaction(domainBuilder, CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
-        this.createContractRecordFile = getRecordFile(domainBuilder, recordItemBuilder, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, createContractTx);
+        this.createContractRecordFile = getRecordFile(domainBuilder, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP);
 
         // Legacy Transaction - Contract Call
         this.contractCallTx = getTransaction(domainBuilder, CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCALL);
         this.contractCallEthTx = getEthereumTransaction(domainBuilder, CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
-        this.contractCallRecordFile = getRecordFile(domainBuilder, recordItemBuilder, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, contractCallTx);
+        this.contractCallRecordFile = getRecordFile(domainBuilder, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP);
 
         // EIP-1559 Transaction
         this.eip1559Tx = getTransaction(domainBuilder, EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
         this.eip1559EthTx = getEthereumTransaction(domainBuilder, EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
-        this.eip1559RecordFile = getRecordFile(domainBuilder, recordItemBuilder, EIP1559_TX_CONSENSUS_TIMESTAMP, eip1559Tx);
+        this.eip1559RecordFile = getRecordFile(domainBuilder, EIP1559_TX_CONSENSUS_TIMESTAMP);
 
         // EIP-2930 Transaction
         this.eip2930Tx = getTransaction(domainBuilder, EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
         this.eip2930EthTx = getEthereumTransaction(domainBuilder, EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
-        this.eip2930RecordFile = getRecordFile(domainBuilder, recordItemBuilder, EIP2930_TX_CONSENSUS_TIMESTAMP, eip2930Tx);
+        this.eip2930RecordFile = getRecordFile(domainBuilder, EIP2930_TX_CONSENSUS_TIMESTAMP);
     }
 
     private static @NotNull Transaction getTransaction(final DomainBuilder domainBuilder,
@@ -107,6 +113,7 @@ public class TransactionMocks {
         return getTransaction(domainBuilder, hash, consensusTimestamp, TransactionType.ETHEREUMTRANSACTION, typeByte);
     }
 
+    @SuppressWarnings("deprecation")
     private static @NotNull Transaction getTransaction(final DomainBuilder domainBuilder,
                                                        final byte[] hash,
                                                        final Timestamp consensusTimestamp,
@@ -132,6 +139,11 @@ public class TransactionMocks {
                     tx.consensusTimestamp(convertToNanosMax(
                             EIP2930_TX_CONSENSUS_TIMESTAMP.getSeconds(),
                             EIP2930_TX_CONSENSUS_TIMESTAMP.getNanos()));
+                    tx.transactionRecordBytes(getTransactionRecord(tx).build().toByteArray());
+                    tx.transactionBytes(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                            .setBodyBytes(getTransactionBody(tx).build().toByteString())
+                            .build()
+                            .toByteArray());
                 })
                 .get();
     }
@@ -160,9 +172,7 @@ public class TransactionMocks {
     }
 
     private static @NotNull RecordFile getRecordFile(final DomainBuilder domainBuilder,
-                                                     final RecordItemBuilder recordItemBuilder,
-                                                     final Timestamp consensusTimestamp,
-                                                     final Transaction transaction) {
+                                                     final Timestamp consensusTimestamp) {
         return domainBuilder.recordFile()
                 .customize(recordFile -> {
                     recordFile.consensusStart(convertToNanosMax(
@@ -172,7 +182,7 @@ public class TransactionMocks {
                             consensusTimestamp.getSeconds(),
                             consensusTimestamp.getNanos() + 1000));
                     recordFile.count(1L);
-                    recordFile.items(List.of(recordItemBuilder.forTransaction(transaction).build()));
+                    recordFile.items(List.of());
                 })
                 .get();
     }
@@ -187,7 +197,47 @@ public class TransactionMocks {
                 .build();
     }
 
+    private static TransactionBody.Builder getTransactionBody(Transaction.TransactionBuilder transactionBuilder) {
+        final var transaction = transactionBuilder.build();
+        return TransactionBody.newBuilder()
+                .setMemo(new String(transaction.getMemo()))
+                .setNodeAccountID(toAccountID(transaction.getNodeAccountId()))
+                .setTransactionFee(transaction.getMaxFee())
+                .setTransactionID(TransactionID.newBuilder()
+                        .setAccountID(toAccountID(transaction.getPayerAccountId()))
+                        .setTransactionValidStart(timestamp(Instant.ofEpochSecond(0, transaction.getValidStartNs())))
+                        .build())
+                .setTransactionValidDuration(duration(transaction.getValidDurationSeconds().intValue()));
+    }
+
+    private static TransactionRecord.Builder getTransactionRecord(Transaction.TransactionBuilder transactionBuilder) {
+        final var transaction = transactionBuilder.build();
+        TransactionRecord.Builder transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(timestamp(Instant.ofEpochSecond(0, transaction.getConsensusTimestamp())))
+                .setMemoBytes(ByteString.copyFrom(transaction.getMemo()))
+                .setTransactionFee(transaction.getChargedTxFee())
+                .setTransactionHash(ByteString.copyFrom(transaction.getTransactionHash()))
+                .setTransactionID(TransactionID.newBuilder()
+                        .setAccountID(toAccountID(transaction.getPayerAccountId()))
+                        .setTransactionValidStart(timestamp(Instant.ofEpochSecond(0, transaction.getValidStartNs())))
+                        .build())
+                .setTransferList(TransferList.getDefaultInstance());
+        transactionRecord.getReceiptBuilder().setStatus(ResponseCodeEnum.forNumber(transaction.getResult()));
+        return transactionRecord;
+    }
+
     private static byte[] generateTransactionHash() {
         return nextBytes(32);
+    }
+
+    private static Duration duration(int seconds) {
+        return Duration.newBuilder().setSeconds(seconds).build();
+    }
+
+    private static Timestamp timestamp(Instant instant) {
+        return Timestamp.newBuilder()
+                .setSeconds(instant.getEpochSecond())
+                .setNanos(instant.getNano())
+                .build();
     }
 }

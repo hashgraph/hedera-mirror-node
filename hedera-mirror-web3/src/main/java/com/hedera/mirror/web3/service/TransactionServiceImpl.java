@@ -19,9 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Duration;
@@ -37,7 +35,6 @@ public class TransactionServiceImpl implements TransactionService {
     private static final Duration MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE = Duration.ofMinutes(35);
 
     private final TransactionRepository transactionRepository;
-    private final EthereumTransactionRepository ethereumTransactionRepository;
 
     @Override
     public Optional<Transaction> findByTransactionId(TransactionID transactionId) {
@@ -55,7 +52,7 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     @Override
-    public Optional<EthereumTransaction> findByEthHash(byte[] transactionHash) {
-        return ethereumTransactionRepository.findByHash(transactionHash);
+    public Optional<Transaction> findByConsensusTimestamp(long consensusTimestamp) {
+        return transactionRepository.findById(consensusTimestamp);
     }
 }
