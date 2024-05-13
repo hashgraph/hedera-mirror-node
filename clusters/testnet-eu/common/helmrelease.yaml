@@ -49,8 +49,15 @@ spec:
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
+    stackgres:
+      enabled: true
     traefik:
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-testnet-eu"} } }'
-
+    zfs:
+      enabled: true
+      init:
+        diskPrefix: testnet-eu
+      worker:
+        initialDiskSize: 1000GB
