@@ -38,7 +38,6 @@ spec:
       ingress:
         enabled: false
     importer:
-      enabled: false
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
@@ -71,7 +70,6 @@ spec:
           size: 900Gi
     test:
       cucumberTags: "@acceptance and not @equivalence"
-      enabled: false
     web3:
       env:
         HEDERA_MIRROR_WEB3_EVM_MAXDATASIZE: "38500B"
