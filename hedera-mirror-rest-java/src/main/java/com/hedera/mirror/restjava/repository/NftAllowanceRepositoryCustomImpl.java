@@ -153,7 +153,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
             EntityIdRangeParameter tokenParam,
             TableField<NftAllowanceRecord, Long> primarySortField) {
 
-        // No secondary condition if there is no primary parameter bound or no token parameter, or the primary sort
+        // No middle condition if there is no primary parameter bound or no token parameter, or the primary sort
         // parameter's operator is EQ. Note that it's guaranteed that there must be
         // a primary sort parameter when token parameter exists except in case of optimized Range
 

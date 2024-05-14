@@ -57,21 +57,22 @@ public class AllowancesController {
     @GetMapping(value = "/nfts")
     NftAllowancesResponse getNftAllowancesByAccountId(
             @PathVariable EntityIdParameter id,
-            @RequestParam(name = ACCOUNT_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> accountId,
+            @RequestParam(name = ACCOUNT_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> accountIds,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(defaultValue = "true") boolean owner,
-            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenId) {
+            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
 
-        var builder = NftAllowanceRequest.builder()
+        var request = NftAllowanceRequest.builder()
                 .accountId(id)
                 .isOwner(owner)
                 .limit(limit)
                 .order(order)
-                .ownerOrSpenderIds(accountId)
-                .tokenIds(tokenId);
+                .ownerOrSpenderIds(accountIds)
+                .tokenIds(tokenIds)
+                .build();
 
-        var serviceResponse = service.getNftAllowances(builder.build());
+        var serviceResponse = service.getNftAllowances(request);
 
         var response = new NftAllowancesResponse();
         response.setAllowances(nftAllowanceMapper.map(serviceResponse));

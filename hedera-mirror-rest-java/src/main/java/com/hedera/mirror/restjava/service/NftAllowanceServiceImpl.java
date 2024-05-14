@@ -22,7 +22,6 @@ import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +39,6 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         var ownerOrSpenderId = request.getOwnerOrSpenderIds();
         var token = request.getTokenIds();
-        var id = entityService.lookup(request.getAccountId());
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
@@ -55,6 +53,8 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
                 request.setOwnerOrSpenderIds(List.of(optimizedRangeParam));
             }
         }
+
+        var id = entityService.lookup(request.getAccountId());
 
         return repository.findAll(request, id);
     }
@@ -75,34 +75,54 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         return new Bound(lowerBound, upperBound);
     }
 
-    private static List<RangeOperator> verifyRangeId(List<EntityIdRangeParameter> idParams) {
+    @SuppressWarnings({"java:S131"})
+    private static Operators verifyRangeId(List<EntityIdRangeParameter> idParams) {
+        boolean hasEq = false;
+        boolean hasGt = false;
+        boolean hasGte = false;
+        boolean hasLt = false;
+        boolean hasLte = false;
         int countGtOperator = 0;
         int countLtOperator = 0;
         int countEqOperator = 0;
 
-        List<RangeOperator> operators = new ArrayList<>();
         for (EntityIdRangeParameter param : idParams) {
 
             if (param.operator() == RangeOperator.NE) {
                 throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
             }
 
-            if (param.operator() == RangeOperator.GT || param.operator() == RangeOperator.GTE) {
-                countGtOperator++;
-            } else if (param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE) {
-                countLtOperator++;
-            } else if (param.operator() == RangeOperator.EQ) {
-                countEqOperator++;
+            switch (param.operator()) {
+                case RangeOperator.GT -> {
+                    hasGt = true;
+                    countGtOperator++;
+                }
+                case RangeOperator.GTE -> {
+                    hasGte = true;
+                    countGtOperator++;
+                }
+                case RangeOperator.LT -> {
+                    hasLt = true;
+                    countLtOperator++;
+                }
+                case RangeOperator.LTE -> {
+                    hasLte = true;
+                    countLtOperator++;
+                }
+                case RangeOperator.EQ -> {
+                    hasEq = true;
+                    countEqOperator++;
+                }
             }
-            operators.add(param.operator());
         }
+
         if (countGtOperator > 1 || countLtOperator > 1 || countEqOperator > 1) {
             throw new IllegalArgumentException("Single occurrence only supported.");
         }
         if (countEqOperator == 1 && (countGtOperator != 0 || countLtOperator != 0)) {
             throw new IllegalArgumentException("Can't support both range and equal for this parameter.");
         }
-        return operators;
+        return new Operators(hasEq, hasGt, hasGte, hasLt, hasLte);
     }
 
     private static void checkOwnerSpenderParamValidity(
@@ -120,15 +140,15 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         if (!CollectionUtils.isEmpty(tokenParams)) {
             var tokenOperators = verifyRangeId(tokenParams);
 
-            if ((tokenOperators.contains(RangeOperator.LTE) || tokenOperators.contains(RangeOperator.LT))
-                    && !accountOperators.contains(RangeOperator.EQ)
-                    && !accountOperators.contains(RangeOperator.LTE)) {
+            if ((tokenOperators.hasLt || tokenOperators.hasLte)
+                    && !accountOperators.hasEq
+                    && !accountOperators.hasLte) {
                 throw new IllegalArgumentException(
                         "Single occurrence only supported.Requires the presence of an lte or eq account.id query");
             }
-            if ((tokenOperators.contains(RangeOperator.GTE) || tokenOperators.contains(RangeOperator.GT))
-                    && !accountOperators.contains(RangeOperator.EQ)
-                    && !accountOperators.contains(RangeOperator.GTE)) {
+            if ((tokenOperators.hasGt || tokenOperators.hadGte)
+                    && !accountOperators.hasEq
+                    && !accountOperators.hadGte) {
                 throw new IllegalArgumentException(
                         "Single occurrence only supported.Requires the presence of an gte or eq account.id query");
             }
@@ -136,4 +156,6 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
     }
 
     private record Bound(long lower, long upper) {}
+
+    private record Operators(boolean hasEq, boolean hasGt, boolean hadGte, boolean hasLt, boolean hasLte) {}
 }
