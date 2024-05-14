@@ -104,7 +104,7 @@ class OpcodesController {
                 .failed(!result.transactionProcessingResult().isSuccessful())
                 .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
                         .map(Bytes::toHexString)
-                        .orElse(null))
+                        .orElse(Bytes.EMPTY.toHexString()))
                 .opcodes(result.opcodes().stream()
                         .map(opcode -> new Opcode()
                                 .pc(opcode.pc())

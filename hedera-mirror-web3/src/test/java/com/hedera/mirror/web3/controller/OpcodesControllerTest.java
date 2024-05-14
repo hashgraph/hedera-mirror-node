@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.controller;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -30,8 +31,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.rest.model.OpcodesResponse;
+import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -46,14 +50,21 @@ import com.hedera.mirror.web3.utils.TransactionMocksProvider;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
@@ -63,6 +74,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -101,17 +115,23 @@ class OpcodesControllerTest {
     @MockBean
     private RecordFileService recordFileService;
 
+    @Autowired
+    private CallServiceParametersBuilder callServiceParametersBuilder;
+
+    @Captor
+    private ArgumentCaptor<CallServiceParameters> callServiceParametersCaptor;
+
+    private final AtomicReference<OpcodesProcessingResult> opcodesProcessingResultCaptor = new AtomicReference<>();
+
     void setUp(Transaction transaction, EthereumTransaction ethTransaction, RecordFile recordFile) {
         given(bucket.tryConsume(1)).willReturn(true);
-        given(contractCallService.processOpcodeCall(any())).willAnswer(context -> {
+        given(contractCallService.processOpcodeCall(callServiceParametersCaptor.capture())).willAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
-            final var gas = params != null ? params.getGas() : 0L;
             final var recipient = params != null ? params.getReceiver() : Address.ZERO;
-            return OpcodesProcessingResult.builder()
-                    .transactionProcessingResult(HederaEvmTransactionProcessingResult
-                            .successful(List.of(), gas , 0, gas, null, recipient))
-                    .opcodes(List.of())
-                    .build();
+            final var output = Bytes.EMPTY;
+            final var result = mockOpcodesProcessingResult(recipient, output);
+            opcodesProcessingResultCaptor.set(result);
+            return result;
         });
 
         when(ethereumTransactionService.findByHash(any(byte[].class))).thenReturn(Optional.of(ethTransaction));
@@ -126,9 +146,16 @@ class OpcodesControllerTest {
         return objectMapper.writeValueAsString(object);
     }
 
-    @SneakyThrows
     private ResultActions contractOpcodes(String transactionIdOrHash) {
+        return contractOpcodes(transactionIdOrHash, true, true, true);
+    }
+
+    @SneakyThrows
+    private ResultActions contractOpcodes(String transactionIdOrHash, boolean stack, boolean memory, boolean storage) {
         return mockMvc.perform(get(OPCODES_URI, transactionIdOrHash)
+                .queryParam("stack", String.valueOf(stack))
+                .queryParam("memory", String.valueOf(memory))
+                .queryParam("storage", String.valueOf(storage))
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON));
     }
@@ -141,12 +168,21 @@ class OpcodesControllerTest {
         setUp(transaction, ethTransaction, recordFile);
 
         final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
+        final var transactionIdOrHash = TransactionIdOrHashParameter.valueOf(transactionHash);
+
         for (var i = 0; i < 3; i++) {
-            contractOpcodes(transactionHash).andExpect(status().isOk());
+            contractOpcodes(transactionHash)
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(convert(buildOpcodesResponse(opcodesProcessingResultCaptor.get()))));
+
+            assertEquals(
+                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
+                    callServiceParametersCaptor.getValue());
         }
 
         given(bucket.tryConsume(1)).willReturn(false);
-        contractOpcodes(transactionHash).andExpect(status().isTooManyRequests());
+        contractOpcodes(transactionHash)
+                .andExpect(status().isTooManyRequests());
     }
 
     @ValueSource(
@@ -208,7 +244,44 @@ class OpcodesControllerTest {
                             .build()));
 
             final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
-            contractOpcodes(transactionHash).andExpect(status().isOk());
+            final var transactionIdOrHash = TransactionIdOrHashParameter.valueOf(transactionHash);
+
+            contractOpcodes(transactionHash)
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(convert(buildOpcodesResponse(opcodesProcessingResultCaptor.get()))));
+
+            assertEquals(
+                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
+                    callServiceParametersCaptor.getValue());
+        }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void callWithDisabledStackOrMemoryOrStorage(Transaction transaction,
+                                                EthereumTransaction ethTransaction,
+                                                RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
+
+        final var requestParams = new boolean[][] {
+                { false, true, true },
+                { true, false, true },
+                { true, true, false },
+                { false, false, false }
+        };
+
+        for (var params : requestParams) {
+            final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
+            final var transactionIdOrHash = TransactionIdOrHashParameter.valueOf(transactionHash);
+
+            contractOpcodes(transactionHash, params[0], params[1], params[2])
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(convert(
+                            buildOpcodesResponse(opcodesProcessingResultCaptor.get(), params[0], params[1], params[2]))));
+
+            assertEquals(
+                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
+                    callServiceParametersCaptor.getValue());
         }
     }
 
@@ -247,6 +320,128 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "*"))
                 .andExpect(header().string("Access-Control-Allow-Methods", "GET"));
+    }
+
+    private static OpcodesResponse buildOpcodesResponse(OpcodesProcessingResult result) {
+        return buildOpcodesResponse(result, true, true, true);
+    }
+
+    private static OpcodesResponse buildOpcodesResponse(OpcodesProcessingResult result,
+                                                        boolean stack,
+                                                        boolean memory,
+                                                        boolean storage) {
+        return new OpcodesResponse()
+                .contractId(result.transactionProcessingResult()
+                        .getRecipient()
+                        .map(EntityIdUtils::contractIdFromEvmAddress)
+                        .map(ContractID::toString)
+                        .orElse(null))
+                .address(result.transactionProcessingResult()
+                        .getRecipient()
+                        .map(Address::toHexString)
+                        .orElse(Address.ZERO.toHexString()))
+                .gas(result.transactionProcessingResult().getGasPrice())
+                .failed(!result.transactionProcessingResult().isSuccessful())
+                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                        .map(Bytes::toHexString)
+                        .orElse(Bytes.EMPTY.toHexString()))
+                .opcodes(result.opcodes().stream()
+                        .map(opcode -> new com.hedera.mirror.rest.model.Opcode()
+                                .pc(opcode.pc())
+                                .op(opcode.op())
+                                .gas(opcode.gas())
+                                .gasCost(opcode.gasCost())
+                                .depth(opcode.depth())
+                                .stack(stack ?
+                                        opcode.stack().stream()
+                                                .map(Bytes::toHexString)
+                                                .toList() :
+                                        List.of())
+                                .memory(memory ?
+                                        opcode.memory().stream()
+                                                .map(Bytes::toHexString)
+                                                .toList() :
+                                        List.of())
+                                .storage(storage ?
+                                        opcode.storage().entrySet().stream()
+                                                .collect(Collectors.toMap(
+                                                        Map.Entry::getKey,
+                                                        entry -> entry.getValue().toHexString())) :
+                                        Map.of())
+                                .reason(opcode.reason()))
+                        .toList());
+    }
+
+    private static OpcodesProcessingResult mockOpcodesProcessingResult(final Address recipient,
+                                                                       final Bytes output) {
+        final List<Opcode> opcodes = mockOpcodes();
+        final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
+        final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
+        return OpcodesProcessingResult.builder()
+                .transactionProcessingResult(HederaEvmTransactionProcessingResult
+                        .successful(List.of(), gasUsed , 0, gasCost, output, recipient))
+                .opcodes(mockOpcodes())
+                .build();
+    }
+
+    private static List<Opcode> mockOpcodes() {
+        return Arrays.asList(
+                new Opcode(
+                        1273,
+                        "PUSH1",
+                        2731,
+                        3,
+                        2,
+                        Arrays.asList(
+                                Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
+                                Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
+                                // Add the rest of the stack items here
+                        ),
+                        Arrays.asList(
+                                Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
+                                Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
+                        ),
+                        Collections.emptyMap(),
+                        null
+                ),
+                new Opcode(
+                        1275,
+                        "REVERT",
+                        2728,
+                        0,
+                        2,
+                        Arrays.asList(
+                                Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
+                                Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
+                        ),
+                        Arrays.asList(
+                                Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
+                                Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
+                        ),
+                        Collections.emptyMap(),
+                        "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"
+                ),
+                new Opcode(
+                        682,
+                        "SWAP2",
+                        2776,
+                        3,
+                        1,
+                        Arrays.asList(
+                                Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
+                                Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")
+                        ),
+                        Arrays.asList(
+                                Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
+                                Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")
+                        ),
+                        Map.of(
+                                "0000000000000000000000000000000000000000000000000000000000000000",
+                                Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")
+                        ),
+                        null
+                )
+        );
     }
 
     @TestConfiguration
