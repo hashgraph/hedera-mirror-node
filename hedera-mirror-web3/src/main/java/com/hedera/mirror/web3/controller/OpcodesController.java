@@ -28,6 +28,7 @@ import com.hedera.mirror.rest.model.Opcode;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.exception.RateLimitException;
+import com.hedera.mirror.web3.repository.TransactionRepository;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.EthereumTransactionService;
 import com.hedera.mirror.web3.service.RecordFileService;
@@ -63,7 +64,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/contracts/results")
-@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
+//@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
 class OpcodesController {
 
     private final RecordFileService recordFileService;
@@ -160,27 +161,20 @@ class OpcodesController {
         } else {
             throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
         }
-
+        Optional<byte[]> dataOpt = ethTransactionOpt.map(EthereumTransaction::getData);
         final RecordFile recordFile = recordFileService.findRecordFileForTimestamp(transaction.getConsensusTimestamp())
                 .orElseThrow(() -> new IllegalArgumentException("Record file with transaction not found"));
 
-        final RecordItem recordItem = RecordItem.builder()
-                .hapiVersion(recordFile.getHapiVersion())
-                .transactionRecord(TransactionRecord.parseFrom(transaction.getTransactionRecordBytes()))
-                .transaction(com.hederahashgraph.api.proto.java.Transaction.parseFrom(transaction.getTransactionBytes()))
-                .ethereumTransaction(ethTransactionOpt.orElse(null))
-                .build();
-
         return CallServiceParameters.builder()
-                .sender(new HederaEvmAccount(getSenderAddress(recordItem)))
-                .receiver(getReceiverAddress(recordItem))
-                .gas(getGasLimit(recordItem))
-                .value(getValue(recordItem).longValue())
-                .callData(getCallData(recordItem))
+                .sender(new HederaEvmAccount(Address.fromHexString("0x05FbA803Be258049A27B820088bab1cAD2058871")))
+                .receiver(Address.fromHexString("0xf1d8228F398232B6A89B235f52bDd230E3FD14BB"))
+                .gas(1000000)
+                .value(0L)
+                .callData(Bytes.fromHexString("0x40c10f1900000000000000000000000005fba803be258049a27b820088bab1cad205887100000000000000000000000000000000000000000000000000000000000003e8"))
                 .isStatic(false)
                 .callType(ETH_CALL)
                 .isEstimate(false)
-                .block(BlockType.of(recordFile.getIndex().toString()))
+                .block(BlockType.of("18016"))
                 .build();
     }
 

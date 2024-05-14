@@ -19,12 +19,18 @@ package com.hedera.mirror.web3.evm.config;
 import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMode.JOURNALED;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperationV038;
@@ -45,10 +51,8 @@ import com.hedera.services.evm.contracts.operations.HederaSelfDestructOperationV
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
 import com.hedera.services.txns.util.PrngLogic;
 import com.swirlds.common.utility.SemanticVersion;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -183,6 +187,16 @@ public class EvmConfiguration {
         caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME));
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
+    }
+
+    @Bean
+    Map<TracerType, Provider<HederaEvmOperationTracer>> tracerProvider(
+            final MirrorOperationTracer mirrorOperationTracer,
+            final OpcodeTracer opcodeTracer) {
+        Map<TracerType, Provider<HederaEvmOperationTracer>> processorsMap = new EnumMap<>(TracerType.class);
+        processorsMap.put(TracerType.OPCODE, () -> opcodeTracer);
+        processorsMap.put(TracerType.OPERATION, () -> mirrorOperationTracer);
+        return processorsMap;
     }
 
     @Bean
@@ -337,6 +351,16 @@ public class EvmConfiguration {
     @Bean
     PrecompileContractRegistry precompileContractRegistry() {
         return new PrecompileContractRegistry();
+    }
+
+    @Bean
+    public OpcodeTracer opcodeTracer() {
+        return new OpcodeTracer();
+    }
+
+    @Bean
+    public MirrorOperationTracer mirrorOperationTracer() {
+        return new MirrorOperationTracer(new TraceProperties(), new MirrorEvmContractAliases(null));
     }
 
     @Bean

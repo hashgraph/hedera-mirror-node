@@ -1,11 +1,10 @@
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import com.hedera.mirror.common.domain.transaction.Opcode;
-import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.internal.StorageEntry;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -21,15 +20,19 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
     private List<Opcode> opcodes;
 
-    private Optional<TransactionSidecarRecord> transactionRecord;
+    private MessageFrame initialFrame;
 
     @Override
     public void init(MessageFrame initialFrame) {
         opcodes = new ArrayList<>();
+        this.initialFrame = initialFrame;
     }
 
     @Override
     public void tracePostExecution(MessageFrame frame, Operation.OperationResult operationResult) {
+        if(frame.getRecipientAddress().equals(Address.fromHexString("0x0000000000000000000000000000000000000167")) == true) {
+            frame.getDepth();
+        }
         opcodes.add(new Opcode(
                 frame.getPC(),
                 frame.getCurrentOperation().getName(),
@@ -55,15 +58,6 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
     public void tracePrecompileCall(
             final MessageFrame frame, final long gasRequirement, final Bytes output) {
-        //frame.getContextVariable()
-        // first checks if calls precompile
-        //
-        Optional<ContractAction> action = transactionRecord.flatMap(record -> record.getActions().getContractActionsList().stream()
-                .filter(contractAction -> contractAction.getCallOperationType().getNumber() == (frame.getCurrentOperation().getOpcode()))
-                .findFirst());
-    }
-
-    public void loadRecord(Optional<TransactionSidecarRecord> record) {
-        this.transactionRecord = record;
+        long gas = frame.getRemainingGas();
     }
 }

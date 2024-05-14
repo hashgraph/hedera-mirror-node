@@ -111,7 +111,6 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.isStatic(),
                 aliasManager.resolveForEvm(params.getReceiver()),
                 params.getReceiver().equals(Address.ZERO),
-                params.getConsensusTimestamp(),
                 tracerType,
                 ctx);
     }

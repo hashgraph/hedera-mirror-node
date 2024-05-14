@@ -116,7 +116,6 @@ public class HederaEvmTxProcessor {
             final boolean isStatic,
             final Address mirrorReceiver,
             final boolean contractCreation,
-            final long consensusTimestamp,
             final TracerType tracerType,
             final ContractCallContext contractCallContext) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
