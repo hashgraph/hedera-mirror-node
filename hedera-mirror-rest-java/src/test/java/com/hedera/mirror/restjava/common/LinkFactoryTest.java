@@ -196,9 +196,8 @@ class LinkFactoryTest {
         var sort = Sort.by(Direction.ASC, ACCOUNT_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, 1, sort);
         var linkFactory = new LinkFactoryImpl(request);
-
-        assertThrows(
-                IllegalArgumentException.class, () -> linkFactory.create(List.of(nftAllowance), pageable, extractor));
+        var list = List.of(nftAllowance);
+        assertThrows(IllegalArgumentException.class, () -> linkFactory.create(list, pageable, extractor));
     }
 
     @Test
