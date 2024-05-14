@@ -22,8 +22,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,6 +35,8 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
+import com.hedera.mirror.web3.service.CallServiceParametersBuilderImpl;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.EthereumTransactionService;
 import com.hedera.mirror.web3.service.RecordFileService;
@@ -126,7 +128,7 @@ class OpcodesControllerTest {
 
     @SneakyThrows
     private ResultActions contractOpcodes(String transactionIdOrHash) {
-        return mockMvc.perform(post(OPCODES_URI, transactionIdOrHash)
+        return mockMvc.perform(get(OPCODES_URI, transactionIdOrHash)
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON));
     }
@@ -241,10 +243,10 @@ class OpcodesControllerTest {
                         .accept(MediaType.APPLICATION_JSON)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Origin", "http://example.com")
-                        .header("Access-Control-Request-Method", "POST"))
+                        .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "*"))
-                .andExpect(header().string("Access-Control-Allow-Methods", "POST"));
+                .andExpect(header().string("Access-Control-Allow-Methods", "GET"));
     }
 
     @TestConfiguration
@@ -268,6 +270,17 @@ class OpcodesControllerTest {
         @Bean
         TransactionOperations transactionOperations() {
             return mock(TransactionOperations.class);
+        }
+
+        @Bean
+        CallServiceParametersBuilder callServiceParametersBuilder(TransactionService transactionService,
+                                                                  EthereumTransactionService ethereumTransactionService,
+                                                                  RecordFileService recordFileService) {
+            return new CallServiceParametersBuilderImpl(
+                    transactionService,
+                    ethereumTransactionService,
+                    recordFileService
+            );
         }
     }
 }
