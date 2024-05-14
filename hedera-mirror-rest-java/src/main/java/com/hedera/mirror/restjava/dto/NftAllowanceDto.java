@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.service;
+package com.hedera.mirror.restjava.dto;
 
-import com.hedera.mirror.restjava.common.EntityIdParameter;
-import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import java.util.List;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.restjava.service.NftAllowanceServiceImpl.Bound;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.domain.Sort;
 
 @Data
 @Builder
-public class NftAllowanceRequest {
+public class NftAllowanceDto {
 
-    private EntityIdParameter accountId;
+    private EntityId accountId;
 
     @Builder.Default
     private int limit = 25;
@@ -38,7 +37,7 @@ public class NftAllowanceRequest {
     @Builder.Default
     private boolean isOwner = true;
 
-    private List<EntityIdRangeParameter> ownerOrSpenderIds;
+    private Bound ownerOrSpenderIdBounds;
 
-    private List<EntityIdRangeParameter> tokenIds;
+    private Bound tokenIdBounds;
 }

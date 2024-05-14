@@ -20,13 +20,16 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
+import com.hedera.mirror.restjava.dto.NftAllowanceDto;
+import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
+import lombok.RequiredArgsConstructor;
+import org.springframework.util.CollectionUtils;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.springframework.util.CollectionUtils;
 
 @Named
 @RequiredArgsConstructor
@@ -44,47 +47,87 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         if (!CollectionUtils.isEmpty(ownerOrSpenderId)) {
             var bounds = getRange(ownerOrSpenderId);
+            long lowerBound = getLowerBound(bounds);
+            long upperBound = getUpperBound(bounds);
 
             // Shortcutting when the range is invalid
-            if (bounds.lower > bounds.upper) {
+            if (lowerBound > upperBound) {
                 return Collections.emptyList();
-            } else if (bounds.lower == bounds.upper) {
-                var optimizedRangeParam = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(bounds.lower));
+            } else if (lowerBound == upperBound) {
+                var optimizedRangeParam = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(lowerBound));
                 request.setOwnerOrSpenderIds(List.of(optimizedRangeParam));
             }
         }
 
         var id = entityService.lookup(request.getAccountId());
 
-        return repository.findAll(request, id);
+        var dto = NftAllowanceDto.builder()
+                .accountId(id)
+                .isOwner(request.isOwner())
+                .limit(request.getLimit())
+                .order(request.getOrder())
+                .ownerOrSpenderIdBounds(getRange(request.getOwnerOrSpenderIds()))
+                .tokenIdBounds(getRange(request.getTokenIds()))
+                .build();
+
+        return repository.findAll(dto);
+    }
+
+    private static long getUpperBound(Bound bounds) {
+        long upperBound = Long.MAX_VALUE;
+
+        if (bounds.upperBound != null) {
+            upperBound = bounds.upperBound.value().getId();
+            if (bounds.upperBound.operator() == RangeOperator.LT) {
+                upperBound--;
+            }
+        }
+        return upperBound;
+    }
+
+    private static long getLowerBound(Bound bounds) {
+        long lowerBound = 0;
+        if (bounds.lowerBound != null) {
+            lowerBound = bounds.lowerBound.value().getId();
+            if (bounds.lowerBound.operator() == RangeOperator.GT) {
+                lowerBound++;
+            }
+        }
+        return lowerBound;
     }
 
     @SuppressWarnings({"java:S131"})
-    private Bound getRange(List<EntityIdRangeParameter> ownerOrSpenderIds) {
-        long lowerBound = 0;
-        long upperBound = Long.MAX_VALUE;
-        for (EntityIdRangeParameter param : ownerOrSpenderIds) {
-            switch (param.operator()) {
-                case LT -> upperBound = param.value().getId() - 1;
-                case GT -> lowerBound = param.value().getId() + 1;
-                case LTE -> upperBound = param.value().getId();
-                case GTE -> lowerBound = param.value().getId();
+    private Bound getRange(List<EntityIdRangeParameter> idRangeParameters) {
+        EntityIdRangeParameter lowerBoundParam = null;
+        EntityIdRangeParameter upperBoundParam = null;
+
+        if (idRangeParameters != null) {
+            for (EntityIdRangeParameter param : idRangeParameters) {
+                if (param != null) {
+                    // Considering EQ in the same category as GT,GTE as an assumption
+                    if (param.operator() == RangeOperator.GT
+                            || param.operator() == RangeOperator.GTE
+                            || param.operator() == RangeOperator.EQ) {
+                        lowerBoundParam = param;
+                    } else if (param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE) {
+                        upperBoundParam = param;
+                    }
+                }
             }
         }
 
-        return new Bound(lowerBound, upperBound);
+        return new Bound(lowerBoundParam, upperBoundParam);
     }
 
     @SuppressWarnings({"java:S131"})
     private static Operators verifyRangeId(List<EntityIdRangeParameter> idParams) {
-        boolean hasEq = false;
         boolean hasGt = false;
         boolean hasGte = false;
         boolean hasLt = false;
         boolean hasLte = false;
-        int countGtOperator = 0;
-        int countLtOperator = 0;
-        int countEqOperator = 0;
+        int countGtGte = 0;
+        int countLtLte = 0;
+        int countEq = 0;
 
         for (EntityIdRangeParameter param : idParams) {
 
@@ -95,34 +138,31 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
             switch (param.operator()) {
                 case RangeOperator.GT -> {
                     hasGt = true;
-                    countGtOperator++;
+                    countGtGte++;
                 }
                 case RangeOperator.GTE -> {
                     hasGte = true;
-                    countGtOperator++;
+                    countGtGte++;
                 }
                 case RangeOperator.LT -> {
                     hasLt = true;
-                    countLtOperator++;
+                    countLtLte++;
                 }
                 case RangeOperator.LTE -> {
                     hasLte = true;
-                    countLtOperator++;
+                    countLtLte++;
                 }
-                case RangeOperator.EQ -> {
-                    hasEq = true;
-                    countEqOperator++;
-                }
+                case RangeOperator.EQ -> countEq++;
             }
         }
 
-        if (countGtOperator > 1 || countLtOperator > 1 || countEqOperator > 1) {
+        if (countGtGte > 1 || countLtLte > 1 || countEq > 1) {
             throw new IllegalArgumentException("Single occurrence only supported.");
         }
-        if (countEqOperator == 1 && (countGtOperator != 0 || countLtOperator != 0)) {
+        if (countEq == 1 && (countGtGte != 0 || countLtLte != 0)) {
             throw new IllegalArgumentException("Can't support both range and equal for this parameter.");
         }
-        return new Operators(hasEq, hasGt, hasGte, hasLt, hasLte);
+        return new Operators(countEq > 0, hasGt, hasGte, hasLt, hasLte);
     }
 
     private static void checkOwnerSpenderParamValidity(
@@ -140,22 +180,26 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         if (!CollectionUtils.isEmpty(tokenParams)) {
             var tokenOperators = verifyRangeId(tokenParams);
 
-            if ((tokenOperators.hasLt || tokenOperators.hasLte)
-                    && !accountOperators.hasEq
-                    && !accountOperators.hasLte) {
+            if (tokenOperators.hasLtLte() && !accountOperators.hasEq && !accountOperators.hasLte) {
                 throw new IllegalArgumentException(
                         "Single occurrence only supported.Requires the presence of an lte or eq account.id query");
             }
-            if ((tokenOperators.hasGt || tokenOperators.hadGte)
-                    && !accountOperators.hasEq
-                    && !accountOperators.hadGte) {
+            if (tokenOperators.hasGtGte() && !accountOperators.hasEq && !accountOperators.hasGte) {
                 throw new IllegalArgumentException(
                         "Single occurrence only supported.Requires the presence of an gte or eq account.id query");
             }
         }
     }
 
-    private record Bound(long lower, long upper) {}
+    public record Bound(EntityIdRangeParameter lowerBound, EntityIdRangeParameter upperBound) {}
 
-    private record Operators(boolean hasEq, boolean hasGt, boolean hadGte, boolean hasLt, boolean hasLte) {}
+    private record Operators(boolean hasEq, boolean hasGt, boolean hasGte, boolean hasLt, boolean hasLte) {
+        public boolean hasGtGte() {
+            return hasGt || hasGte;
+        }
+
+        public boolean hasLtLte() {
+            return hasLt || hasLte;
+        }
+    }
 }

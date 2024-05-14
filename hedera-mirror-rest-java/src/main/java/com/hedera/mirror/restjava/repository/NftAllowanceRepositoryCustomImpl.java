@@ -19,12 +19,11 @@ package com.hedera.mirror.restjava.repository;
 import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
 import static org.jooq.impl.DSL.noCondition;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
+import com.hedera.mirror.restjava.dto.NftAllowanceDto;
 import com.hedera.mirror.restjava.jooq.domain.tables.records.NftAllowanceRecord;
-import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import jakarta.inject.Named;
 import jakarta.validation.constraints.NotNull;
 import java.util.Collection;
@@ -53,29 +52,25 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     @NotNull
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId) {
-        boolean byOwner = request.isOwner();
-        int limit = request.getLimit();
-        var order = request.getOrder();
+    public Collection<NftAllowance> findAll(NftAllowanceDto requestDto) {
+        boolean byOwner = requestDto.isOwner();
+        int limit = requestDto.getLimit();
+        var order = requestDto.getOrder();
 
         var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
 
-        var primarySortParams = request.getOwnerOrSpenderIds();
-        var tokenParams = request.getTokenIds();
+        var primaryBounds = requestDto.getOwnerOrSpenderIdBounds();
+        var tokenBounds = requestDto.getTokenIdBounds();
 
-        var primaryBounds = getBounds(primarySortParams);
-        var tokenBounds = getBounds(tokenParams);
-
-        var commonCondition = getCondition(primaryField, RangeOperator.EQ, accountId.getId());
-        var lowerCondition = getOuterBoundCondition(
-                primaryBounds.primaryLowerBoundParam(), tokenBounds.primaryLowerBoundParam, primarySortField);
-        var middleCondition = getMiddleCondition(
-                        primaryBounds.primaryLowerBoundParam, tokenBounds.primaryLowerBoundParam, primarySortField)
-                .and(getMiddleCondition(
-                        primaryBounds.primaryUpperBoundParam, tokenBounds.primaryUpperBoundParam, primarySortField));
-        var upperCondition = getOuterBoundCondition(
-                primaryBounds.primaryUpperBoundParam(), tokenBounds.primaryUpperBoundParam, primarySortField);
+        var commonCondition = getCondition(
+                primaryField, RangeOperator.EQ, requestDto.getAccountId().getId());
+        var lowerCondition =
+                getOuterBoundCondition(primaryBounds.lowerBound(), tokenBounds.lowerBound(), primarySortField);
+        var middleCondition = getMiddleCondition(primaryBounds.lowerBound(), tokenBounds.lowerBound(), primarySortField)
+                .and(getMiddleCondition(primaryBounds.upperBound(), tokenBounds.upperBound(), primarySortField));
+        var upperCondition =
+                getOuterBoundCondition(primaryBounds.upperBound(), tokenBounds.upperBound(), primarySortField);
         var condition = commonCondition.and(lowerCondition.or(middleCondition).or(upperCondition));
 
         return dslContext
@@ -85,28 +80,6 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
                 .limit(limit)
                 .fetchInto(NftAllowance.class);
     }
-
-    private Bound getBounds(List<EntityIdRangeParameter> primarySortParam) {
-        EntityIdRangeParameter lowerBoundParam = null;
-        EntityIdRangeParameter upperBoundParam = null;
-
-        if (primarySortParam != null) {
-            for (EntityIdRangeParameter param : primarySortParam) {
-                // Considering EQ in the same category as GT,GTE as an assumption
-                if (param.operator() == RangeOperator.GT
-                        || param.operator() == RangeOperator.GTE
-                        || param.operator() == RangeOperator.EQ) {
-                    lowerBoundParam = param;
-                } else if (param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE) {
-                    upperBoundParam = param;
-                }
-            }
-        }
-        return new Bound(lowerBoundParam, upperBoundParam);
-    }
-
-    private record Bound(
-            EntityIdRangeParameter primaryLowerBoundParam, EntityIdRangeParameter primaryUpperBoundParam) {}
 
     private Condition getOuterBoundCondition(
             EntityIdRangeParameter primarySortParam,
