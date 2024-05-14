@@ -66,6 +66,7 @@ spec:
           size: 900Gi
     test:
       cucumberTags: "@acceptance and not @equivalence"
+      enabled: true
     web3:
       env:
         HEDERA_MIRROR_WEB3_EVM_MAXDATASIZE: "38500B"
