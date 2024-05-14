@@ -20,21 +20,23 @@ import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.ParameterNames.OWNER;
 import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 
-import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowance;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory.ParameterExtractor;
+import com.hedera.mirror.restjava.common.LinkFactoryImpl;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
+import java.util.function.Function;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -50,21 +52,10 @@ public class AllowancesController {
     private static final int MAX_LIMIT = 100;
     private static final String DEFAULT_LIMIT = "25";
 
+    private final LinkFactoryImpl linkFactory;
     private final NftAllowanceService service;
     private final NftAllowanceMapper nftAllowanceMapper;
-
-    private final AllowancesLinkFactory linkFactory;
-
-    public static final ParameterExtractor<NftAllowance> extractor = param -> switch (param) {
-        case ACCOUNT_ID:
-            yield NftAllowance::getSpender;
-        case OWNER:
-            yield NftAllowance::getOwner;
-        case TOKEN_ID:
-            yield NftAllowance::getTokenId;
-        default:
-            yield null;
-    };
+    private final HttpServletRequest request;
 
     @GetMapping(value = "/nfts")
     NftAllowancesResponse getNftAllowancesByAccountId(
@@ -87,14 +78,36 @@ public class AllowancesController {
         var allowances = nftAllowanceMapper.map(serviceResponse);
         var response = new NftAllowancesResponse();
         response.setAllowances(allowances);
-        if (allowances.size() == limit) {
-            var last = CollectionUtils.lastElement(allowances);
-            var links = linkFactory.create(last, extractor);
-            response.links(links);
-        } else {
-            response.links(new Links());
-        }
+
+        var sort = Sort.by(order, ACCOUNT_ID, TOKEN_ID);
+        var pageable = PageRequest.of(0, limit, sort);
+        var links = linkFactory.create(allowances, pageable, extractor);
+        response.links(links);
 
         return response;
     }
+
+    private final ParameterExtractor<NftAllowance> extractor = new ParameterExtractor<>() {
+        @Override
+        public Function<NftAllowance, String> extract(String param) {
+            return nftAllowance -> switch (param) {
+                case ACCOUNT_ID:
+                    var paramsMap = request.getParameterMap();
+                    boolean owner = !paramsMap.containsKey(OWNER)
+                            || Boolean.parseBoolean(paramsMap.get(OWNER)[0]);
+                    yield owner ? nftAllowance.getSpender() : nftAllowance.getOwner();
+                case OWNER:
+                    yield nftAllowance.getOwner();
+                case TOKEN_ID:
+                    yield nftAllowance.getTokenId();
+                default:
+                    yield null;
+            };
+        }
+
+        @Override
+        public boolean isInclusive(String param) {
+            return param.equals(ACCOUNT_ID);
+        }
+    };
 }

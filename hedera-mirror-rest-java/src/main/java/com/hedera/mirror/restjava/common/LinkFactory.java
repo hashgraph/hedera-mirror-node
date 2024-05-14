@@ -17,53 +17,15 @@
 package com.hedera.mirror.restjava.common;
 
 import com.hedera.mirror.rest.model.Links;
-import java.util.Map.Entry;
 import java.util.function.Function;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.data.domain.Pageable;
 
 public interface LinkFactory {
-    <T> Links create(T item, ParameterExtractor<T> extractor);
+    <T> Links create(Iterable<T> items, Pageable pageable, ParameterExtractor<T> extractor);
 
     interface ParameterExtractor<T> {
         Function<T, String> extract(String name);
-    }
 
-    /**
-     * Add a query parameter to the UriComponentsBuilder
-     *
-     * @return true if the query parameter was added, false otherwise
-     */
-    default <T> boolean addQueryParam(
-            Function<T, String> extract,
-            T item,
-            Entry<String, String[]> entry,
-            UriComponentsBuilder builder,
-            Direction order,
-            String key,
-            boolean inclusive) {
-        if (extract == null) {
-            return false;
-        }
-
-        var lastParameterValue = extract.apply(item);
-        if (lastParameterValue == null) {
-            return false;
-        }
-
-        for (var value : entry.getValue()) {
-            if (order.isDescending()) {
-                builder.queryParam(key, value);
-            } else {
-                var splitVal = value.split(":");
-                var operator = splitVal.length == 1
-                        ? (inclusive ? RangeOperator.GTE : RangeOperator.GT)
-                        : RangeOperator.of(splitVal[0]);
-
-                builder.queryParam(key, operator.toString() + ":" + lastParameterValue);
-            }
-        }
-
-        return true;
+        boolean isInclusive(String name);
     }
 }
