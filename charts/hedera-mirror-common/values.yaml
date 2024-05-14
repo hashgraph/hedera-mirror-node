@@ -383,6 +383,7 @@ testkube:
   test:
     config:
       rest: {}
+      restjava: {}
       web3: {}
     extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion

@@ -28,8 +28,6 @@ import * as accountsCryptoAllowanceSpender from './accountsCryptoAllowanceSpende
 import * as accountsId from './accountsId.js';
 import * as accountsIdTimestampLte from './accountsIdTimestampLte.js';
 import * as accountsIdNe from './accountsIdNe.js';
-import * as accountsNftAllowanceOwner from './accountsNftAllowanceOwner.js';
-import * as accountsNftAllowanceSpender from './accountsNftAllowanceSpender.js';
 import * as accountsNfts from './accountsNfts.js';
 import * as accountsTokens from './accountsTokens.js';
 import * as accountsTokenAllowance from './accountsTokenAllowance.js';
@@ -80,7 +78,6 @@ import * as transactionsTransactionTypeAscending from './transactionsTransaction
 
 // add test modules here
 const tests = {
-  /*
   accounts,
   accountsBalanceFalse,
   accountsBalanceFalsePubkey,
@@ -92,10 +89,6 @@ const tests = {
   accountsId,
   accountsIdNe,
   accountsIdTimestampLte,
-  */
-  accountsNftAllowanceOwner,
-  accountsNftAllowanceSpender,
-  /*
   accountsNfts,
   accountsTokens,
   accountsTokenAllowance,
@@ -143,7 +136,6 @@ const tests = {
   transactionsHash,
   transactionsId,
   transactionsTransactionTypeAscending,
-   */
 };
 
 const {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} =
