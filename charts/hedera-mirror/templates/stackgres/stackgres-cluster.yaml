@@ -38,7 +38,7 @@ spec:
   postgres:
     extensions: {{ .Values.stackgres.extensions | toYaml | nindent 6 }}
     version: {{ .Values.stackgres.postgresVersion | quote }}
-  prometheusAutobind: {{ .Values.stackgres.prometheus }}
+  prometheusAutobind: {{ or .Values.stackgres.coordinator.enableMetricsExporter .Values.stackgres.worker.enableMetricsExporter }}
   replication:
     mode: async  # We might consider setting coordinator to sync or the proposed sync-all in the future
   shards:

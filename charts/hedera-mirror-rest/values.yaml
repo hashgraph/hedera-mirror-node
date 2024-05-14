@@ -174,7 +174,7 @@ prometheusRules:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
       summary: "Mirror REST API CPU usage exceeds 80%"
     enabled: true
-    expr: sum(nodejs_process_cpu_usage_percentage{container="rest"}) by (namespace, pod) > 80
+    expr: sum(nodejs_process_cpu_usage_percentage{container="rest"}) by (namespace, pod) / 100 > 0.8
     for: 5m
     labels:
       severity: critical
