@@ -20,60 +20,76 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
 import lombok.CustomLog;
+import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+@Getter
 @Component
 @CustomLog
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TransactionMocks {
 
-    // ETH Transaction Types
+    /**
+     * ETH Transaction Types
+     */
     private static final int LEGACY_TYPE_BYTE = 0;
     private static final int EIP2930_TYPE_BYTE = 1;
     private static final int EIP1559_TYPE_BYTE = 2;
 
-    // Legacy Transaction - Contract Create
+    /**
+     * Legacy Transaction - Contract Create
+     */
     private static final byte[] CREATE_CONTRACT_TX_HASH = generateTransactionHash();
     private static final Timestamp CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP = Timestamp.newBuilder()
             .setSeconds(1L)
             .setNanos(2000)
             .build();
-    public final Transaction createContractTx;
-    public final EthereumTransaction createContractEthTx;
-    public final RecordFile createContractRecordFile;
 
-    // Legacy Transaction - Contract Call
+    private final Transaction createContractTx;
+    private final EthereumTransaction createContractEthTx;
+    private final RecordFile createContractRecordFile;
+
+    /**
+     * Legacy Transaction - Contract Call
+     */
     private static final byte[] CONTRACT_CALL_TX_HASH = generateTransactionHash();
     private static final Timestamp CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP = Timestamp.newBuilder()
             .setSeconds(2L)
             .setNanos(3000)
             .build();
-    public final Transaction contractCallTx;
-    public final EthereumTransaction contractCallEthTx;
-    public final RecordFile contractCallRecordFile;
 
-    // EIP-1559 Transaction
+    private final Transaction contractCallTx;
+    private final EthereumTransaction contractCallEthTx;
+    private final RecordFile contractCallRecordFile;
+
+    /**
+     * EIP-1559 Transaction
+     */
     private static final byte[] EIP_1559_TX_HASH = generateTransactionHash();
     private static final Timestamp EIP1559_TX_CONSENSUS_TIMESTAMP = Timestamp.newBuilder()
             .setSeconds(3L)
             .setNanos(4000)
             .build();
-    public final Transaction eip1559Tx;
-    public final EthereumTransaction eip1559EthTx;
-    public final RecordFile eip1559RecordFile;
 
-    // EIP-2930 Transaction
+    private final Transaction eip1559Tx;
+    private final EthereumTransaction eip1559EthTx;
+    private final RecordFile eip1559RecordFile;
+
+    /**
+     * EIP-2930 Transaction
+     */
     private static final byte[] EIP_2930_TX_HASH = generateTransactionHash();
     private static final Timestamp EIP2930_TX_CONSENSUS_TIMESTAMP = Timestamp.newBuilder()
             .setSeconds(4L)
             .setNanos(5000)
             .build();
-    public final Transaction eip2930Tx;
-    public final EthereumTransaction eip2930EthTx;
-    public final RecordFile eip2930RecordFile;
+
+    private final Transaction eip2930Tx;
+    private final EthereumTransaction eip2930EthTx;
+    private final RecordFile eip2930RecordFile;
 
     public TransactionMocks() {
         final var domainBuilder = new DomainBuilder();

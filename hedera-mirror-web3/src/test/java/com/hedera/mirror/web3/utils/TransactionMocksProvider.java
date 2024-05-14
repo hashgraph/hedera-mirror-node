@@ -8,15 +8,15 @@ import org.junit.jupiter.params.provider.ArgumentsProvider;
 
 public class TransactionMocksProvider implements ArgumentsProvider {
 
-    private final TransactionMocks transactionMocks = new TransactionMocks();
+    private final TransactionMocks mocks = new TransactionMocks();
 
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(
-                Arguments.of(transactionMocks.createContractTx, transactionMocks.createContractEthTx, transactionMocks.createContractRecordFile),
-                Arguments.of(transactionMocks.contractCallTx, transactionMocks.contractCallEthTx, transactionMocks.contractCallRecordFile),
-                Arguments.of(transactionMocks.eip1559Tx, transactionMocks.eip1559EthTx, transactionMocks.eip1559RecordFile),
-                Arguments.of(transactionMocks.eip2930Tx, transactionMocks.eip2930EthTx, transactionMocks.eip2930RecordFile)
+                Arguments.of(mocks.getCreateContractTx(), mocks.getCreateContractEthTx(), mocks.getCreateContractRecordFile()),
+                Arguments.of(mocks.getContractCallTx(), mocks.getContractCallEthTx(), mocks.getContractCallRecordFile()),
+                Arguments.of(mocks.getEip1559Tx(), mocks.getEip1559EthTx(), mocks.getEip1559RecordFile()),
+                Arguments.of(mocks.getEip2930Tx(), mocks.getEip2930EthTx(), mocks.getEip2930RecordFile())
         );
     }
 }
