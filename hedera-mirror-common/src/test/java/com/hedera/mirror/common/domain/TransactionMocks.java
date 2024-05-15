@@ -16,7 +16,9 @@
 
 package com.hedera.mirror.common.domain;
 
+import static com.hedera.mirror.common.util.CommonUtils.duration;
 import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
+import static com.hedera.mirror.common.util.CommonUtils.timestamp;
 import static com.hedera.mirror.common.util.CommonUtils.toAccountID;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 
@@ -26,7 +28,6 @@ import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -262,21 +263,6 @@ public class TransactionMocks {
                 .setTransferList(TransferList.getDefaultInstance());
         transactionRecord.getReceiptBuilder().setStatus(ResponseCodeEnum.forNumber(transaction.getResult()));
         return transactionRecord;
-    }
-
-    private static @NotNull Duration duration(int seconds) {
-        return Duration.newBuilder().setSeconds(seconds).build();
-    }
-
-    private static @NotNull Timestamp timestamp(Instant instant) {
-        return timestamp(instant.getEpochSecond(), instant.getNano());
-    }
-
-    private static @NotNull Timestamp timestamp(long seconds, int nanos) {
-        return Timestamp.newBuilder()
-                .setSeconds(seconds)
-                .setNanos(nanos)
-                .build();
     }
 
     private static byte[] transactionHash() {
