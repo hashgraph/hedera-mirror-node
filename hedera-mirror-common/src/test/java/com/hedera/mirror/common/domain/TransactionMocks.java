@@ -19,18 +19,13 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
-import lombok.CustomLog;
-import lombok.Getter;
+import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
-@Getter
-@Component
-@CustomLog
-@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+@UtilityClass
 public class TransactionMocks {
+
+    private static final DomainBuilder DOMAIN_BUILDER = new DomainBuilder();
 
     /**
      * ETH Transaction Types
@@ -48,10 +43,6 @@ public class TransactionMocks {
             .setNanos(2000)
             .build();
 
-    private final Transaction createContractTx;
-    private final EthereumTransaction createContractEthTx;
-    private final RecordFile createContractRecordFile;
-
     /**
      * Legacy Transaction - Contract Call
      */
@@ -60,10 +51,6 @@ public class TransactionMocks {
             .setSeconds(2L)
             .setNanos(3000)
             .build();
-
-    private final Transaction contractCallTx;
-    private final EthereumTransaction contractCallEthTx;
-    private final RecordFile contractCallRecordFile;
 
     /**
      * EIP-1559 Transaction
@@ -74,10 +61,6 @@ public class TransactionMocks {
             .setNanos(4000)
             .build();
 
-    private final Transaction eip1559Tx;
-    private final EthereumTransaction eip1559EthTx;
-    private final RecordFile eip1559RecordFile;
-
     /**
      * EIP-2930 Transaction
      */
@@ -87,55 +70,108 @@ public class TransactionMocks {
             .setNanos(5000)
             .build();
 
-    private final Transaction eip2930Tx;
-    private final EthereumTransaction eip2930EthTx;
-    private final RecordFile eip2930RecordFile;
-
-    public TransactionMocks() {
-        final var domainBuilder = new DomainBuilder();
-
-        // Legacy Transaction - Contract Create
-        this.createContractTx = getTransaction(domainBuilder, CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCREATEINSTANCE);
-        this.createContractEthTx = getEthereumTransaction(domainBuilder, CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
-        this.createContractRecordFile = getRecordFile(domainBuilder, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP);
-
-        // Legacy Transaction - Contract Call
-        this.contractCallTx = getTransaction(domainBuilder, CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCALL);
-        this.contractCallEthTx = getEthereumTransaction(domainBuilder, CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
-        this.contractCallRecordFile = getRecordFile(domainBuilder, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP);
-
-        // EIP-1559 Transaction
-        this.eip1559Tx = getTransaction(domainBuilder, EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
-        this.eip1559EthTx = getEthereumTransaction(domainBuilder, EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
-        this.eip1559RecordFile = getRecordFile(domainBuilder, EIP1559_TX_CONSENSUS_TIMESTAMP);
-
-        // EIP-2930 Transaction
-        this.eip2930Tx = getTransaction(domainBuilder, EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
-        this.eip2930EthTx = getEthereumTransaction(domainBuilder, EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
-        this.eip2930RecordFile = getRecordFile(domainBuilder, EIP2930_TX_CONSENSUS_TIMESTAMP);
+    /**
+     * @return {@link Transaction} for Contract Create
+     */
+    public static @NotNull Transaction getCreateContractTransaction() {
+        return getTransaction(CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCREATEINSTANCE);
     }
 
-    private static @NotNull Transaction getTransaction(final DomainBuilder domainBuilder,
-                                                       final byte[] hash,
+    /**
+     * @return Legacy {@link EthereumTransaction} for Contract Create
+     */
+    public static @NotNull EthereumTransaction getCreateContractEthTransaction() {
+        return getEthereumTransaction(CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
+    }
+
+    /**
+     * @return {@link RecordFile} for Contract Create
+     */
+    public static @NotNull RecordFile getCreateContractRecordFile() {
+        return getRecordFile(CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP);
+    }
+
+    /**
+     * @return {@link Transaction} for Contract Call
+     */
+    public static @NotNull Transaction getContractCallTransaction() {
+        return getTransaction(CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCALL);
+    }
+
+    /**
+     * @return Legacy {@link EthereumTransaction} for Contract Call
+     */
+    public static @NotNull EthereumTransaction getContractCallEthTransaction() {
+        return getEthereumTransaction(CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
+    }
+
+    /**
+     * @return {@link RecordFile} for Contract Call
+     */
+    public static @NotNull RecordFile getContractCallRecordFile() {
+        return getRecordFile(CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP);
+    }
+
+    /**
+     * @return {@link Transaction} for EIP-1559 Transaction
+     */
+    public static @NotNull Transaction getEip1559Transaction() {
+        return getTransaction(EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
+    }
+
+    /**
+     * @return {@link EthereumTransaction} for EIP-1559 Transaction
+     */
+    public static @NotNull EthereumTransaction getEip1559EthTransaction() {
+        return getEthereumTransaction(EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
+    }
+
+    /**
+     * @return {@link RecordFile} for EIP-1559 Transaction
+     */
+    public static @NotNull RecordFile getEip1559RecordFile() {
+        return getRecordFile(EIP1559_TX_CONSENSUS_TIMESTAMP);
+    }
+
+    /**
+     * @return {@link Transaction} for EIP-2930 Transaction
+     */
+    public static @NotNull Transaction getEip2930Transaction() {
+        return getTransaction(EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
+    }
+
+    /**
+     * @return {@link EthereumTransaction} for EIP-2930 Transaction
+     */
+    public static @NotNull EthereumTransaction getEip2930EthTransaction() {
+        return getEthereumTransaction(EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
+    }
+
+    /**
+     * @return {@link RecordFile} for EIP-2930 Transaction
+     */
+    public static @NotNull RecordFile getEip2930RecordFile() {
+        return getRecordFile(EIP2930_TX_CONSENSUS_TIMESTAMP);
+    }
+
+    private static @NotNull Transaction getTransaction(final byte[] hash,
                                                        final Timestamp consensusTimestamp,
                                                        final TransactionType transactionType) {
-        return getTransaction(domainBuilder, hash, consensusTimestamp, transactionType, LEGACY_TYPE_BYTE);
+        return getTransaction(hash, consensusTimestamp, transactionType, LEGACY_TYPE_BYTE);
     }
 
-    private static @NotNull Transaction getTransaction(final DomainBuilder domainBuilder,
-                                                       final byte[] hash,
+    private static @NotNull Transaction getTransaction(final byte[] hash,
                                                        final Timestamp consensusTimestamp,
                                                        final int typeByte) {
-        return getTransaction(domainBuilder, hash, consensusTimestamp, TransactionType.ETHEREUMTRANSACTION, typeByte);
+        return getTransaction(hash, consensusTimestamp, TransactionType.ETHEREUMTRANSACTION, typeByte);
     }
 
     @SuppressWarnings("deprecation")
-    private static @NotNull Transaction getTransaction(final DomainBuilder domainBuilder,
-                                                       final byte[] hash,
+    private static @NotNull Transaction getTransaction(final byte[] hash,
                                                        final Timestamp consensusTimestamp,
                                                        final TransactionType transactionType,
                                                        final int typeByte) {
-        final var transactionID = getTransactionID(domainBuilder, consensusTimestamp);
+        final var transactionID = getTransactionID(consensusTimestamp);
         final var ethType = switch (typeByte) {
             case LEGACY_TYPE_BYTE -> "LEGACY";
             case EIP2930_TYPE_BYTE -> "EIP2930";
@@ -143,7 +179,7 @@ public class TransactionMocks {
             default -> "UNKNOWN";
         };
         final var memo = transactionType.name() + "_" + ethType;
-        return domainBuilder.transaction()
+        return DOMAIN_BUILDER.transaction()
                 .customize(tx -> {
                     tx.type(transactionType.getProtoId());
                     tx.memo(memo.getBytes());
@@ -164,11 +200,10 @@ public class TransactionMocks {
                 .get();
     }
 
-    private static @NotNull EthereumTransaction getEthereumTransaction(final DomainBuilder domainBuilder,
-                                                                       final byte[] hash,
+    private static @NotNull EthereumTransaction getEthereumTransaction(final byte[] hash,
                                                                        final Timestamp consensusTimestamp,
                                                                        final int typeByte) {
-        return domainBuilder.ethereumTransaction(true)
+        return DOMAIN_BUILDER.ethereumTransaction(true)
                 .customize(tx -> {
                     tx.type(typeByte);
                     tx.hash(hash);
@@ -187,9 +222,8 @@ public class TransactionMocks {
                 .get();
     }
 
-    private static @NotNull RecordFile getRecordFile(final DomainBuilder domainBuilder,
-                                                     final Timestamp consensusTimestamp) {
-        return domainBuilder.recordFile()
+    private static @NotNull RecordFile getRecordFile(final Timestamp consensusTimestamp) {
+        return DOMAIN_BUILDER.recordFile()
                 .customize(recordFile -> {
                     recordFile.consensusStart(convertToNanosMax(
                             consensusTimestamp.getSeconds(),
@@ -203,9 +237,9 @@ public class TransactionMocks {
                 .get();
     }
 
-    private static @NotNull TransactionID getTransactionID(DomainBuilder domainBuilder, Timestamp consensusTimestamp) {
+    private static @NotNull TransactionID getTransactionID(final Timestamp consensusTimestamp) {
         return TransactionID.newBuilder()
-                .setAccountID(toAccountID(domainBuilder.entityId()))
+                .setAccountID(toAccountID(DOMAIN_BUILDER.entityId()))
                 .setTransactionValidStart(Timestamp.newBuilder()
                         .setSeconds(consensusTimestamp.getSeconds())
                         .setNanos(consensusTimestamp.getNanos() - 1000)
@@ -213,7 +247,7 @@ public class TransactionMocks {
                 .build();
     }
 
-    private static TransactionBody.Builder getTransactionBody(Transaction.TransactionBuilder transactionBuilder) {
+    private static TransactionBody.Builder getTransactionBody(final Transaction.TransactionBuilder transactionBuilder) {
         final var transaction = transactionBuilder.build();
         return TransactionBody.newBuilder()
                 .setMemo(new String(transaction.getMemo()))
@@ -226,7 +260,7 @@ public class TransactionMocks {
                 .setTransactionValidDuration(duration(transaction.getValidDurationSeconds().intValue()));
     }
 
-    private static TransactionRecord.Builder getTransactionRecord(Transaction.TransactionBuilder transactionBuilder) {
+    private static TransactionRecord.Builder getTransactionRecord(final Transaction.TransactionBuilder transactionBuilder) {
         final var transaction = transactionBuilder.build();
         TransactionRecord.Builder transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(timestamp(Instant.ofEpochSecond(0, transaction.getConsensusTimestamp())))
