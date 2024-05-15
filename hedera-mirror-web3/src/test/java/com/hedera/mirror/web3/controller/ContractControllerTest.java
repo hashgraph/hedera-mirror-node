@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -146,6 +147,15 @@ class ContractControllerTest {
     void exceedingGasLimit() throws Exception {
         given(gasLimitBucket.tryConsume(THROTTLE_GAS_LIMIT)).willReturn(false);
         contractCall(request()).andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void restoreGasInThrottleBucketOnValidationFail() throws Exception {
+        var request = request();
+        request.setData("With invalid symbol!");
+        contractCall(request).andExpect(status().isBadRequest());
+        verify(gasLimitBucket).tryConsume(request.getGas());
+        verify(gasLimitBucket).addTokens(request.getGas());
     }
 
     @ValueSource(

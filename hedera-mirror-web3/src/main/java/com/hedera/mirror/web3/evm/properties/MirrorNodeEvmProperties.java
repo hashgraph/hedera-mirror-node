@@ -137,7 +137,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     // used by eth_estimateGas only
     @Min(1)
     @Max(100)
-    private int maxGasRefundPercentage = 100;
+    private int maxGasRefundPercentage = 20;
 
     @Getter
     @Min(1)
@@ -167,20 +167,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @Getter
-    @Min(100)
-    private long rateLimit = 500;
-
-    @Getter
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
-
-    @Getter
-    private long throttleGasLimit = 50_000_000L;
-
-    @Getter
-    @Min(0)
-    @Max(100)
-    private int throttleGasLimitRefundPercent = 20;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);

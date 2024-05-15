@@ -26,7 +26,6 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
@@ -35,6 +34,7 @@ import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
+import com.hedera.mirror.web3.throttle.properties.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import io.github.bucket4j.Bucket;
@@ -59,8 +59,8 @@ public class ContractCallService {
     private final Store store;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final RecordFileRepository recordFileRepository;
-    private final MirrorNodeEvmProperties dynamicProperties;
-    private Bucket gasLimitBucket;
+    private final ThrottleProperties throttleProperties;
+    private final Bucket gasLimitBucket;
 
     public ContractCallService(
             MeterRegistry meterRegistry,
@@ -68,7 +68,7 @@ public class ContractCallService {
             Store store,
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
             RecordFileRepository recordFileRepository,
-            MirrorNodeEvmProperties dynamicProperties,
+            ThrottleProperties throttleProperties,
             Bucket gasLimitBucket) {
         this.binaryGasEstimator = binaryGasEstimator;
         this.gasCounter = Counter.builder(GAS_METRIC)
@@ -77,11 +77,7 @@ public class ContractCallService {
         this.store = store;
         this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
         this.recordFileRepository = recordFileRepository;
-        this.dynamicProperties = dynamicProperties;
-        this.gasLimitBucket = gasLimitBucket;
-    }
-
-    public void setGasLimitBucket(final Bucket gasLimitBucket) {
+        this.throttleProperties = throttleProperties;
         this.gasLimitBucket = gasLimitBucket;
     }
 
@@ -172,8 +168,7 @@ public class ContractCallService {
     private void restoreGasToBucket(HederaEvmTransactionProcessingResult result, long gasLimit) {
         // If the transaction fails, gasUsed is equal to gasLimit, so restore the configured refund percent
         // of the gasLimit value back in the bucket.
-        final var gasLimitToRestoreBaseline =
-                (long) (gasLimit * dynamicProperties.getThrottleGasLimitRefundPercent() / 100f);
+        final var gasLimitToRestoreBaseline = (long) (gasLimit * throttleProperties.getGasLimitRefundPercent() / 100f);
         if (!result.isSuccessful() && gasLimit == result.getGasUsed()) {
             gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
         } else {
