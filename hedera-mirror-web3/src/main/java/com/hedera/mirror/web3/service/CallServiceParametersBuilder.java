@@ -31,15 +31,24 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.util.StringUtils;
 
+/**
+ * Provides abstractions for building {@link CallServiceParameters} objects.
+ *
+ * @author vyanev
+ */
 public interface CallServiceParametersBuilder {
 
     /**
-     * @param transactionIdOrHash the transaction id or hash
+     * @param transactionIdOrHash the {@link TransactionIdOrHashParameter}
      * @return the {@link CallServiceParameters} for the given transaction id or hash
      */
     CallServiceParameters buildFromTransaction(@NonNull TransactionIdOrHashParameter transactionIdOrHash);
 
-    static CallServiceParameters buildFromContractCallRequest(ContractCallRequest request) {
+    /**
+     * @param request the {@link ContractCallRequest}
+     * @return the {@link CallServiceParameters} for the given contract call request
+     */
+    static CallServiceParameters buildFromContractCallRequest(@NonNull ContractCallRequest request) {
         // In case of an empty "to" field, we set a default value of the zero address
         // to avoid any potential NullPointerExceptions throughout the process.
         final Address sender = Optional.ofNullable(request.getFrom())
