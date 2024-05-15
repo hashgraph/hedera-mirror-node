@@ -20,5 +20,6 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 
 public interface MirrorEvmTxProcessor {
+
     HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas);
 }

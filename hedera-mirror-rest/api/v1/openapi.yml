@@ -4757,7 +4757,7 @@ components:
         default: false
     transactionsQueryParam:
       name: transactions
-      description: If provided and set to false transactions will not include in the response
+      description: If provided and set to false transactions will not be included in the response
       in: query
       example: true
       schema:

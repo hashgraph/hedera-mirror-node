@@ -72,7 +72,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final MirrorOperationTracer operationTracer,
             final Store store,
             final EntityAddressSequencer entityAddressSequencer,
-            final TokenAccessor tokenAccessor) {
+            TokenAccessor tokenAccessor) {
         super(
                 worldState,
                 pricesAndFeesProvider,

@@ -19,7 +19,6 @@ package com.hedera.node.app.service.evm.contracts.execution;
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 
 import com.hedera.mirror.web3.common.PrecompileContext;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
@@ -70,7 +69,7 @@ public class HederaEvmTxProcessor {
             final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps,
             final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
-            final MirrorOperationTracer tracer) {
+            final HederaEvmOperationTracer tracer) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
         this.dynamicProperties = dynamicProperties;
