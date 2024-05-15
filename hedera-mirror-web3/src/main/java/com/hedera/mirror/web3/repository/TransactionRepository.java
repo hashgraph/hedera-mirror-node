@@ -26,7 +26,7 @@ public interface TransactionRepository extends CrudRepository<Transaction, Long>
 
     @Query("select t from Transaction t " +
             "where t.payerAccountId = ?1 " +
-            "and t.consensusTimestamp >= ?2 and t.consensusTimestamp <= ?3" +
+            "and t.consensusTimestamp >= ?2 and t.consensusTimestamp <= ?3 " +
             "and t.validStartNs = ?2")
     Optional<Transaction> findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
             EntityId payerAccountId, long validStartNs, long maxConsensusTimestampNs);

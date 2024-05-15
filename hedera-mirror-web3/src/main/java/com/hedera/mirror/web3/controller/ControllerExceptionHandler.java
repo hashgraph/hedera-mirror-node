@@ -108,22 +108,23 @@ public class ControllerExceptionHandler {
         return new ResponseEntity<>(errorResponse(e.getMessage(), e.getDetail(), e.getData()), BAD_REQUEST);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler({
+            ServerWebInputException.class,
+            HttpMessageConversionException.class
+    })
     @ResponseStatus(BAD_REQUEST)
-    private ResponseEntity<?> invalidJson(final ServerWebInputException e) {
+    private ResponseEntity<?> invalidJson(final Exception e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
-        return new ResponseEntity<>(
-                errorResponse(e.getReason(), "Unable to parse JSON", StringUtils.EMPTY),
-                BAD_REQUEST);
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private ResponseEntity<?> invalidJson(final HttpMessageConversionException e) {
-        log.warn("Transaction body parsing error: {}", e.getMessage());
+        if (e instanceof ServerWebInputException webInputException) {
+            return new ResponseEntity<>(
+                    errorResponse(webInputException.getReason(), webInputException.getMessage(), StringUtils.EMPTY),
+                    BAD_REQUEST
+            );
+        }
         return new ResponseEntity<>(
                 errorResponse("Unable to parse JSON", e.getMessage(), StringUtils.EMPTY),
-                BAD_REQUEST);
+                BAD_REQUEST
+        );
     }
 
     @ExceptionHandler
@@ -139,7 +140,8 @@ public class ControllerExceptionHandler {
         log.warn("Unsupported media type error: {}", e.getMessage());
         return new ResponseEntity<>(
                 errorResponse(UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(), e.getMessage(), StringUtils.EMPTY),
-                UNSUPPORTED_MEDIA_TYPE);
+                UNSUPPORTED_MEDIA_TYPE
+        );
     }
 
     @ExceptionHandler
@@ -148,7 +150,8 @@ public class ControllerExceptionHandler {
         log.error("Generic error: ", e);
         return new ResponseEntity<>(
                 errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase()),
-                INTERNAL_SERVER_ERROR);
+                INTERNAL_SERVER_ERROR
+        );
     }
 
     @ExceptionHandler
@@ -157,7 +160,8 @@ public class ControllerExceptionHandler {
         log.error("Query timed out: {}", e.getMessage());
         return new ResponseEntity<>(
                 errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()),
-                SERVICE_UNAVAILABLE);
+                SERVICE_UNAVAILABLE
+        );
     }
 
     private GenericErrorResponse errorResponse(final List<String> errors) {
