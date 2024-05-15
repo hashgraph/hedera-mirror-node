@@ -16,15 +16,18 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.node.app.service.evm.contracts.execution.*;
-import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -33,6 +36,9 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.utility.SemanticVersion;
 import jakarta.inject.Named;
+import java.time.Instant;
+import java.util.Map;
+import javax.inject.Provider;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -42,10 +48,6 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
-
-import javax.inject.Provider;
-import java.time.Instant;
-import java.util.Map;
 
 @Named
 public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements MirrorEvmTxProcessor {
@@ -67,7 +69,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
-            final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap,
+            final MirrorOperationTracer operationTracer,
             final Store store,
             final EntityAddressSequencer entityAddressSequencer,
             final TokenAccessor tokenAccessor) {
@@ -79,7 +81,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 mcps,
                 ccps,
                 blockMetaSource,
-                tracerMap);
+                operationTracer);
 
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
@@ -88,7 +90,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.tokenAccessor = tokenAccessor;
     }
 
-    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas, TracerType tracerType, ContractCallContext ctx) {
+    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();
@@ -110,9 +112,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getCallData(),
                 params.isStatic(),
                 aliasManager.resolveForEvm(params.getReceiver()),
-                params.getReceiver().equals(Address.ZERO),
-                tracerType,
-                ctx);
+                params.getReceiver().equals(Address.ZERO));
     }
 
     @Override
