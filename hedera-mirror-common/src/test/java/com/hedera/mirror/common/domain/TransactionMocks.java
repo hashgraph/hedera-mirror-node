@@ -51,123 +51,95 @@ public class TransactionMocks {
     private static final int EIP1559_TYPE_BYTE = 2;
 
     /**
-     * Legacy Transaction - Contract Create
+     * Contract Create Transaction
      */
-    private static final byte[] CREATE_CONTRACT_TX_HASH = generateTransactionHash();
-    private static final Timestamp CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP = Timestamp.newBuilder()
-            .setSeconds(1L)
-            .setNanos(2000)
-            .build();
+    public static class ContractCreate {
+        private static final byte[] CREATE_CONTRACT_TX_HASH = transactionHash();
+        private static final Timestamp CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP = timestamp(1, 2000);
 
-    /**
-     * Legacy Transaction - Contract Call
-     */
-    private static final byte[] CONTRACT_CALL_TX_HASH = generateTransactionHash();
-    private static final Timestamp CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP = Timestamp.newBuilder()
-            .setSeconds(2L)
-            .setNanos(3000)
-            .build();
+        public static @NotNull Transaction getCreateContractTransaction() {
+            return getTransaction(CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCREATEINSTANCE);
+        }
 
-    /**
-     * EIP-1559 Transaction
-     */
-    private static final byte[] EIP_1559_TX_HASH = generateTransactionHash();
-    private static final Timestamp EIP1559_TX_CONSENSUS_TIMESTAMP = Timestamp.newBuilder()
-            .setSeconds(3L)
-            .setNanos(4000)
-            .build();
-
-    /**
-     * EIP-2930 Transaction
-     */
-    private static final byte[] EIP_2930_TX_HASH = generateTransactionHash();
-    private static final Timestamp EIP2930_TX_CONSENSUS_TIMESTAMP = Timestamp.newBuilder()
-            .setSeconds(4L)
-            .setNanos(5000)
-            .build();
-
-    /**
-     * @return {@link Transaction} for Contract Create
-     */
-    public static @NotNull Transaction getCreateContractTransaction() {
-        return getTransaction(CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCREATEINSTANCE);
+        public static @NotNull RecordFile getCreateContractRecordFile() {
+            return getRecordFile(CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP);
+        }
     }
 
     /**
-     * @return Legacy {@link EthereumTransaction} for Contract Create
+     * Contract Call Transaction
      */
-    public static @NotNull EthereumTransaction getCreateContractEthTransaction() {
-        return getEthereumTransaction(CREATE_CONTRACT_TX_HASH, CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
+    public static class ContractCall {
+        private static final byte[] CONTRACT_CALL_TX_HASH = transactionHash();
+        private static final Timestamp CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP = timestamp(2, 3000);
+
+        public static @NotNull Transaction getContractCallTransaction() {
+            return getTransaction(CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCALL);
+        }
+
+        public static @NotNull RecordFile getContractCallRecordFile() {
+            return getRecordFile(CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP);
+        }
     }
 
     /**
-     * @return {@link RecordFile} for Contract Create
+     * EIP-1559 ETH Transaction
      */
-    public static @NotNull RecordFile getCreateContractRecordFile() {
-        return getRecordFile(CREATE_CONTRACT_TX_CONSENSUS_TIMESTAMP);
+    public static class Eip1559 {
+        private static final byte[] EIP_1559_TX_HASH = transactionHash();
+        private static final Timestamp EIP1559_TX_CONSENSUS_TIMESTAMP = timestamp(3, 4000);
+
+        public static @NotNull Transaction getEip1559Transaction() {
+            return getTransaction(EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
+        }
+
+        public static @NotNull EthereumTransaction getEip1559EthTransaction() {
+            return getEthereumTransaction(EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
+        }
+
+        public static @NotNull RecordFile getEip1559RecordFile() {
+            return getRecordFile(EIP1559_TX_CONSENSUS_TIMESTAMP);
+        }
     }
 
     /**
-     * @return {@link Transaction} for Contract Call
+     * EIP-2930 ETH Transaction
      */
-    public static @NotNull Transaction getContractCallTransaction() {
-        return getTransaction(CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, TransactionType.CONTRACTCALL);
+    public static class Eip2930 {
+        private static final byte[] EIP_2930_TX_HASH = transactionHash();
+        private static final Timestamp EIP2930_TX_CONSENSUS_TIMESTAMP = timestamp(4, 5000);
+
+        public static @NotNull Transaction getEip2930Transaction() {
+            return getTransaction(EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
+        }
+
+        public static @NotNull EthereumTransaction getEip2930EthTransaction() {
+            return getEthereumTransaction(EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
+        }
+
+        public static @NotNull RecordFile getEip2930RecordFile() {
+            return getRecordFile(EIP2930_TX_CONSENSUS_TIMESTAMP);
+        }
     }
 
     /**
-     * @return Legacy {@link EthereumTransaction} for Contract Call
+     * Legacy ETH Transaction
      */
-    public static @NotNull EthereumTransaction getContractCallEthTransaction() {
-        return getEthereumTransaction(CONTRACT_CALL_TX_HASH, CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
-    }
+    public static class Legacy {
+        private static final byte[] LEGACY_TX_HASH = transactionHash();
+        private static final Timestamp LEGACY_TX_CONSENSUS_TIMESTAMP = timestamp(5, 6000);
 
-    /**
-     * @return {@link RecordFile} for Contract Call
-     */
-    public static @NotNull RecordFile getContractCallRecordFile() {
-        return getRecordFile(CONTRACT_CALL_TX_CONSENSUS_TIMESTAMP);
-    }
+        public static @NotNull Transaction getLegacyTransaction() {
+            return getTransaction(LEGACY_TX_HASH, LEGACY_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
+        }
 
-    /**
-     * @return {@link Transaction} for EIP-1559 Transaction
-     */
-    public static @NotNull Transaction getEip1559Transaction() {
-        return getTransaction(EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
-    }
+        public static @NotNull EthereumTransaction getLegacyEthTransaction() {
+            return getEthereumTransaction(LEGACY_TX_HASH, LEGACY_TX_CONSENSUS_TIMESTAMP, LEGACY_TYPE_BYTE);
+        }
 
-    /**
-     * @return {@link EthereumTransaction} for EIP-1559 Transaction
-     */
-    public static @NotNull EthereumTransaction getEip1559EthTransaction() {
-        return getEthereumTransaction(EIP_1559_TX_HASH, EIP1559_TX_CONSENSUS_TIMESTAMP, EIP1559_TYPE_BYTE);
-    }
-
-    /**
-     * @return {@link RecordFile} for EIP-1559 Transaction
-     */
-    public static @NotNull RecordFile getEip1559RecordFile() {
-        return getRecordFile(EIP1559_TX_CONSENSUS_TIMESTAMP);
-    }
-
-    /**
-     * @return {@link Transaction} for EIP-2930 Transaction
-     */
-    public static @NotNull Transaction getEip2930Transaction() {
-        return getTransaction(EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
-    }
-
-    /**
-     * @return {@link EthereumTransaction} for EIP-2930 Transaction
-     */
-    public static @NotNull EthereumTransaction getEip2930EthTransaction() {
-        return getEthereumTransaction(EIP_2930_TX_HASH, EIP2930_TX_CONSENSUS_TIMESTAMP, EIP2930_TYPE_BYTE);
-    }
-
-    /**
-     * @return {@link RecordFile} for EIP-2930 Transaction
-     */
-    public static @NotNull RecordFile getEip2930RecordFile() {
-        return getRecordFile(EIP2930_TX_CONSENSUS_TIMESTAMP);
+        public static @NotNull RecordFile getLegacyRecordFile() {
+            return getRecordFile(LEGACY_TX_CONSENSUS_TIMESTAMP);
+        }
     }
 
     private static @NotNull Transaction getTransaction(final byte[] hash,
@@ -205,8 +177,8 @@ public class TransactionMocks {
                             transactionID.getTransactionValidStart().getSeconds(),
                             transactionID.getTransactionValidStart().getNanos()));
                     tx.consensusTimestamp(convertToNanosMax(
-                            EIP2930_TX_CONSENSUS_TIMESTAMP.getSeconds(),
-                            EIP2930_TX_CONSENSUS_TIMESTAMP.getNanos()));
+                            consensusTimestamp.getSeconds(),
+                            consensusTimestamp.getNanos()));
                     tx.transactionRecordBytes(getTransactionRecord(tx).build().toByteArray());
                     tx.transactionBytes(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
                             .setBodyBytes(getTransactionBody(tx).build().toByteString())
@@ -263,7 +235,7 @@ public class TransactionMocks {
                 .build();
     }
 
-    private static TransactionBody.Builder getTransactionBody(final Transaction.TransactionBuilder transactionBuilder) {
+    private static @NotNull TransactionBody.Builder getTransactionBody(final Transaction.TransactionBuilder transactionBuilder) {
         final var transaction = transactionBuilder.build();
         return TransactionBody.newBuilder()
                 .setMemo(new String(transaction.getMemo()))
@@ -276,7 +248,7 @@ public class TransactionMocks {
                 .setTransactionValidDuration(duration(transaction.getValidDurationSeconds().intValue()));
     }
 
-    private static TransactionRecord.Builder getTransactionRecord(final Transaction.TransactionBuilder transactionBuilder) {
+    private static @NotNull TransactionRecord.Builder getTransactionRecord(final Transaction.TransactionBuilder transactionBuilder) {
         final var transaction = transactionBuilder.build();
         TransactionRecord.Builder transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(timestamp(Instant.ofEpochSecond(0, transaction.getConsensusTimestamp())))
@@ -292,18 +264,22 @@ public class TransactionMocks {
         return transactionRecord;
     }
 
-    private static byte[] generateTransactionHash() {
-        return nextBytes(32);
-    }
-
-    private static Duration duration(int seconds) {
+    private static @NotNull Duration duration(int seconds) {
         return Duration.newBuilder().setSeconds(seconds).build();
     }
 
-    private static Timestamp timestamp(Instant instant) {
+    private static @NotNull Timestamp timestamp(Instant instant) {
+        return timestamp(instant.getEpochSecond(), instant.getNano());
+    }
+
+    private static @NotNull Timestamp timestamp(long seconds, int nanos) {
         return Timestamp.newBuilder()
-                .setSeconds(instant.getEpochSecond())
-                .setNanos(instant.getNano())
+                .setSeconds(seconds)
+                .setNanos(nanos)
                 .build();
+    }
+
+    private static byte[] transactionHash() {
+        return nextBytes(32);
     }
 }
