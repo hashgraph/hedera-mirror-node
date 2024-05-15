@@ -8,7 +8,7 @@ To this end, we use [Flux](https://fluxcd.io) in our Kubernetes clusters to mana
 
 ### Kubernetes
 
-Create a standard GKE cluster with at least Kubernetes 1.21.
+Create a standard GKE cluster with at least Kubernetes 1.29.
 
 ### Sealed Secrets
 
@@ -19,7 +19,7 @@ kubectl create namespace flux-system
 helm upgrade -i --wait -n flux-system sealed-secrets sealed-secrets/sealed-secrets --set keyrenewperiod=0s
 ```
 
-### Flux v2
+### FluxCD
 
 ```bash
 export GITHUB_TOKEN=...
