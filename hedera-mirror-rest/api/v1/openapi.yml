@@ -613,22 +613,17 @@ paths:
         - contracts
   /api/v1/contracts/results/{transactionIdOrHash}/opcodes:
     get:
-      summary: Get the opcode traces for a historical transaction on the network with the given transactionId or ethereum transaction hash
+      summary: Get the opcode traces for a historical transaction on the network with the given transaction ID or hash
       description: |
-        Returns a result containing detailed information for the transaction execution with stack, memory and storage.
-      
-        For providing output formatted by opcodeLogger, the transaction is re-executed using 
-        the state from the contract_state_changes sidecars produced by the consensus nodes. 
-        
-        In this way, we can have a track on all of the storage/memory information and 
-        the entire trace of opcodes that were executed during the replay.
-
-        Note: The output generated from the opcodeLogger is very verbose. 
-        The /opcodes endpoint will be disabled by default and can be enabled by 
-        users of the Hedera Local node or users running their own Mirror Nodes.
+        Re-executes a transaction and returns a result containing detailed information for the execution, 
+        including all values from the {@code stack}, {@code memory} and {@code storage} 
+        and the entire trace of opcodes that were executed during the replay.
       operationId: getContractOpcodesByTransactionIdOrHash
       parameters:
         - $ref: "#/components/parameters/transactionIdOrEthHashPathParam"
+        - $ref: "#/components/parameters/stack"
+        - $ref: "#/components/parameters/memory"
+        - $ref: "#/components/parameters/storage"
       responses:
         200:
           description: OK
@@ -4736,9 +4731,33 @@ components:
           value: lte:0.0.200
       schema:
         $ref: "#/components/schemas/EntityIdQuery"
+    memory:
+      name: memory
+      description: If provided and set to false, memory information will not be included in the response
+      in: query
+      example: true
+      schema:
+        type: boolean
+        default: true
+    stack:
+      name: stack
+      description: If provided and set to false, stack information will not be included in the response
+      in: query
+      example: true
+      schema:
+        type: boolean
+        default: true
+    storage:
+      name: storage
+      description: If provided and set to false, storage information will not be included in the response
+      in: query
+      example: true
+      schema:
+        type: boolean
+        default: true
     transactionsQueryParam:
       name: transactions
-      description: If provided and set to false transactions will not be included in the response
+      description: If provided and set to false transactions will not include in the response
       in: query
       example: true
       schema:
