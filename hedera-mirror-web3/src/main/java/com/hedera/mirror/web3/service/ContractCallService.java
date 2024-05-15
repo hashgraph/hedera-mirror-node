@@ -81,7 +81,18 @@ public class ContractCallService {
                     ctx.initializeStackFrames(store.getStackedStateFrames());
                     result = estimateGas(params);
                 } else {
-                    final var ethCallTxnResult = getCallTxnResult(params, ctx);
+                    BlockType block = params.getBlock();
+                    // if we have historical call then set corresponding file record
+                    if (block != BlockType.LATEST) {
+                        var recordFileOptional = recordFileService
+                                .findRecordFileByBlock(block)
+                                .orElseThrow(BlockNumberNotFoundException::new);
+                        ctx.setRecordFile(recordFileOptional);
+                    }
+                    // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
+                    // if the call is historical
+                    ctx.initializeStackFrames(store.getStackedStateFrames());
+                    final var ethCallTxnResult = doProcessCall(params, params.getGas());
 
                     validateResult(ethCallTxnResult, params.getCallType());
 
@@ -98,29 +109,7 @@ public class ContractCallService {
     }
 
     public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params) {
-        return ContractCallContext.run(ctx -> {
-            final var ethCallTxnResult = getCallTxnResult(params, ctx);
-            validateResult(ethCallTxnResult, params.getCallType());
-
-            return OpcodesProcessingResult.builder()
-                    .transactionProcessingResult(ethCallTxnResult)
-                    .opcodes(ctx.getOpcodes())
-                    .build();
-        });
-    }
-
-    private HederaEvmTransactionProcessingResult getCallTxnResult(CallServiceParameters params,
-                                                                  ContractCallContext ctx) throws MirrorEvmTransactionException {
-        // if we have historical call then set corresponding file record
-        if (params.getBlock() != BlockType.LATEST) {
-            ctx.setRecordFile(recordFileService
-                    .findRecordFileByBlock(params.getBlock())
-                    .orElseThrow(BlockNumberNotFoundException::new));
-        }
-        // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
-        // if the call is historical
-        ctx.initializeStackFrames(store.getStackedStateFrames());
-        return doProcessCall(params, params.getGas());
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
