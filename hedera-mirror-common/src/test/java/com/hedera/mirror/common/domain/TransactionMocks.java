@@ -34,7 +34,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.time.Instant;
 import java.util.List;
 import lombok.experimental.UtilityClass;
 import org.jetbrains.annotations.NotNull;
@@ -244,7 +243,7 @@ public class TransactionMocks {
                 .setTransactionFee(transaction.getMaxFee())
                 .setTransactionID(TransactionID.newBuilder()
                         .setAccountID(toAccountID(transaction.getPayerAccountId()))
-                        .setTransactionValidStart(timestamp(Instant.ofEpochSecond(0, transaction.getValidStartNs())))
+                        .setTransactionValidStart(timestamp(transaction.getValidStartNs()))
                         .build())
                 .setTransactionValidDuration(duration(transaction.getValidDurationSeconds().intValue()));
     }
@@ -252,13 +251,13 @@ public class TransactionMocks {
     private static @NotNull TransactionRecord.Builder getTransactionRecord(final Transaction.TransactionBuilder transactionBuilder) {
         final var transaction = transactionBuilder.build();
         TransactionRecord.Builder transactionRecord = TransactionRecord.newBuilder()
-                .setConsensusTimestamp(timestamp(Instant.ofEpochSecond(0, transaction.getConsensusTimestamp())))
+                .setConsensusTimestamp(timestamp(transaction.getConsensusTimestamp()))
                 .setMemoBytes(ByteString.copyFrom(transaction.getMemo()))
                 .setTransactionFee(transaction.getChargedTxFee())
                 .setTransactionHash(ByteString.copyFrom(transaction.getTransactionHash()))
                 .setTransactionID(TransactionID.newBuilder()
                         .setAccountID(toAccountID(transaction.getPayerAccountId()))
-                        .setTransactionValidStart(timestamp(Instant.ofEpochSecond(0, transaction.getValidStartNs())))
+                        .setTransactionValidStart(timestamp(transaction.getValidStartNs()))
                         .build())
                 .setTransferList(TransferList.getDefaultInstance());
         transactionRecord.getReceiptBuilder().setStatus(ResponseCodeEnum.forNumber(transaction.getResult()));

@@ -61,7 +61,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -167,7 +166,7 @@ class OpcodesControllerTest {
         } else {
             final String transactionId = transactionIdString(
                     toAccountID(transaction.getPayerAccountId()),
-                    timestamp(Instant.ofEpochSecond(0, transaction.getValidStartNs()))
+                    timestamp(transaction.getValidStartNs())
             );
             return TransactionIdOrHashParameter.valueOf(transactionId);
         }

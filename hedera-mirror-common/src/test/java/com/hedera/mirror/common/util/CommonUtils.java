@@ -21,7 +21,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.security.SecureRandom;
-import java.time.Instant;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
@@ -47,8 +46,10 @@ public class CommonUtils {
         return Duration.newBuilder().setSeconds(seconds).build();
     }
 
-    public static Timestamp timestamp(Instant instant) {
-        return timestamp(instant.getEpochSecond(), instant.getNano());
+    public static Timestamp timestamp(long nanos) {
+        final long seconds = nanos / 1_000_000_000;
+        final int remainingNanos = (int) (nanos % 1_000_000_000);
+        return timestamp(seconds, remainingNanos);
     }
 
     public static Timestamp timestamp(long seconds, int nanos) {
