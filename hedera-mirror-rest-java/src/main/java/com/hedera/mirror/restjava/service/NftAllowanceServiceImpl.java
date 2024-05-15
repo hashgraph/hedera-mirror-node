@@ -182,11 +182,11 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
             if (tokenOperators.hasLtLte() && !accountOperators.hasEq && !accountOperators.hasLte) {
                 throw new IllegalArgumentException(
-                        "Single occurrence only supported.Requires the presence of an lte or eq account.id query");
+                        "Single occurrence only supported. Requires the presence of an lte or eq account.id parameter");
             }
             if (tokenOperators.hasGtGte() && !accountOperators.hasEq && !accountOperators.hasGte) {
                 throw new IllegalArgumentException(
-                        "Single occurrence only supported.Requires the presence of an gte or eq account.id query");
+                        "Single occurrence only supported. Requires the presence of an gte or eq account.id parameter");
             }
         }
     }
