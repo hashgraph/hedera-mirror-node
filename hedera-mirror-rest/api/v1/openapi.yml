@@ -4733,12 +4733,12 @@ components:
         $ref: "#/components/schemas/EntityIdQuery"
     memory:
       name: memory
-      description: If provided and set to false, memory information will not be included in the response
+      description: If provided and set to true, memory information will be included in the response
       in: query
-      example: true
+      example: false
       schema:
         type: boolean
-        default: true
+        default: false
     stack:
       name: stack
       description: If provided and set to false, stack information will not be included in the response
@@ -4749,12 +4749,12 @@ components:
         default: true
     storage:
       name: storage
-      description: If provided and set to false, storage information will not be included in the response
+      description: If provided and set to true, storage information will be included in the response
       in: query
-      example: true
+      example: false
       schema:
         type: boolean
-        default: true
+        default: false
     transactionsQueryParam:
       name: transactions
       description: If provided and set to false transactions will not include in the response

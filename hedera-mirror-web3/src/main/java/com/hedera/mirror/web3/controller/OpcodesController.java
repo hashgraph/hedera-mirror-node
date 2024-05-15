@@ -78,10 +78,12 @@ class OpcodesController {
      */
     @CrossOrigin(origins = "*")
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")
-    OpcodesResponse opcodes(@PathVariable TransactionIdOrHashParameter transactionIdOrHash,
-                            @RequestParam(required = false, defaultValue = "true") boolean stack,
-                            @RequestParam(required = false, defaultValue = "false") boolean memory,
-                            @RequestParam(required = false, defaultValue = "false") boolean storage) {
+    OpcodesResponse getContractOpcodesByTransactionIdOrHash(
+            @PathVariable TransactionIdOrHashParameter transactionIdOrHash,
+            @RequestParam(required = false, defaultValue = "true") boolean stack,
+            @RequestParam(required = false, defaultValue = "false") boolean memory,
+            @RequestParam(required = false, defaultValue = "false") boolean storage
+    ) {
         if (!bucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
