@@ -145,8 +145,8 @@ data:
         echo "Successfully patched config map"
         COMMAND_STATUS=0
       else
-        echo "Conflict patching config map. Retrying ..."
         COMMAND_STATUS=$?
+        echo "Conflict patching config map. Retrying ..."
       fi
     done
     
