@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.common.util.CommonUtils.timestamp;
 import static com.hedera.mirror.common.util.CommonUtils.toAccountID;
+import static com.hedera.mirror.web3.service.TransactionServiceImpl.MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -41,12 +43,18 @@ import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
+import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.mirror.web3.repository.TransactionRepository;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilderImpl;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.EthereumTransactionService;
+import com.hedera.mirror.web3.service.EthereumTransactionServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
+import com.hedera.mirror.web3.service.RecordFileServiceImpl;
 import com.hedera.mirror.web3.service.TransactionService;
+import com.hedera.mirror.web3.service.TransactionServiceImpl;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.TransactionMocksProvider;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -55,7 +63,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -111,13 +118,13 @@ class OpcodesControllerTest {
     private Bucket bucket;
 
     @MockBean
-    private TransactionService transactionService;
+    private TransactionRepository transactionRepository;
 
     @MockBean
-    private EthereumTransactionService ethereumTransactionService;
+    private EthereumTransactionRepository ethereumTransactionRepository;
 
     @MockBean
-    private RecordFileService recordFileService;
+    private RecordFileRepository recordFileRepository;
 
     @Autowired
     private CallServiceParametersBuilder callServiceParametersBuilder;
@@ -190,11 +197,15 @@ class OpcodesControllerTest {
             opcodesResultCaptor.set(result);
             return result;
         });
-        when(ethereumTransactionService.findByHash(any(byte[].class))).thenReturn(Optional.ofNullable(ethTransaction));
-        when(ethereumTransactionService.findByConsensusTimestamp(anyLong())).thenReturn(Optional.ofNullable(ethTransaction));
-        when(transactionService.findByTransactionId(any(TransactionID.class))).thenReturn(Optional.of(transaction));
-        when(transactionService.findByConsensusTimestamp(anyLong())).thenReturn(Optional.of(transaction));
-        when(recordFileService.findRecordFileForTimestamp(anyLong())).thenReturn(Optional.of(recordFile));
+        when(ethereumTransactionRepository.findByHash(any(byte[].class))).thenReturn(Optional.ofNullable(ethTransaction));
+        when(ethereumTransactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.ofNullable(ethTransaction));
+        when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
+                transaction.getPayerAccountId(),
+                transaction.getValidStartNs(),
+                transaction.getValidStartNs() + MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE.toNanos()
+        )).thenReturn(Optional.of(transaction));
+        when(transactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.of(transaction));
+        when(recordFileRepository.findByTimestamp(transaction.getConsensusTimestamp())).thenReturn(Optional.of(recordFile));
     }
 
     @ParameterizedTest
@@ -277,13 +288,33 @@ class OpcodesControllerTest {
                                                  EthereumTransaction ethTransaction,
                                                  RecordFile recordFile) throws Exception {
         setUp(transaction, ethTransaction, recordFile);
-        when(recordFileService.findRecordFileForTimestamp(any())).thenReturn(Optional.empty());
+
+        when(recordFileRepository.findByTimestamp(anyLong())).thenReturn(Optional.empty());
 
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isBadRequest())
                 .andExpect(responseBody(new GenericErrorResponse("Record file with transaction not found")));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void callWithTransactionNotFoundExceptionTest(Transaction transaction,
+                                                  EthereumTransaction ethTransaction,
+                                                  RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
+
+        when(transactionRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
+                any(EntityId.class), anyLong(), anyLong()
+        )).thenReturn(Optional.empty());
+
+        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isBadRequest())
+                .andExpect(responseBody(new GenericErrorResponse("Transaction not found")));
     }
 
     /*
@@ -479,6 +510,21 @@ class OpcodesControllerTest {
         @Bean
         TransactionOperations transactionOperations() {
             return mock(TransactionOperations.class);
+        }
+
+        @Bean
+        TransactionService transactionService(TransactionRepository transactionRepository) {
+            return new TransactionServiceImpl(transactionRepository);
+        }
+
+        @Bean
+        EthereumTransactionService ethereumTransactionService(EthereumTransactionRepository ethereumTransactionRepository) {
+            return new EthereumTransactionServiceImpl(ethereumTransactionRepository);
+        }
+
+        @Bean
+        RecordFileService recordFileService(RecordFileRepository recordFileRepository) {
+            return new RecordFileServiceImpl(recordFileRepository);
         }
 
         @Bean
