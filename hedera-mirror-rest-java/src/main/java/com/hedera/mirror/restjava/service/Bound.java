@@ -26,8 +26,8 @@ import lombok.Getter;
 @Getter
 public class Bound {
 
-    private EntityIdRangeParameter lowerBound;
-    private EntityIdRangeParameter upperBound;
+    private EntityIdRangeParameter lower;
+    private EntityIdRangeParameter upper;
     private final EnumMap<RangeOperator, Integer> cardinality = new EnumMap<>(RangeOperator.class);
 
     public Bound(List<EntityIdRangeParameter> params) {
@@ -36,42 +36,42 @@ public class Bound {
             for (EntityIdRangeParameter param : params) {
                 // Considering EQ in the same category as GT,GTE as an assumption
                 if (param.hasLowerBound()) {
-                    lowerBound = param;
+                    lower = param;
                 } else if (param.hasUpperBound()) {
-                    upperBound = param;
+                    upper = param;
                 }
                 populateCardinality(param);
             }
-            long lower = adjustLowerBound();
-            long upper = adjustUpperBound();
+            long adjustedLower = adjustLowerBound();
+            long adjustedUpper = adjustUpperBound();
 
-            if (lower == upper) {
-                lowerBound = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(lower));
+            if (adjustedLower == adjustedUpper) {
+                this.lower = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(adjustedLower));
             }
         }
     }
 
     private long adjustUpperBound() {
-        long upper = Long.MAX_VALUE;
+        long upperBound = Long.MAX_VALUE;
 
-        if (this.upperBound != null) {
-            upper = this.upperBound.value().getId();
-            if (this.upperBound.operator() == RangeOperator.LT) {
-                upper--;
+        if (this.upper != null) {
+            upperBound = this.upper.value().getId();
+            if (this.upper.operator() == RangeOperator.LT) {
+                upperBound--;
             }
         }
-        return upper;
+        return upperBound;
     }
 
     private long adjustLowerBound() {
-        long lower = 0;
-        if (this.lowerBound != null) {
-            lower = this.lowerBound.value().getId();
-            if (this.lowerBound.operator() == RangeOperator.GT) {
-                lower++;
+        long lowerBound = 0;
+        if (this.lower != null) {
+            lowerBound = this.lower.value().getId();
+            if (this.lower.operator() == RangeOperator.GT) {
+                lowerBound++;
             }
         }
-        return lower;
+        return lowerBound;
     }
 
     private void populateCardinality(EntityIdRangeParameter param) {

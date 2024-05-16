@@ -21,10 +21,9 @@ import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
-import lombok.RequiredArgsConstructor;
-
 import java.util.Collection;
 import java.util.Collections;
+import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
@@ -40,10 +39,10 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
-        if (ownerOrSpenderId.getLowerBound() != null
-                && ownerOrSpenderId.getUpperBound() != null
-                && (ownerOrSpenderId.getLowerBound().value().getId()
-                        > ownerOrSpenderId.getUpperBound().value().getId())) {
+        if (ownerOrSpenderId.getLower() != null
+                && ownerOrSpenderId.getUpper() != null
+                && (ownerOrSpenderId.getLower().value().getId()
+                        > ownerOrSpenderId.getUpper().value().getId())) {
             return Collections.emptyList();
         }
 
@@ -81,9 +80,9 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
     private static void checkOwnerSpenderParamValidity(Bound ownerOrSpenderParams, Bound tokenParams) {
 
-        if (ownerOrSpenderParams.getLowerBound() == null
-                && ownerOrSpenderParams.getUpperBound() == null
-                && (tokenParams.getLowerBound() != null || tokenParams.getUpperBound() != null)) {
+        if (ownerOrSpenderParams.getLower() == null
+                && ownerOrSpenderParams.getUpper() == null
+                && (tokenParams.getLower() != null || tokenParams.getUpper() != null)) {
             throw new IllegalArgumentException("token.id parameter must have account.id present");
         }
 

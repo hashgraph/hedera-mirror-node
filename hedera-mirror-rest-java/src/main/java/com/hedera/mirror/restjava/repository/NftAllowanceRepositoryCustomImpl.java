@@ -65,13 +65,10 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         var tokenBounds = request.getTokenIds();
 
         var commonCondition = getCondition(primaryField, RangeOperator.EQ, id.getId());
-        var lowerCondition =
-                getOuterBoundCondition(primaryBounds.getLowerBound(), tokenBounds.getLowerBound(), primarySortField);
-        var middleCondition = getMiddleCondition(
-                        primaryBounds.getLowerBound(), tokenBounds.getLowerBound(), primarySortField)
-                .and(getMiddleCondition(primaryBounds.getUpperBound(), tokenBounds.getUpperBound(), primarySortField));
-        var upperCondition =
-                getOuterBoundCondition(primaryBounds.getUpperBound(), tokenBounds.getUpperBound(), primarySortField);
+        var lowerCondition = getOuterBoundCondition(primaryBounds.getLower(), tokenBounds.getLower(), primarySortField);
+        var middleCondition = getMiddleCondition(primaryBounds.getLower(), tokenBounds.getLower(), primarySortField)
+                .and(getMiddleCondition(primaryBounds.getUpper(), tokenBounds.getUpper(), primarySortField));
+        var upperCondition = getOuterBoundCondition(primaryBounds.getUpper(), tokenBounds.getUpper(), primarySortField);
         var condition = commonCondition.and(lowerCondition.or(middleCondition).or(upperCondition));
 
         return dslContext
