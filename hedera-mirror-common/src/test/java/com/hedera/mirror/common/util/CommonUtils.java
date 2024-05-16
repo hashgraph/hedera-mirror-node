@@ -18,6 +18,8 @@ package com.hedera.mirror.common.util;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.Timestamp;
 import java.security.SecureRandom;
 import lombok.experimental.UtilityClass;
 
@@ -37,6 +39,23 @@ public class CommonUtils {
                 .setShardNum(entityId.getShard())
                 .setRealmNum(entityId.getRealm())
                 .setAccountNum(entityId.getNum())
+                .build();
+    }
+
+    public static Duration duration(int seconds) {
+        return Duration.newBuilder().setSeconds(seconds).build();
+    }
+
+    public static Timestamp timestamp(long nanos) {
+        final long seconds = nanos / 1_000_000_000;
+        final int remainingNanos = (int) (nanos % 1_000_000_000);
+        return timestamp(seconds, remainingNanos);
+    }
+
+    public static Timestamp timestamp(long seconds, int nanos) {
+        return Timestamp.newBuilder()
+                .setSeconds(seconds)
+                .setNanos(nanos)
                 .build();
     }
 }

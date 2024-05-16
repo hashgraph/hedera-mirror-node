@@ -16,18 +16,19 @@
 
 package com.hedera.mirror.web3.utils;
 
-import static com.hedera.mirror.common.domain.TransactionMocks.getContractCallEthTransaction;
-import static com.hedera.mirror.common.domain.TransactionMocks.getContractCallRecordFile;
-import static com.hedera.mirror.common.domain.TransactionMocks.getContractCallTransaction;
-import static com.hedera.mirror.common.domain.TransactionMocks.getCreateContractEthTransaction;
-import static com.hedera.mirror.common.domain.TransactionMocks.getCreateContractRecordFile;
-import static com.hedera.mirror.common.domain.TransactionMocks.getCreateContractTransaction;
-import static com.hedera.mirror.common.domain.TransactionMocks.getEip1559EthTransaction;
-import static com.hedera.mirror.common.domain.TransactionMocks.getEip1559RecordFile;
-import static com.hedera.mirror.common.domain.TransactionMocks.getEip1559Transaction;
-import static com.hedera.mirror.common.domain.TransactionMocks.getEip2930EthTransaction;
-import static com.hedera.mirror.common.domain.TransactionMocks.getEip2930RecordFile;
-import static com.hedera.mirror.common.domain.TransactionMocks.getEip2930Transaction;
+import static com.hedera.mirror.common.domain.TransactionMocks.ContractCall.getContractCallRecordFile;
+import static com.hedera.mirror.common.domain.TransactionMocks.ContractCall.getContractCallTransaction;
+import static com.hedera.mirror.common.domain.TransactionMocks.ContractCreate.getCreateContractRecordFile;
+import static com.hedera.mirror.common.domain.TransactionMocks.ContractCreate.getCreateContractTransaction;
+import static com.hedera.mirror.common.domain.TransactionMocks.Eip1559.getEip1559EthTransaction;
+import static com.hedera.mirror.common.domain.TransactionMocks.Eip1559.getEip1559RecordFile;
+import static com.hedera.mirror.common.domain.TransactionMocks.Eip1559.getEip1559Transaction;
+import static com.hedera.mirror.common.domain.TransactionMocks.Eip2930.getEip2930EthTransaction;
+import static com.hedera.mirror.common.domain.TransactionMocks.Eip2930.getEip2930RecordFile;
+import static com.hedera.mirror.common.domain.TransactionMocks.Eip2930.getEip2930Transaction;
+import static com.hedera.mirror.common.domain.TransactionMocks.Legacy.getLegacyEthTransaction;
+import static com.hedera.mirror.common.domain.TransactionMocks.Legacy.getLegacyRecordFile;
+import static com.hedera.mirror.common.domain.TransactionMocks.Legacy.getLegacyTransaction;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -54,8 +55,9 @@ public class TransactionMocksProvider implements ArgumentsProvider {
     @Override
     public Stream<? extends Arguments> provideArguments(ExtensionContext context) {
         return Stream.of(
-                Arguments.of(getCreateContractTransaction(), getCreateContractEthTransaction(), getCreateContractRecordFile()),
-                Arguments.of(getContractCallTransaction(), getContractCallEthTransaction(), getContractCallRecordFile()),
+                Arguments.of(getCreateContractTransaction(), null, getCreateContractRecordFile()),
+                Arguments.of(getContractCallTransaction(), null, getContractCallRecordFile()),
+                Arguments.of(getLegacyTransaction(), getLegacyEthTransaction(), getLegacyRecordFile()),
                 Arguments.of(getEip1559Transaction(), getEip1559EthTransaction(), getEip1559RecordFile()),
                 Arguments.of(getEip2930Transaction(), getEip2930EthTransaction(), getEip2930RecordFile())
         );

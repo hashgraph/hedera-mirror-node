@@ -16,7 +16,8 @@
 
 package com.hedera.node.app.service.evm.contracts.execution;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
+
 import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -25,6 +26,9 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldStat
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.swirlds.common.utility.SemanticVersion;
+import java.time.Instant;
+import java.util.Map;
+import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;

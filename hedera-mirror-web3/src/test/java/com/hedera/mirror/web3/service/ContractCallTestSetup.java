@@ -22,7 +22,6 @@ import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType.OPERATION;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -1050,7 +1049,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ContractCallContext.run(ctx -> {
             ctx.initializeStackFrames(store.getStackedStateFrames());
             long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas(), OPERATION, ctx)
+                    .execute(serviceParameters, serviceParameters.getGas())
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
