@@ -182,10 +182,8 @@ class OpcodesControllerTest {
 
     void setUp(Transaction transaction, EthereumTransaction ethTransaction, RecordFile recordFile) {
         final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
-        given(bucket.tryConsume(1)).willReturn(true);
-        given(contractCallService.processOpcodeCall(callServiceParametersCaptor.capture(), TransactionIdOrHashParameter.valueOf(transactionHash))).willAnswer(context -> {
         when(bucket.tryConsume(1)).thenReturn(true);
-        when(contractCallService.processOpcodeCall(callServiceParametersCaptor.capture())).thenAnswer(context -> {
+        when(contractCallService.processOpcodeCall(callServiceParametersCaptor.capture(), TransactionIdOrHashParameter.valueOf(transactionHash))).thenAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
             final var recipient = params != null ? params.getReceiver() : Address.ZERO;
             final var output = Bytes.EMPTY;
@@ -234,8 +232,8 @@ class OpcodesControllerTest {
         final var detailedErrorMessage = "Custom revert message";
         final var hexDataErrorMessage =
                 "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
-
-        when(contractCallService.processOpcodeCall(any())).thenThrow(
+        final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
+        when(contractCallService.processOpcodeCall(any(), TransactionIdOrHashParameter.valueOf(transactionHash))).thenThrow(
                 new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);

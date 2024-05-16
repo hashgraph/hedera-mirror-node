@@ -43,7 +43,7 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
                                 storageEntry -> storageEntry.getOffset().toString(),
                                 StorageEntry::getValue
                         )),
-                frame.getRevertReason().toString()
+                frame.getRevertReason().get().toString()
         ));
 
     }
