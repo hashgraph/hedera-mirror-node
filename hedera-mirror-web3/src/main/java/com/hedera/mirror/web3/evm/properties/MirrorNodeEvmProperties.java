@@ -118,7 +118,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @NotNull
     @DataSizeUnit(DataUnit.KILOBYTES)
-    private DataSize maxDataSize = DataSize.ofKilobytes(25);
+    private DataSize maxDataSize = DataSize.ofKilobytes(128);
 
     @Getter(lazy = true)
     private final Pattern dataValidatorPattern =
