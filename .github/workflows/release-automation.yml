@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 defaults:
   run:
