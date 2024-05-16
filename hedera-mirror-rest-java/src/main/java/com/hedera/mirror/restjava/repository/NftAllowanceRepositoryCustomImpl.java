@@ -19,10 +19,11 @@ package com.hedera.mirror.restjava.repository;
 import static com.hedera.mirror.restjava.jooq.domain.Tables.NFT_ALLOWANCE;
 import static org.jooq.impl.DSL.noCondition;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.dto.NftAllowanceDto;
+import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.jooq.domain.tables.records.NftAllowanceRecord;
 import jakarta.inject.Named;
 import jakarta.validation.constraints.NotNull;
@@ -52,25 +53,25 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     @NotNull
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<NftAllowance> findAll(NftAllowanceDto requestDto) {
-        boolean byOwner = requestDto.isOwner();
-        int limit = requestDto.getLimit();
-        var order = requestDto.getOrder();
+    public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId id) {
+        boolean byOwner = request.isOwner();
+        int limit = request.getLimit();
+        var order = request.getOrder();
 
         var primaryField = byOwner ? NFT_ALLOWANCE.OWNER : NFT_ALLOWANCE.SPENDER;
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
 
-        var primaryBounds = requestDto.getOwnerOrSpenderIdBounds();
-        var tokenBounds = requestDto.getTokenIdBounds();
+        var primaryBounds = request.getOwnerOrSpenderIds();
+        var tokenBounds = request.getTokenIds();
 
-        var commonCondition = getCondition(
-                primaryField, RangeOperator.EQ, requestDto.getAccountId().getId());
+        var commonCondition = getCondition(primaryField, RangeOperator.EQ, id.getId());
         var lowerCondition =
-                getOuterBoundCondition(primaryBounds.lowerBound(), tokenBounds.lowerBound(), primarySortField);
-        var middleCondition = getMiddleCondition(primaryBounds.lowerBound(), tokenBounds.lowerBound(), primarySortField)
-                .and(getMiddleCondition(primaryBounds.upperBound(), tokenBounds.upperBound(), primarySortField));
+                getOuterBoundCondition(primaryBounds.getLowerBound(), tokenBounds.getLowerBound(), primarySortField);
+        var middleCondition = getMiddleCondition(
+                        primaryBounds.getLowerBound(), tokenBounds.getLowerBound(), primarySortField)
+                .and(getMiddleCondition(primaryBounds.getUpperBound(), tokenBounds.getUpperBound(), primarySortField));
         var upperCondition =
-                getOuterBoundCondition(primaryBounds.upperBound(), tokenBounds.upperBound(), primarySortField);
+                getOuterBoundCondition(primaryBounds.getUpperBound(), tokenBounds.getUpperBound(), primarySortField);
         var condition = commonCondition.and(lowerCondition.or(middleCondition).or(upperCondition));
 
         return dslContext

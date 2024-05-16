@@ -26,6 +26,7 @@ import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.Utils;
 import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
+import com.hedera.mirror.restjava.service.Bound;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
@@ -68,8 +69,8 @@ public class AllowancesController {
                 .isOwner(owner)
                 .limit(limit)
                 .order(order)
-                .ownerOrSpenderIds(accountIds)
-                .tokenIds(tokenIds)
+                .ownerOrSpenderIds(new Bound(accountIds))
+                .tokenIds(new Bound(tokenIds))
                 .build();
 
         var serviceResponse = service.getNftAllowances(request);

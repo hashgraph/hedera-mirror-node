@@ -21,10 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
+import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.dto.NftAllowanceDto;
-import com.hedera.mirror.restjava.service.NftAllowanceServiceImpl.Bound;
+import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
+import com.hedera.mirror.restjava.service.Bound;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -40,11 +41,11 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     private final NftAllowanceRepository nftAllowanceRepository;
 
     private Map<Tuple, NftAllowance> nftAllowances;
-    private Map<NftAllowanceDto, List<Tuple>> NftAllowanceDtos;
+    private Map<NftAllowanceRequest, List<Tuple>> nftAllowanceRequests;
 
     private List<Long> owners;
     private List<Long> spenders;
-    private List<Long> tokenIdBounds;
+    private List<Long> tokenIds;
 
     @Test
     void findAll() {
@@ -63,66 +64,75 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
         setupNftAllowances();
 
         // when, then
-        assertThat(nftAllowanceRepository.findAll(NftAllowanceDto.builder()
-                        .isOwner(true)
-                        .accountId(EntityId.of(owners.get(2) + 1))
-                        .ownerOrSpenderIdBounds(new Bound(null, null))
-                        .tokenIdBounds(new Bound(null, null))
-                        .limit(10)
-                        .order(Direction.ASC)
-                        .build()))
+        assertThat(nftAllowanceRepository.findAll(
+                        NftAllowanceRequest.builder()
+                                .isOwner(true)
+                                .accountId(new EntityIdNumParameter(EntityId.of(owners.get(2) + 1)))
+                                .ownerOrSpenderIds(new Bound(List.of()))
+                                .tokenIds(new Bound(List.of()))
+                                .limit(10)
+                                .order(Direction.ASC)
+                                .build(),
+                        EntityId.of(owners.get(2) + 1)))
                 .isEmpty();
 
         // when, then
-        assertThat(nftAllowanceRepository.findAll(NftAllowanceDto.builder()
-                        .isOwner(true)
-                        .accountId(EntityId.of(owners.get(0)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(2) + 1)), null))
-                        .tokenIdBounds(new Bound(null, null))
-                        .limit(10)
-                        .order(Direction.ASC)
-                        .build()))
+        assertThat(nftAllowanceRepository.findAll(
+                        NftAllowanceRequest.builder()
+                                .isOwner(true)
+                                .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
+                                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(
+                                        RangeOperator.EQ, EntityId.of(spenders.get(2) + 1)))))
+                                .tokenIds(new Bound(List.of()))
+                                .limit(10)
+                                .order(Direction.ASC)
+                                .build(),
+                        EntityId.of(owners.get(0))))
                 .isEmpty();
 
         // when, then
-        assertThat(nftAllowanceRepository.findAll(NftAllowanceDto.builder()
-                        .isOwner(true)
-                        .accountId(EntityId.of(owners.get(0)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0))), null))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(tokenIdBounds.get(2) + 1)),
-                                null))
-                        .limit(10)
-                        .order(Direction.ASC)
-                        .build()))
+        assertThat(nftAllowanceRepository.findAll(
+                        NftAllowanceRequest.builder()
+                                .isOwner(true)
+                                .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
+                                .ownerOrSpenderIds(new Bound(List.of(
+                                        new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0))))))
+                                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(
+                                        RangeOperator.EQ, EntityId.of(tokenIds.get(2) + 1)))))
+                                .limit(10)
+                                .order(Direction.ASC)
+                                .build(),
+                        EntityId.of(owners.get(0))))
                 .isEmpty();
 
         // when, then
-        assertThat(nftAllowanceRepository.findAll(NftAllowanceDto.builder()
-                        .isOwner(true)
-                        .accountId(EntityId.of(owners.get(0)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(spenders.get(2))), null))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIdBounds.get(0))), null))
-                        .limit(10)
-                        .order(Direction.ASC)
-                        .build()))
+        assertThat(nftAllowanceRepository.findAll(
+                        NftAllowanceRequest.builder()
+                                .isOwner(true)
+                                .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
+                                .ownerOrSpenderIds(new Bound(List.of(
+                                        new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(spenders.get(2))))))
+                                .tokenIds(new Bound(List.of(
+                                        new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(0))))))
+                                .limit(10)
+                                .order(Direction.ASC)
+                                .build(),
+                        EntityId.of(owners.get(0))))
                 .isEmpty();
 
         // when, then
-        assertThat(nftAllowanceRepository.findAll(NftAllowanceDto.builder()
-                        .isOwner(true)
-                        .accountId(EntityId.of(owners.get(0)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(spenders.get(0))), null))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(tokenIdBounds.get(2))), null))
-                        .limit(10)
-                        .order(Direction.ASC)
-                        .build()))
+        assertThat(nftAllowanceRepository.findAll(
+                        NftAllowanceRequest.builder()
+                                .isOwner(true)
+                                .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
+                                .ownerOrSpenderIds(new Bound(List.of(
+                                        new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(spenders.get(0))))))
+                                .tokenIds(new Bound(List.of(
+                                        new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(tokenIds.get(2))))))
+                                .limit(10)
+                                .order(Direction.ASC)
+                                .build(),
+                        EntityId.of(owners.get(0))))
                 .isEmpty();
     }
 
@@ -132,15 +142,15 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                 IntStream.range(0, 9).mapToLong(x -> domainBuilder.id()).boxed().toList();
         owners = entityIds.subList(0, 3);
         spenders = entityIds.subList(3, 6);
-        tokenIdBounds = entityIds.subList(6, 9);
+        tokenIds = entityIds.subList(6, 9);
         nftAllowances = new HashMap<>();
 
         for (int ownerIndex = 0; ownerIndex < owners.size(); ownerIndex++) {
             long owner = owners.get(ownerIndex);
             for (int spenderIndex = 0; spenderIndex < spenders.size(); spenderIndex++) {
                 long spender = spenders.get(spenderIndex);
-                for (int tokenIndex = 0; tokenIndex < tokenIdBounds.size(); tokenIndex++) {
-                    long tokenId = tokenIdBounds.get(tokenIndex);
+                for (int tokenIndex = 0; tokenIndex < tokenIds.size(); tokenIndex++) {
+                    long tokenId = tokenIds.get(tokenIndex);
                     // true if sum of index is even, otherwise false
                     boolean approvedForAll = (ownerIndex + spenderIndex + tokenIndex) % 2 == 0;
                     var nftAllowance = domainBuilder
@@ -157,129 +167,129 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     }
 
     private void populateNftRequestMap() {
-        NftAllowanceDtos = new LinkedHashMap<>();
+        nftAllowanceRequests = new LinkedHashMap<>();
 
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(0)))
-                        .ownerOrSpenderIdBounds(new Bound(null, null))
-                        .tokenIdBounds(new Bound(null, null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
+                        .ownerOrSpenderIds(new Bound(List.of()))
+                        .tokenIds(new Bound(List.of()))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(0, 0, 0), new Tuple(0, 0, 1), new Tuple(0, 0, 2), new Tuple(0, 1, 0)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(0)))
-                        .ownerOrSpenderIdBounds(new Bound(null, null))
-                        .tokenIdBounds(new Bound(null, null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(0))))
+                        .ownerOrSpenderIds(new Bound(List.of()))
+                        .tokenIds(new Bound(List.of()))
                         .limit(4)
                         .order(Direction.DESC)
                         .build(),
                 List.of(new Tuple(0, 2, 2), new Tuple(0, 2, 1), new Tuple(0, 2, 0), new Tuple(0, 1, 2)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(false)
-                        .accountId(EntityId.of(spenders.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(null, null))
-                        .tokenIdBounds(new Bound(null, null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(spenders.get(1))))
+                        .ownerOrSpenderIds(new Bound(List.of()))
+                        .tokenIds(new Bound(List.of()))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(0, 1, 0), new Tuple(0, 1, 1), new Tuple(0, 1, 2), new Tuple(1, 1, 0)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(false)
-                        .accountId(EntityId.of(spenders.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(null, null))
-                        .tokenIdBounds(new Bound(null, null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(spenders.get(1))))
+                        .ownerOrSpenderIds(new Bound(List.of()))
+                        .tokenIds(new Bound(List.of()))
                         .limit(4)
                         .order(Direction.DESC)
                         .build(),
                 List.of(new Tuple(2, 1, 2), new Tuple(2, 1, 1), new Tuple(2, 1, 0), new Tuple(1, 1, 2)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0))), null))
-                        .tokenIdBounds(new Bound(null, null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0))))))
+                        .tokenIds(new Bound(List.of()))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(1, 0, 0), new Tuple(1, 0, 1), new Tuple(1, 0, 2)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(spenders.get(0))), null))
-                        .tokenIdBounds(new Bound(null, null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(spenders.get(0))))))
+                        .tokenIds(new Bound(List.of()))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(1, 0, 0), new Tuple(1, 0, 1), new Tuple(1, 0, 2), new Tuple(1, 1, 0)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(spenders.get(0))), null))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(tokenIdBounds.get(0))), null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(spenders.get(0))))))
+                        .tokenIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(tokenIds.get(0))))))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(1, 0, 0), new Tuple(1, 0, 1), new Tuple(1, 0, 2), new Tuple(1, 1, 0)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(spenders.get(0))), null))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIdBounds.get(1))), null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(spenders.get(0))))))
+                        .tokenIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(1))))))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(1, 0, 2), new Tuple(1, 1, 0), new Tuple(1, 1, 1), new Tuple(1, 1, 2)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(spenders.get(2))), null))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(tokenIdBounds.get(2))), null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(spenders.get(2))))))
+                        .tokenIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(tokenIds.get(2))))))
                         .limit(4)
                         .order(Direction.DESC)
                         .build(),
                 List.of(new Tuple(1, 2, 1), new Tuple(1, 2, 0), new Tuple(1, 1, 2), new Tuple(1, 1, 1)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(List.of(
                                 new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(spenders.get(2))),
-                                new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(spenders.get(0)))))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(tokenIdBounds.get(2))),
-                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIdBounds.get(0)))))
+                                new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(spenders.get(0))))))
+                        .tokenIds(new Bound(List.of(
+                                new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(tokenIds.get(2))),
+                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(0))))))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(1, 0, 1), new Tuple(1, 0, 2), new Tuple(1, 1, 0), new Tuple(1, 1, 1)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(List.of(
                                 new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(spenders.get(2))),
-                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(spenders.get(0)))))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(tokenIdBounds.get(0))), null))
+                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(spenders.get(0))))))
+                        .tokenIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(tokenIds.get(0))))))
                         .limit(6)
                         .order(Direction.DESC)
                         .build(),
@@ -290,27 +300,27 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         new Tuple(1, 1, 2),
                         new Tuple(1, 1, 1),
                         new Tuple(1, 1, 0)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0))), null))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(tokenIdBounds.get(1))), null))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0))))))
+                        .tokenIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(tokenIds.get(1))))))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
                 List.of(new Tuple(1, 0, 1)));
-        NftAllowanceDtos.put(
-                NftAllowanceDto.builder()
+        nftAllowanceRequests.put(
+                NftAllowanceRequest.builder()
                         .isOwner(true)
-                        .accountId(EntityId.of(owners.get(1)))
-                        .ownerOrSpenderIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0))), null))
-                        .tokenIdBounds(new Bound(
-                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIdBounds.get(1))),
-                                new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(tokenIdBounds.get(2)))))
+                        .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
+                        .ownerOrSpenderIds(new Bound(
+                                List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0))))))
+                        .tokenIds(new Bound(List.of(
+                                new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(1))),
+                                new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(tokenIds.get(2))))))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
@@ -318,12 +328,13 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
     }
 
     private void assertNftAllowances() {
-        for (var entry : NftAllowanceDtos.entrySet()) {
+        for (var entry : nftAllowanceRequests.entrySet()) {
             var expectedNftAllowances =
                     entry.getValue().stream().map(nftAllowances::get).toList();
 
             var key = entry.getKey();
-            assertThat(nftAllowanceRepository.findAll(key)).containsExactlyElementsOf(expectedNftAllowances);
+            assertThat(nftAllowanceRepository.findAll(key, ((EntityIdNumParameter) key.getAccountId()).id()))
+                    .containsExactlyElementsOf(expectedNftAllowances);
         }
     }
 

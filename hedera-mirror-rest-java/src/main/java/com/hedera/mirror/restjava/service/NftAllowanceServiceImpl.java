@@ -16,20 +16,15 @@
 
 package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
-import com.hedera.mirror.restjava.dto.NftAllowanceDto;
 import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
-import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 @Named
 @RequiredArgsConstructor
@@ -45,161 +40,67 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
-        if (!CollectionUtils.isEmpty(ownerOrSpenderId)) {
-            var bounds = getRange(ownerOrSpenderId);
-            long lowerBound = getLowerBound(bounds);
-            long upperBound = getUpperBound(bounds);
-
-            // Shortcutting when the range is invalid
-            if (lowerBound > upperBound) {
-                return Collections.emptyList();
-            } else if (lowerBound == upperBound) {
-                var optimizedRangeParam = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(lowerBound));
-                request.setOwnerOrSpenderIds(List.of(optimizedRangeParam));
-            }
+        if (ownerOrSpenderId.getLowerBound() != null
+                && ownerOrSpenderId.getUpperBound() != null
+                && (ownerOrSpenderId.getLowerBound().value().getId()
+                        > ownerOrSpenderId.getUpperBound().value().getId())) {
+            return Collections.emptyList();
         }
 
         var id = entityService.lookup(request.getAccountId());
 
-        var dto = NftAllowanceDto.builder()
-                .accountId(id)
-                .isOwner(request.isOwner())
-                .limit(request.getLimit())
-                .order(request.getOrder())
-                .ownerOrSpenderIdBounds(getRange(request.getOwnerOrSpenderIds()))
-                .tokenIdBounds(getRange(request.getTokenIds()))
-                .build();
-
-        return repository.findAll(dto);
-    }
-
-    private static long getUpperBound(Bound bounds) {
-        long upperBound = Long.MAX_VALUE;
-
-        if (bounds.upperBound != null) {
-            upperBound = bounds.upperBound.value().getId();
-            if (bounds.upperBound.operator() == RangeOperator.LT) {
-                upperBound--;
-            }
-        }
-        return upperBound;
-    }
-
-    private static long getLowerBound(Bound bounds) {
-        long lowerBound = 0;
-        if (bounds.lowerBound != null) {
-            lowerBound = bounds.lowerBound.value().getId();
-            if (bounds.lowerBound.operator() == RangeOperator.GT) {
-                lowerBound++;
-            }
-        }
-        return lowerBound;
+        return repository.findAll(request, id);
     }
 
     @SuppressWarnings({"java:S131"})
-    private Bound getRange(List<EntityIdRangeParameter> idRangeParameters) {
-        EntityIdRangeParameter lowerBoundParam = null;
-        EntityIdRangeParameter upperBoundParam = null;
-
-        if (idRangeParameters != null) {
-            for (EntityIdRangeParameter param : idRangeParameters) {
-                if (param != null) {
-                    // Considering EQ in the same category as GT,GTE as an assumption
-                    if (param.operator() == RangeOperator.GT
-                            || param.operator() == RangeOperator.GTE
-                            || param.operator() == RangeOperator.EQ) {
-                        lowerBoundParam = param;
-                    } else if (param.operator() == RangeOperator.LT || param.operator() == RangeOperator.LTE) {
-                        upperBoundParam = param;
-                    }
-                }
-            }
+    private static void verifyRangeId(Bound ids) {
+        if (ids.getCardinality(RangeOperator.NE) > 0) {
+            throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
         }
 
-        return new Bound(lowerBoundParam, upperBoundParam);
-    }
-
-    @SuppressWarnings({"java:S131"})
-    private static Operators verifyRangeId(List<EntityIdRangeParameter> idParams) {
-        boolean hasGt = false;
-        boolean hasGte = false;
-        boolean hasLt = false;
-        boolean hasLte = false;
-        int countGtGte = 0;
-        int countLtLte = 0;
-        int countEq = 0;
-
-        for (EntityIdRangeParameter param : idParams) {
-
-            if (param.operator() == RangeOperator.NE) {
-                throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
-            }
-
-            switch (param.operator()) {
-                case RangeOperator.GT -> {
-                    hasGt = true;
-                    countGtGte++;
-                }
-                case RangeOperator.GTE -> {
-                    hasGte = true;
-                    countGtGte++;
-                }
-                case RangeOperator.LT -> {
-                    hasLt = true;
-                    countLtLte++;
-                }
-                case RangeOperator.LTE -> {
-                    hasLte = true;
-                    countLtLte++;
-                }
-                case RangeOperator.EQ -> countEq++;
-            }
-        }
-
-        if (countGtGte > 1 || countLtLte > 1 || countEq > 1) {
+        if (singleOperatorCheck(ids)) {
             throw new IllegalArgumentException("Single occurrence only supported.");
         }
-        if (countEq == 1 && (countGtGte != 0 || countLtLte != 0)) {
+
+        if (ids.getCardinality(RangeOperator.EQ) == 1 && (getCountGtGte(ids) != 0 || getCountLtLte(ids) != 0)) {
             throw new IllegalArgumentException("Can't support both range and equal for this parameter.");
         }
-        return new Operators(countEq > 0, hasGt, hasGte, hasLt, hasLte);
     }
 
-    private static void checkOwnerSpenderParamValidity(
-            List<EntityIdRangeParameter> ownerOrSpenderParams, List<EntityIdRangeParameter> tokenParams) {
-
-        if (CollectionUtils.isEmpty(ownerOrSpenderParams)) {
-            if (!CollectionUtils.isEmpty(tokenParams)) {
-                throw new IllegalArgumentException("token.id parameter must have account.id present");
-            } else {
-                return;
-            }
-        }
-        var accountOperators = verifyRangeId(ownerOrSpenderParams);
-
-        if (!CollectionUtils.isEmpty(tokenParams)) {
-            var tokenOperators = verifyRangeId(tokenParams);
-
-            if (tokenOperators.hasLtLte() && !accountOperators.hasEq && !accountOperators.hasLte) {
-                throw new IllegalArgumentException(
-                        "Single occurrence only supported. Requires the presence of an lte or eq account.id parameter");
-            }
-            if (tokenOperators.hasGtGte() && !accountOperators.hasEq && !accountOperators.hasGte) {
-                throw new IllegalArgumentException(
-                        "Single occurrence only supported. Requires the presence of an gte or eq account.id parameter");
-            }
-        }
+    private static boolean singleOperatorCheck(Bound ids) {
+        return getCountGtGte(ids) > 1 || getCountLtLte(ids) > 1 || ids.getCardinality(RangeOperator.EQ) > 1;
     }
 
-    public record Bound(EntityIdRangeParameter lowerBound, EntityIdRangeParameter upperBound) {}
+    private static int getCountGtGte(Bound ids) {
+        return ids.getCardinality(RangeOperator.GT) + ids.getCardinality(RangeOperator.GTE);
+    }
 
-    private record Operators(boolean hasEq, boolean hasGt, boolean hasGte, boolean hasLt, boolean hasLte) {
-        public boolean hasGtGte() {
-            return hasGt || hasGte;
+    private static int getCountLtLte(Bound ids) {
+        return ids.getCardinality(RangeOperator.LT) + ids.getCardinality(RangeOperator.LTE);
+    }
+
+    private static void checkOwnerSpenderParamValidity(Bound ownerOrSpenderParams, Bound tokenParams) {
+
+        if (ownerOrSpenderParams.getLowerBound() == null
+                && ownerOrSpenderParams.getUpperBound() == null
+                && (tokenParams.getLowerBound() != null || tokenParams.getUpperBound() != null)) {
+            throw new IllegalArgumentException("token.id parameter must have account.id present");
         }
 
-        public boolean hasLtLte() {
-            return hasLt || hasLte;
+        verifyRangeId(ownerOrSpenderParams);
+        verifyRangeId(tokenParams);
+
+        if (getCountLtLte(tokenParams) > 0
+                && ownerOrSpenderParams.getCardinality(RangeOperator.EQ) == 0
+                && ownerOrSpenderParams.getCardinality(RangeOperator.LTE) == 0) {
+            throw new IllegalArgumentException(
+                    "Single occurrence only supported. Requires the presence of an lte or eq account.id parameter");
+        }
+        if (getCountGtGte(tokenParams) > 0
+                && ownerOrSpenderParams.getCardinality(RangeOperator.EQ) == 0
+                && ownerOrSpenderParams.getCardinality(RangeOperator.GTE) == 0) {
+            throw new IllegalArgumentException(
+                    "Single occurrence only supported. Requires the presence of an gte or eq account.id parameter");
         }
     }
 }
