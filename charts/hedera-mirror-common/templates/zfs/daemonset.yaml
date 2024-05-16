@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-common.selectorLabels" . | nindent 4 }}
     app: zfs-init
   name: {{ .Release.Name }}-zfs-init
   namespace: {{ include "hedera-mirror-common.namespace" . }}
