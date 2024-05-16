@@ -1,4 +1,4 @@
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: mirror
@@ -11,6 +11,8 @@ spec:
         kind: HelmRepository
         name: hedera-mirror-node
       version: '>0.0.0-0' # Update to the latest pre-release'
+  driftDetection:
+    mode: warn
   install:
     crds: CreateReplace
   interval: 1m
