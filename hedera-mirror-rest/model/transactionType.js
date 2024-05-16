@@ -63,6 +63,7 @@ const protoToName = {
   50: 'ETHEREUMTRANSACTION',
   51: 'NODESTAKEUPDATE',
   52: 'UTILPRNG',
+  53: 'TOKENUPDATENFTS',
 };
 
 // Temporary extra mappings until we can update the hashgraph proto dependency with the latest types
