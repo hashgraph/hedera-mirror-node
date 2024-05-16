@@ -16,7 +16,6 @@
 
 import http from 'k6/http';
 
-import {setupTestParameters} from './parameters.js';
 import {TestScenarioBuilder} from '../../lib/common.js';
 
 const isSuccess = (response) => response.status >= 200 && response.status < 300;
@@ -42,10 +41,6 @@ class RestJavaTestScenarioBuilder extends TestScenarioBuilder {
       const url = `${testParameters['BASE_URL_PREFIX']}/accounts/639043/allowances/nfts`;
       return http.get(url);
     });
-  }
-
-  build() {
-    return Object.assign(super.build(), {setup: () => setupTestParameters(this._requiredParameters)});
   }
 }
 
