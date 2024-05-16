@@ -3524,6 +3524,7 @@ components:
         - TOKENUNFREEZE
         - TOKENUNPAUSE
         - TOKENUPDATE
+        - TOKENUPDATENFTS
         - TOKENWIPE
         - UNCHECKEDSUBMIT
         - UNKNOWN
