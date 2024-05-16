@@ -73,7 +73,7 @@ spec:
       enabled: true
     web3:
       env:
-        HEDERA_MIRROR_WEB3_EVM_MAXDATASIZE: "38500B"
+        HEDERA_MIRROR_WEB3_EVM_MAXDATASIZE: "128KB"
       ingress:
         enabled: false
 
