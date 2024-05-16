@@ -271,7 +271,7 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 }
 
 func TestGeneralOperationStatus(t *testing.T) {
-	assert.Equal(t, "GENERAL_ERROR", types.GetTransactionResult(400))
+	assert.Equal(t, "GENERAL_ERROR", types.GetTransactionResult(10000))
 }
 
 func TestTransactionGetHashString(t *testing.T) {

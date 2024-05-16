@@ -28,8 +28,8 @@
         "payerAccountId": "0.0.9",
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1565779444711927001",
-        "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15",
+        "name": "TOKENUPDATENFTS",
+        "type": "53",
         "entity_id": "0.0.8"
       }
     ],
@@ -238,7 +238,7 @@
       }
     },
     {
-      "url": "/api/v1/transactions?transactiontype=CRYPTOTRANSFER&transactiontype=CRYPTOUPDATEACCOUNT",
+      "url": "/api/v1/transactions?transactiontype=CRYPTOTRANSFER&transactiontype=TOKENUPDATENFTS",
       "responseStatus": 200,
       "responseJson": {
         "transactions": [
@@ -287,7 +287,7 @@
             "entity_id": "0.0.8",
             "max_fee": "33",
             "memo_base64": null,
-            "name": "CRYPTOUPDATEACCOUNT",
+            "name": "TOKENUPDATENFTS",
             "nft_transfers": [],
             "node": "0.0.3",
             "nonce": 0,
