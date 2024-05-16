@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.config;
 
-import com.hedera.mirror.web3.throttle.properties.ThrottleProperties;
+import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.local.SynchronizationStrategy;

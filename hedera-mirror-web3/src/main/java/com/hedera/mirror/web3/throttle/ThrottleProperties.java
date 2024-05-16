@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.throttle.properties;
+package com.hedera.mirror.web3.throttle;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

@@ -137,7 +137,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     // used by eth_estimateGas only
     @Min(1)
     @Max(100)
-    private int maxGasRefundPercentage = 20;
+    private int maxGasRefundPercentage = 100;
 
     @Getter
     @Min(1)
