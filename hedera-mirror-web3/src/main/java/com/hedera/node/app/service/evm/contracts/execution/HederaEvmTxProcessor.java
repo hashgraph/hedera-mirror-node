@@ -23,10 +23,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.services.stream.proto.SidecarFile;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.swirlds.common.utility.SemanticVersion;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -155,14 +152,6 @@ public class HederaEvmTxProcessor {
         final var messageFrameStack = initialFrame.getMessageFrameStack();
         HederaEvmOperationTracer tracer = this.getTracer(tracerType);
         tracer.init(initialFrame);
-//        Optional<TransactionSidecarRecord> record = contractCallContext.getRecordFile().getSidecars().stream()
-//                .flatMap(sidecarFile -> sidecarFile.getRecords().stream())
-//                        .filter(transactionSidecarRecord -> transactionSidecarRecord.getConsensusTimestamp().getSeconds() == consensusTimestamp)
-//                        .findFirst();
-
-//        if (tracer instanceof OpcodeTracer opcodeTracer) {
-//            opcodeTracer.loadRecord(record);
-//        }
 
         final var evmVersion = ((MirrorNodeEvmProperties) dynamicProperties).getSemanticEvmVersion();
         while (!messageFrameStack.isEmpty()) {

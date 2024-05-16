@@ -20,12 +20,14 @@ import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErr
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType.OPCODE;
-import static com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType.OPERATION;
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
+import com.hedera.mirror.common.domain.contract.ContractAction;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -37,12 +39,18 @@ import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
+
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+
 import lombok.CustomLog;
+import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 
 @CustomLog
@@ -56,13 +64,19 @@ public class ContractCallService {
     private final Store store;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final RecordFileService recordFileService;
+    private final ContractActionService contractActionService;
+    private final TransactionService transactionService;
+    private final EthereumTransactionService ethereumTransactionService;
 
     public ContractCallService(
             MeterRegistry meterRegistry,
             BinaryGasEstimator binaryGasEstimator,
             Store store,
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
-            RecordFileService recordFileService) {
+            RecordFileService recordFileService,
+            ContractActionService contractActionService,
+            TransactionService transactionService,
+            EthereumTransactionService ethereumTransactionService) {
         this.binaryGasEstimator = binaryGasEstimator;
         this.gasCounter = Counter.builder(GAS_METRIC)
                 .description("The amount of gas consumed by the EVM")
@@ -70,6 +84,9 @@ public class ContractCallService {
         this.store = store;
         this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
         this.recordFileService = recordFileService;
+        this.transactionService = transactionService;
+        this.contractActionService = contractActionService;
+        this.ethereumTransactionService = ethereumTransactionService;
     }
 
     public String processCall(final CallServiceParameters params) {
@@ -84,7 +101,7 @@ public class ContractCallService {
                     ctx.initializeStackFrames(store.getStackedStateFrames());
                     result = estimateGas(params);
                 } else {
-                    final var ethCallTxnResult = getCallTxnResult(params, OPERATION, ctx);
+                    final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPERATION, ctx);
 
                     validateResult(ethCallTxnResult, params.getCallType());
 
@@ -100,16 +117,39 @@ public class ContractCallService {
         });
     }
 
-    public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params) {
+    public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params, TransactionIdOrHashParameter transactionIdOrHashParameter) {
         return ContractCallContext.run(ctx -> {
-            final var ethCallTxnResult = getCallTxnResult(params, OPCODE, ctx);
+            List<ContractAction> contractActions = getContractAction(transactionIdOrHashParameter);
+            ctx.setContractActions(contractActions);
+            final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPCODE, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
-
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(ethCallTxnResult)
                     .opcodes(ctx.getOpcodes())
                     .build();
         });
+    }
+
+    @SneakyThrows
+    public List<ContractAction> getContractAction(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
+        final Optional<Transaction> transaction;
+        final Optional<EthereumTransaction> ethTransaction;
+
+        if (transactionIdOrHash.isHash()) {
+            ethTransaction = ethereumTransactionService.findByHash(transactionIdOrHash.hash().toByteArray());
+            transaction = ethTransaction
+                    .map(EthereumTransaction::getConsensusTimestamp)
+                    .flatMap(transactionService::findByConsensusTimestamp);
+        } else if (transactionIdOrHash.isTransactionId()) {
+            transaction = transactionService.findByTransactionId(transactionIdOrHash.transactionID());
+            ethTransaction = transaction
+                    .map(Transaction::getConsensusTimestamp)
+                    .flatMap(ethereumTransactionService::findByConsensusTimestamp);
+        } else {
+            throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
+        }
+
+        return contractActionService.findContractActionByConsensusTimestamp(transaction.get().getConsensusTimestamp());
     }
 
     private HederaEvmTransactionProcessingResult getCallTxnResult(CallServiceParameters params,
@@ -139,7 +179,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final CallServiceParameters params) {
-        final var processingResult = doProcessCall(params, params.getGas(), OPERATION, null);
+        final var processingResult = doProcessCall(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPERATION, null);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -151,7 +191,7 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas, OPERATION, null),
+                gas -> doProcessCall(params, gas, HederaEvmTxProcessor.TracerType.OPERATION, null),
                 gasUsedByInitialCall,
                 params.getGas());
 

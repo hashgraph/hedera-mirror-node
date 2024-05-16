@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.common;
 
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
@@ -54,6 +55,10 @@ public class ContractCallContext {
     @Setter
     @Getter
     private List<Opcode> opcodes;
+
+    @Setter
+    @Getter
+    private List<ContractAction> contractActions;
 
     private ContractCallContext() {}
 

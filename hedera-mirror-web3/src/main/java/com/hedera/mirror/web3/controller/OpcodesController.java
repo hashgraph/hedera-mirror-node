@@ -20,8 +20,7 @@ import com.hedera.mirror.rest.model.Opcode;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
-import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.*;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
@@ -45,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/contracts/results")
-//@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
 class OpcodesController {
 
     private final CallServiceParametersBuilder callServiceParametersBuilder;
@@ -87,7 +86,7 @@ class OpcodesController {
         }
 
         final var params = callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash);
-        final var result = contractCallService.processOpcodeCall(params);
+        final var result = contractCallService.processOpcodeCall(params, transactionIdOrHash);
 
         return new OpcodesResponse()
                 // TODO: Not sure if this is the correct way to get the contractId here
