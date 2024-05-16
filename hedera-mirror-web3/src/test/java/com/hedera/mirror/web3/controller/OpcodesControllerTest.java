@@ -124,8 +124,9 @@ class OpcodesControllerTest {
     private final AtomicReference<OpcodesProcessingResult> opcodesProcessingResultCaptor = new AtomicReference<>();
 
     void setUp(Transaction transaction, EthereumTransaction ethTransaction, RecordFile recordFile) {
+        final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
         given(bucket.tryConsume(1)).willReturn(true);
-        given(contractCallService.processOpcodeCall(callServiceParametersCaptor.capture())).willAnswer(context -> {
+        given(contractCallService.processOpcodeCall(callServiceParametersCaptor.capture(), TransactionIdOrHashParameter.valueOf(transactionHash))).willAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
             final var recipient = params != null ? params.getReceiver() : Address.ZERO;
             final var output = Bytes.EMPTY;
@@ -217,7 +218,7 @@ class OpcodesControllerTest {
                 "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
         final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
 
-        given(contractCallService.processOpcodeCall(any())).willThrow(
+        given(contractCallService.processOpcodeCall(any(), TransactionIdOrHashParameter.valueOf(transactionHash))).willThrow(
                 new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
         contractOpcodes(transactionHash)
