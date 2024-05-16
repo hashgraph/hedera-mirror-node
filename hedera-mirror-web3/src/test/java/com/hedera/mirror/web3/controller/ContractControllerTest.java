@@ -210,7 +210,7 @@ class ContractControllerTest {
 
     @Test
     void exceedingDataCallSizeOnEstimate() throws Exception {
-        var error = "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters";
+        var error = "data field of size 262148 contains invalid hexadecimal characters or exceeds 262144 characters";
         final var request = request();
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
@@ -223,7 +223,7 @@ class ContractControllerTest {
 
     @Test
     void exceedingDataCreateSizeOnEstimate() throws Exception {
-        var error = "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters";
+        var error = "data field of size 262148 contains invalid hexadecimal characters or exceeds 262144 characters";
         final var request = request();
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
