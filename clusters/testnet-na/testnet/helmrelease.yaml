@@ -1,4 +1,4 @@
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: mirror
@@ -13,10 +13,12 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '>0.0.0' # Update to the latest release'
+      version: '>0.0.0' # Update to the latest release
   dependsOn:
     - name: mirror
       namespace: common
+  driftDetection:
+    mode: warn
   install:
     crds: CreateReplace
   interval: 90s
