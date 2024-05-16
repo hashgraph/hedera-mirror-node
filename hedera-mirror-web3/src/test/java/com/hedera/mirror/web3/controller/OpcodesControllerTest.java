@@ -97,6 +97,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.util.StringUtils;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(controllers = OpcodesController.class)
@@ -206,6 +207,22 @@ class OpcodesControllerTest {
         )).thenReturn(Optional.of(transaction));
         when(transactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.of(transaction));
         when(recordFileRepository.findByTimestamp(transaction.getConsensusTimestamp())).thenReturn(Optional.of(recordFile));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void shouldThrowUnsupportedOperationFromContractCallService(Transaction transaction,
+                                                                EthereumTransaction ethTransaction,
+                                                                RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
+
+        when(contractCallService.processOpcodeCall(any())).thenCallRealMethod();
+
+        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isNotImplemented())
+                .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
     }
 
     @ParameterizedTest
@@ -351,13 +368,18 @@ class OpcodesControllerTest {
                     "0xghijklmno",
                     "0x00000000000000000000000000000000000004e",
                     "0x00000000000000000000000000000000000004e2a",
-                    "0x000000000000000000000000000000Z0000007e7",
-                    "00000000001239847e"
+                    "00000000001239847e",
+                    "0.0.1234-1234567890", // missing nanos
+                    "0.0.1234-0-1234567890", // nanos overflow
+                    "0.0.1234-1-123456789-",  // dash after nanos
             })
     void callInvalidTransactionIdOrHash(String transactionIdOrHash) throws Exception {
-        final var expectedMessage = transactionIdOrHash.isBlank() ?
-                "Transaction ID or hash is required" :
-                "Invalid transaction ID or hash";
+        when(bucket.tryConsume(1)).thenReturn(true);
+
+        final var expectedMessage = StringUtils.hasText(transactionIdOrHash) ?
+                "Invalid transaction ID or hash" :
+                "Transaction ID or hash is required";
+
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(new StringContains(expectedMessage)));

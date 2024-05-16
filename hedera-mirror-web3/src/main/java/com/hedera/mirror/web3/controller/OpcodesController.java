@@ -92,7 +92,6 @@ class OpcodesController {
         final var result = contractCallService.processOpcodeCall(params);
 
         return new OpcodesResponse()
-                // TODO: Not sure if this is the correct way to get the contractId here
                 .contractId(result.transactionProcessingResult()
                         .getRecipient()
                         .map(EntityIdUtils::contractIdFromEvmAddress)

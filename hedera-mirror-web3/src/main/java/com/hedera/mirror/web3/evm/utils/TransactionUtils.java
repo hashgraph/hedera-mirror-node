@@ -22,6 +22,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
+import org.springframework.util.Assert;
 
 @UtilityClass
 public class TransactionUtils {
@@ -48,6 +49,8 @@ public class TransactionUtils {
     }
 
     public static TransactionID parseTransactionId(String transactionId) {
+        Assert.notNull(transactionId, "Transaction ID cannot be null");
+
         Matcher matcher = TRANSACTION_ID_PATTERN.matcher(transactionId);
 
         if (!matcher.matches() || matcher.groupCount() != 5) {
@@ -61,9 +64,7 @@ public class TransactionUtils {
         long seconds = Long.parseLong(matcher.group(4));
         int nanos = Integer.parseInt(matcher.group(5));
 
-        if (seconds < 0) {
-            throw new IllegalArgumentException("Seconds cannot be less than 0");
-        }
+        Assert.isTrue(seconds >= 0, "Seconds cannot be less than 0");
 
         return TransactionID.newBuilder()
                 .setAccountID(AccountID.newBuilder()
