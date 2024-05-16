@@ -27,9 +27,9 @@ function handleSummary(data) {
   };
 }
 
-function run(testParameters) {
+function run() {
   const scenario = exec.scenario;
-  funcs[scenario.name](testParameters);
+  funcs[scenario.name]();
   scenarioDurationGauge.add(Date.now() - scenario.startTime, {scenario: scenario.name});
 }
 
