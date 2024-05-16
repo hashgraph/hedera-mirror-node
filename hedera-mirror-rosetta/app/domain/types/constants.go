@@ -388,6 +388,7 @@ var TransactionTypes = map[int32]string{
 	50: "ETHEREUMTRANSACTION",
 	51: "NODESTAKEUPDATE",
 	52: "UTILPRNG",
+	53: "TOKENUPDATENFTS",
 }
 
 var (
