@@ -51,33 +51,6 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         return repository.findAll(request, id);
     }
 
-    @SuppressWarnings({"java:S131"})
-    private static void verifyRangeId(Bound ids) {
-        if (ids.getCardinality(RangeOperator.NE) > 0) {
-            throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
-        }
-
-        if (singleOperatorCheck(ids)) {
-            throw new IllegalArgumentException("Single occurrence only supported.");
-        }
-
-        if (ids.getCardinality(RangeOperator.EQ) == 1 && (getCountGtGte(ids) != 0 || getCountLtLte(ids) != 0)) {
-            throw new IllegalArgumentException("Can't support both range and equal for this parameter.");
-        }
-    }
-
-    private static boolean singleOperatorCheck(Bound ids) {
-        return getCountGtGte(ids) > 1 || getCountLtLte(ids) > 1 || ids.getCardinality(RangeOperator.EQ) > 1;
-    }
-
-    private static int getCountGtGte(Bound ids) {
-        return ids.getCardinality(RangeOperator.GT) + ids.getCardinality(RangeOperator.GTE);
-    }
-
-    private static int getCountLtLte(Bound ids) {
-        return ids.getCardinality(RangeOperator.LT) + ids.getCardinality(RangeOperator.LTE);
-    }
-
     private static void checkOwnerSpenderParamValidity(Bound ownerOrSpenderParams, Bound tokenParams) {
 
         if (ownerOrSpenderParams.getLower() == null
@@ -100,6 +73,32 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
                 && ownerOrSpenderParams.getCardinality(RangeOperator.GTE) == 0) {
             throw new IllegalArgumentException(
                     "Single occurrence only supported. Requires the presence of an gte or eq account.id parameter");
+        }
+    }
+
+    private static int getCountGtGte(Bound ids) {
+        return ids.getCardinality(RangeOperator.GT) + ids.getCardinality(RangeOperator.GTE);
+    }
+
+    private static int getCountLtLte(Bound ids) {
+        return ids.getCardinality(RangeOperator.LT) + ids.getCardinality(RangeOperator.LTE);
+    }
+
+    private static boolean singleOperatorCheck(Bound ids) {
+        return getCountGtGte(ids) > 1 || getCountLtLte(ids) > 1 || ids.getCardinality(RangeOperator.EQ) > 1;
+    }
+
+    private static void verifyRangeId(Bound ids) {
+        if (ids.getCardinality(RangeOperator.NE) > 0) {
+            throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
+        }
+
+        if (singleOperatorCheck(ids)) {
+            throw new IllegalArgumentException("Single occurrence only supported.");
+        }
+
+        if (ids.getCardinality(RangeOperator.EQ) == 1 && (getCountGtGte(ids) != 0 || getCountLtLte(ids) != 0)) {
+            throw new IllegalArgumentException("Can't support both range and equal for this parameter.");
         }
     }
 }

@@ -34,7 +34,7 @@ public class Bound {
 
         if (params != null) {
             for (EntityIdRangeParameter param : params) {
-                // Considering EQ in the same category as GT,GTE as an assumption
+
                 if (param.hasLowerBound()) {
                     lower = param;
                 } else if (param.hasUpperBound()) {

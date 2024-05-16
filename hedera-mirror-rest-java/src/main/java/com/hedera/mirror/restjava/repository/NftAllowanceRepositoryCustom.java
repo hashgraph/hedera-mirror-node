@@ -27,8 +27,9 @@ public interface NftAllowanceRepositoryCustom {
     /**
      * Find all NftAllowance matching the request parameters with the given limit, sort order, and byOwner flag
      *
-     * @param request @return The matching nft allowances
+     * @param request
      * @param id
+     * @return The matching nft allowances
      */
     @NotNull
     Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId id);

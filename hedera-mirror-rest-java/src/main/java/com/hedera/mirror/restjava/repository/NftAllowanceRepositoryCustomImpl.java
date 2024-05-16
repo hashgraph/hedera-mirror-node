@@ -53,7 +53,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
     @NotNull
     @Override
     @SuppressWarnings("unchecked")
-    public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId id) {
+    public Collection<NftAllowance> findAll(NftAllowanceRequest request, EntityId accountId) {
         boolean byOwner = request.isOwner();
         int limit = request.getLimit();
         var order = request.getOrder();
@@ -64,7 +64,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         var primaryBounds = request.getOwnerOrSpenderIds();
         var tokenBounds = request.getTokenIds();
 
-        var commonCondition = getCondition(primaryField, RangeOperator.EQ, id.getId());
+        var commonCondition = getCondition(primaryField, RangeOperator.EQ, accountId.getId());
         var lowerCondition = getOuterBoundCondition(primaryBounds.getLower(), tokenBounds.getLower(), primarySortField);
         var middleCondition = getMiddleCondition(primaryBounds.getLower(), tokenBounds.getLower(), primarySortField)
                 .and(getMiddleCondition(primaryBounds.getUpper(), tokenBounds.getUpper(), primarySortField));
