@@ -16,17 +16,20 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.OptionalLong;
+import org.apache.tuweni.units.bigints.UInt256;
+
 import org.apache.tuweni.bytes.Bytes;
 
 public record Opcode(int pc,
-                     String op,
+                     Optional<String> op,
                      long gas,
-                     long gasCost,
+                     OptionalLong gasCost,
                      int depth,
-                     List<Bytes> stack,
-                     List<Bytes> memory,
-                     Map<String, Bytes> storage,
+                     Optional<Bytes[]> stack,
+                     Optional<Bytes[]> memory,
+                     Optional<Map<UInt256, UInt256>> storage,
                      String reason) {
 }

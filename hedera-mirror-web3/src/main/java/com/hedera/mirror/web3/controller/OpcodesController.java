@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/contracts/results")
-@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
+//@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
 class OpcodesController {
 
     private final CallServiceParametersBuilder callServiceParametersBuilder;
@@ -109,27 +109,27 @@ class OpcodesController {
                 .opcodes(result.opcodes().stream()
                         .map(opcode -> new Opcode()
                                 .pc(opcode.pc())
-                                .op(opcode.op())
+                                .op(String.valueOf(opcode.op()))
                                 .gas(opcode.gas())
                                 .gasCost(opcode.gasCost())
                                 .depth(opcode.depth())
                                 .stack(stack ?
                                         opcode.stack().stream()
-                                                .map(Bytes::toHexString)
+                                                .map(byteValue -> String.format("%02X", byteValue))
                                                 .toList() :
                                         List.of())
                                 .memory(memory ?
                                         opcode.memory().stream()
-                                                .map(Bytes::toHexString)
+                                                .map(byteValue -> String.format("%02X", byteValue))
                                                 .toList() :
                                         List.of())
                                 .storage(storage ?
-                                        opcode.storage().entrySet().stream()
+                                        opcode.storage().get().entrySet().stream()
                                                 .collect(Collectors.toMap(
-                                                        Map.Entry::getKey,
+                                                        entry -> entry.getKey().toHexString(),
                                                         entry -> entry.getValue().toHexString())) :
                                         Map.of())
-                                .reason(opcode.reason()))
-                        .toList());
+                                .reason(opcode.reason())).toList()
+                );
     }
 }
