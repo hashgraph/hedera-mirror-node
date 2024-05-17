@@ -19,13 +19,13 @@ package com.hedera.mirror.web3.controller;
 import com.hedera.mirror.rest.model.Opcode;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,7 +33,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -89,7 +88,7 @@ class OpcodesController {
         }
 
         final var params = callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash);
-        final var result = contractCallService.processOpcodeCall(params);
+        final var result = contractCallService.processOpcodeCall(params, new OpcodeTracerOptions(stack, memory, storage));
 
         return new OpcodesResponse()
                 .contractId(result.transactionProcessingResult()
@@ -113,22 +112,16 @@ class OpcodesController {
                                 .gas(opcode.gas())
                                 .gasCost(opcode.gasCost())
                                 .depth(opcode.depth())
-                                .stack(stack ?
-                                        opcode.stack().stream()
+                                .stack(opcode.stack().stream()
                                                 .map(Bytes::toHexString)
-                                                .toList() :
-                                        List.of())
-                                .memory(memory ?
-                                        opcode.memory().stream()
+                                                .toList())
+                                .memory(opcode.memory().stream()
                                                 .map(Bytes::toHexString)
-                                                .toList() :
-                                        List.of())
-                                .storage(storage ?
-                                        opcode.storage().entrySet().stream()
+                                                .toList())
+                                .storage(opcode.storage().entrySet().stream()
                                                 .collect(Collectors.toMap(
                                                         Map.Entry::getKey,
-                                                        entry -> entry.getValue().toHexString())) :
-                                        Map.of())
+                                                        entry -> entry.getValue().toHexString())))
                                 .reason(opcode.reason()))
                         .toList());
     }

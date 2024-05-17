@@ -26,6 +26,7 @@ import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -108,7 +109,8 @@ public class ContractCallService {
         });
     }
 
-    public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params) {
+    public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params,
+                                                     final OpcodeTracerOptions options) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
