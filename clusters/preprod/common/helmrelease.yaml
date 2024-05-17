@@ -16,6 +16,10 @@ spec:
       namespace: testkube
   driftDetection:
     mode: warn
+    ignore:
+      - paths: [""]
+        target:
+          kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
   install:
     crds: CreateReplace
   interval: 1m
