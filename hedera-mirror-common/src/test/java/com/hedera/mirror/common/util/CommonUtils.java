@@ -16,8 +16,12 @@
 
 package com.hedera.mirror.common.util;
 
+import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.security.SecureRandom;
@@ -39,6 +43,15 @@ public class CommonUtils {
                 .setShardNum(entityId.getShard())
                 .setRealmNum(entityId.getRealm())
                 .setAccountNum(entityId.getNum())
+                .build();
+    }
+
+    public static ContractID toContractID(EntityId entityId) {
+        return ContractID.newBuilder()
+                .setShardNum(entityId.getShard())
+                .setRealmNum(entityId.getRealm())
+                .setContractNum(entityId.getNum())
+                .setEvmAddress(ByteString.copyFrom(toEvmAddress(entityId)))
                 .build();
     }
 

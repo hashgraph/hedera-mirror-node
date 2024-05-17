@@ -20,22 +20,32 @@ import static com.hedera.mirror.common.util.CommonUtils.duration;
 import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 import static com.hedera.mirror.common.util.CommonUtils.timestamp;
 import static com.hedera.mirror.common.util.CommonUtils.toAccountID;
+import static com.hedera.mirror.common.util.CommonUtils.toContractID;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.ContractNonceInfo;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.List;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.jetbrains.annotations.NotNull;
 
 @UtilityClass
@@ -150,17 +160,17 @@ public class TransactionMocks {
 
     private static @NotNull Transaction getTransaction(final byte[] hash,
                                                        final Timestamp consensusTimestamp,
-                                                       final int typeByte) {
-        return getTransaction(hash, consensusTimestamp, TransactionType.ETHEREUMTRANSACTION, typeByte);
+                                                       final int ethTypeByte) {
+        return getTransaction(hash, consensusTimestamp, TransactionType.ETHEREUMTRANSACTION, ethTypeByte);
     }
 
     @SuppressWarnings("deprecation")
     private static @NotNull Transaction getTransaction(final byte[] hash,
                                                        final Timestamp consensusTimestamp,
                                                        final TransactionType transactionType,
-                                                       final int typeByte) {
+                                                       final int ethTypeByte) {
         final var transactionID = getTransactionID(consensusTimestamp);
-        final var ethType = switch (typeByte) {
+        final var ethType = switch (ethTypeByte) {
             case LEGACY_TYPE_BYTE -> "LEGACY";
             case EIP2930_TYPE_BYTE -> "EIP2930";
             case EIP1559_TYPE_BYTE -> "EIP1559";
@@ -179,11 +189,13 @@ public class TransactionMocks {
                     tx.consensusTimestamp(convertToNanosMax(
                             consensusTimestamp.getSeconds(),
                             consensusTimestamp.getNanos()));
-                    tx.transactionRecordBytes(getTransactionRecord(tx).build().toByteArray());
-                    tx.transactionBytes(com.hederahashgraph.api.proto.java.Transaction.newBuilder()
-                            .setBodyBytes(getTransactionBody(tx).build().toByteString())
-                            .build()
-                            .toByteArray());
+                    tx.transactionRecordBytes(
+                            getTransactionRecord(tx).build().toByteArray());
+                    tx.transactionBytes(
+                            com.hederahashgraph.api.proto.java.Transaction.newBuilder()
+                                    .setBodyBytes(getTransactionBody(tx).build().toByteString())
+                                    .build()
+                                    .toByteArray());
                 })
                 .get();
     }
@@ -235,9 +247,10 @@ public class TransactionMocks {
                 .build();
     }
 
+    @SneakyThrows
     private static @NotNull TransactionBody.Builder getTransactionBody(final Transaction.TransactionBuilder transactionBuilder) {
         final var transaction = transactionBuilder.build();
-        return TransactionBody.newBuilder()
+        final var transactionBodyBuilder = TransactionBody.newBuilder()
                 .setMemo(new String(transaction.getMemo()))
                 .setNodeAccountID(toAccountID(transaction.getNodeAccountId()))
                 .setTransactionFee(transaction.getMaxFee())
@@ -246,11 +259,28 @@ public class TransactionMocks {
                         .setTransactionValidStart(timestamp(transaction.getValidStartNs()))
                         .build())
                 .setTransactionValidDuration(duration(transaction.getValidDurationSeconds().intValue()));
+        if (transaction.getType() == TransactionType.CONTRACTCALL.getProtoId()) {
+            transactionBodyBuilder.setContractCall(ContractCallTransactionBody.newBuilder()
+                    .setGas(transaction.getMaxFee())
+                    .setAmount(5_000L)
+                    .setContractID(toContractID(transaction.getEntityId()))
+                    .setFunctionParameters(ByteString.copyFrom(nextBytes(64)))
+                    .build());
+        } else if (transaction.getType() == TransactionType.CONTRACTCREATEINSTANCE.getProtoId()) {
+            transactionBodyBuilder.setContractCreateInstance(ContractCreateTransactionBody.newBuilder()
+                    .setGas(transaction.getMaxFee())
+                    .setInitialBalance(5_000L)
+                    .setInitcode(ByteString.copyFromUtf8("init code"))
+                    .setConstructorParameters(ByteString.copyFrom(nextBytes(64)))
+                    .build());
+        }
+        return transactionBodyBuilder;
     }
 
+    @SuppressWarnings("deprecation")
     private static @NotNull TransactionRecord.Builder getTransactionRecord(final Transaction.TransactionBuilder transactionBuilder) {
         final var transaction = transactionBuilder.build();
-        TransactionRecord.Builder transactionRecord = TransactionRecord.newBuilder()
+        final var transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(timestamp(transaction.getConsensusTimestamp()))
                 .setMemoBytes(ByteString.copyFrom(transaction.getMemo()))
                 .setTransactionFee(transaction.getChargedTxFee())
@@ -259,9 +289,67 @@ public class TransactionMocks {
                         .setAccountID(toAccountID(transaction.getPayerAccountId()))
                         .setTransactionValidStart(timestamp(transaction.getValidStartNs()))
                         .build())
-                .setTransferList(TransferList.getDefaultInstance());
-        transactionRecord.getReceiptBuilder().setStatus(ResponseCodeEnum.forNumber(transaction.getResult()));
+                .setTransferList(TransferList.getDefaultInstance())
+                .setReceipt(getTransactionReceipt(transaction));
+
+        if (transaction.getType() == TransactionType.CONTRACTCALL.getProtoId()) {
+            transactionRecord.setContractCallResult(getContractFunctionResult(transaction));
+        } else if (transaction.getType() == TransactionType.CONTRACTCREATEINSTANCE.getProtoId()) {
+            transactionRecord.setContractCreateResult(getContractFunctionResult(transaction));
+        }
+
         return transactionRecord;
+    }
+
+    private static @NotNull TransactionReceipt getTransactionReceipt(final Transaction transaction) {
+        final var transactionReceipt = TransactionReceipt.newBuilder()
+                .setStatus(ResponseCodeEnum.forNumber(transaction.getResult()));
+        if (transaction.getType() == TransactionType.CONTRACTCREATEINSTANCE.getProtoId()) {
+            return transactionReceipt
+                    .setContractID(toContractID(transaction.getEntityId()))
+                    .build();
+        } else {
+            return transactionReceipt.build();
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    private static @NotNull ContractFunctionResult getContractFunctionResult(final Transaction transaction) {
+        final var contractFunctionResult = ContractFunctionResult.newBuilder()
+                .setBloom(ByteString.copyFrom(nextBytes(256)))
+                .setGasUsed(transaction.getChargedTxFee())
+                .setSenderId(toAccountID(transaction.getPayerAccountId()));
+
+        if (transaction.getResult() != ResponseCodeEnum.SUCCESS.getNumber()) {
+            final var errorMessage = RandomStringUtils.randomAlphanumeric((10));
+            contractFunctionResult.setErrorMessage(errorMessage);
+            contractFunctionResult.setErrorMessageBytes(ByteString.copyFrom(errorMessage.getBytes()));
+        }
+
+        if (transaction.getType() == TransactionType.CONTRACTCALL.getProtoId()) {
+            final var contractId = toContractID(transaction.getEntityId());
+            contractFunctionResult
+                    .setContractCallResult(ByteString.copyFrom(nextBytes(16)))
+                    .setContractID(contractId);
+        } else if (transaction.getType() == TransactionType.CONTRACTCREATEINSTANCE.getProtoId()) {
+            final var contractId = toContractID(transaction.getEntityId());
+            contractFunctionResult
+                    .setEvmAddress(BytesValue.of(contractId.getEvmAddress()))
+                    .addCreatedContractIDs(contractId)
+                    .addContractNonces(ContractNonceInfo.newBuilder()
+                            .setContractId(contractId)
+                            .setNonce(1))
+                    .addLogInfo(ContractLoginfo.newBuilder()
+                            .setBloom(ByteString.copyFrom(nextBytes(256)))
+                            .setContractID(contractId)
+                            .setData(ByteString.copyFrom(nextBytes(128)))
+                            .addTopic(ByteString.copyFrom(nextBytes(32)))
+                            .addTopic(ByteString.copyFrom(nextBytes(32)))
+                            .addTopic(ByteString.copyFrom(nextBytes(32)))
+                            .addTopic(ByteString.copyFrom(nextBytes(32))));
+        }
+
+        return contractFunctionResult.build();
     }
 
     private static byte[] transactionHash() {

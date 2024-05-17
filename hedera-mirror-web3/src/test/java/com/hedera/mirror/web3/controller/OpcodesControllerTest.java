@@ -18,11 +18,13 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.common.util.CommonUtils.timestamp;
 import static com.hedera.mirror.common.util.CommonUtils.toAccountID;
+import static com.hedera.mirror.web3.service.TransactionServiceImpl.MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -32,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -39,14 +42,21 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
+import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.mirror.web3.repository.TransactionRepository;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilderImpl;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.EthereumTransactionService;
+import com.hedera.mirror.web3.service.EthereumTransactionServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
+import com.hedera.mirror.web3.service.RecordFileServiceImpl;
 import com.hedera.mirror.web3.service.TransactionService;
+import com.hedera.mirror.web3.service.TransactionServiceImpl;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.TransactionMocksProvider;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -55,7 +65,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -90,6 +99,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.util.StringUtils;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(controllers = OpcodesController.class)
@@ -111,13 +121,13 @@ class OpcodesControllerTest {
     private Bucket bucket;
 
     @MockBean
-    private TransactionService transactionService;
+    private TransactionRepository transactionRepository;
 
     @MockBean
-    private EthereumTransactionService ethereumTransactionService;
+    private EthereumTransactionRepository ethereumTransactionRepository;
 
     @MockBean
-    private RecordFileService recordFileService;
+    private RecordFileRepository recordFileRepository;
 
     @Autowired
     private CallServiceParametersBuilder callServiceParametersBuilder;
@@ -125,16 +135,17 @@ class OpcodesControllerTest {
     @Captor
     private ArgumentCaptor<CallServiceParameters> callServiceParametersCaptor;
 
+    @Captor
+    private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
+
     private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
 
     private MockHttpServletRequestBuilder opcodesRequest(TransactionIdOrHashParameter parameter) {
-        return opcodesRequest(parameter, true, false, false);
+        return opcodesRequest(parameter, new OpcodeTracerOptions());
     }
 
     private MockHttpServletRequestBuilder opcodesRequest(TransactionIdOrHashParameter parameter,
-                                                         boolean stack,
-                                                         boolean memory,
-                                                         boolean storage) {
+                                                         OpcodeTracerOptions options) {
         final String transactionIdOrHash = parameter.isHash() ?
                 Bytes.of(parameter.hash().toByteArray()).toHexString() :
                 transactionIdString(
@@ -143,9 +154,9 @@ class OpcodesControllerTest {
                 );
 
         return opcodesRequest(transactionIdOrHash)
-                .queryParam("stack", String.valueOf(stack))
-                .queryParam("memory", String.valueOf(memory))
-                .queryParam("storage", String.valueOf(storage));
+                .queryParam("stack", String.valueOf(options.isStack()))
+                .queryParam("memory", String.valueOf(options.isMemory()))
+                .queryParam("storage", String.valueOf(options.isStorage()));
     }
 
     private MockHttpServletRequestBuilder opcodesRequest(String transactionIdOrHash) {
@@ -181,21 +192,45 @@ class OpcodesControllerTest {
     }
 
     void setUp(Transaction transaction, EthereumTransaction ethTransaction, RecordFile recordFile) {
-        final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
         when(bucket.tryConsume(1)).thenReturn(true);
-        when(contractCallService.processOpcodeCall(callServiceParametersCaptor.capture(), TransactionIdOrHashParameter.valueOf(transactionHash))).thenAnswer(context -> {
+        when(contractCallService.processOpcodeCall(
+                callServiceParametersCaptor.capture(),
+                tracerOptionsCaptor.capture()
+        )).thenAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
-            final var recipient = params != null ? params.getReceiver() : Address.ZERO;
-            final var output = Bytes.EMPTY;
-            final var result = Builder.opcodesProcessingResult(recipient, output);
-            opcodesResultCaptor.set(result);
-            return result;
+            final OpcodeTracerOptions options = context.getArgument(1);
+            opcodesResultCaptor.set(Builder.opcodesProcessingResult(params, options));
+            return opcodesResultCaptor.get();
         });
-        when(ethereumTransactionService.findByHash(any(byte[].class))).thenReturn(Optional.ofNullable(ethTransaction));
-        when(ethereumTransactionService.findByConsensusTimestamp(anyLong())).thenReturn(Optional.ofNullable(ethTransaction));
-        when(transactionService.findByTransactionId(any(TransactionID.class))).thenReturn(Optional.of(transaction));
-        when(transactionService.findByConsensusTimestamp(anyLong())).thenReturn(Optional.of(transaction));
-        when(recordFileService.findRecordFileForTimestamp(anyLong())).thenReturn(Optional.of(recordFile));
+        when(ethereumTransactionRepository.findByHash(any(byte[].class))).thenReturn(Optional.ofNullable(ethTransaction));
+        when(ethereumTransactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.ofNullable(ethTransaction));
+        when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
+                transaction.getPayerAccountId(),
+                transaction.getValidStartNs(),
+                transaction.getValidStartNs() + MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE.toNanos()
+        )).thenReturn(Optional.of(transaction));
+        when(transactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.of(transaction));
+        when(recordFileRepository.findByTimestamp(transaction.getConsensusTimestamp())).thenReturn(Optional.of(recordFile));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void shouldThrowUnsupportedOperationFromContractCallService(Transaction transaction,
+                                                                EthereumTransaction ethTransaction,
+                                                                RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
+
+        reset(contractCallService);
+        when(contractCallService.processOpcodeCall(
+                callServiceParametersCaptor.capture(),
+                tracerOptionsCaptor.capture()
+        )).thenCallRealMethod();
+
+        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isNotImplemented())
+                .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
     }
 
     @ParameterizedTest
@@ -212,6 +247,7 @@ class OpcodesControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
 
+            assertEquals(new OpcodeTracerOptions(), tracerOptionsCaptor.getValue());
             assertEquals(
                     callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
                     callServiceParametersCaptor.getValue());
@@ -232,9 +268,12 @@ class OpcodesControllerTest {
         final var detailedErrorMessage = "Custom revert message";
         final var hexDataErrorMessage =
                 "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
-        final var transactionHash = Bytes.of(ethTransaction.getHash()).toHexString();
-        when(contractCallService.processOpcodeCall(any(), TransactionIdOrHashParameter.valueOf(transactionHash))).thenThrow(
-                new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
+
+        reset(contractCallService);
+        when(contractCallService.processOpcodeCall(
+                callServiceParametersCaptor.capture(),
+                tracerOptionsCaptor.capture()
+        )).thenThrow(new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
@@ -253,19 +292,20 @@ class OpcodesControllerTest {
 
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
-        final var requestParams = new boolean[][] {
-                { false, true, true },
-                { true, false, true },
-                { true, true, false },
-                { false, false, false }
+        final var tracerOptions = new OpcodeTracerOptions[] {
+                new OpcodeTracerOptions(false, true, true),
+                new OpcodeTracerOptions(true, false, true),
+                new OpcodeTracerOptions(true, true, false),
+                new OpcodeTracerOptions(false, false, false)
         };
 
-        for (var params : requestParams) {
-            mockMvc.perform(opcodesRequest(transactionIdOrHash, params[0], params[1], params[2]))
+        for (var options : tracerOptions) {
+            mockMvc.perform(opcodesRequest(transactionIdOrHash, options))
                     .andExpect(status().isOk())
                     .andExpect(responseBody(
-                            Builder.opcodesResponse(opcodesResultCaptor.get(), params[0], params[1], params[2])));
+                            Builder.opcodesResponse(opcodesResultCaptor.get(), options)));
 
+            assertEquals(options, tracerOptionsCaptor.getValue());
             assertEquals(
                     callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
                     callServiceParametersCaptor.getValue());
@@ -278,13 +318,33 @@ class OpcodesControllerTest {
                                                  EthereumTransaction ethTransaction,
                                                  RecordFile recordFile) throws Exception {
         setUp(transaction, ethTransaction, recordFile);
-        when(recordFileService.findRecordFileForTimestamp(any())).thenReturn(Optional.empty());
+
+        when(recordFileRepository.findByTimestamp(anyLong())).thenReturn(Optional.empty());
 
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isBadRequest())
                 .andExpect(responseBody(new GenericErrorResponse("Record file with transaction not found")));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransactionMocksProvider.class)
+    void callWithTransactionNotFoundExceptionTest(Transaction transaction,
+                                                  EthereumTransaction ethTransaction,
+                                                  RecordFile recordFile) throws Exception {
+        setUp(transaction, ethTransaction, recordFile);
+
+        when(transactionRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
+                any(EntityId.class), anyLong(), anyLong()
+        )).thenReturn(Optional.empty());
+
+        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isBadRequest())
+                .andExpect(responseBody(new GenericErrorResponse("Transaction not found")));
     }
 
     /*
@@ -321,13 +381,18 @@ class OpcodesControllerTest {
                     "0xghijklmno",
                     "0x00000000000000000000000000000000000004e",
                     "0x00000000000000000000000000000000000004e2a",
-                    "0x000000000000000000000000000000Z0000007e7",
-                    "00000000001239847e"
+                    "00000000001239847e",
+                    "0.0.1234-1234567890", // missing nanos
+                    "0.0.1234-0-1234567890", // nanos overflow
+                    "0.0.1234-1-123456789-",  // dash after nanos
             })
     void callInvalidTransactionIdOrHash(String transactionIdOrHash) throws Exception {
-        final var expectedMessage = transactionIdOrHash.isBlank() ?
-                "Transaction ID or hash is required" :
-                "Invalid transaction ID or hash";
+        when(bucket.tryConsume(1)).thenReturn(true);
+
+        final var expectedMessage = StringUtils.hasText(transactionIdOrHash) ?
+                "Invalid transaction ID or hash" :
+                "Transaction ID or hash is required";
+
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(new StringContains(expectedMessage)));
@@ -340,13 +405,11 @@ class OpcodesControllerTest {
     private static class Builder {
 
         private static OpcodesResponse opcodesResponse(OpcodesProcessingResult result) {
-            return opcodesResponse(result, true, false, false);
+            return opcodesResponse(result, new OpcodeTracerOptions());
         }
 
         private static OpcodesResponse opcodesResponse(OpcodesProcessingResult result,
-                                                       boolean stack,
-                                                       boolean memory,
-                                                       boolean storage) {
+                                                       OpcodeTracerOptions options) {
             return new OpcodesResponse()
                     .contractId(result.transactionProcessingResult().getRecipient()
                             .map(EntityIdUtils::contractIdFromEvmAddress)
@@ -367,17 +430,17 @@ class OpcodesControllerTest {
                                     .gas(opcode.gas())
                                     .gasCost(opcode.gasCost())
                                     .depth(opcode.depth())
-                                    .stack(stack ?
+                                    .stack(options.isStack() ?
                                             opcode.stack().stream()
                                                     .map(Bytes::toHexString)
                                                     .toList() :
                                             List.of())
-                                    .memory(memory ?
+                                    .memory(options.isMemory() ?
                                             opcode.memory().stream()
                                                     .map(Bytes::toHexString)
                                                     .toList() :
                                             List.of())
-                                    .storage(storage ?
+                                    .storage(options.isStorage() ?
                                             opcode.storage().entrySet().stream()
                                                     .collect(Collectors.toMap(
                                                             Map.Entry::getKey,
@@ -387,19 +450,20 @@ class OpcodesControllerTest {
                             .toList());
         }
 
-        private static OpcodesProcessingResult opcodesProcessingResult(final Address recipient,
-                                                                       final Bytes output) {
-            final List<Opcode> opcodes = opcodes();
+        private static OpcodesProcessingResult opcodesProcessingResult(final CallServiceParameters params,
+                                                                       final OpcodeTracerOptions options) {
+            final Address recipient = params != null ? params.getReceiver() : Address.ZERO;
+            final List<Opcode> opcodes = opcodes(options);
             final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
             final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(HederaEvmTransactionProcessingResult
-                            .successful(List.of(), gasUsed , 0, gasCost, output, recipient))
+                            .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, recipient))
                     .opcodes(opcodes)
                     .build();
         }
 
-        private static List<Opcode> opcodes() {
+        private static List<Opcode> opcodes(final OpcodeTracerOptions options) {
             return Arrays.asList(
                     new Opcode(
                             1273,
@@ -407,14 +471,16 @@ class OpcodesControllerTest {
                             2731,
                             3,
                             2,
-                            Arrays.asList(
-                                    Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
-                                    Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
-                            ),
-                            Arrays.asList(
-                                    Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
-                                    Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
-                            ),
+                            options.isStack() ?
+                                    Arrays.asList(
+                                            Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
+                                    ) : List.of(),
+                            options.isMemory() ?
+                                    Arrays.asList(
+                                            Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
+                                    ) : List.of(),
                             Collections.emptyMap(),
                             null
                     ),
@@ -424,14 +490,16 @@ class OpcodesControllerTest {
                             2728,
                             0,
                             2,
-                            Arrays.asList(
-                                    Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
-                                    Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
-                            ),
-                            Arrays.asList(
-                                    Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
-                                    Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
-                            ),
+                            options.isStack() ?
+                                    Arrays.asList(
+                                        Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
+                                        Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
+                                    ) : List.of(),
+                            options.isMemory() ?
+                                    Arrays.asList(
+                                        Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
+                                        Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
+                                    ) : List.of(),
                             Collections.emptyMap(),
                             "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"
                     ),
@@ -441,18 +509,21 @@ class OpcodesControllerTest {
                             2776,
                             3,
                             1,
-                            Arrays.asList(
-                                    Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
-                                    Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")
-                            ),
-                            Arrays.asList(
-                                    Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
-                                    Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")
-                            ),
-                            Map.of(
-                                    "0000000000000000000000000000000000000000000000000000000000000000",
-                                    Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")
-                            ),
+                            options.isStack() ?
+                                    Arrays.asList(
+                                        Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
+                                        Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")
+                                    ) : List.of(),
+                            options.isMemory() ?
+                                    Arrays.asList(
+                                        Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
+                                        Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")
+                                    ) : List.of(),
+                            options.isStorage() ?
+                                    Map.of(
+                                            "0000000000000000000000000000000000000000000000000000000000000000",
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")
+                                    ) : Collections.emptyMap(),
                             null
                     )
             );
@@ -480,6 +551,21 @@ class OpcodesControllerTest {
         @Bean
         TransactionOperations transactionOperations() {
             return mock(TransactionOperations.class);
+        }
+
+        @Bean
+        TransactionService transactionService(TransactionRepository transactionRepository) {
+            return new TransactionServiceImpl(transactionRepository);
+        }
+
+        @Bean
+        EthereumTransactionService ethereumTransactionService(EthereumTransactionRepository ethereumTransactionRepository) {
+            return new EthereumTransactionServiceImpl(ethereumTransactionRepository);
+        }
+
+        @Bean
+        RecordFileService recordFileService(RecordFileRepository recordFileRepository) {
+            return new RecordFileServiceImpl(recordFileRepository);
         }
 
         @Bean

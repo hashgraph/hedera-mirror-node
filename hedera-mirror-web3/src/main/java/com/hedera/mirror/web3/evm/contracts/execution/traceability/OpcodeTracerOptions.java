@@ -14,16 +14,32 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.contracts.execution;
+package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
-import com.hedera.mirror.common.domain.transaction.Opcode;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import jakarta.validation.constraints.NotNull;
-import java.util.List;
-import lombok.Builder;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Builder
-public record OpcodesProcessingResult(
-        @NotNull HederaEvmTransactionProcessingResult transactionProcessingResult,
-        @NotNull List<Opcode> opcodes) {
+/**
+ * Options for tracing opcodes
+ */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class OpcodeTracerOptions {
+
+    /**
+     * Include stack information
+     */
+    private boolean stack = true;
+
+    /**
+     * Include memory information
+     */
+    private boolean memory = false;
+
+    /**
+     * Include storage information
+     */
+    private boolean storage = false;
 }
