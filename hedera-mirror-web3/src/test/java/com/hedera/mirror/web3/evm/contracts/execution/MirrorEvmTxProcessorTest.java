@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.web3.ContextExtension;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -41,13 +42,13 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Account;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.swirlds.common.utility.SemanticVersion;
 import java.math.BigInteger;
 import java.util.List;
@@ -55,7 +56,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.inject.Provider;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -136,7 +136,6 @@ class MirrorEvmTxProcessorTest {
     private TokenAccessor tokenAccessor;
 
     private MirrorEvmTxProcessorImpl mirrorEvmTxProcessor;
-    private Pair<ResponseCodeEnum, Long> result;
 
     private SemanticVersion mcpVersion;
     private SemanticVersion ccpVersion;
@@ -182,12 +181,10 @@ class MirrorEvmTxProcessorTest {
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
-                mirrorOperationTracer,
+                Map.of(HederaEvmTxProcessor.TracerType.OPERATION, () -> mirrorOperationTracer),
                 store,
                 new EntityAddressSequencer(),
                 tokenAccessor);
-
-        Pair<ResponseCodeEnum, Long> result = Pair.of(ResponseCodeEnum.OK, 100L);
     }
 
     @ParameterizedTest
@@ -210,12 +207,13 @@ class MirrorEvmTxProcessorTest {
                 .isStatic(true)
                 .isEstimate(isEstimate)
                 .build();
-        var result = mirrorEvmTxProcessor.execute(params, params.getGas());
+        final var result = ContractCallContext.run(ctx ->
+                mirrorEvmTxProcessor.execute(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPERATION, ctx));
 
         assertThat(result)
                 .isNotNull()
                 .returns(true, HederaEvmTransactionProcessingResult::isSuccessful)
-                .returns(receiver.canonicalAddress(), r -> r.getRecipient().get());
+                .returns(receiver.canonicalAddress(), r -> r.getRecipient().orElseThrow());
     }
 
     @Test
@@ -231,9 +229,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ONE)
                 .apparentValue(Wei.ONE)
                 .blockValues(hederaBlockValues)
-                .completer(frame -> {})
+                .completer(_ -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(hash -> null);
+                .blockHashLookup(_ -> null);
 
         assertThatExceptionOfType(MirrorEvmTransactionException.class)
                 .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(
@@ -257,9 +255,9 @@ class MirrorEvmTxProcessorTest {
                 .value(oneWei)
                 .apparentValue(oneWei)
                 .blockValues(mock(BlockValues.class))
-                .completer(__ -> {})
+                .completer(_ -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(h -> null);
+                .blockHashLookup(_ -> null);
         // when:
         final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
                 commonInitialFrame, receiver.canonicalAddress(), Bytes.EMPTY, 0L);
@@ -289,9 +287,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ZERO)
                 .apparentValue(Wei.ZERO)
                 .blockValues(mock(BlockValues.class))
-                .completer(__ -> {})
+                .completer(_ -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(h -> null);
+                .blockHashLookup(_ -> null);
 
         // when:
         final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
@@ -323,9 +321,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ZERO)
                 .apparentValue(Wei.ZERO)
                 .blockValues(mock(BlockValues.class))
-                .completer(__ -> {})
+                .completer(_ -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(h -> null);
+                .blockHashLookup(_ -> null);
 
         // when:
         assertThatExceptionOfType(MirrorEvmTransactionException.class)

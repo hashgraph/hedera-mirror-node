@@ -27,8 +27,8 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -114,24 +114,26 @@ class OpcodesController {
                 .opcodes(result.opcodes().stream()
                         .map(opcode -> new Opcode()
                                 .pc(opcode.pc())
-                                .op(String.valueOf(opcode.op()))
+                                .op(opcode.op().orElse(""))
                                 .gas(opcode.gas())
-                                .gasCost(opcode.gasCost())
+                                .gasCost(opcode.gasCost().orElse(0L))
                                 .depth(opcode.depth())
-                                .stack(opcode.stack().orElse(Bytes[]::new)
-                                        .stream()
-                                        .map(Bytes::toHexString)
-                                        .toList())
-                                .memory(opcode.memory().orElse(Bytes[]::new)
-                                        .stream()
-                                        .map(Bytes::toHexString)
-                                        .toList())
-                                .storage(opcode.storage().orElse(new HashMap<>())
-                                        .entrySet()
-                                        .stream()
-                                        .collect(Collectors.toMap(
-                                                entry -> entry.getKey().toHexString(),
-                                                entry -> entry.getValue().toHexString())))
+                                .stack(opcode.stack().isPresent() ?
+                                        Arrays.stream(opcode.stack().get())
+                                                .map(Bytes::toHexString)
+                                                .toList() :
+                                        List.of())
+                                .memory(opcode.memory().isPresent() ?
+                                        Arrays.stream(opcode.memory().get())
+                                                .map(Bytes::toHexString)
+                                                .toList() :
+                                        List.of())
+                                .storage(opcode.storage().isPresent() ?
+                                        opcode.storage().get().entrySet().stream()
+                                                .collect(Collectors.toMap(
+                                                        entry -> entry.getKey().toHexString(),
+                                                        entry -> entry.getValue().toHexString())) :
+                                        Map.of())
                                 .reason(opcode.reason()))
                         .toList());
     }

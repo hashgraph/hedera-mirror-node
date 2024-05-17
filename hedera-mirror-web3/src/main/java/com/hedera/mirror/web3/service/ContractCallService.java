@@ -45,11 +45,9 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
 import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
@@ -100,7 +98,7 @@ public class ContractCallService {
                 if (params.isEstimate()) {
                     // eth_estimateGas initialization - historical timestamp is Optional.empty()
                     ctx.initializeStackFrames(store.getStackedStateFrames());
-                    result = estimateGas(params);
+                    result = estimateGas(params, ctx);
                 } else {
                     final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPERATION, ctx);
 
@@ -182,8 +180,8 @@ public class ContractCallService {
      * 2. Finally, if the first step is successful, a binary search is initiated. The lower bound of the search is the
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
-    private Bytes estimateGas(final CallServiceParameters params) {
-        final var processingResult = doProcessCall(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPERATION, null);
+    private Bytes estimateGas(final CallServiceParameters params, final ContractCallContext ctx) {
+        final var processingResult = doProcessCall(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPERATION, ctx);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -195,7 +193,7 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas, HederaEvmTxProcessor.TracerType.OPERATION, null),
+                gas -> doProcessCall(params, gas, HederaEvmTxProcessor.TracerType.OPERATION, ctx),
                 gasUsedByInitialCall,
                 params.getGas());
 

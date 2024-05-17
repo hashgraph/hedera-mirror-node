@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Opcode;
@@ -75,10 +76,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.TestInstance;
@@ -195,7 +198,8 @@ class OpcodesControllerTest {
         when(bucket.tryConsume(1)).thenReturn(true);
         when(contractCallService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
+                tracerOptionsCaptor.capture(),
+                any(TransactionIdOrHashParameter.class)
         )).thenAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
@@ -211,26 +215,6 @@ class OpcodesControllerTest {
         )).thenReturn(Optional.of(transaction));
         when(transactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.of(transaction));
         when(recordFileRepository.findByTimestamp(transaction.getConsensusTimestamp())).thenReturn(Optional.of(recordFile));
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransactionMocksProvider.class)
-    void shouldThrowUnsupportedOperationFromContractCallService(Transaction transaction,
-                                                                EthereumTransaction ethTransaction,
-                                                                RecordFile recordFile) throws Exception {
-        setUp(transaction, ethTransaction, recordFile);
-
-        reset(contractCallService);
-        when(contractCallService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
-        )).thenCallRealMethod();
-
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isNotImplemented())
-                .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
     }
 
     @ParameterizedTest
@@ -272,7 +256,8 @@ class OpcodesControllerTest {
         reset(contractCallService);
         when(contractCallService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
+                tracerOptionsCaptor.capture(),
+                any(TransactionIdOrHashParameter.class)
         )).thenThrow(new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
@@ -302,8 +287,7 @@ class OpcodesControllerTest {
         for (var options : tracerOptions) {
             mockMvc.perform(opcodesRequest(transactionIdOrHash, options))
                     .andExpect(status().isOk())
-                    .andExpect(responseBody(
-                            Builder.opcodesResponse(opcodesResultCaptor.get(), options)));
+                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
 
             assertEquals(options, tracerOptionsCaptor.getValue());
             assertEquals(
@@ -405,11 +389,6 @@ class OpcodesControllerTest {
     private static class Builder {
 
         private static OpcodesResponse opcodesResponse(OpcodesProcessingResult result) {
-            return opcodesResponse(result, new OpcodeTracerOptions());
-        }
-
-        private static OpcodesResponse opcodesResponse(OpcodesProcessingResult result,
-                                                       OpcodeTracerOptions options) {
             return new OpcodesResponse()
                     .contractId(result.transactionProcessingResult().getRecipient()
                             .map(EntityIdUtils::contractIdFromEvmAddress)
@@ -426,24 +405,24 @@ class OpcodesControllerTest {
                     .opcodes(result.opcodes().stream()
                             .map(opcode -> new com.hedera.mirror.rest.model.Opcode()
                                     .pc(opcode.pc())
-                                    .op(opcode.op())
+                                    .op(opcode.op().orElse(""))
                                     .gas(opcode.gas())
-                                    .gasCost(opcode.gasCost())
+                                    .gasCost(opcode.gasCost().orElse(0L))
                                     .depth(opcode.depth())
-                                    .stack(options.isStack() ?
-                                            opcode.stack().stream()
+                                    .stack(opcode.stack().isPresent() ?
+                                            Arrays.stream(opcode.stack().get())
                                                     .map(Bytes::toHexString)
                                                     .toList() :
                                             List.of())
-                                    .memory(options.isMemory() ?
-                                            opcode.memory().stream()
+                                    .memory(opcode.memory().isPresent() ?
+                                            Arrays.stream(opcode.memory().get())
                                                     .map(Bytes::toHexString)
                                                     .toList() :
                                             List.of())
-                                    .storage(options.isStorage() ?
-                                            opcode.storage().entrySet().stream()
+                                    .storage(opcode.storage().isPresent() ?
+                                            opcode.storage().get().entrySet().stream()
                                                     .collect(Collectors.toMap(
-                                                            Map.Entry::getKey,
+                                                            entry -> entry.getKey().toHexString(),
                                                             entry -> entry.getValue().toHexString())) :
                                             Map.of())
                                     .reason(opcode.reason()))
@@ -454,8 +433,16 @@ class OpcodesControllerTest {
                                                                        final OpcodeTracerOptions options) {
             final Address recipient = params != null ? params.getReceiver() : Address.ZERO;
             final List<Opcode> opcodes = opcodes(options);
-            final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
-            final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
+            final long gasUsed = opcodes.stream()
+                    .map(Opcode::gas)
+                    .reduce(Long::sum)
+                    .orElse(0L);
+            final long gasCost = opcodes.stream()
+                    .map(Opcode::gasCost)
+                    .filter(OptionalLong::isPresent)
+                    .map(OptionalLong::getAsLong)
+                    .reduce(Long::sum)
+                    .orElse(0L);
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(HederaEvmTransactionProcessingResult
                             .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, recipient))
@@ -467,63 +454,63 @@ class OpcodesControllerTest {
             return Arrays.asList(
                     new Opcode(
                             1273,
-                            "PUSH1",
+                            Optional.of("PUSH1"),
                             2731,
-                            3,
+                            OptionalLong.of(3),
                             2,
                             options.isStack() ?
-                                    Arrays.asList(
+                                    Optional.of(new Bytes[]{
                                             Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
                                             Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
-                                    ) : List.of(),
+                                    }) : Optional.empty(),
                             options.isMemory() ?
-                                    Arrays.asList(
+                                    Optional.of(new Bytes[]{
                                             Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
                                             Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
-                                    ) : List.of(),
-                            Collections.emptyMap(),
+                                    }) : Optional.empty(),
+                            options.isMemory() ? Optional.of(Collections.emptyMap()) : Optional.empty(),
                             null
                     ),
                     new Opcode(
                             1275,
-                            "REVERT",
+                            Optional.of("REVERT"),
                             2728,
-                            0,
+                            OptionalLong.of(0),
                             2,
                             options.isStack() ?
-                                    Arrays.asList(
-                                        Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
-                                        Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
-                                    ) : List.of(),
+                                    Optional.of(new Bytes[]{
+                                            Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
+                                    }) : Optional.empty(),
                             options.isMemory() ?
-                                    Arrays.asList(
-                                        Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
-                                        Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
-                                    ) : List.of(),
-                            Collections.emptyMap(),
+                                    Optional.of(new Bytes[]{
+                                            Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
+                                    }) : Optional.empty(),
+                            options.isMemory() ? Optional.of(Collections.emptyMap()) : Optional.empty(),
                             "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"
                     ),
                     new Opcode(
                             682,
-                            "SWAP2",
+                            Optional.of("SWAP2"),
                             2776,
-                            3,
+                            OptionalLong.of(3),
                             1,
                             options.isStack() ?
-                                    Arrays.asList(
-                                        Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
-                                        Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")
-                                    ) : List.of(),
+                                    Optional.of(new Bytes[] {
+                                            Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")
+                                    }) : Optional.empty(),
                             options.isMemory() ?
-                                    Arrays.asList(
-                                        Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
-                                        Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")
-                                    ) : List.of(),
+                                    Optional.of(new Bytes[]{
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")
+                                    }) : Optional.empty(),
                             options.isStorage() ?
-                                    Map.of(
-                                            "0000000000000000000000000000000000000000000000000000000000000000",
-                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")
-                                    ) : Collections.emptyMap(),
+                                    Optional.of(ImmutableSortedMap.of(
+                                            UInt256.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
+                                            UInt256.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")
+                                    )) : Optional.empty(),
                             null
                     )
             );
