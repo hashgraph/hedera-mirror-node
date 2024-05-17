@@ -26,6 +26,8 @@ import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -112,16 +114,20 @@ class OpcodesController {
                                 .gas(opcode.gas())
                                 .gasCost(opcode.gasCost())
                                 .depth(opcode.depth())
-                                .stack(opcode.stack().stream()
-                                                .map(Bytes::toHexString)
-                                                .toList())
-                                .memory(opcode.memory().stream()
-                                                .map(Bytes::toHexString)
-                                                .toList())
-                                .storage(opcode.storage().entrySet().stream()
-                                                .collect(Collectors.toMap(
-                                                        Map.Entry::getKey,
-                                                        entry -> entry.getValue().toHexString())))
+                                .stack(Optional.ofNullable(opcode.stack()).orElse(new ArrayList<>())
+                                        .stream()
+                                        .map(Bytes::toHexString)
+                                        .toList())
+                                .memory(Optional.ofNullable(opcode.memory()).orElse(new ArrayList<>())
+                                        .stream()
+                                        .map(Bytes::toHexString)
+                                        .toList())
+                                .storage(Optional.ofNullable(opcode.storage()).orElse(new HashMap<>())
+                                        .entrySet()
+                                        .stream()
+                                        .collect(Collectors.toMap(
+                                                Map.Entry::getKey,
+                                                entry -> entry.getValue().toHexString())))
                                 .reason(opcode.reason()))
                         .toList());
     }
