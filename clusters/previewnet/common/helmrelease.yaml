@@ -16,7 +16,7 @@ spec:
     ignore:
       - paths: [""]
         target:
-          kind: SGConfig
+          kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
   install:
     crds: CreateReplace
   interval: 1m

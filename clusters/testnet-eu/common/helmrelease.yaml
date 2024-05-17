@@ -13,6 +13,10 @@ spec:
       version: '0.104.0'
   driftDetection:
     mode: warn
+    ignore:
+      - paths: [""]
+        target:
+          kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
   install:
     crds: CreateReplace
   interval: 1m
