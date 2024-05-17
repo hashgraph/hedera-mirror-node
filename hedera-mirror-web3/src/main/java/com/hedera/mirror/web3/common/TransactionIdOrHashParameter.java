@@ -19,7 +19,7 @@ package com.hedera.mirror.web3.common;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.utils.TransactionUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import lombok.SneakyThrows;
+import jakarta.validation.constraints.AssertTrue;
 import org.springframework.util.StringUtils;
 
 /**
@@ -48,7 +48,6 @@ public record TransactionIdOrHashParameter(TransactionID transactionID, ByteStri
      * @see TransactionUtils#isValidEthHash
      * @see TransactionUtils#isValidTransactionId
      */
-    @SneakyThrows(NumberFormatException.class)
     public static TransactionIdOrHashParameter valueOf(String transactionIdOrHash) {
         if (!StringUtils.hasText(transactionIdOrHash)) {
             throw new IllegalArgumentException("Transaction ID or hash is required");
@@ -62,6 +61,11 @@ public record TransactionIdOrHashParameter(TransactionID transactionID, ByteStri
         } else {
             throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
         }
+    }
+
+    @AssertTrue(message = "Transaction ID or hash is required")
+    public boolean isValid() {
+        return isTransactionId() || isHash();
     }
 
     public boolean isTransactionId() {

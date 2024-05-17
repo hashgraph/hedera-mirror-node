@@ -26,6 +26,7 @@ import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
+import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -82,7 +83,7 @@ class OpcodesController {
     @CrossOrigin(origins = "*")
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")
     OpcodesResponse getContractOpcodesByTransactionIdOrHash(
-            @PathVariable TransactionIdOrHashParameter transactionIdOrHash,
+            @PathVariable @Valid TransactionIdOrHashParameter transactionIdOrHash,
             @RequestParam(required = false, defaultValue = "true") boolean stack,
             @RequestParam(required = false, defaultValue = "false") boolean memory,
             @RequestParam(required = false, defaultValue = "false") boolean storage

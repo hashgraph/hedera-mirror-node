@@ -39,6 +39,7 @@ import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 @Service
 @RequiredArgsConstructor
@@ -51,8 +52,10 @@ public class CallServiceParametersBuilderImpl implements CallServiceParametersBu
     @Override
     @SneakyThrows
     public CallServiceParameters buildFromTransaction(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
-        final Optional<Transaction> transaction;
-        final Optional<EthereumTransaction> ethTransaction;
+        Assert.isTrue(transactionIdOrHash.isValid(), "Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
+
+        Optional<Transaction> transaction = Optional.empty();
+        Optional<EthereumTransaction> ethTransaction = Optional.empty();
 
         if (transactionIdOrHash.isHash()) {
             ethTransaction = ethereumTransactionService.findByHash(transactionIdOrHash.hash().toByteArray());
@@ -64,8 +67,6 @@ public class CallServiceParametersBuilderImpl implements CallServiceParametersBu
             ethTransaction = transaction
                     .map(Transaction::getConsensusTimestamp)
                     .flatMap(ethereumTransactionService::findByConsensusTimestamp);
-        } else {
-            throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
         }
 
         return buildFromTransaction(transaction, ethTransaction);
@@ -73,9 +74,7 @@ public class CallServiceParametersBuilderImpl implements CallServiceParametersBu
 
     private CallServiceParameters buildFromTransaction(Optional<Transaction> transaction,
                                                        Optional<EthereumTransaction> ethTransaction) throws InvalidProtocolBufferException {
-        if (transaction.isEmpty()) {
-            throw new IllegalArgumentException("Transaction not found");
-        }
+        Assert.isTrue(transaction.isPresent(), "Transaction not found");
 
         final RecordFile recordFile = recordFileService
                 .findRecordFileForTimestamp(transaction.get().getConsensusTimestamp())
