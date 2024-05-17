@@ -19,12 +19,16 @@ package com.hedera.mirror.web3.controller;
 import com.hedera.mirror.rest.model.Opcode;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.*;
+import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
+import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
-import java.util.List;
+import jakarta.validation.Valid;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -44,7 +48,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/contracts/results")
-//@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
+@SuppressWarnings("java:S5122") // "Make sure that enabling CORS is safe here"
 class OpcodesController {
 
     private final CallServiceParametersBuilder callServiceParametersBuilder;
@@ -78,7 +83,7 @@ class OpcodesController {
     @CrossOrigin(origins = "*")
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")
     OpcodesResponse getContractOpcodesByTransactionIdOrHash(
-            @PathVariable TransactionIdOrHashParameter transactionIdOrHash,
+            @PathVariable @Valid TransactionIdOrHashParameter transactionIdOrHash,
             @RequestParam(required = false, defaultValue = "true") boolean stack,
             @RequestParam(required = false, defaultValue = "false") boolean memory,
             @RequestParam(required = false, defaultValue = "false") boolean storage
@@ -88,10 +93,10 @@ class OpcodesController {
         }
 
         final var params = callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash);
-        final var result = contractCallService.processOpcodeCall(params, transactionIdOrHash);
+        final var options = new OpcodeTracerOptions(stack, memory, storage);
+        final var result = contractCallService.processOpcodeCall(params, options, transactionIdOrHash);
 
         return new OpcodesResponse()
-                // TODO: Not sure if this is the correct way to get the contractId here
                 .contractId(result.transactionProcessingResult()
                         .getRecipient()
                         .map(EntityIdUtils::contractIdFromEvmAddress)
@@ -113,23 +118,21 @@ class OpcodesController {
                                 .gas(opcode.gas())
                                 .gasCost(opcode.gasCost())
                                 .depth(opcode.depth())
-                                .stack(stack ?
-                                        opcode.stack().stream()
-                                                .map(byteValue -> String.format("%02X", byteValue))
-                                                .toList() :
-                                        List.of())
-                                .memory(memory ?
-                                        opcode.memory().stream()
-                                                .map(byteValue -> String.format("%02X", byteValue))
-                                                .toList() :
-                                        List.of())
-                                .storage(storage ?
-                                        opcode.storage().get().entrySet().stream()
-                                                .collect(Collectors.toMap(
-                                                        entry -> entry.getKey().toHexString(),
-                                                        entry -> entry.getValue().toHexString())) :
-                                        Map.of())
-                                .reason(opcode.reason())).toList()
-                );
+                                .stack(opcode.stack().orElse(Bytes[]::new)
+                                        .stream()
+                                        .map(Bytes::toHexString)
+                                        .toList())
+                                .memory(opcode.memory().orElse(Bytes[]::new)
+                                        .stream()
+                                        .map(Bytes::toHexString)
+                                        .toList())
+                                .storage(opcode.storage().orElse(new HashMap<>())
+                                        .entrySet()
+                                        .stream()
+                                        .collect(Collectors.toMap(
+                                                entry -> entry.getKey().toHexString(),
+                                                entry -> entry.getValue().toHexString())))
+                                .reason(opcode.reason()))
+                        .toList());
     }
 }

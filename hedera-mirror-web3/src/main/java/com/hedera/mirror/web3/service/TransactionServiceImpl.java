@@ -32,7 +32,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class TransactionServiceImpl implements TransactionService {
 
-    private static final Duration MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE = Duration.ofMinutes(35);
+    public static final Duration MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE = Duration.ofMinutes(35);
 
     private final TransactionRepository transactionRepository;
 

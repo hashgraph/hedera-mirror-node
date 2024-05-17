@@ -30,6 +30,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -117,10 +118,13 @@ public class ContractCallService {
         });
     }
 
-    public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params, TransactionIdOrHashParameter transactionIdOrHashParameter) {
+    public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params,
+                                                     final OpcodeTracerOptions opcodeTracerOptions,
+                                                     final TransactionIdOrHashParameter transactionIdOrHashParameter) {
         return ContractCallContext.run(ctx -> {
             List<ContractAction> contractActions = getContractAction(transactionIdOrHashParameter);
             ctx.setContractActions(contractActions);
+            ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPCODE, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
             return OpcodesProcessingResult.builder()
