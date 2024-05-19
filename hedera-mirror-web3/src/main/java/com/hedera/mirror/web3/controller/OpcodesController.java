@@ -21,13 +21,14 @@ import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.*;
+import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
+import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -92,7 +93,8 @@ class OpcodesController {
         }
 
         final var params = callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash);
-        final var result = contractCallService.processOpcodeCall(params, transactionIdOrHash);
+        final var options = new OpcodeTracerOptions(stack, memory, storage);
+        final var result = contractCallService.processOpcodeCall(params, options, transactionIdOrHash);
 
         return new OpcodesResponse()
                 .contractId(result.transactionProcessingResult()
@@ -112,26 +114,27 @@ class OpcodesController {
                 .opcodes(result.opcodes().stream()
                         .map(opcode -> new Opcode()
                                 .pc(opcode.pc())
-                                .op(String.valueOf(opcode.op()))
+                                .op(opcode.op().orElse(""))
                                 .gas(opcode.gas())
-                                .gasCost(opcode.gasCost().isPresent() ? opcode.gasCost().getAsLong() : 0L)
+                                .gasCost(opcode.gasCost().orElse(0L))
                                 .depth(opcode.depth())
-                                .stack(Optional.ofNullable(opcode.stack()).orElse(Optional.of(new Bytes[0]))
-                                        .stream()
-                                        .map(byteValue -> String.format("%02X", byteValue))
-                                        .toList())
-                                .memory(Optional.ofNullable(opcode.memory()).orElse(Optional.of(new Bytes[0]))
-                                        .stream()
-                                        .map(byteValue -> String.format("%02X", byteValue))
-                                        .toList())
-                                .storage(Optional.ofNullable(opcode.storage()).orElse(Optional.of(new HashMap<>()))
-                                        .get()
-                                        .entrySet()
-                                        .stream()
-                                        .collect(Collectors.toMap(
-                                                entry -> entry.getKey().toHexString(),
-                                                entry -> entry.getValue().toHexString())))
-                                .reason(opcode.reason())).toList()
-                );
+                                .stack(opcode.stack().isPresent() ?
+                                        Arrays.stream(opcode.stack().get())
+                                                .map(Bytes::toHexString)
+                                                .toList() :
+                                        List.of())
+                                .memory(opcode.memory().isPresent() ?
+                                        Arrays.stream(opcode.memory().get())
+                                                .map(Bytes::toHexString)
+                                                .toList() :
+                                        List.of())
+                                .storage(opcode.storage().isPresent() ?
+                                        opcode.storage().get().entrySet().stream()
+                                                .collect(Collectors.toMap(
+                                                        entry -> entry.getKey().toHexString(),
+                                                        entry -> entry.getValue().toHexString())) :
+                                        Map.of())
+                                .reason(opcode.reason()))
+                        .toList());
     }
 }

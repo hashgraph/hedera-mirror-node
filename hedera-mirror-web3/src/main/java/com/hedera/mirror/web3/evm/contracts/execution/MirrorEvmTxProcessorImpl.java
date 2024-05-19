@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -74,7 +73,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap,
             final Store store,
             final EntityAddressSequencer entityAddressSequencer,
-            TokenAccessor tokenAccessor) {
+            final TokenAccessor tokenAccessor) {
         super(
                 worldState,
                 pricesAndFeesProvider,
@@ -92,7 +91,10 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.tokenAccessor = tokenAccessor;
     }
 
-    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas, TracerType tracerType, ContractCallContext ctx) {
+    public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params,
+                                                        final long estimatedGas,
+                                                        final TracerType tracerType,
+                                                        final ContractCallContext ctx) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();

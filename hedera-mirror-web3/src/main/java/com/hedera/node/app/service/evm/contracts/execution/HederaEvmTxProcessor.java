@@ -41,13 +41,6 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-import javax.inject.Provider;
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-
-import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
-
 /**
  * Stateless invariant copy of its hedera-services counterpart. It is used to process EVM transactions in
  * an asynchronous manner.
@@ -156,7 +149,11 @@ public class HederaEvmTxProcessor {
         final var initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         final var messageFrameStack = initialFrame.getMessageFrameStack();
         HederaEvmOperationTracer tracer = this.getTracer(tracerType);
-        tracer.init(initialFrame);
+        if (tracer instanceof OpcodeTracer opcodeTracer) {
+            opcodeTracer.init(initialFrame, contractCallContext.getOpcodeTracerOptions());
+        } else {
+            tracer.init(initialFrame);
+        }
 
         final var evmVersion = ((MirrorNodeEvmProperties) dynamicProperties).getSemanticEvmVersion();
         while (!messageFrameStack.isEmpty()) {
