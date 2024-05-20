@@ -1,4 +1,4 @@
-@nftallowance @allowance @fullsuite @critical @release
+@nftallowance @allowance @fullsuite @critical @release @acceptance
 Feature: Account NFT Allowance Coverage Feature
 
   Scenario Outline: Validate approval NftTransfer affect on NftAllowance
@@ -14,7 +14,7 @@ Feature: Account NFT Allowance Coverage Feature
     When I delete the allowance on NFT <tokenName> for spender <spender>
     Then the mirror node REST API should confirm the approved allowance for NFT <tokenName> and <spender> is no longer available
     Examples:
-      | tokenName | spender | recipient |
-      | NFT       | BOB     | ALICE     |
+      | tokenName            | spender | recipient |
+      | ALLOWANCENONFUNGIBLE | BOB     | ALICE     |
 
 
