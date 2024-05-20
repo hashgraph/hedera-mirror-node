@@ -37,6 +37,7 @@ const isValidListResponse = (response, listName) => {
 class RestJavaTestScenarioBuilder extends TestScenarioBuilder {
   constructor() {
     super();
+    this._shouldSkip = false;
     this.fallbackRequest((testParameters) => {
       const url = `${testParameters['BASE_URL_PREFIX']}/accounts/639043/allowances/nfts`;
       return http.get(url);
