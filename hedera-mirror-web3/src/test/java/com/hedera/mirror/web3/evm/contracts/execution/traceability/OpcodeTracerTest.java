@@ -22,6 +22,8 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.transaction.Opcode;
+import com.hedera.mirror.web3.common.ContractCallContext;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.codec.binary.Hex;
@@ -66,6 +68,9 @@ class OpcodeTracerTest {
     @Mock
     private WorldUpdater worldUpdater;
 
+    @Mock
+    private ContractCallContext contractCallContext;
+
     // Transient test data
     private OpcodeTracerOptions tracerOptions;
     private MessageFrame frame;
@@ -79,20 +84,23 @@ class OpcodeTracerTest {
     void setUp() {
         REMAINING_GAS.set(INITIAL_GAS);
         tracerOptions = new OpcodeTracerOptions(false, false, false);
-        frame = validMessageFrame();
     }
 
     @Test
     @DisplayName("should record program counter")
     void shouldRecordProgramCounter() {
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
+
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.pc()).isEqualTo(frame.getPC());
     }
 
     @Test
     @DisplayName("should record opcode")
     void shouldRecordOpcode() {
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
+
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.op()).isNotEmpty();
         assertThat(opcode.op()).contains(OPERATION.getName());
     }
@@ -100,27 +108,33 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("should record depth")
     void shouldRecordDepth() {
+        frame = setupMessageFrame(tracerOptions);
+
         // simulate 4 calls
         final int expectedDepth = 4;
         for (int i = 0; i < expectedDepth; i++) {
             frame.getMessageFrameStack().add(validMessageFrame());
         }
 
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.depth()).isEqualTo(expectedDepth);
     }
 
     @Test
     @DisplayName("should record remaining gas")
     void shouldRecordRemainingGas() {
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
+
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.gas()).isEqualTo(REMAINING_GAS.get());
     }
 
     @Test
     @DisplayName("should record gas cost")
     void shouldRecordGasCost() {
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
+
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.gasCost()).isNotEmpty();
         assertThat(opcode.gasCost().getAsLong()).isEqualTo(GAS_COST);
     }
@@ -129,9 +143,9 @@ class OpcodeTracerTest {
     @DisplayName("given stack is enabled in tracer options, should record stack")
     void shouldRecordStackWhenEnabled() {
         tracerOptions.setStack(true);
-        setupDataForCapture(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
 
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.stack()).isNotEmpty();
         assertThat(opcode.stack().get()).containsExactly(stackItems);
     }
@@ -140,9 +154,9 @@ class OpcodeTracerTest {
     @DisplayName("given stack is disabled in tracer options, should not record stack")
     void shouldNotRecordStackWhenDisabled() {
         tracerOptions.setStack(false);
-        setupDataForCapture(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
 
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.stack()).isEmpty();
     }
 
@@ -150,9 +164,9 @@ class OpcodeTracerTest {
     @DisplayName("given memory is enabled in tracer options, should record memory")
     void shouldRecordMemoryWhenEnabled() {
         tracerOptions.setMemory(true);
-        setupDataForCapture(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
 
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.memory()).isNotEmpty();
         assertThat(opcode.memory().get()).containsExactly(wordsInMemory);
     }
@@ -161,9 +175,9 @@ class OpcodeTracerTest {
     @DisplayName("given memory is disabled in tracer options, should not record memory")
     void shouldNotRecordMemoryWhenDisabled() {
         tracerOptions.setMemory(false);
-        setupDataForCapture(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
 
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.memory()).isEmpty();
     }
 
@@ -171,9 +185,9 @@ class OpcodeTracerTest {
     @DisplayName("given storage is enabled in tracer options, should record storage")
     void shouldRecordStorageWhenEnabled() {
         tracerOptions.setStorage(true);
-        setupDataForCapture(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
 
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.storage()).isNotEmpty();
         assertThat(opcode.storage().get()).containsAllEntriesOf(updatedStorage);
     }
@@ -182,9 +196,9 @@ class OpcodeTracerTest {
     @DisplayName("given storage is disabled in tracer options, should not record storage")
     void shouldNotRecordStorageWhenDisabled() {
         tracerOptions.setStorage(false);
-        setupDataForCapture(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
 
-        final Opcode opcode = executeOperation(frame, tracerOptions);
+        final Opcode opcode = executeOperation(frame);
         assertThat(opcode.storage()).isEmpty();
     }
 
@@ -194,25 +208,23 @@ class OpcodeTracerTest {
         tracerOptions.setStack(true);
         tracerOptions.setMemory(true);
         tracerOptions.setStorage(true);
-        setupDataForCapture(frame, tracerOptions);
+        frame = setupMessageFrame(tracerOptions);
 
-        final Opcode opcode = executeOperation(frame, tracerOptions, ExceptionalHaltReason.INSUFFICIENT_GAS);
+        final Opcode opcode = executeOperation(frame, ExceptionalHaltReason.INSUFFICIENT_GAS);
         assertThat(opcode.reason()).contains(Hex.encodeHexString(ExceptionalHaltReason.INSUFFICIENT_GAS.getDescription().getBytes()));
         assertThat(opcode.stack()).contains(stackItems);
         assertThat(opcode.memory()).contains(wordsInMemory);
         assertThat(opcode.storage()).contains(updatedStorage);
     }
 
-    private Opcode executeOperation(final MessageFrame frame,
-                                    final OpcodeTracerOptions options) {
-        return executeOperation(frame, options, null);
+    private Opcode executeOperation(final MessageFrame frame) {
+        return executeOperation(frame, null);
     }
 
     private Opcode executeOperation(final MessageFrame frame,
-                                    final OpcodeTracerOptions options,
                                     final ExceptionalHaltReason haltReason) {
         final var tracer = new OpcodeTracer();
-        tracer.init(frame, options);
+        tracer.init(frame);
         tracer.tracePreExecution(frame);
 
         final OperationResult operationResult;
@@ -230,10 +242,16 @@ class OpcodeTracerTest {
         return tracer.getOpcodes().getFirst();
     }
 
-    private void setupDataForCapture(final MessageFrame messageFrame, final OpcodeTracerOptions options) {
+    private MessageFrame setupMessageFrame(final OpcodeTracerOptions options) {
+        when(contractCallContext.getOpcodeTracerOptions()).thenReturn(options);
+        when(contractCallContext.getContractActions()).thenReturn(List.of());
+
+        final MessageFrame messageFrame = validMessageFrame();
         stackItems = setupStackForCapture(messageFrame, options);
         wordsInMemory = setupMemoryForCapture(messageFrame, options);
         updatedStorage = setupStorageForCapture(messageFrame, options);
+
+        return messageFrame;
     }
 
     private Map<UInt256, UInt256> setupStorageForCapture(final MessageFrame frame, final OpcodeTracerOptions options) {
@@ -292,7 +310,9 @@ class OpcodeTracerTest {
     private MessageFrame validMessageFrame() {
         REMAINING_GAS.set(REMAINING_GAS.get() - GAS_COST);
 
-        final MessageFrame messageFrame = validMessageFrameBuilder().build();
+        final MessageFrame messageFrame = validMessageFrameBuilder()
+                .contextVariables(Map.of(ContractCallContext.CONTEXT_NAME, contractCallContext))
+                .build();
         messageFrame.setCurrentOperation(OPERATION);
         messageFrame.setPC(10);
         messageFrame.setGasRemaining(REMAINING_GAS.get());
