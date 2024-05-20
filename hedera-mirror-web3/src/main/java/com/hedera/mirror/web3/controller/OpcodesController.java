@@ -101,6 +101,11 @@ class OpcodesController {
                         .getRecipient()
                         .map(EntityIdUtils::contractIdFromEvmAddress)
                         .map(ContractID::toString)
+                        .map(contractId -> {
+                            String[] parts = contractId.split(":");
+                            String number = parts[1].trim();
+                            return "0.0." + number;
+                        })
                         .orElse(null))
                 .address(result.transactionProcessingResult()
                         .getRecipient()
@@ -116,7 +121,7 @@ class OpcodesController {
                                 .pc(opcode.pc())
                                 .op(opcode.op().orElse(""))
                                 .gas(opcode.gas())
-                                .gasCost(opcode.gasCost().orElse(0L))
+                                .gasCost(opcode.gasCost().isPresent() ? opcode.gasCost().getAsLong() : 0L)
                                 .depth(opcode.depth())
                                 .stack(opcode.stack().isPresent() ?
                                         Arrays.stream(opcode.stack().get())

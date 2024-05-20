@@ -1,6 +1,8 @@
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.Opcode;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.TreeMap;
+
 import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -20,16 +23,14 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
     private OpcodeTracerOptions options;
     private List<Opcode> opcodes;
+    private List<ContractAction> contractActions;
 
     @Override
     public void init(MessageFrame initialFrame) {
-        init(initialFrame, new OpcodeTracerOptions());
-    }
-
-    @SuppressWarnings("java:S1172")
-    public void init(MessageFrame ignored, OpcodeTracerOptions opcodeTracerOptions) {
         opcodes = new ArrayList<>();
-        options = opcodeTracerOptions;
+        ContractCallContext ctx = initialFrame.getContextVariable("ContractCallContext");
+        options = ctx.getOpcodeTracerOptions();
+        contractActions = ctx.getContractActions();
     }
 
     @Override
@@ -96,7 +97,6 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     @Override
     public void tracePrecompileCall(
             final MessageFrame frame, final long gasRequirement, final Bytes output) {
-        //To be implemented
         opcodes.add(new Opcode(
                 frame.getPC(),
                 Optional.empty(),
