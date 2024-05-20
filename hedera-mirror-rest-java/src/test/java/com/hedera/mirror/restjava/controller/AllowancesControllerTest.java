@@ -264,11 +264,13 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .customize(nfta -> nfta.owner(allowance1.getOwner()))
                 .persist();
         var uriParams = "?account.id={account.id}&limit=1&order=asc";
-        var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
-                .formatted(
-                        allowance2.getOwner(),
-                        EntityId.of(allowance2.getSpender()),
-                        EntityId.of(allowance2.getTokenId()));
+        var nextLink =
+                "/api/v1/accounts/%s/allowances/nfts?account.id=%s&account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
+                        .formatted(
+                                allowance2.getOwner(),
+                                EntityId.of(allowance2.getSpender()),
+                                EntityId.of(allowance2.getSpender()),
+                                EntityId.of(allowance2.getTokenId()));
 
         // When
         var result = restClient

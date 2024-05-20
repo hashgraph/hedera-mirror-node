@@ -17,10 +17,8 @@
 package com.hedera.mirror.restjava.common;
 
 import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.ParameterNames.OWNER;
 import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.rest.model.NftAllowance;
@@ -29,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,12 +35,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -49,6 +53,11 @@ class LinkFactoryTest {
 
     @Mock
     private HttpServletRequest request;
+
+    @Mock
+    private ServletRequestAttributes attributes;
+
+    private MockedStatic<RequestContextHolder> context;
 
     @Mock
     private ParameterExtractor<NftAllowance> extractor;
@@ -60,21 +69,29 @@ class LinkFactoryTest {
 
     @BeforeEach
     void setUp() {
+        context = Mockito.mockStatic(RequestContextHolder.class);
+        context.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
+        when(attributes.getRequest()).thenReturn(request);
         when(request.getRequestURI()).thenReturn(uri);
-        when(extractor.extract(ACCOUNT_ID)).thenReturn(NftAllowance::getOwner);
-        when(extractor.extract(OWNER)).thenReturn(NftAllowance::getOwner);
-        when(extractor.extract(TOKEN_ID)).thenReturn(NftAllowance::getTokenId);
-        when(extractor.isInclusive(ACCOUNT_ID)).thenReturn(true);
+        when(extractor.getRequest()).thenReturn(request);
+        when(extractor.extract(nftAllowance, ACCOUNT_ID)).thenReturn(nftAllowance.getOwner());
+        when(extractor.extract(nftAllowance, TOKEN_ID)).thenReturn(nftAllowance.getTokenId());
+    }
+
+    @AfterEach
+    void closeMocks() {
+        context.close();
     }
 
     @DisplayName("Get pagination links for all query parameters")
     @ParameterizedTest
     @CsvSource({
-        "1, ASC,  0.0.1000,    0.0.1000,    false, /api?limit=1&order=asc&account.id=gte:0.0.1000&token.id=gt:0.0.6458&owner=false",
+        "1, ASC,  eq:0.0.1000, eq:0.0.1000, false, /api?limit=1&order=asc&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458&owner=false",
+        "1, ASC,  lt:0.0.2000, 0.0.1000,    false, /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458&owner=false",
         "1, DESC, 0.0.1000,    0.0.1000,    false, /api?limit=1&order=desc&account.id=0.0.1000&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458&owner=false",
         "1, DESC, gt:0.0.900,  gt:0.0.900,  false, /api?limit=1&order=desc&account.id=gt:0.0.900&account.id=lte:0.0.1000&token.id=gt:0.0.900&token.id=lt:0.0.6458&owner=false",
-        "1, DESC, lt:0.0.9000, gte:0.0.900, false, /api?limit=1&order=desc&account.id=lt:0.0.9000&account.id=lte:0.0.1000&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=false",
-        "1, DESC, lt:0.0.9000, gte:0.0.900, true,  /api?limit=1&order=desc&account.id=lt:0.0.9000&account.id=lte:0.0.2000&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=true",
+        "1, DESC, lt:0.0.9000, gte:0.0.900, false, /api?limit=1&order=desc&account.id=lte:0.0.1000&token.id=gt:0.0.899&token.id=lt:0.0.6458&owner=false",
+        "1, DESC, lt:0.0.9000, gte:0.0.900, true,  /api?limit=1&order=desc&account.id=lte:0.0.2000&token.id=gt:0.0.899&token.id=lt:0.0.6458&owner=true",
         "2, ASC,  0.0.1000,    0.0.1000, false,",
         "2, DESC, 0.0.1000,    0.0.1000, false,",
     })
@@ -92,10 +109,11 @@ class LinkFactoryTest {
         params.put("token.id", new String[] {tokenParameter});
         params.put("owner", new String[] {Boolean.toString(owner)});
         when(request.getParameterMap()).thenReturn(params);
-        when(extractor.extract(ACCOUNT_ID)).thenReturn(owner ? NftAllowance::getSpender : NftAllowance::getOwner);
+        when(extractor.extract(nftAllowance, ACCOUNT_ID))
+                .thenReturn(owner ? nftAllowance.getSpender() : nftAllowance.getOwner());
         var sort = Sort.by(Direction.valueOf(order), ACCOUNT_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, Integer.parseInt(limit), sort);
-        var linkFactory = new LinkFactoryImpl(request);
+        var linkFactory = new LinkFactoryImpl();
 
         assertThat(linkFactory
                         .create(List.of(nftAllowance), pageable, extractor)
@@ -106,8 +124,8 @@ class LinkFactoryTest {
     @DisplayName("Get pagination links with no primary sort")
     @ParameterizedTest
     @CsvSource({
-        "0.0.1000,    0.0.1000,    /api?limit=1&account.id=gte:0.0.1000&token.id=gt:0.0.6458",
-        "lt:0.0.9000, gte:0.0.900, /api?limit=1&account.id=lt:0.0.1000&token.id=gte:0.0.6458",
+        "0.0.1000,    0.0.1000,    /api?limit=1&account.id=0.0.1000&account.id=gt:0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458",
+        "lt:0.0.9000, gte:0.0.900, /api?limit=1&account.id=lt:0.0.9000&account.id=gt:0.0.1000&token.id=gt:0.0.6458",
     })
     void testNoPrimarySort(String accountParameter, String tokenParameter, String expectedLink) {
         Map<String, String[]> params = new LinkedHashMap<>();
@@ -116,51 +134,7 @@ class LinkFactoryTest {
         params.put("token.id", new String[] {tokenParameter});
         when(request.getParameterMap()).thenReturn(params);
         var pageable = PageRequest.of(0, 1);
-        var linkFactory = new LinkFactoryImpl(request);
-
-        assertThat(linkFactory
-                        .create(List.of(nftAllowance), pageable, extractor)
-                        .getNext())
-                .isEqualTo(expectedLink);
-    }
-
-    @DisplayName("Get pagination links with secondary sort")
-    @ParameterizedTest
-    @CsvSource({
-        "false, /api?limit=1&account.id=lt:0.0.9000&account.id=lte:0.0.1000&token.id=gte:0.0.900",
-        "true,  /api?limit=1&account.id=lt:0.0.9000&account.id=lte:0.0.1000&token.id=gte:0.0.900&token.id=lt:0.0.6458",
-    })
-    void testSecondarySort(boolean secondarySort, String expectedLink) {
-        Map<String, String[]> params = new LinkedHashMap<>();
-        params.put("limit", new String[] {"1"});
-        params.put("account.id", new String[] {"lt:0.0.9000"});
-        params.put("token.id", new String[] {"gte:0.0.900"});
-        when(request.getParameterMap()).thenReturn(params);
-        var sort = secondarySort ? Sort.by(Direction.DESC, ACCOUNT_ID, TOKEN_ID) : Sort.by(Direction.DESC, ACCOUNT_ID);
-        var pageable = PageRequest.of(0, 1, sort);
-        var linkFactory = new LinkFactoryImpl(request);
-
-        assertThat(linkFactory
-                        .create(List.of(nftAllowance), pageable, extractor)
-                        .getNext())
-                .isEqualTo(expectedLink);
-    }
-
-    @DisplayName("Get pagination links with inclusive")
-    @ParameterizedTest
-    @CsvSource({
-        "false, /api?limit=1&account.id=gt:0.0.1000&token.id=gt:0.0.6458",
-        "true,  /api?limit=1&account.id=gte:0.0.1000&token.id=gt:0.0.6458",
-    })
-    void testInclusive(boolean inclusive, String expectedLink) {
-        Map<String, String[]> params = new LinkedHashMap<>();
-        params.put("limit", new String[] {"1"});
-        params.put("account.id", new String[] {"0.0.1000"});
-        when(request.getParameterMap()).thenReturn(params);
-        when(extractor.isInclusive(ACCOUNT_ID)).thenReturn(inclusive);
-        var sort = Sort.by(Direction.ASC, ACCOUNT_ID, TOKEN_ID);
-        var pageable = PageRequest.of(0, 1, sort);
-        var linkFactory = new LinkFactoryImpl(request);
+        var linkFactory = new LinkFactoryImpl();
 
         assertThat(linkFactory
                         .create(List.of(nftAllowance), pageable, extractor)
@@ -174,36 +148,60 @@ class LinkFactoryTest {
         Map<String, String[]> params = new LinkedHashMap<>();
         params.put("limit", new String[] {"1"});
         params.put("account.id", new String[] {"0.0.1000"});
-        params.put("unknown", new String[] {"value"});
+        params.put("unknown", new String[] {"value", "value2"});
         when(request.getParameterMap()).thenReturn(params);
         var sort = Sort.by(Direction.ASC, ACCOUNT_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, 1, sort);
-        var linkFactory = new LinkFactoryImpl(request);
+        var linkFactory = new LinkFactoryImpl();
 
         assertThat(linkFactory
                         .create(List.of(nftAllowance), pageable, extractor)
                         .getNext())
-                .isEqualTo("/api?limit=1&account.id=gte:0.0.1000&token.id=gt:0.0.6458");
+                .isEqualTo(
+                        "/api?limit=1&account.id=0.0.1000&account.id=gte:0.0.1000&unknown=value&unknown=value2&token.id=gt:0.0.6458");
     }
 
-    @DisplayName("Get pagination links invalid operator")
-    @Test
-    void testInvalidOperator() {
+    @DisplayName("Get pagination links with multiple parameter values")
+    @ParameterizedTest
+    @CsvSource({
+        "ASC,  lt:0.0.1002, lte:0.0.1002, lte:0.0.9000, gt:0.0.100,  /api?limit=1&order=asc&account.id=lt:0.0.1003&account.id=gte:0.0.1000&token.id=lt:0.0.9001&token.id=gt:0.0.6458",
+        "ASC,  lt:0.0.2000, gt:0.0.200,   0.0.4000, 0.0.4000,        /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=0.0.4000&token.id=gt:0.0.6458",
+        "ASC,  0.0.1000,    0.0.1000,     0.0.1000, 0.0.1000,        /api?limit=1&order=asc&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458",
+        "ASC,  0.0.1000,    gt:0.0.1001,  lte:0.0.1000, gt:0.0.100,  /api?limit=1&order=asc&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=lt:0.0.1001&token.id=gt:0.0.6458",
+        "DESC, gt:0.0.101,  gte:0.0.101,  0.0.4000, 0.0.4000,        /api?limit=1&order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
+        "DESC, gt:0.0.900,  gt:0.0.900,   0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=gt:0.0.900&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
+        "DESC, lt:0.0.9000, gte:0.0.900,  0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=gt:0.0.899&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
+        "DESC, lt:0.0.9000, gte:0.0.900,  0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=gt:0.0.899&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
+        "DESC, 0.0.1000,    0.0.1000,     0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=0.0.1000&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
+        "DESC, gte:0.0.101, gt:0.0.101,   0.0.4000, 0.0.4000,        /api?limit=1&order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
+    })
+    void testMultipleParameters(
+            String order,
+            String accountParameter,
+            String accountParameter2,
+            String tokenParameter,
+            String tokenParameter2,
+            String expectedLink) {
         Map<String, String[]> params = new LinkedHashMap<>();
         params.put("limit", new String[] {"1"});
-        params.put("account.id", new String[] {"gtl:0.0.1000"});
+        params.put("order", new String[] {order});
+        params.put("account.id", new String[] {accountParameter, accountParameter2});
+        params.put("token.id", new String[] {tokenParameter, tokenParameter2});
         when(request.getParameterMap()).thenReturn(params);
-        var sort = Sort.by(Direction.ASC, ACCOUNT_ID, TOKEN_ID);
+        var sort = Sort.by(Direction.valueOf(order), ACCOUNT_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, 1, sort);
-        var linkFactory = new LinkFactoryImpl(request);
-        var list = List.of(nftAllowance);
-        assertThrows(IllegalArgumentException.class, () -> linkFactory.create(list, pageable, extractor));
+        var linkFactory = new LinkFactoryImpl();
+
+        assertThat(linkFactory
+                        .create(List.of(nftAllowance), pageable, extractor)
+                        .getNext())
+                .isEqualTo(expectedLink);
     }
 
     @Test
     @DisplayName("Empty next link")
     void testEmptyPaginationLinks() {
-        var linkFactory = new LinkFactoryImpl(request);
+        var linkFactory = new LinkFactoryImpl();
         // When the no item has been passed
         assertThat(linkFactory.create(null, null, extractor).getNext()).isNull();
         assertThat(linkFactory
@@ -211,11 +209,10 @@ class LinkFactoryTest {
                         .getNext())
                 .isNull();
         assertThat(linkFactory
-                        .create(List.of(nftAllowance), PageRequest.ofSize(1), extractor)
-                        .getNext())
-                .isNull();
-        assertThat(linkFactory
-                        .create(List.of(nftAllowance), PageRequest.ofSize(2), extractor)
+                        .create(
+                                List.of(nftAllowance),
+                                Pageable.unpaged(Sort.by(Direction.ASC, ACCOUNT_ID, TOKEN_ID)),
+                                extractor)
                         .getNext())
                 .isNull();
     }
