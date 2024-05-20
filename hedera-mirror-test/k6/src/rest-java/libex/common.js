@@ -16,6 +16,7 @@
 
 import http from 'k6/http';
 
+import {setupTestParameters} from './parameters.js';
 import {TestScenarioBuilder} from '../../lib/common.js';
 
 const isSuccess = (response) => response.status >= 200 && response.status < 300;
@@ -37,11 +38,14 @@ const isValidListResponse = (response, listName) => {
 class RestJavaTestScenarioBuilder extends TestScenarioBuilder {
   constructor() {
     super();
-    this._shouldSkip = false;
     this.fallbackRequest((testParameters) => {
       const url = `${testParameters['BASE_URL_PREFIX']}/accounts/639043/allowances/nfts`;
       return http.get(url);
     });
+  }
+
+  build() {
+    return Object.assign(super.build(), {setup: () => setupTestParameters(this._requiredParameters)});
   }
 }
 
