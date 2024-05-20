@@ -20,13 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.transaction.Opcode;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.assertj.core.api.Assertions;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
@@ -36,215 +37,285 @@ import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.gascalculator.CancunGasCalculator;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
-import org.hyperledger.besu.evm.operation.CallOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+@DisplayName("OpcodeTracer")
 @ExtendWith(MockitoExtension.class)
 class OpcodeTracerTest {
 
-  private static final long INITIAL_GAS = 1000L;
-
-  @Mock
-  private WorldUpdater worldUpdater;
-
-  private final Operation anOperation =
-      new AbstractOperation(0x02, "MUL", 2, 1, null) {
+    private static final long INITIAL_GAS = 1000L;
+    private static final long GAS_COST = 20L;
+    private static final long GAS_PRICE = 25L;
+    private static final AtomicReference<Long> REMAINING_GAS = new AtomicReference<>();
+    private static final Operation OPERATION = new AbstractOperation(0x02, "MUL", 2, 1, null) {
         @Override
         public OperationResult execute(final MessageFrame frame, final EVM evm) {
-          return new OperationResult(20L, null);
+            return new OperationResult(GAS_COST, null);
         }
-      };
+    };
 
-  private final CallOperation callOperation = new CallOperation(new CancunGasCalculator());
+    @Mock
+    private WorldUpdater worldUpdater;
 
-  @Test
-  void shouldRecordProgramCounter() {
-    final MessageFrame frame = validMessageFrame();
-    frame.setPC(10);
-    final Opcode opcode = opcode(frame);
-    assertThat(opcode.pc()).isEqualTo(10);
-  }
+    // Transient test data
+    private OpcodeTracerOptions tracerOptions;
+    private MessageFrame frame;
 
-  @Test
-  void shouldRecordOpcode() {
-    final MessageFrame frame = validMessageFrame();
-    final Opcode opcode = opcode(frame);
-    assertThat(opcode.op()).isNotEmpty();
-    assertThat(opcode.op()).contains("MUL");
-  }
+    // EVM data for capture
+    private UInt256[] stackItems;
+    private Bytes[] wordsInMemory;
+    private Map<UInt256, UInt256> updatedStorage;
 
-  @Test
-  void shouldRecordDepth() {
-    final MessageFrame frame = validMessageFrame();
-    // simulate 4 calls
-    frame.getMessageFrameStack().add(frame);
-    frame.getMessageFrameStack().add(frame);
-    frame.getMessageFrameStack().add(frame);
-    frame.getMessageFrameStack().add(frame);
-    final Opcode opcode = opcode(frame);
-    assertThat(opcode.depth()).isEqualTo(4);
-  }
+    @BeforeEach
+    void setUp() {
+        REMAINING_GAS.set(INITIAL_GAS);
+        tracerOptions = new OpcodeTracerOptions(false, false, false);
+        frame = validMessageFrame();
+    }
 
-  @Test
-  void shouldRecordRemainingGas() {
-    final MessageFrame frame = validMessageFrame();
-    final Opcode opcode = opcode(frame);
-    assertThat(opcode.gas()).isEqualTo(INITIAL_GAS);
-  }
+    @Test
+    @DisplayName("should record program counter")
+    void shouldRecordProgramCounter() {
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.pc()).isEqualTo(frame.getPC());
+    }
 
-  @Test
-  void shouldRecordStackWhenEnabled() {
-    final MessageFrame frame = validMessageFrame();
-    final UInt256 stackItem1 = UInt256.fromHexString("0x01");
-    final UInt256 stackItem2 = UInt256.fromHexString("0x02");
-    final UInt256 stackItem3 = UInt256.fromHexString("0x03");
-    frame.pushStackItem(stackItem1);
-    frame.pushStackItem(stackItem2);
-    frame.pushStackItem(stackItem3);
-    final Opcode opcode = opcode(frame, new OpcodeTracerOptions(true, false, false));
-    assertThat(opcode.stack()).isNotEmpty();
-    assertThat(opcode.stack().get()).containsExactly(stackItem1, stackItem2, stackItem3);
-  }
+    @Test
+    @DisplayName("should record opcode")
+    void shouldRecordOpcode() {
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.op()).isNotEmpty();
+        assertThat(opcode.op()).contains(OPERATION.getName());
+    }
 
-  @Test
-  void shouldNotRecordStackWhenDisabled() {
-    final Opcode opcode = opcode(validMessageFrame(), new OpcodeTracerOptions(false, false, false));
-    assertThat(opcode.stack()).isEmpty();
-  }
+    @Test
+    @DisplayName("should record depth")
+    void shouldRecordDepth() {
+        // simulate 4 calls
+        final int expectedDepth = 4;
+        for (int i = 0; i < expectedDepth; i++) {
+            frame.getMessageFrameStack().add(validMessageFrame());
+        }
 
-  @Test
-  void shouldRecordMemoryWhenEnabled() {
-    final MessageFrame frame = validMessageFrame();
-    final Bytes word1 = Bytes.fromHexString("0x01", 32);
-    final Bytes word2 = Bytes.fromHexString("0x02", 32);
-    final Bytes word3 = Bytes.fromHexString("0x03", 32);
-    frame.writeMemory(0, 32, word1);
-    frame.writeMemory(32, 32, word2);
-    frame.writeMemory(64, 32, word3);
-    final Opcode opcode = opcode(frame, new OpcodeTracerOptions(false, true, false));
-    assertThat(opcode.memory()).isNotEmpty();
-    assertThat(opcode.memory().get()).containsExactly(word1, word2, word3);
-  }
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.depth()).isEqualTo(expectedDepth);
+    }
 
-  @Test
-  void shouldNotRecordMemoryWhenDisabled() {
-    final Opcode opcode = opcode(validMessageFrame(), new OpcodeTracerOptions(false, false, false));
-    assertThat(opcode.memory()).isEmpty();
-  }
+    @Test
+    @DisplayName("should record remaining gas")
+    void shouldRecordRemainingGas() {
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.gas()).isEqualTo(REMAINING_GAS.get());
+    }
 
-  @Test
-  void shouldRecordStorageWhenEnabled() {
-    final MessageFrame frame = validMessageFrame();
-    final Map<UInt256, UInt256> updatedStorage = setupStorageForCapture(frame);
-    final Opcode opcode = opcode(frame, new OpcodeTracerOptions(false, false, true));
-    assertThat(opcode.storage()).isNotEmpty();
-    assertThat(opcode.storage().get()).containsAllEntriesOf(updatedStorage);
-  }
+    @Test
+    @DisplayName("should record gas cost")
+    void shouldRecordGasCost() {
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.gasCost()).isNotEmpty();
+        assertThat(opcode.gasCost().getAsLong()).isEqualTo(GAS_COST);
+    }
 
-  @Test
-  void shouldNotRecordStorageWhenDisabled() {
-    final Opcode opcode = opcode(validMessageFrame(), new OpcodeTracerOptions(false, false, false));
-    assertThat(opcode.storage()).isEmpty();
-  }
+    @Test
+    @DisplayName("given stack is enabled in tracer options, should record stack")
+    void shouldRecordStackWhenEnabled() {
+        tracerOptions.setStack(true);
+        setupDataForCapture(frame, tracerOptions);
 
-  @Test
-  void shouldNotAddGas() {
-    final Opcode opcode = opcode(validCallFrame(), new OpcodeTracerOptions(false, false, false));
-    assertThat(opcode.gasCost()).isNotEmpty();
-    assertThat(opcode.gasCost().getAsLong()).isEqualTo(20L);
-  }
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.stack()).isNotEmpty();
+        assertThat(opcode.stack().get()).containsExactly(stackItems);
+    }
 
-  @Test
-  void shouldCaptureFrameWhenExceptionalHaltOccurs() {
-    final ExceptionalHaltReason haltReason = ExceptionalHaltReason.INSUFFICIENT_GAS;
-    final MessageFrame frame = validMessageFrame();
-    final Map<UInt256, UInt256> updatedStorage = setupStorageForCapture(frame);
+    @Test
+    @DisplayName("given stack is disabled in tracer options, should not record stack")
+    void shouldNotRecordStackWhenDisabled() {
+        tracerOptions.setStack(false);
+        setupDataForCapture(frame, tracerOptions);
 
-    final OpcodeTracer tracer = new OpcodeTracer();
-    tracer.init(frame, new OpcodeTracerOptions(true, true, true));
-    frame.setRevertReason(Bytes.of(haltReason.getDescription().getBytes()));
-    tracer.tracePostExecution(frame, new OperationResult(50L, haltReason));
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.stack()).isEmpty();
+    }
 
-    final Opcode opcode = getOnlyOpcode(tracer);
-    assertThat(opcode.reason()).contains(Bytes.of(haltReason.getDescription().getBytes()).toString());
-    assertThat(opcode.storage()).isNotEmpty();
-    assertThat(opcode.storage().get()).containsAllEntriesOf(updatedStorage);
-  }
+    @Test
+    @DisplayName("given memory is enabled in tracer options, should record memory")
+    void shouldRecordMemoryWhenEnabled() {
+        tracerOptions.setMemory(true);
+        setupDataForCapture(frame, tracerOptions);
 
-  private Opcode opcode(final MessageFrame frame) {
-    return opcode(frame, new OpcodeTracerOptions());
-  }
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.memory()).isNotEmpty();
+        assertThat(opcode.memory().get()).containsExactly(wordsInMemory);
+    }
 
-  private Opcode opcode(final MessageFrame frame, final OpcodeTracerOptions options) {
-    final var tracer = new OpcodeTracer();
-    tracer.init(frame, options);
-    tracer.tracePreExecution(frame);
-    OperationResult operationResult = anOperation.execute(frame, null);
-    tracer.tracePostExecution(frame, operationResult);
-    return getOnlyOpcode(tracer);
-  }
+    @Test
+    @DisplayName("given memory is disabled in tracer options, should not record memory")
+    void shouldNotRecordMemoryWhenDisabled() {
+        tracerOptions.setMemory(false);
+        setupDataForCapture(frame, tracerOptions);
 
-  private MessageFrame validMessageFrame() {
-    final MessageFrame frame = validMessageFrameBuilder().build();
-    frame.setCurrentOperation(anOperation);
-    frame.setPC(10);
-    return frame;
-  }
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.memory()).isEmpty();
+    }
 
-  private MessageFrame validCallFrame() {
-    final MessageFrame frame = validMessageFrameBuilder().build();
-    frame.setCurrentOperation(callOperation);
-    frame.setPC(10);
-    return frame;
-  }
+    @Test
+    @DisplayName("given storage is enabled in tracer options, should record storage")
+    void shouldRecordStorageWhenEnabled() {
+        tracerOptions.setStorage(true);
+        setupDataForCapture(frame, tracerOptions);
 
-  private Opcode getOnlyOpcode(final OpcodeTracer tracer) {
-    Assertions.assertThat(tracer.getOpcodes()).hasSize(1);
-    return tracer.getOpcodes().getFirst();
-  }
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.storage()).isNotEmpty();
+        assertThat(opcode.storage().get()).containsAllEntriesOf(updatedStorage);
+    }
 
-  private MessageFrame.Builder validMessageFrameBuilder() {
-    return new MessageFrame.Builder()
-            .type(MessageFrame.Type.MESSAGE_CALL)
-            .code(CodeV0.EMPTY_CODE)
-            .sender(Address.ZERO)
-            .originator(Address.ZERO)
-            .completer(_ -> {})
-            .miningBeneficiary(Address.ZERO)
-            .address(Address.ZERO)
-            .contract(Address.ZERO)
-            .inputData(Bytes.EMPTY)
-            .initialGas(INITIAL_GAS)
-            .value(Wei.ZERO)
-            .apparentValue(Wei.ZERO)
-            .worldUpdater(worldUpdater)
-            .gasPrice(Wei.of(25))
-            .blockValues(mock(BlockValues.class))
-            .blockHashLookup(_ -> Hash.wrap(Bytes32.ZERO));
-  }
+    @Test
+    @DisplayName("given storage is disabled in tracer options, should not record storage")
+    void shouldNotRecordStorageWhenDisabled() {
+        tracerOptions.setStorage(false);
+        setupDataForCapture(frame, tracerOptions);
 
-  private Map<UInt256, UInt256> setupStorageForCapture(final MessageFrame frame) {
-    final MutableAccount account = mock(MutableAccount.class);
-    when(worldUpdater.getAccount(frame.getRecipientAddress())).thenReturn(account);
+        final Opcode opcode = executeOperation(frame, tracerOptions);
+        assertThat(opcode.storage()).isEmpty();
+    }
 
-    final Map<UInt256, UInt256> updatedStorage = new TreeMap<>();
-    updatedStorage.put(UInt256.ZERO, UInt256.valueOf(233));
-    updatedStorage.put(UInt256.ONE, UInt256.valueOf(2424));
-    when(account.getUpdatedStorage()).thenReturn(updatedStorage);
-    final Bytes32 word1 = Bytes32.fromHexString("0x01");
-    final Bytes32 word2 = Bytes32.fromHexString("0x02");
-    final Bytes32 word3 = Bytes32.fromHexString("0x03");
-    frame.writeMemory(0, 32, word1);
-    frame.writeMemory(32, 32, word2);
-    frame.writeMemory(64, 32, word3);
-    return updatedStorage;
-  }
+    @Test
+    @DisplayName("given exceptional halt occurs, should capture frame data and halt reason")
+    void shouldCaptureFrameWhenExceptionalHaltOccurs() {
+        tracerOptions.setStack(true);
+        tracerOptions.setMemory(true);
+        tracerOptions.setStorage(true);
+        setupDataForCapture(frame, tracerOptions);
+
+        final Opcode opcode = executeOperation(frame, tracerOptions, ExceptionalHaltReason.INSUFFICIENT_GAS);
+        assertThat(opcode.reason()).contains(Hex.encodeHexString(ExceptionalHaltReason.INSUFFICIENT_GAS.getDescription().getBytes()));
+        assertThat(opcode.stack()).contains(stackItems);
+        assertThat(opcode.memory()).contains(wordsInMemory);
+        assertThat(opcode.storage()).contains(updatedStorage);
+    }
+
+    private Opcode executeOperation(final MessageFrame frame,
+                                    final OpcodeTracerOptions options) {
+        return executeOperation(frame, options, null);
+    }
+
+    private Opcode executeOperation(final MessageFrame frame,
+                                    final OpcodeTracerOptions options,
+                                    final ExceptionalHaltReason haltReason) {
+        final var tracer = new OpcodeTracer();
+        tracer.init(frame, options);
+        tracer.tracePreExecution(frame);
+
+        final OperationResult operationResult;
+        if (haltReason != null) {
+            frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+            frame.setRevertReason(Bytes.of(haltReason.getDescription().getBytes()));
+            operationResult = new OperationResult(GAS_COST, haltReason);
+        } else {
+            operationResult = OPERATION.execute(frame, null);
+        }
+
+        tracer.tracePostExecution(frame, operationResult);
+
+        assertThat(tracer.getOpcodes()).hasSize(1);
+        return tracer.getOpcodes().getFirst();
+    }
+
+    private void setupDataForCapture(final MessageFrame messageFrame, final OpcodeTracerOptions options) {
+        stackItems = setupStackForCapture(messageFrame, options);
+        wordsInMemory = setupMemoryForCapture(messageFrame, options);
+        updatedStorage = setupStorageForCapture(messageFrame, options);
+    }
+
+    private Map<UInt256, UInt256> setupStorageForCapture(final MessageFrame frame, final OpcodeTracerOptions options) {
+        if (!options.isStorage()) {
+            return ImmutableSortedMap.of();
+        }
+
+        final Map<UInt256, UInt256> storage = ImmutableSortedMap.of(
+                UInt256.ZERO, UInt256.valueOf(233),
+                UInt256.ONE, UInt256.valueOf(2424)
+        );
+
+        final MutableAccount account = mock(MutableAccount.class);
+        when(account.getUpdatedStorage()).thenReturn(storage);
+        when(worldUpdater.getAccount(frame.getRecipientAddress())).thenReturn(account);
+
+        return storage;
+    }
+
+    private UInt256[] setupStackForCapture(final MessageFrame frame, final OpcodeTracerOptions options) {
+        if (!options.isStack()) {
+            return new UInt256[0];
+        }
+
+        final UInt256[] stack = new UInt256[] {
+                UInt256.fromHexString("0x01"),
+                UInt256.fromHexString("0x02"),
+                UInt256.fromHexString("0x03")
+        };
+
+        for (final UInt256 stackItem : stack) {
+            frame.pushStackItem(stackItem);
+        }
+
+        return stack;
+    }
+
+    private Bytes[] setupMemoryForCapture(final MessageFrame frame, final OpcodeTracerOptions options) {
+        if (!options.isMemory()) {
+            return new Bytes[0];
+        }
+
+        final Bytes[] words = new Bytes[] {
+                Bytes.fromHexString("0x01", 32),
+                Bytes.fromHexString("0x02", 32),
+                Bytes.fromHexString("0x03", 32)
+        };
+
+        for (int i = 0; i < words.length; i++) {
+            frame.writeMemory(i * 32, 32, words[i]);
+        }
+
+        return words;
+    }
+
+    private MessageFrame validMessageFrame() {
+        REMAINING_GAS.set(REMAINING_GAS.get() - GAS_COST);
+
+        final MessageFrame messageFrame = validMessageFrameBuilder().build();
+        messageFrame.setCurrentOperation(OPERATION);
+        messageFrame.setPC(10);
+        messageFrame.setGasRemaining(REMAINING_GAS.get());
+        return messageFrame;
+    }
+
+    private MessageFrame.Builder validMessageFrameBuilder() {
+        return new MessageFrame.Builder()
+                .type(MessageFrame.Type.MESSAGE_CALL)
+                .code(CodeV0.EMPTY_CODE)
+                .sender(Address.ZERO)
+                .originator(Address.ZERO)
+                .completer(_ -> {})
+                .miningBeneficiary(Address.ZERO)
+                .address(Address.ZERO)
+                .contract(Address.ZERO)
+                .inputData(Bytes.EMPTY)
+                .initialGas(INITIAL_GAS)
+                .value(Wei.ZERO)
+                .apparentValue(Wei.ZERO)
+                .worldUpdater(worldUpdater)
+                .gasPrice(Wei.of(GAS_PRICE))
+                .blockValues(mock(BlockValues.class))
+                .blockHashLookup(_ -> Hash.wrap(Bytes32.ZERO));
+    }
 }
