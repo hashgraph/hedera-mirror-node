@@ -24,7 +24,6 @@ import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
 import java.util.Arrays;
@@ -100,12 +99,10 @@ class OpcodesController {
                 .contractId(result.transactionProcessingResult()
                         .getRecipient()
                         .map(EntityIdUtils::contractIdFromEvmAddress)
-                        .map(ContractID::toString)
-                        .map(contractId -> {
-                            String[] parts = contractId.split(":");
-                            String number = parts[1].trim();
-                            return "0.0." + number;
-                        })
+                        .map(contractId -> "%d.%d.%d".formatted(
+                                contractId.getShardNum(),
+                                contractId.getRealmNum(),
+                                contractId.getContractNum()))
                         .orElse(null))
                 .address(result.transactionProcessingResult()
                         .getRecipient()

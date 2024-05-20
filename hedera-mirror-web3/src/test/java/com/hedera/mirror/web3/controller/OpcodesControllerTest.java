@@ -64,7 +64,6 @@ import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -392,7 +391,10 @@ class OpcodesControllerTest {
             return new OpcodesResponse()
                     .contractId(result.transactionProcessingResult().getRecipient()
                             .map(EntityIdUtils::contractIdFromEvmAddress)
-                            .map(ContractID::toString)
+                            .map(contractId -> "%d.%d.%d".formatted(
+                                    contractId.getShardNum(),
+                                    contractId.getRealmNum(),
+                                    contractId.getContractNum()))
                             .orElse(null))
                     .address(result.transactionProcessingResult().getRecipient()
                             .map(Address::toHexString)
