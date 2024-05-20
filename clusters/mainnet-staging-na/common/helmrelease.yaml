@@ -1,4 +1,4 @@
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: mirror
@@ -14,6 +14,12 @@ spec:
   dependsOn:
     - name: testkube
       namespace: testkube
+  driftDetection:
+    mode: warn
+    ignore:
+      - paths: [""]
+        target:
+          kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
   install:
     crds: CreateReplace
   interval: 1m
