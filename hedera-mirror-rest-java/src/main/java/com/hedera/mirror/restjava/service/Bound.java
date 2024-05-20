@@ -30,7 +30,7 @@ public class Bound {
     private EntityIdRangeParameter upper;
     private final EnumMap<RangeOperator, Integer> cardinality = new EnumMap<>(RangeOperator.class);
 
-    public Bound(List<EntityIdRangeParameter> params) {
+    public Bound(List<EntityIdRangeParameter> params, boolean primarySortField) {
 
         if (params != null) {
             for (EntityIdRangeParameter param : params) {
@@ -45,7 +45,9 @@ public class Bound {
             long adjustedLower = adjustLowerBound();
             long adjustedUpper = adjustUpperBound();
 
-            if (adjustedLower == adjustedUpper) {
+            if (primarySortField && adjustedLower > adjustedUpper) {
+                throw new IllegalArgumentException("Invalid range provided");
+            } else if (adjustedLower == adjustedUpper) {
                 this.lower = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(adjustedLower));
             }
         }

@@ -69,8 +69,8 @@ public class AllowancesController {
                 .isOwner(owner)
                 .limit(limit)
                 .order(order)
-                .ownerOrSpenderIds(new Bound(accountIds))
-                .tokenIds(new Bound(tokenIds))
+                .ownerOrSpenderIds(new Bound(accountIds, true))
+                .tokenIds(new Bound(tokenIds, false))
                 .build();
 
         var serviceResponse = service.getNftAllowances(request);

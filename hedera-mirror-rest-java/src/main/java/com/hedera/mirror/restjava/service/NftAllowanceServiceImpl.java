@@ -22,7 +22,6 @@ import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
-import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 
 @Named
@@ -38,13 +37,6 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
         var token = request.getTokenIds();
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
-
-        if (ownerOrSpenderId.getLower() != null
-                && ownerOrSpenderId.getUpper() != null
-                && (ownerOrSpenderId.getLower().value().getId()
-                        > ownerOrSpenderId.getUpper().value().getId())) {
-            return Collections.emptyList();
-        }
 
         var id = entityService.lookup(request.getAccountId());
 

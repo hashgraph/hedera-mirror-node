@@ -415,10 +415,14 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 callable, HttpClientErrorException.NotFound.class, "No account found for the given ID", "Not Found");
     }
 
-    @Test
-    void nftAllowancesTokenIdValidation() {
+    @ParameterizedTest
+    @CsvSource({
+        "?owner=true&token.id=gt:0.0.1000&limit=1&order=asc,token.id parameter must have account.id present",
+        "?owner=true&account.id=gte:0.0.1000&token.id=ne:0.0.1000&limit=1&order=asc,Invalid range operator ne. This operator is not supported",
+        "?owner=true&account.id=gte:0.0.1000&account.id=lte:0.0.999&token.id=eq:0.0.1000&limit=1&order=asc,Invalid range provided"
+    })
+    void nftAllowancesRangeValidation(String uriParams, String message) {
         // Given
-        var uriParams = "?owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
@@ -433,36 +437,39 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        validateError(
-                callable,
-                HttpClientErrorException.BadRequest.class,
-                "token.id parameter must have account.id present",
-                "Bad Request");
+        validateError(callable, HttpClientErrorException.BadRequest.class, message, "Bad Request");
     }
 
     @Test
-    void nftAllowancesEntityIdRangeOperatorValidation() {
+    void nftAllowancesSecondaryParameterAllowedRange() {
         // Given
-        var uriParams = "?owner=true&account.id=gte:0.0.1000&token.id=ne:0.0.1000&limit=1&order=asc";
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(entity.getId()))
                 .persist();
+        domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .persist();
+        var uriParams =
+                "?account.id=gte:0.0.1000&account.id=lte:0.0.2002&owner=true&token.id=gt:0.0.1000&&token.id=lt:0.0.800&limit=1&order=asc";
+        var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=true&token.id=gt:%s&limit=1&order=asc"
+                .formatted(
+                        allowance1.getOwner(),
+                        EntityId.of(allowance1.getSpender()),
+                        EntityId.of(allowance1.getTokenId()));
 
         // When
-        ThrowingCallable callable = () -> restClient
+        var result = restClient
                 .get()
                 .uri(uriParams, allowance1.getOwner())
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
         // Then
-        validateError(
-                callable,
-                HttpClientErrorException.BadRequest.class,
-                "Invalid range operator ne. This operator is not supported",
-                "Bad Request");
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
+        assertThat(result.getLinks().getNext()).isEqualTo(next);
     }
 
     private void validateError(

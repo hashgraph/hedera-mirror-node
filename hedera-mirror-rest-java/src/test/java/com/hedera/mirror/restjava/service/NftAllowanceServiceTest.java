@@ -53,8 +53,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(owner)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of()))
-                .tokenIds(new Bound(List.of()))
+                .ownerOrSpenderIds(new Bound(List.of(), false))
+                .tokenIds(new Bound(List.of(), false))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
@@ -73,8 +73,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(true)
                 .limit(2)
                 .accountId(new EntityIdAliasParameter(0, 0, entity.getAlias()))
-                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, accountId))))
-                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GT, accountId))))
+                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, accountId)), true))
+                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GT, accountId)), false))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
@@ -93,8 +93,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(true)
                 .limit(2)
                 .accountId(new EntityIdEvmAddressParameter(0, 0, entity.getEvmAddress()))
-                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, accountId))))
-                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GT, accountId))))
+                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, accountId)), true))
+                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GT, accountId)), false))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
@@ -119,8 +119,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(true)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID))))
-                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID))))
+                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID)), true))
+                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GT, ACCOUNT_ID)), false))
                 .order(Sort.Direction.DESC)
                 .build();
 
@@ -147,8 +147,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(false)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID))))
-                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID))))
+                .ownerOrSpenderIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID)), true))
+                .tokenIds(new Bound(List.of(new EntityIdRangeParameter(RangeOperator.GTE, ACCOUNT_ID)), false))
                 .order(Sort.Direction.DESC)
                 .build();
 
@@ -175,10 +175,12 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(true)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of(
-                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender())))))
-                .tokenIds(new Bound(List.of(
-                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))))
+                .ownerOrSpenderIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getSpender()))),
+                        true))
+                .tokenIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId()))),
+                        false))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
@@ -202,29 +204,15 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
                 .ownerOrSpenderIds(new Bound(
-                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getOwner())))))
-                .tokenIds(new Bound(List.of(
-                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))))
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getOwner()))),
+                        true))
+                .tokenIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId()))),
+                        false))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
         assertThat(response).containsExactlyInAnyOrder(nftAllowance1);
-    }
-
-    @Test
-    void getNftAllowancesForInvalidRange() {
-
-        var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
-
-        domainBuilder
-                .nftAllowance()
-                .customize(e -> e.spender(ACCOUNT_ID.getId())
-                        .owner(nftAllowance1.getOwner() - 2)
-                        .tokenId(nftAllowance1.getTokenId() - 2))
-                .persist();
-
-        assertEmptyResponse(nftAllowance1, RangeOperator.GTE, RangeOperator.LTE);
-        assertEmptyResponse(nftAllowance1, RangeOperator.GT, RangeOperator.LT);
     }
 
     @Test
@@ -243,11 +231,14 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(false)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of(
-                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getOwner())),
-                        new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(nftAllowance1.getOwner())))))
-                .tokenIds(new Bound(List.of(
-                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))))
+                .ownerOrSpenderIds(new Bound(
+                        List.of(
+                                new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getOwner())),
+                                new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(nftAllowance1.getOwner()))),
+                        true))
+                .tokenIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId()))),
+                        false))
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
@@ -270,9 +261,11 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
                 .ownerOrSpenderIds(new Bound(
-                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner())))))
+                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner()))),
+                        true))
                 .tokenIds(new Bound(
-                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getTokenId())))))
+                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getTokenId()))),
+                        false))
                 .order(Sort.Direction.ASC)
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request))
@@ -285,9 +278,11 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
                 .ownerOrSpenderIds(new Bound(
-                        List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(nftAllowance1.getOwner())))))
+                        List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(nftAllowance1.getOwner()))),
+                        true))
                 .tokenIds(new Bound(
-                        List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(nftAllowance1.getTokenId())))))
+                        List.of(new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(nftAllowance1.getTokenId()))),
+                        false))
                 .order(Sort.Direction.ASC)
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request1))
@@ -311,11 +306,15 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(false)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of(
-                        new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner())),
-                        new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner() + 10)))))
+                .ownerOrSpenderIds(new Bound(
+                        List.of(
+                                new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner())),
+                                new EntityIdRangeParameter(
+                                        RangeOperator.LT, EntityId.of(nftAllowance1.getOwner() + 10))),
+                        true))
                 .tokenIds(new Bound(
-                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getTokenId())))))
+                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getTokenId()))),
+                        false))
                 .order(Sort.Direction.ASC)
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request))
@@ -338,11 +337,15 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(false)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of(
-                        new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner())),
-                        new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(nftAllowance1.getOwner() + 10)))))
+                .ownerOrSpenderIds(new Bound(
+                        List.of(
+                                new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getOwner())),
+                                new EntityIdRangeParameter(
+                                        RangeOperator.EQ, EntityId.of(nftAllowance1.getOwner() - 10))),
+                        true))
                 .tokenIds(new Bound(
-                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getTokenId())))))
+                        List.of(new EntityIdRangeParameter(RangeOperator.LT, EntityId.of(nftAllowance1.getTokenId()))),
+                        false))
                 .order(Sort.Direction.ASC)
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request))
@@ -365,9 +368,10 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .isOwner(false)
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of()))
-                .tokenIds(new Bound(List.of(
-                        new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId())))))
+                .ownerOrSpenderIds(new Bound(List.of(), true))
+                .tokenIds(new Bound(
+                        List.of(new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(nftAllowance1.getTokenId()))),
+                        false))
                 .order(Sort.Direction.ASC)
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request))
@@ -392,28 +396,14 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .limit(2)
                 .accountId(new EntityIdNumParameter(ACCOUNT_ID))
                 .ownerOrSpenderIds(new Bound(
-                        List.of(new EntityIdRangeParameter(RangeOperator.NE, EntityId.of(nftAllowance1.getSpender())))))
-                .tokenIds(new Bound(List.of()))
+                        List.of(new EntityIdRangeParameter(RangeOperator.NE, EntityId.of(nftAllowance1.getSpender()))),
+                        true))
+                .tokenIds(new Bound(List.of(), false))
                 .order(Sort.Direction.ASC)
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid range operator ne. This operator is not supported");
-    }
-
-    private void assertEmptyResponse(NftAllowance nftAllowance1, RangeOperator op1, RangeOperator op2) {
-        NftAllowanceRequest request = NftAllowanceRequest.builder()
-                .isOwner(false)
-                .limit(2)
-                .accountId(new EntityIdNumParameter(ACCOUNT_ID))
-                .ownerOrSpenderIds(new Bound(List.of(
-                        new EntityIdRangeParameter(op1, EntityId.of(nftAllowance1.getOwner())),
-                        new EntityIdRangeParameter(op2, EntityId.of(nftAllowance1.getOwner() - 2)))))
-                .tokenIds(new Bound(List.of()))
-                .order(Sort.Direction.ASC)
-                .build();
-        var response = service.getNftAllowances(request);
-        assertThat(response).isEmpty();
     }
 
     NftAllowance saveNftAllowance(EntityId accountId, boolean owner) {
