@@ -15,5 +15,5 @@
  */
 
 
-export const accountNftAllowanceListName = 'account_nft_allowances';
+export const accountNftAllowanceListName = 'allowances';
 
