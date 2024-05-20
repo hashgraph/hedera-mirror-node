@@ -19,12 +19,14 @@ package com.hedera.mirror.web3.evm.config;
 import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMode.JOURNALED;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType;
@@ -357,6 +359,16 @@ public class EvmConfiguration {
     @Bean
     public ContractCreationProcessor contractCreationProcessor30(@Qualifier("evm030") EVM evm) {
         return contractCreationProcessor(evm);
+    }
+
+    @Bean
+    public OpcodeTracer opcodeTracer() {
+        return new OpcodeTracer();
+    }
+
+    @Bean
+    public MirrorOperationTracer mirrorOperationTracer() {
+        return new MirrorOperationTracer(new TraceProperties(), new MirrorEvmContractAliases(null));
     }
 
     @Bean
