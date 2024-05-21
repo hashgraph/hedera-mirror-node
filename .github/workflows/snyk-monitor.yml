@@ -2,10 +2,10 @@ name: Snyk Monitor
 on:
   push:
     branches:
-      - 'main'
-      - 'release/**'
+      - "main"
+      - "release/**"
     tags:
-      - 'v*'
+      - "v*"
 
 defaults:
   run:

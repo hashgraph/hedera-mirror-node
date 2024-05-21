@@ -16,6 +16,14 @@
 
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
+import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
+import static com.hedera.services.utils.EntityNum.fromAccountId;
+import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
+import static com.hedera.services.utils.MiscUtils.synthAccessorFor;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -32,9 +40,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import org.apache.commons.lang3.tuple.Pair;
-import org.hyperledger.besu.datatypes.Address;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,14 +48,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import org.apache.commons.lang3.tuple.Pair;
+import org.hyperledger.besu.datatypes.Address;
 
-import static com.hedera.node.app.service.evm.store.models.HederaEvmAccount.EVM_ADDRESS_SIZE;
-import static com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils.EMPTY_KEY;
-import static com.hedera.services.utils.EntityNum.fromAccountId;
-import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
-import static com.hedera.services.utils.MiscUtils.synthAccessorFor;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 /**
  * Copied Logic type from hedera-services. Differences with the original:
  * 1. Use abstraction for the state by introducing {@link Store} interface

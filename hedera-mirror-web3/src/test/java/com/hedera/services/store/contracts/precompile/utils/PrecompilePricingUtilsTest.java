@@ -19,8 +19,8 @@ package com.hedera.services.store.contracts.precompile.utils;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.sender;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
@@ -34,7 +34,6 @@ import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.store.contracts.precompile.Precompile;
 import com.hedera.services.utils.accessors.AccessorFactory;
 import com.hederahashgraph.api.proto.java.*;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
@@ -122,11 +121,12 @@ class PrecompilePricingUtilsTest {
                 .willReturn(Map.of(
                         HederaFunctionality.TokenAssociateToAccount,
                         Map.of(SubType.DEFAULT, BigDecimal.valueOf(COST))));
-        given(feeCalculator.estimatePayment(any(), any(), any(), any(ResponseType.class))).willReturn(feeObject);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(ResponseType.class)))
+                .willReturn(feeObject);
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(GAS_PRICE);
 
-        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils subject =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         // minimum gas cost should apply
         final long price = subject.computeViewFunctionGas(timestamp, MINIMUM_GAS_COST);
@@ -145,11 +145,12 @@ class PrecompilePricingUtilsTest {
                 .willReturn(Map.of(
                         HederaFunctionality.TokenAssociateToAccount,
                         Map.of(SubType.DEFAULT, BigDecimal.valueOf(COST))));
-        given(feeCalculator.estimatePayment(any(), any(), any(), any(ResponseType.class))).willReturn(feeObject);
+        given(feeCalculator.estimatePayment(any(), any(), any(), any(ResponseType.class)))
+                .willReturn(feeObject);
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(GAS_PRICE);
 
-        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils subject =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
 
         final long price = subject.computeViewFunctionGas(timestamp, MINIMUM_GAS_COST);
         final long expectedPrice = (nodeFee + networkFee + serviceFee + GAS_PRICE - 1L) / GAS_PRICE;
@@ -170,13 +171,14 @@ class PrecompilePricingUtilsTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(GAS_PRICE);
         given(precompile.getMinimumFeeInTinybars(any(), any(), any())).willReturn(minimumFeeInTinybars);
 
-        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils subject =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
         final var subjectSpy = spy(subject);
 
         doReturn(gasInTinybars).when(subjectSpy).gasFeeInTinybars(any(), any());
 
-        final long price = subjectSpy.computeGasRequirement(timestamp.getSeconds(), precompile, transactionBody, sender);
+        final long price =
+                subjectSpy.computeGasRequirement(timestamp.getSeconds(), precompile, transactionBody, sender);
         final long expectedPrice = (minimumFeeInTinybars + GAS_PRICE - 1L) / GAS_PRICE;
 
         // The minimum gas should apply
@@ -195,18 +197,17 @@ class PrecompilePricingUtilsTest {
         given(feeCalculator.estimatedGasPriceInTinybars(any(), any())).willReturn(GAS_PRICE);
         given(precompile.getMinimumFeeInTinybars(any(), any(), any())).willReturn(minimumFeeInTinybars);
 
-        final PrecompilePricingUtils subject = new PrecompilePricingUtils(
-                assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
+        final PrecompilePricingUtils subject =
+                new PrecompilePricingUtils(assetLoader, exchange, feeCalculator, resourceCosts, accessorFactory);
         final var subjectSpy = spy(subject);
 
         doReturn(gasInTinybars).when(subjectSpy).gasFeeInTinybars(any(), any());
 
-        final long price = subjectSpy.computeGasRequirement(timestamp.getSeconds(), precompile, transactionBody, sender);
+        final long price =
+                subjectSpy.computeGasRequirement(timestamp.getSeconds(), precompile, transactionBody, sender);
         final long expectedPrice = (gasInTinybars + GAS_PRICE - 1L) / GAS_PRICE;
 
         // The minimum gas cost does not apply.  The cost is the expected price plus 20%.
         assertEquals(expectedPrice + expectedPrice / 5, price);
     }
-
-
 }

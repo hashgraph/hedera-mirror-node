@@ -16,6 +16,19 @@
 
 package com.hedera.mirror.web3.evm.store.contract.precompile;
 
+import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
+import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
+import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
+import static org.hyperledger.besu.datatypes.Address.ALTBN128_MUL;
+import static org.hyperledger.besu.datatypes.Address.BLS12_G1ADD;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.common.PrecompileContext;
@@ -40,6 +53,11 @@ import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -52,25 +70,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
-import static com.hedera.node.app.service.evm.store.contracts.precompile.AbiConstants.ABI_ID_ERC_NAME;
-import static com.hedera.services.store.contracts.precompile.AbiConstants.ABI_ID_REDIRECT_FOR_TOKEN;
-import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
-import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.SUCCESS_RESULT;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_ADD;
-import static org.hyperledger.besu.datatypes.Address.ALTBN128_MUL;
-import static org.hyperledger.besu.datatypes.Address.BLS12_G1ADD;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)

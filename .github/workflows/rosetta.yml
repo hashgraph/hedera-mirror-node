@@ -4,9 +4,9 @@ on:
     - cron: "0 1 * * *" # Daily at 1:00 AM
   push:
     branches:
-      - 'main'
+      - "main"
     tags:
-      - 'v*'
+      - "v*"
 
 defaults:
   run:

@@ -2,14 +2,14 @@ name: "Gradle"
 on:
   pull_request:
     branches:
-      - 'main'
-      - 'release/**'
+      - "main"
+      - "release/**"
   push:
     branches:
-      - 'main'
-      - 'release/**'
+      - "main"
+      - "release/**"
     tags:
-      - 'v*'
+      - "v*"
 
 defaults:
   run:
@@ -25,7 +25,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     strategy:
       matrix:
         project:
@@ -36,8 +36,8 @@ jobs:
           - monitor
           - rest
           - rest-java
-          - 'rest:check-state-proof'
-          - 'rest:monitoring'
+          - "rest:check-state-proof"
+          - "rest:monitoring"
           - rosetta
           - test
           - web3
