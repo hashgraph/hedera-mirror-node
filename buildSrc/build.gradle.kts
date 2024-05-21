@@ -23,8 +23,8 @@ repositories {
 
 dependencies {
     val dockerJavaVersion = "3.3.6"
-    val flywayVersion = "10.11.0"
-    val jooqVersion = "3.19.7"
+    val flywayVersion = "10.13.0"
+    val jooqVersion = "3.19.8"
 
     // Add docker-java dependencies before gradle-docker-plugin to avoid the docker-java jars
     // embedded in the plugin being used by testcontainers-postgresql
@@ -36,22 +36,22 @@ dependencies {
     implementation("com.github.johnrengelman:shadow:8.1.1")
     implementation("com.github.node-gradle:gradle-node-plugin:7.0.2")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
-    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
+    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.2")
     implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.4")
-    implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.5.1")
+    implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.6.1")
     implementation("gradle.plugin.org.flywaydb:gradle-plugin-publishing:$flywayVersion")
     implementation("io.freefair.gradle:lombok-plugin:8.6")
-    implementation("io.spring.gradle:dependency-management-plugin:1.1.4")
+    implementation("io.spring.gradle:dependency-management-plugin:1.1.5")
     implementation("org.apache.commons:commons-compress:1.26.1")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
-    implementation("org.gradle:test-retry-gradle-plugin:1.5.8")
+    implementation("org.gradle:test-retry-gradle-plugin:1.5.9")
     implementation("org.jooq:jooq-codegen-gradle:$jooqVersion")
     implementation("org.jooq:jooq-meta:$jooqVersion")
-    implementation("org.openapitools:openapi-generator-gradle-plugin:7.4.0")
-    implementation("org.owasp:dependency-check-gradle:9.1.0")
+    implementation("org.openapitools:openapi-generator-gradle-plugin:7.5.0")
+    implementation("org.owasp:dependency-check-gradle:9.2.0")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.0.0.4638")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.4")
-    implementation("org.testcontainers:postgresql:1.19.7")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.5")
+    implementation("org.testcontainers:postgresql:1.19.8")
 }
 
 val gitHook =

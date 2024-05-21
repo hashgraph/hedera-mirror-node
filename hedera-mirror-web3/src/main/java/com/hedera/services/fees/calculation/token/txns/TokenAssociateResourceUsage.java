@@ -49,7 +49,7 @@ public class TokenAssociateResourceUsage extends AbstractTokenResourceUsage impl
     }
 
     @Override
-    public FeeData usageGiven(TransactionBody txn, SigValueObj svo) throws Exception {
+    public FeeData usageGiven(TransactionBody txn, SigValueObj svo) {
         final var op = txn.getTokenAssociate();
         final var account = store.getAccount(EntityIdUtils.asTypedEvmAddress(op.getAccount()), OnMissing.DONT_THROW);
 

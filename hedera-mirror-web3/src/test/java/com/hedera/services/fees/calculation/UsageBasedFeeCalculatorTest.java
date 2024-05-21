@@ -58,10 +58,13 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -212,15 +215,12 @@ class UsageBasedFeeCalculatorTest {
     }
 
     @Test
-    void failsWithIseGivenApplicableButUnusableCalculator() {
+    void failsWithNpeGivenApplicableButUnusableCalculator() {
         // setup:
-
-        given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
-        given(txnUsageEstimators.get(any())).willReturn(List.of(correctOpEstimator));
+        givenApplicableButUnusableCalculator();
 
         // when:
-
-        assertThrows(IllegalArgumentException.class, () -> subject.computeFee(accessor, payerKey, at));
+        assertThrows(NullPointerException.class, () -> subject.computeFee(accessor, payerKey, at));
     }
 
     @Test
@@ -249,8 +249,7 @@ class UsageBasedFeeCalculatorTest {
                 getFeeObject(currentPrices.get(SubType.DEFAULT), resourceUsage, currentRate, multiplier);
         suggestedMultiplier.set(multiplier);
 
-        given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
-        given(txnUsageEstimators.get(any())).willReturn(List.of(correctOpEstimator));
+        givenApplicableButUnusableCalculator();
         given(correctOpEstimator.usageGiven(any(), any())).willReturn(resourceUsage);
         given(exchange.rate(at)).willReturn(currentRate);
         given(usagePrices.activePrices(any())).willReturn(currentPrices);
@@ -277,6 +276,20 @@ class UsageBasedFeeCalculatorTest {
         assertEquals(expectedFeeData, feeData);
     }
 
+    @Test
+    void failsWithNseeGetTxnUsageEstimator() {
+        final Exception exception = assertThrows(NoSuchElementException.class,
+                () -> subject.computeFee(accessor, payerKey, at));
+        assertEquals("No estimator exists for the given transaction", exception.getMessage());
+    }
+
+    @Test
+    void failsWithNseeGetQueryUsageEstimator() {
+        final Exception exception = assertThrows(NoSuchElementException.class,
+                () -> subject.estimatePayment(query, currentPrices.get(SubType.DEFAULT), at, ANSWER_ONLY));
+        assertEquals("No estimator exists for the given query", exception.getMessage());
+    }
+
     @SuppressWarnings("deprecation")
     private Transaction.Builder signableTxn(final long fee) {
         final TransactionBody.Builder txn = baseTxn();
@@ -292,5 +305,10 @@ class UsageBasedFeeCalculatorTest {
                         Duration.newBuilder().setSeconds(68).build())
                 .setMemo("memo");
         return txn;
+    }
+
+    private void givenApplicableButUnusableCalculator() {
+        given(correctOpEstimator.applicableTo(accessor.getTxn())).willReturn(true);
+        given(txnUsageEstimators.get(any())).willReturn(List.of(correctOpEstimator));
     }
 }

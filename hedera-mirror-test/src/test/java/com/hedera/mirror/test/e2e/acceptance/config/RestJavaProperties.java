@@ -14,20 +14,31 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.cache;
+package com.hedera.mirror.test.e2e.acceptance.config;
 
-import jakarta.validation.constraints.NotBlank;
+import static com.hedera.mirror.test.e2e.acceptance.config.RestProperties.URL_PREFIX;
+
+import jakarta.inject.Named;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.rest-java")
 @Data
+@Named
+@RequiredArgsConstructor
 @Validated
-@ConfigurationProperties(prefix = "hedera.mirror.rest-java.cache")
-public class CacheProperties {
+public class RestJavaProperties {
 
-    private boolean enabled = true;
+    private String baseUrl;
 
-    @NotBlank
-    private String entity = "maximumSize=100000,expireAfterWrite=10s,recordStats";
+    private boolean enabled = false;
+
+    public String getBaseUrl() {
+        if (baseUrl != null && !baseUrl.endsWith(URL_PREFIX)) {
+            return baseUrl + URL_PREFIX;
+        }
+        return baseUrl;
+    }
 }

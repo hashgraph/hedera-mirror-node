@@ -692,10 +692,12 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @SuppressWarnings("deprecation")
     private Map<Long, EntityTransaction> getExpectedEntityTransactions(RecordItem recordItem, Transaction transaction) {
         var body = recordItem.getTransactionBody().getContractCreateInstance();
+        var autoRenewAccountId =
+                !body.getAutoRenewAccountId().hasAlias() ? EntityId.of(body.getAutoRenewAccountId()) : EntityId.EMPTY;
         return getExpectedEntityTransactions(
                 recordItem,
                 transaction,
-                EntityId.of(body.getAutoRenewAccountId()),
+                autoRenewAccountId,
                 EntityId.of(body.getFileID()),
                 EntityId.of(body.getProxyAccountID()),
                 EntityId.of(body.getStakedAccountId()));

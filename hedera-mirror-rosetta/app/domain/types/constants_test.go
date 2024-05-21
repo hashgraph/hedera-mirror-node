@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const maxCode = int32(331)
+const maxCode = int32(337)
 
 func TestGetTransactionResult(t *testing.T) {
 	for code, expected := range services.ResponseCodeEnum_name {

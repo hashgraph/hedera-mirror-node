@@ -19,7 +19,14 @@ import _ from 'lodash';
 import BaseController from './baseController';
 import Bound from './bound';
 import {getResponseLimit} from '../config';
-import {filterKeys, httpStatusCodes, orderFilterValues, queryParamOperators, responseDataLabel} from '../constants';
+import {
+  filterKeys,
+  httpStatusCodes,
+  orderFilterValues,
+  queryParamOperators,
+  requestPathLabel,
+  responseDataLabel,
+} from '../constants';
 import EntityId from '../entityId';
 import {InvalidArgumentError, NotFoundError} from '../errors';
 import {
@@ -781,11 +788,12 @@ class ContractController extends BaseController {
     checkTimestampsForTopics(filters);
 
     const query = this.extractContractLogsMultiUnionQuery(filters);
-
     const rows = await ContractService.getContractLogs(query);
-
     const logs = rows.map((row) => new ContractLogViewModel(row));
 
+    // Workaround: set the request path in handler so later in the router level generic middleware it won't be
+    // set to /contracts/results/:transactionIdOrHash
+    res.locals[requestPathLabel] = `${req.baseUrl}${req.route.path}`;
     res.locals[responseDataLabel] = {
       logs,
       links: {

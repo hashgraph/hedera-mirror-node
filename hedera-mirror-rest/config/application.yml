@@ -68,17 +68,48 @@ hedera:
         maxTransactionsTimestampRange: 60d
         strictTimestampParam: true
         topicMessageLookup: false
+      redis:
+        commandTimeout: 10000
+        connectTimeout: 10000
+        enabled: false
+        maxBackoff: 128000
+        maxMemory: 250Mb
+        maxMemoryPolicy: allkeys-lfu
+        maxRetriesPerRequest: 1
+        uri: redis://127.0.0.1:6379
       response:
         compression: true
         headers:
           default: { "cache-control": "public, max-age=1" }
           path:
+            /api/v1/accounts/:idOrAliasOrEvmAddress:
+              { "cache-control": "public, max-age=2" }
+            /api/v1/accounts/:idOrAliasOrEvmAddress/rewards:
+              { "cache-control": "public, max-age=60" }
+            /api/v1/blocks/:hashOrNumber:
+              { "cache-control": "public, max-age=600" }
+            /api/v1/contracts/:contractId/results/:consensusTimestamp([0-9.]+):
+              { "cache-control": "public, max-age=600" }
+            /api/v1/contracts/results/:transactionIdOrHash:
+              { "cache-control": "public, max-age=600" }
+            /api/v1/contracts/results/:transactionIdOrHash/actions:
+              { "cache-control": "public, max-age=600" }
+            /api/v1/network/exchangerate:
+              { "cache-control": "public, max-age=60" }
+            /api/v1/network/fees: { "cache-control": "public, max-age=60" }
+            /api/v1/network/nodes: { "cache-control": "public, max-age=60" }
+            /api/v1/network/stake: { "cache-control": "public, max-age=60" }
+            /api/v1/network/supply: { "cache-control": "public, max-age=60" }
+            /api/v1/tokens/:tokenId: { "cache-control": "public, max-age=5" }
+            /api/v1/topics/:topicId/messages/:sequenceNumber:
+              { "cache-control": "public, max-age=600" }
+            /api/v1/topics/messages/:consensusTimestamp:
+              { "cache-control": "public, max-age=600" }
+            /api/v1/transactions: { "cache-control": "public, max-age=2" }
             /api/v1/transactions/:transactionIdOrHash:
-              { "cache-control": "public, max-age=300" }
+              { "cache-control": "public, max-age=600" }
             /api/v1/transactions/:transactionId/stateproof:
               { "cache-control": "public, max-age=600" }
-            /exchangerate: { "cache-control": "public, max-age=60" }
-            /fees: { "cache-control": "public, max-age=60" }
         includeHostInLink: false
         limit:
           default: 25

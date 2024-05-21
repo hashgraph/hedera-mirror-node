@@ -53,6 +53,8 @@ const defaultResponseHeaders = {
 };
 const responseHeadersFilename = 'responseHeaders.json';
 
+let specRootPath;
+
 const walk = (dir, files = []) => {
   for (const f of fs.readdirSync(dir)) {
     const p = path.join(dir, f);
@@ -68,23 +70,39 @@ const walk = (dir, files = []) => {
   return files;
 };
 
+/**
+ * Recursively search for responseHeaders.json file from the directory of the spec file, up to the spec root directory.
+ * Return the content of the first such file or the default response headers if none found.
+ *
+ * @param specPath
+ * @returns {*} response headers
+ */
+const getResponseHeadersFromFileOrDefault = (specPath) => {
+  do {
+    specPath = path.dirname(specPath);
+    const responseHeadersPath = path.join(specPath, responseHeadersFilename);
+    if (fs.existsSync(responseHeadersPath)) {
+      return JSONParse(fs.readFileSync(responseHeadersPath, 'utf8'));
+    }
+  } while (specPath !== specRootPath);
+
+  return defaultResponseHeaders;
+};
+
 const getResponseHeaders = (spec, specPath) => {
-  const responseHeadersPath = path.join(path.dirname(specPath), responseHeadersFilename);
   spec.responseHeaders = {
     ...(spec.responseHeaders ?? {}),
-    ...(fs.existsSync(responseHeadersPath)
-      ? JSONParse(fs.readFileSync(responseHeadersPath, 'utf8'))
-      : defaultResponseHeaders),
+    ...getResponseHeadersFromFileOrDefault(specPath),
   };
 };
 
 const getSpecs = async () => {
   const modulePath = getModuleDirname(import.meta);
-  const specPath = path.join(modulePath, '..', 'specs', groupSpecPath);
+  specRootPath = path.resolve(path.join(modulePath, '..', 'specs', groupSpecPath));
 
   return (
     await Promise.all(
-      walk(specPath)
+      walk(specRootPath)
         .filter((f) => f.endsWith('.json') && !f.endsWith(responseHeadersFilename))
         .map(async (f) => {
           const specText = fs.readFileSync(f, 'utf8');
@@ -92,7 +110,7 @@ const getSpecs = async () => {
           spec.name = path.basename(f);
           getResponseHeaders(spec, f);
 
-          const key = path.dirname(f).replace(specPath, '');
+          const key = path.dirname(f).replace(specRootPath, '');
           const specs = [];
           if (spec.matrix) {
             const apply = (await import(path.join(modulePath, spec.matrix))).default;

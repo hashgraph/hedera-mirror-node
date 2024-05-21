@@ -18,18 +18,16 @@ package com.hedera.services.evm.contracts.operations;
 
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import edu.umd.cs.findbugs.annotations.Nullable;
-import java.util.function.BiPredicate;
-import java.util.function.Predicate;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
+
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 /**
  * Hedera adapted version of the {@link SelfDestructOperation}.
@@ -43,7 +41,7 @@ import org.hyperledger.besu.evm.operation.SelfDestructOperation;
  * address being destructed.
  * This class is a copy of HederaSelfDestructOperationV046 from hedera-services mono
  */
-public class HederaSelfDestructOperationV046 extends SelfDestructOperation {
+public class HederaSelfDestructOperationV046 extends HederaSelfDestructOperationBase {
 
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
@@ -70,24 +68,11 @@ public class HederaSelfDestructOperationV046 extends SelfDestructOperation {
         }
         final var beneficiary = updater.get(beneficiaryAddress);
 
-        final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress);
+        final var exceptionalHaltReason = reasonToHalt(toBeDeleted, beneficiaryAddress, updater);
         if (exceptionalHaltReason != null) {
             return reversionWith(beneficiary, exceptionalHaltReason);
         }
 
         return super.execute(frame, evm);
-    }
-
-    @Nullable
-    private ExceptionalHaltReason reasonToHalt(final Address toBeDeleted, final Address beneficiaryAddress) {
-        if (toBeDeleted.equals(beneficiaryAddress)) {
-            return HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;
-        }
-        return null;
-    }
-
-    private OperationResult reversionWith(final Account beneficiary, final ExceptionalHaltReason reason) {
-        final long cost = gasCalculator().selfDestructOperationGasCost(beneficiary, Wei.ONE);
-        return new OperationResult(cost, reason);
     }
 }

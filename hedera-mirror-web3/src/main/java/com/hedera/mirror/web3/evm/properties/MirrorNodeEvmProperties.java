@@ -118,7 +118,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @NotNull
     @DataSizeUnit(DataUnit.KILOBYTES)
-    private DataSize maxDataSize = DataSize.ofKilobytes(25);
+    private DataSize maxDataSize = DataSize.ofKilobytes(128);
 
     @Getter(lazy = true)
     private final Pattern dataValidatorPattern =
@@ -169,6 +169,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Getter
     @Min(100)
     private long rateLimit = 500;
+
+    @Getter
+    @Min(1)
+    private int feesTokenTransferUsageMultiplier = 380;
 
     public boolean shouldAutoRenewAccounts() {
         return autoRenewTargetTypes.contains(EntityType.ACCOUNT);
@@ -298,6 +302,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         } else {
             return EVM_VERSION; // Return default version if no entry matches the block number
         }
+    }
+
+    public int feesTokenTransferUsageMultiplier() {
+        return feesTokenTransferUsageMultiplier;
     }
 
     @Getter

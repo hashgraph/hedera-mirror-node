@@ -1302,7 +1302,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.103.0-SNAPSHOT
+  version: 0.106.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -3388,8 +3388,8 @@ components:
           format: byte
         metadata_key:
           allOf:
-          - $ref: "#/components/schemas/Key"
-          - description: The key which can change the metadata of a token and individual NFTs.
+            - $ref: "#/components/schemas/Key"
+            - description: The key which can change the metadata of a token and individual NFTs.
         modified_timestamp:
           $ref: "#/components/schemas/Timestamp"
         name:
@@ -3524,6 +3524,7 @@ components:
         - TOKENUNFREEZE
         - TOKENUNPAUSE
         - TOKENUPDATE
+        - TOKENUPDATENFTS
         - TOKENWIPE
         - UNCHECKEDSUBMIT
         - UNKNOWN

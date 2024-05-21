@@ -124,19 +124,45 @@ rosetta:
 
 stackgres:
   coordinator:
+    enableMetricsExporter: true
     instances: 2
     resources:
-      cpu: 7000m
+      cpu: 7350m
       memory: 24Gi
+      requests:
+        containers:
+          cluster-controller:
+            cpu: 500m
+          envoy:
+            cpu: 750m
+          patroni:
+            cpu: 7350m
+          pgbouncer:
+            cpu: 300m
+          prometheus-postgres-exporter:
+            cpu: 100m
     persistentVolume:
       size: 256Gi
       storageClass: zfs
   worker:
+    enableMetricsExporter: true
     instances: 3
     replicasPerInstance: 1
     resources:
-      cpu: 7300m
+      cpu: 7350m
       memory: 24Gi
+      requests:
+        containers:
+          cluster-controller:
+            cpu: 500m
+          envoy:
+            cpu: 750m
+          patroni:
+            cpu: 7350m
+          pgbouncer:
+            cpu: 300m
+          prometheus-postgres-exporter:
+            cpu: 100m
     persistentVolume:
       size: 3000Gi
       storageClass: zfs

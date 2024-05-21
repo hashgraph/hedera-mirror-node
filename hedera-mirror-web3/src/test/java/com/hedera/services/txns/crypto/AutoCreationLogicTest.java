@@ -16,21 +16,6 @@
 
 package com.hedera.services.txns.crypto;
 
-import static com.hedera.services.jproto.JKey.mapKey;
-import static com.hedera.services.store.models.Id.fromGrpcToken;
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
-import static com.hedera.services.utils.IdUtils.asAccount;
-import static com.hedera.services.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
-
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.web3.ContextExtension;
@@ -49,6 +34,8 @@ import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.txns.validation.OptionValidator;
+import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -56,8 +43,6 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.security.InvalidKeyException;
-import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -67,6 +52,24 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.security.InvalidKeyException;
+import java.util.List;
+
+import static com.hedera.services.jproto.JKey.mapKey;
+import static com.hedera.services.store.models.Id.fromGrpcToken;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
@@ -102,6 +105,9 @@ class AutoCreationLogicTest {
     @Mock
     private EvmProperties evmProperties;
 
+    @Mock
+    private OptionValidator validator;
+
     private AutoCreationLogic subject;
 
     @BeforeEach
@@ -109,7 +115,7 @@ class AutoCreationLogicTest {
         final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        store = new StoreImpl(stackedStateFrames);
+        store = new StoreImpl(stackedStateFrames, validator);
         subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory, aliasManager);
     }
 
@@ -124,7 +130,7 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownTokenChange(edKeyAlias);
 
-        final var result = subject.create(input, at, store, ids);
+        final var result = subject.create(input, at, store, ids, List.of(input));
         assertEquals(NOT_SUPPORTED, result.getLeft());
     }
 
@@ -136,7 +142,8 @@ class AutoCreationLogicTest {
                         .setAccountID(payer)
                         .build(),
                 payer);
-        final var result = assertThrows(IllegalStateException.class, () -> subject.create(input, at, store, ids));
+        final var result =
+                assertThrows(IllegalStateException.class, () -> subject.create(input, at, store, ids, List.of(input)));
         assertTrue(result.getMessage().contains("Cannot auto-create an account from unaliased change"));
     }
 
@@ -148,14 +155,15 @@ class AutoCreationLogicTest {
         TransactionBody.Builder syntheticHollowCreation =
                 TransactionBody.newBuilder().setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder());
 
-        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L)).willReturn(syntheticHollowCreation);
+        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L, 0)).willReturn(syntheticHollowCreation);
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
 
         final var input = wellKnownChange(evmAddressAlias);
 
         store.wrap();
-        final var result = subject.create(input, at, store, ids);
+
+        final var result = subject.create(input, at, store, ids, List.of(input));
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         assertEquals(initialTransfer, input.getNewBalance());
@@ -175,21 +183,46 @@ class AutoCreationLogicTest {
         TransactionBody.Builder syntheticEDAliasCreation = TransactionBody.newBuilder()
                 .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setAlias(edKeyAlias));
 
+        final var input = wellKnownTokenChange(edKeyAlias);
+        final var changes = List.of(input);
+
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 0))
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, changes.size()))
                 .willReturn(syntheticEDAliasCreation);
 
-        final var input = wellKnownTokenChange(edKeyAlias);
-
         store.wrap();
-        final var result = subject.create(input, at, store, ids);
+        final var result = subject.create(input, at, store, ids, changes);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         verify(aliasManager)
                 .maybeLinkEvmAddress(JKey.mapKey(aPrimitiveKey), Address.wrap(Bytes.wrap(asEvmAddress(created))));
         assertEquals(Pair.of(OK, totalFee), result);
+    }
+
+    @Test
+    void analyzesTokenTransfersInChangesForAutoCreation() {
+        final Key aPrimitiveKey = Key.newBuilder()
+                .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
+                .build();
+        final ByteString edKeyAlias = aPrimitiveKey.toByteString();
+        final TransactionBody.Builder syntheticEDAliasCreation = TransactionBody.newBuilder()
+                .setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder().setAlias(edKeyAlias));
+        given(ids.getNewAccountId()).willReturn(created);
+        given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
+        given(evmProperties.isLazyCreationEnabled()).willReturn(true);
+        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 2))
+                .willReturn(syntheticEDAliasCreation);
+
+        final var input1 = wellKnownTokenChange(edKeyAlias);
+        final var input2 = anotherTokenChange();
+
+        store.wrap();
+        final var result = subject.create(input1, at, store, ids, List.of(input1, input2));
+        assertEquals(Pair.of(OK, totalFee), result);
+
+        assertEquals(16L, input1.getAggregatedUnits());
     }
 
     private BalanceChange wellKnownTokenChange(final ByteString alias) {
@@ -208,6 +241,22 @@ class AutoCreationLogicTest {
                 AccountAmount.newBuilder()
                         .setAmount(initialTransfer)
                         .setAccountID(AccountID.newBuilder().setAlias(alias).build())
+                        .build(),
+                payer);
+    }
+
+    private BalanceChange anotherTokenChange() {
+        Key primitiveKey = Key.newBuilder()
+                .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
+                .build();
+        final TokenID token1 = IdUtils.asToken("0.0.123456");
+        return BalanceChange.changingFtUnits(
+                fromGrpcToken(token1),
+                token1,
+                AccountAmount.newBuilder()
+                        .setAmount(initialTransfer)
+                        .setAccountID(
+                                AccountID.newBuilder().setAlias(primitiveKey.toByteString()).build())
                         .build(),
                 payer);
     }
