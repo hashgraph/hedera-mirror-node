@@ -17,79 +17,92 @@
 package com.hedera.mirror.restjava.common;
 
 import static com.hedera.mirror.restjava.common.EntityIdNumParameter.ENTITY_ID_PATTERN;
-import static com.hedera.mirror.restjava.common.ParameterNames.LIMIT;
-import static com.hedera.mirror.restjava.common.ParameterNames.ORDER;
 
 import com.google.common.collect.Iterables;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.Links;
 import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.domain.Sort.Order;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Named
 @RequiredArgsConstructor
 public class LinkFactoryImpl implements LinkFactory {
 
+    private static final Links DEFAULT_LINKS = new Links();
+
     public <T> Links create(List<T> items, Pageable pageable, ParameterExtractor<T> extractor) {
-        var links = new Links();
-        if (items == null || items.isEmpty() || pageable.isUnpaged()) {
-            return links;
+        if (items == null || items.isEmpty() || pageable == null || extractor == null) {
+            return DEFAULT_LINKS;
         }
 
         var limit = pageable.getPageSize();
         if (limit > items.size()) {
-            return links;
+            return DEFAULT_LINKS;
         }
 
+        ServletRequestAttributes servletRequestAttributes =
+                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (servletRequestAttributes == null) {
+            return DEFAULT_LINKS;
+        }
+
+        var request = servletRequestAttributes.getRequest();
         var lastItem = CollectionUtils.lastElement(items);
-        var nextLink = createNextLink(lastItem, limit, pageable, extractor);
-        return links.next(nextLink);
+        var nextLink = createNextLink(lastItem, pageable, extractor, request);
+        return new Links().next(nextLink);
     }
 
-    private <T> String createNextLink(T lastItem, int limit, Pageable pageable, ParameterExtractor<T> extractor) {
+    private <T> String createNextLink(
+            T lastItem, Pageable pageable, ParameterExtractor<T> extractor, HttpServletRequest request) {
         var sortOrders = pageable.getSort();
         var primarySort = Iterables.getFirst(sortOrders, null);
-        var lastSort = Iterables.getLast(sortOrders, null);
         var order = primarySort == null ? Direction.ASC : primarySort.getDirection();
-        var request = extractor.getRequest();
         var builder = UriComponentsBuilder.fromPath(request.getRequestURI());
         var paramsMap = request.getParameterMap();
 
+        var paginationParamsMap = extractor.extract(lastItem);
         for (var entry : paramsMap.entrySet()) {
             var key = entry.getKey();
-            switch (key) {
-                case LIMIT -> builder.queryParam(LIMIT, limit);
-                case ORDER -> builder.queryParam(ORDER, order.name().toLowerCase());
-                default -> {
-                    var lastValue = extractor.extract(lastItem, key);
-                    if (lastValue == null) {
-                        builder.queryParam(key, (Object[]) entry.getValue());
-                    } else {
-                        boolean inclusive = false;
-                        if (lastSort != null) {
-                            inclusive = !lastSort.getProperty().equals(key);
-                        }
-
-                        addQueryParamToLink(entry, inclusive, builder, lastValue, order, key);
-                    }
-                }
+            if (!paginationParamsMap.containsKey(key)) {
+                builder.queryParam(key, (Object[]) entry.getValue());
+            } else {
+                boolean inclusive = extractor.isInclusive(key);
+                var lastValue = paginationParamsMap.get(key);
+                addQueryParamToLink(entry, inclusive, builder, lastValue, order, key);
             }
         }
 
-        // For any sort orders that are not already in the query parameters, add the last value to the link
-        addSortOrdersToLink(sortOrders, paramsMap.keySet(), lastSort, builder, lastItem, extractor, order);
+        for (var entry : paginationParamsMap.entrySet()) {
+            var key = entry.getKey();
+            if (!paramsMap.containsKey(key)) {
+                boolean inclusive = extractor.isInclusive(key);
+                addPaginationValuesToLink(key, entry.getValue(), inclusive, builder, order);
+            }
+        }
+
         return builder.toUriString();
+    }
+
+    private void addPaginationValuesToLink(
+            String key, String lastValue, boolean inclusive, UriComponentsBuilder builder, Direction order) {
+        RangeOperator operator;
+        if (order.isDescending()) {
+            operator = inclusive ? RangeOperator.LTE : RangeOperator.LT;
+        } else {
+            operator = inclusive ? RangeOperator.GTE : RangeOperator.GT;
+        }
+        builder.queryParam(key, operator + ":" + lastValue);
     }
 
     private void addQueryParamToLink(
@@ -147,31 +160,8 @@ public class LinkFactoryImpl implements LinkFactory {
         }
     }
 
-    private <T> void addSortOrdersToLink(
-            Sort sortOrders,
-            Set<String> keySet,
-            Order lastSort,
-            UriComponentsBuilder builder,
-            T lastItem,
-            ParameterExtractor<T> extractor,
-            Direction order) {
-        sortOrders.stream().filter(s -> !keySet.contains(s.getProperty())).forEach(sort -> {
-            var lastValue = extractor.extract(lastItem, sort.getProperty());
-            if (lastValue != null) {
-                var inclusive = lastSort != sort;
-                RangeOperator operator;
-                if (order.isDescending()) {
-                    operator = inclusive ? RangeOperator.LTE : RangeOperator.LT;
-                } else {
-                    operator = inclusive ? RangeOperator.GTE : RangeOperator.GT;
-                }
-                builder.queryParam(sort.getProperty(), operator + ":" + lastValue);
-            }
-        });
-    }
-
     private record RangeBound(RangeOperator operator, String value) implements RangeParameter<String> {
-        public static final RangeBound EMPTY = new RangeBound(null, null);
+        private static final RangeBound EMPTY = new RangeBound(null, null);
 
         public static RangeBound valueOf(String value) {
             if (StringUtils.isBlank(value)) {

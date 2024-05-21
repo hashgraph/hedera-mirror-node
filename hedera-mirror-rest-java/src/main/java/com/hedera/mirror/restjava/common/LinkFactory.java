@@ -17,16 +17,16 @@
 package com.hedera.mirror.restjava.common;
 
 import com.hedera.mirror.rest.model.Links;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 import org.springframework.data.domain.Pageable;
 
 public interface LinkFactory {
     <T> Links create(List<T> items, Pageable pageable, ParameterExtractor<T> extractor);
 
     interface ParameterExtractor<T> {
-        String extract(T item, String name);
+        Map<String, String> extract(T item);
 
-        HttpServletRequest getRequest();
+        boolean isInclusive(String param);
     }
 }

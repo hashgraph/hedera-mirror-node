@@ -17,7 +17,6 @@
 package com.hedera.mirror.restjava.controller;
 
 import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
-import static com.hedera.mirror.restjava.common.ParameterNames.OWNER;
 import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 
 import com.hedera.mirror.rest.model.NftAllowance;
@@ -29,9 +28,9 @@ import com.hedera.mirror.restjava.common.LinkFactoryImpl;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
+import java.util.Map;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -57,7 +56,6 @@ public class AllowancesController {
 
     @GetMapping(value = "/nfts")
     NftAllowancesResponse getNftAllowancesByAccountId(
-            HttpServletRequest request,
             @PathVariable EntityIdParameter id,
             @RequestParam(name = ACCOUNT_ID, required = false) EntityIdRangeParameter accountId,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
@@ -80,7 +78,7 @@ public class AllowancesController {
 
         var sort = Sort.by(order, ACCOUNT_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, limit, sort);
-        var extractor = new NftAllowanceExtractor(request);
+        var extractor = new NftAllowanceExtractor(owner);
         var links = linkFactory.create(allowances, pageable, extractor);
         response.links(links);
 
@@ -89,26 +87,20 @@ public class AllowancesController {
 
     @RequiredArgsConstructor
     class NftAllowanceExtractor implements ParameterExtractor<NftAllowance> {
-        private final HttpServletRequest request;
+        private final boolean owner;
 
         @Override
-        public String extract(NftAllowance nftAllowance, String param) {
-            return switch (param) {
-                case ACCOUNT_ID:
-                    var paramsMap = request.getParameterMap();
-                    boolean owner = !paramsMap.containsKey(OWNER)
-                            || Boolean.parseBoolean(paramsMap.get(OWNER)[0]);
-                    yield owner ? nftAllowance.getSpender() : nftAllowance.getOwner();
-                case TOKEN_ID:
-                    yield nftAllowance.getTokenId();
-                default:
-                    yield null;
-            };
+        public Map<String, String> extract(NftAllowance nftAllowance) {
+            return Map.of(
+                    ACCOUNT_ID,
+                    owner ? nftAllowance.getSpender() : nftAllowance.getOwner(),
+                    TOKEN_ID,
+                    nftAllowance.getTokenId());
         }
 
         @Override
-        public HttpServletRequest getRequest() {
-            return request;
+        public boolean isInclusive(String param) {
+            return ACCOUNT_ID.equals(param);
         }
     }
 }
