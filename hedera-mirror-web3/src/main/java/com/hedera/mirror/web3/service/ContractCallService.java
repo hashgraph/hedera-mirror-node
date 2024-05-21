@@ -127,7 +127,7 @@ public class ContractCallService {
             }
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPCODE, ctx);
-            validateResult(ethCallTxnResult, ETH_DEBUG_TRACE_TRANSACTION);
+            validateResult(ethCallTxnResult, params.getCallType());
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(ethCallTxnResult)
                     .opcodes(ctx.getOpcodes())

@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
@@ -43,7 +43,10 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
     @EnumSource(ContractCallServicePrecompileTest.ContractReadFunctions.class)
     void evmPrecompileReadOnlyTokenFunctions(final ContractFunctionProviderEnum function) {
         final var params = serviceParametersForExecution(
-                function, PRECOMPILE_TEST_CONTRACT_ABI_PATH, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L
+                function,
+                PRECOMPILE_TEST_CONTRACT_ABI_PATH,
+                PRECOMPILE_TEST_CONTRACT_ADDRESS,
+                ETH_DEBUG_TRACE_TRANSACTION
         );
         verifyOpcodeTracerCall(params, function);
     }
@@ -52,7 +55,10 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
     @EnumSource(ContractCallServicePrecompileTest.SupportedContractModificationFunctions.class)
     void evmPrecompileSupportedModificationTokenFunctions(final ContractFunctionProviderEnum function) {
         final var params = serviceParametersForExecution(
-                function, MODIFICATION_CONTRACT_ABI_PATH, MODIFICATION_CONTRACT_ADDRESS, ETH_CALL, 0L
+                function,
+                MODIFICATION_CONTRACT_ABI_PATH,
+                MODIFICATION_CONTRACT_ADDRESS,
+                ETH_DEBUG_TRACE_TRANSACTION
         );
         verifyOpcodeTracerCall(params, function);
     }
@@ -61,7 +67,10 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
     @EnumSource(ContractCallNestedCallsTest.NestedEthCallContractFunctionsNegativeCases.class)
     void failedNestedCallWithHardcodedResult(final ContractFunctionProviderEnum function) {
         final var params = serviceParametersForExecution(
-                function, NESTED_CALLS_ABI_PATH, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L
+                function,
+                NESTED_CALLS_ABI_PATH,
+                NESTED_ETH_CALLS_CONTRACT_ADDRESS,
+                ETH_DEBUG_TRACE_TRANSACTION
         );
         verifyOpcodeTracerCall(params, function);
     }

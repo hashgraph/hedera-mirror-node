@@ -1007,6 +1007,20 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final ContractFunctionProviderEnum function,
             final Path contractAbiPath,
             final Address contractAddress,
+            final CallServiceParameters.CallType callType) {
+        return serviceParametersForExecution(
+                function,
+                contractAbiPath,
+                contractAddress,
+                callType,
+                0L
+        );
+    }
+
+    protected CallServiceParameters serviceParametersForExecution(
+            final ContractFunctionProviderEnum function,
+            final Path contractAbiPath,
+            final Address contractAddress,
             final CallServiceParameters.CallType callType,
             final Long value) {
         return serviceParametersForExecution(
