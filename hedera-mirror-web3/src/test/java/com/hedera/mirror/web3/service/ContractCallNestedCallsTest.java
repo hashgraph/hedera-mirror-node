@@ -39,7 +39,16 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
     void nestedPrecompileTokenFunctionsTestEthCall(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.functionParameters);
-        final var value = contractFunc.isCreateTokenFunction() ? 10_000L * 100_000_000L : 0L;
+        final var value =
+                switch (contractFunc) {
+                    case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
+                         CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                         CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
+                         CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
+                         CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
+                         CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 10000 * 100_000_000L;
+                    default -> 0L;
+                };
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, value, BlockType.LATEST);
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
@@ -53,7 +62,16 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
     void nestedReadOnlyTokenFunctionsTestEthEstimateGas(NestedEthCallContractFunctions contractFunc) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.functionParameters);
-        final var value = contractFunc.isCreateTokenFunction() ? 3070L * 100_000_000L : 0L;
+        final var value =
+                switch (contractFunc) {
+                    case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
+                         CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                         CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
+                         CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
+                         CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
+                         CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 3070 * 100_000_000L;
+                    default -> 0L;
+                };
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, value, BlockType.LATEST);
 
@@ -880,18 +898,6 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResultFields;
-
-        public boolean isCreateTokenFunction() {
-            return switch (this) {
-                case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
-                     CREATE_FUNGIBLE_TOKEN_NO_KEYS,
-                     CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
-                     CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
-                     CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
-                     CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> true;
-                default -> false;
-            };
-        }
     }
 
     @Getter
