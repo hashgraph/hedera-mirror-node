@@ -18,14 +18,15 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
+import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import java.util.Comparator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.lang.Nullable;
 
 class OpcodeTracerCallsTest extends ContractCallTestSetup {
 
@@ -40,49 +41,59 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(ContractCallServicePrecompileTest.ContractReadFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctions(final ContractCallServicePrecompileTest.ContractReadFunctions function) {
-        final var callData = functionEncodeDecoder.functionHashFor(
-                function.getName(), PRECOMPILE_TEST_CONTRACT_ABI_PATH, function.getFunctionParameters());
+    void evmPrecompileReadOnlyTokenFunctions(final ContractFunctionProviderEnum function) {
         final var params = serviceParametersForExecution(
-                callData, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-
-        verifyOpcodeTracerCall(params);
+                function, PRECOMPILE_TEST_CONTRACT_ABI_PATH, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L
+        );
+        verifyOpcodeTracerCall(params, function);
     }
 
     @ParameterizedTest
     @EnumSource(ContractCallServicePrecompileTest.SupportedContractModificationFunctions.class)
-    void evmPrecompileSupportedModificationTokenFunctions(final ContractCallServicePrecompileTest.SupportedContractModificationFunctions function) {
-        final var callData = functionEncodeDecoder.functionHashFor(
-                function.getName(), MODIFICATION_CONTRACT_ABI_PATH, function.getFunctionParameters());
+    void evmPrecompileSupportedModificationTokenFunctions(final ContractFunctionProviderEnum function) {
         final var params = serviceParametersForExecution(
-                callData, MODIFICATION_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-
-        verifyOpcodeTracerCall(params);
+                function, MODIFICATION_CONTRACT_ABI_PATH, MODIFICATION_CONTRACT_ADDRESS, ETH_CALL, 0L
+        );
+        verifyOpcodeTracerCall(params, function);
     }
 
     @ParameterizedTest
     @EnumSource(ContractCallNestedCallsTest.NestedEthCallContractFunctionsNegativeCases.class)
-    void failedNestedCallWithHardcodedResult(final ContractCallNestedCallsTest.NestedEthCallContractFunctionsNegativeCases function) {
-        final var callData = functionEncodeDecoder.functionHashFor(
-                function.getName(), NESTED_CALLS_ABI_PATH, function.getFunctionParameters());
+    void failedNestedCallWithHardcodedResult(final ContractFunctionProviderEnum function) {
         final var params = serviceParametersForExecution(
-                callData, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, function.getBlock());
-        final var expectedOutput = functionEncodeDecoder.encodedResultFor(
-                function.getName(), NESTED_CALLS_ABI_PATH, function.getExpectedResultFields());
-
-        verifyOpcodeTracerCall(params, expectedOutput);
+                function, NESTED_CALLS_ABI_PATH, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L
+        );
+        verifyOpcodeTracerCall(params, function);
     }
 
-    private void verifyOpcodeTracerCall(CallServiceParameters params) {
-        verifyOpcodeTracerCall(params, null);
+    private void verifyOpcodeTracerCall(final CallServiceParameters params,
+                                        final ContractFunctionProviderEnum function) {
+        if (function.getExpectedErrorMessage() != null) {
+            verifyThrowingOpcodeTracerCall(params, function);
+        } else {
+            verifySuccessfulOpcodeTracerCall(params, function);
+        }
     }
 
-    private void verifyOpcodeTracerCall(CallServiceParameters params, @Nullable String expectedOutput) {
+    private void verifyThrowingOpcodeTracerCall(final CallServiceParameters params,
+                                                final ContractFunctionProviderEnum function) {
+        assertThatThrownBy(() -> contractCallService.processOpcodeCall(params, OPTIONS, null))
+                .isInstanceOf(MirrorEvmTransactionException.class)
+                .satisfies(exception -> {
+                    MirrorEvmTransactionException mirrorEvmException = (MirrorEvmTransactionException) exception;
+                    assertThat(mirrorEvmException.getDetail()).isEqualTo(function.getExpectedErrorMessage());
+                });
+    }
+
+    private void verifySuccessfulOpcodeTracerCall(final CallServiceParameters params,
+                                                  final ContractFunctionProviderEnum function) {
         final var expected = expectedOpcodeProcessingResult(params, OPTIONS);
         final var actual = contractCallService.processOpcodeCall(params, OPTIONS, null);
 
-        if (expectedOutput != null) {
-            assertThat(actual.transactionProcessingResult().getOutput().toHexString()).isEqualTo(expectedOutput);
+        if (function.getExpectedResultFields() != null) {
+            assertThat(actual.transactionProcessingResult().getOutput().toHexString())
+                    .isEqualTo(functionEncodeDecoder.encodedResultFor(
+                            function.getName(), NESTED_CALLS_ABI_PATH, function.getExpectedResultFields()));
         }
 
         // Compare transaction processing result

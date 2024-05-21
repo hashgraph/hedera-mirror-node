@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
@@ -80,7 +81,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
     @Getter
     @RequiredArgsConstructor
-    enum NestedEthCallContractFunctions {
+    enum NestedEthCallContractFunctions implements ContractFunctionProviderEnum {
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -895,7 +896,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
     @Getter
     @RequiredArgsConstructor
-    enum NestedEthCallContractFunctionsNegativeCases {
+    enum NestedEthCallContractFunctionsNegativeCases implements ContractFunctionProviderEnum {
         GET_TOKEN_INFO_HISTORICAL(
                 "nestedGetTokenInfoAndHardcodedResult",
                 new Object[] {NFT_ADDRESS_HISTORICAL},

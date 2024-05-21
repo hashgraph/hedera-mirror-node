@@ -58,6 +58,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
@@ -1000,6 +1001,21 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 List.of(),
                 new TokenExpiryWrapper(
                         9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
+    }
+
+    protected CallServiceParameters serviceParametersForExecution(
+            final ContractFunctionProviderEnum function,
+            final Path contractAbiPath,
+            final Address contractAddress,
+            final CallServiceParameters.CallType callType,
+            final Long value) {
+        return serviceParametersForExecution(
+                functionEncodeDecoder.functionHashFor(function.getName(), contractAbiPath, function.getFunctionParameters()),
+                contractAddress,
+                callType,
+                value,
+                function.getBlock()
+        );
     }
 
     protected CallServiceParameters serviceParametersForExecution(
