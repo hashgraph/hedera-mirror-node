@@ -17,7 +17,7 @@ echo "16384 65535" > /proc/sys/net/ipv4/ip_local_port_range
 
 ## Run The Tests
 
-The tests are organized per API, and they reside in `src/rest`, `src/rosetta`, and `src/web3` respectively. You can run
+The tests are organized per API, and they reside in `src/rest`, `src/rest-java`, `src/rosetta`, and `src/web3` respectively. You can run
 the tests of an API as a test suite. You can also run tests one at a time.
 
 ### Test Suite
@@ -68,8 +68,6 @@ The following parameters can be used to configure a rest test:
 
 - DEFAULT_ACCOUNT_ID
 - DEFAULT_ACCOUNT_ID_NFTS
-- DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_OWNER
-- DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_SPENDER
 - DEFAULT_ACCOUNT_ID_TOKEN
 - DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE
 - DEFAULT_ACCOUNT_BALANCE
@@ -91,6 +89,11 @@ The following parameters can be used to configure a rest test:
 - DEFAULT_TOPIC_TIMESTAMP
 - DEFAULT_TRANSACTION_HASH
 - DEFAULT_TRANSACTION_ID
+
+The following parameters can be used to configure a rest-java test:
+
+- DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_OWNER
+- DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_SPENDER
 
 The following parameters can be used to configure a rosetta test:
 
