@@ -19,11 +19,13 @@ import {getSequentialTestScenarios} from '../../lib/common.js';
 // import test modules
 import * as accountsNftAllowanceOwner from './accountsNftAllowanceOwner.js';
 import * as accountsNftAllowanceSpender from './accountsNftAllowanceSpender.js';
+import * as rampUp from './rampUp.js';
 
 // add test modules here
 const tests = {
   accountsNftAllowanceOwner,
   accountsNftAllowanceSpender,
+  rampUp
 };
 
 const {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} =
