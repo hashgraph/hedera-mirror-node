@@ -20,10 +20,13 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import java.util.Comparator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -96,7 +99,7 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
 
     private void verifySuccessfulOpcodeTracerCall(final CallServiceParameters params,
                                                   final ContractFunctionProviderEnum function) {
-        final var expected = expectedOpcodeProcessingResult(params, OPTIONS);
+        final var expected = expectedOpcodeProcessingResult(params);
         final var actual = contractCallService.processOpcodeCall(params, OPTIONS, null);
 
         if (function.getExpectedResultFields() != null) {
@@ -114,5 +117,17 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
                 .usingRecursiveComparison()
                 .withComparatorForFields(gasComparator(), "gas")
                 .isEqualTo(expected.opcodes());
+    }
+
+    private OpcodesProcessingResult expectedOpcodeProcessingResult(final CallServiceParameters params) {
+        return ContractCallContext.run(ctx -> {
+            ctx.setOpcodeTracerOptions(OPTIONS);
+            ctx.initializeStackFrames(store.getStackedStateFrames());
+            final var result = processor.execute(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPCODE, ctx);
+            return OpcodesProcessingResult.builder()
+                    .transactionProcessingResult(result)
+                    .opcodes(ctx.getOpcodes())
+                    .build();
+        });
     }
 }

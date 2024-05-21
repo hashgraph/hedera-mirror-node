@@ -52,8 +52,6 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
-import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -1087,19 +1085,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
             return result;
-        });
-    }
-
-    protected OpcodesProcessingResult expectedOpcodeProcessingResult(final CallServiceParameters params,
-                                                                     final OpcodeTracerOptions options) {
-        return ContractCallContext.run(ctx -> {
-            ctx.setOpcodeTracerOptions(options);
-            ctx.initializeStackFrames(store.getStackedStateFrames());
-            final var result = processor.execute(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPCODE, ctx);
-            return OpcodesProcessingResult.builder()
-                    .transactionProcessingResult(result)
-                    .opcodes(ctx.getOpcodes())
-                    .build();
         });
     }
 
