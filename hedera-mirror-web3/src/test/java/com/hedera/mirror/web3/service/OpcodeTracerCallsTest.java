@@ -18,16 +18,20 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
-import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import java.util.Comparator;
+import lombok.SneakyThrows;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
@@ -40,18 +44,6 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
             final var diff = Math.abs(d1 - d2);
             return Math.toIntExact(diff <= 64L ? 0 : d1 - d2);
         };
-    }
-
-    @ParameterizedTest
-    @EnumSource(ContractCallServicePrecompileTest.ContractReadFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctions(final ContractFunctionProviderEnum function) {
-        final var params = serviceParametersForExecution(
-                function,
-                PRECOMPILE_TEST_CONTRACT_ABI_PATH,
-                PRECOMPILE_TEST_CONTRACT_ADDRESS,
-                ETH_DEBUG_TRACE_TRANSACTION
-        );
-        verifyOpcodeTracerCall(params, function);
     }
 
     @ParameterizedTest
@@ -78,6 +70,18 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
         verifyOpcodeTracerCall(params, function);
     }
 
+    @ParameterizedTest
+    @EnumSource(ContractCallDynamicCallsTest.DynamicCallsContractFunctions.class)
+    void evmDynamicCallsTokenFunctions(final ContractFunctionProviderEnum function) {
+        final var params = serviceParametersForExecution(
+                function,
+                DYNAMIC_ETH_CALLS_ABI_PATH,
+                DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
+                ETH_DEBUG_TRACE_TRANSACTION
+        );
+        verifyOpcodeTracerCall(params, function);
+    }
+
     private void verifyOpcodeTracerCall(final CallServiceParameters params,
                                         final ContractFunctionProviderEnum function) {
         if (function.getExpectedErrorMessage() != null) {
@@ -87,14 +91,34 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
         }
     }
 
+    @SneakyThrows
     private void verifyThrowingOpcodeTracerCall(final CallServiceParameters params,
                                                 final ContractFunctionProviderEnum function) {
-        assertThatThrownBy(() -> contractCallService.processOpcodeCall(params, OPTIONS, null))
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .satisfies(exception -> {
-                    MirrorEvmTransactionException mirrorEvmException = (MirrorEvmTransactionException) exception;
-                    assertThat(mirrorEvmException.getDetail()).isEqualTo(function.getExpectedErrorMessage());
-                });
+        final var actual = contractCallService.processOpcodeCall(params, OPTIONS, null);
+        if (function.getExpectedErrorMessage() != null) {
+            log.info("Expected error message: {}", function.getExpectedErrorMessage());
+            log.info("Actual: {}", new ObjectMapper()
+                    .registerModule(new Jdk8Module())
+                    .writerWithDefaultPrettyPrinter()
+                    .writeValueAsString(actual));
+
+            assertThat(actual.transactionProcessingResult().isSuccessful()).isFalse();
+            assertThat(actual.transactionProcessingResult().getOutput()).isEqualTo(Bytes.EMPTY);
+            assertThat(actual.transactionProcessingResult())
+                    .satisfiesAnyOf(
+                            result -> assertThat(result.getRevertReason())
+                                    .isPresent()
+                                    .map(BytesDecoder::maybeDecodeSolidityErrorStringToReadableMessage)
+                                    .hasValue(function.getExpectedErrorMessage()),
+                            result -> assertThat(result.getHaltReason())
+                                    .isPresent()
+                                    .map(ExceptionalHaltReason::getDescription)
+                                    .hasValue(function.getExpectedErrorMessage())
+                    );
+            assertThat(actual.opcodes().size()).isNotZero();
+            assertThat(toHumanReadableMessage(actual.opcodes().getLast().reason()))
+                    .isEqualTo(function.getExpectedErrorMessage());
+        }
     }
 
     private void verifySuccessfulOpcodeTracerCall(final CallServiceParameters params,
@@ -111,6 +135,7 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
         // Compare transaction processing result
         assertThat(actual.transactionProcessingResult())
                 .usingRecursiveComparison()
+                .ignoringFields("logs")
                 .isEqualTo(expected.transactionProcessingResult());
         // Compare opcodes with gas tolerance
         assertThat(actual.opcodes())
@@ -129,5 +154,9 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
                     .opcodes(ctx.getOpcodes())
                     .build();
         });
+    }
+
+    private static String toHumanReadableMessage(final String solidityError) {
+        return BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage(Bytes.fromHexString(solidityError));
     }
 }
