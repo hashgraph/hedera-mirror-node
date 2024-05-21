@@ -167,10 +167,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @Getter
-    @Min(100)
-    private long rateLimit = 500;
-
-    @Getter
     @Min(1)
     private int feesTokenTransferUsageMultiplier = 380;
 
