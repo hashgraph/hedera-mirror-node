@@ -185,35 +185,27 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                             ) as all_token_allowances
                         ) as grouped_token_allowances
                         where row_number = 1 and amount_granted > 0
-                    ), transfers as (
-                        select tt.token_id, tt.payer_account_id, tt.consensus_timestamp, sum(tt.amount) as amount
+                    ), approved_transfers as (
+                        select tt.token_id, tt.payer_account_id, tt.consensus_timestamp, tt.amount, tt.account_id
                         from token_transfer tt
-                            join token_allowances ta on tt.account_id = ta.owner
-                                and tt.payer_account_id = ta.spender
-                                and tt.token_id = ta.token_id
                         where is_approval is true
+                            and account_id = :owner
                             and consensus_timestamp <= :blockTimestamp
-                            and consensus_timestamp > lower(ta.timestamp_range)
+                            and consensus_timestamp > (select min(lower(timestamp_range)) from token_allowances)
+                    ), spender_transfers as (
+                        select tt.token_id, tt.payer_account_id, tt.consensus_timestamp, sum(tt.amount) as amount
+                        from approved_transfers tt
+                            join token_allowances ta on tt.payer_account_id = ta.spender and tt.token_id = ta.token_id
                         group by tt.token_id, tt.payer_account_id, tt.consensus_timestamp
-                    ), owner_token_transfers as (
+                    ), owner_transfers as (
                         select ta.spender, tt.account_id, tt.consensus_timestamp, tt.token_id, tt.amount
-                        from token_transfer tt
+                        from approved_transfers tt
                             join token_allowances ta on tt.account_id = ta.owner and tt.token_id = ta.token_id
-                        where tt.is_approval is true
-                            and tt.consensus_timestamp <= :blockTimestamp
-                            and tt.consensus_timestamp > lower(ta.timestamp_range)
-                    ), contract_results_filtered as (
-                        select cr.sender_id, cr.consensus_timestamp
-                        from contract_result cr
-                        join token_allowances ta on cr.sender_id = ta.spender
-                        join owner_token_transfers tt on cr.consensus_timestamp = tt.consensus_timestamp and cr.sender_id = tt.spender
-                        where cr.consensus_timestamp <= :blockTimestamp
+                        where tt.consensus_timestamp not in (select consensus_timestamp from spender_transfers)
                     ), contract_call_transfers as (
                         select cr.sender_id, tt.consensus_timestamp, tt.token_id, sum(tt.amount) as amount
-                        from owner_token_transfers tt,
-                             contract_results_filtered cr
-                        where cr.sender_id = tt.spender
-                            and tt.consensus_timestamp = cr.consensus_timestamp
+                        from owner_transfers tt
+                             join contract_result cr on tt.consensus_timestamp = cr.consensus_timestamp and cr.sender_id = tt.spender
                         group by cr.sender_id, tt.token_id, tt.consensus_timestamp
                     )
                     select *
@@ -229,13 +221,9 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                             +  coalesce(
                             (
                                 select sum(amount)
-                                from transfers tr
+                                from spender_transfers tr
                                 where tr.token_id = ta.token_id
                                     and tr.payer_account_id = ta.spender
-                                    and tr.consensus_timestamp not in (
-                                        select consensus_timestamp
-                                        from contract_call_transfers
-                                    )
                             ),
                             0
                         ) as amount
