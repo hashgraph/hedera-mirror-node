@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
@@ -126,6 +127,7 @@ public class ContractCallService {
             }
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPCODE, ctx);
+            validateResult(ethCallTxnResult, ETH_DEBUG_TRACE_TRANSACTION);
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(ethCallTxnResult)
                     .opcodes(ctx.getOpcodes())
@@ -217,7 +219,12 @@ public class ContractCallService {
             updateGasMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            if (type == ETH_DEBUG_TRACE_TRANSACTION) {
+                log.warn("Transaction failed with status: {}, detail: {}, revertReason: {}",
+                        getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            } else {
+                throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            }
         } else {
             updateGasMetric(type, txnResult.getGasUsed(), 1);
         }
