@@ -20,10 +20,12 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.Comparator;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.lang.Nullable;
 
 class OpcodeTracerCallsTest extends ContractCallTestSetup {
 
@@ -37,27 +39,25 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
     }
 
     @ParameterizedTest
-    @EnumSource(ContractCallNestedCallsTest.NestedEthCallContractFunctions.class)
-    void nestedPrecompileTokenFunctions(final ContractCallNestedCallsTest.NestedEthCallContractFunctions function) {
+    @EnumSource(ContractCallServicePrecompileTest.ContractReadFunctions.class)
+    void evmPrecompileReadOnlyTokenFunctions(final ContractCallServicePrecompileTest.ContractReadFunctions function) {
         final var callData = functionEncodeDecoder.functionHashFor(
-                function.getName(), NESTED_CALLS_ABI_PATH, function.getFunctionParameters());
-        final var value = function.isCreateTokenFunction() ?
-                10_000L * 100_000_000L : 0L;
+                function.getName(), PRECOMPILE_TEST_CONTRACT_ABI_PATH, function.getFunctionParameters());
         final var params = serviceParametersForExecution(
-                callData, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, value, BlockType.LATEST);
+                callData, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        final var expected = expectedOpcodeProcessingResult(params, OPTIONS);
-        final var actual = contractCallService.processOpcodeCall(params, OPTIONS, null);
+        verifyOpcodeTracerCall(params);
+    }
 
-        // Compare transaction processing result
-        assertThat(actual.transactionProcessingResult())
-                .usingRecursiveComparison()
-                .isEqualTo(expected.transactionProcessingResult());
-        // Compare opcodes with gas tolerance
-        assertThat(actual.opcodes())
-                .usingRecursiveComparison()
-                .withComparatorForFields(gasComparator(), "gas")
-                .isEqualTo(expected.opcodes());
+    @ParameterizedTest
+    @EnumSource(ContractCallServicePrecompileTest.SupportedContractModificationFunctions.class)
+    void evmPrecompileSupportedModificationTokenFunctions(final ContractCallServicePrecompileTest.SupportedContractModificationFunctions function) {
+        final var callData = functionEncodeDecoder.functionHashFor(
+                function.getName(), MODIFICATION_CONTRACT_ABI_PATH, function.getFunctionParameters());
+        final var params = serviceParametersForExecution(
+                callData, MODIFICATION_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
+
+        verifyOpcodeTracerCall(params);
     }
 
     @ParameterizedTest
@@ -67,16 +67,26 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
                 function.getName(), NESTED_CALLS_ABI_PATH, function.getFunctionParameters());
         final var params = serviceParametersForExecution(
                 callData, NESTED_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, function.getBlock());
-
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+        final var expectedOutput = functionEncodeDecoder.encodedResultFor(
                 function.getName(), NESTED_CALLS_ABI_PATH, function.getExpectedResultFields());
 
+        verifyOpcodeTracerCall(params, expectedOutput);
+    }
+
+    private void verifyOpcodeTracerCall(CallServiceParameters params) {
+        verifyOpcodeTracerCall(params, null);
+    }
+
+    private void verifyOpcodeTracerCall(CallServiceParameters params, @Nullable String expectedOutput) {
         final var expected = expectedOpcodeProcessingResult(params, OPTIONS);
         final var actual = contractCallService.processOpcodeCall(params, OPTIONS, null);
 
+        if (expectedOutput != null) {
+            assertThat(actual.transactionProcessingResult().getOutput().toHexString()).isEqualTo(expectedOutput);
+        }
+
         // Compare transaction processing result
         assertThat(actual.transactionProcessingResult())
-                .matches(result -> result.getOutput().toHexString().equals(successfulResponse))
                 .usingRecursiveComparison()
                 .isEqualTo(expected.transactionProcessingResult());
         // Compare opcodes with gas tolerance

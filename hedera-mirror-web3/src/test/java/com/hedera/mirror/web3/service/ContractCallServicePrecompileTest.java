@@ -34,6 +34,7 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -312,6 +313,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         };
     }
 
+    @Getter
     @RequiredArgsConstructor
     enum ContractReadFunctions {
         IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
@@ -763,6 +765,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         NFT_INVALID_AUTORENEW_ACCOUNT
     }
 
+    @Getter
     @RequiredArgsConstructor
     enum SupportedContractModificationFunctions {
         TRANSFER_FROM(
