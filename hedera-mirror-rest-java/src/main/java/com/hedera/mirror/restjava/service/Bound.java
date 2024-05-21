@@ -19,37 +19,42 @@ package com.hedera.mirror.restjava.service;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import lombok.Getter;
 
-@Getter
 public class Bound {
 
+    @Getter
     private EntityIdRangeParameter lower;
+
+    @Getter
     private EntityIdRangeParameter upper;
+
     private final EnumMap<RangeOperator, Integer> cardinality = new EnumMap<>(RangeOperator.class);
 
     public Bound(List<EntityIdRangeParameter> params, boolean primarySortField) {
 
-        if (params != null) {
-            for (EntityIdRangeParameter param : params) {
+        if (params == null) {
+            return;
+        }
+        for (EntityIdRangeParameter param : params) {
 
-                if (param.hasLowerBound()) {
-                    lower = param;
-                } else if (param.hasUpperBound()) {
-                    upper = param;
-                }
-                populateCardinality(param);
+            if (param.hasLowerBound()) {
+                lower = param;
+            } else if (param.hasUpperBound()) {
+                upper = param;
             }
-            long adjustedLower = adjustLowerBound();
-            long adjustedUpper = adjustUpperBound();
+            cardinality.merge(param.operator(), 1, Math::addExact);
+        }
+        long adjustedLower = adjustLowerBound();
+        long adjustedUpper = adjustUpperBound();
 
-            if (primarySortField && adjustedLower > adjustedUpper) {
-                throw new IllegalArgumentException("Invalid range provided");
-            } else if (adjustedLower == adjustedUpper) {
-                this.lower = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(adjustedLower));
-            }
+        if (primarySortField && adjustedLower > adjustedUpper) {
+            throw new IllegalArgumentException("Invalid range provided");
+        } else if (adjustedLower == adjustedUpper) {
+            this.lower = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(adjustedLower));
         }
     }
 
@@ -76,24 +81,36 @@ public class Bound {
         return lowerBound;
     }
 
-    private void populateCardinality(EntityIdRangeParameter param) {
-        switch (param.operator()) {
-            case RangeOperator.GT -> cardinality.put(
-                    RangeOperator.GT, cardinality.getOrDefault(RangeOperator.GT, 0) + 1);
-            case RangeOperator.GTE -> cardinality.put(
-                    RangeOperator.GTE, cardinality.getOrDefault(RangeOperator.GTE, 0) + 1);
-            case RangeOperator.LT -> cardinality.put(
-                    RangeOperator.LT, cardinality.getOrDefault(RangeOperator.LT, 0) + 1);
-            case RangeOperator.LTE -> cardinality.put(
-                    RangeOperator.LTE, cardinality.getOrDefault(RangeOperator.LTE, 0) + 1);
-            case RangeOperator.EQ -> cardinality.put(
-                    RangeOperator.EQ, cardinality.getOrDefault(RangeOperator.EQ, 0) + 1);
-            case RangeOperator.NE -> cardinality.put(
-                    RangeOperator.NE, cardinality.getOrDefault(RangeOperator.NE, 0) + 1);
+    public int getCardinality(RangeOperator... operators) {
+        return Arrays.stream(operators)
+                .mapToInt(x -> cardinality.getOrDefault(x, 0))
+                .sum();
+    }
+
+    public boolean isEmpty() {
+        return lower == null && upper == null;
+    }
+
+    public void verifyUnsupported(RangeOperator unsupportedOperator) {
+        if (getCardinality(unsupportedOperator) > 0) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid range operator %s. This operator is not supported", unsupportedOperator));
         }
     }
 
-    public int getCardinality(RangeOperator operator) {
-        return cardinality.getOrDefault(operator, 0);
+    public void verifySingleOccurrence() {
+        if (this.getCardinality(RangeOperator.GT, RangeOperator.GTE) > 1
+                || this.getCardinality(RangeOperator.LT, RangeOperator.LTE) > 1
+                || this.getCardinality(RangeOperator.EQ) > 1) {
+            throw new IllegalArgumentException("Single occurrence only supported.");
+        }
+    }
+
+    public void verifyEqualOrRange() {
+        if (this.getCardinality(RangeOperator.EQ) == 1
+                && (this.getCardinality(RangeOperator.GT, RangeOperator.GTE) != 0
+                        || this.getCardinality(RangeOperator.LT, RangeOperator.LTE) != 0)) {
+            throw new IllegalArgumentException("Can't support both range and equal for this parameter.");
+        }
     }
 }
