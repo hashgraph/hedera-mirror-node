@@ -29,6 +29,7 @@ dependencies {
     implementation("com.hedera.evm:hedera-evm")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
+    implementation("io.vertx:vertx-core")
     implementation("jakarta.inject:jakarta.inject-api")
     implementation("javax.inject:javax.inject:1")
     implementation("net.java.dev.jna:jna")

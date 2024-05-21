@@ -120,8 +120,10 @@ public class ContractCallService {
                                                      final OpcodeTracerOptions opcodeTracerOptions,
                                                      final TransactionIdOrHashParameter transactionIdOrHashParameter) {
         return ContractCallContext.run(ctx -> {
-            List<ContractAction> contractActions = getContractAction(transactionIdOrHashParameter);
-            ctx.setContractActions(contractActions);
+            if (transactionIdOrHashParameter != null && transactionIdOrHashParameter.isValid()) {
+                List<ContractAction> contractActions = getContractAction(transactionIdOrHashParameter);
+                ctx.setContractActions(contractActions);
+            }
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPCODE, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
