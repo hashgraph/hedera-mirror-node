@@ -46,8 +46,8 @@ public class EthereumClient extends AbstractNetworkClient {
 
     @Override
     public void clean() {
-        // can't delete ethereum contracts, they are immutable
-        log.info("Deleting {} contracts", contractIds.size());
+        // Contracts created by ethereum transactions are immutable
+        log.info("Can't delete contracts created by ethereum transactions");
     }
 
     private final TupleType LONG_TUPLE = TupleType.parse("(int64)");
@@ -61,12 +61,7 @@ public class EthereumClient extends AbstractNetworkClient {
     private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
 
     public NetworkTransactionResponse createContract(
-            PrivateKey signerKey,
-            FileId fileId,
-            String fileContents,
-            long gas,
-            Hbar payableAmount,
-            ContractFunctionParameters contractFunctionParameters) {
+            PrivateKey signerKey, FileId fileId, String fileContents, long gas, Hbar payableAmount) {
 
         int nonce = getNonce(signerKey);
         byte[] chainId = Integers.toBytes(298);
@@ -140,7 +135,9 @@ public class EthereumClient extends AbstractNetworkClient {
                 .getFunctionParameters()
                 .toByteArray();
 
-        BigInteger value = payableAmount != null ? payableAmount.getValue().toBigInteger() : BigInteger.ZERO;
+        BigInteger value = payableAmount != null
+                ? WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(payableAmount.toTinybars()))
+                : BigInteger.ZERO;
 
         var ethTxData = new EthTxData(
                 null,

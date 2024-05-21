@@ -233,6 +233,7 @@ public class EthCallFeature extends AbstractFeature {
         ContractFunctionParameters parameters = new ContractFunctionParameters()
                 .addBytes(childContractBytecodeFromParent)
                 .addUint256(BigInteger.valueOf(EVM_ADDRESS_SALT));
+
         executeEthereumTransaction(
                 deployedParentContract.contractId(),
                 "create2Deploy",
@@ -320,8 +321,7 @@ public class EthCallFeature extends AbstractFeature {
                             .getMaxContractFunctionGas(),
                     contractResource.getInitialBalance() == 0
                             ? null
-                            : Hbar.fromTinybars(contractResource.getInitialBalance()),
-                    null);
+                            : Hbar.fromTinybars(contractResource.getInitialBalance()));
             ContractId contractId = verifyCreateContractNetworkResponse();
             return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
         } catch (IOException e) {

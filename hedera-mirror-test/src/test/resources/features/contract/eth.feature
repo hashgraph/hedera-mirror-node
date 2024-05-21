@@ -18,8 +18,8 @@ Feature: Ethereum transactions Coverage Feature
   the CREATE2 opcode and with the same bytecode and salt, thus this is done to the child EVM address.
 
   With the contract now present, and the account no longer hollow, invoke a function on the child contract
-  to cause its self destruction, vacating the EVM address for future use. Also, Finally, delete the original parent
-  contract and its underlying bytecode file.
+  to cause its self destruction, vacating the EVM address for future use. Also, Finally, delete the parent bytecode
+  file.
 
   Given I successfully created a signer account with an EVM address alias
   Then validate the signer account and its balance
