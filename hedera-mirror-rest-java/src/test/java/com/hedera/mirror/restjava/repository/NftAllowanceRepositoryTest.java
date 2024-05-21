@@ -192,7 +192,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
-                List.of(new Tuple(0, 0, 0), new Tuple(0, 0, 1), new Tuple(0, 0, 2), new Tuple(0, 1, 0)));
+                List.of(new Tuple(0, 0, 0), new Tuple(0, 0, 2), new Tuple(0, 1, 1), new Tuple(0, 2, 0)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -202,7 +202,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.DESC)
                         .build(),
-                List.of(new Tuple(0, 2, 2), new Tuple(0, 2, 1), new Tuple(0, 2, 0), new Tuple(0, 1, 2)));
+                List.of(new Tuple(0, 2, 2), new Tuple(0, 2, 0), new Tuple(0, 1, 1), new Tuple(0, 0, 2)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(false)
@@ -212,7 +212,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
-                List.of(new Tuple(0, 1, 0), new Tuple(0, 1, 1), new Tuple(0, 1, 2), new Tuple(1, 1, 0)));
+                List.of(new Tuple(0, 1, 1), new Tuple(1, 1, 0), new Tuple(1, 1, 2), new Tuple(2, 1, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(false)
@@ -222,7 +222,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.DESC)
                         .build(),
-                List.of(new Tuple(2, 1, 2), new Tuple(2, 1, 1), new Tuple(2, 1, 0), new Tuple(1, 1, 2)));
+                List.of(new Tuple(2, 1, 1), new Tuple(1, 1, 2), new Tuple(1, 1, 0), new Tuple(0, 1, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -234,7 +234,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
-                List.of(new Tuple(1, 0, 0), new Tuple(1, 0, 1), new Tuple(1, 0, 2)));
+                List.of(new Tuple(1, 0, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -246,7 +246,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
-                List.of(new Tuple(1, 0, 0), new Tuple(1, 0, 1), new Tuple(1, 0, 2), new Tuple(1, 1, 0)));
+                List.of(new Tuple(1, 0, 1), new Tuple(1, 1, 0), new Tuple(1, 1, 2), new Tuple(1, 2, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -260,7 +260,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
-                List.of(new Tuple(1, 0, 0), new Tuple(1, 0, 1), new Tuple(1, 0, 2), new Tuple(1, 1, 0)));
+                List.of(new Tuple(1, 0, 1), new Tuple(1, 1, 0), new Tuple(1, 1, 2), new Tuple(1, 2, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -274,7 +274,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
-                List.of(new Tuple(1, 0, 2), new Tuple(1, 1, 0), new Tuple(1, 1, 1), new Tuple(1, 1, 2)));
+                List.of(new Tuple(1, 1, 0), new Tuple(1, 1, 2), new Tuple(1, 2, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -288,7 +288,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.DESC)
                         .build(),
-                List.of(new Tuple(1, 2, 1), new Tuple(1, 2, 0), new Tuple(1, 1, 2), new Tuple(1, 1, 1)));
+                List.of(new Tuple(1, 2, 1), new Tuple(1, 1, 2), new Tuple(1, 1, 0), new Tuple(1, 0, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -306,7 +306,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
-                List.of(new Tuple(1, 0, 1), new Tuple(1, 0, 2), new Tuple(1, 1, 0), new Tuple(1, 1, 1)));
+                List.of(new Tuple(1, 0, 1), new Tuple(1, 1, 0), new Tuple(1, 1, 2), new Tuple(1, 2, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -322,13 +322,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .limit(6)
                         .order(Direction.DESC)
                         .build(),
-                List.of(
-                        new Tuple(1, 2, 2),
-                        new Tuple(1, 2, 1),
-                        new Tuple(1, 2, 0),
-                        new Tuple(1, 1, 2),
-                        new Tuple(1, 1, 1),
-                        new Tuple(1, 1, 0)));
+                List.of(new Tuple(1, 2, 1), new Tuple(1, 1, 2), new Tuple(1, 1, 0), new Tuple(1, 0, 1)));
         nftAllowanceRequests.put(
                 NftAllowanceRequest.builder()
                         .isOwner(true)
@@ -348,17 +342,17 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                         .isOwner(true)
                         .accountId(new EntityIdNumParameter(EntityId.of(owners.get(1))))
                         .ownerOrSpenderIds(new Bound(
-                                List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(0)))),
+                                List.of(new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(spenders.get(1)))),
                                 false))
                         .tokenIds(new Bound(
                                 List.of(
-                                        new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(1))),
-                                        new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(tokenIds.get(2)))),
+                                        new EntityIdRangeParameter(RangeOperator.GT, EntityId.of(tokenIds.get(0))),
+                                        new EntityIdRangeParameter(RangeOperator.LTE, EntityId.of(tokenIds.get(1)))),
                                 false))
                         .limit(4)
                         .order(Direction.ASC)
                         .build(),
-                List.of(new Tuple(1, 0, 2)));
+                List.of(new Tuple(1, 1, 2)));
     }
 
     private void assertNftAllowances() {

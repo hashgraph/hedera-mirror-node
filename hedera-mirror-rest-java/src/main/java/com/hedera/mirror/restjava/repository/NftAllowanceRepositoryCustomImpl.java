@@ -47,6 +47,7 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
             new OrderSpec(true, Direction.DESC), List.of(NFT_ALLOWANCE.SPENDER.desc(), NFT_ALLOWANCE.TOKEN_ID.desc()),
             new OrderSpec(false, Direction.ASC), List.of(NFT_ALLOWANCE.OWNER.asc(), NFT_ALLOWANCE.TOKEN_ID.asc()),
             new OrderSpec(false, Direction.DESC), List.of(NFT_ALLOWANCE.OWNER.desc(), NFT_ALLOWANCE.TOKEN_ID.desc()));
+    private static final Condition APPROVAL_CONDITION = NFT_ALLOWANCE.APPROVED_FOR_ALL.isTrue();
 
     private final DSLContext dslContext;
 
@@ -69,7 +70,9 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         var middleCondition = getMiddleCondition(primaryBounds.getLower(), tokenBounds.getLower(), primarySortField)
                 .and(getMiddleCondition(primaryBounds.getUpper(), tokenBounds.getUpper(), primarySortField));
         var upperCondition = getOuterBoundCondition(primaryBounds.getUpper(), tokenBounds.getUpper(), primarySortField);
-        var condition = commonCondition.and(lowerCondition.or(middleCondition).or(upperCondition));
+        var condition = commonCondition
+                .and(lowerCondition.or(middleCondition).or(upperCondition))
+                .and(APPROVAL_CONDITION);
 
         return dslContext
                 .selectFrom(NFT_ALLOWANCE)

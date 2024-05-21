@@ -108,11 +108,11 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
         var nftAllowance1 = domainBuilder
                 .nftAllowance()
-                .customize(e -> e.owner(id).spender(id + 100))
+                .customize(e -> e.owner(id).spender(id + 100).approvedForAll(true))
                 .persist();
         var nftAllowance2 = domainBuilder
                 .nftAllowance()
-                .customize(e -> e.owner(id).spender(id + 50))
+                .customize(e -> e.owner(id).spender(id + 50).approvedForAll(true))
                 .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
@@ -136,11 +136,11 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
         var nftAllowance1 = domainBuilder
                 .nftAllowance()
-                .customize(e -> e.spender(id).owner(id + 100))
+                .customize(e -> e.spender(id).owner(id + 100).approvedForAll(true))
                 .persist();
         var nftAllowance2 = domainBuilder
                 .nftAllowance()
-                .customize(e -> e.spender(id).owner(id + 50))
+                .customize(e -> e.spender(id).owner(id + 50).approvedForAll(true))
                 .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
@@ -168,7 +168,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .nftAllowance()
                 .customize(e -> e.owner(ACCOUNT_ID.getId())
                         .spender(nftAllowance1.getSpender() - 2)
-                        .tokenId(nftAllowance1.getTokenId() - 2))
+                        .tokenId(nftAllowance1.getTokenId() - 2)
+                        .approvedForAll(true))
                 .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
@@ -196,7 +197,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .nftAllowance()
                 .customize(e -> e.spender(ACCOUNT_ID.getId())
                         .owner(nftAllowance1.getOwner() - 2)
-                        .tokenId(nftAllowance1.getTokenId() - 2))
+                        .tokenId(nftAllowance1.getTokenId() - 2)
+                        .approvedForAll(true))
                 .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
@@ -224,7 +226,8 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .nftAllowance()
                 .customize(e -> e.spender(ACCOUNT_ID.getId())
                         .owner(nftAllowance1.getOwner() + 2)
-                        .tokenId(nftAllowance1.getTokenId() - 2))
+                        .tokenId(nftAllowance1.getTokenId() - 2)
+                        .approvedForAll(true))
                 .persist();
 
         NftAllowanceRequest request = NftAllowanceRequest.builder()
@@ -410,12 +413,12 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
         if (owner) {
             return domainBuilder
                     .nftAllowance()
-                    .customize(e -> e.owner(accountId.getId()))
+                    .customize(e -> e.owner(accountId.getId()).approvedForAll(true))
                     .persist();
         } else {
             return domainBuilder
                     .nftAllowance()
-                    .customize(e -> e.spender(accountId.getId()))
+                    .customize(e -> e.spender(accountId.getId()).approvedForAll(true))
                     .persist();
         }
     }
