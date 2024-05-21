@@ -195,25 +195,25 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                             and consensus_timestamp <= :blockTimestamp
                             and consensus_timestamp > lower(ta.timestamp_range)
                         group by tt.token_id, tt.payer_account_id, tt.consensus_timestamp
-                    ), contract_results_filtered as (
-                        select sender_id, consensus_timestamp
-                        from contract_result cr
-                        where cr.consensus_timestamp <= :blockTimestamp
-                            and cr.consensus_timestamp in (
-                                select consensus_timestamp
-                                from token_transfer
-                            )
-                    ), contract_call_transfers as (
-                        select cr.sender_id, tt.consensus_timestamp, tt.token_id, sum(tt.amount) as amount
+                    ), owner_token_transfers as (
+                        select ta.spender, tt.account_id, tt.consensus_timestamp, tt.token_id, tt.amount
                         from token_transfer tt
-                            join token_allowances ta on tt.account_id = ta.owner
-                                and tt.token_id = ta.token_id,
-                                contract_results_filtered cr
+                            join token_allowances ta on tt.account_id = ta.owner and tt.token_id = ta.token_id
                         where tt.is_approval is true
-                            and cr.sender_id = ta.spender
-                            and tt.consensus_timestamp = cr.consensus_timestamp
                             and tt.consensus_timestamp <= :blockTimestamp
                             and tt.consensus_timestamp > lower(ta.timestamp_range)
+                    ), contract_results_filtered as (
+                        select cr.sender_id, cr.consensus_timestamp
+                        from contract_result cr
+                        join token_allowances ta on cr.sender_id = ta.spender
+                        join owner_token_transfers tt on cr.consensus_timestamp = tt.consensus_timestamp and cr.sender_id = tt.spender
+                        where cr.consensus_timestamp <= :blockTimestamp
+                    ), contract_call_transfers as (
+                        select cr.sender_id, tt.consensus_timestamp, tt.token_id, sum(tt.amount) as amount
+                        from owner_token_transfers tt,
+                             contract_results_filtered cr
+                        where cr.sender_id = tt.spender
+                            and tt.consensus_timestamp = cr.consensus_timestamp
                         group by cr.sender_id, tt.token_id, tt.consensus_timestamp
                     )
                     select *
