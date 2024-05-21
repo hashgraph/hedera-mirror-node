@@ -42,11 +42,11 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         final var value =
                 switch (contractFunc) {
                     case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
-                         CREATE_FUNGIBLE_TOKEN_NO_KEYS,
-                         CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
-                         CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
-                         CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
-                         CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 10000 * 100_000_000L;
+                            CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 10000 * 100_000_000L;
                     default -> 0L;
                 };
         final var serviceParameters = serviceParametersForExecution(
@@ -65,11 +65,11 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         final var value =
                 switch (contractFunc) {
                     case CREATE_FUNGIBLE_TOKEN_WITH_KEYS,
-                         CREATE_FUNGIBLE_TOKEN_NO_KEYS,
-                         CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
-                         CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
-                         CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
-                         CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 3070 * 100_000_000L;
+                            CREATE_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_FUNGIBLE_TOKEN_INHERIT_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_WITH_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_NO_KEYS,
+                            CREATE_NON_FUNGIBLE_TOKEN_INHERIT_KEYS -> 3070 * 100_000_000L;
                     default -> 0L;
                 };
         final var serviceParameters = serviceParametersForExecution(
