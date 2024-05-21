@@ -16,13 +16,13 @@
 
 package com.hedera.mirror.restjava.service;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import lombok.Getter;
+import org.springframework.util.CollectionUtils;
 
 public class Bound {
 
@@ -36,7 +36,7 @@ public class Bound {
 
     public Bound(List<EntityIdRangeParameter> params, boolean primarySortField) {
 
-        if (params == null) {
+        if (CollectionUtils.isEmpty(params)) {
             return;
         }
         for (EntityIdRangeParameter param : params) {
@@ -53,30 +53,27 @@ public class Bound {
 
         if (primarySortField && adjustedLower > adjustedUpper) {
             throw new IllegalArgumentException("Invalid range provided");
-        } else if (adjustedLower == adjustedUpper) {
-            this.lower = new EntityIdRangeParameter(RangeOperator.GTE, EntityId.of(adjustedLower));
         }
     }
 
     private long adjustUpperBound() {
-        long upperBound = Long.MAX_VALUE;
-
-        if (this.upper != null) {
-            upperBound = this.upper.value().getId();
-            if (this.upper.operator() == RangeOperator.LT) {
-                upperBound--;
-            }
+        if (this.upper == null) {
+            return Long.MAX_VALUE;
+        }
+        long upperBound = this.upper.value().getId();
+        if (this.upper.operator() == RangeOperator.LT) {
+            upperBound--;
         }
         return upperBound;
     }
 
     private long adjustLowerBound() {
-        long lowerBound = 0;
-        if (this.lower != null) {
-            lowerBound = this.lower.value().getId();
-            if (this.lower.operator() == RangeOperator.GT) {
-                lowerBound++;
-            }
+        if (this.lower == null) {
+            return 0;
+        }
+        long lowerBound = this.lower.value().getId();
+        if (this.lower.operator() == RangeOperator.GT) {
+            lowerBound++;
         }
         return lowerBound;
     }
@@ -93,8 +90,7 @@ public class Bound {
 
     public void verifyUnsupported(RangeOperator unsupportedOperator) {
         if (getCardinality(unsupportedOperator) > 0) {
-            throw new IllegalArgumentException(
-                    String.format("Invalid range operator %s. This operator is not supported", unsupportedOperator));
+            throw new IllegalArgumentException(String.format("Unsupported range operator %s", unsupportedOperator));
         }
     }
 

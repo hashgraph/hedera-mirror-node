@@ -63,13 +63,26 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         var primarySortField = byOwner ? NFT_ALLOWANCE.SPENDER : NFT_ALLOWANCE.OWNER;
 
         var primaryBounds = request.getOwnerOrSpenderIds();
+        var lowerPrimary = primaryBounds.getLower();
+        var upperPrimary = primaryBounds.getUpper();
+
+        // This is for range shortcutting when the GTE and LTE values are same. With GT and LT the values will be
+        // shortcut in the controller.
+        if (!primaryBounds.isEmpty()
+                && primaryBounds.getLower().value().getId()
+                        == primaryBounds.getUpper().value().getId()) {
+            lowerPrimary = new EntityIdRangeParameter(
+                    RangeOperator.EQ, primaryBounds.getLower().value());
+            upperPrimary = null;
+        }
+
         var tokenBounds = request.getTokenIds();
 
         var commonCondition = getCondition(primaryField, RangeOperator.EQ, accountId.getId());
-        var lowerCondition = getOuterBoundCondition(primaryBounds.getLower(), tokenBounds.getLower(), primarySortField);
-        var middleCondition = getMiddleCondition(primaryBounds.getLower(), tokenBounds.getLower(), primarySortField)
-                .and(getMiddleCondition(primaryBounds.getUpper(), tokenBounds.getUpper(), primarySortField));
-        var upperCondition = getOuterBoundCondition(primaryBounds.getUpper(), tokenBounds.getUpper(), primarySortField);
+        var lowerCondition = getOuterBoundCondition(lowerPrimary, tokenBounds.getLower(), primarySortField);
+        var middleCondition = getMiddleCondition(lowerPrimary, tokenBounds.getLower(), primarySortField)
+                .and(getMiddleCondition(upperPrimary, tokenBounds.getUpper(), primarySortField));
+        var upperCondition = getOuterBoundCondition(upperPrimary, tokenBounds.getUpper(), primarySortField);
         var condition = commonCondition
                 .and(lowerCondition.or(middleCondition).or(upperCondition))
                 .and(APPROVAL_CONDITION);

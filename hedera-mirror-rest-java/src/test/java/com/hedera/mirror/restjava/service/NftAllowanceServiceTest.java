@@ -222,7 +222,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
 
         var nftAllowance1 = saveNftAllowance(ACCOUNT_ID, false);
 
-        var nftAllowance2 = domainBuilder
+        domainBuilder
                 .nftAllowance()
                 .customize(e -> e.spender(ACCOUNT_ID.getId())
                         .owner(nftAllowance1.getOwner() + 2)
@@ -245,7 +245,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .order(Sort.Direction.ASC)
                 .build();
         var response = service.getNftAllowances(request);
-        assertThat(response).containsExactly(nftAllowance1, nftAllowance2);
+        assertThat(response).containsExactly(nftAllowance1);
     }
 
     @Test
@@ -273,8 +273,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(
-                        "Single occurrence only supported. Requires the presence of an lte or eq account.id parameter");
+                .hasMessageContaining("Requires the presence of an lte or eq account.id parameter");
 
         NftAllowanceRequest request1 = NftAllowanceRequest.builder()
                 .isOwner(false)
@@ -290,8 +289,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request1))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(
-                        "Single occurrence only supported. Requires the presence of an gte or eq account.id parameter");
+                .hasMessageContaining("Requires the presence of an gte or eq account.id parameter");
     }
 
     @Test
@@ -406,7 +404,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Invalid range operator ne. This operator is not supported");
+                .hasMessageContaining("Unsupported range operator ne");
     }
 
     NftAllowance saveNftAllowance(EntityId accountId, boolean owner) {

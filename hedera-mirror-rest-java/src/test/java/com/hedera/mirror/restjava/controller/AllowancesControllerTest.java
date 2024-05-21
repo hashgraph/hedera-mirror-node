@@ -418,7 +418,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
     @ParameterizedTest
     @CsvSource({
         "?owner=true&token.id=gt:0.0.1000&limit=1&order=asc,token.id parameter must have account.id present",
-        "?owner=true&account.id=gte:0.0.1000&token.id=ne:0.0.1000&limit=1&order=asc,Invalid range operator ne. This operator is not supported",
+        "?owner=true&account.id=gte:0.0.1000&token.id=ne:0.0.1000&limit=1&order=asc,Unsupported range operator ne",
         "?owner=true&account.id=gte:0.0.1000&account.id=lte:0.0.999&token.id=eq:0.0.1000&limit=1&order=asc,Invalid range provided"
     })
     void nftAllowancesRangeValidation(String uriParams, String message) {

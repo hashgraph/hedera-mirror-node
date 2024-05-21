@@ -54,13 +54,11 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         if (tokenParams.getCardinality(RangeOperator.LT, RangeOperator.LTE) > 0
                 && ownerOrSpenderParams.getCardinality(RangeOperator.EQ, RangeOperator.LTE) == 0) {
-            throw new IllegalArgumentException(
-                    "Single occurrence only supported. Requires the presence of an lte or eq account.id parameter");
+            throw new IllegalArgumentException("Requires the presence of an lte or eq account.id parameter");
         }
         if (tokenParams.getCardinality(RangeOperator.GT, RangeOperator.GTE) > 0
                 && ownerOrSpenderParams.getCardinality(RangeOperator.EQ, RangeOperator.GTE) == 0) {
-            throw new IllegalArgumentException(
-                    "Single occurrence only supported. Requires the presence of an gte or eq account.id parameter");
+            throw new IllegalArgumentException("Requires the presence of an gte or eq account.id parameter");
         }
     }
 
