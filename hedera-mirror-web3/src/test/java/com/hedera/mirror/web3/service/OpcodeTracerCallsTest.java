@@ -23,9 +23,9 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import java.util.Comparator;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
@@ -140,7 +140,7 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
         return ContractCallContext.run(ctx -> {
             ctx.setOpcodeTracerOptions(OPTIONS);
             ctx.initializeStackFrames(store.getStackedStateFrames());
-            final var result = processor.execute(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPCODE, ctx);
+            final var result = processor.execute(params, params.getGas(), TracerType.OPCODE, ctx);
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(result)
                     .opcodes(ctx.getOpcodes())
