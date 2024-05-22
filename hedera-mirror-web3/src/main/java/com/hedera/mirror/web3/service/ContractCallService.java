@@ -32,6 +32,7 @@ import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -41,7 +42,6 @@ import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
@@ -112,7 +112,7 @@ public class ContractCallService {
                     ctx.initializeStackFrames(store.getStackedStateFrames());
                     result = estimateGas(params, ctx);
                 } else {
-                    final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPERATION, ctx);
+                    final var ethCallTxnResult = getCallTxnResult(params, TracerType.OPERATION, ctx);
 
                     validateResult(ethCallTxnResult, params.getCallType());
 
@@ -137,7 +137,7 @@ public class ContractCallService {
                 ctx.setContractActions(contractActions);
             }
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
-            final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPCODE, ctx);
+            final var ethCallTxnResult = getCallTxnResult(params, TracerType.OPCODE, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(ethCallTxnResult)
@@ -162,12 +162,12 @@ public class ContractCallService {
         }
 
         return consensusTimestamp
-                .map(contractActionService::findContractActionByConsensusTimestamp)
+                .map(contractActionService::findAllByConsensusTimestamp)
                 .orElseThrow(() -> new IllegalArgumentException("Contract actions for transaction not found"));
     }
 
     private HederaEvmTransactionProcessingResult getCallTxnResult(CallServiceParameters params,
-                                                                  HederaEvmTxProcessor.TracerType tracerType,
+                                                                  TracerType tracerType,
                                                                   ContractCallContext ctx) throws MirrorEvmTransactionException {
         // if we have historical call then set corresponding file record
         if (params.getBlock() != BlockType.LATEST) {
@@ -193,7 +193,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final CallServiceParameters params, final ContractCallContext ctx) {
-        final var processingResult = doProcessCall(params, params.getGas(), true, HederaEvmTxProcessor.TracerType.OPERATION, ctx);
+        final var processingResult = doProcessCall(params, params.getGas(), true, TracerType.OPERATION, ctx);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -205,7 +205,7 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas, false, HederaEvmTxProcessor.TracerType.OPERATION, ctx),
+                gas -> doProcessCall(params, gas, false, TracerType.OPERATION, ctx),
                 gasUsedByInitialCall,
                 params.getGas());
 
@@ -215,7 +215,7 @@ public class ContractCallService {
     private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params,
                                                                long estimatedGas,
                                                                boolean restoreGasToThrottleBucket,
-                                                               HederaEvmTxProcessor.TracerType tracerType,
+                                                               TracerType tracerType,
                                                                ContractCallContext ctx) throws MirrorEvmTransactionException {
         try {
             var result = mirrorEvmTxProcessor.execute(params, estimatedGas, tracerType, ctx);

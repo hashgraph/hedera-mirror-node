@@ -21,6 +21,7 @@ import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
@@ -59,8 +60,6 @@ public class HederaEvmTxProcessor {
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps;
     protected final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps;
-
-    //TODO: do not import TRACER_TYPE from ProcessorImpl
     protected final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap;
     protected final EvmProperties dynamicProperties;
 
@@ -224,10 +223,5 @@ public class HederaEvmTxProcessor {
 
     private HederaEvmOperationTracer getTracer(TracerType tracerType) {
         return tracerMap.get(tracerType).get();
-    }
-
-    public enum TracerType {
-        OPCODE,
-        OPERATION
     }
 }

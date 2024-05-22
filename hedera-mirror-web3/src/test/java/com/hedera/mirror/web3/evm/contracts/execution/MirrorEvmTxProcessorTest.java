@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.StoreImpl;
@@ -42,7 +43,6 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
@@ -181,7 +181,7 @@ class MirrorEvmTxProcessorTest {
                 blockMetaSource,
                 hederaEvmContractAliases,
                 new AbstractCodeCache(10, hederaEvmEntityAccess),
-                Map.of(HederaEvmTxProcessor.TracerType.OPERATION, () -> mirrorOperationTracer),
+                Map.of(TracerType.OPERATION, () -> mirrorOperationTracer),
                 store,
                 new EntityAddressSequencer(),
                 tokenAccessor);
@@ -208,7 +208,7 @@ class MirrorEvmTxProcessorTest {
                 .isEstimate(isEstimate)
                 .build();
         final var result = ContractCallContext.run(ctx ->
-                mirrorEvmTxProcessor.execute(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPERATION, ctx));
+                mirrorEvmTxProcessor.execute(params, params.getGas(), TracerType.OPERATION, ctx));
 
         assertThat(result)
                 .isNotNull()

@@ -135,8 +135,7 @@ class OpcodeTracerTest {
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame);
-        assertThat(opcode.gasCost()).isNotEmpty();
-        assertThat(opcode.gasCost().getAsLong()).isEqualTo(GAS_COST);
+        assertThat(opcode.gasCost()).isEqualTo(GAS_COST);
     }
 
     @Test
