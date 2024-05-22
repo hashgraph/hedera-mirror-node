@@ -89,8 +89,9 @@ class LinkFactoryTest {
         "1, asc,  lt:0.0.2000, 0.0.1000,    false, /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458&owner=false",
         "1, DESC, 0.0.1000,    0.0.1000,    false, /api?limit=1&order=DESC&account.id=0.0.1000&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458&owner=false",
         "1, desc, gt:0.0.900,  gt:0.0.900,  false, /api?limit=1&order=desc&account.id=gt:0.0.900&account.id=lte:0.0.1000&token.id=gt:0.0.900&token.id=lt:0.0.6458&owner=false",
-        "1, desc, lt:0.0.9000, gte:0.0.900, false, /api?limit=1&order=desc&account.id=lte:0.0.1000&token.id=gt:0.0.899&token.id=lt:0.0.6458&owner=false",
-        "1, desc, lt:0.0.9000, gte:0.0.900, true,  /api?limit=1&order=desc&account.id=lte:0.0.2000&token.id=gt:0.0.899&token.id=lt:0.0.6458&owner=true",
+        "1, desc, gt:0.0.900, gte:0.0.900, false,  /api?limit=1&order=desc&account.id=gt:0.0.900&account.id=lte:0.0.1000&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=false",
+        "1, desc, lt:0.0.9000, gte:0.0.900, false, /api?limit=1&order=desc&account.id=lte:0.0.1000&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=false",
+        "1, desc, lt:0.0.9000, gte:0.0.900, true,  /api?limit=1&order=desc&account.id=lte:0.0.2000&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=true",
         "2, ASC,  0.0.1000,    0.0.1000, false,",
         "2, desc, 0.0.1000,    0.0.1000, false,",
     })
@@ -167,16 +168,23 @@ class LinkFactoryTest {
     @DisplayName("Get pagination links with multiple parameter values")
     @ParameterizedTest
     @CsvSource({
-        "asc,  lt:0.0.1002, lte:0.0.1002, lte:0.0.9000, gt:0.0.100,  /api?limit=1&order=asc&account.id=lt:0.0.1003&account.id=gte:0.0.1000&token.id=lt:0.0.9001&token.id=gt:0.0.6458",
+        "asc,  lt:0.0.1002, lte:0.0.1002, lte:0.0.9000, gt:0.0.100,  /api?limit=1&order=asc&account.id=lt:0.0.1002&account.id=gte:0.0.1000&token.id=lte:0.0.9000&token.id=gt:0.0.6458",
         "asc,  lt:0.0.2000, gt:0.0.200,   0.0.4000, 0.0.4000,        /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=0.0.4000&token.id=gt:0.0.6458",
         "asc,  0.0.1000,    0.0.1000,     0.0.1000, 0.0.1000,        /api?limit=1&order=asc&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458",
-        "asc,  0.0.1000,    gt:0.0.1001,  lte:0.0.1000, gt:0.0.100,  /api?limit=1&order=asc&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=lt:0.0.1001&token.id=gt:0.0.6458",
-        "desc, gt:0.0.101,  gte:0.0.101,  0.0.4000, 0.0.4000,        /api?limit=1&order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
+        "asc,  0.0.1000,    gt:0.0.1000,  lte:0.0.1000, gt:0.0.100,  /api?limit=1&order=asc&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=lte:0.0.1000&token.id=gt:0.0.6458",
+        "desc, gt:0.0.100,  gte:0.0.100,  0.0.4000, 0.0.4000,        /api?limit=1&order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
+        "desc, gte:0.0.100,  gt:0.0.100,  0.0.4000, 0.0.4000,        /api?limit=1&order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
+        "desc, gt:0.0.100,  gt:0.0.100,  0.0.4000, 0.0.4000,         /api?limit=1&order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
+        "desc, gte:0.0.100,  gte:0.0.101,  0.0.4000, 0.0.4000,       /api?limit=1&order=desc&account.id=gte:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
+        "asc, lt:0.0.2000,  lte:0.0.2000,  0.0.4000, 0.0.4000,       /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=0.0.4000&token.id=gt:0.0.6458",
+        "asc, lte:0.0.2000,  lt:0.0.2000,  0.0.4000, 0.0.4000,       /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=0.0.4000&token.id=gt:0.0.6458",
+        "asc, lt:0.0.2000,  lt:0.0.2000,  0.0.4000, 0.0.4000,        /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=0.0.4000&token.id=gt:0.0.6458",
+        "asc, lte:0.0.2000,  lte:0.0.2001,  0.0.4000, 0.0.4000,      /api?limit=1&order=asc&account.id=lte:0.0.2001&account.id=gte:0.0.1000&token.id=0.0.4000&token.id=gt:0.0.6458",
         "desc, gt:0.0.900,  gt:0.0.900,   0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=gt:0.0.900&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
-        "desc, lt:0.0.9000, gte:0.0.900,  0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=gt:0.0.899&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
-        "desc, lt:0.0.9000, gte:0.0.900,  0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=gt:0.0.899&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
+        "desc, lt:0.0.9000, gte:0.0.900,  0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=gte:0.0.900&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
+        "desc, lt:0.0.9000, gte:0.0.900,  0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=gte:0.0.900&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
         "desc, 0.0.1000,    0.0.1000,     0.0.1000, 0.0.1000,        /api?limit=1&order=desc&account.id=0.0.1000&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
-        "desc, gte:0.0.101, gt:0.0.101,   0.0.4000, 0.0.4000,        /api?limit=1&order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
+        "desc, gte:0.0.100, gt:0.0.100,   0.0.4000, 0.0.4000,        /api?limit=1&order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=0.0.4000&token.id=lt:0.0.6458",
     })
     void testMultipleParameters(
             String order,

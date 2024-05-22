@@ -16,10 +16,7 @@
 
 package com.hedera.mirror.restjava.common;
 
-import static com.hedera.mirror.restjava.common.EntityIdNumParameter.ENTITY_ID_PATTERN;
-
 import com.google.common.collect.Iterables;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.Links;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
@@ -133,9 +130,15 @@ public class LinkFactoryImpl implements LinkFactory {
 
             // If a lower bound is found, always add it to the link
             var lowerBound = rangeBounds.stream()
-                    .filter(rangeBound -> rangeBound.operator() == RangeOperator.GT)
-                    .reduce((rangeBound1, rangeBound2) ->
-                            rangeBound1.value().compareTo(rangeBound2.value()) < 0 ? rangeBound1 : rangeBound2)
+                    .filter(rangeBound ->
+                            rangeBound.operator() == RangeOperator.GT || rangeBound.operator() == RangeOperator.GTE)
+                    .reduce((rangeBound1, rangeBound2) -> {
+                        var compare = rangeBound1.value().compareTo(rangeBound2.value());
+                        if (compare == 0) {
+                            return rangeBound1.operator() == RangeOperator.GT ? rangeBound1 : rangeBound2;
+                        }
+                        return compare < 0 ? rangeBound1 : rangeBound2;
+                    })
                     .orElse(RangeBound.EMPTY);
             addBoundToLink(lowerBound, key, builder);
         } else {
@@ -143,9 +146,15 @@ public class LinkFactoryImpl implements LinkFactory {
 
             // If an upper bound is found, always add it to the link
             var upperBound = rangeBounds.stream()
-                    .filter(rangeBound -> rangeBound.operator() == RangeOperator.LT)
-                    .reduce((rangeBound1, rangeBound2) ->
-                            rangeBound1.value().compareTo(rangeBound2.value()) > 0 ? rangeBound1 : rangeBound2)
+                    .filter(rangeBound ->
+                            rangeBound.operator() == RangeOperator.LT || rangeBound.operator() == RangeOperator.LTE)
+                    .reduce((rangeBound1, rangeBound2) -> {
+                        var compare = rangeBound1.value().compareTo(rangeBound2.value());
+                        if (compare == 0) {
+                            return rangeBound1.operator() == RangeOperator.LT ? rangeBound1 : rangeBound2;
+                        }
+                        return compare > 0 ? rangeBound1 : rangeBound2;
+                    })
                     .orElse(RangeBound.EMPTY);
             addBoundToLink(upperBound, key, builder);
         }
@@ -176,21 +185,6 @@ public class LinkFactoryImpl implements LinkFactory {
 
             var operator = RangeOperator.of(splitValues[0]);
             var rangeValue = splitValues[1];
-            boolean decrementValue = operator == RangeOperator.GTE;
-            boolean incrementValue = operator == RangeOperator.LTE;
-            if (decrementValue || incrementValue) {
-                operator = decrementValue ? RangeOperator.GT : RangeOperator.LT;
-
-                if (ENTITY_ID_PATTERN.matcher(rangeValue).matches()) {
-                    var entityId = EntityId.of(rangeValue);
-                    var updatedIdNum = (decrementValue ? entityId.getNum() - 1 : entityId.getNum() + 1);
-                    rangeValue = entityId.getShard() + "." + entityId.getRealm() + "." + updatedIdNum;
-                } else if (StringUtils.isNumeric(rangeValue)) {
-                    var numericValue = Integer.parseInt(rangeValue) + (decrementValue ? -1 : 1);
-                    rangeValue = String.valueOf(numericValue);
-                }
-            }
-
             return new RangeBound(operator, rangeValue);
         }
     }
