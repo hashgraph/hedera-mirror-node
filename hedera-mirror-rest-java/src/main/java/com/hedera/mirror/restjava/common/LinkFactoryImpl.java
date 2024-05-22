@@ -23,7 +23,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map.Entry;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.util.CollectionUtils;
@@ -103,26 +102,6 @@ public class LinkFactoryImpl implements LinkFactory {
             }
 
             builder.queryParam(entry.getKey(), value);
-        }
-    }
-
-    private record RangeBound(RangeOperator operator, String value) implements RangeParameter<String> {
-        private static final RangeBound EMPTY = new RangeBound(null, null);
-
-        public static RangeBound valueOf(String value) {
-            if (StringUtils.isBlank(value)) {
-                return EMPTY;
-            }
-
-            value = value.toLowerCase();
-            var splitValues = value.split(":");
-            if (splitValues.length != 2) {
-                return new RangeBound(RangeOperator.EQ, value);
-            }
-
-            var operator = RangeOperator.of(splitValues[0]);
-            var rangeValue = splitValues[1];
-            return new RangeBound(operator, rangeValue);
         }
     }
 }
