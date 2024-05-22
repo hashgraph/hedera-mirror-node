@@ -19,8 +19,6 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
@@ -96,12 +94,6 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
                                                 final ContractFunctionProviderEnum function) {
         final var actual = contractCallService.processOpcodeCall(params, OPTIONS, null);
         if (function.getExpectedErrorMessage() != null) {
-            log.info("Expected error message: {}", function.getExpectedErrorMessage());
-            log.info("Actual: {}", new ObjectMapper()
-                    .registerModule(new Jdk8Module())
-                    .writerWithDefaultPrettyPrinter()
-                    .writeValueAsString(actual));
-
             assertThat(actual.transactionProcessingResult().isSuccessful()).isFalse();
             assertThat(actual.transactionProcessingResult().getOutput()).isEqualTo(Bytes.EMPTY);
             assertThat(actual.transactionProcessingResult())
