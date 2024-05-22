@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
@@ -41,18 +42,21 @@ import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 @CustomLog
 @Named
@@ -126,10 +130,12 @@ public class ContractCallService {
 
     public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params,
                                                      final OpcodeTracerOptions opcodeTracerOptions,
-                                                     final TransactionIdOrHashParameter transactionIdOrHashParameter) {
+                                                     @Nullable final TransactionIdOrHashParameter transactionIdOrHash) {
         return ContractCallContext.run(ctx -> {
-            List<ContractAction> contractActions = getContractAction(transactionIdOrHashParameter);
-            ctx.setContractActions(contractActions);
+            if (transactionIdOrHash != null && transactionIdOrHash.isValid()) {
+                List<ContractAction> contractActions = getContractAction(transactionIdOrHash);
+                ctx.setContractActions(contractActions);
+            }
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             final var ethCallTxnResult = getCallTxnResult(params, HederaEvmTxProcessor.TracerType.OPCODE, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
@@ -141,25 +147,23 @@ public class ContractCallService {
     }
 
     @SneakyThrows
-    public List<ContractAction> getContractAction(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
-        final Optional<Transaction> transaction;
-        final Optional<EthereumTransaction> ethTransaction;
+    public List<ContractAction> getContractAction(@NonNull @Valid TransactionIdOrHashParameter transactionIdOrHash) {
+        Assert.isTrue(transactionIdOrHash.isValid(), "Invalid transactionIdOrHash");
 
+        Optional<Long> consensusTimestamp;
         if (transactionIdOrHash.isHash()) {
-            ethTransaction = ethereumTransactionService.findByHash(transactionIdOrHash.hash().toByteArray());
-            transaction = ethTransaction
-                    .map(EthereumTransaction::getConsensusTimestamp)
-                    .flatMap(transactionService::findByConsensusTimestamp);
-        } else if (transactionIdOrHash.isTransactionId()) {
-            transaction = transactionService.findByTransactionId(transactionIdOrHash.transactionID());
-            ethTransaction = transaction
-                    .map(Transaction::getConsensusTimestamp)
-                    .flatMap(ethereumTransactionService::findByConsensusTimestamp);
+            consensusTimestamp = ethereumTransactionService
+                    .findByHash(transactionIdOrHash.hash().toByteArray())
+                    .map(EthereumTransaction::getConsensusTimestamp);
         } else {
-            throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
+            consensusTimestamp = transactionService
+                    .findByTransactionId(transactionIdOrHash.transactionID())
+                    .map(Transaction::getConsensusTimestamp);
         }
 
-        return contractActionService.findContractActionByConsensusTimestamp(transaction.get().getConsensusTimestamp());
+        return consensusTimestamp
+                .map(contractActionService::findContractActionByConsensusTimestamp)
+                .orElseThrow(() -> new IllegalArgumentException("Contract actions for transaction not found"));
     }
 
     private HederaEvmTransactionProcessingResult getCallTxnResult(CallServiceParameters params,
@@ -244,7 +248,12 @@ public class ContractCallService {
             updateGasMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            if (type == ETH_DEBUG_TRACE_TRANSACTION) {
+                log.warn("Transaction failed with status: {}, detail: {}, revertReason: {}",
+                        getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            } else {
+                throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            }
         } else {
             updateGasMetric(type, txnResult.getGasUsed(), 1);
         }
