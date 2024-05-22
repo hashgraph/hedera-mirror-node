@@ -16,15 +16,20 @@
 
 package com.hedera.mirror.restjava.mapper;
 
-import static org.mapstruct.MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG;
+import static com.hedera.mirror.restjava.mapper.CommonMapper.QUALIFIER_TIMESTAMP;
 
-import com.hedera.mirror.rest.model.NftAllowance;
-import org.mapstruct.MapperConfig;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.rest.model.Topic;
+import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
-public interface RestJavaMapperConfig {
+@Mapper(config = MapperConfiguration.class)
+public interface TopicMapper {
 
+    @Mapping(source = "autoRenewAccountId", target = "autoRenewAccount")
+    @Mapping(source = "createdTimestamp", target = "createdTimestamp", qualifiedByName = QUALIFIER_TIMESTAMP)
+    @Mapping(source = "id", target = "topicId")
+    @Mapping(source = "key", target = "adminKey")
     @Mapping(source = "timestampRange", target = "timestamp")
-    NftAllowance map(com.hedera.mirror.common.domain.entity.NftAllowance source);
+    Topic map(Entity source);
 }

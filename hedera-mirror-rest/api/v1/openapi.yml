@@ -4,7 +4,7 @@ paths:
     get:
       summary: List account entities on network
       description: Returns a list of all account entity items on the network.
-      operationId: listAccounts
+      operationId: getAccounts
       parameters:
         - $ref: "#/components/parameters/accountBalanceQueryParam"
         - $ref: "#/components/parameters/accountIdQueryParam"
@@ -30,7 +30,7 @@ paths:
         Return the account transactions and balance information given an account alias, an account id, or an evm address. The information will be limited to at most 1000 token balances for the account as outlined in HIP-367.
         When the timestamp parameter is supplied, we will return transactions and account state for the relevant timestamp query. Balance information will be accurate to within 15 minutes of the provided timestamp query.
         Historical ethereum nonce information is currently not available and may not be the exact value at a provided timestamp.
-      operationId: getAccountByIdOrAliasOrEvmAddress
+      operationId: getAccount
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -93,7 +93,7 @@ paths:
         Note: When searching across a range for individual NFTs a **serialnumber** with an additional **token.id** query filter must be provided.
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
-      operationId: listNftByAccountId
+      operationId: getNftsByAccountId
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -119,7 +119,7 @@ paths:
       summary: Get past staking reward payouts for an account
       description: |
         Returns information for all past staking reward payouts for an account.
-      operationId: listStakingRewardsByAccountId
+      operationId: getStakingRewards
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -143,7 +143,7 @@ paths:
       summary: Get token relationships info for an account
       description: |
         Returns information for all token relationships for an account.
-      operationId: listTokenRelationshipByAccountId
+      operationId: getTokensByAccountId
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -166,7 +166,7 @@ paths:
     get:
       summary: Get crypto allowances for an account info
       description: Returns information for all crypto allowances for an account.
-      operationId: listCryptoAllowancesByAccountId
+      operationId: getCryptoAllowances
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -215,7 +215,7 @@ paths:
 
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
-      operationId: listTokenAllowancesByAccountId
+      operationId: getTokenAllowances
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -267,7 +267,7 @@ paths:
 
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
-      operationId: listNftAllowancesByAccountId
+      operationId: getNftAllowances
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -295,7 +295,7 @@ paths:
         Returns a list of account balances on the network, limited to at most 50 token balances per account as outlined
         in HIP-367. As such, it's not recommended for general use and we instead recommend using either
         `/api/v1/accounts/{id}/tokens` or `/api/v1/tokens/{id}/balances` to obtain token balance information.
-      operationId: listAccountBalances
+      operationId: getBalances
       parameters:
         - $ref: "#/components/parameters/accountIdOrAliasOrEvmAddressQueryParam"
         - $ref: "#/components/parameters/accountBalanceQueryParam"
@@ -318,7 +318,7 @@ paths:
     get:
       summary: List blocks
       description: Returns a list of blocks on the network.
-      operationId: listBlocks
+      operationId: getBlocks
       parameters:
         - $ref: "#/components/parameters/blockNumberQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -339,7 +339,7 @@ paths:
     get:
       summary: Get block by hash or number
       description: Returns the block information by given hash or number.
-      operationId: getByHashOrNumber
+      operationId: getBlock
       parameters:
         - $ref: "#/components/parameters/hashOrNumberPathParam"
       responses:
@@ -355,7 +355,6 @@ paths:
           $ref: "#/components/responses/NotFoundError"
       tags:
         - blocks
-
   /api/v1/contracts/call:
     post:
       summary: Invoke a smart contract
@@ -366,7 +365,7 @@ paths:
 
         The operations types which are not currently supported should return 501 error status.
 
-      operationId: contractsCall
+      operationId: contractCall
       requestBody:
         required: true
         content:
@@ -422,7 +421,7 @@ paths:
     get:
       summary: List contract entities on network
       description: Returns a list of all contract entity items on the network.
-      operationId: listContracts
+      operationId: getContracts
       parameters:
         - $ref: "#/components/parameters/contractIdQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -442,7 +441,7 @@ paths:
     get:
       summary: Get contract by id
       description: Return the contract information given an id
-      operationId: getContractById
+      operationId: getContract
       parameters:
         - $ref: "#/components/parameters/contractIdOrAddressPathParam"
         - $ref: "#/components/parameters/timestampQueryParam"
@@ -463,7 +462,7 @@ paths:
     get:
       summary: List contract results from a contract on the network
       description: Returns a list of all ContractResults for a contract's function executions.
-      operationId: listContractResults
+      operationId: getContractResultsByContractId
       parameters:
         - $ref: "#/components/parameters/contractIdOrAddressPathParam"
         - $ref: "#/components/parameters/blockHashQueryParam"
@@ -489,7 +488,7 @@ paths:
     get:
       summary: The contract state from a contract on the network
       description: Returns a list of all contract's slots. If no timestamp is provided, returns the current state.
-      operationId: listContractState
+      operationId: getContractState
       parameters:
         - $ref: "#/components/parameters/contractIdOrAddressPathParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -540,7 +539,7 @@ paths:
     get:
       summary: List contract results from all contracts on the network
       description: Returns a list of all ContractResults for all contract's function executions.
-      operationId: listAllContractsResults
+      operationId: getContractsResults
       parameters:
         - $ref: "#/components/parameters/fromQueryParam"
         - $ref: "#/components/parameters/blockHashQueryParam"
@@ -592,7 +591,7 @@ paths:
     get:
       summary: Get the contract actions from a contract on the network for a given transactionId or ethereum transaction hash
       description: Returns a list of ContractActions for a contract's function executions for a given transactionId or ethereum transaction hash.
-      operationId: getContractActionsByTransactionIdOrHash
+      operationId: getContractActions
       parameters:
         - $ref: "#/components/parameters/transactionIdOrEthHashPathParam"
         - $ref: "#/components/parameters/contractActionsIndexQueryParam"
@@ -644,7 +643,7 @@ paths:
 
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
-      operationId: listContractLogs
+      operationId: getContractLogsByContractId
       parameters:
         - $ref: "#/components/parameters/contractIdOrAddressPathParam"
         - $ref: "#/components/parameters/logIndexQueryParam"
@@ -698,7 +697,7 @@ paths:
 
 
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
-      operationId: listContractsLogs
+      operationId: getContractsLogs
       parameters:
         - $ref: "#/components/parameters/logIndexQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -829,7 +828,7 @@ paths:
     get:
       summary: List schedules entities
       description: Lists schedules on the network that govern the execution logic of scheduled transactions. This includes executed and non executed schedules.
-      operationId: listSchedules
+      operationId: getSchedules
       parameters:
         - $ref: "#/components/parameters/accountIdQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -850,7 +849,7 @@ paths:
     get:
       summary: Get schedule by id
       description: Returns schedule information based on the given schedule id
-      operationId: getScheduleById
+      operationId: getSchedule
       parameters:
         - $ref: "#/components/parameters/scheduleIdPathParam"
       responses:
@@ -870,7 +869,7 @@ paths:
     get:
       summary: List transactions
       description: Lists transactions on the network. This includes successful and unsuccessful transactions.
-      operationId: listTransactions
+      operationId: getTransactions
       parameters:
         - $ref: "#/components/parameters/accountIdQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -902,7 +901,7 @@ paths:
     get:
       summary: Get transaction by id
       description: Returns transaction information based on the given transaction id
-      operationId: getTransactionById
+      operationId: getTransaction
       parameters:
         - $ref: "#/components/parameters/transactionIdPathParam"
         - $ref: "#/components/parameters/nonceQueryParam"
@@ -924,7 +923,7 @@ paths:
     get:
       summary: Get stateproof information
       description: Returns the  contents of the address book file, signature files, and record file that can be used to validate the transaction occurred on the Hedera network given transaction id.
-      operationId: getStateproofInfo
+      operationId: getTransactionStateproof
       parameters:
         - $ref: "#/components/parameters/transactionIdPathParam"
         - $ref: "#/components/parameters/nonceQueryParamWithDefault"
@@ -946,11 +945,32 @@ paths:
           $ref: "#/components/responses/ServiceUnavailableError"
       tags:
         - transactions
+  /api/v1/topics/{topicId}:
+    get:
+      summary: Get topic by ID
+      description: Returns the topic details for the given topic ID.
+      operationId: getTopic
+      parameters:
+        - $ref: "#/components/parameters/topicIdPathParam"
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+        400:
+          $ref: "#/components/responses/InvalidParameterError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+      tags:
+        - topics
+
   /api/v1/topics/{topicId}/messages:
     get:
       summary: List topic messages by id
       description: Returns the list of topic messages for the given topic id.
-      operationId: listTopicMessagesById
+      operationId: getTopicMessages
       parameters:
         - $ref: "#/components/parameters/topicIdPathParam"
         - name: encoding
@@ -985,7 +1005,7 @@ paths:
     get:
       summary: Get topic message by id and sequence number
       description: Returns a single topic message the given topic id and sequence number.
-      operationId: getTopicMessageByIdAndSequenceNumber
+      operationId: getTopicMessageById
       parameters:
         - $ref: "#/components/parameters/topicIdPathParam"
         - name: sequenceNumber
@@ -1014,7 +1034,7 @@ paths:
     get:
       summary: Get topic message by consensusTimestamp
       description: Returns a topic message the given the consensusTimestamp.
-      operationId: getTopicMessagesByConsensusTimestamp
+      operationId: getTopicMessageByTimestamp
       parameters:
         - $ref: "#/components/parameters/timestampPathParam"
       responses:
@@ -1034,7 +1054,7 @@ paths:
     get:
       summary: List tokens
       description: Returns a list of tokens on the network.
-      operationId: listTokens
+      operationId: getTokens
       parameters:
         - $ref: "#/components/parameters/accountIdQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
@@ -1057,7 +1077,7 @@ paths:
     get:
       summary: Get token by id
       description: Returns token entity information given the id
-      operationId: getTokenById
+      operationId: getToken
       parameters:
         - $ref: "#/components/parameters/tokenIdPathParam"
         - $ref: "#/components/parameters/tokenInfoTimestampQueryParam"
@@ -1186,7 +1206,7 @@ paths:
     get:
       summary: List token balances
       description: Returns a list of token balances given the id. This represents the Token supply distribution across the network
-      operationId: listTokenBalancesById
+      operationId: getTokenBalances
       parameters:
         - $ref: "#/components/parameters/tokenIdPathParam"
         - $ref: "#/components/parameters/accountBalanceQueryParam"
@@ -1210,7 +1230,7 @@ paths:
     get:
       summary: List nfts
       description: Returns a list of non-fungible tokens
-      operationId: listNfts
+      operationId: getNfts
       parameters:
         - $ref: "#/components/parameters/tokenIdPathParam"
         - $ref: "#/components/parameters/accountIdQueryParam"
@@ -1232,7 +1252,7 @@ paths:
     get:
       summary: Get nft info
       description: Returns information for a non-fungible token
-      operationId: listNftBySerialnumber
+      operationId: getNft
       parameters:
         - $ref: "#/components/parameters/tokenIdPathParam"
         - $ref: "#/components/parameters/serialNumberPathParam"
@@ -1253,7 +1273,7 @@ paths:
     get:
       summary: Get an nfts transction history
       description: Returns a list of transactions for a given non-fungible token
-      operationId: listNftTransactions
+      operationId: getNftTransactions
       parameters:
         - $ref: "#/components/parameters/tokenIdPathParam"
         - $ref: "#/components/parameters/serialNumberPathParam"
@@ -2688,6 +2708,7 @@ components:
             denominating_token_id:
               $ref: "#/components/schemas/EntityId"
     Key:
+      description: The public key which controls access to various network entities.
       type: object
       nullable: true
       properties:
@@ -3533,6 +3554,46 @@ components:
       type: array
       items:
         $ref: "#/components/schemas/Token"
+    Topic:
+      type: object
+      properties:
+        admin_key:
+          $ref: "#/components/schemas/Key"
+        auto_renew_account:
+          $ref: "#/components/schemas/EntityId"
+        auto_renew_period:
+          description: The amount of time to attempt to extend the topic's lifetime after expiration.
+          example: 7776000
+          format: int64
+          nullable: true
+          type: integer
+        created_timestamp:
+          $ref: "#/components/schemas/TimestampNullable"
+        deleted:
+          description: Whether the topic is deleted or not.
+          example: false
+          nullable: true
+          type: boolean
+        memo:
+          description: The memo associated with the topic.
+          example: topic memo
+          type: string
+        submit_key:
+          $ref: "#/components/schemas/Key"
+        timestamp:
+          $ref: "#/components/schemas/TimestampRange"
+        topic_id:
+          $ref: "#/components/schemas/EntityId"
+      required:
+        - admin_key
+        - auto_renew_account
+        - auto_renew_period
+        - created_timestamp
+        - deleted
+        - memo
+        - submit_key
+        - timestamp
+        - topic_id
     TopicMessage:
       type: object
       properties:

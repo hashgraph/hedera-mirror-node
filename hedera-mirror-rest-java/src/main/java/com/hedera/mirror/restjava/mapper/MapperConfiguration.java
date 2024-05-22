@@ -14,16 +14,11 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.service;
+package com.hedera.mirror.restjava.mapper;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.restjava.common.EntityIdParameter;
-import jakarta.annotation.Nonnull;
+import static org.mapstruct.MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG;
 
-public interface EntityService {
+import org.mapstruct.MapperConfig;
 
-    Entity findById(@Nonnull EntityId id);
-
-    EntityId lookup(@Nonnull EntityIdParameter entityId);
-}
+@MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
+public interface MapperConfiguration {}
