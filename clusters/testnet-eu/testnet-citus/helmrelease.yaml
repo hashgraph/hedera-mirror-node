@@ -48,19 +48,11 @@ spec:
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.1926"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.25"
         HEDERA_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.1926"
-      ingress:
-        enabled: false
       prometheusRules:
         MonitorPublishLatency:
           enabled: false
         MonitorSubscribeLatency:
           enabled: false
-    rest:
-      ingress:
-        enabled: false
-    restjava:
-      ingress:
-        enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
@@ -74,6 +66,4 @@ spec:
     web3:
       env:
         HEDERA_MIRROR_WEB3_EVM_MAXDATASIZE: "128KB"
-      ingress:
-        enabled: false
 
