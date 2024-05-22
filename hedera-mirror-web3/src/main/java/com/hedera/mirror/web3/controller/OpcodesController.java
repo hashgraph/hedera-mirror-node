@@ -24,12 +24,9 @@ import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.ContractID;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
@@ -54,7 +51,8 @@ class OpcodesController {
 
     private final CallServiceParametersBuilder callServiceParametersBuilder;
     private final ContractCallService contractCallService;
-    private final Bucket bucket;
+    private final Bucket rateLimitBucket;
+    private final Bucket gasLimitBucket;
 
     /**
      * <p>
@@ -88,18 +86,26 @@ class OpcodesController {
             @RequestParam(required = false, defaultValue = "false") boolean memory,
             @RequestParam(required = false, defaultValue = "false") boolean storage
     ) {
-        if (!bucket.tryConsume(1)) {
+        if (!rateLimitBucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
 
         final var params = callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash);
-        final var result = contractCallService.processOpcodeCall(params, new OpcodeTracerOptions(stack, memory, storage));
+        if (!gasLimitBucket.tryConsume(params.getGas())) {
+            throw new RateLimitException("Rate limit exceeded.");
+        }
+
+        final var options = new OpcodeTracerOptions(stack, memory, storage);
+        final var result = contractCallService.processOpcodeCall(params, options);
 
         return new OpcodesResponse()
                 .contractId(result.transactionProcessingResult()
                         .getRecipient()
                         .map(EntityIdUtils::contractIdFromEvmAddress)
-                        .map(ContractID::toString)
+                        .map(contractId -> "%d.%d.%d".formatted(
+                                contractId.getShardNum(),
+                                contractId.getRealmNum(),
+                                contractId.getContractNum()))
                         .orElse(null))
                 .address(result.transactionProcessingResult()
                         .getRecipient()
@@ -117,20 +123,22 @@ class OpcodesController {
                                 .gas(opcode.gas())
                                 .gasCost(opcode.gasCost())
                                 .depth(opcode.depth())
-                                .stack(Optional.ofNullable(opcode.stack()).orElse(new ArrayList<>())
-                                        .stream()
-                                        .map(Bytes::toHexString)
-                                        .toList())
-                                .memory(Optional.ofNullable(opcode.memory()).orElse(new ArrayList<>())
-                                        .stream()
-                                        .map(Bytes::toHexString)
-                                        .toList())
-                                .storage(Optional.ofNullable(opcode.storage()).orElse(new HashMap<>())
-                                        .entrySet()
-                                        .stream()
-                                        .collect(Collectors.toMap(
-                                                Map.Entry::getKey,
-                                                entry -> entry.getValue().toHexString())))
+                                .stack(opcode.stack().isPresent() ?
+                                        Arrays.stream(opcode.stack().get())
+                                                .map(Bytes::toHexString)
+                                                .toList() :
+                                        null)
+                                .memory(opcode.memory().isPresent() ?
+                                        Arrays.stream(opcode.memory().get())
+                                                .map(Bytes::toHexString)
+                                                .toList() :
+                                        null)
+                                .storage(opcode.storage().isPresent() ?
+                                        opcode.storage().get().entrySet().stream()
+                                                .collect(Collectors.toMap(
+                                                        entry -> entry.getKey().toHexString(),
+                                                        entry -> entry.getValue().toHexString())) :
+                                        null)
                                 .reason(opcode.reason()))
                         .toList());
     }

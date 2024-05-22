@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.controller;
 
+import static com.hedera.mirror.common.domain.TransactionMocks.ContractCall.getContractCallRecordFile;
+import static com.hedera.mirror.common.domain.TransactionMocks.ContractCall.getContractCallTransaction;
 import static com.hedera.mirror.common.util.CommonUtils.timestamp;
 import static com.hedera.mirror.common.util.CommonUtils.toAccountID;
 import static com.hedera.mirror.web3.service.TransactionServiceImpl.MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE;
@@ -34,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Opcode;
@@ -63,7 +66,6 @@ import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -73,7 +75,6 @@ import jakarta.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -81,6 +82,7 @@ import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -117,8 +119,11 @@ class OpcodesControllerTest {
     @MockBean
     private ContractCallService contractCallService;
 
-    @MockBean
-    private Bucket bucket;
+    @MockBean(name = "rateLimitBucket")
+    private Bucket rateLimitBucket;
+
+    @MockBean(name = "gasLimitBucket")
+    private Bucket gasLimitBucket;
 
     @MockBean
     private TransactionRepository transactionRepository;
@@ -192,7 +197,8 @@ class OpcodesControllerTest {
     }
 
     void setUp(Transaction transaction, EthereumTransaction ethTransaction, RecordFile recordFile) {
-        when(bucket.tryConsume(1)).thenReturn(true);
+        when(rateLimitBucket.tryConsume(1)).thenReturn(true);
+        when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractCallService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
@@ -235,31 +241,6 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @ArgumentsSource(TransactionMocksProvider.class)
-    void exceedingRateLimit(Transaction transaction,
-                            EthereumTransaction ethTransaction,
-                            RecordFile recordFile) throws Exception {
-        setUp(transaction, ethTransaction, recordFile);
-
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
-
-        for (var i = 0; i < 3; i++) {
-            mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                    .andExpect(status().isOk())
-                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
-
-            assertEquals(new OpcodeTracerOptions(), tracerOptionsCaptor.getValue());
-            assertEquals(
-                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
-                    callServiceParametersCaptor.getValue());
-        }
-
-        when(bucket.tryConsume(1)).thenReturn(false);
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isTooManyRequests());
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransactionMocksProvider.class)
     void callRevertMethodAndExpectDetailMessage(Transaction transaction,
                                                 EthereumTransaction ethTransaction,
                                                 RecordFile recordFile) throws Exception {
@@ -285,25 +266,28 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @ArgumentsSource(TransactionMocksProvider.class)
-    void callWithDisabledStackOrMemoryOrStorage(Transaction transaction,
-                                                EthereumTransaction ethTransaction,
-                                                RecordFile recordFile) throws Exception {
+    void callWithDifferentCombinationsOfTracerOptions(Transaction transaction,
+                                                      EthereumTransaction ethTransaction,
+                                                      RecordFile recordFile) throws Exception {
         setUp(transaction, ethTransaction, recordFile);
 
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
         final var tracerOptions = new OpcodeTracerOptions[] {
+                new OpcodeTracerOptions(true, true, true),
                 new OpcodeTracerOptions(false, true, true),
                 new OpcodeTracerOptions(true, false, true),
                 new OpcodeTracerOptions(true, true, false),
+                new OpcodeTracerOptions(false, false, true),
+                new OpcodeTracerOptions(false, true, false),
+                new OpcodeTracerOptions(true, false, false),
                 new OpcodeTracerOptions(false, false, false)
         };
 
         for (var options : tracerOptions) {
             mockMvc.perform(opcodesRequest(transactionIdOrHash, options))
                     .andExpect(status().isOk())
-                    .andExpect(responseBody(
-                            Builder.opcodesResponse(opcodesResultCaptor.get(), options)));
+                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
 
             assertEquals(options, tracerOptionsCaptor.getValue());
             assertEquals(
@@ -347,32 +331,6 @@ class OpcodesControllerTest {
                 .andExpect(responseBody(new GenericErrorResponse("Transaction not found")));
     }
 
-    /*
-     * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
-     * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
-     */
-    @ParameterizedTest
-    @ArgumentsSource(TransactionMocksProvider.class)
-    void callSuccessCors(Transaction transaction,
-                         EthereumTransaction ethTransaction,
-                         RecordFile recordFile) throws Exception {
-        setUp(transaction, ethTransaction, recordFile);
-
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
-        final String param = transactionIdOrHash.isTransactionId() ?
-                transactionIdOrHash.transactionID().toString() :
-                Bytes.of(transactionIdOrHash.hash().toByteArray()).toHexString();
-
-        mockMvc.perform(options(OPCODES_URI, param)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Origin", "https://example.com")
-                        .header("Access-Control-Request-Method", "GET"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "*"))
-                .andExpect(header().string("Access-Control-Allow-Methods", "GET"));
-    }
-
     @ParameterizedTest
     @ValueSource(
             strings = {
@@ -387,7 +345,7 @@ class OpcodesControllerTest {
                     "0.0.1234-1-123456789-",  // dash after nanos
             })
     void callInvalidTransactionIdOrHash(String transactionIdOrHash) throws Exception {
-        when(bucket.tryConsume(1)).thenReturn(true);
+        when(rateLimitBucket.tryConsume(1)).thenReturn(true);
 
         final var expectedMessage = StringUtils.hasText(transactionIdOrHash) ?
                 "Invalid transaction ID or hash" :
@@ -398,6 +356,79 @@ class OpcodesControllerTest {
                 .andExpect(content().string(new StringContains(expectedMessage)));
     }
 
+    @Test
+    void exceedingRateLimit() throws Exception {
+        final Transaction transaction = getContractCallTransaction();
+        final RecordFile recordFile = getContractCallRecordFile();
+        setUp(transaction, null, recordFile);
+
+        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, null);
+
+        for (var i = 0; i < 3; i++) {
+            mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                    .andExpect(status().isOk())
+                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
+
+            assertEquals(new OpcodeTracerOptions(), tracerOptionsCaptor.getValue());
+            assertEquals(
+                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
+                    callServiceParametersCaptor.getValue());
+        }
+
+        when(rateLimitBucket.tryConsume(1)).thenReturn(false);
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void exceedingGasLimit() throws Exception {
+        final Transaction transaction = getContractCallTransaction();
+        final RecordFile recordFile = getContractCallRecordFile();
+        setUp(transaction, null, recordFile);
+
+        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, null);
+
+        for (var i = 0; i < 3; i++) {
+            mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                    .andExpect(status().isOk())
+                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
+
+            assertEquals(new OpcodeTracerOptions(), tracerOptionsCaptor.getValue());
+            assertEquals(
+                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
+                    callServiceParametersCaptor.getValue());
+        }
+
+        when(gasLimitBucket.tryConsume(anyLong())).thenReturn(false);
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isTooManyRequests());
+    }
+
+    /*
+     * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
+     * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
+     */
+    @Test
+    void callSuccessCors() throws Exception {
+        final Transaction transaction = getContractCallTransaction();
+        final RecordFile recordFile = getContractCallRecordFile();
+        setUp(transaction, null, recordFile);
+
+        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, null);
+        final String param = transactionIdOrHash.isTransactionId() ?
+                transactionIdOrHash.transactionID().toString() :
+                Bytes.of(transactionIdOrHash.hash().toByteArray()).toHexString();
+
+        mockMvc.perform(options(OPCODES_URI, param)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Origin", "https://example.com")
+                        .header("Access-Control-Request-Method", "GET"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "*"))
+                .andExpect(header().string("Access-Control-Allow-Methods", "GET"));
+    }
+
     /**
      * Utility class with helper methods for building different objects in the tests
      */
@@ -405,15 +436,13 @@ class OpcodesControllerTest {
     private static class Builder {
 
         private static OpcodesResponse opcodesResponse(OpcodesProcessingResult result) {
-            return opcodesResponse(result, new OpcodeTracerOptions());
-        }
-
-        private static OpcodesResponse opcodesResponse(OpcodesProcessingResult result,
-                                                       OpcodeTracerOptions options) {
             return new OpcodesResponse()
                     .contractId(result.transactionProcessingResult().getRecipient()
                             .map(EntityIdUtils::contractIdFromEvmAddress)
-                            .map(ContractID::toString)
+                            .map(contractId -> "%d.%d.%d".formatted(
+                                    contractId.getShardNum(),
+                                    contractId.getRealmNum(),
+                                    contractId.getContractNum()))
                             .orElse(null))
                     .address(result.transactionProcessingResult().getRecipient()
                             .map(Address::toHexString)
@@ -430,22 +459,22 @@ class OpcodesControllerTest {
                                     .gas(opcode.gas())
                                     .gasCost(opcode.gasCost())
                                     .depth(opcode.depth())
-                                    .stack(options.isStack() ?
-                                            opcode.stack().stream()
+                                    .stack(opcode.stack().isPresent() ?
+                                            Arrays.stream(opcode.stack().get())
                                                     .map(Bytes::toHexString)
                                                     .toList() :
-                                            List.of())
-                                    .memory(options.isMemory() ?
-                                            opcode.memory().stream()
+                                            null)
+                                    .memory(opcode.memory().isPresent() ?
+                                            Arrays.stream(opcode.memory().get())
                                                     .map(Bytes::toHexString)
                                                     .toList() :
-                                            List.of())
-                                    .storage(options.isStorage() ?
-                                            opcode.storage().entrySet().stream()
+                                            null)
+                                    .storage(opcode.storage().isPresent() ?
+                                            opcode.storage().get().entrySet().stream()
                                                     .collect(Collectors.toMap(
-                                                            Map.Entry::getKey,
+                                                            entry -> entry.getKey().toHexString(),
                                                             entry -> entry.getValue().toHexString())) :
-                                            Map.of())
+                                            null)
                                     .reason(opcode.reason()))
                             .toList());
         }
@@ -472,16 +501,17 @@ class OpcodesControllerTest {
                             3,
                             2,
                             options.isStack() ?
-                                    Arrays.asList(
+                                    Optional.of(new Bytes[]{
                                             Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
                                             Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
-                                    ) : List.of(),
+                                    }) : Optional.empty(),
                             options.isMemory() ?
-                                    Arrays.asList(
+                                    Optional.of(new Bytes[]{
                                             Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
                                             Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
-                                    ) : List.of(),
-                            Collections.emptyMap(),
+                                    }) : Optional.empty(),
+                            options.isStorage() ?
+                                    Optional.of(Collections.emptySortedMap()) : Optional.empty(),
                             null
                     ),
                     new Opcode(
@@ -491,16 +521,17 @@ class OpcodesControllerTest {
                             0,
                             2,
                             options.isStack() ?
-                                    Arrays.asList(
-                                        Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
-                                        Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
-                                    ) : List.of(),
+                                    Optional.of(new Bytes[]{
+                                            Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
+                                    }) : Optional.empty(),
                             options.isMemory() ?
-                                    Arrays.asList(
-                                        Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
-                                        Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
-                                    ) : List.of(),
-                            Collections.emptyMap(),
+                                    Optional.of(new Bytes[]{
+                                            Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
+                                    }) : Optional.empty(),
+                            options.isStorage() ?
+                                    Optional.of(Collections.emptySortedMap()) : Optional.empty(),
                             "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"
                     ),
                     new Opcode(
@@ -510,20 +541,20 @@ class OpcodesControllerTest {
                             3,
                             1,
                             options.isStack() ?
-                                    Arrays.asList(
-                                        Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
-                                        Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")
-                                    ) : List.of(),
+                                    Optional.of(new Bytes[]{
+                                            Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")
+                                    }) : Optional.empty(),
                             options.isMemory() ?
-                                    Arrays.asList(
-                                        Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
-                                        Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")
-                                    ) : List.of(),
+                                    Optional.of(new Bytes[]{
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")
+                                    }) : Optional.empty(),
                             options.isStorage() ?
-                                    Map.of(
-                                            "0000000000000000000000000000000000000000000000000000000000000000",
+                                    Optional.of(ImmutableSortedMap.of(
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
                                             Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")
-                                    ) : Collections.emptyMap(),
+                                    )) : Optional.empty(),
                             null
                     )
             );

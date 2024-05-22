@@ -37,14 +37,11 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import io.github.bucket4j.Bucket;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Meter.MeterProvider;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -70,9 +67,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @Autowired
     private BinaryGasEstimator binaryGasEstimator;
 
-    @Autowired(required = false)
-    private MeterProvider<Counter> gasCounter;
-
     @Autowired
     private Store store;
 
@@ -80,7 +74,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
 
     @Autowired
-    private RecordFileRepository recordFileRepository;
+    private RecordFileService recordFileService;
 
     @Autowired
     private ThrottleProperties throttleProperties;
@@ -628,7 +622,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 binaryGasEstimator,
                 store,
                 mirrorEvmTxProcessor,
-                recordFileRepository,
+                recordFileService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -656,7 +650,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 binaryGasEstimator,
                 store,
                 mirrorEvmTxProcessor,
-                recordFileRepository,
+                recordFileService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -684,7 +678,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 binaryGasEstimator,
                 store,
                 mirrorEvmTxProcessor,
-                recordFileRepository,
+                recordFileService,
                 throttleProperties,
                 gasLimitBucket);
 

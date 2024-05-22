@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.common.domain.transaction;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 
 public record Opcode(int pc,
@@ -25,8 +25,8 @@ public record Opcode(int pc,
                      long gas,
                      long gasCost,
                      int depth,
-                     List<Bytes> stack,
-                     List<Bytes> memory,
-                     Map<String, Bytes> storage,
+                     Optional<Bytes[]> stack,
+                     Optional<Bytes[]> memory,
+                     Optional<Map<Bytes, Bytes>> storage,
                      String reason) {
 }
