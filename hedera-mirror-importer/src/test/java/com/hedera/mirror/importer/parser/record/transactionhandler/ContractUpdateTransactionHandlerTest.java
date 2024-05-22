@@ -395,7 +395,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     private Map<Long, EntityTransaction> getExpectedEntityTransactions(
             EntityId autoRenewAccountId, RecordItem recordItem, Transaction transaction) {
         var body = recordItem.getTransactionBody().getContractUpdateInstance();
-        if (EntityId.isEmpty(autoRenewAccountId)) {
+        if (EntityId.isEmpty(autoRenewAccountId)
+                && !body.getAutoRenewAccountId().hasAlias()) {
             autoRenewAccountId = EntityId.of(body.getAutoRenewAccountId());
         }
 

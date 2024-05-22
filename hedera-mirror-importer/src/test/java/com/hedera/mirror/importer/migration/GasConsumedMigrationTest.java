@@ -184,7 +184,7 @@ class GasConsumedMigrationTest extends ImporterIntegrationTest {
                 .createdContractIds(List.of(domainBuilder.entityId().getId()))
                 .errorMessage("")
                 .failedInitcode(failedInitcode)
-                .functionParameters(domainBuilder.bytes(64))
+                .functionParameters(domainBuilder.nonZeroBytes(64))
                 .functionResult(domainBuilder.bytes(128))
                 .gasLimit(200L)
                 .gasUsed(100L)

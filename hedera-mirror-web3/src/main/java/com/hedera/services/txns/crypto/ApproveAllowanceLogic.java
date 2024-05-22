@@ -18,6 +18,7 @@ package com.hedera.services.txns.crypto;
 
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.fetchOwnerAccount;
 import static com.hedera.services.txns.crypto.helpers.AllowanceHelpers.updateSpender;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
@@ -104,8 +105,7 @@ public class ApproveAllowanceLogic {
             }
             if (amount > 0) {
                 // To add allowances spender should be validated as being a valid account
-                store.getAccount(spender.asEvmAddress(), OnMissing.THROW);
-
+                store.loadAccountOrFailWith(spender.asEvmAddress(), INVALID_ALLOWANCE_SPENDER_ID);
                 cryptoMap.put(spender.asEntityNum(), amount);
                 accountToApprove = accountToApprove.setCryptoAllowance(cryptoMap);
                 accountsChanged.put(accountToApprove.getId().num(), accountToApprove);
@@ -156,7 +156,7 @@ public class ApproveAllowanceLogic {
             }
             if (amount > 0) {
                 // To add allowances spender should be validated as being a valid account
-                store.getAccount(spender.asEvmAddress(), OnMissing.THROW);
+                store.loadAccountOrFailWith(spender.asEvmAddress(), INVALID_ALLOWANCE_SPENDER_ID);
 
                 tokensMap.put(key, amount);
                 accountToApprove = accountToApprove.setFungibleTokenAllowances(tokensMap);
@@ -193,7 +193,7 @@ public class ApproveAllowanceLogic {
                 final var key = FcTokenAllowanceId.from(tokenId.asEntityNum(), spenderId.asEntityNum());
                 if (allowance.getApprovedForAll().getValue()) {
                     // Validate the spender/operator account
-                    store.getAccount(spenderId.asEvmAddress(), OnMissing.THROW);
+                    store.loadAccountOrFailWith(spenderId.asEvmAddress(), INVALID_ALLOWANCE_SPENDER_ID);
                     approveForAllNfts.add(key);
                 } else {
                     // Need not validate anything here to revoke the approval
@@ -208,7 +208,7 @@ public class ApproveAllowanceLogic {
 
             if (allowance.getSerialNumbersCount() > 0) {
                 // To add allowance for any serials, need to validate spender
-                store.getAccount(spenderId.asEvmAddress(), OnMissing.THROW);
+                store.loadAccountOrFailWith(spenderId.asEvmAddress(), INVALID_ALLOWANCE_SPENDER_ID);
             }
 
             final var nfts = updateSpender(

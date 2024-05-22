@@ -23,9 +23,11 @@ import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
@@ -95,6 +97,8 @@ public interface Store {
     boolean exists(Address accountID);
 
     Optional<Long> getHistoricalTimestamp();
+
+    Account loadAccountOrFailWith(final Address evmAddress, @Nullable final ResponseCodeEnum responseCodeEnum);
 
     enum OnMissing {
         THROW,

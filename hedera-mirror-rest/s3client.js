@@ -84,11 +84,11 @@ const buildS3ConfigFromStreamsConfig = () => {
   };
 
   if (!!accessKey && !!secretKey) {
-    logger.info('Building s3Config with provided access/secret key');
+    logger.debug('Building s3Config with provided access/secret key');
     s3Config.credentials.accessKeyId = accessKey;
     s3Config.credentials.secretAccessKey = secretKey;
   } else {
-    logger.info('Building s3Config with no credentials');
+    logger.debug('Building s3Config with no credentials');
   }
 
   return {

@@ -47,6 +47,7 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
 import java.util.List;
@@ -106,6 +107,9 @@ class HederaEvmWorldStateTest {
     @Mock
     private NftRepository nftRepository;
 
+    @Mock
+    private OptionValidator validator;
+
     private StoreImpl store;
 
     private HederaEvmWorldState subject;
@@ -129,7 +133,7 @@ class HederaEvmWorldStateTest {
                 tokenRelationshipDatabaseAccessor,
                 uniqueTokenDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        store = new StoreImpl(stackedStateFrames);
+        store = new StoreImpl(stackedStateFrames, validator);
         subject = new HederaEvmWorldState(
                 hederaEvmEntityAccess,
                 evmProperties,

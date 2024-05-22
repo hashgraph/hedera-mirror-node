@@ -21,6 +21,8 @@ import static com.hedera.services.utils.EntityNum.fromAccountId;
 import static com.hedera.services.utils.EntityNum.fromTokenId;
 import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_SPENDER_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -114,7 +116,7 @@ class ApproveAllowanceLogicTest {
 
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial1), OnMissing.THROW))
@@ -185,7 +187,7 @@ class ApproveAllowanceLogicTest {
 
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial1), OnMissing.THROW))
@@ -241,7 +243,7 @@ class ApproveAllowanceLogicTest {
     void doesntAddAllowancesWhenAmountIsZero() {
         givenTxnCtxWithZeroAmount();
 
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
@@ -280,7 +282,7 @@ class ApproveAllowanceLogicTest {
 
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial1), OnMissing.THROW))
@@ -325,7 +327,8 @@ class ApproveAllowanceLogicTest {
 
         givenValidTxnCtx();
 
-        given(store.getAccount(spenderId1.asEvmAddress(), OnMissing.THROW)).willReturn(payerAccount);
+        given(store.loadAccountOrFailWith(spenderId1.asEvmAddress(), INVALID_ALLOWANCE_SPENDER_ID))
+                .willReturn(payerAccount);
         ownerAcccount.setCryptoAllowance(new TreeMap<>());
         ownerAcccount.setFungibleTokenAllowances(new TreeMap<>());
         ownerAcccount.setApproveForAllNfts(new TreeSet<>());
@@ -374,7 +377,7 @@ class ApproveAllowanceLogicTest {
 
         given(store.getAccount(payerAccount.getAccountAddress(), OnMissing.THROW))
                 .willReturn(payerAccount);
-        given(store.getAccount(ownerAccount.getAccountAddress(), OnMissing.THROW))
+        given(store.loadAccountOrFailWith(ownerAccount.getAccountAddress(), INVALID_ALLOWANCE_OWNER_ID))
                 .willReturn(ownerAccount);
         given(store.getUniqueToken(
                         new NftId(tokenId2.shard(), tokenId2.realm(), tokenId2.num(), serial1), OnMissing.THROW))

@@ -17,10 +17,10 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import java.util.Optional;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface EthereumTransactionRepository extends CrudRepository<EthereumTransaction, Long> {
 
-    Optional<EthereumTransaction> findByHash(byte[] transactionHash);
 }
