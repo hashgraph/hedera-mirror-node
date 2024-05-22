@@ -196,11 +196,13 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                         select tt.token_id, tt.payer_account_id, tt.consensus_timestamp, sum(tt.amount) as amount
                         from approved_transfers tt
                             join token_allowances ta on tt.payer_account_id = ta.spender and tt.token_id = ta.token_id
+                            and tt.consensus_timestamp > lower(ta.timestamp_range)
                         group by tt.token_id, tt.payer_account_id, tt.consensus_timestamp
                     ), owner_transfers as (
                         select ta.spender, tt.account_id, tt.consensus_timestamp, tt.token_id, tt.amount
                         from approved_transfers tt
                             join token_allowances ta on tt.account_id = ta.owner and tt.token_id = ta.token_id
+                            and tt.consensus_timestamp > lower(ta.timestamp_range)
                         where tt.consensus_timestamp not in (select consensus_timestamp from spender_transfers)
                     ), contract_call_transfers as (
                         select cr.sender_id, tt.consensus_timestamp, tt.token_id, sum(tt.amount) as amount
