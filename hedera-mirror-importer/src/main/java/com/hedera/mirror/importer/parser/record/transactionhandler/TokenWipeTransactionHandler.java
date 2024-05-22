@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static java.util.function.Predicate.not;
+
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -23,15 +25,20 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.util.Utility;
 import jakarta.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
+@CustomLog
 @Named
 @RequiredArgsConstructor
 class TokenWipeTransactionHandler extends AbstractTransactionHandler {
 
+    private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
@@ -71,6 +78,13 @@ class TokenWipeTransactionHandler extends AbstractTransactionHandler {
             entityListener.onNft(nft);
         });
 
-        recordItem.addEntityId(EntityId.of(transactionBody.getAccount()));
+        var account = transactionBody.getAccount();
+        entityIdService
+                .lookup(account)
+                .filter(not(EntityId::isEmpty))
+                .ifPresentOrElse(
+                        recordItem::addEntityId,
+                        () -> Utility.handleRecoverableError(
+                                "Invalid TokenWipe account {} at {}", account, consensusTimestamp));
     }
 }

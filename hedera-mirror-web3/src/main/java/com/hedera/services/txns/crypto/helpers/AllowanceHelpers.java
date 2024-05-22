@@ -17,6 +17,7 @@
 package com.hedera.services.txns.crypto.helpers;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ALLOWANCE_OWNER_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SENDER_DOES_NOT_OWN_NFT_SERIAL_NO;
 
 import com.hedera.mirror.web3.evm.store.Store;
@@ -109,7 +110,7 @@ public class AllowanceHelpers {
         } else if (entitiesChanged.containsKey(ownerId.num())) {
             return entitiesChanged.get(ownerId.num());
         } else {
-            return store.getAccount(ownerId.asEvmAddress(), OnMissing.THROW);
+            return store.loadAccountOrFailWith(ownerId.asEvmAddress(), INVALID_ALLOWANCE_OWNER_ID);
         }
     }
 

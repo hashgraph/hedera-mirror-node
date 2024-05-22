@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -67,6 +68,9 @@ public abstract class AbstractAutoCreationLogic {
     private final EvmProperties evmProperties;
     private final SyntheticTxnFactory syntheticTxnFactory;
 
+    private static final Supplier<Long> zeroLongSupplier = () -> 0L;
+    private static final Supplier<Integer> zeroIntegerSupplier = () -> 0;
+
     protected AbstractAutoCreationLogic(
             final FeeCalculator feeCalculator,
             final EvmProperties evmProperties,
@@ -85,7 +89,8 @@ public abstract class AbstractAutoCreationLogic {
      * <p><b>IMPORTANT:</b> If this change was to be part of a zero-sum balance change list, then
      * after those changes are applied atomically, the returned fee must be given to the funding account!
      *
-     * @param change a triggering change with unique alias
+     * @param change  a triggering change with unique alias
+     * @param changes list of all changes need to construct tokenAliasMap
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
@@ -126,17 +131,17 @@ public abstract class AbstractAutoCreationLogic {
                 0L,
                 Id.fromGrpcAccount(newId),
                 0L,
-                () -> 0L,
+                zeroLongSupplier,
                 false,
-                () -> 0L,
+                zeroLongSupplier,
                 0L,
                 null,
                 maxAutoAssociations,
                 Collections::emptySortedMap,
                 Collections::emptySortedMap,
                 Collections::emptySortedSet,
-                () -> 0,
-                () -> 0,
+                zeroIntegerSupplier,
+                zeroIntegerSupplier,
                 0,
                 0L,
                 false,

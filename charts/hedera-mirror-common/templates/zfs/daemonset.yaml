@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
+  labels: {{ include "hedera-mirror-common.selectorLabels" . | nindent 4 }}
     app: zfs-init
   name: {{ .Release.Name }}-zfs-init
   namespace: {{ include "hedera-mirror-common.namespace" . }}
@@ -50,11 +50,11 @@ spec:
               mountPath: /node
             - name: scripts
               mountPath: /scripts
-      nodeSelector: {{ toYaml .Values.zfs.zfsNode.nodeSelector | nindent 8 }}
+      nodeSelector: {{ index .Values.zfs "zfs-localpv" "zfsNode" "nodeSelector" | toYaml | nindent 8 }}
       priorityClassName: {{ .Values.zfs.priorityClassName }}
       serviceAccountName: {{ .Values.zfs.init.serviceAccount.name }}
       terminationGracePeriodSeconds: 1
-      tolerations: {{ toYaml .Values.zfs.zfsNode.tolerations | nindent 8 }}
+      tolerations: {{ index .Values.zfs "zfs-localpv" "zfsNode" "tolerations" | toYaml | nindent 8 }}
       volumes:
         - name: node
           hostPath:

@@ -40,24 +40,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 class ContractController {
     private final ContractCallService contractCallService;
-    private final Bucket bucket;
+    private final Bucket rateLimitBucket;
+    private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties evmProperties;
 
     @CrossOrigin(origins = "*")
     @PostMapping(value = "/call")
     ContractCallResponse call(@RequestBody @Valid ContractCallRequest request) {
 
-        if (!bucket.tryConsume(1)) {
+        if (!rateLimitBucket.tryConsume(1) || !gasLimitBucket.tryConsume(request.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
 
-        validateContractData(request);
-        validateContractMaxGasLimit(request);
+        try {
+            validateContractData(request);
+            validateContractMaxGasLimit(request);
 
-        final var params = buildFromContractCallRequest(request);
-        final var result = contractCallService.processCall(params);
-
-        return new ContractCallResponse(result);
+            final var params = buildFromContractCallRequest(request);
+            final var result = contractCallService.processCall(params);
+            return new ContractCallResponse(result);
+        } catch (InvalidParametersException e) {
+            // The validation failed but no processing was made - restore the consumed gas back to the bucket.
+            gasLimitBucket.addTokens(request.getGas());
+            throw e;
+        }
     }
 
     /*
