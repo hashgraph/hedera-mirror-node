@@ -35,6 +35,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 class OpcodeTracerCallsTest extends ContractCallTestSetup {
 
+    private static final Long DEFAULT_CALL_VALUE = 0L;
     private static final OpcodeTracerOptions OPTIONS = new OpcodeTracerOptions(false, false, false);
 
     private static Comparator<Long> gasComparator() {
@@ -51,7 +52,8 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
                 function,
                 MODIFICATION_CONTRACT_ABI_PATH,
                 MODIFICATION_CONTRACT_ADDRESS,
-                ETH_DEBUG_TRACE_TRANSACTION
+                ETH_DEBUG_TRACE_TRANSACTION,
+                DEFAULT_CALL_VALUE
         );
         verifyOpcodeTracerCall(params, function);
     }
@@ -63,7 +65,8 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
                 function,
                 NESTED_CALLS_ABI_PATH,
                 NESTED_ETH_CALLS_CONTRACT_ADDRESS,
-                ETH_DEBUG_TRACE_TRANSACTION
+                ETH_DEBUG_TRACE_TRANSACTION,
+                DEFAULT_CALL_VALUE
         );
         verifyOpcodeTracerCall(params, function);
     }
@@ -75,7 +78,8 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
                 function,
                 DYNAMIC_ETH_CALLS_ABI_PATH,
                 DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
-                ETH_DEBUG_TRACE_TRANSACTION
+                ETH_DEBUG_TRACE_TRANSACTION,
+                DEFAULT_CALL_VALUE
         );
         verifyOpcodeTracerCall(params, function);
     }
