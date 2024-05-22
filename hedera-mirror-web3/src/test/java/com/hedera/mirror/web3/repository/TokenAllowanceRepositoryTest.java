@@ -222,6 +222,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
         var initialHistoryAmount = 10L;
         var amountForTransfer = -1L;
         var amountForHistoryTransfer = -2L;
+        var amountForContractCallTransfer = -5L;
 
         var allowance = domainBuilder
                 .tokenAllowance()
@@ -289,6 +290,24 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
+        var contractCallTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForContractCallTransfer)
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(historyRange.lowerEndpoint() + 3)
+                                .build()))
+                .persist();
+
+        var contractResult = domainBuilder
+                .contractResult()
+                .customize(
+                        c -> c.consensusTimestamp(contractCallTransfer.getId().getConsensusTimestamp())
+                                .senderId(EntityId.of(spenderId)))
+                .persist();
+
         var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
 
         assertThat(result).hasSize(2);
@@ -300,6 +319,16 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(initialHistoryAmount + amountForHistoryTransfer, TokenAllowance::getAmount);
+        assertThat(result.get(1)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
+
+        result = repository.findByOwnerAndTimestamp(
+                allowance.getOwner(), contractCallTransfer.getId().getConsensusTimestamp());
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0))
+                .returns(
+                        initialHistoryAmount + amountForHistoryTransfer + amountForContractCallTransfer,
+                        TokenAllowance::getAmount);
         assertThat(result.get(1)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
     }
 
