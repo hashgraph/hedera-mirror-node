@@ -53,7 +53,8 @@ class OpcodesController {
 
     private final CallServiceParametersBuilder callServiceParametersBuilder;
     private final ContractCallService contractCallService;
-    private final Bucket bucket;
+    private final Bucket rateLimitBucket;
+    private final Bucket gasLimitBucket;
 
     /**
      * <p>
@@ -87,11 +88,15 @@ class OpcodesController {
             @RequestParam(required = false, defaultValue = "false") boolean memory,
             @RequestParam(required = false, defaultValue = "false") boolean storage
     ) {
-        if (!bucket.tryConsume(1)) {
+        if (!rateLimitBucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
 
         final var params = callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash);
+        if (!gasLimitBucket.tryConsume(params.getGas())) {
+            throw new RateLimitException("Rate limit exceeded.");
+        }
+
         final var options = new OpcodeTracerOptions(stack, memory, storage);
         final var result = contractCallService.processOpcodeCall(params, options, transactionIdOrHash);
 
@@ -124,18 +129,18 @@ class OpcodesController {
                                         Arrays.stream(opcode.stack().get())
                                                 .map(Bytes::toHexString)
                                                 .toList() :
-                                        List.of())
+                                        null)
                                 .memory(opcode.memory().isPresent() ?
                                         Arrays.stream(opcode.memory().get())
                                                 .map(Bytes::toHexString)
                                                 .toList() :
-                                        List.of())
+                                        null)
                                 .storage(opcode.storage().isPresent() ?
                                         opcode.storage().get().entrySet().stream()
                                                 .collect(Collectors.toMap(
                                                         entry -> entry.getKey().toHexString(),
                                                         entry -> entry.getValue().toHexString())) :
-                                        Map.of())
+                                        null)
                                 .reason(opcode.reason()))
                         .toList());
     }

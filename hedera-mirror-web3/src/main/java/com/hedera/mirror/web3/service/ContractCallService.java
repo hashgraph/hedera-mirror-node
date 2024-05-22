@@ -38,20 +38,25 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
+import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
-import edu.umd.cs.findbugs.annotations.NonNull;
+import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.CustomLog;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
+import org.springframework.lang.Nullable;
+import org.springframework.util.Assert;
 
 @CustomLog
 @Named
@@ -67,6 +72,8 @@ public class ContractCallService {
     private final ContractActionService contractActionService;
     private final TransactionService transactionService;
     private final EthereumTransactionService ethereumTransactionService;
+    private final ThrottleProperties throttleProperties;
+    private final Bucket gasLimitBucket;
 
     public ContractCallService(
             MeterRegistry meterRegistry,
@@ -76,7 +83,9 @@ public class ContractCallService {
             RecordFileService recordFileService,
             ContractActionService contractActionService,
             TransactionService transactionService,
-            EthereumTransactionService ethereumTransactionService) {
+            EthereumTransactionService ethereumTransactionService,
+            ThrottleProperties throttleProperties,
+            Bucket gasLimitBucket) {
         this.binaryGasEstimator = binaryGasEstimator;
         this.gasCounter = Counter.builder(GAS_METRIC)
                 .description("The amount of gas consumed by the EVM")
@@ -87,6 +96,8 @@ public class ContractCallService {
         this.transactionService = transactionService;
         this.contractActionService = contractActionService;
         this.ethereumTransactionService = ethereumTransactionService;
+        this.throttleProperties = throttleProperties;
+        this.gasLimitBucket = gasLimitBucket;
     }
 
     public String processCall(final CallServiceParameters params) {
@@ -119,10 +130,10 @@ public class ContractCallService {
 
     public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params,
                                                      final OpcodeTracerOptions opcodeTracerOptions,
-                                                     final TransactionIdOrHashParameter transactionIdOrHashParameter) {
+                                                     @Nullable final TransactionIdOrHashParameter transactionIdOrHash) {
         return ContractCallContext.run(ctx -> {
-            if (transactionIdOrHashParameter != null && transactionIdOrHashParameter.isValid()) {
-                List<ContractAction> contractActions = getContractAction(transactionIdOrHashParameter);
+            if (transactionIdOrHash != null && transactionIdOrHash.isValid()) {
+                List<ContractAction> contractActions = getContractAction(transactionIdOrHash);
                 ctx.setContractActions(contractActions);
             }
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
@@ -136,25 +147,23 @@ public class ContractCallService {
     }
 
     @SneakyThrows
-    public List<ContractAction> getContractAction(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
-        final Optional<Transaction> transaction;
-        final Optional<EthereumTransaction> ethTransaction;
+    public List<ContractAction> getContractAction(@NonNull @Valid TransactionIdOrHashParameter transactionIdOrHash) {
+        Assert.isTrue(transactionIdOrHash.isValid(), "Invalid transactionIdOrHash");
 
+        Optional<Long> consensusTimestamp;
         if (transactionIdOrHash.isHash()) {
-            ethTransaction = ethereumTransactionService.findByHash(transactionIdOrHash.hash().toByteArray());
-            transaction = ethTransaction
-                    .map(EthereumTransaction::getConsensusTimestamp)
-                    .flatMap(transactionService::findByConsensusTimestamp);
-        } else if (transactionIdOrHash.isTransactionId()) {
-            transaction = transactionService.findByTransactionId(transactionIdOrHash.transactionID());
-            ethTransaction = transaction
-                    .map(Transaction::getConsensusTimestamp)
-                    .flatMap(ethereumTransactionService::findByConsensusTimestamp);
+            consensusTimestamp = ethereumTransactionService
+                    .findByHash(transactionIdOrHash.hash().toByteArray())
+                    .map(EthereumTransaction::getConsensusTimestamp);
         } else {
-            throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
+            consensusTimestamp = transactionService
+                    .findByTransactionId(transactionIdOrHash.transactionID())
+                    .map(Transaction::getConsensusTimestamp);
         }
 
-        return contractActionService.findContractActionByConsensusTimestamp(transaction.get().getConsensusTimestamp());
+        return consensusTimestamp
+                .map(contractActionService::findContractActionByConsensusTimestamp)
+                .orElseThrow(() -> new IllegalArgumentException("Contract actions for transaction not found"));
     }
 
     private HederaEvmTransactionProcessingResult getCallTxnResult(CallServiceParameters params,
@@ -169,7 +178,7 @@ public class ContractCallService {
         // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
         // if the call is historical
         ctx.initializeStackFrames(store.getStackedStateFrames());
-        return doProcessCall(params, params.getGas(), tracerType, ctx);
+        return doProcessCall(params, params.getGas(), true, tracerType, ctx);
     }
 
     /**
@@ -184,7 +193,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final CallServiceParameters params, final ContractCallContext ctx) {
-        final var processingResult = doProcessCall(params, params.getGas(), HederaEvmTxProcessor.TracerType.OPERATION, ctx);
+        final var processingResult = doProcessCall(params, params.getGas(), true, HederaEvmTxProcessor.TracerType.OPERATION, ctx);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -196,7 +205,7 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas, HederaEvmTxProcessor.TracerType.OPERATION, ctx),
+                gas -> doProcessCall(params, gas, false, HederaEvmTxProcessor.TracerType.OPERATION, ctx),
                 gasUsedByInitialCall,
                 params.getGas());
 
@@ -205,12 +214,32 @@ public class ContractCallService {
 
     private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params,
                                                                long estimatedGas,
+                                                               boolean restoreGasToThrottleBucket,
                                                                HederaEvmTxProcessor.TracerType tracerType,
                                                                ContractCallContext ctx) throws MirrorEvmTransactionException {
         try {
-            return mirrorEvmTxProcessor.execute(params, estimatedGas, tracerType, ctx);
+            var result = mirrorEvmTxProcessor.execute(params, estimatedGas, tracerType, ctx);
+            if (!restoreGasToThrottleBucket) {
+                return result;
+            }
+
+            restoreGasToBucket(result, params.getGas());
+            return result;
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
+        }
+    }
+
+    private void restoreGasToBucket(HederaEvmTransactionProcessingResult result, long gasLimit) {
+        // If the transaction fails, gasUsed is equal to gasLimit, so restore the configured refund percent
+        // of the gasLimit value back in the bucket.
+        final var gasLimitToRestoreBaseline = (long) (gasLimit * throttleProperties.getGasLimitRefundPercent() / 100f);
+        if (!result.isSuccessful() && gasLimit == result.getGasUsed()) {
+            gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
+        } else {
+            // The transaction was successful or reverted, so restore the remaining gas back in the bucket or
+            // the configured refund percent of the gasLimit value back in the bucket - whichever is lower.
+            gasLimitBucket.addTokens(Math.min(gasLimit - result.getGasUsed(), gasLimitToRestoreBaseline));
         }
     }
 

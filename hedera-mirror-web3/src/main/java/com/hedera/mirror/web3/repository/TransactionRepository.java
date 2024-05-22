@@ -21,13 +21,18 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface TransactionRepository extends CrudRepository<Transaction, Long> {
 
     @Query("select t from Transaction t " +
-            "where t.payerAccountId = ?1 " +
-            "and t.consensusTimestamp >= ?2 and t.consensusTimestamp <= ?3 " +
-            "and t.validStartNs = ?2")
+            "where t.payerAccountId = :payerAccountId " +
+            "and t.validStartNs = :validStartNs " +
+            "and t.consensusTimestamp >= :validStartNs and t.consensusTimestamp <= :maxConsensusNs")
     Optional<Transaction> findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
-            EntityId payerAccountId, long validStartNs, long maxConsensusTimestampNs);
+            @Param("payerAccountId") EntityId payerAccountId,
+            @Param("validStartNs") long validStartNs,
+            @Param("maxConsensusNs") long maxConsensusNs);
 }

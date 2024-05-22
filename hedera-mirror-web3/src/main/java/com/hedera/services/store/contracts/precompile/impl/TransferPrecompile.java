@@ -216,7 +216,7 @@ public class TransferPrecompile extends AbstractWritePrecompile {
         for (int i = 0, n = changes.size(); i < n; i++) {
             final var change = changes.get(i);
             if (change.hasAlias()) {
-                replaceAliasWithId(change, completedLazyCreates, store, entityAddressSequencer, changes);
+                replaceAliasWithId(change, changes, completedLazyCreates, store, entityAddressSequencer);
             }
 
             final var units = change.getAggregatedUnits();
@@ -483,10 +483,10 @@ public class TransferPrecompile extends AbstractWritePrecompile {
 
     private void replaceAliasWithId(
             final BalanceChange change,
+            final List<BalanceChange> changes,
             final Map<ByteString, EntityNum> completedLazyCreates,
             Store store,
-            EntityAddressSequencer entityAddressSequencer,
-            final List<BalanceChange> changes) {
+            EntityAddressSequencer entityAddressSequencer) {
         final var receiverAlias = change.getNonEmptyAliasIfPresent();
         if (completedLazyCreates.containsKey(receiverAlias)) {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));

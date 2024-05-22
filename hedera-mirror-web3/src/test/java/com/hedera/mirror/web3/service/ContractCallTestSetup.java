@@ -143,6 +143,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1266));
     protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1269));
     protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1270));
+    protected static final Address SELF_DESTRUCT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1278));
 
     // Account addresses
     protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
@@ -599,6 +600,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/InternalCaller/InternalCaller.json")
     protected Path INTERNAL_CALLER_CONTRACT_ABI_PATH;
 
+    @Value("classpath:contracts/SelfDestructContract/SelfDestructContract.bin")
+    protected Path SELF_DESTRUCT_CONTRACT_BYTES_PATH;
+
     /**
      * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
      *
@@ -1036,6 +1040,16 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final CallType callType,
             final long value,
             final BlockType block) {
+        return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
+    }
+
+    protected CallServiceParameters serviceParametersForExecution(
+            final Bytes callData,
+            final Address contractAddress,
+            final CallType callType,
+            final long value,
+            final BlockType block,
+            final long gasLimit) {
         HederaEvmAccount sender;
         if (block != BlockType.LATEST) {
             sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
@@ -1049,7 +1063,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .value(value)
                 .receiver(contractAddress)
                 .callData(callData)
-                .gas(15_000_000L)
+                .gas(gasLimit)
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
@@ -1106,6 +1120,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nestedContractId = dynamicEthCallContractPresist();
         nestedEthCallsContractPersist();
         final var redirectContract = redirectContractPersist();
+        selfDestructContractPersist();
         fileDataPersist();
 
         receiverPersist();
@@ -2864,5 +2879,30 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(internalCallerContractBytes))
                 .persist();
         return internalCallerContractEntityId;
+    }
+
+    private void selfDestructContractPersist() {
+        final var evmCodesContractBytes = functionEncodeDecoder.getContractBytes(SELF_DESTRUCT_CONTRACT_BYTES_PATH);
+        final var evmCodesContractEntityId = fromEvmAddress(SELF_DESTRUCT_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var evmCodesContractEvmAddress = toEvmAddress(evmCodesContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(evmCodesContractEntityId.getId())
+                        .num(evmCodesContractEntityId.getNum())
+                        .evmAddress(evmCodesContractEvmAddress)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(evmCodesContractEntityId.getId()).runtimeBytecode(evmCodesContractBytes))
+                .persist();
+
+        domainBuilder
+                .recordFile()
+                .customize(f -> f.bytes(evmCodesContractBytes))
+                .persist();
     }
 }

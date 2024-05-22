@@ -17,7 +17,9 @@
 package com.hedera.mirror.web3.service;
 
 
+import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -28,10 +30,14 @@ import org.springframework.stereotype.Service;
 public class EthereumTransactionServiceImpl implements EthereumTransactionService {
 
     private final EthereumTransactionRepository ethereumTransactionRepository;
+    private final ContractTransactionHashRepository contractTransactionHashRepository;
 
     @Override
     public Optional<EthereumTransaction> findByHash(byte[] transactionHash) {
-        return ethereumTransactionRepository.findByHash(transactionHash);
+        return contractTransactionHashRepository
+                .findByHash(transactionHash)
+                .map(ContractTransactionHash::getConsensusTimestamp)
+                .flatMap(ethereumTransactionRepository::findById);
     }
 
     @Override

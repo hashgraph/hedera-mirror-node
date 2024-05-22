@@ -57,6 +57,7 @@ import com.hedera.services.store.models.Id;
 import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import java.util.Arrays;
 import java.util.List;
@@ -153,6 +154,9 @@ class StoreImplTest {
     @Mock(strictness = Strictness.LENIENT)
     private Nft nft;
 
+    @Mock
+    private OptionValidator validator;
+
     private StoreImpl subject;
 
     @BeforeEach
@@ -182,7 +186,7 @@ class StoreImplTest {
                 uniqueTokenDatabaseAccessor,
                 entityDatabaseAccessor);
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        subject = new StoreImpl(stackedStateFrames);
+        subject = new StoreImpl(stackedStateFrames, validator);
     }
 
     @Test
