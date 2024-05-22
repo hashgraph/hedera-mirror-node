@@ -37,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSortedMap;
+import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.Opcode;
@@ -48,6 +49,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
@@ -132,6 +134,9 @@ class OpcodesControllerTest {
     private EthereumTransactionRepository ethereumTransactionRepository;
 
     @MockBean
+    private ContractTransactionHashRepository contractTransactionHashRepository;
+
+    @MockBean
     private RecordFileRepository recordFileRepository;
 
     @Autowired
@@ -145,12 +150,12 @@ class OpcodesControllerTest {
 
     private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
 
-    private MockHttpServletRequestBuilder opcodesRequest(TransactionIdOrHashParameter parameter) {
+    private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter) {
         return opcodesRequest(parameter, new OpcodeTracerOptions());
     }
 
-    private MockHttpServletRequestBuilder opcodesRequest(TransactionIdOrHashParameter parameter,
-                                                         OpcodeTracerOptions options) {
+    private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter,
+                                                         final OpcodeTracerOptions options) {
         final String transactionIdOrHash = parameter.isHash() ?
                 Bytes.of(parameter.hash().toByteArray()).toHexString() :
                 transactionIdString(
@@ -164,18 +169,18 @@ class OpcodesControllerTest {
                 .queryParam("storage", String.valueOf(options.isStorage()));
     }
 
-    private MockHttpServletRequestBuilder opcodesRequest(String transactionIdOrHash) {
+    private MockHttpServletRequestBuilder opcodesRequest(final String transactionIdOrHash) {
         return get(OPCODES_URI, transactionIdOrHash)
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON);
     }
 
-    private ResultMatcher responseBody(Object expectedBody) throws JsonProcessingException {
+    private ResultMatcher responseBody(final Object expectedBody) throws JsonProcessingException {
         return content().string(objectMapper.writeValueAsString(expectedBody));
     }
 
-    private TransactionIdOrHashParameter getTransactionIdOrHash(Transaction transaction,
-                                                                EthereumTransaction ethereumTransaction) {
+    private TransactionIdOrHashParameter getTransactionIdOrHash(final Transaction transaction,
+                                                                final EthereumTransaction ethereumTransaction) {
         if (ethereumTransaction != null) {
             final String ethHash = Bytes.of(ethereumTransaction.getHash()).toHexString();
             return TransactionIdOrHashParameter.valueOf(ethHash);
@@ -188,7 +193,7 @@ class OpcodesControllerTest {
         }
     }
 
-    private String transactionIdString(AccountID accountID, Timestamp transactionValidStart) {
+    private String transactionIdString(final AccountID accountID, final Timestamp transactionValidStart) {
         final String entityId = "%d.%d.%d".formatted(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
         return "%s-%d-%d".formatted(
                 entityId,
@@ -196,7 +201,7 @@ class OpcodesControllerTest {
                 transactionValidStart.getNanos());
     }
 
-    void setUp(Transaction transaction, EthereumTransaction ethTransaction, RecordFile recordFile) {
+    void setUp(final Transaction transaction, final EthereumTransaction ethTransaction, final RecordFile recordFile) {
         when(rateLimitBucket.tryConsume(1)).thenReturn(true);
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractCallService.processOpcodeCall(
@@ -208,7 +213,11 @@ class OpcodesControllerTest {
             opcodesResultCaptor.set(Builder.opcodesProcessingResult(params, options));
             return opcodesResultCaptor.get();
         });
-        when(ethereumTransactionRepository.findByHash(any(byte[].class))).thenReturn(Optional.ofNullable(ethTransaction));
+        when(contractTransactionHashRepository.findByHash(
+                Optional.ofNullable(ethTransaction)
+                        .map(EthereumTransaction::getHash)
+                        .orElse(transaction.getTransactionHash())
+        )).thenReturn(Optional.of(Builder.contractTransactionHashFrom(transaction, ethTransaction)));
         when(ethereumTransactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.ofNullable(ethTransaction));
         when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
                 transaction.getPayerAccountId(),
@@ -221,9 +230,9 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @ArgumentsSource(TransactionMocksProvider.class)
-    void shouldThrowUnsupportedOperationFromContractCallService(Transaction transaction,
-                                                                EthereumTransaction ethTransaction,
-                                                                RecordFile recordFile) throws Exception {
+    void shouldThrowUnsupportedOperationFromContractCallService(final Transaction transaction,
+                                                                final EthereumTransaction ethTransaction,
+                                                                final RecordFile recordFile) throws Exception {
         setUp(transaction, ethTransaction, recordFile);
 
         reset(contractCallService);
@@ -241,9 +250,9 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @ArgumentsSource(TransactionMocksProvider.class)
-    void callRevertMethodAndExpectDetailMessage(Transaction transaction,
-                                                EthereumTransaction ethTransaction,
-                                                RecordFile recordFile) throws Exception {
+    void callRevertMethodAndExpectDetailMessage(final Transaction transaction,
+                                                final EthereumTransaction ethTransaction,
+                                                final RecordFile recordFile) throws Exception {
         setUp(transaction, ethTransaction, recordFile);
 
         final var detailedErrorMessage = "Custom revert message";
@@ -266,9 +275,9 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @ArgumentsSource(TransactionMocksProvider.class)
-    void callWithDifferentCombinationsOfTracerOptions(Transaction transaction,
-                                                      EthereumTransaction ethTransaction,
-                                                      RecordFile recordFile) throws Exception {
+    void callWithDifferentCombinationsOfTracerOptions(final Transaction transaction,
+                                                      final EthereumTransaction ethTransaction,
+                                                      final RecordFile recordFile) throws Exception {
         setUp(transaction, ethTransaction, recordFile);
 
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
@@ -298,9 +307,9 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @ArgumentsSource(TransactionMocksProvider.class)
-    void callWithRecordFileNotFoundExceptionTest(Transaction transaction,
-                                                 EthereumTransaction ethTransaction,
-                                                 RecordFile recordFile) throws Exception {
+    void callWithRecordFileNotFoundExceptionTest(final Transaction transaction,
+                                                 final EthereumTransaction ethTransaction,
+                                                 final RecordFile recordFile) throws Exception {
         setUp(transaction, ethTransaction, recordFile);
 
         when(recordFileRepository.findByTimestamp(anyLong())).thenReturn(Optional.empty());
@@ -314,9 +323,9 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @ArgumentsSource(TransactionMocksProvider.class)
-    void callWithTransactionNotFoundExceptionTest(Transaction transaction,
-                                                  EthereumTransaction ethTransaction,
-                                                  RecordFile recordFile) throws Exception {
+    void callWithTransactionNotFoundExceptionTest(final Transaction transaction,
+                                                  final EthereumTransaction ethTransaction,
+                                                  final RecordFile recordFile) throws Exception {
         setUp(transaction, ethTransaction, recordFile);
 
         when(transactionRepository.findById(anyLong())).thenReturn(Optional.empty());
@@ -344,7 +353,7 @@ class OpcodesControllerTest {
                     "0.0.1234-0-1234567890", // nanos overflow
                     "0.0.1234-1-123456789-",  // dash after nanos
             })
-    void callInvalidTransactionIdOrHash(String transactionIdOrHash) throws Exception {
+    void callInvalidTransactionIdOrHash(final String transactionIdOrHash) throws Exception {
         when(rateLimitBucket.tryConsume(1)).thenReturn(true);
 
         final var expectedMessage = StringUtils.hasText(transactionIdOrHash) ?
@@ -435,7 +444,20 @@ class OpcodesControllerTest {
     @UtilityClass
     private static class Builder {
 
-        private static OpcodesResponse opcodesResponse(OpcodesProcessingResult result) {
+        private static ContractTransactionHash contractTransactionHashFrom(final Transaction transaction,
+                                                                           final EthereumTransaction ethTransaction) {
+            return ContractTransactionHash.builder()
+                    .consensusTimestamp(transaction.getConsensusTimestamp())
+                    .entityId(transaction.getEntityId().getNum())
+                    .hash(Optional.ofNullable(ethTransaction)
+                            .map(EthereumTransaction::getHash)
+                            .orElse(transaction.getTransactionHash()))
+                    .payerAccountId(transaction.getPayerAccountId().getNum())
+                    .transactionResult(transaction.getResult())
+                    .build();
+        }
+
+        private static OpcodesResponse opcodesResponse(final OpcodesProcessingResult result) {
             return new OpcodesResponse()
                     .contractId(result.transactionProcessingResult().getRecipient()
                             .map(EntityIdUtils::contractIdFromEvmAddress)
@@ -585,24 +607,29 @@ class OpcodesControllerTest {
         }
 
         @Bean
-        TransactionService transactionService(TransactionRepository transactionRepository) {
+        TransactionService transactionService(final TransactionRepository transactionRepository) {
             return new TransactionServiceImpl(transactionRepository);
         }
 
         @Bean
-        EthereumTransactionService ethereumTransactionService(EthereumTransactionRepository ethereumTransactionRepository) {
-            return new EthereumTransactionServiceImpl(ethereumTransactionRepository);
+        EthereumTransactionService ethereumTransactionService(
+                final EthereumTransactionRepository ethereumTransactionRepository,
+                final ContractTransactionHashRepository contractTransactionHashRepository
+        ) {
+            return new EthereumTransactionServiceImpl(ethereumTransactionRepository, contractTransactionHashRepository);
         }
 
         @Bean
-        RecordFileService recordFileService(RecordFileRepository recordFileRepository) {
+        RecordFileService recordFileService(final RecordFileRepository recordFileRepository) {
             return new RecordFileServiceImpl(recordFileRepository);
         }
 
         @Bean
-        CallServiceParametersBuilder callServiceParametersBuilder(TransactionService transactionService,
-                                                                  EthereumTransactionService ethereumTransactionService,
-                                                                  RecordFileService recordFileService) {
+        CallServiceParametersBuilder callServiceParametersBuilder(
+                final TransactionService transactionService,
+                final EthereumTransactionService ethereumTransactionService,
+                final RecordFileService recordFileService
+        ) {
             return new CallServiceParametersBuilderImpl(
                     transactionService,
                     ethereumTransactionService,
