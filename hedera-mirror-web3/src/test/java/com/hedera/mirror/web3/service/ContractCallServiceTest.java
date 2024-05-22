@@ -77,6 +77,15 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     private RecordFileService recordFileService;
 
     @Autowired
+    private ContractActionService contractActionService;
+
+    @Autowired
+    private TransactionService transactionService;
+
+    @Autowired
+    private EthereumTransactionService ethereumTransactionService;
+
+    @Autowired
     private ThrottleProperties throttleProperties;
 
     static Stream<BlockType> provideBlockTypes() {
@@ -623,6 +632,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
+                contractActionService,
+                transactionService,
+                ethereumTransactionService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -651,6 +663,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
+                contractActionService,
+                transactionService,
+                ethereumTransactionService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -679,6 +694,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
+                contractActionService,
+                transactionService,
+                ethereumTransactionService,
                 throttleProperties,
                 gasLimitBucket);
 

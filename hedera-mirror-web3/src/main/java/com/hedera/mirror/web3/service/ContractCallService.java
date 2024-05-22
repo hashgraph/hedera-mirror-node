@@ -174,7 +174,7 @@ public class ContractCallService {
         // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
         // if the call is historical
         ctx.initializeStackFrames(store.getStackedStateFrames());
-        return doProcessCall(params, params.getGas(), tracerType, ctx);
+        return doProcessCall(params, params.getGas(), true, tracerType, ctx);
     }
 
     /**
