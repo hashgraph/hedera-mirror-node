@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-public class RangeBoundTest {
+class RangeBoundTest {
 
     @ParameterizedTest
     @CsvSource({
@@ -41,7 +41,7 @@ public class RangeBoundTest {
     })
     void testConversion(String input, String expectedOperator, String expectedValue) {
         var rangeBound = RangeBound.valueOf(input);
-        assertThat(rangeBound.operator().toString()).isEqualTo(expectedOperator);
+        assertThat(rangeBound.operator()).hasToString(expectedOperator);
         assertThat(rangeBound.value()).isEqualTo(expectedValue);
     }
 
