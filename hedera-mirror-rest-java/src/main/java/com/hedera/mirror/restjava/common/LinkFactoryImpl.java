@@ -20,7 +20,6 @@ import com.google.common.collect.Iterables;
 import com.hedera.mirror.rest.model.Links;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import lombok.RequiredArgsConstructor;
@@ -67,105 +66,43 @@ public class LinkFactoryImpl implements LinkFactory {
         var order = primarySort == null ? Direction.ASC : primarySort.getDirection();
         var builder = UriComponentsBuilder.fromPath(request.getRequestURI());
         var paramsMap = request.getParameterMap();
-
         var paginationParamsMap = extractor.extract(lastItem);
+
         for (var entry : paramsMap.entrySet()) {
             var key = entry.getKey();
             if (!paginationParamsMap.containsKey(key)) {
                 builder.queryParam(key, (Object[]) entry.getValue());
             } else {
-                boolean inclusive = extractor.isInclusive(key);
-                var lastValue = paginationParamsMap.get(key);
-                addQueryParamToLink(entry, inclusive, builder, lastValue, order, key);
+                addQueryParamToLink(entry, builder, order);
             }
         }
 
         for (var entry : paginationParamsMap.entrySet()) {
             var key = entry.getKey();
-            if (!paramsMap.containsKey(key)) {
-                boolean inclusive = extractor.isInclusive(key);
-                addPaginationValuesToLink(key, entry.getValue(), inclusive, builder, order);
+            var inclusive = extractor.isInclusive(key);
+            RangeOperator operator;
+            if (order.isAscending()) {
+                operator = inclusive ? RangeOperator.GTE : RangeOperator.GT;
+            } else {
+                operator = inclusive ? RangeOperator.LTE : RangeOperator.LT;
             }
+            builder.queryParam(key, operator + ":" + entry.getValue());
         }
 
         return builder.toUriString();
     }
 
-    private void addPaginationValuesToLink(
-            String key, String lastValue, boolean inclusive, UriComponentsBuilder builder, Direction order) {
-        RangeOperator operator;
-        if (order.isDescending()) {
-            operator = inclusive ? RangeOperator.LTE : RangeOperator.LT;
-        } else {
-            operator = inclusive ? RangeOperator.GTE : RangeOperator.GT;
-        }
-        builder.queryParam(key, operator + ":" + lastValue);
-    }
+    private void addQueryParamToLink(Entry<String, String[]> entry, UriComponentsBuilder builder, Direction order) {
+        for (var value : entry.getValue()) {
+            var rangeBound = RangeBound.valueOf(value);
+            var operator = rangeBound.operator();
+            if ((order.isAscending() && (operator == RangeOperator.GT || operator == RangeOperator.GTE))
+                    || (order.isDescending() && (operator == RangeOperator.LT || operator == RangeOperator.LTE))) {
+                // Skip this value since the new bound comes from the extracted value
+                continue;
+            }
 
-    private void addQueryParamToLink(
-            Entry<String, String[]> entry,
-            boolean inclusive,
-            UriComponentsBuilder builder,
-            String lastValue,
-            Direction order,
-            String key) {
-        var rangeBounds = Arrays.stream(entry.getValue())
-                .distinct()
-                .map(RangeBound::valueOf)
-                .filter(rangeBound -> {
-                    // Add to the link parameters that have an eq operator
-                    if (rangeBound.operator().equals(RangeOperator.EQ)) {
-                        builder.queryParam(key, rangeBound.value());
-                        return false;
-                    }
-
-                    return true;
-                })
-                .toList();
-
-        // The lastValueOperator is set based on the order
-        RangeOperator lastValueOperator;
-        if (order.isDescending()) {
-            lastValueOperator = inclusive ? RangeOperator.LTE : RangeOperator.LT;
-
-            // If a lower bound is found, always add it to the link
-            var lowerBound = rangeBounds.stream()
-                    .filter(rangeBound ->
-                            rangeBound.operator() == RangeOperator.GT || rangeBound.operator() == RangeOperator.GTE)
-                    .reduce((rangeBound1, rangeBound2) -> {
-                        var compare = rangeBound1.value().compareTo(rangeBound2.value());
-                        if (compare == 0) {
-                            return rangeBound1.operator() == RangeOperator.GT ? rangeBound1 : rangeBound2;
-                        }
-                        return compare < 0 ? rangeBound1 : rangeBound2;
-                    })
-                    .orElse(RangeBound.EMPTY);
-            addBoundToLink(lowerBound, key, builder);
-        } else {
-            lastValueOperator = inclusive ? RangeOperator.GTE : RangeOperator.GT;
-
-            // If an upper bound is found, always add it to the link
-            var upperBound = rangeBounds.stream()
-                    .filter(rangeBound ->
-                            rangeBound.operator() == RangeOperator.LT || rangeBound.operator() == RangeOperator.LTE)
-                    .reduce((rangeBound1, rangeBound2) -> {
-                        var compare = rangeBound1.value().compareTo(rangeBound2.value());
-                        if (compare == 0) {
-                            return rangeBound1.operator() == RangeOperator.LT ? rangeBound1 : rangeBound2;
-                        }
-                        return compare > 0 ? rangeBound1 : rangeBound2;
-                    })
-                    .orElse(RangeBound.EMPTY);
-            addBoundToLink(upperBound, key, builder);
-        }
-
-        // Always add the last value to the link
-        builder.queryParam(key, lastValueOperator + ":" + lastValue);
-    }
-
-    private void addBoundToLink(RangeBound bound, String key, UriComponentsBuilder builder) {
-        if (bound != RangeBound.EMPTY) {
-            builder.queryParam(key, bound.operator() + ":" + bound.value());
+            builder.queryParam(entry.getKey(), value);
         }
     }
 

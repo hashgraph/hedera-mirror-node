@@ -31,6 +31,7 @@ import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import java.util.Map;
+import java.util.TreeMap;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -91,11 +92,11 @@ public class AllowancesController {
 
         @Override
         public Map<String, String> extract(NftAllowance nftAllowance) {
-            return Map.of(
+            return new TreeMap<>(Map.of(
                     ACCOUNT_ID,
                     owner ? nftAllowance.getSpender() : nftAllowance.getOwner(),
                     TOKEN_ID,
-                    nftAllowance.getTokenId());
+                    nftAllowance.getTokenId()));
         }
 
         @Override
