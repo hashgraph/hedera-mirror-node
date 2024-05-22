@@ -56,7 +56,7 @@ public class ContractCallContext {
     private List<Opcode> opcodes = List.of();
 
     @Setter
-    private List<ContractAction> contractActions;
+    private List<ContractAction> contractActions = List.of();
 
     private ContractCallContext() {}
 

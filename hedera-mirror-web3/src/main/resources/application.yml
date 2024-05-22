@@ -5,7 +5,7 @@ hedera:
         host: 127.0.0.1
         name: mirror_node
         password: mirror_web3_pass
-        port: 5433
+        port: 5432
         sslMode: DISABLE
         statementTimeout: 10000
         username: mirror_web3

@@ -19,17 +19,15 @@ package com.hedera.mirror.web3.evm.config;
 import static org.hyperledger.besu.evm.internal.EvmConfiguration.WorldUpdaterMode.JOURNALED;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmMessageCallProcessorV30;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.contracts.operations.HederaBlockHashOperation;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.properties.TraceProperties;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.repository.properties.CacheProperties;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor.TracerType;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.contracts.operations.CreateOperationExternalizer;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
@@ -196,10 +194,10 @@ public class EvmConfiguration {
     Map<TracerType, Provider<HederaEvmOperationTracer>> tracerProvider(
             final MirrorOperationTracer mirrorOperationTracer,
             final OpcodeTracer opcodeTracer) {
-        Map<TracerType, Provider<HederaEvmOperationTracer>> processorsMap = new EnumMap<>(TracerType.class);
-        processorsMap.put(TracerType.OPCODE, () -> opcodeTracer);
-        processorsMap.put(TracerType.OPERATION, () -> mirrorOperationTracer);
-        return processorsMap;
+        Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap = new EnumMap<>(TracerType.class);
+        tracerMap.put(TracerType.OPCODE, () -> opcodeTracer);
+        tracerMap.put(TracerType.OPERATION, () -> mirrorOperationTracer);
+        return tracerMap;
     }
 
     @Bean
@@ -359,16 +357,6 @@ public class EvmConfiguration {
     @Bean
     public ContractCreationProcessor contractCreationProcessor30(@Qualifier("evm030") EVM evm) {
         return contractCreationProcessor(evm);
-    }
-
-    @Bean
-    public OpcodeTracer opcodeTracer() {
-        return new OpcodeTracer();
-    }
-
-    @Bean
-    public MirrorOperationTracer mirrorOperationTracer() {
-        return new MirrorOperationTracer(new TraceProperties(), new MirrorEvmContractAliases(null));
     }
 
     @Bean

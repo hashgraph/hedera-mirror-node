@@ -78,7 +78,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
@@ -463,7 +462,7 @@ class OpcodesControllerTest {
                                     .pc(opcode.pc())
                                     .op(opcode.op().orElse(""))
                                     .gas(opcode.gas())
-                                    .gasCost(opcode.gasCost().orElse(0L))
+                                    .gasCost(opcode.gasCost())
                                     .depth(opcode.depth())
                                     .stack(opcode.stack().isPresent() ?
                                             Arrays.stream(opcode.stack().get())
@@ -495,8 +494,6 @@ class OpcodesControllerTest {
                     .orElse(0L);
             final long gasCost = opcodes.stream()
                     .map(Opcode::gasCost)
-                    .filter(OptionalLong::isPresent)
-                    .map(OptionalLong::getAsLong)
                     .reduce(Long::sum)
                     .orElse(0L);
             return OpcodesProcessingResult.builder()
@@ -512,7 +509,7 @@ class OpcodesControllerTest {
                             1273,
                             Optional.of("PUSH1"),
                             2731,
-                            OptionalLong.of(3),
+                            3,
                             2,
                             options.isStack() ?
                                     Optional.of(new Bytes[]{
@@ -532,7 +529,7 @@ class OpcodesControllerTest {
                             1275,
                             Optional.of("REVERT"),
                             2728,
-                            OptionalLong.of(0),
+                            0,
                             2,
                             options.isStack() ?
                                     Optional.of(new Bytes[]{
@@ -552,7 +549,7 @@ class OpcodesControllerTest {
                             682,
                             Optional.of("SWAP2"),
                             2776,
-                            OptionalLong.of(3),
+                            3,
                             1,
                             options.isStack() ?
                                     Optional.of(new Bytes[]{

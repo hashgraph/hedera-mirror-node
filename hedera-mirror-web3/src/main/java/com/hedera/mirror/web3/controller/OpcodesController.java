@@ -27,8 +27,6 @@ import com.hedera.services.utils.EntityIdUtils;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
@@ -123,7 +121,7 @@ class OpcodesController {
                                 .pc(opcode.pc())
                                 .op(opcode.op().orElse(""))
                                 .gas(opcode.gas())
-                                .gasCost(opcode.gasCost().isPresent() ? opcode.gasCost().getAsLong() : 0L)
+                                .gasCost(opcode.gasCost())
                                 .depth(opcode.depth())
                                 .stack(opcode.stack().isPresent() ?
                                         Arrays.stream(opcode.stack().get())
