@@ -88,6 +88,14 @@ public class Bound {
         return lower == null && upper == null;
     }
 
+    public boolean hasLowerAndUpper() {
+        return lower != null && upper != null;
+    }
+
+    public boolean hasEqualBounds() {
+        return getLower().value().getId() == getUpper().value().getId();
+    }
+
     public void verifyUnsupported(RangeOperator unsupportedOperator) {
         if (getCardinality(unsupportedOperator) > 0) {
             throw new IllegalArgumentException(String.format("Unsupported range operator %s", unsupportedOperator));
