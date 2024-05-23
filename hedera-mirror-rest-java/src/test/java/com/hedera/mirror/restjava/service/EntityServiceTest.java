@@ -47,7 +47,7 @@ class EntityServiceTest extends RestJavaIntegrationTest {
         var id = EntityId.of(1L, 2L, 3L);
         assertThatThrownBy(() -> service.findById(id))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("invalid shard");
+                .hasMessageContaining("Unsupported shard 1 in ID " + id);
     }
 
     @Test
