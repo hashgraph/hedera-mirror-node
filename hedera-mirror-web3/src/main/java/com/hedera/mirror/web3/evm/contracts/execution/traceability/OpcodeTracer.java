@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import com.hedera.mirror.common.domain.contract.ContractAction;
-import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import jakarta.inject.Named;
@@ -73,16 +72,20 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
     @Override
     public void tracePrecompileCall(final MessageFrame frame, final long gasRequirement, final Bytes output) {
+        final Optional<Bytes> revertReason = frame.getRevertReason().isPresent() ?
+                frame.getRevertReason() :
+                getRevertReason(contractActions);
+
         opcodes.add(new Opcode(
                 frame.getPC(),
-                Optional.empty(),
+                Optional.ofNullable(frame.getCurrentOperation().getName()),
                 frame.getRemainingGas(),
                 output != null ? gasRequirement : 0L,
                 frame.getDepth(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                frame.getRevertReason().map(Bytes::toString).orElse(null)
+                revertReason.map(Bytes::toString).orElse(null)
         ));
     }
 
@@ -130,5 +133,13 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
             log.warn(e.getMessage(), e);
             return Optional.of(new TreeMap<>());
         }
+    }
+
+    private static Optional<Bytes> getRevertReason(List<ContractAction> contractActions) {
+        return contractActions.stream()
+                .filter(ContractAction::hasRevertReason)
+                .map(ContractAction::getResultData)
+                .map(Bytes::of)
+                .findFirst();
     }
 }
