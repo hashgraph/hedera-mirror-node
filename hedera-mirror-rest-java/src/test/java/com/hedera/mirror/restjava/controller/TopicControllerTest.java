@@ -115,7 +115,7 @@ class TopicControllerTest extends ControllerTest {
                     .body(Topic.class);
 
             // Then
-            validateError(callable, HttpClientErrorException.NotFound.class, "not found");
+            validateError(callable, HttpClientErrorException.NotFound.class, "Topic not found: " + entity.toEntityId());
         }
 
         @NullAndEmptySource
