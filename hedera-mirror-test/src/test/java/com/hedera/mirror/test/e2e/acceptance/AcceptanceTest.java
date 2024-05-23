@@ -37,17 +37,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 @Tag("acceptance")
 public class AcceptanceTest {
 
-    @ParameterType("\"?([A-Z]+)\"?")
+    @ParameterType("\"?(([A-Z]+)(_[A-Z]+)*)\"?")
     public AccountNameEnum account(String name) {
         return AccountNameEnum.valueOf(name);
     }
 
-    @ParameterType("\"?([A-Z]+)\"?")
+    @ParameterType("\"?(([A-Z]+)(_[A-Z]+)*)\"?")
     public PauseStatusEnum pauseStatus(String name) {
         return PauseStatusEnum.valueOf(name);
     }
 
-    @ParameterType("\"?([A-Z]+)\"?")
+    @ParameterType("\"?(([A-Z]+)(_[A-Z]+)*)\"?")
     public TokenNameEnum token(String name) {
         return TokenNameEnum.valueOf(name);
     }
