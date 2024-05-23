@@ -16,6 +16,16 @@
 
 package com.hedera.mirror.web3.evm.store;
 
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
+import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame.CacheAccessIncorrectTypeException;
 import com.hedera.mirror.web3.evm.store.UpdatableReferenceCache.UpdatableCacheUsageException;
@@ -34,23 +44,12 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import jakarta.inject.Named;
-import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
+import org.hyperledger.besu.datatypes.Address;
+import org.jetbrains.annotations.Nullable;
 
 @Named
 public class StoreImpl implements Store {
@@ -314,13 +313,15 @@ public class StoreImpl implements Store {
         return account;
     }
 
-    private void validateUsable(final Account account,
-                                @Nullable final ResponseCodeEnum explicitResponse,
-                                final ResponseCodeEnum nonExistingCode,
-                                final ResponseCodeEnum deletedCode) {
+    private void validateUsable(
+            final Account account,
+            @Nullable final ResponseCodeEnum explicitResponse,
+            final ResponseCodeEnum nonExistingCode,
+            final ResponseCodeEnum deletedCode) {
         validateTrue(account != null, explicitResponse != null ? explicitResponse : nonExistingCode);
         validateFalse(account.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
-        final var expiryStatus = validator.expiryStatusGiven(this, accountIdFromEvmAddress(account.getAccountAddress()));
+        final var expiryStatus =
+                validator.expiryStatusGiven(this, accountIdFromEvmAddress(account.getAccountAddress()));
         validateTrue(expiryStatus == OK, expiryStatus);
     }
 

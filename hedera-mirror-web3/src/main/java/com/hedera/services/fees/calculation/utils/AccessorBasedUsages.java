@@ -40,10 +40,9 @@ import com.hedera.services.hapi.fees.usage.SigUsage;
 import com.hedera.services.hapi.fees.usage.crypto.CryptoOpsUsage;
 import com.hedera.services.utils.accessors.TxnAccessor;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
-
+import java.util.EnumSet;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.EnumSet;
 
 /**
  *  Copied Logic type from hedera-services. Differences with the original:

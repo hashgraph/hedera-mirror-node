@@ -16,34 +16,6 @@
 
 package com.hedera.services.store.contracts.precompile.utils;
 
-import com.hedera.mirror.web3.evm.store.Store;
-import com.hedera.services.fees.FeeCalculator;
-import com.hedera.services.fees.HbarCentExchange;
-import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hedera.services.fees.pricing.AssetsLoader;
-import com.hedera.services.hapi.utils.fees.FeeBuilder;
-import com.hedera.services.jproto.JKey;
-import com.hedera.services.store.contracts.precompile.Precompile;
-import com.hedera.services.utils.accessors.AccessorFactory;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.Query;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
-import com.hederahashgraph.api.proto.java.TransactionID;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.EnumMap;
-import java.util.Map;
-
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
@@ -71,6 +43,33 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_WITH_CUSTOM_FEES;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
+
+import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.services.fees.FeeCalculator;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
+import com.hedera.services.fees.pricing.AssetsLoader;
+import com.hedera.services.hapi.utils.fees.FeeBuilder;
+import com.hedera.services.jproto.JKey;
+import com.hedera.services.store.contracts.precompile.Precompile;
+import com.hedera.services.utils.accessors.AccessorFactory;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.Query;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.SubType;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.EnumMap;
+import java.util.Map;
 
 /**
  * Copied Logic type from hedera-services. Differences with the original:

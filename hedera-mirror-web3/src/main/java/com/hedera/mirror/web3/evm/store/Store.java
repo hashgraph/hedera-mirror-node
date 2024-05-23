@@ -25,11 +25,10 @@ import com.hedera.services.store.models.UniqueToken;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.hyperledger.besu.datatypes.Address;
-
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
+import org.hyperledger.besu.datatypes.Address;
 
 /**
  * An interface which serves as a facade over the mirror-node specific in-memory state. This interface is used by components

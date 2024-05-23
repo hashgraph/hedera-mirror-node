@@ -34,8 +34,10 @@ import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
+import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -57,13 +59,17 @@ public class ContractCallService {
     private final Store store;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final RecordFileRepository recordFileRepository;
+    private final ThrottleProperties throttleProperties;
+    private final Bucket gasLimitBucket;
 
     public ContractCallService(
             MeterRegistry meterRegistry,
             BinaryGasEstimator binaryGasEstimator,
             Store store,
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
-            RecordFileRepository recordFileRepository) {
+            RecordFileRepository recordFileRepository,
+            ThrottleProperties throttleProperties,
+            Bucket gasLimitBucket) {
         this.binaryGasEstimator = binaryGasEstimator;
         this.gasCounter = Counter.builder(GAS_METRIC)
                 .description("The amount of gas consumed by the EVM")
@@ -71,6 +77,8 @@ public class ContractCallService {
         this.store = store;
         this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
         this.recordFileRepository = recordFileRepository;
+        this.throttleProperties = throttleProperties;
+        this.gasLimitBucket = gasLimitBucket;
     }
 
     public String processCall(final CallServiceParameters params) {
@@ -95,7 +103,7 @@ public class ContractCallService {
                     // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
                     // if the call is historical
                     ctx.initializeStackFrames(store.getStackedStateFrames());
-                    final var ethCallTxnResult = doProcessCall(params, params.getGas());
+                    final var ethCallTxnResult = doProcessCall(params, params.getGas(), true);
 
                     validateResult(ethCallTxnResult, params.getCallType());
 
@@ -123,7 +131,7 @@ public class ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final CallServiceParameters params) {
-        final var processingResult = doProcessCall(params, params.getGas());
+        final var processingResult = doProcessCall(params, params.getGas(), true);
         validateResult(processingResult, ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -135,18 +143,38 @@ public class ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasMetric(ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas),
+                gas -> doProcessCall(params, gas, false),
                 gasUsedByInitialCall,
                 params.getGas());
 
         return Bytes.ofUnsignedLong(estimatedGas);
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params, long estimatedGas) {
+    private HederaEvmTransactionProcessingResult doProcessCall(
+            CallServiceParameters params, long estimatedGas, boolean restoreGasToThrottleBucket) {
         try {
-            return mirrorEvmTxProcessor.execute(params, estimatedGas);
+            var result = mirrorEvmTxProcessor.execute(params, estimatedGas);
+            if (!restoreGasToThrottleBucket) {
+                return result;
+            }
+
+            restoreGasToBucket(result, params.getGas());
+            return result;
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new MirrorEvmTransactionException(e.getMessage(), EMPTY, EMPTY);
+        }
+    }
+
+    private void restoreGasToBucket(HederaEvmTransactionProcessingResult result, long gasLimit) {
+        // If the transaction fails, gasUsed is equal to gasLimit, so restore the configured refund percent
+        // of the gasLimit value back in the bucket.
+        final var gasLimitToRestoreBaseline = (long) (gasLimit * throttleProperties.getGasLimitRefundPercent() / 100f);
+        if (!result.isSuccessful() && gasLimit == result.getGasUsed()) {
+            gasLimitBucket.addTokens(gasLimitToRestoreBaseline);
+        } else {
+            // The transaction was successful or reverted, so restore the remaining gas back in the bucket or
+            // the configured refund percent of the gasLimit value back in the bucket - whichever is lower.
+            gasLimitBucket.addTokens(Math.min(gasLimit - result.getGasUsed(), gasLimitToRestoreBaseline));
         }
     }
 

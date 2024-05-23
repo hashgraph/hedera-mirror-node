@@ -16,6 +16,21 @@
 
 package com.hedera.services.txns.crypto;
 
+import static com.hedera.services.jproto.JKey.mapKey;
+import static com.hedera.services.store.models.Id.fromGrpcToken;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.IdUtils.asAccount;
+import static com.hedera.services.utils.IdUtils.asToken;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
+
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.web3.ContextExtension;
@@ -43,6 +58,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.security.InvalidKeyException;
+import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -52,24 +69,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.security.InvalidKeyException;
-import java.util.List;
-
-import static com.hedera.services.jproto.JKey.mapKey;
-import static com.hedera.services.store.models.Id.fromGrpcToken;
-import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
-import static com.hedera.services.utils.IdUtils.asAccount;
-import static com.hedera.services.utils.IdUtils.asToken;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
@@ -255,8 +254,9 @@ class AutoCreationLogicTest {
                 token1,
                 AccountAmount.newBuilder()
                         .setAmount(initialTransfer)
-                        .setAccountID(
-                                AccountID.newBuilder().setAlias(primitiveKey.toByteString()).build())
+                        .setAccountID(AccountID.newBuilder()
+                                .setAlias(primitiveKey.toByteString())
+                                .build())
                         .build(),
                 payer);
     }

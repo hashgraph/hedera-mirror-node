@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.63.0")
+    set("grpcVersion", "1.64.0")
     // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
     // with the next springboot release
     set("jooq.version", "3.19.6")
@@ -57,7 +57,7 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.5")
         api("org.bouncycastle:bcprov-jdk18on:1.78.1")
         api("com.bucket4j:bucket4j-core:8.10.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.2.1")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.3.0")
         api("com.google.guava:guava:33.2.0-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
@@ -65,18 +65,18 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-validation:22.0")
         api("com.hedera.evm:hedera-evm:0.48.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.49.0")
-        api("com.hedera.hashgraph:sdk:2.30.0")
+        api("com.hedera.hashgraph:sdk:2.32.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.6")
         api("com.redis.testcontainers:testcontainers-redis-junit-jupiter:1.4.6")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.16.1")
-        api("io.cucumber:cucumber-bom:7.17.0")
+        api("io.cucumber:cucumber-bom:7.18.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.5")
-        api("io.projectreactor:reactor-core-micrometer:1.1.5")
+        api("io.projectreactor:reactor-core-micrometer:1.1.6")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
@@ -99,7 +99,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.1")
         api("org.testcontainers:junit-jupiter:1.19.8")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.45")
+        api("software.amazon.awssdk:bom:2.25.55")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }

@@ -320,7 +320,6 @@ stackgres:
     pool_mode: session
   podAntiAffinity: true
   postgresVersion: 16
-  prometheus: false
   worker:
     config:
       autovacuum_max_workers: "2"
