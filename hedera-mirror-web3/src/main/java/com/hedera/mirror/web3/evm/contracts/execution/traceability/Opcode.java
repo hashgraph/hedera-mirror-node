@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import java.util.Map;
 import java.util.Optional;

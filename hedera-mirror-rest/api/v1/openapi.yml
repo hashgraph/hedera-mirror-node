@@ -615,10 +615,13 @@ paths:
     get:
       summary: Get the opcode traces for a historical transaction on the network with the given transaction ID or hash
       description: |
-        Re-executes a transaction and returns a result containing detailed information for the execution, 
-        including all values from the {@code stack}, {@code memory} and {@code storage} 
+        Re-executes a transaction and returns a result containing detailed information for the execution,
+        including all values from the {@code stack}, {@code memory} and {@code storage}
         and the entire trace of opcodes that were executed during the replay.
-      operationId: getContractOpcodesByTransactionIdOrHash
+        
+        Note that to provide the output, the transaction needs to be re-executed on the EVM,
+        which may take a significant amount of time to complete if stack and memory information is requested.
+      operationId: getContractOpcodes
       parameters:
         - $ref: "#/components/parameters/transactionIdOrEthHashPathParam"
         - $ref: "#/components/parameters/stack"
@@ -633,6 +636,12 @@ paths:
                 $ref: "#/components/schemas/OpcodesResponse"
         400:
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Transaction or record file not found
           content:
             application/json:
               schema:
@@ -1536,53 +1545,92 @@ components:
           $ref: "#/components/schemas/Links"
     OpcodesResponse:
       type: object
+      required:
+        - address
+        - failed
+        - gas
+        - opcodes
+        - return_value
       properties:
         address:
+          description: |
+            The address of the transaction recipient in hex.
+            Zero address is set for transactions without a recipient (e.g., contract create)
           type: string
+          format: binary
         contract_id:
-          type: string
+          $ref: "#/components/schemas/EntityId"
+        failed:
+          description: Whether the transaction failed to be completely processed.
+          type: boolean
         gas:
+          description: The gas used in tinybars
           type: integer
           format: int64
-        failed:
-          type: boolean
-        return_value:
-          type: string
         opcodes:
+          description: The logs produced by the opcode logger
           type: array
           items:
             $ref: "#/components/schemas/Opcode"
+        return_value:
+          description: The returned data from the transaction in hex
+          type: string
+          format: binary
     Opcode:
+      description: Represents a struct/opcode log entry in a trace
       type: object
+      required:
+        - depth
+        - gas
+        - gas_cost
+        - op
+        - pc
       properties:
-        pc:
+        depth:
+          description: The current call depth
           type: integer
           format: int32
-        op:
-          type: string
         gas:
+          description: The remaining gas
           type: integer
           format: int64
         gas_cost:
+          description: The cost for executing op
           type: integer
           format: int64
-        depth:
+        memory:
+          description: The EVM memory
+          type: array
+          items:
+            type: string
+            format: binary
+          nullable: true
+        op:
+          description: The opcode to execute
+          type: string
+        pc:
+          description: The program counter
           type: integer
           format: int32
+        reason:
+          description: The revert reason in hex
+          type: string
+          format: binary
+          nullable: true
         stack:
+          description: The EVM stack
           type: array
           items:
             type: string
-        memory:
-          type: array
-          items:
-            type: string
+            format: binary
+          nullable: true
         storage:
+          description: The storage slots of the current contract which is read from and written to
           type: object
           additionalProperties:
             type: string
-        reason:
-          type: string
+            format: binary
+          nullable: true
     SchedulesResponse:
       type: object
       properties:

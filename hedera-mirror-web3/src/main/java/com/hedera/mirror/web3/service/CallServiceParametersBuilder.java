@@ -70,15 +70,15 @@ public interface CallServiceParametersBuilder {
         }
 
         return CallServiceParameters.builder()
-                .sender(new HederaEvmAccount(sender))
-                .receiver(receiver)
-                .callData(callData)
-                .gas(request.getGas())
-                .value(request.getValue())
-                .isStatic(false)
-                .callType(request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL)
-                .isEstimate(request.isEstimate())
                 .block(request.getBlock())
+                .callData(callData)
+                .callType(request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL)
+                .gas(request.getGas())
+                .isStatic(false)
+                .isEstimate(request.isEstimate())
+                .receiver(receiver)
+                .sender(new HederaEvmAccount(sender))
+                .value(request.getValue())
                 .build();
     }
 }

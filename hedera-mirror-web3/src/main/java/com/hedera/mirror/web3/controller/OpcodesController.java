@@ -61,8 +61,8 @@ class OpcodesController {
      *     and the entire trace of opcodes that were executed during the replay.
      * </p>
      * <p>
-     *     To provide the output, the transaction is re-executed using the state from the
-     *     {@code contract_state_changes} sidecars produced by the consensus nodes.
+     *     Note that to provide the output, the transaction needs to be re-executed on the EVM,
+     *     which may take a significant amount of time to complete if stack and memory information is requested.
      * </p>
      * <p>
      *     The endpoint depends on the following properties to be set to true when starting up the mirror-node:
@@ -80,7 +80,7 @@ class OpcodesController {
      */
     @CrossOrigin(origins = "*")
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")
-    OpcodesResponse getContractOpcodesByTransactionIdOrHash(
+    OpcodesResponse getContractOpcodes(
             @PathVariable @Valid TransactionIdOrHashParameter transactionIdOrHash,
             @RequestParam(required = false, defaultValue = "true") boolean stack,
             @RequestParam(required = false, defaultValue = "false") boolean memory,
@@ -99,6 +99,10 @@ class OpcodesController {
         final var result = contractCallService.processOpcodeCall(params, options, transactionIdOrHash);
 
         return new OpcodesResponse()
+                .address(result.transactionProcessingResult()
+                        .getRecipient()
+                        .map(Address::toHexString)
+                        .orElse(Address.ZERO.toHexString()))
                 .contractId(result.transactionProcessingResult()
                         .getRecipient()
                         .map(EntityIdUtils::contractIdFromEvmAddress)
@@ -107,22 +111,16 @@ class OpcodesController {
                                 contractId.getRealmNum(),
                                 contractId.getContractNum()))
                         .orElse(null))
-                .address(result.transactionProcessingResult()
-                        .getRecipient()
-                        .map(Address::toHexString)
-                        .orElse(Address.ZERO.toHexString()))
-                .gas(result.transactionProcessingResult().getGasPrice())
                 .failed(!result.transactionProcessingResult().isSuccessful())
-                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
-                        .map(Bytes::toHexString)
-                        .orElse(Bytes.EMPTY.toHexString()))
+                .gas(result.transactionProcessingResult().getGasUsed())
                 .opcodes(result.opcodes().stream()
                         .map(opcode -> new Opcode()
-                                .pc(opcode.pc())
-                                .op(opcode.op().orElse(""))
+                                .depth(opcode.depth())
                                 .gas(opcode.gas())
                                 .gasCost(opcode.gasCost())
-                                .depth(opcode.depth())
+                                .op(opcode.op().orElse(""))
+                                .pc(opcode.pc())
+                                .reason(opcode.reason())
                                 .stack(opcode.stack().isPresent() ?
                                         Arrays.stream(opcode.stack().get())
                                                 .map(Bytes::toHexString)
@@ -138,8 +136,10 @@ class OpcodesController {
                                                 .collect(Collectors.toMap(
                                                         entry -> entry.getKey().toHexString(),
                                                         entry -> entry.getValue().toHexString())) :
-                                        null)
-                                .reason(opcode.reason()))
-                        .toList());
+                                        null))
+                        .toList())
+                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                        .map(Bytes::toHexString)
+                        .orElse(Bytes.EMPTY.toHexString()));
     }
 }
