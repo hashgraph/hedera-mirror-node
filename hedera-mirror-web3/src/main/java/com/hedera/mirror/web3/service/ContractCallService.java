@@ -35,6 +35,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerO
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -133,7 +134,7 @@ public class ContractCallService {
                                                      @Nullable final TransactionIdOrHashParameter transactionIdOrHash) {
         return ContractCallContext.run(ctx -> {
             if (transactionIdOrHash != null && transactionIdOrHash.isValid()) {
-                List<ContractAction> contractActions = getContractAction(transactionIdOrHash);
+                List<ContractAction> contractActions = getContractActions(transactionIdOrHash);
                 ctx.setContractActions(contractActions);
             }
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
@@ -147,7 +148,7 @@ public class ContractCallService {
     }
 
     @SneakyThrows
-    public List<ContractAction> getContractAction(@NonNull @Valid TransactionIdOrHashParameter transactionIdOrHash) {
+    public List<ContractAction> getContractActions(@NonNull @Valid TransactionIdOrHashParameter transactionIdOrHash) {
         Assert.isTrue(transactionIdOrHash.isValid(), "Invalid transactionIdOrHash");
 
         Optional<Long> consensusTimestamp;
@@ -163,7 +164,7 @@ public class ContractCallService {
 
         return consensusTimestamp
                 .map(contractActionService::findAllByConsensusTimestamp)
-                .orElseThrow(() -> new IllegalArgumentException("Contract actions for transaction not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
     }
 
     private HederaEvmTransactionProcessingResult getCallTxnResult(CallServiceParameters params,
