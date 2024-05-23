@@ -1536,53 +1536,92 @@ components:
           $ref: "#/components/schemas/Links"
     OpcodesResponse:
       type: object
+      required:
+        - address
+        - failed
+        - gas
+        - opcodes
+        - return_value
       properties:
         address:
+          description: |
+            The address of the transaction recipient in hex. 
+            Zero address is set for transactions without a recipient (e.g., contract create)
           type: string
+          format: binary
         contract_id:
-          type: string
+          $ref: "#/components/schemas/EntityId"
+        failed:
+          description: Whether the transaction failed to be completely processed.
+          type: boolean
         gas:
+          description: The gas used in tinybars
           type: integer
           format: int64
-        failed:
-          type: boolean
-        return_value:
-          type: string
         opcodes:
+          description: The logs produced by the opcode logger
           type: array
           items:
             $ref: "#/components/schemas/Opcode"
+        return_value:
+          description: The returned data from the transaction in hex
+          type: string
+          format: binary
     Opcode:
+      description: Represents a struct/opcode log entry in a trace
       type: object
+      required:
+        - depth
+        - gas
+        - gas_cost
+        - op
+        - pc
       properties:
-        pc:
+        depth:
+          description: The current call depth
           type: integer
           format: int32
-        op:
-          type: string
         gas:
+          description: The remaining gas
           type: integer
           format: int64
         gas_cost:
+          description: The cost for executing op
           type: integer
           format: int64
-        depth:
+        memory:
+          description: The EVM memory
+          type: array
+          items:
+            type: string
+            format: binary
+          nullable: true
+        op:
+          description: The opcode to execute
+          type: string
+        pc:
+          description: The program counter
           type: integer
           format: int32
+        reason:
+          description: The revert reason in hex
+          type: string
+          format: binary
+          nullable: true
         stack:
+          description: The EVM stack
           type: array
           items:
             type: string
-        memory:
-          type: array
-          items:
-            type: string
+            format: binary
+          nullable: true
         storage:
+          description: The storage slots of the current contract which is read from and written to
           type: object
           additionalProperties:
             type: string
-        reason:
-          type: string
+            format: binary
+          nullable: true
     SchedulesResponse:
       type: object
       properties:

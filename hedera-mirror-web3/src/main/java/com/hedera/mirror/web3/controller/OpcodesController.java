@@ -99,6 +99,10 @@ class OpcodesController {
         final var result = contractCallService.processOpcodeCall(params, options);
 
         return new OpcodesResponse()
+                .address(result.transactionProcessingResult()
+                        .getRecipient()
+                        .map(Address::toHexString)
+                        .orElse(Address.ZERO.toHexString()))
                 .contractId(result.transactionProcessingResult()
                         .getRecipient()
                         .map(EntityIdUtils::contractIdFromEvmAddress)
@@ -107,22 +111,16 @@ class OpcodesController {
                                 contractId.getRealmNum(),
                                 contractId.getContractNum()))
                         .orElse(null))
-                .address(result.transactionProcessingResult()
-                        .getRecipient()
-                        .map(Address::toHexString)
-                        .orElse(Address.ZERO.toHexString()))
-                .gas(result.transactionProcessingResult().getGasPrice())
                 .failed(!result.transactionProcessingResult().isSuccessful())
-                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
-                        .map(Bytes::toHexString)
-                        .orElse(Bytes.EMPTY.toHexString()))
+                .gas(result.transactionProcessingResult().getGasUsed())
                 .opcodes(result.opcodes().stream()
                         .map(opcode -> new Opcode()
-                                .pc(opcode.pc())
-                                .op(opcode.op())
+                                .depth(opcode.depth())
                                 .gas(opcode.gas())
                                 .gasCost(opcode.gasCost())
-                                .depth(opcode.depth())
+                                .op(opcode.op())
+                                .pc(opcode.pc())
+                                .reason(opcode.reason())
                                 .stack(opcode.stack().isPresent() ?
                                         Arrays.stream(opcode.stack().get())
                                                 .map(Bytes::toHexString)
@@ -138,8 +136,10 @@ class OpcodesController {
                                                 .collect(Collectors.toMap(
                                                         entry -> entry.getKey().toHexString(),
                                                         entry -> entry.getValue().toHexString())) :
-                                        null)
-                                .reason(opcode.reason()))
-                        .toList());
+                                        null))
+                        .toList())
+                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                        .map(Bytes::toHexString)
+                        .orElse(Bytes.EMPTY.toHexString()));
     }
 }

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.dao.QueryTimeoutException;
@@ -44,14 +45,12 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ServerWebInputException;
 
 @ControllerAdvice
 @CustomLog
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class ControllerExceptionHandler {
-
 
     /**
      * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
@@ -79,48 +78,37 @@ public class ControllerExceptionHandler {
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private ResponseEntity<?> inputValidationError(final InvalidInputException e) {
+    private ResponseEntity<?> invalidInputError(final InvalidInputException e) {
         log.warn("Input validation error: {}", e.getMessage());
         return new ResponseEntity<>(errorResponse(e.getMessage()), BAD_REQUEST);
     }
 
-    @ExceptionHandler({
-            MethodArgumentTypeMismatchException.class,
-            IllegalArgumentException.class
-    })
+    @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private ResponseEntity<?> invalidArgumentError(final Exception e) {
-        if (e instanceof MethodArgumentTypeMismatchException mismatchException) {
-            final var message = Optional.ofNullable(mismatchException.getRootCause())
-                    .orElse(mismatchException)
-                    .getMessage();
-            log.warn("Invalid argument error: {}", message);
-            return new ResponseEntity<>(errorResponse(message), BAD_REQUEST);
-        }
+    private ResponseEntity<?> illegalArgumentError(final IllegalArgumentException e) {
         log.warn("Invalid argument error: {}", e.getMessage());
         return new ResponseEntity<>(errorResponse(e.getMessage()), BAD_REQUEST);
     }
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private ResponseEntity<?> mirrorEvmTransactionException(final MirrorEvmTransactionException e) {
+    private ResponseEntity<?> typeMismatchError(final TypeMismatchException e) {
+        final var message = Optional.ofNullable(e.getRootCause()).orElse(e).getMessage();
+        log.warn("Type mismatch error: {}", message);
+        return new ResponseEntity<>(errorResponse(message), BAD_REQUEST);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(BAD_REQUEST)
+    private ResponseEntity<?> mirrorEvmTransactionError(final MirrorEvmTransactionException e) {
         log.warn("Mirror EVM transaction error: {}", e.getMessage());
         return new ResponseEntity<>(errorResponse(e.getMessage(), e.getDetail(), e.getData()), BAD_REQUEST);
     }
 
-    @ExceptionHandler({
-            ServerWebInputException.class,
-            HttpMessageConversionException.class
-    })
+    @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private ResponseEntity<?> invalidJson(final Exception e) {
+    private ResponseEntity<?> httpMessageConversionError(final HttpMessageConversionException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
-        if (e instanceof ServerWebInputException webInputException) {
-            return new ResponseEntity<>(
-                    errorResponse(webInputException.getReason(), webInputException.getMessage(), StringUtils.EMPTY),
-                    BAD_REQUEST
-            );
-        }
         return new ResponseEntity<>(
                 errorResponse("Unable to parse JSON", e.getMessage(), StringUtils.EMPTY),
                 BAD_REQUEST
@@ -128,8 +116,18 @@ public class ControllerExceptionHandler {
     }
 
     @ExceptionHandler
+    @ResponseStatus(BAD_REQUEST)
+    private ResponseEntity<?> serverWebInputError(final ServerWebInputException e) {
+        log.warn("Transaction body parsing error: {}", e.getMessage());
+        return new ResponseEntity<>(
+                errorResponse(e.getReason(), e.getMessage(), StringUtils.EMPTY),
+                BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler
     @ResponseStatus(NOT_FOUND)
-    private ResponseEntity<?> notFound(final EntityNotFoundException e) {
+    private ResponseEntity<?> notFoundError(final EntityNotFoundException e) {
         log.warn("Not found: {}", e.getMessage());
         return new ResponseEntity<>(errorResponse(e.getMessage()), NOT_FOUND);
     }
@@ -145,22 +143,22 @@ public class ControllerExceptionHandler {
     }
 
     @ExceptionHandler
+    @ResponseStatus(SERVICE_UNAVAILABLE)
+    private ResponseEntity<?> queryTimeoutError(final QueryTimeoutException e) {
+        log.error("Query timed out: {}", e.getMessage());
+        return new ResponseEntity<>(
+                errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()),
+                SERVICE_UNAVAILABLE
+        );
+    }
+
+    @ExceptionHandler
     @ResponseStatus(INTERNAL_SERVER_ERROR)
     private ResponseEntity<?> genericError(final Exception e) {
         log.error("Generic error: ", e);
         return new ResponseEntity<>(
                 errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase()),
                 INTERNAL_SERVER_ERROR
-        );
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(SERVICE_UNAVAILABLE)
-    private ResponseEntity<?> queryTimeout(final QueryTimeoutException e) {
-        log.error("Query timed out: {}", e.getMessage());
-        return new ResponseEntity<>(
-                errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()),
-                SERVICE_UNAVAILABLE
         );
     }
 

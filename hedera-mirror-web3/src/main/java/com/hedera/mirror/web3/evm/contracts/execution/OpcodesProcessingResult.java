@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.common.domain.transaction.Opcode;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
