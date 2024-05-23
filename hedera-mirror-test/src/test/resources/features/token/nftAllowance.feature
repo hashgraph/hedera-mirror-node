@@ -1,4 +1,4 @@
-@nftallowance @allowance @fullsuite @critical @release @acceptance
+@nftallowance @acceptance @allowance @fullsuite @critical @release
 Feature: Account NFT Allowance Coverage Feature
 
   Scenario Outline: Validate approval NftTransfer affect on NftAllowance
@@ -9,12 +9,12 @@ Feature: Account NFT Allowance Coverage Feature
     Given I approve <spender> to all serials of the NFT
     Then the mirror node REST API should confirm the approved allowance of NFT <tokenName> and <spender> when owner is "true"
     And the mirror node REST API should confirm the approved allowance of NFT <tokenName> and <spender> when owner is "false"
-    Given <spender> transfers NFT <tokenName> to <recipient>
-    Then the mirror node REST API should confirm the approved transfer of NFT and confirm the new owner is <recipient>
+    Given <spender> transfers NFT <tokenName> to <recipient> with approval=true
+    Then the mirror node REST API should confirm the NFT transfer and confirm the new owner is <recipient>
     When I delete the allowance on NFT <tokenName> for spender <spender>
     Then the mirror node REST API should confirm the approved allowance for NFT <tokenName> and <spender> is no longer available
+    When <recipient> transfers NFT <tokenName> to OPERATOR with approval=false
+    Then the mirror node REST API should confirm the NFT transfer and confirm the new owner is OPERATOR
     Examples:
-      | tokenName              | spender | recipient |
-      | ALLOWANCE_NON_FUNGIBLE | BOB     | ALICE     |
-
-
+      | tokenName | spender | recipient |
+      | NFT       | BOB     | ALICE     |

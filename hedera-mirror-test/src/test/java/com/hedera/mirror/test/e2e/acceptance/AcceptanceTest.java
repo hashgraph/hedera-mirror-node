@@ -42,6 +42,11 @@ public class AcceptanceTest {
         return AccountNameEnum.valueOf(name);
     }
 
+    @ParameterType("[Tt][Rr][Uu][Ee]|[Ff][Aa][Ll][Ss][Ee]")
+    public boolean bool(String value) {
+        return Boolean.parseBoolean(value);
+    }
+
     @ParameterType("\"?(([A-Z]+)(_[A-Z]+)*)\"?")
     public PauseStatusEnum pauseStatus(String name) {
         return PauseStatusEnum.valueOf(name);
