@@ -20,25 +20,24 @@ import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Integers;
 import com.hedera.hashgraph.sdk.*;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.ethereum.EthTxData;
 import com.hedera.mirror.test.e2e.acceptance.util.ethereum.EthTxSigs;
 import jakarta.inject.Named;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.tuweni.bytes.Bytes;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class EthereumClient extends AbstractNetworkClient {
+    @Autowired
+    private AcceptanceTestProperties acceptanceTestProperties;
 
-    private final Collection<ContractId> contractIds = new CopyOnWriteArrayList<>();
-
-    private final HashMap<PrivateKey, Integer> accountNonce = new HashMap<>();
+    private final Map<PrivateKey, Integer> accountNonce = new ConcurrentHashMap<>();
 
     public EthereumClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -57,14 +56,14 @@ public class EthereumClient extends AbstractNetworkClient {
     }
 
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
-    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
-    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private final BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private final BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
 
     public NetworkTransactionResponse createContract(
             PrivateKey signerKey, FileId fileId, String fileContents, long gas, Hbar payableAmount) {
 
         int nonce = getNonce(signerKey);
-        byte[] chainId = Integers.toBytes(298);
+        byte[] chainId = Integers.toBytes(acceptanceTestProperties.getNetwork().getChainId());
         byte[] maxPriorityGas = gasLongToBytes(20_000L);
         byte[] maxGas = gasLongToBytes(maxFeePerGas.longValueExact());
         byte[] to = new byte[] {};
@@ -76,7 +75,7 @@ public class EthereumClient extends AbstractNetworkClient {
 
         var ethTxData = new EthTxData(
                 null,
-                EthTxData.EthTransactionType.EIP1559,
+                EthTxData.EthTransactionType.LEGACY_ETHEREUM,
                 chainId,
                 nonce,
                 gasLongToBytes(gasPrice.longValueExact()),
@@ -108,7 +107,7 @@ public class EthereumClient extends AbstractNetworkClient {
 
         TransactionRecord transactionRecord = getTransactionRecord(response.getTransactionId());
         logContractFunctionResult("constructor", transactionRecord.contractFunctionResult);
-        contractIds.add(contractId);
+
         incrementNonce(signerKey);
         return response;
     }
@@ -123,7 +122,7 @@ public class EthereumClient extends AbstractNetworkClient {
             EthTxData.EthTransactionType type) {
 
         int nonce = getNonce(signerKey);
-        byte[] chainId = Integers.toBytes(298);
+        byte[] chainId = Integers.toBytes(acceptanceTestProperties.getNetwork().getChainId());
         byte[] maxPriorityGas = gasLongToBytes(20_000L);
         byte[] maxGas = gasLongToBytes(maxFeePerGas.longValueExact());
         final var address = contractId.toSolidityAddress();
@@ -183,26 +182,6 @@ public class EthereumClient extends AbstractNetworkClient {
                 contractFunctionResult.contractId,
                 contractFunctionResult.gasUsed,
                 contractFunctionResult.logs.size());
-    }
-
-    @RequiredArgsConstructor
-    public enum NodeNameEnum {
-        CONSENSUS("consensus"),
-        MIRROR("mirror");
-
-        private final String name;
-
-        static Optional<NodeNameEnum> of(String name) {
-            try {
-                return Optional.ofNullable(name).map(NodeNameEnum::valueOf);
-            } catch (Exception e) {
-                return Optional.empty();
-            }
-        }
-    }
-
-    public String getClientAddress() {
-        return sdkClient.getClient().getOperatorAccountId().toSolidityAddress();
     }
 
     public record ExecuteContractResult(
