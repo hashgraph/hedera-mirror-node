@@ -23,9 +23,11 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.*;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -69,19 +71,28 @@ public class CallServiceParametersBuilderImpl implements CallServiceParametersBu
         return buildFromTransaction(transaction, ethTransaction);
     }
 
-    private CallServiceParameters buildFromTransaction(Optional<Transaction> transaction,
-                                                       Optional<EthereumTransaction> ethTransaction) throws InvalidProtocolBufferException {
-        Assert.isTrue(transaction.isPresent(), "Transaction not found");
+    private CallServiceParameters buildFromTransaction(Optional<Transaction> transactionOpt,
+                                                       Optional<EthereumTransaction> ethTransactionOpt) throws InvalidProtocolBufferException {
+        final Transaction transaction = transactionOpt
+                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
 
         final RecordFile recordFile = recordFileService
-                .findRecordFileForTimestamp(transaction.get().getConsensusTimestamp())
-                .orElseThrow(() -> new IllegalArgumentException("Record file with transaction not found"));
+                .findRecordFileForTimestamp(transaction.getConsensusTimestamp())
+                .orElseThrow(() -> new EntityNotFoundException("Record file with transaction not found"));
 
         final RecordItem recordItem = RecordItem.builder()
+                .consensusTimestamp(transaction.getConsensusTimestamp())
+                .ethereumTransaction(ethTransactionOpt.orElse(null))
                 .hapiVersion(recordFile.getHapiVersion())
-                .transactionRecord(TransactionRecord.parseFrom(transaction.get().getTransactionRecordBytes()))
-                .transaction(com.hederahashgraph.api.proto.java.Transaction.parseFrom(transaction.get().getTransactionBytes()))
-                .ethereumTransaction(ethTransaction.orElse(null))
+                .payerAccountId(transaction.getPayerAccountId())
+                .successful(
+                        transaction.getResult() == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED.getNumber() ||
+                        transaction.getResult() == ResponseCodeEnum.SUCCESS.getNumber() ||
+                        transaction.getResult() == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION.getNumber())
+                .transaction(
+                        com.hederahashgraph.api.proto.java.Transaction.parseFrom(transaction.getTransactionBytes()))
+                .transactionRecord(TransactionRecord.parseFrom(transaction.getTransactionRecordBytes()))
+                .transactionType(transaction.getType())
                 .build();
 
         return buildFromRecordItem(recordItem, recordFile.getIndex());

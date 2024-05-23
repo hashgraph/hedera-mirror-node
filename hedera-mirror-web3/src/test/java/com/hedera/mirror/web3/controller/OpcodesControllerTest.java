@@ -40,12 +40,12 @@ import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.domain.transaction.Opcode;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -203,7 +203,7 @@ class OpcodesControllerTest {
     }
 
     void setUp(final Transaction transaction, final EthereumTransaction ethTransaction, final RecordFile recordFile) {
-        when(rateLimitBucket.tryConsume(1)).thenReturn(true);
+        when(rateLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractCallService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
@@ -220,7 +220,10 @@ class OpcodesControllerTest {
                         .map(EthereumTransaction::getHash)
                         .orElse(transaction.getTransactionHash())
         )).thenReturn(Optional.of(Builder.contractTransactionHashFrom(transaction, ethTransaction)));
-        when(ethereumTransactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.ofNullable(ethTransaction));
+        when(ethereumTransactionRepository.findByConsensusTimestampAndPayerAccountId(
+                transaction.getConsensusTimestamp(),
+                transaction.getPayerAccountId()
+        )).thenReturn(Optional.ofNullable(ethTransaction));
         when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
                 transaction.getPayerAccountId(),
                 transaction.getValidStartNs(),
@@ -300,7 +303,7 @@ class OpcodesControllerTest {
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(responseBody(new GenericErrorResponse("Record file with transaction not found")));
     }
 
@@ -319,7 +322,7 @@ class OpcodesControllerTest {
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(responseBody(new GenericErrorResponse("Transaction not found")));
     }
 
@@ -431,17 +434,20 @@ class OpcodesControllerTest {
                                                                            final EthereumTransaction ethTransaction) {
             return ContractTransactionHash.builder()
                     .consensusTimestamp(transaction.getConsensusTimestamp())
-                    .entityId(transaction.getEntityId().getNum())
+                    .entityId(transaction.getEntityId().getId())
                     .hash(Optional.ofNullable(ethTransaction)
                             .map(EthereumTransaction::getHash)
                             .orElse(transaction.getTransactionHash()))
-                    .payerAccountId(transaction.getPayerAccountId().getNum())
+                    .payerAccountId(transaction.getPayerAccountId().getId())
                     .transactionResult(transaction.getResult())
                     .build();
         }
 
         private static OpcodesResponse opcodesResponse(final OpcodesProcessingResult result) {
             return new OpcodesResponse()
+                    .address(result.transactionProcessingResult().getRecipient()
+                            .map(Address::toHexString)
+                            .orElse(Address.ZERO.toHexString()))
                     .contractId(result.transactionProcessingResult().getRecipient()
                             .map(EntityIdUtils::contractIdFromEvmAddress)
                             .map(contractId -> "%d.%d.%d".formatted(
@@ -449,21 +455,16 @@ class OpcodesControllerTest {
                                     contractId.getRealmNum(),
                                     contractId.getContractNum()))
                             .orElse(null))
-                    .address(result.transactionProcessingResult().getRecipient()
-                            .map(Address::toHexString)
-                            .orElse(Address.ZERO.toHexString()))
-                    .gas(result.transactionProcessingResult().getGasPrice())
                     .failed(!result.transactionProcessingResult().isSuccessful())
-                    .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
-                            .map(Bytes::toHexString)
-                            .orElse(Bytes.EMPTY.toHexString()))
+                    .gas(result.transactionProcessingResult().getGasUsed())
                     .opcodes(result.opcodes().stream()
                             .map(opcode -> new com.hedera.mirror.rest.model.Opcode()
-                                    .pc(opcode.pc())
-                                    .op(opcode.op().orElse(""))
+                                    .depth(opcode.depth())
                                     .gas(opcode.gas())
                                     .gasCost(opcode.gasCost())
-                                    .depth(opcode.depth())
+                                    .op(opcode.op().orElse(""))
+                                    .pc(opcode.pc())
+                                    .reason(opcode.reason())
                                     .stack(opcode.stack().isPresent() ?
                                             Arrays.stream(opcode.stack().get())
                                                     .map(Bytes::toHexString)
@@ -479,9 +480,11 @@ class OpcodesControllerTest {
                                                     .collect(Collectors.toMap(
                                                             entry -> entry.getKey().toHexString(),
                                                             entry -> entry.getValue().toHexString())) :
-                                            null)
-                                    .reason(opcode.reason()))
-                            .toList());
+                                            null))
+                            .toList())
+                    .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                            .map(Bytes::toHexString)
+                            .orElse(Bytes.EMPTY.toHexString()));
         }
 
         private static OpcodesProcessingResult opcodesProcessingResult(final CallServiceParameters params,

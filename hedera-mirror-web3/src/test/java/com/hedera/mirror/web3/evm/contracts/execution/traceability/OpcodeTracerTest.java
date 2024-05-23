@@ -16,20 +16,27 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
+import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
+import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSortedMap;
-import com.hedera.mirror.common.domain.transaction.Opcode;
+import com.hedera.mirror.common.domain.contract.ContractAction;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
-import java.util.List;
+import com.hedera.services.stream.proto.CallOperationType;
+import com.hedera.services.stream.proto.ContractActionType;
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.assertj.core.util.Lists;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
@@ -55,8 +62,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class OpcodeTracerTest {
 
     private static final long INITIAL_GAS = 1000L;
-    private static final long GAS_COST = 20L;
-    private static final long GAS_PRICE = 25L;
+    private static final long GAS_COST = 2L;
+    private static final long GAS_PRICE = 200L;
+    private static final long GAS_REQUIREMENT = 100L;
     private static final AtomicReference<Long> REMAINING_GAS = new AtomicReference<>();
     private static final Operation OPERATION = new AbstractOperation(0x02, "MUL", 2, 1, null) {
         @Override
@@ -216,6 +224,66 @@ class OpcodeTracerTest {
         assertThat(opcode.storage()).contains(updatedStorage);
     }
 
+    @Test
+    @DisplayName("should capture a precompile call")
+    void shouldCaptureFrameWhenSuccessfulPrecompileCallOccurs() {
+        frame = setupMessageFrame(tracerOptions);
+
+        final Opcode opcode = executePrecompileOperation(frame, GAS_REQUIREMENT, Bytes.fromHexString("0x01"));
+        assertThat(opcode.pc()).isEqualTo(frame.getPC());
+        assertThat(opcode.op()).isNotEmpty().hasValue(OPERATION.getName());
+        assertThat(opcode.gas()).isEqualTo(REMAINING_GAS.get());
+        assertThat(opcode.gasCost()).isEqualTo(GAS_REQUIREMENT);
+        assertThat(opcode.depth()).isEqualTo(frame.getDepth());
+        assertThat(opcode.stack()).isEmpty();
+        assertThat(opcode.memory()).isEmpty();
+        assertThat(opcode.storage()).isEmpty();
+        assertThat(opcode.reason()).isEqualTo(frame.getRevertReason().map(Bytes::toString).orElse(null));
+    }
+
+    @Test
+    @DisplayName("should not record gas requirement of precompile call with null output")
+    void shouldNotRecordGasRequirementWhenPrecompileCallHasNullOutput() {
+        frame = setupMessageFrame(tracerOptions);
+
+        final long gasRequirement = 100L;
+        final Opcode opcode = executePrecompileOperation(frame, gasRequirement, null);
+        assertThat(opcode.gasCost()).isZero();
+    }
+
+    @Test
+    @DisplayName("should not record revert reason of precompile call with no revert reason")
+    void shouldNotRecordRevertReasonWhenPrecompileCallHasNoRevertReason() {
+        frame = setupMessageFrame(tracerOptions);
+
+        final Opcode opcode = executePrecompileOperation(frame, GAS_REQUIREMENT, Bytes.EMPTY);
+        assertThat(opcode.reason()).isNull();
+    }
+
+    @Test
+    @DisplayName("should record revert reason of precompile call when frame has revert reason")
+    void shouldRecordRevertReasonWhenPrecompileCallHasRevertReason() {
+        frame = setupMessageFrame(tracerOptions, true);
+
+        final Opcode opcode = executePrecompileOperation(frame, GAS_REQUIREMENT, Bytes.EMPTY);
+        assertThat(opcode.reason())
+                .isNotEmpty()
+                .isEqualTo(frame.getRevertReason().map(Bytes::toString).orElseThrow());
+    }
+
+    @Test
+    @DisplayName("should record revert reason of precompile call with revert reason")
+    void shouldRecordRevertReasonWhenPrecompileCallHasContractActions() {
+        final var contractActionNoRevert = contractAction(CallOperationType.OP_CREATE, OUTPUT.getNumber());
+        final var contractActionWithRevert = contractAction(CallOperationType.OP_CALL, REVERT_REASON.getNumber());
+        frame = setupMessageFrame(tracerOptions, false, contractActionNoRevert, contractActionWithRevert);
+
+        final Opcode opcode = executePrecompileOperation(frame, GAS_REQUIREMENT, Bytes.EMPTY);
+        assertThat(opcode.reason())
+                .isNotEmpty()
+                .isEqualTo(Bytes.of(contractActionWithRevert.getResultData()).toString());
+    }
+
     private Opcode executeOperation(final MessageFrame frame) {
         return executeOperation(frame, null);
     }
@@ -241,11 +309,27 @@ class OpcodeTracerTest {
         return tracer.getOpcodes().getFirst();
     }
 
-    private MessageFrame setupMessageFrame(final OpcodeTracerOptions options) {
-        when(contractCallContext.getOpcodeTracerOptions()).thenReturn(options);
-        when(contractCallContext.getContractActions()).thenReturn(List.of());
+    private Opcode executePrecompileOperation(final MessageFrame frame, final long gasRequirement, final Bytes output) {
+        final var tracer = new OpcodeTracer();
+        tracer.init(frame);
+        tracer.tracePreExecution(frame);
+        tracer.tracePrecompileCall(frame, gasRequirement, output);
 
-        final MessageFrame messageFrame = validMessageFrame();
+        assertThat(tracer.getOpcodes()).hasSize(1);
+        return tracer.getOpcodes().getFirst();
+    }
+
+    private MessageFrame setupMessageFrame(final OpcodeTracerOptions options) {
+        return setupMessageFrame(options, false);
+    }
+
+    private MessageFrame setupMessageFrame(final OpcodeTracerOptions options,
+                                           final boolean revertReason,
+                                           final ContractAction... contractActions) {
+        when(contractCallContext.getOpcodeTracerOptions()).thenReturn(options);
+        when(contractCallContext.getContractActions()).thenReturn(Lists.newArrayList(contractActions));
+
+        final MessageFrame messageFrame = validMessageFrame(revertReason);
         stackItems = setupStackForCapture(messageFrame, options);
         wordsInMemory = setupMemoryForCapture(messageFrame, options);
         updatedStorage = setupStorageForCapture(messageFrame, options);
@@ -307,6 +391,10 @@ class OpcodeTracerTest {
     }
 
     private MessageFrame validMessageFrame() {
+        return validMessageFrame(false);
+    }
+
+    private MessageFrame validMessageFrame(final boolean revertReason) {
         REMAINING_GAS.set(REMAINING_GAS.get() - GAS_COST);
 
         final MessageFrame messageFrame = validMessageFrameBuilder()
@@ -315,6 +403,9 @@ class OpcodeTracerTest {
         messageFrame.setCurrentOperation(OPERATION);
         messageFrame.setPC(10);
         messageFrame.setGasRemaining(REMAINING_GAS.get());
+        if (revertReason) {
+            messageFrame.setRevertReason(Bytes.of("Revert reason".getBytes()));
+        }
         return messageFrame;
     }
 
@@ -336,5 +427,27 @@ class OpcodeTracerTest {
                 .gasPrice(Wei.of(GAS_PRICE))
                 .blockValues(mock(BlockValues.class))
                 .blockHashLookup(_ -> Hash.wrap(Bytes32.ZERO));
+    }
+
+    private ContractAction contractAction(final CallOperationType callOperationType, final int resultDataType) {
+        return ContractAction.builder()
+                .callDepth(1)
+                .caller(EntityId.of("0.0.1"))
+                .callerType(EntityType.ACCOUNT)
+                .callOperationType(callOperationType.getNumber())
+                .callType(ContractActionType.PRECOMPILE.getNumber())
+                .consensusTimestamp(new SecureRandom().nextLong())
+                .gas(REMAINING_GAS.get())
+                .gasUsed(GAS_PRICE)
+                .index(1)
+                .input(new byte[0])
+                .payerAccountId(EntityId.of("0.0.2"))
+                .recipientAccount(EntityId.of("0.0.3"))
+                .recipientAddress(new byte[0])
+                .recipientContract(EntityId.of("0.0.4"))
+                .resultData(resultDataType == REVERT_REASON.getNumber() ? "revert reason".getBytes() : new byte[0])
+                .resultDataType(resultDataType)
+                .value(1L)
+                .build();
     }
 }

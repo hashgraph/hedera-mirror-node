@@ -17,7 +17,7 @@
 package com.hedera.mirror.web3.service;
 
 
-import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
@@ -36,8 +36,13 @@ public class EthereumTransactionServiceImpl implements EthereumTransactionServic
     public Optional<EthereumTransaction> findByHash(byte[] transactionHash) {
         return contractTransactionHashRepository
                 .findByHash(transactionHash)
-                .map(ContractTransactionHash::getConsensusTimestamp)
-                .flatMap(ethereumTransactionRepository::findById);
+                .flatMap(contractTransactionHash -> {
+                    final var consensusTimestamp = contractTransactionHash.getConsensusTimestamp();
+                    final var payerAccountId = EntityId.of(contractTransactionHash.getPayerAccountId());
+                    return ethereumTransactionRepository
+                            .findByConsensusTimestampAndPayerAccountId(consensusTimestamp, payerAccountId);
+                });
+
     }
 
     @Override
