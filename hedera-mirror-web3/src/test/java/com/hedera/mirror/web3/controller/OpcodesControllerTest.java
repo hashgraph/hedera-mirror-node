@@ -320,7 +320,7 @@ class OpcodesControllerTest {
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(responseBody(new GenericErrorResponse("Record file with transaction not found")));
     }
 
@@ -339,7 +339,7 @@ class OpcodesControllerTest {
         final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isBadRequest())
+                .andExpect(status().isNotFound())
                 .andExpect(responseBody(new GenericErrorResponse("Transaction not found")));
     }
 

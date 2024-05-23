@@ -80,7 +80,7 @@ class OpcodesController {
      */
     @CrossOrigin(origins = "*")
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")
-    OpcodesResponse getContractOpcodesByTransactionIdOrHash(
+    OpcodesResponse getContractOpcodes(
             @PathVariable @Valid TransactionIdOrHashParameter transactionIdOrHash,
             @RequestParam(required = false, defaultValue = "true") boolean stack,
             @RequestParam(required = false, defaultValue = "false") boolean memory,

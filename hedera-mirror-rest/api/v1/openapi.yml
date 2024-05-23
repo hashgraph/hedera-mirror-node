@@ -618,7 +618,7 @@ paths:
         Re-executes a transaction and returns a result containing detailed information for the execution, 
         including all values from the {@code stack}, {@code memory} and {@code storage} 
         and the entire trace of opcodes that were executed during the replay.
-      operationId: getContractOpcodesByTransactionIdOrHash
+      operationId: getContractOpcodes
       parameters:
         - $ref: "#/components/parameters/transactionIdOrEthHashPathParam"
         - $ref: "#/components/parameters/stack"
@@ -633,6 +633,12 @@ paths:
                 $ref: "#/components/schemas/OpcodesResponse"
         400:
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Transaction or record file not found
           content:
             application/json:
               schema:
