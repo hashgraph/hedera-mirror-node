@@ -266,7 +266,7 @@ since open access until April 2023.
 | Coordinator | 2     | 7    | 24 GB  | 256 GB       |
 | Worker      | 3     | 7    | 24 GB  | 3 TB         |
 
-Following are the prerequisites and steps for migrating V1 data to V2. As of mirror node v0.103.0, the migration script is expected to migrate full mainnet data in 7 days.
+Following are the prerequisites and steps for migrating V1 data to V2. As of mirror node v0.103.0, the migration script is expected to migrate full mainnet data in 10 days.
 
 1. Make sure `bc` and `csvkit` are installed on the machine where the migration script will be run. For Ubuntu, you can install them using the following commands:
    ```shell
