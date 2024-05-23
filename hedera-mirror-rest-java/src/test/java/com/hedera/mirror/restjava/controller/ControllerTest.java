@@ -108,7 +108,7 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
         }
 
         @Test
-        void unsupportedMediaException() {
+        void methodNotAllowed() {
             // When
             ThrowingCallable callable =
                     () -> defaultRequest(restClient.post()).retrieve().toBodilessEntity();

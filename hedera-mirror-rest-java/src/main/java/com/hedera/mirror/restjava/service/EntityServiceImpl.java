@@ -63,8 +63,9 @@ class EntityServiceImpl implements EntityService {
     }
 
     private void validateShard(Object id, long shard) {
-        if (shard != properties.getShard()) {
-            throw new IllegalArgumentException("Unsupported shard %s in ID %s".formatted(shard, id));
+        long expected = properties.getShard();
+        if (shard != expected) {
+            throw new IllegalArgumentException("ID %s has an invalid shard. Shard must be %d".formatted(id, expected));
         }
     }
 }
