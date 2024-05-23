@@ -615,9 +615,12 @@ paths:
     get:
       summary: Get the opcode traces for a historical transaction on the network with the given transaction ID or hash
       description: |
-        Re-executes a transaction and returns a result containing detailed information for the execution, 
-        including all values from the {@code stack}, {@code memory} and {@code storage} 
+        Re-executes a transaction and returns a result containing detailed information for the execution,
+        including all values from the {@code stack}, {@code memory} and {@code storage}
         and the entire trace of opcodes that were executed during the replay.
+        
+        Note that to provide the output, the transaction needs to be re-executed on the EVM,
+        which may take a significant amount of time to complete if stack and memory information is requested.
       operationId: getContractOpcodes
       parameters:
         - $ref: "#/components/parameters/transactionIdOrEthHashPathParam"
@@ -1551,7 +1554,7 @@ components:
       properties:
         address:
           description: |
-            The address of the transaction recipient in hex. 
+            The address of the transaction recipient in hex.
             Zero address is set for transactions without a recipient (e.g., contract create)
           type: string
           format: binary

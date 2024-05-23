@@ -61,8 +61,8 @@ class OpcodesController {
      *     and the entire trace of opcodes that were executed during the replay.
      * </p>
      * <p>
-     *     To provide the output, the transaction is re-executed using the state from the
-     *     {@code contract_state_changes} sidecars produced by the consensus nodes.
+     *     Note that to provide the output, the transaction needs to be re-executed on the EVM,
+     *     which may take a significant amount of time to complete if stack and memory information is requested.
      * </p>
      * <p>
      *     The endpoint depends on the following properties to be set to true when starting up the mirror-node:
