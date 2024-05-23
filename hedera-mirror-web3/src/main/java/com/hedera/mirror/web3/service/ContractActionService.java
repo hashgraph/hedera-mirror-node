@@ -1,13 +1,16 @@
 package com.hedera.mirror.web3.service;
 
 import com.hedera.mirror.common.domain.contract.ContractAction;
+import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
+import jakarta.validation.Valid;
 import java.util.List;
+import lombok.NonNull;
 
 public interface ContractActionService {
 
     /**
-     * @param consensusTimestamp the consensus timestamp of a record
-     * @return the sidecar contract actions associated with the given consensus timestamp
+     * @param transactionIdOrHash the transaction ID or hash
+     * @return the sidecar contract actions associated with the given transaction
      */
-    List<ContractAction> findAllByConsensusTimestamp(Long consensusTimestamp);
+    List<ContractAction> findFromTransaction(@NonNull @Valid TransactionIdOrHashParameter transactionIdOrHash);
 }
