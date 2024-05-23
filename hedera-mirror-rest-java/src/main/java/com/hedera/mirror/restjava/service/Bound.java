@@ -93,7 +93,7 @@ public class Bound {
     }
 
     public boolean hasEqualBounds() {
-        return getLower().value().getId() == getUpper().value().getId();
+        return Objects.equals(getLower().value(), getUpper().value());
     }
 
     public void verifyUnsupported(RangeOperator unsupportedOperator) {
