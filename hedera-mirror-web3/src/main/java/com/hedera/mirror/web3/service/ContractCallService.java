@@ -25,8 +25,6 @@ import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.contract.ContractAction;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
@@ -35,7 +33,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerO
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
-import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -48,16 +45,11 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.CustomLog;
-import lombok.NonNull;
-import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 @CustomLog
 @Named
@@ -71,8 +63,6 @@ public class ContractCallService {
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final RecordFileService recordFileService;
     private final ContractActionService contractActionService;
-    private final TransactionService transactionService;
-    private final EthereumTransactionService ethereumTransactionService;
     private final ThrottleProperties throttleProperties;
     private final Bucket gasLimitBucket;
 
@@ -83,8 +73,6 @@ public class ContractCallService {
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
             RecordFileService recordFileService,
             ContractActionService contractActionService,
-            TransactionService transactionService,
-            EthereumTransactionService ethereumTransactionService,
             ThrottleProperties throttleProperties,
             Bucket gasLimitBucket) {
         this.binaryGasEstimator = binaryGasEstimator;
@@ -94,9 +82,7 @@ public class ContractCallService {
         this.store = store;
         this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
         this.recordFileService = recordFileService;
-        this.transactionService = transactionService;
         this.contractActionService = contractActionService;
-        this.ethereumTransactionService = ethereumTransactionService;
         this.throttleProperties = throttleProperties;
         this.gasLimitBucket = gasLimitBucket;
     }
@@ -113,7 +99,7 @@ public class ContractCallService {
                     ctx.initializeStackFrames(store.getStackedStateFrames());
                     result = estimateGas(params, ctx);
                 } else {
-                    final var ethCallTxnResult = getCallTxnResult(params, TracerType.OPERATION, ctx);
+                    final var ethCallTxnResult = callContract(params, TracerType.OPERATION, ctx);
 
                     validateResult(ethCallTxnResult, params.getCallType());
 
@@ -134,11 +120,11 @@ public class ContractCallService {
                                                      @Nullable final TransactionIdOrHashParameter transactionIdOrHash) {
         return ContractCallContext.run(ctx -> {
             if (transactionIdOrHash != null && transactionIdOrHash.isValid()) {
-                List<ContractAction> contractActions = getContractActions(transactionIdOrHash);
+                List<ContractAction> contractActions = contractActionService.findFromTransaction(transactionIdOrHash);
                 ctx.setContractActions(contractActions);
             }
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
-            final var ethCallTxnResult = getCallTxnResult(params, TracerType.OPCODE, ctx);
+            final var ethCallTxnResult = callContract(params, TracerType.OPCODE, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(ethCallTxnResult)
@@ -147,37 +133,34 @@ public class ContractCallService {
         });
     }
 
-    @SneakyThrows
-    public List<ContractAction> getContractActions(@NonNull @Valid TransactionIdOrHashParameter transactionIdOrHash) {
-        Assert.isTrue(transactionIdOrHash.isValid(), "Invalid transactionIdOrHash");
-
-        Optional<Long> consensusTimestamp;
-        if (transactionIdOrHash.isHash()) {
-            consensusTimestamp = ethereumTransactionService
-                    .findByHash(transactionIdOrHash.hash().toByteArray())
-                    .map(EthereumTransaction::getConsensusTimestamp);
-        } else {
-            consensusTimestamp = transactionService
-                    .findByTransactionId(transactionIdOrHash.transactionID())
-                    .map(Transaction::getConsensusTimestamp);
-        }
-
-        return consensusTimestamp
-                .map(contractActionService::findAllByConsensusTimestamp)
-                .orElseThrow(() -> new EntityNotFoundException("Transaction not found"));
-    }
-
-    private HederaEvmTransactionProcessingResult getCallTxnResult(CallServiceParameters params,
-                                                                  TracerType tracerType,
-                                                                  ContractCallContext ctx) throws MirrorEvmTransactionException {
-        // if we have historical call then set corresponding file record
+    /**
+     * This method is responsible for calling a smart contract function. The method is divided into two main parts:
+     * <p>
+     *     1. If the call is historical, the method retrieves the corresponding record file and initializes
+     *     the contract call context with the historical state. The method then proceeds to call the contract.
+     * </p>
+     * <p>
+     *     2. If the call is not historical, the method initializes the contract call context with the current state
+     *     and proceeds to call the contract.
+     * </p>
+     *
+     * @param params the call service parameters
+     * @param tracerType the type of tracer to use
+     * @param ctx the contract call context
+     * @return {@link HederaEvmTransactionProcessingResult} of the contract call
+     * @throws MirrorEvmTransactionException if any pre-checks
+     * fail with {@link IllegalStateException} or {@link IllegalArgumentException}
+     */
+    private HederaEvmTransactionProcessingResult callContract(CallServiceParameters params,
+                                                              TracerType tracerType,
+                                                              ContractCallContext ctx) throws MirrorEvmTransactionException {
+        // if we have historical call, then set the corresponding record file in the context
         if (params.getBlock() != BlockType.LATEST) {
             ctx.setRecordFile(recordFileService
                     .findRecordFileByBlock(params.getBlock())
                     .orElseThrow(BlockNumberNotFoundException::new));
         }
-        // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
-        // if the call is historical
+        // initializes the stack frame with the current state or historical state (if the call is historical)
         ctx.initializeStackFrames(store.getStackedStateFrames());
         return doProcessCall(params, params.getGas(), true, tracerType, ctx);
     }

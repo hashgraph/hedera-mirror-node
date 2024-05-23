@@ -20,6 +20,7 @@ import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUT
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSortedMap;
@@ -31,6 +32,7 @@ import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
 import java.security.SecureRandom;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
@@ -41,6 +43,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.code.CodeV0;
 import org.hyperledger.besu.evm.frame.BlockValues;
@@ -200,6 +203,35 @@ class OpcodeTracerTest {
     }
 
     @Test
+    @DisplayName("given account is missing in the world updater, should only log a warning and return empty storage")
+    void shouldNotThrowExceptionWhenAccountIsMissingInWorldUpdater() {
+        tracerOptions.setStorage(true);
+        frame = setupMessageFrame(tracerOptions);
+
+        reset(worldUpdater.getAccount(frame.getRecipientAddress()));
+        when(worldUpdater.getAccount(frame.getRecipientAddress())).thenReturn(null);
+
+        final Opcode opcode = executeOperation(frame);
+        assertThat(opcode.storage()).isNotEmpty();
+        assertThat(opcode.storage()).hasValue(new TreeMap<>());
+    }
+
+    @Test
+    @DisplayName("given ModificationNotAllowedException thrown when trying to retrieve account through WorldUpdater, " +
+            "should only log a warning and return empty storage")
+    void shouldNotThrowExceptionWhenWorldUpdaterThrowsModificationNotAllowedException() {
+        tracerOptions.setStorage(true);
+        frame = setupMessageFrame(tracerOptions);
+
+        reset(worldUpdater.getAccount(frame.getRecipientAddress()));
+        when(worldUpdater.getAccount(frame.getRecipientAddress())).thenThrow(new ModificationNotAllowedException());
+
+        final Opcode opcode = executeOperation(frame);
+        assertThat(opcode.storage()).isNotEmpty();
+        assertThat(opcode.storage()).hasValue(new TreeMap<>());
+    }
+
+    @Test
     @DisplayName("given storage is disabled in tracer options, should not record storage")
     void shouldNotRecordStorageWhenDisabled() {
         tracerOptions.setStorage(false);
@@ -246,8 +278,7 @@ class OpcodeTracerTest {
     void shouldNotRecordGasRequirementWhenPrecompileCallHasNullOutput() {
         frame = setupMessageFrame(tracerOptions);
 
-        final long gasRequirement = 100L;
-        final Opcode opcode = executePrecompileOperation(frame, gasRequirement, null);
+        final Opcode opcode = executePrecompileOperation(frame, GAS_REQUIREMENT, null);
         assertThat(opcode.gasCost()).isZero();
     }
 
@@ -315,7 +346,9 @@ class OpcodeTracerTest {
         tracer.tracePreExecution(frame);
         tracer.tracePrecompileCall(frame, gasRequirement, output);
 
+        assertThat(tracer.getOptions()).isEqualTo(tracerOptions);
         assertThat(tracer.getOpcodes()).hasSize(1);
+        assertThat(tracer.getContractActions()).isNotNull();
         return tracer.getOpcodes().getFirst();
     }
 
