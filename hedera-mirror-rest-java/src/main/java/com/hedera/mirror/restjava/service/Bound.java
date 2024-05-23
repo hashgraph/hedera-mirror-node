@@ -103,10 +103,14 @@ public class Bound {
     }
 
     public void verifySingleOccurrence() {
-        if (this.getCardinality(RangeOperator.GT, RangeOperator.GTE) > 1
-                || this.getCardinality(RangeOperator.LT, RangeOperator.LTE) > 1
-                || this.getCardinality(RangeOperator.EQ) > 1) {
-            throw new IllegalArgumentException("Single occurrence only supported.");
+        verifySingleOccurrence(RangeOperator.EQ);
+        verifySingleOccurrence(RangeOperator.GT, RangeOperator.GTE);
+        verifySingleOccurrence(RangeOperator.LT, RangeOperator.LTE);
+    }
+    
+    private void verifySingleOccurrence(RangeOperator... rangeOperators) {
+        if (this.getCardinality(rangeOperators) > 1) {
+            throw new IllegalArgumentException("Only one range operator from %s is allowed for the given parameter".formatted(Arrays.toString(rangeOperators));
         }
     }
 
