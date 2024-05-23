@@ -96,7 +96,7 @@ class TopicControllerTest extends ControllerTest {
                     () -> restClient.get().uri("", id).retrieve().body(Topic.class);
 
             // Then
-            validateError(callable, HttpClientErrorException.BadRequest.class, "Invalid path variable 'id'");
+            validateError(callable, HttpClientErrorException.BadRequest.class, "Invalid value for path variable 'id'");
         }
 
         @Test

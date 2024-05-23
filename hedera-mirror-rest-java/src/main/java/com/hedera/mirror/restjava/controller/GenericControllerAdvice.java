@@ -101,7 +101,7 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleMissingPathVariable(
             MissingPathVariableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         if (ex.isMissingAfterConversion()) {
-            var message = "Invalid path variable '" + ex.getVariableName() + "'";
+            var message = "Invalid value for path variable '" + ex.getVariableName() + "'";
             ResponseEntity<?> response = errorResponse(message, status);
             return (ResponseEntity<Object>) response;
         }
