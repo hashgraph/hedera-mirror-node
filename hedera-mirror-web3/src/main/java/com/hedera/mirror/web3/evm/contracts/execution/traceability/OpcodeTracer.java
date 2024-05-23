@@ -34,6 +34,7 @@ import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.springframework.util.CollectionUtils;
 
 @Named
 @CustomLog
@@ -50,6 +51,9 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         ContractCallContext ctx = initialFrame.getContextVariable(ContractCallContext.CONTEXT_NAME);
         options = ctx.getOpcodeTracerOptions();
         contractActions = ctx.getContractActions();
+        if (CollectionUtils.isEmpty(contractActions)) {
+            log.warn("No contract actions found in context!");
+        }
     }
 
     @Override
@@ -73,12 +77,13 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     @Override
     public void tracePrecompileCall(final MessageFrame frame, final long gasRequirement, final Bytes output) {
         final Optional<Bytes> revertReason = frame.getRevertReason().isPresent() ?
-                frame.getRevertReason() :
-                getRevertReason(contractActions);
+                frame.getRevertReason() : getRevertReason(contractActions);
+
+        revertReason.ifPresent(bytes -> log.trace("Revert reason: {}", bytes.toHexString()));
 
         opcodes.add(new Opcode(
                 frame.getPC(),
-                Optional.ofNullable(frame.getCurrentOperation().getName()),
+                Optional.ofNullable(frame.getCurrentOperation()).map(Operation::getName),
                 frame.getRemainingGas(),
                 output != null ? gasRequirement : 0L,
                 frame.getDepth(),
@@ -136,10 +141,12 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     }
 
     private static Optional<Bytes> getRevertReason(List<ContractAction> contractActions) {
+        if (CollectionUtils.isEmpty(contractActions)) {
+            return Optional.empty();
+        }
         return contractActions.stream()
                 .filter(ContractAction::hasRevertReason)
-                .map(ContractAction::getResultData)
-                .map(Bytes::of)
+                .map(action -> Bytes.of(action.getResultData()))
                 .findFirst();
     }
 }
