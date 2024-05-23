@@ -320,7 +320,7 @@ class NftAllowanceServiceTest extends RestJavaIntegrationTest {
                 .build();
         assertThatThrownBy(() -> service.getNftAllowances(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Single occurrence only supported.");
+                .hasMessageContaining("Only one range operator from [lt, lte] is allowed for the given parameter");
     }
 
     @Test

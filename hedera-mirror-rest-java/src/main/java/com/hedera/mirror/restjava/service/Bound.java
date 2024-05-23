@@ -21,6 +21,7 @@ import com.hedera.mirror.restjava.common.RangeOperator;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Objects;
 import lombok.Getter;
 import org.springframework.util.CollectionUtils;
 
@@ -107,10 +108,11 @@ public class Bound {
         verifySingleOccurrence(RangeOperator.GT, RangeOperator.GTE);
         verifySingleOccurrence(RangeOperator.LT, RangeOperator.LTE);
     }
-    
+
     private void verifySingleOccurrence(RangeOperator... rangeOperators) {
         if (this.getCardinality(rangeOperators) > 1) {
-            throw new IllegalArgumentException("Only one range operator from %s is allowed for the given parameter".formatted(Arrays.toString(rangeOperators));
+            throw new IllegalArgumentException("Only one range operator from %s is allowed for the given parameter"
+                    .formatted(Arrays.toString(rangeOperators)));
         }
     }
 
