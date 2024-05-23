@@ -21,7 +21,6 @@ import com.hedera.mirror.restjava.common.RangeOperator;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
-import java.util.Objects;
 import lombok.Getter;
 import org.springframework.util.CollectionUtils;
 
@@ -33,9 +32,12 @@ public class Bound {
     @Getter
     private EntityIdRangeParameter upper;
 
+    @Getter
+    private String parameterName;
+
     private final EnumMap<RangeOperator, Integer> cardinality = new EnumMap<>(RangeOperator.class);
 
-    public Bound(List<EntityIdRangeParameter> params, boolean primarySortField) {
+    public Bound(List<EntityIdRangeParameter> params, boolean primarySortField, String parameterName) {
 
         if (CollectionUtils.isEmpty(params)) {
             return;
@@ -53,11 +55,12 @@ public class Bound {
         long adjustedUpper = adjustUpperBound();
 
         if (primarySortField && adjustedLower > adjustedUpper) {
-            throw new IllegalArgumentException("Invalid range provided");
+            throw new IllegalArgumentException("Invalid range provided for %s".formatted(parameterName));
         }
+        this.parameterName = parameterName;
     }
 
-    private long adjustUpperBound() {
+    public long adjustUpperBound() {
         if (this.upper == null) {
             return Long.MAX_VALUE;
         }
@@ -68,7 +71,7 @@ public class Bound {
         return upperBound;
     }
 
-    private long adjustLowerBound() {
+    public long adjustLowerBound() {
         if (this.lower == null) {
             return 0;
         }
@@ -94,12 +97,13 @@ public class Bound {
     }
 
     public boolean hasEqualBounds() {
-        return Objects.equals(getLower().value(), getUpper().value());
+        return hasLowerAndUpper() && adjustLowerBound() == adjustUpperBound();
     }
 
     public void verifyUnsupported(RangeOperator unsupportedOperator) {
         if (getCardinality(unsupportedOperator) > 0) {
-            throw new IllegalArgumentException(String.format("Unsupported range operator %s", unsupportedOperator));
+            throw new IllegalArgumentException(
+                    String.format("Unsupported range operator %s for %s", unsupportedOperator, parameterName));
         }
     }
 
@@ -111,8 +115,9 @@ public class Bound {
 
     private void verifySingleOccurrence(RangeOperator... rangeOperators) {
         if (this.getCardinality(rangeOperators) > 1) {
-            throw new IllegalArgumentException("Only one range operator from %s is allowed for the given parameter"
-                    .formatted(Arrays.toString(rangeOperators)));
+            throw new IllegalArgumentException(
+                    "Only one range operator from %s is allowed for the given parameter for %s"
+                            .formatted(Arrays.toString(rangeOperators), parameterName));
         }
     }
 
@@ -120,7 +125,7 @@ public class Bound {
         if (this.getCardinality(RangeOperator.EQ) == 1
                 && (this.getCardinality(RangeOperator.GT, RangeOperator.GTE) != 0
                         || this.getCardinality(RangeOperator.LT, RangeOperator.LTE) != 0)) {
-            throw new IllegalArgumentException("Can't support both range and equal for this parameter.");
+            throw new IllegalArgumentException("Can't support both range and equal for %s".formatted(parameterName));
         }
     }
 }

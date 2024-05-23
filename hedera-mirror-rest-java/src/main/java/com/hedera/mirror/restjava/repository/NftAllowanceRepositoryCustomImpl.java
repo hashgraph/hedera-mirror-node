@@ -66,11 +66,9 @@ class NftAllowanceRepositoryCustomImpl implements NftAllowanceRepositoryCustom {
         var lowerPrimary = primaryBounds.getLower();
         var upperPrimary = primaryBounds.getUpper();
 
-        // This is for range shortcutting when the GTE and LTE values are same. With GT and LT the values will be
-        // shortcut in the controller.
-        if (primaryBounds.hasLowerAndUpper() && primaryBounds.hasEqualBounds()) {
-            lowerPrimary = new EntityIdRangeParameter(
-                    RangeOperator.EQ, primaryBounds.getLower().value());
+        // This is for range shortcutting when the bounds are the same.
+        if (primaryBounds.hasEqualBounds()) {
+            lowerPrimary = new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(primaryBounds.adjustLowerBound()));
             upperPrimary = null;
         }
 

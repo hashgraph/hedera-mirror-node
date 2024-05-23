@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.restjava.common.ParameterNames;
 import com.hedera.mirror.restjava.common.RangeOperator;
 import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
@@ -51,6 +52,11 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
         verifyRangeId(ownerOrSpenderParams);
         verifyRangeId(tokenParams);
+
+        if (!ownerOrSpenderParams.hasLowerAndUpper()
+                && tokenParams.adjustLowerBound() > tokenParams.adjustUpperBound()) {
+            throw new IllegalArgumentException("Invalid range provided for %s".formatted(ParameterNames.TOKEN_ID));
+        }
 
         if (tokenParams.getCardinality(RangeOperator.LT, RangeOperator.LTE) > 0
                 && ownerOrSpenderParams.getCardinality(RangeOperator.EQ, RangeOperator.LTE) == 0) {
