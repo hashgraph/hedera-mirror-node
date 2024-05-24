@@ -889,7 +889,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var recordItem = recordItemBuilder
                 .cryptoUpdate()
                 .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
-                .transactionBody(b -> b.setStakedNodeId(newStakedNodeId).setAccountIDToUpdate(protoAccountId))
+                .transactionBody(b -> b.setStakedNodeId(newStakedNodeId)
+                        .setAccountIDToUpdate(protoAccountId)
+                        .setMaxAutomaticTokenAssociations(Int32Value.of(-1)))
                 .transactionBodyWrapper(w -> w.setTransactionID(transactionId))
                 .record(r -> r.addPaidStakingRewards(accountAmount(account.getId(), 200L))
                         .setTransactionID(transactionId)
@@ -911,7 +913,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(entityRepository.findById(account.getId()))
                         .get()
                         .returns(newStakedNodeId, Entity::getStakedNodeId)
-                        .returns(expectedStakePeriodStart, Entity::getStakePeriodStart));
+                        .returns(expectedStakePeriodStart, Entity::getStakePeriodStart)
+                        .returns(-1, Entity::getMaxAutomaticTokenAssociations));
     }
 
     @Test
@@ -1663,7 +1666,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var evmAddress = recordItemBuilder.evmAddress();
         var cryptoCreate = recordItemBuilder
                 .cryptoCreate()
-                .transactionBody(b -> b.clearAlias().clearKey().setAlias(evmAddress.getValue()))
+                .transactionBody(b -> b.clearAlias()
+                        .clearKey()
+                        .setAlias(evmAddress.getValue())
+                        .setMaxAutomaticTokenAssociations(-1))
                 .receipt(r -> r.setAccountID(accountId))
                 .build();
 
@@ -1681,7 +1687,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         String[] fields = new String[] {"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
         assertThat(entityRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
-                .containsExactly(expectedAccount);
+                .containsExactly(expectedAccount)
+                .map(e -> e.getMaxAutomaticTokenAssociations())
+                .containsOnly(-1);
         assertThat(findHistory(Entity.class)).isEmpty();
 
         // when

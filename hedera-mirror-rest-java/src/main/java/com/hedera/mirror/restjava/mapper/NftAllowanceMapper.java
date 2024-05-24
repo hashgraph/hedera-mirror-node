@@ -22,10 +22,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
-@Mapper(config = RestJavaMapperConfig.class)
+@Mapper(config = MapperConfiguration.class)
 public interface NftAllowanceMapper {
 
+    @Mapping(source = "timestampRange", target = "timestamp")
     com.hedera.mirror.rest.model.NftAllowance map(NftAllowance source);
 
     default List<com.hedera.mirror.rest.model.NftAllowance> map(Collection<NftAllowance> source) {

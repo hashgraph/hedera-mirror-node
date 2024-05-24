@@ -98,6 +98,7 @@ import com.hedera.services.stream.proto.ContractActionType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.FreezeType;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.Key.KeyCase;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -415,7 +416,7 @@ public class DomainBuilder {
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> entity(long id, long createdTimestamp) {
         var builder = Entity.builder()
                 .alias(key())
-                .autoRenewAccountId(id)
+                .autoRenewAccountId(id())
                 .autoRenewPeriod(8_000_000L)
                 .balance(tinybar())
                 .balanceTimestamp(createdTimestamp)
@@ -1070,13 +1071,19 @@ public class DomainBuilder {
     }
 
     public byte[] key() {
-        if (id.get() % 2 == 0) {
-            ByteString bytes = ByteString.copyFrom(bytes(KEY_LENGTH_ECDSA));
-            return Key.newBuilder().setECDSASecp256K1(bytes).build().toByteArray();
-        } else {
-            ByteString bytes = ByteString.copyFrom(bytes(KEY_LENGTH_ED25519));
-            return Key.newBuilder().setEd25519(bytes).build().toByteArray();
-        }
+        return id.get() % 2 == 0 ? key(KeyCase.ECDSA_SECP256K1) : key(KeyCase.ED25519);
+    }
+
+    public byte[] key(KeyCase keyCase) {
+        var key =
+                switch (keyCase) {
+                    case ECDSA_SECP256K1 -> Key.newBuilder()
+                            .setECDSASecp256K1(ByteString.copyFrom(bytes(KEY_LENGTH_ECDSA)));
+                    case ED25519 -> Key.newBuilder().setEd25519(ByteString.copyFrom(bytes(KEY_LENGTH_ED25519)));
+                    default -> throw new UnsupportedOperationException("Key type not supported");
+                };
+
+        return key.build().toByteArray();
     }
 
     public long number() {
@@ -1103,6 +1110,7 @@ public class DomainBuilder {
 
     /**
      * Reset the timestamp, so next call of timestamp() will return value + 1
+     *
      * @param value The timestamp to reset to
      */
     public void resetTimestamp(long value) {
