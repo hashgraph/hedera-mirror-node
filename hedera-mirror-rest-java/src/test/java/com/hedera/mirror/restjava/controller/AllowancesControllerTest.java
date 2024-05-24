@@ -19,6 +19,7 @@ package com.hedera.mirror.restjava.controller;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.google.common.io.BaseEncoding;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
@@ -46,7 +47,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
-import org.testcontainers.shaded.com.google.common.io.BaseEncoding;
 
 @RequiredArgsConstructor
 @RunWith(SpringRunner.class)

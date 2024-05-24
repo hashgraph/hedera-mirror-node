@@ -318,12 +318,8 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
                                         List.of(fromIndex(LTE, spenders, 2), fromIndex(GT, spenders, 0)),
                                         false,
                                         ParameterNames.ACCOUNT_ID))
-                                .tokenIds(new Bound(
-                                        List.of(fromIndex(
-                                                LTE, tokenIds,
-                                                0)), // new EntityIdRangeParameter(LTE, EntityId.of(tokenIds.get(0)))),
-                                        false,
-                                        ParameterNames.TOKEN_ID))
+                                .tokenIds(
+                                        new Bound(List.of(fromIndex(LTE, tokenIds, 0)), false, ParameterNames.TOKEN_ID))
                                 .limit(6)
                                 .order(Direction.DESC)
                                 .build(),
