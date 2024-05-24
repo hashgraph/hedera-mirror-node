@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowance;
+import com.hedera.mirror.rest.model.Transaction;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -141,6 +142,19 @@ class LinkFactoryTest {
 
         assertThat(linkFactory.create(List.of(nftAllowance), pageable, extractor))
                 .returns(expectedLink, Links::getNext);
+    }
+
+    @Test
+    void testSortOmitted() {
+        // given
+        var transaction = new Transaction().consensusTimestamp("123456789.000000123");
+
+        // when then
+        assertThat(linkFactory.create(
+                        List.of(transaction),
+                        PageRequest.ofSize(1),
+                        (t) -> Map.of("timestamp", t.getConsensusTimestamp())))
+                .returns("/api?timestamp=gt:123456789.000000123", Links::getNext);
     }
 
     @DisplayName("Get pagination links unknown parameter")

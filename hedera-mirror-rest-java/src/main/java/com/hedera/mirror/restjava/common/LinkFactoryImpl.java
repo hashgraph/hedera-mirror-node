@@ -63,6 +63,7 @@ class LinkFactoryImpl implements LinkFactory {
         var primarySort = Iterables.getFirst(sortOrders, null);
         var order = primarySort == null ? Direction.ASC : primarySort.getDirection();
         var lastSort = Iterables.getLast(sortOrders, null);
+        // Only the last sort param's value is exclusive
         var exclusiveParam = lastSort != null ? lastSort.getProperty() : null;
         var builder = UriComponentsBuilder.fromPath(request.getRequestURI());
         var paramsMap = request.getParameterMap();
@@ -79,12 +80,12 @@ class LinkFactoryImpl implements LinkFactory {
 
         for (var entry : paginationParamsMap.entrySet()) {
             var key = entry.getKey();
-            var inclusive = !key.equals(exclusiveParam);
+            var exclusive = exclusiveParam == null || key.equals(exclusiveParam);
             RangeOperator operator;
             if (order.isAscending()) {
-                operator = inclusive ? RangeOperator.GTE : RangeOperator.GT;
+                operator = exclusive ? RangeOperator.GT : RangeOperator.GTE;
             } else {
-                operator = inclusive ? RangeOperator.LTE : RangeOperator.LT;
+                operator = exclusive ? RangeOperator.LT : RangeOperator.LTE;
             }
             builder.queryParam(key, operator + ":" + entry.getValue());
         }
