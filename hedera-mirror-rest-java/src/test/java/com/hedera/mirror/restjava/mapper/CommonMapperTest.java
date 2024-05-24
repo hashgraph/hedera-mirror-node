@@ -16,24 +16,32 @@
 
 package com.hedera.mirror.restjava.mapper;
 
+import static com.hedera.mirror.restjava.mapper.CommonMapper.NANO_DIGITS;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.rest.model.Key.TypeEnum;
 import com.hedera.mirror.rest.model.TimestampRange;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
-import static com.hedera.mirror.restjava.mapper.CommonMapper.NANO_DIGITS;
-import static org.assertj.core.api.Assertions.assertThat;
-
 class CommonMapperTest {
 
     private final CommonMapper commonMapper = Mappers.getMapper(CommonMapper.class);
+    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Test
     void mapEntityId() {
         var entityId = com.hedera.mirror.common.domain.entity.EntityId.of("1.2.3");
-        assertThat(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null)).isNull();
+        assertThat(commonMapper.mapEntityId((com.hedera.mirror.common.domain.entity.EntityId) null))
+                .isNull();
         assertThat(commonMapper.mapEntityId(entityId))
                 .isEqualTo(EntityId.of(1L, 2L, 3L).toString());
     }
@@ -42,6 +50,36 @@ class CommonMapperTest {
     void mapEntityIdLong() {
         assertThat(commonMapper.mapEntityId((Long) null)).isNull();
         assertThat(commonMapper.mapEntityId(0L)).isNull();
+    }
+
+    @Test
+    void mapKey() {
+        // Given
+        var bytesEcdsa = domainBuilder.bytes(DomainBuilder.KEY_LENGTH_ECDSA);
+        var bytesEd25519 = domainBuilder.bytes(DomainBuilder.KEY_LENGTH_ED25519);
+        var ecdsa = Key.newBuilder()
+                .setECDSASecp256K1(DomainUtils.fromBytes(bytesEcdsa))
+                .build();
+        var ecdsaList =
+                Key.newBuilder().setKeyList(KeyList.newBuilder().addKeys(ecdsa)).build();
+        var ed25519 =
+                Key.newBuilder().setEd25519(DomainUtils.fromBytes(bytesEd25519)).build();
+        var ed25519List = Key.newBuilder()
+                .setKeyList(KeyList.newBuilder().addKeys(ed25519))
+                .build();
+        var protobufEncoded = Key.newBuilder()
+                .setKeyList(KeyList.newBuilder().addKeys(ecdsa).addKeys(ed25519))
+                .build()
+                .toByteArray();
+
+        // Then
+        assertThat(commonMapper.mapKey(null)).isNull();
+        assertThat(commonMapper.mapKey(ecdsa.toByteArray())).isEqualTo(toKey(bytesEcdsa, TypeEnum.ECDSA_SECP256K1));
+        assertThat(commonMapper.mapKey(ecdsaList.toByteArray())).isEqualTo(toKey(bytesEcdsa, TypeEnum.ECDSA_SECP256K1));
+        assertThat(commonMapper.mapKey(ed25519.toByteArray())).isEqualTo(toKey(bytesEd25519, TypeEnum.ED25519));
+        assertThat(commonMapper.mapKey(ed25519.toByteArray())).isEqualTo(toKey(bytesEd25519, TypeEnum.ED25519));
+        assertThat(commonMapper.mapKey(ed25519List.toByteArray())).isEqualTo(toKey(bytesEd25519, TypeEnum.ED25519));
+        assertThat(commonMapper.mapKey(protobufEncoded)).isEqualTo(toKey(protobufEncoded, TypeEnum.PROTOBUFENCODED));
     }
 
     @Test
@@ -58,7 +96,8 @@ class CommonMapperTest {
         assertThat(commonMapper.mapRange(Range.atLeast(0L)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
-        range.setTo(timestampString.substring(0, timestampString.length() - NANO_DIGITS) + "." + timestampString.substring(timestampString.length() - NANO_DIGITS));
+        range.setTo(timestampString.substring(0, timestampString.length() - NANO_DIGITS) + "."
+                + timestampString.substring(timestampString.length() - NANO_DIGITS));
         assertThat(commonMapper.mapRange(Range.openClosed(0L, now)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
@@ -90,5 +129,11 @@ class CommonMapperTest {
         assertThat(commonMapper.mapRange(Range.openClosed(110000000L, 1100000000L)))
                 .usingRecursiveComparison()
                 .isEqualTo(range);
+    }
+
+    private com.hedera.mirror.rest.model.Key toKey(byte[] bytes, TypeEnum type) {
+        return new com.hedera.mirror.rest.model.Key()
+                .key(Hex.encodeHexString(bytes))
+                .type(type);
     }
 }

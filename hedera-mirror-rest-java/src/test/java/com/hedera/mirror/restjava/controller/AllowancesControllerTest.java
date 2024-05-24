@@ -19,6 +19,7 @@ package com.hedera.mirror.restjava.controller;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.google.common.io.BaseEncoding;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -30,7 +31,6 @@ import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.binary.Base32;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ThrowableAssert;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -137,7 +137,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         // When
         var result = restClient
                 .get()
-                .uri("", new Base32().encodeAsString(entity.getAlias()))
+                .uri("", BaseEncoding.base32().omitPadding().encode(entity.getAlias()))
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
