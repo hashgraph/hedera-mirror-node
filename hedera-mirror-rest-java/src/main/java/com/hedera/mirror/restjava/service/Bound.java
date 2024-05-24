@@ -32,18 +32,18 @@ public class Bound {
     @Getter
     private EntityIdRangeParameter upper;
 
-    @Getter
-    private String parameterName;
+    private final String parameterName;
 
     private final EnumMap<RangeOperator, Integer> cardinality = new EnumMap<>(RangeOperator.class);
 
     public Bound(List<EntityIdRangeParameter> params, boolean primarySortField, String parameterName) {
+        this.parameterName = parameterName;
 
         if (CollectionUtils.isEmpty(params)) {
             return;
         }
-        for (EntityIdRangeParameter param : params) {
 
+        for (var param : params) {
             if (param.hasLowerBound()) {
                 lower = param;
             } else if (param.hasUpperBound()) {
@@ -51,23 +51,24 @@ public class Bound {
             }
             cardinality.merge(param.operator(), 1, Math::addExact);
         }
+
         long adjustedLower = adjustLowerBound();
         long adjustedUpper = adjustUpperBound();
-
         if (primarySortField && adjustedLower > adjustedUpper) {
             throw new IllegalArgumentException("Invalid range provided for %s".formatted(parameterName));
         }
-        this.parameterName = parameterName;
     }
 
     public long adjustUpperBound() {
         if (this.upper == null) {
             return Long.MAX_VALUE;
         }
+
         long upperBound = this.upper.value().getId();
         if (this.upper.operator() == RangeOperator.LT) {
             upperBound--;
         }
+
         return upperBound;
     }
 
@@ -75,10 +76,12 @@ public class Bound {
         if (this.lower == null) {
             return 0;
         }
+
         long lowerBound = this.lower.value().getId();
         if (this.lower.operator() == RangeOperator.GT) {
             lowerBound++;
         }
+
         return lowerBound;
     }
 
