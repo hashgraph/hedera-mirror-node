@@ -54,13 +54,13 @@ public class AllowancesController {
     private static final String DEFAULT_LIMIT = "25";
     private static final Map<Boolean, Function<NftAllowance, Map<String, String>>> EXTRACTORS = Map.of(
             true,
-            (nftAllowance) -> ImmutableSortedMap.of(
+            nftAllowance -> ImmutableSortedMap.of(
                     ACCOUNT_ID, nftAllowance.getSpender(),
                     TOKEN_ID, nftAllowance.getTokenId()),
             false,
-            (nftAllowance -> ImmutableSortedMap.of(
+            nftAllowance -> ImmutableSortedMap.of(
                     ACCOUNT_ID, nftAllowance.getOwner(),
-                    TOKEN_ID, nftAllowance.getTokenId())));
+                    TOKEN_ID, nftAllowance.getTokenId()));
     private static final int MAX_LIMIT = 100;
 
     private final LinkFactory linkFactory;
