@@ -21,16 +21,17 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.Error;
+import com.hedera.mirror.rest.model.ErrorStatus;
 import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
+import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
-import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.binary.Base32;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ThrowableAssert;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -45,6 +46,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.testcontainers.shaded.com.google.common.io.BaseEncoding;
 
 @RequiredArgsConstructor
 @RunWith(SpringRunner.class)
@@ -92,8 +94,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var result = restClient.get().uri("", allowance1.getOwner()).retrieve().body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1, allowance2)));
-        assertThat(result.getLinks().getNext()).isNull();
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), null));
     }
 
     @Test
@@ -117,8 +118,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1, allowance2)));
-        assertThat(result.getLinks().getNext()).isNull();
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), null));
     }
 
     @Test
@@ -137,13 +137,12 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         // When
         var result = restClient
                 .get()
-                .uri("", new Base32().encodeAsString(entity.getAlias()))
+                .uri("", BaseEncoding.base32().omitPadding().encode(entity.getAlias()))
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1, allowance2)));
-        assertThat(result.getLinks().getNext()).isNull();
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), null));
     }
 
     @Test
@@ -179,8 +178,11 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
-        var uriParams =
-                "?account.id=gte:0.0.1000&account.id=lt:0.0.1002&owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
+        var uriParams = "?account.id=gte:%s&account.id=lt:%s&owner=true&token.id=gt:%s&limit=1&order=asc"
+                .formatted(
+                        EntityId.of(allowance1.getSpender() - 1),
+                        EntityId.of(allowance1.getSpender() + 1),
+                        EntityId.of(allowance1.getTokenId() - 1));
         var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=true&token.id=gt:%s&limit=1&order=asc"
                 .formatted(
                         allowance1.getOwner(),
@@ -195,8 +197,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
-        assertThat(result.getLinks().getNext()).isEqualTo(next);
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1), next));
     }
 
     @Test
@@ -212,7 +213,12 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
         var uriParams =
-                "?account.id=gte:0.0.1000&account.id=lte:0.0.1102&owner=true&token.id=gt:0.0.1000&token.id=lt:0.0.3000&limit=1&order=desc";
+                "?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
+                        .formatted(
+                                EntityId.of(allowance1.getSpender()),
+                                EntityId.of(allowance2.getSpender()),
+                                EntityId.of(allowance1.getTokenId()),
+                                EntityId.of(allowance2.getTokenId() + 1));
         var next = "/api/v1/accounts/%s/allowances/nfts?account.id=lte:%s&owner=true&token.id=lt:%s&limit=1&order=desc"
                 .formatted(
                         allowance1.getOwner(),
@@ -227,8 +233,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2)));
-        assertThat(result.getLinks().getNext()).isEqualTo(next);
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2), next));
     }
 
     @Test
@@ -258,10 +263,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        // This test will need to change after the new repository layer is integrated to return the correct result for
-        // spenderId = allowance.spender()
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2)));
-        assertThat(result.getLinks().getNext()).isEqualTo(nextLink);
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2), nextLink));
     }
 
     @Test
@@ -275,7 +277,8 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
-        var uriParams = "?account.id=gte:0.0.1000&owner=true&token.id=gt:0.0.1000&limit=1&order=desc";
+        var uriParams = "?account.id=gte:%s&owner=true&token.id=gt:%s&limit=1&order=desc"
+                .formatted(EntityId.of(allowance2.getSpender()), EntityId.of(allowance2.getTokenId() - 1));
         var nextLink =
                 "/api/v1/accounts/%s/allowances/nfts?account.id=lte:%s&owner=true&token.id=lt:%s&limit=1&order=desc"
                         .formatted(
@@ -291,8 +294,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2)));
-        assertThat(result.getLinks().getNext()).isEqualTo(nextLink);
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2), nextLink));
     }
 
     @Test
@@ -307,7 +309,8 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .customize(nfta -> nfta.spender(allowance1.getSpender()).approvedForAll(true))
                 .persist();
 
-        var uriParams = "?account.id=gte:0.0.1000&owner=false&token.id=gt:0.0.1000&limit=1&order=asc";
+        var uriParams = "?account.id=gte:%s&owner=false&token.id=gt:%s&limit=1&order=asc"
+                .formatted(EntityId.of(allowance1.getOwner()), EntityId.of(allowance1.getTokenId() - 1));
         var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=false&token.id=gt:%s&limit=1&order=asc"
                 .formatted(
                         allowance1.getSpender(),
@@ -322,8 +325,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance1)));
-        assertThat(result.getLinks().getNext()).isEqualTo(next);
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1), next));
     }
 
     @Test
@@ -348,8 +350,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(Collections.EMPTY_LIST);
-        assertThat(result.getLinks().getNext()).isNull();
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
     }
 
     @ParameterizedTest
@@ -470,8 +471,11 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2, allowance1)));
-        assertThat(result.getLinks().getNext()).isEqualTo(next);
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2, allowance1), next));
+    }
+
+    private NftAllowancesResponse getExpectedResponse(List<NftAllowance> nftAllowances, String next) {
+        return new NftAllowancesResponse().allowances(mapper.map(nftAllowances)).links(new Links().next(next));
     }
 
     private void validateError(
@@ -483,10 +487,10 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .isInstanceOf(clazz)
                 .hasMessageContaining(description)
                 .asInstanceOf(InstanceOfAssertFactories.type(clazz))
-                .extracting(r -> r.getResponseBodyAs(Error.class)
-                        .getStatus()
-                        .getMessages()
-                        .get(0))
+                .extracting(r -> r.getResponseBodyAs(Error.class))
+                .extracting(Error::getStatus)
+                .extracting(ErrorStatus::getMessages)
+                .extracting(List::getFirst)
                 .returns(null, ErrorStatusMessagesInner::getData)
                 .returns(null, ErrorStatusMessagesInner::getDetail)
                 .returns(message, ErrorStatusMessagesInner::getMessage);
