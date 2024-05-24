@@ -258,10 +258,10 @@ paths:
         |               | ne                  | N       | | |
         |               | lt(e)               | Y       | Single occurrence only. | ?account.id=lte:X |
         |               | gt(e)               | Y       | Single occurrence only. | ?account.id=gte:X |
-        | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of an **account.id** query | ?account.id=X&token.id=eq:Y |
+        | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of an **account.id** parameter | ?account.id=X&token.id=eq:Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** or **eq** **account.id** query | ?account.id=lte:X&token.id=lt:Y |
-        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** or **eq** **account.id** query | ?account.id=gte:X&token.id=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** or **eq** **account.id** parameter | ?account.id=lte:X&token.id=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** or **eq** **account.id** parameter | ?account.id=gte:X&token.id=gt:Y |
 
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 

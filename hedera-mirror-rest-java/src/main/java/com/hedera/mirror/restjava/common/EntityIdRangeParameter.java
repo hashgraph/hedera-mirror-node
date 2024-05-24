@@ -38,4 +38,13 @@ public record EntityIdRangeParameter(RangeOperator operator, EntityId value) imp
                     "Invalid range operator %s. Should have format rangeOperator:Id".formatted(entityIdRangeParam));
         };
     }
+
+    // Considering EQ in the same category as GT,GTE as an assumption
+    public boolean hasLowerBound() {
+        return operator == RangeOperator.GT || operator == RangeOperator.GTE || operator == RangeOperator.EQ;
+    }
+
+    public boolean hasUpperBound() {
+        return operator == RangeOperator.LT || operator == RangeOperator.LTE;
+    }
 }

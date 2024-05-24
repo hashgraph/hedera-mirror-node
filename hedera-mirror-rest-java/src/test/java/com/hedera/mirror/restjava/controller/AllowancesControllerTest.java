@@ -81,11 +81,11 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
 
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(entity.getId()))
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
                 .persist();
         var allowance2 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
 
         // When
@@ -102,11 +102,11 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(entity.getId()))
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
                 .persist();
         var allowance2 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
 
         // When
@@ -127,11 +127,11 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(entity.getId()))
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
                 .persist();
         var allowance2 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
 
         // When
@@ -152,7 +152,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(entity.getId()))
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
                 .persist();
 
         // When
@@ -173,13 +173,14 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(entity.getId()))
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
                 .persist();
         domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
-        var uriParams = "?account.id=gte:0.0.1000&owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
+        var uriParams =
+                "?account.id=gte:0.0.1000&account.id=lt:0.0.1002&owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
         var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=true&token.id=gt:%s&limit=1&order=asc"
                 .formatted(
                         allowance1.getOwner(),
@@ -199,6 +200,38 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
     }
 
     @Test
+    void nftAllowancesAllRangeConditions() {
+        // Given
+        var entity = domainBuilder.entity().persist();
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
+                .persist();
+        var allowance2 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
+                .persist();
+        var uriParams =
+                "?account.id=gte:0.0.1000&account.id=lte:0.0.1102&owner=true&token.id=gt:0.0.1000&token.id=lt:0.0.3000&limit=1&order=desc";
+        var next = "/api/v1/accounts/%s/allowances/nfts?account.id=lte:%s&owner=true&token.id=lt:%s&limit=1&order=desc"
+                .formatted(
+                        allowance1.getOwner(),
+                        EntityId.of(allowance2.getSpender()),
+                        EntityId.of(allowance2.getTokenId()));
+
+        // When
+        var result = restClient
+                .get()
+                .uri(uriParams, allowance1.getOwner())
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+
+        // Then
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2)));
+        assertThat(result.getLinks().getNext()).isEqualTo(next);
+    }
+
+    @Test
     void nftAllowancesNoOperators() {
         // Given
         var entity = domainBuilder.entity().persist();
@@ -208,7 +241,7 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .persist();
         var allowance2 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
         var uriParams = "?account.id={account.id}&limit=1&order=asc";
         var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
@@ -236,11 +269,11 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(entity.getId()))
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
                 .persist();
         var allowance2 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
         var uriParams = "?account.id=gte:0.0.1000&owner=true&token.id=gt:0.0.1000&limit=1&order=desc";
         var nextLink =
@@ -267,11 +300,11 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.spender(entity.getId()))
+                .customize(nfta -> nfta.spender(entity.getId()).approvedForAll(true))
                 .persist();
         domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.spender(allowance1.getSpender()))
+                .customize(nfta -> nfta.spender(allowance1.getSpender()).approvedForAll(true))
                 .persist();
 
         var uriParams = "?account.id=gte:0.0.1000&owner=false&token.id=gt:0.0.1000&limit=1&order=asc";
@@ -299,11 +332,11 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.spender(entity.getId()))
+                .customize(nfta -> nfta.spender(entity.getId()).approvedForAll(true))
                 .persist();
         domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(allowance1.getOwner()))
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
         var uriParams = "?account.id=gte:0.0.5000&owner=true&token.id=gt:0.0.5000&limit=1&order=asc";
 
@@ -382,14 +415,19 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 callable, HttpClientErrorException.NotFound.class, "No account found for the given ID", "Not Found");
     }
 
-    @Test
-    void nftAllowancesTokenIdValidation() {
+    @ParameterizedTest
+    @CsvSource({
+        "?owner=true&token.id=gt:0.0.1000&limit=1&order=asc,token.id parameter must have account.id present",
+        "?owner=true&account.id=gte:0.0.1000&token.id=ne:0.0.1000&limit=1&order=asc,Unsupported range operator ne for token.id",
+        "?owner=true&account.id=gte:0.0.1000&account.id=lte:0.0.999&token.id=eq:0.0.1000&limit=1&order=asc,Invalid range provided for account.id",
+        "?owner=true&account.id=gte:0.0.1000&token.id=gt:0.0.1000&&token.id=lt:0.0.800&limit=1&order=asc,Invalid range provided for token.id"
+    })
+    void nftAllowancesRangeValidation(String uriParams, String message) {
         // Given
-        var uriParams = "?owner=true&token.id=gt:0.0.1000&limit=1&order=asc";
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(entity.getId()))
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
                 .persist();
 
         // When
@@ -400,36 +438,40 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .body(NftAllowancesResponse.class);
 
         // Then
-        validateError(
-                callable,
-                HttpClientErrorException.BadRequest.class,
-                "token.id parameter must have account.id present",
-                "Bad Request");
+        validateError(callable, HttpClientErrorException.BadRequest.class, message, "Bad Request");
     }
 
     @Test
-    void nftAllowancesEntityIdRangeOperatorValidation() {
+    void nftAllowancesSecondaryParameterAllowedRange() {
         // Given
-        var uriParams = "?owner=true&account.id=gte:0.0.1000&token.id=ne:0.0.1000&limit=1&order=asc";
         var entity = domainBuilder.entity().persist();
         var allowance1 = domainBuilder
                 .nftAllowance()
-                .customize(nfta -> nfta.owner(entity.getId()))
+                .customize(nfta ->
+                        nfta.owner(entity.getId()).tokenId(700).spender(2002).approvedForAll(true))
                 .persist();
-
+        var allowance2 = domainBuilder
+                .nftAllowance()
+                .customize(nfta ->
+                        nfta.owner(entity.getId()).tokenId(1002).spender(1000).approvedForAll(true))
+                .persist();
+        var uriParams =
+                "?account.id=gte:0.0.1000&account.id=lte:0.0.2002&owner=true&token.id=gt:0.0.1000&&token.id=lt:0.0.800&limit=2&order=asc";
+        var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=true&token.id=gt:%s&limit=2&order=asc"
+                .formatted(
+                        allowance1.getOwner(),
+                        EntityId.of(allowance1.getSpender()),
+                        EntityId.of(allowance1.getTokenId()));
         // When
-        ThrowingCallable callable = () -> restClient
+        var result = restClient
                 .get()
                 .uri(uriParams, allowance1.getOwner())
                 .retrieve()
                 .body(NftAllowancesResponse.class);
 
         // Then
-        validateError(
-                callable,
-                HttpClientErrorException.BadRequest.class,
-                "Invalid range operator ne. This operator is not supported",
-                "Bad Request");
+        assertThat(result.getAllowances()).isEqualTo(mapper.map(List.of(allowance2, allowance1)));
+        assertThat(result.getLinks().getNext()).isEqualTo(next);
     }
 
     private void validateError(

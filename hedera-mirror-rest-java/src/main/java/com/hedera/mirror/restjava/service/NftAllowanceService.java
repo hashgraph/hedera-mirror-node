@@ -17,6 +17,7 @@
 package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import java.util.Collection;
 
 public interface NftAllowanceService {
