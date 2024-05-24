@@ -260,6 +260,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .get()
                         .returns(2L, Entity::getEthereumNonce));
     }
+
     // Issue #5637 caused by an invalid receipt.ContractID sent by consensus nodes in testnet.
     @Test
     void contractCreateWithInvalidId() {

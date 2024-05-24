@@ -2,14 +2,14 @@ name: "Gradle"
 on:
   pull_request:
     branches:
-      - 'main'
-      - 'release/**'
+      - "main"
+      - "release/**"
   push:
     branches:
-      - 'main'
-      - 'release/**'
+      - "main"
+      - "release/**"
     tags:
-      - 'v*'
+      - "v*"
 
 defaults:
   run:
@@ -25,7 +25,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: [ self-hosted, Linux, large, ephemeral ]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     strategy:
       matrix:
         project:
@@ -36,8 +36,8 @@ jobs:
           - monitor
           - rest
           - rest-java
-          - 'rest:check-state-proof'
-          - 'rest:monitoring'
+          - "rest:check-state-proof"
+          - "rest:monitoring"
           - rosetta
           - test
           - web3
@@ -60,7 +60,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
+        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
         with:
           egress-policy: audit
 
@@ -94,7 +94,7 @@ jobs:
         run: ./gradlew :${{matrix.project}}:build --scan ${{ secrets.GRADLE_ARGS }}
 
       - name: Upload coverage report
-        uses: codecov/codecov-action@6d798873df2b1b8e5846dba6fb86631229fbcb17 # v4.4.0
+        uses: codecov/codecov-action@125fc84a9a348dbcf27191600683ec096ec9021c # v4.4.1
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         if: ${{ matrix.schema == 'v1' && matrix.project != 'rest:monitoring' && matrix.project != 'test' && always() }}

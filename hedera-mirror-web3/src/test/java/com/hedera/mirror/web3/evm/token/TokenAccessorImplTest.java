@@ -16,6 +16,14 @@
 
 package com.hedera.mirror.web3.evm.token;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -58,6 +66,8 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftIn
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Key;
+import java.util.List;
+import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,17 +75,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)

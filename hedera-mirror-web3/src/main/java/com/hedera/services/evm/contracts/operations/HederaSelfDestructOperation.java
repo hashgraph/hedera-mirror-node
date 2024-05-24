@@ -18,14 +18,13 @@ package com.hedera.services.evm.contracts.operations;
 
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import java.util.function.BiPredicate;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.Words;
 import org.hyperledger.besu.evm.operation.SelfDestructOperation;
-
-import java.util.function.BiPredicate;
 
 /**
  * Hedera adapted version of the {@link SelfDestructOperation}.

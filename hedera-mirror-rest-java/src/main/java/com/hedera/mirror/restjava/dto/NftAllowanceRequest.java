@@ -14,17 +14,30 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.mapper;
+package com.hedera.mirror.restjava.dto;
 
-import static org.mapstruct.MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG;
+import com.hedera.mirror.restjava.common.EntityIdParameter;
+import com.hedera.mirror.restjava.service.Bound;
+import lombok.Builder;
+import lombok.Data;
+import org.springframework.data.domain.Sort;
 
-import com.hedera.mirror.rest.model.NftAllowance;
-import org.mapstruct.MapperConfig;
-import org.mapstruct.Mapping;
+@Data
+@Builder
+public class NftAllowanceRequest {
 
-@MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
-public interface RestJavaMapperConfig {
+    private EntityIdParameter accountId;
 
-    @Mapping(source = "timestampRange", target = "timestamp")
-    NftAllowance map(com.hedera.mirror.common.domain.entity.NftAllowance source);
+    @Builder.Default
+    private int limit = 25;
+
+    @Builder.Default
+    private Sort.Direction order = Sort.Direction.ASC;
+
+    @Builder.Default
+    private boolean isOwner = true;
+
+    private Bound ownerOrSpenderIds;
+
+    private Bound tokenIds;
 }

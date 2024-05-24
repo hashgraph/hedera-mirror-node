@@ -16,6 +16,13 @@
 
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
@@ -42,6 +49,8 @@ import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.Collections;
+import java.util.List;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,16 +58,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Collections;
-import java.util.List;
-
-import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
-import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(ContextExtension.class)
 @ExtendWith(MockitoExtension.class)
