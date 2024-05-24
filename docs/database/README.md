@@ -268,10 +268,9 @@ since open access until April 2023.
 
 Following are the prerequisites and steps for migrating V1 data to V2. As of mirror node v0.103.0, the migration script is expected to migrate full mainnet data in 10 days.
 
-1. Make sure `bc` and `csvkit` are installed on the machine where the migration script will be run. For Ubuntu, you can install them using the following commands:
+1. Make sure `bc` and `csvkit` are installed on the machine where the migration script will be run. For Ubuntu, you can install them using the following command:
    ```shell
-   sudo apt-get install bc
-   sudo apt-get install csvkit
+   sudo apt-get install -y bc csvkit
    ```
 2. Create a Citus cluster with enough resources (Disk, CPU and memory). For GKE, an e2-custom-6-32768 can be used.
 3. Ensure the source and target schemas are compatible by deploying the same version to both. Be sure to leave importer disabled for the target deployment.
