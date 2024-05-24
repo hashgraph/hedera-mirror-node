@@ -23,11 +23,11 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowance;
-import com.hedera.mirror.restjava.common.LinkFactory.ParameterExtractor;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -60,7 +60,7 @@ class LinkFactoryTest {
     private MockedStatic<RequestContextHolder> context;
 
     @Mock
-    private ParameterExtractor<NftAllowance> extractor;
+    private Function<NftAllowance, Map<String, String>> extractor;
 
     private final LinkFactory linkFactory = new LinkFactoryImpl();
 
@@ -75,9 +75,8 @@ class LinkFactoryTest {
         context.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
         when(attributes.getRequest()).thenReturn(request);
         when(request.getRequestURI()).thenReturn(uri);
-        when(extractor.extract(nftAllowance))
+        when(extractor.apply(nftAllowance))
                 .thenReturn(Map.of(ACCOUNT_ID, nftAllowance.getOwner(), TOKEN_ID, nftAllowance.getTokenId()));
-        when(extractor.isInclusive(ACCOUNT_ID)).thenReturn(true);
     }
 
     @AfterEach
@@ -112,7 +111,7 @@ class LinkFactoryTest {
         params.put("token.id", new String[] {tokenParameter});
         params.put("owner", new String[] {Boolean.toString(owner)});
         when(request.getParameterMap()).thenReturn(params);
-        when(extractor.extract(nftAllowance))
+        when(extractor.apply(nftAllowance))
                 .thenReturn(Map.of(
                         ACCOUNT_ID,
                         owner ? nftAllowance.getSpender() : nftAllowance.getOwner(),
@@ -137,7 +136,8 @@ class LinkFactoryTest {
         params.put("account.id", new String[] {accountParameter});
         params.put("token.id", new String[] {tokenParameter});
         when(request.getParameterMap()).thenReturn(params);
-        var pageable = PageRequest.of(0, 1);
+        var sort = Sort.by(Direction.ASC, ACCOUNT_ID, TOKEN_ID);
+        var pageable = PageRequest.of(0, 1, sort);
 
         assertThat(linkFactory.create(List.of(nftAllowance), pageable, extractor))
                 .returns(expectedLink, Links::getNext);

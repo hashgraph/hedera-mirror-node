@@ -25,13 +25,13 @@ import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
 import com.hedera.mirror.restjava.common.LinkFactory;
-import com.hedera.mirror.restjava.common.LinkFactory.ParameterExtractor;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import java.util.Map;
+import java.util.function.Function;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -49,9 +49,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class AllowancesController {
 
     private static final String DEFAULT_LIMIT = "25";
-    private static final Map<Boolean, NftAllowanceExtractor> EXTRACTORS = Map.of(
-            true, new NftAllowanceExtractor(true),
-            false, new NftAllowanceExtractor(false));
+    private static final Map<Boolean, Function<NftAllowance, Map<String, String>>> EXTRACTORS = Map.of(
+            true,
+            (nftAllowance) -> ImmutableSortedMap.of(
+                    ACCOUNT_ID, nftAllowance.getSpender(),
+                    TOKEN_ID, nftAllowance.getTokenId()),
+            false,
+            (nftAllowance -> ImmutableSortedMap.of(
+                    ACCOUNT_ID, nftAllowance.getOwner(),
+                    TOKEN_ID, nftAllowance.getTokenId())));
     private static final int MAX_LIMIT = 100;
 
     private final LinkFactory linkFactory;
@@ -87,24 +93,5 @@ public class AllowancesController {
         response.links(links);
 
         return response;
-    }
-
-    @RequiredArgsConstructor
-    static class NftAllowanceExtractor implements ParameterExtractor<NftAllowance> {
-        private final boolean owner;
-
-        @Override
-        public Map<String, String> extract(NftAllowance nftAllowance) {
-            return ImmutableSortedMap.of(
-                    ACCOUNT_ID,
-                    owner ? nftAllowance.getSpender() : nftAllowance.getOwner(),
-                    TOKEN_ID,
-                    nftAllowance.getTokenId());
-        }
-
-        @Override
-        public boolean isInclusive(String param) {
-            return ACCOUNT_ID.equals(param);
-        }
     }
 }

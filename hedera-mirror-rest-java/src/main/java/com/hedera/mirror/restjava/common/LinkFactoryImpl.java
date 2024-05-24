@@ -22,7 +22,9 @@ import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort.Direction;
@@ -38,7 +40,8 @@ class LinkFactoryImpl implements LinkFactory {
     private static final Links DEFAULT_LINKS = new Links();
 
     @Override
-    public <T> Links create(List<T> items, @Nonnull Pageable pageable, @Nonnull ParameterExtractor<T> extractor) {
+    public <T> Links create(
+            List<T> items, @Nonnull Pageable pageable, @Nonnull Function<T, Map<String, String>> extractor) {
         if (CollectionUtils.isEmpty(items) || pageable.getPageSize() > items.size()) {
             return DEFAULT_LINKS;
         }
@@ -55,13 +58,15 @@ class LinkFactoryImpl implements LinkFactory {
     }
 
     private <T> String createNextLink(
-            T lastItem, Pageable pageable, ParameterExtractor<T> extractor, HttpServletRequest request) {
+            T lastItem, Pageable pageable, Function<T, Map<String, String>> extractor, HttpServletRequest request) {
         var sortOrders = pageable.getSort();
         var primarySort = Iterables.getFirst(sortOrders, null);
         var order = primarySort == null ? Direction.ASC : primarySort.getDirection();
+        var lastSort = Iterables.getLast(sortOrders, null);
+        var exclusiveParam = lastSort != null ? lastSort.getProperty() : null;
         var builder = UriComponentsBuilder.fromPath(request.getRequestURI());
         var paramsMap = request.getParameterMap();
-        var paginationParamsMap = extractor.extract(lastItem);
+        var paginationParamsMap = extractor.apply(lastItem);
 
         for (var entry : paramsMap.entrySet()) {
             var key = entry.getKey();
@@ -74,7 +79,7 @@ class LinkFactoryImpl implements LinkFactory {
 
         for (var entry : paginationParamsMap.entrySet()) {
             var key = entry.getKey();
-            var inclusive = extractor.isInclusive(key);
+            var inclusive = !key.equals(exclusiveParam);
             RangeOperator operator;
             if (order.isAscending()) {
                 operator = inclusive ? RangeOperator.GTE : RangeOperator.GT;
