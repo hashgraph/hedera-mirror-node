@@ -18,6 +18,7 @@ package com.hedera.mirror.restjava.common;
 
 import com.google.common.collect.Iterables;
 import com.hedera.mirror.rest.model.Links;
+import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -32,22 +33,17 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 @Named
 @RequiredArgsConstructor
-public class LinkFactoryImpl implements LinkFactory {
+class LinkFactoryImpl implements LinkFactory {
 
     private static final Links DEFAULT_LINKS = new Links();
 
-    public <T> Links create(List<T> items, Pageable pageable, ParameterExtractor<T> extractor) {
-        if (items == null || items.isEmpty() || pageable == null || extractor == null) {
+    @Override
+    public <T> Links create(List<T> items, @Nonnull Pageable pageable, @Nonnull ParameterExtractor<T> extractor) {
+        if (CollectionUtils.isEmpty(items) || pageable.getPageSize() > items.size()) {
             return DEFAULT_LINKS;
         }
 
-        var limit = pageable.getPageSize();
-        if (limit > items.size()) {
-            return DEFAULT_LINKS;
-        }
-
-        ServletRequestAttributes servletRequestAttributes =
-                (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        var servletRequestAttributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (servletRequestAttributes == null) {
             return DEFAULT_LINKS;
         }

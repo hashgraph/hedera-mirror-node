@@ -19,19 +19,19 @@ package com.hedera.mirror.restjava.controller;
 import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 
+import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.rest.model.NftAllowance;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
+import com.hedera.mirror.restjava.common.LinkFactory;
 import com.hedera.mirror.restjava.common.LinkFactory.ParameterExtractor;
-import com.hedera.mirror.restjava.common.LinkFactoryImpl;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import com.hedera.mirror.restjava.service.NftAllowanceRequest;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
 import java.util.Map;
-import java.util.TreeMap;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -48,10 +48,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AllowancesController {
 
-    private static final int MAX_LIMIT = 100;
     private static final String DEFAULT_LIMIT = "25";
+    private static final Map<Boolean, NftAllowanceExtractor> EXTRACTORS = Map.of(
+            true, new NftAllowanceExtractor(true),
+            false, new NftAllowanceExtractor(false));
+    private static final int MAX_LIMIT = 100;
 
-    private final LinkFactoryImpl linkFactory;
+    private final LinkFactory linkFactory;
     private final NftAllowanceService service;
     private final NftAllowanceMapper nftAllowanceMapper;
 
@@ -79,7 +82,7 @@ public class AllowancesController {
 
         var sort = Sort.by(order, ACCOUNT_ID, TOKEN_ID);
         var pageable = PageRequest.of(0, limit, sort);
-        var extractor = new NftAllowanceExtractor(owner);
+        var extractor = EXTRACTORS.get(owner);
         var links = linkFactory.create(allowances, pageable, extractor);
         response.links(links);
 
@@ -87,16 +90,16 @@ public class AllowancesController {
     }
 
     @RequiredArgsConstructor
-    class NftAllowanceExtractor implements ParameterExtractor<NftAllowance> {
+    static class NftAllowanceExtractor implements ParameterExtractor<NftAllowance> {
         private final boolean owner;
 
         @Override
         public Map<String, String> extract(NftAllowance nftAllowance) {
-            return new TreeMap<>(Map.of(
+            return ImmutableSortedMap.of(
                     ACCOUNT_ID,
                     owner ? nftAllowance.getSpender() : nftAllowance.getOwner(),
                     TOKEN_ID,
-                    nftAllowance.getTokenId()));
+                    nftAllowance.getTokenId());
         }
 
         @Override
