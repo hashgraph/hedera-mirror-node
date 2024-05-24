@@ -216,11 +216,13 @@ public class TokenFeature extends AbstractFeature {
             TokenClient.TokenNameEnum tokenName, AccountClient.AccountNameEnum spenderName) {
         verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
 
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
-        var spender = accountClient.getAccount(spenderName);
+        var owner = accountClient.getClient().getOperatorAccountId().toString();
+        var spender = accountClient.getAccount(spenderName).getAccountId().toString();
+        var token = tokenClient.getToken(tokenName).tokenId().toString();
 
-        // Once we change this API to not return approved_for_all=false this test will change to check for an empty list
-        verifyMirrorAPIApprovedNftAllowanceResponse(tokenId, spender, false, true);
+        var mirrorNftAllowanceResponse = mirrorClient.getAccountNftAllowanceByOwner(owner, token, spender);
+
+        assertThat(mirrorNftAllowanceResponse.getAllowances()).isEmpty();
     }
 
     @Then("the mirror node REST API should confirm the debit of {long} from {token} allowance of {long} for {account}")
