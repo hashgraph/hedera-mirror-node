@@ -30,6 +30,12 @@ spec:
       - delay: 60s
       stopOnFailure: false
     - execute:
+      - test: test-rest-java
+      stopOnFailure: false
+    - execute:
+      - delay: 60s
+      stopOnFailure: false
+    - execute:
       - test: test-web3
       stopOnFailure: false
 {{- end }}

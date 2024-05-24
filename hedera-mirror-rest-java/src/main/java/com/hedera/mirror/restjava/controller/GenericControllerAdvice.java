@@ -37,6 +37,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingPathVariableException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -93,6 +94,18 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
         var message = statusCode instanceof HttpStatus hs ? hs.getReasonPhrase() : statusCode.toString();
         ResponseEntity<?> responseEntity = errorResponse(message, statusCode);
         return (ResponseEntity<Object>) responseEntity;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected ResponseEntity<Object> handleMissingPathVariable(
+            MissingPathVariableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        if (ex.isMissingAfterConversion()) {
+            var message = "Invalid value for path variable '" + ex.getVariableName() + "'";
+            ResponseEntity<?> response = errorResponse(message, status);
+            return (ResponseEntity<Object>) response;
+        }
+        return super.handleMissingPathVariable(ex, headers, status, request);
     }
 
     private ResponseEntity<Error> errorResponse(final String e, HttpStatusCode statusCode) {

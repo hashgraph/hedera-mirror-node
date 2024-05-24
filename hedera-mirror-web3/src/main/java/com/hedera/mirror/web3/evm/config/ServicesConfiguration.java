@@ -397,7 +397,8 @@ public class ServicesConfiguration {
             final ContextOptionValidator contextOptionValidator,
             final AutoCreationLogic autoCreationLogic,
             final SyntheticTxnFactory syntheticTxnFactory,
-            final EntityAddressSequencer entityAddressSequencer) {
+            final EntityAddressSequencer entityAddressSequencer,
+            final Predicate<Address> systemAccountDetector) {
         return new TransferPrecompile(
                 pricingUtils,
                 mirrorNodeEvmProperties,
@@ -405,7 +406,8 @@ public class ServicesConfiguration {
                 contextOptionValidator,
                 autoCreationLogic,
                 syntheticTxnFactory,
-                entityAddressSequencer);
+                entityAddressSequencer,
+                systemAccountDetector);
     }
 
     @Bean
@@ -417,7 +419,8 @@ public class ServicesConfiguration {
             final AutoCreationLogic autoCreationLogic,
             final SyntheticTxnFactory syntheticTxnFactory,
             final EncodingFacade encoder,
-            final EntityAddressSequencer entityAddressSequencer) {
+            final EntityAddressSequencer entityAddressSequencer,
+            final Predicate<Address> systemAccountDetector) {
         return new ERCTransferPrecompile(
                 pricingUtils,
                 mirrorNodeEvmProperties,
@@ -426,7 +429,8 @@ public class ServicesConfiguration {
                 autoCreationLogic,
                 syntheticTxnFactory,
                 entityAddressSequencer,
-                encoder);
+                encoder,
+                systemAccountDetector);
     }
 
     @Bean
@@ -521,8 +525,9 @@ public class ServicesConfiguration {
     AccessorBasedUsages accessorBasedUsages(
             final TokenOpsUsage tokenOpsUsage,
             final CryptoOpsUsage cryptoOpsUsage,
-            final OpUsageCtxHelper opUsageCtxHelper) {
-        return new AccessorBasedUsages(tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper);
+            final OpUsageCtxHelper opUsageCtxHelper,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties) {
+        return new AccessorBasedUsages(tokenOpsUsage, cryptoOpsUsage, opUsageCtxHelper, mirrorNodeEvmProperties);
     }
 
     @Bean

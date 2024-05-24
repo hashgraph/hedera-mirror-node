@@ -3,3 +3,5 @@ hedera:
     rest:
       metrics:
         enabled: false
+      redis:
+        enabled: false

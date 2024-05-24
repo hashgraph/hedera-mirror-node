@@ -49,6 +49,7 @@ import com.hedera.services.store.contracts.precompile.HTSPrecompiledContract;
 import com.hedera.services.store.contracts.precompile.PrecompileMapper;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -122,6 +123,9 @@ class HTSPrecompiledContractTest {
     @Mock
     private PrecompilePricingUtils precompilePricingUtils;
 
+    @Mock
+    private OptionValidator validator;
+
     private Deque<MessageFrame> messageFrameStack;
     private Store store;
 
@@ -142,7 +146,7 @@ class HTSPrecompiledContractTest {
 
         final var stackedStateFrames = new StackedStateFrames(accessors);
 
-        store = new StoreImpl(stackedStateFrames);
+        store = new StoreImpl(stackedStateFrames, validator);
         messageFrameStack = new ArrayDeque<>();
         messageFrameStack.push(lastFrame);
         messageFrameStack.push(messageFrame);

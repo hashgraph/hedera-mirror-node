@@ -16,38 +16,33 @@
 
 package com.hedera.mirror.restjava.mapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.NftAllowance;
 import com.hedera.mirror.rest.model.TimestampRange;
-import org.apache.commons.lang3.StringUtils;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static com.hedera.mirror.restjava.mapper.CommonMapper.NANO_DIGITS;
-import static org.assertj.core.api.Assertions.assertThat;
-
 class NftAllowanceMapperTest {
 
-    private NftAllowanceMapper mapper;
+    private CommonMapper commonMapper;
     private DomainBuilder domainBuilder;
+    private NftAllowanceMapper mapper;
 
     @BeforeEach
     void setup() {
-        mapper = new NftAllowanceMapperImpl(new CommonMapperImpl());
+        commonMapper = new CommonMapperImpl();
+        mapper = new NftAllowanceMapperImpl(commonMapper);
         domainBuilder = new DomainBuilder();
     }
 
     @Test
     void map() {
         var allowance = domainBuilder.nftAllowance().get();
-        var timestampString = StringUtils.leftPad(String.valueOf(allowance.getTimestampLower()), 10, '0');
-
-        var to = timestampString.substring(0, timestampString.length() - NANO_DIGITS) + "." + timestampString.substring(timestampString.length() - NANO_DIGITS) ;
-
-
+        var to = commonMapper.mapTimestamp(allowance.getTimestampLower());
 
         assertThat(mapper.map(List.of(allowance)))
                 .first()

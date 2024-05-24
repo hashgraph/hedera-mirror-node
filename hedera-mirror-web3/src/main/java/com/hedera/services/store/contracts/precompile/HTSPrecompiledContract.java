@@ -343,7 +343,8 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
                         transactionBodyBuilder = precompile.body(
                                 input.slice(24),
                                 aliasResolver,
-                                new ERCTransferParams(nestedFunctionSelector, senderAddress, tokenAccessor, tokenId));
+                                new ERCTransferParams(
+                                        nestedFunctionSelector, senderAddress, tokenAccessor, tokenId, store::exists));
                     }
                     default -> {
                         precompile =
@@ -396,7 +397,9 @@ public class HTSPrecompiledContract extends EvmHTSPrecompiledContract {
             case AbiConstants.ABI_ID_TRANSFER_FROM, AbiConstants.ABI_ID_TRANSFER_FROM_NFT -> {
                 precompile = precompileMapper.lookup(functionId).orElseThrow();
                 transactionBodyBuilder = precompile.body(
-                        input, aliasResolver, new ERCTransferParams(functionId, senderAddress, tokenAccessor, null));
+                        input,
+                        aliasResolver,
+                        new ERCTransferParams(functionId, senderAddress, tokenAccessor, null, store::exists));
             }
             case AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN,
                     AbiConstants.ABI_ID_CREATE_FUNGIBLE_TOKEN_V2,

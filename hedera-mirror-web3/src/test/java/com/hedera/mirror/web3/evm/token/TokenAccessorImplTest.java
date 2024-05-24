@@ -64,6 +64,7 @@ import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import java.util.Optional;
@@ -132,6 +133,9 @@ class TokenAccessorImplTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Token token;
 
+    @Mock
+    private OptionValidator validator;
+
     private List<DatabaseAccessor<Object, ?>> accessors;
     private Store store;
 
@@ -162,7 +166,7 @@ class TokenAccessorImplTest {
                         nftRepository),
                 new UniqueTokenDatabaseAccessor(nftRepository));
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        store = new StoreImpl(stackedStateFrames);
+        store = new StoreImpl(stackedStateFrames, validator);
         tokenAccessor = new TokenAccessorImpl(properties, store, mirrorEvmContractAliases);
     }
 
