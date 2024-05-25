@@ -16,14 +16,13 @@
 
 package com.hedera.mirror.restjava.common;
 
-import lombok.experimental.UtilityClass;
+import com.hedera.mirror.rest.model.Links;
+import jakarta.annotation.Nonnull;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import org.springframework.data.domain.Pageable;
 
-@UtilityClass
-public class ParameterNames {
-
-    public static final String ACCOUNT_ID = "account.id";
-    public static final String LIMIT = "limit";
-    public static final String ORDER = "order";
-    public static final String OWNER = "owner";
-    public static final String TOKEN_ID = "token.id";
+public interface LinkFactory {
+    <T> Links create(List<T> items, @Nonnull Pageable pageable, @Nonnull Function<T, Map<String, String>> extractor);
 }

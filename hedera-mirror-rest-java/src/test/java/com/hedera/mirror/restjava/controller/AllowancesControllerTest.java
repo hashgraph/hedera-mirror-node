@@ -98,6 +98,55 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
     }
 
     @Test
+    void followAscendingOrderLink() {
+        // Given
+        var entityBuilder = domainBuilder.entity();
+        var entity = entityBuilder.persist();
+
+        var allowance1 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
+                .persist();
+        var allowance2 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
+                .persist();
+        var baseLink = "/api/v1/accounts/%d/allowances/nfts".formatted(allowance1.getOwner());
+
+        // When
+        var result = restClient
+                .get()
+                .uri("?limit=1", allowance1.getOwner())
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+        var nextParams = "?limit=1&account.id=gte:%s&token.id=gt:%s"
+                .formatted(EntityId.of(allowance1.getSpender()), EntityId.of(allowance1.getTokenId()));
+        // Then
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1), baseLink + nextParams));
+
+        // When follow link
+        result = restClient
+                .get()
+                .uri(nextParams, allowance1.getOwner())
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+
+        // Then
+        nextParams = "?limit=1&account.id=gte:%s&token.id=gt:%s"
+                .formatted(EntityId.of(allowance2.getSpender()), EntityId.of(allowance2.getTokenId()));
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2), baseLink + nextParams));
+
+        // When follow link 2
+        result = restClient
+                .get()
+                .uri(nextParams, allowance1.getOwner())
+                .retrieve()
+                .body(NftAllowancesResponse.class);
+        // Then
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(), null));
+    }
+
+    @Test
     void nftAllowancesEvmAddress() {
         // Given
         var entity = domainBuilder.entity().persist();
@@ -183,11 +232,13 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                         EntityId.of(allowance1.getSpender() - 1),
                         EntityId.of(allowance1.getSpender() + 1),
                         EntityId.of(allowance1.getTokenId() - 1));
-        var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=true&token.id=gt:%s&limit=1&order=asc"
-                .formatted(
-                        allowance1.getOwner(),
-                        EntityId.of(allowance1.getSpender()),
-                        EntityId.of(allowance1.getTokenId()));
+        var next =
+                "/api/v1/accounts/%s/allowances/nfts?account.id=lt:%s&account.id=gte:%s&owner=true&limit=1&order=asc&token.id=gt:%s"
+                        .formatted(
+                                allowance1.getOwner(),
+                                EntityId.of(allowance1.getSpender() + 1),
+                                EntityId.of(allowance1.getSpender()),
+                                EntityId.of(allowance1.getTokenId()));
 
         // When
         var result = restClient
@@ -219,11 +270,14 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                                 EntityId.of(allowance2.getSpender()),
                                 EntityId.of(allowance1.getTokenId()),
                                 EntityId.of(allowance2.getTokenId() + 1));
-        var next = "/api/v1/accounts/%s/allowances/nfts?account.id=lte:%s&owner=true&token.id=lt:%s&limit=1&order=desc"
-                .formatted(
-                        allowance1.getOwner(),
-                        EntityId.of(allowance2.getSpender()),
-                        EntityId.of(allowance2.getTokenId()));
+        var next =
+                "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
+                        .formatted(
+                                allowance1.getOwner(),
+                                EntityId.of(allowance1.getSpender()),
+                                EntityId.of(allowance2.getSpender()),
+                                EntityId.of(allowance1.getTokenId()),
+                                EntityId.of(allowance2.getTokenId()));
 
         // When
         var result = restClient
@@ -249,11 +303,13 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
         var uriParams = "?account.id={account.id}&limit=1&order=asc";
-        var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
-                .formatted(
-                        allowance2.getOwner(),
-                        EntityId.of(allowance2.getSpender()),
-                        EntityId.of(allowance2.getTokenId()));
+        var nextLink =
+                "/api/v1/accounts/%s/allowances/nfts?account.id=%s&account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
+                        .formatted(
+                                allowance2.getOwner(),
+                                EntityId.of(allowance2.getSpender()),
+                                EntityId.of(allowance2.getSpender()),
+                                EntityId.of(allowance2.getTokenId()));
 
         // When
         var result = restClient
@@ -277,14 +333,12 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .nftAllowance()
                 .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                 .persist();
-        var uriParams = "?account.id=gte:%s&owner=true&token.id=gt:%s&limit=1&order=desc"
+        var allowance3 = domainBuilder
+                .nftAllowance()
+                .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
+                .persist();
+        var uriParams = "?account.id=gte:%s&owner=true&token.id=gt:%s&limit=2&order=desc"
                 .formatted(EntityId.of(allowance2.getSpender()), EntityId.of(allowance2.getTokenId() - 1));
-        var nextLink =
-                "/api/v1/accounts/%s/allowances/nfts?account.id=lte:%s&owner=true&token.id=lt:%s&limit=1&order=desc"
-                        .formatted(
-                                allowance2.getOwner(),
-                                EntityId.of(allowance2.getSpender()),
-                                EntityId.of(allowance2.getTokenId()));
 
         // When
         var result = restClient
@@ -292,9 +346,17 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .uri(uriParams, allowance1.getOwner())
                 .retrieve()
                 .body(NftAllowancesResponse.class);
+        var next =
+                "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=2&order=desc"
+                        .formatted(
+                                allowance2.getOwner(),
+                                EntityId.of(allowance2.getSpender()),
+                                EntityId.of(allowance2.getSpender()),
+                                EntityId.of(allowance2.getTokenId() - 1),
+                                EntityId.of(allowance2.getTokenId()));
 
         // Then
-        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2), nextLink));
+        assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance3, allowance2), next));
     }
 
     @Test
@@ -308,10 +370,8 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .nftAllowance()
                 .customize(nfta -> nfta.spender(allowance1.getSpender()).approvedForAll(true))
                 .persist();
-
-        var uriParams = "?account.id=gte:%s&owner=false&token.id=gt:%s&limit=1&order=asc"
-                .formatted(EntityId.of(allowance1.getOwner()), EntityId.of(allowance1.getTokenId() - 1));
-        var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=false&token.id=gt:%s&limit=1&order=asc"
+        var uriParams = "?account.id=gte:0.0.1000&owner=false&token.id=gt:0.0.1000&limit=1&order=asc";
+        var next = "/api/v1/accounts/%s/allowances/nfts?owner=false&limit=1&order=asc&account.id=gte:%s&token.id=gt:%s"
                 .formatted(
                         allowance1.getSpender(),
                         EntityId.of(allowance1.getOwner()),
@@ -458,11 +518,9 @@ class AllowancesControllerTest extends RestJavaIntegrationTest {
                 .persist();
         var uriParams =
                 "?account.id=gte:0.0.1000&account.id=lte:0.0.2002&owner=true&token.id=gt:0.0.1000&&token.id=lt:0.0.800&limit=2&order=asc";
-        var next = "/api/v1/accounts/%s/allowances/nfts?account.id=gte:%s&owner=true&token.id=gt:%s&limit=2&order=asc"
-                .formatted(
-                        allowance1.getOwner(),
-                        EntityId.of(allowance1.getSpender()),
-                        EntityId.of(allowance1.getTokenId()));
+        var next =
+                "/api/v1/accounts/%s/allowances/nfts?account.id=lte:0.0.2002&account.id=gte:0.0.2002&owner=true&token.id=lt:0.0.800&token.id=gt:0.0.700&limit=2&order=asc"
+                        .formatted(allowance1.getOwner());
         // When
         var result = restClient
                 .get()

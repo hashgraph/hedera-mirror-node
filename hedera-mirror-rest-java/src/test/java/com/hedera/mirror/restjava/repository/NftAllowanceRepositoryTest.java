@@ -452,8 +452,7 @@ class NftAllowanceRepositoryTest extends RestJavaIntegrationTest {
 
     private void assertNftAllowances() {
         var softAssertion = new SoftAssertions();
-        for (int i = 0; i < testSpecs.size(); i++) {
-            var testSpec = testSpecs.get(i);
+        for (var testSpec : testSpecs) {
             var request = testSpec.request();
             var expected = testSpec.expected().stream().map(nftAllowances::get).toList();
             softAssertion
