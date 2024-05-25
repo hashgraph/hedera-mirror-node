@@ -27,7 +27,6 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -90,11 +89,8 @@ class LinkFactoryImpl implements LinkFactory {
 
     private void addQueryParamToLink(Entry<String, String[]> entry, UriComponentsBuilder builder, Direction order) {
         for (var value : entry.getValue()) {
-            var rangeBound = RangeBound.valueOf(value);
-            var operator = rangeBound.operator();
-            if ((order.isAscending() && (operator == RangeOperator.GT || operator == RangeOperator.GTE))
-                    || (order.isDescending() && (operator == RangeOperator.LT || operator == RangeOperator.LTE))) {
-                // Skip this value since the new bound comes from the extracted value
+            // Skip if it's in the same direction as the order, the new bound should come from the extracted value
+            if (isSameDirection(order, value)) {
                 continue;
             }
 
@@ -102,10 +98,18 @@ class LinkFactoryImpl implements LinkFactory {
         }
     }
 
-    private static RangeOperator getOperator(Sort.Direction order, boolean exclusive) {
+    private static RangeOperator getOperator(Direction order, boolean exclusive) {
         return switch (order) {
             case ASC -> exclusive ? RangeOperator.GT : RangeOperator.GTE;
             case DESC -> exclusive ? RangeOperator.LT : RangeOperator.LTE;
+        };
+    }
+
+    private static boolean isSameDirection(Direction order, String value) {
+        var normalized = value.toLowerCase();
+        return switch (order) {
+            case ASC -> normalized.startsWith("gt:") || normalized.startsWith("gte:");
+            case DESC -> normalized.startsWith("lt:") || normalized.startsWith("lte:");
         };
     }
 }
