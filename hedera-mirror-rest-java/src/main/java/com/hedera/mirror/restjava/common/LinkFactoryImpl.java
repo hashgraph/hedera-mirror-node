@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -81,13 +82,7 @@ class LinkFactoryImpl implements LinkFactory {
         for (var entry : paginationParamsMap.entrySet()) {
             var key = entry.getKey();
             var exclusive = exclusiveParam == null || key.equals(exclusiveParam);
-            RangeOperator operator;
-            if (order.isAscending()) {
-                operator = exclusive ? RangeOperator.GT : RangeOperator.GTE;
-            } else {
-                operator = exclusive ? RangeOperator.LT : RangeOperator.LTE;
-            }
-            builder.queryParam(key, operator + ":" + entry.getValue());
+            builder.queryParam(key, getOperator(order, exclusive) + ":" + entry.getValue());
         }
 
         return builder.toUriString();
@@ -105,5 +100,12 @@ class LinkFactoryImpl implements LinkFactory {
 
             builder.queryParam(entry.getKey(), value);
         }
+    }
+
+    private static RangeOperator getOperator(Sort.Direction order, boolean exclusive) {
+        return switch (order) {
+            case ASC -> exclusive ? RangeOperator.GT : RangeOperator.GTE;
+            case DESC -> exclusive ? RangeOperator.LT : RangeOperator.LTE;
+        };
     }
 }

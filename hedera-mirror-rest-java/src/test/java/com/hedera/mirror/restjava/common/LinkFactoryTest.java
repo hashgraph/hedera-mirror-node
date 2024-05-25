@@ -153,7 +153,7 @@ class LinkFactoryTest {
         assertThat(linkFactory.create(
                         List.of(transaction),
                         PageRequest.ofSize(1),
-                        (t) -> Map.of("timestamp", t.getConsensusTimestamp())))
+                        t -> Map.of("timestamp", t.getConsensusTimestamp())))
                 .returns("/api?timestamp=gt:123456789.000000123", Links::getNext);
     }
 
