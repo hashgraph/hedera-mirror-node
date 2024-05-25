@@ -25,7 +25,7 @@ import * as rampUp from './rampUp.js';
 const tests = {
   accountsNftAllowanceOwner,
   accountsNftAllowanceSpender,
-  rampUp
+  rampUp,
 };
 
 const {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} =

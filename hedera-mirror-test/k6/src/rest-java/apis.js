@@ -19,7 +19,7 @@ import {textSummary} from 'https://jslib.k6.io/k6-summary/0.0.3/index.js';
 
 import {getTestReportFilename, markdownReport} from '../lib/common.js';
 import {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} from './test/index.js';
-import { setupTestParameters } from './libex/parameters.js';
+import {setupTestParameters} from './libex/parameters.js';
 
 function handleSummary(data) {
   return {

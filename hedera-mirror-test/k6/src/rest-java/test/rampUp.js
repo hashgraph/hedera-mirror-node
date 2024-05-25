@@ -16,8 +16,8 @@
 
 import http from 'k6/http';
 
-import { isValidListResponse, RestJavaTestScenarioBuilder } from '../libex/common.js';
-import { accountNftAllowanceListName } from '../libex/constants.js';
+import {isValidListResponse, RestJavaTestScenarioBuilder} from '../libex/common.js';
+import {accountNftAllowanceListName} from '../libex/constants.js';
 
 const urlTag = '/accounts/{id}/allowances/nfts';
 
