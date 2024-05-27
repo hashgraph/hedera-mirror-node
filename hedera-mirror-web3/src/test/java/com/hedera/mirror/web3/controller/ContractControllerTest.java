@@ -33,7 +33,6 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.core.StringContains;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +45,6 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpMethod;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @WebMvcTest(controllers = ContractController.class)
@@ -76,11 +74,6 @@ class ContractControllerTest extends ControllerTest {
         protected MockHttpServletRequestBuilder customizeRequest(MockHttpServletRequestBuilder requestBuilder) {
             return requestBuilder.content(convertToJson(request));
         }
-
-        @SneakyThrows
-        private ResultActions contractCall(Object requestBody) {
-            return mockMvc.perform(buildRequest(requestBody));
-        }
         
         @BeforeEach
         void setUp() {
@@ -94,7 +87,7 @@ class ContractControllerTest extends ControllerTest {
             request.setEstimate(true);
             request.setValue(0);
             request.setTo(to);
-            contractCall(request).andExpect(status().isOk());
+            performRequest(request).andExpect(status().isOk());
         }
 
         @ValueSource(longs = {2000, -2000, 16_000_000L, 0})
@@ -106,7 +99,7 @@ class ContractControllerTest extends ControllerTest {
             given(gasLimitBucket.tryConsume(gas)).willReturn(true);
             request.setEstimate(true);
             request.setGas(gas);
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(errorString)));
         }
@@ -114,7 +107,7 @@ class ContractControllerTest extends ControllerTest {
         @Test
         void restoreGasInThrottleBucketOnValidationFail() throws Exception {
             request.setData("With invalid symbol!");
-            contractCall(request).andExpect(status().isBadRequest());
+            performRequest(request).andExpect(status().isBadRequest());
             verify(gasLimitBucket).tryConsume(request.getGas());
             verify(gasLimitBucket).addTokens(request.getGas());
         }
@@ -133,7 +126,7 @@ class ContractControllerTest extends ControllerTest {
         void callInvalidTo(String to) throws Exception {
             request.setValue(0);
             request.setTo(to);
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(content().string(new StringContains("to field")));
         }
@@ -141,7 +134,7 @@ class ContractControllerTest extends ControllerTest {
         @Test
         void callInvalidToDueToTransfer() throws Exception {
             request.setTo(null);
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(content().string(new StringContains("to field")));
         }
@@ -151,7 +144,7 @@ class ContractControllerTest extends ControllerTest {
             final var exceptionMessage = "No such contract or token";
             given(contractCallService.processCall(any())).willThrow(new EntityNotFoundException(exceptionMessage));
 
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isNotFound())
                     .andExpect(responseBody(new GenericErrorResponse(exceptionMessage)));
         }
@@ -171,7 +164,7 @@ class ContractControllerTest extends ControllerTest {
         void callInvalidFrom(String from) throws Exception {
             final var errorString = "from field ".concat(MESSAGE);
             request.setFrom(from);
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(errorString)));
         }
@@ -180,7 +173,7 @@ class ContractControllerTest extends ControllerTest {
         void callInvalidValue() throws Exception {
             final var error = "value field must be greater than or equal to 0";
             request.setValue(-1L);
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(error)));
         }
@@ -192,7 +185,7 @@ class ContractControllerTest extends ControllerTest {
                     ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
             request.setData("0x" + dataAsHex);
             request.setEstimate(true);
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(error)));
         }
@@ -207,7 +200,7 @@ class ContractControllerTest extends ControllerTest {
             request.setData("0x" + dataAsHex);
             request.setEstimate(true);
 
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(error)));
         }
@@ -223,7 +216,7 @@ class ContractControllerTest extends ControllerTest {
                             CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
             request.setData("0xa26388bb");
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(
                                     CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage)));
@@ -234,7 +227,7 @@ class ContractControllerTest extends ControllerTest {
             final var error = "No such contract or token";
 
             given(contractCallService.processCall(any())).willThrow(new InvalidParametersException(error));
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(error)));
         }
@@ -244,7 +237,7 @@ class ContractControllerTest extends ControllerTest {
             final var errorString = numberErrorString("gasPrice", "greater", 0);
             request.setGasPrice(-1L);
 
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(errorString)));
         }
@@ -254,7 +247,7 @@ class ContractControllerTest extends ControllerTest {
             final var errorString = "from field must not be empty";
             request.setFrom(null);
 
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(errorString)));
         }
@@ -265,13 +258,13 @@ class ContractControllerTest extends ControllerTest {
         void callValidBlockType(String value) throws Exception {
             request.setBlock(BlockType.of(value));
 
-            contractCall(request).andExpect(status().isOk());
+            performRequest(request).andExpect(status().isOk());
         }
 
         @Test
         void callNegativeBlock() throws Exception {
             request.setBlock(new BlockType("-1", -1));
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(
                             "Unable to parse JSON",
@@ -284,7 +277,7 @@ class ContractControllerTest extends ControllerTest {
             given(contractCallService.processCall(any()))
                     .willThrow(new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER));
 
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(UNKNOWN_BLOCK_NUMBER)));
         }
@@ -293,7 +286,7 @@ class ContractControllerTest extends ControllerTest {
         void callWithBlockNumberNotFoundExceptionTest() throws Exception {
             given(contractCallService.processCall(any())).willThrow(new BlockNumberNotFoundException());
 
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse("Unknown block number")));
         }
@@ -303,7 +296,7 @@ class ContractControllerTest extends ControllerTest {
             request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
             request.setValue(0);
 
-            contractCall(request).andExpect(status().isOk());
+            performRequest(request).andExpect(status().isOk());
         }
 
         @NullAndEmptySource
@@ -312,7 +305,7 @@ class ContractControllerTest extends ControllerTest {
             request.setData(data);
             request.setValue(0);
 
-            contractCall(request).andExpect(status().isOk());
+            performRequest(request).andExpect(status().isOk());
         }
 
         @ParameterizedTest
@@ -321,7 +314,7 @@ class ContractControllerTest extends ControllerTest {
             request.setData(data);
             request.setValue(0);
 
-            contractCall(request)
+            performRequest(request)
                     .andExpect(status().isBadRequest())
                     .andExpect(content().string(new StringContains("contains invalid odd length characters")));
         }
@@ -330,7 +323,11 @@ class ContractControllerTest extends ControllerTest {
         void transferSuccess() throws Exception {
             request.setData(null);
 
-            contractCall(request).andExpect(status().isOk());
+            performRequest(request).andExpect(status().isOk());
+        }
+
+        private String numberErrorString(String field, String direction, long num) {
+            return String.format("%s field must be %s than or equal to %d", field, direction, num);
         }
 
         private ContractCallRequest contractCallRequest() {

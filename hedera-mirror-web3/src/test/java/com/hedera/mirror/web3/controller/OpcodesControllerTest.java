@@ -206,7 +206,7 @@ class OpcodesControllerTest extends ControllerTest {
                     tracerOptionsCaptor.capture()
             )).thenCallRealMethod();
 
-            mockMvc.perform(buildRequest())
+            performRequest()
                     .andExpect(status().isNotImplemented())
                     .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
         }
@@ -228,7 +228,7 @@ class OpcodesControllerTest extends ControllerTest {
                     tracerOptionsCaptor.capture()
             )).thenThrow(new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
 
-            mockMvc.perform(buildRequest())
+            performRequest()
                     .andExpect(status().isBadRequest())
                     .andExpect(responseBody(new GenericErrorResponse(
                             CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage)));
@@ -254,7 +254,7 @@ class OpcodesControllerTest extends ControllerTest {
 
             for (final var options : tracerOptions) {
                 opcodeTracerOptions = options;
-                mockMvc.perform(buildRequest())
+                performRequest()
                         .andExpect(status().isOk())
                         .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
 
@@ -275,7 +275,7 @@ class OpcodesControllerTest extends ControllerTest {
 
             when(recordFileRepository.findByTimestamp(anyLong())).thenReturn(Optional.empty());
 
-            mockMvc.perform(buildRequest())
+            performRequest()
                     .andExpect(status().isNotFound())
                     .andExpect(responseBody(new GenericErrorResponse("Record file with transaction not found")));
         }
@@ -292,7 +292,7 @@ class OpcodesControllerTest extends ControllerTest {
                     any(EntityId.class), anyLong(), anyLong()
             )).thenReturn(Optional.empty());
 
-            mockMvc.perform(buildRequest())
+            performRequest()
                     .andExpect(status().isNotFound())
                     .andExpect(responseBody(new GenericErrorResponse("Transaction not found")));
         }
@@ -317,7 +317,7 @@ class OpcodesControllerTest extends ControllerTest {
 
             this.transactionIdOrHash = transactionIdOrHash;
 
-            mockMvc.perform(buildRequest())
+            performRequest()
                     .andExpect(status().isBadRequest())
                     .andExpect(content().string(new StringContains(expectedMessage)));
         }

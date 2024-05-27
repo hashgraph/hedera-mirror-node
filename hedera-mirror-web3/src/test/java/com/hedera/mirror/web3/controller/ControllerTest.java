@@ -48,6 +48,7 @@ import org.springframework.lang.Nullable;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.ResultMatcher;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -83,27 +84,72 @@ public abstract class ControllerTest {
 
     protected abstract class EndpointTest {
 
+        /**
+         * @return HTTP method for the endpoint
+         */
         protected abstract HttpMethod getMethod();
 
+        /**
+         * @return URI for the endpoint
+         */
         protected abstract String getUrl();
 
+        /**
+         * @return path parameters for the endpoint (empty by default)
+         */
         protected Object[] getParameters() {
             return new Object[0];
         }
 
-        /*
-         * This method allows subclasses to do any setup work like entity persistence and provide a default URI and
-         * parameters for the parent class to run its common set of tests.
+        /**
+         * This method can be overridden by subclasses to do any setup work.
+         * E.g. adding headers, query parameters, etc. for the parent class to run its common set of tests.
+         *
+         * @param requestBuilder the request builder to customize
+         * @return the customized {@link MockHttpServletRequestBuilder}
          */
         protected MockHttpServletRequestBuilder customizeRequest(MockHttpServletRequestBuilder requestBuilder) {
             return requestBuilder;
         }
 
-        protected MockHttpServletRequestBuilder buildRequest() {
+        /**
+         * @return the {@link ResultActions} for the request
+         */
+        protected ResultActions performRequest() {
+            return performRequest(null);
+        }
+
+        /**
+         * @param requestBody the request body (if any) to include in the request
+         * @return the {@link ResultActions} for the request
+         */
+        @SneakyThrows
+        protected ResultActions performRequest(@Nullable Object requestBody) {
+            return mockMvc.perform(buildRequest(requestBody));
+        }
+
+        /**
+         * @param expectedBody the expected response body
+         * @return the {@link ResultMatcher} for the response body
+         */
+        protected ResultMatcher responseBody(final Object expectedBody) {
+            return content().string(convertToJson(expectedBody));
+        }
+
+        /**
+         * @param object the object to convert
+         * @return the JSON string representation of the object
+         */
+        @SneakyThrows
+        protected String convertToJson(Object object) {
+            return objectMapper.writeValueAsString(object);
+        }
+
+        private MockHttpServletRequestBuilder buildRequest() {
             return buildRequest(null);
         }
 
-        protected MockHttpServletRequestBuilder buildRequest(@Nullable Object requestBody) {
+        private MockHttpServletRequestBuilder buildRequest(@Nullable Object requestBody) {
             final MockHttpServletRequestBuilder requestBuilder = customizeRequest(
                     MockMvcRequestBuilders
                             .request(getMethod(), getUrl(), getParameters())
@@ -119,22 +165,9 @@ public abstract class ControllerTest {
             }
         }
 
-        protected ResultMatcher responseBody(final Object expectedBody) {
-            return content().string(convertToJson(expectedBody));
-        }
-
-        protected String numberErrorString(String field, String direction, long num) {
-            return String.format("%s field must be %s than or equal to %d", field, direction, num);
-        }
-
-        @SneakyThrows
-        protected String convertToJson(Object object) {
-            return objectMapper.writeValueAsString(object);
-        }
-
-        /*
-         * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
+        /**
          * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
+         * <a href="https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux">...</a>
          */
         @Test
         void cors() throws Exception {
@@ -148,6 +181,9 @@ public abstract class ControllerTest {
                     .andExpect(header().string("Access-Control-Allow-Methods", getMethod().name()));
         }
 
+        /**
+         * Tests the endpoint with unsupported media type.
+         */
         @Test
         void unsupportedMediaType() throws Exception {
             if (getMethod() == HttpMethod.GET) {
