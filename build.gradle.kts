@@ -38,7 +38,7 @@ extra.apply {
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.7")
+    set("vertxVersion", "4.5.8")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
