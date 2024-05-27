@@ -167,6 +167,20 @@ public abstract class ControllerTest {
         }
 
         @Test
+        void malformedJsonBody() throws Exception {
+            if (getMethod() == HttpMethod.GET) {
+                return;
+            }
+            var requestJson = "{from: 0x00000000000000000000000000000000000004e2\"";
+            mockMvc.perform(buildRequest(requestJson))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(responseBody(new GenericErrorResponse(
+                            "Unable to parse JSON",
+                            "JSON parse error: Unexpected character ('f' (code 102)): was expecting double-quote to start field name",
+                            StringUtils.EMPTY)));
+        }
+
+        @Test
         void exceedingRateLimit() throws Exception {
             for (var i = 0; i < 3; i++) {
                 mockMvc.perform(buildRequest()).andExpect(status().isOk());
