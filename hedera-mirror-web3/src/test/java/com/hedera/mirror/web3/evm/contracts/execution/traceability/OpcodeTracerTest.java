@@ -19,8 +19,12 @@ package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSortedMap;
@@ -53,6 +57,7 @@ import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.Operation.OperationResult;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -77,10 +82,13 @@ class OpcodeTracerTest {
     };
 
     @Mock
+    private ContractCallContext contractCallContext;
+
+    @Mock
     private WorldUpdater worldUpdater;
 
     @Mock
-    private ContractCallContext contractCallContext;
+    private MutableAccount recipientAccount;
 
     // Transient test data
     private OpcodeTracerOptions tracerOptions;
@@ -95,6 +103,38 @@ class OpcodeTracerTest {
     void setUp() {
         REMAINING_GAS.set(INITIAL_GAS);
         tracerOptions = new OpcodeTracerOptions(false, false, false);
+    }
+
+    @AfterEach
+    void tearDown() {
+        verifyMocks();
+        reset(contractCallContext);
+        reset(worldUpdater);
+        reset(recipientAccount);
+    }
+
+    private void verifyMocks() {
+        verify(contractCallContext, times(1)).getOpcodeTracerOptions();
+        verify(contractCallContext, times(1)).getContractActions();
+
+        if (tracerOptions.isStorage()) {
+            verify(worldUpdater, times(1)).getAccount(frame.getRecipientAddress());
+
+            MutableAccount account;
+            try {
+                account = worldUpdater.getAccount(frame.getRecipientAddress());
+            } catch (Exception e) {
+                account = null;
+            }
+
+            if (account != null) {
+                assertThat(account).isEqualTo(recipientAccount);
+                verify(recipientAccount, times(1)).getUpdatedStorage();
+            }
+        } else {
+            verify(worldUpdater, never()).getAccount(any());
+            verify(recipientAccount, never()).getUpdatedStorage();
+        }
     }
 
     @Test
@@ -208,8 +248,7 @@ class OpcodeTracerTest {
         tracerOptions.setStorage(true);
         frame = setupMessageFrame(tracerOptions);
 
-        reset(worldUpdater.getAccount(frame.getRecipientAddress()));
-        when(worldUpdater.getAccount(frame.getRecipientAddress())).thenReturn(null);
+        when(worldUpdater.getAccount(any())).thenReturn(null);
 
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.storage()).isNotEmpty();
@@ -223,8 +262,7 @@ class OpcodeTracerTest {
         tracerOptions.setStorage(true);
         frame = setupMessageFrame(tracerOptions);
 
-        reset(worldUpdater.getAccount(frame.getRecipientAddress()));
-        when(worldUpdater.getAccount(frame.getRecipientAddress())).thenThrow(new ModificationNotAllowedException());
+        when(worldUpdater.getAccount(any())).thenThrow(new ModificationNotAllowedException());
 
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.storage()).isNotEmpty();
@@ -363,35 +401,26 @@ class OpcodeTracerTest {
         when(contractCallContext.getContractActions()).thenReturn(Lists.newArrayList(contractActions));
 
         final MessageFrame messageFrame = validMessageFrame(revertReason);
-        stackItems = setupStackForCapture(messageFrame, options);
-        wordsInMemory = setupMemoryForCapture(messageFrame, options);
-        updatedStorage = setupStorageForCapture(messageFrame, options);
+        stackItems = setupStackForCapture(messageFrame);
+        wordsInMemory = setupMemoryForCapture(messageFrame);
+        updatedStorage = setupStorageForCapture(messageFrame);
 
         return messageFrame;
     }
 
-    private Map<UInt256, UInt256> setupStorageForCapture(final MessageFrame frame, final OpcodeTracerOptions options) {
-        if (!options.isStorage()) {
-            return ImmutableSortedMap.of();
-        }
-
+    private Map<UInt256, UInt256> setupStorageForCapture(final MessageFrame frame) {
         final Map<UInt256, UInt256> storage = ImmutableSortedMap.of(
                 UInt256.ZERO, UInt256.valueOf(233),
                 UInt256.ONE, UInt256.valueOf(2424)
         );
 
-        final MutableAccount account = mock(MutableAccount.class);
-        when(account.getUpdatedStorage()).thenReturn(storage);
-        when(worldUpdater.getAccount(frame.getRecipientAddress())).thenReturn(account);
+        when(recipientAccount.getUpdatedStorage()).thenReturn(storage);
+        when(worldUpdater.getAccount(frame.getRecipientAddress())).thenReturn(recipientAccount);
 
         return storage;
     }
 
-    private UInt256[] setupStackForCapture(final MessageFrame frame, final OpcodeTracerOptions options) {
-        if (!options.isStack()) {
-            return new UInt256[0];
-        }
-
+    private UInt256[] setupStackForCapture(final MessageFrame frame) {
         final UInt256[] stack = new UInt256[] {
                 UInt256.fromHexString("0x01"),
                 UInt256.fromHexString("0x02"),
@@ -405,11 +434,7 @@ class OpcodeTracerTest {
         return stack;
     }
 
-    private Bytes[] setupMemoryForCapture(final MessageFrame frame, final OpcodeTracerOptions options) {
-        if (!options.isMemory()) {
-            return new Bytes[0];
-        }
-
+    private Bytes[] setupMemoryForCapture(final MessageFrame frame) {
         final Bytes[] words = new Bytes[] {
                 Bytes.fromHexString("0x01", 32),
                 Bytes.fromHexString("0x02", 32),
