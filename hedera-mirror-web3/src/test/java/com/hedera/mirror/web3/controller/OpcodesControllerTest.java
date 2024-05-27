@@ -25,17 +25,11 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVER
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -47,7 +41,6 @@ import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
-import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
@@ -55,7 +48,6 @@ import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
 import com.hedera.mirror.web3.service.CallServiceParametersBuilderImpl;
-import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.EthereumTransactionService;
 import com.hedera.mirror.web3.service.EthereumTransactionServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
@@ -69,11 +61,6 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import io.github.bucket4j.Bucket;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import jakarta.annotation.Resource;
-import jakarta.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -84,9 +71,10 @@ import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -97,35 +85,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.StringUtils;
 
-@ExtendWith(SpringExtension.class)
+@Import(OpcodesControllerTest.Config.class)
 @WebMvcTest(controllers = OpcodesController.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class OpcodesControllerTest {
-
-    private static final String OPCODES_URI = "/api/v1/contracts/results/{transactionIdOrHash}/opcodes";
-
-    @Resource
-    private MockMvc mockMvc;
-
-    @Resource
-    private ObjectMapper objectMapper;
-
-    @MockBean
-    private ContractCallService contractCallService;
-
-    @MockBean(name = "rateLimitBucket")
-    private Bucket rateLimitBucket;
-
-    @MockBean(name = "gasLimitBucket")
-    private Bucket gasLimitBucket;
+class OpcodesControllerTest extends ControllerTest {
 
     @MockBean
     private TransactionRepository transactionRepository;
@@ -142,303 +109,238 @@ class OpcodesControllerTest {
     @Autowired
     private CallServiceParametersBuilder callServiceParametersBuilder;
 
-    @Captor
-    private ArgumentCaptor<CallServiceParameters> callServiceParametersCaptor;
+    @Nested
+    @DisplayName(OpcodesEndpoint.OPCODES_URI)
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class OpcodesEndpoint extends EndpointTest {
 
-    @Captor
-    private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
+        public static final String OPCODES_URI = "/api/v1/contracts/results/{transactionIdOrHash}/opcodes";
 
-    private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
+        @Captor
+        private ArgumentCaptor<CallServiceParameters> callServiceParametersCaptor;
 
-    private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter) {
-        return opcodesRequest(parameter, new OpcodeTracerOptions());
-    }
+        @Captor
+        private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
 
-    private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter,
-                                                         final OpcodeTracerOptions options) {
-        final String transactionIdOrHash = parameter.isHash() ?
-                Bytes.of(parameter.hash().toByteArray()).toHexString() :
-                transactionIdString(
-                        parameter.transactionID().getAccountID(),
-                        parameter.transactionID().getTransactionValidStart()
-                );
+        private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
 
-        return opcodesRequest(transactionIdOrHash)
-                .queryParam("stack", String.valueOf(options.isStack()))
-                .queryParam("memory", String.valueOf(options.isMemory()))
-                .queryParam("storage", String.valueOf(options.isStorage()));
-    }
+        private String transactionIdOrHash;
+        private OpcodeTracerOptions opcodeTracerOptions;
 
-    private MockHttpServletRequestBuilder opcodesRequest(final String transactionIdOrHash) {
-        return get(OPCODES_URI, transactionIdOrHash)
-                .accept(MediaType.APPLICATION_JSON)
-                .contentType(MediaType.APPLICATION_JSON);
-    }
-
-    private ResultMatcher responseBody(final Object expectedBody) throws JsonProcessingException {
-        return content().string(objectMapper.writeValueAsString(expectedBody));
-    }
-
-    private TransactionIdOrHashParameter getTransactionIdOrHash(final Transaction transaction,
-                                                                final EthereumTransaction ethereumTransaction) {
-        if (ethereumTransaction != null) {
-            final String ethHash = Bytes.of(ethereumTransaction.getHash()).toHexString();
-            return TransactionIdOrHashParameter.valueOf(ethHash);
-        } else {
-            final String transactionId = transactionIdString(
-                    toAccountID(transaction.getPayerAccountId()),
-                    timestamp(transaction.getValidStartNs())
-            );
-            return TransactionIdOrHashParameter.valueOf(transactionId);
+        @Override
+        protected HttpMethod getMethod() {
+            return HttpMethod.GET;
         }
-    }
 
-    private String transactionIdString(final AccountID accountID, final Timestamp transactionValidStart) {
-        final String entityId = "%d.%d.%d".formatted(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
-        return "%s-%d-%d".formatted(
-                entityId,
-                transactionValidStart.getSeconds(),
-                transactionValidStart.getNanos());
-    }
+        @Override
+        protected String getUrl() {
+            return OPCODES_URI;
+        }
 
-    void setUp(final Transaction transaction, final EthereumTransaction ethTransaction, final RecordFile recordFile) {
-        when(rateLimitBucket.tryConsume(anyLong())).thenReturn(true);
-        when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
-        when(contractCallService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
-        )).thenAnswer(context -> {
-            final CallServiceParameters params = context.getArgument(0);
-            final OpcodeTracerOptions options = context.getArgument(1);
-            opcodesResultCaptor.set(Builder.opcodesProcessingResult(params, options));
-            return opcodesResultCaptor.get();
-        });
-        when(contractTransactionHashRepository.findByHash(
-                Optional.ofNullable(ethTransaction)
-                        .map(EthereumTransaction::getHash)
-                        .orElse(transaction.getTransactionHash())
-        )).thenReturn(Optional.of(Builder.contractTransactionHashFrom(transaction, ethTransaction)));
-        when(ethereumTransactionRepository.findByConsensusTimestampAndPayerAccountId(
-                transaction.getConsensusTimestamp(),
-                transaction.getPayerAccountId()
-        )).thenReturn(Optional.ofNullable(ethTransaction));
-        when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
-                transaction.getPayerAccountId(),
-                transaction.getValidStartNs(),
-                transaction.getValidStartNs() + MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE.toNanos()
-        )).thenReturn(Optional.of(transaction));
-        when(transactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.of(transaction));
-        when(recordFileRepository.findByTimestamp(transaction.getConsensusTimestamp())).thenReturn(Optional.of(recordFile));
-    }
+        @Override
+        protected Object[] getParameters() {
+            return new String[]{ transactionIdOrHash };
+        }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransactionMocksProvider.class)
-    void shouldThrowUnsupportedOperationFromContractCallService(final Transaction transaction,
-                                                                final EthereumTransaction ethTransaction,
-                                                                final RecordFile recordFile) throws Exception {
-        setUp(transaction, ethTransaction, recordFile);
+        @Override
+        protected MockHttpServletRequestBuilder customizeRequest(MockHttpServletRequestBuilder requestBuilder) {
+            return requestBuilder
+                    .queryParam("stack", String.valueOf(opcodeTracerOptions.isStack()))
+                    .queryParam("memory", String.valueOf(opcodeTracerOptions.isMemory()))
+                    .queryParam("storage", String.valueOf(opcodeTracerOptions.isStorage()));
+        }
 
-        reset(contractCallService);
-        when(contractCallService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
-        )).thenCallRealMethod();
+        @BeforeEach
+        void setUp() {
+            // tests will use this transaction and record file, in case it's not overridden by the other setUp() method
+            final Transaction transaction = getContractCallTransaction();
+            final RecordFile recordFile = getContractCallRecordFile();
+            setUp(transaction, null, recordFile);
+        }
 
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
+        void setUp(final Transaction transaction, final EthereumTransaction ethTransaction, final RecordFile recordFile) {
+            setUpMocks(transaction, ethTransaction, recordFile);
+            this.transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
+            this.opcodeTracerOptions = new OpcodeTracerOptions();
+        }
 
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isNotImplemented())
-                .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
-    }
+        void setUpMocks(final Transaction transaction, final EthereumTransaction ethTransaction, final RecordFile recordFile) {
+            reset(contractCallService);
+            when(contractCallService.processOpcodeCall(
+                    callServiceParametersCaptor.capture(),
+                    tracerOptionsCaptor.capture()
+            )).thenAnswer(context -> {
+                final CallServiceParameters params = context.getArgument(0);
+                final OpcodeTracerOptions options = context.getArgument(1);
+                opcodesResultCaptor.set(Builder.opcodesProcessingResult(params, options));
+                return opcodesResultCaptor.get();
+            });
+            when(contractTransactionHashRepository.findByHash(
+                    Optional.ofNullable(ethTransaction)
+                            .map(EthereumTransaction::getHash)
+                            .orElse(transaction.getTransactionHash())
+            )).thenReturn(Optional.of(Builder.contractTransactionHashFrom(transaction, ethTransaction)));
+            when(ethereumTransactionRepository.findByConsensusTimestampAndPayerAccountId(
+                    transaction.getConsensusTimestamp(),
+                    transaction.getPayerAccountId()
+            )).thenReturn(Optional.ofNullable(ethTransaction));
+            when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
+                    transaction.getPayerAccountId(),
+                    transaction.getValidStartNs(),
+                    transaction.getValidStartNs() + MAX_TRANSACTION_CONSENSUS_TIMESTAMP_RANGE.toNanos()
+            )).thenReturn(Optional.of(transaction));
+            when(transactionRepository.findById(transaction.getConsensusTimestamp())).thenReturn(Optional.of(transaction));
+            when(recordFileRepository.findByTimestamp(transaction.getConsensusTimestamp())).thenReturn(Optional.of(recordFile));
+        }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransactionMocksProvider.class)
-    void callRevertMethodAndExpectDetailMessage(final Transaction transaction,
-                                                final EthereumTransaction ethTransaction,
-                                                final RecordFile recordFile) throws Exception {
-        setUp(transaction, ethTransaction, recordFile);
+        @ParameterizedTest
+        @ArgumentsSource(TransactionMocksProvider.class)
+        void shouldThrowUnsupportedOperationFromContractCallService(final Transaction transaction,
+                                                                    final EthereumTransaction ethTransaction,
+                                                                    final RecordFile recordFile) throws Exception {
+            setUp(transaction, ethTransaction, recordFile);
 
-        final var detailedErrorMessage = "Custom revert message";
-        final var hexDataErrorMessage =
-                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
+            reset(contractCallService);
+            when(contractCallService.processOpcodeCall(
+                    callServiceParametersCaptor.capture(),
+                    tracerOptionsCaptor.capture()
+            )).thenCallRealMethod();
 
-        reset(contractCallService);
-        when(contractCallService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
-        )).thenThrow(new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
+            mockMvc.perform(buildRequest())
+                    .andExpect(status().isNotImplemented())
+                    .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
+        }
 
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
+        @ParameterizedTest
+        @ArgumentsSource(TransactionMocksProvider.class)
+        void callRevertMethodAndExpectDetailMessage(final Transaction transaction,
+                                                    final EthereumTransaction ethTransaction,
+                                                    final RecordFile recordFile) throws Exception {
+            setUp(transaction, ethTransaction, recordFile);
 
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isBadRequest())
-                .andExpect(responseBody(new GenericErrorResponse(
-                        CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage)));
-    }
+            final var detailedErrorMessage = "Custom revert message";
+            final var hexDataErrorMessage =
+                    "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
 
-    @ParameterizedTest
-    @ArgumentsSource(TransactionMocksProvider.class)
-    void callWithDifferentCombinationsOfTracerOptions(final Transaction transaction,
+            reset(contractCallService);
+            when(contractCallService.processOpcodeCall(
+                    callServiceParametersCaptor.capture(),
+                    tracerOptionsCaptor.capture()
+            )).thenThrow(new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
+
+            mockMvc.perform(buildRequest())
+                    .andExpect(status().isBadRequest())
+                    .andExpect(responseBody(new GenericErrorResponse(
+                            CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage)));
+        }
+
+        @ParameterizedTest
+        @ArgumentsSource(TransactionMocksProvider.class)
+        void callWithDifferentCombinationsOfTracerOptions(final Transaction transaction,
+                                                          final EthereumTransaction ethTransaction,
+                                                          final RecordFile recordFile) throws Exception {
+            setUp(transaction, ethTransaction, recordFile);
+
+            final var tracerOptions = new OpcodeTracerOptions[] {
+                    new OpcodeTracerOptions(true, true, true),
+                    new OpcodeTracerOptions(false, true, true),
+                    new OpcodeTracerOptions(true, false, true),
+                    new OpcodeTracerOptions(true, true, false),
+                    new OpcodeTracerOptions(false, false, true),
+                    new OpcodeTracerOptions(false, true, false),
+                    new OpcodeTracerOptions(true, false, false),
+                    new OpcodeTracerOptions(false, false, false)
+            };
+
+            for (final var options : tracerOptions) {
+                opcodeTracerOptions = options;
+                mockMvc.perform(buildRequest())
+                        .andExpect(status().isOk())
+                        .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
+
+                assertEquals(options, tracerOptionsCaptor.getValue());
+                assertEquals(
+                        callServiceParametersBuilder
+                                .buildFromTransaction(TransactionIdOrHashParameter.valueOf(transactionIdOrHash)),
+                        callServiceParametersCaptor.getValue());
+            }
+        }
+
+        @ParameterizedTest
+        @ArgumentsSource(TransactionMocksProvider.class)
+        void callWithRecordFileNotFoundExceptionTest(final Transaction transaction,
+                                                     final EthereumTransaction ethTransaction,
+                                                     final RecordFile recordFile) throws Exception {
+            setUp(transaction, ethTransaction, recordFile);
+
+            when(recordFileRepository.findByTimestamp(anyLong())).thenReturn(Optional.empty());
+
+            mockMvc.perform(buildRequest())
+                    .andExpect(status().isNotFound())
+                    .andExpect(responseBody(new GenericErrorResponse("Record file with transaction not found")));
+        }
+
+        @ParameterizedTest
+        @ArgumentsSource(TransactionMocksProvider.class)
+        void callWithTransactionNotFoundExceptionTest(final Transaction transaction,
                                                       final EthereumTransaction ethTransaction,
                                                       final RecordFile recordFile) throws Exception {
-        setUp(transaction, ethTransaction, recordFile);
+            setUp(transaction, ethTransaction, recordFile);
 
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
+            when(transactionRepository.findById(anyLong())).thenReturn(Optional.empty());
+            when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
+                    any(EntityId.class), anyLong(), anyLong()
+            )).thenReturn(Optional.empty());
 
-        final var tracerOptions = new OpcodeTracerOptions[] {
-                new OpcodeTracerOptions(true, true, true),
-                new OpcodeTracerOptions(false, true, true),
-                new OpcodeTracerOptions(true, false, true),
-                new OpcodeTracerOptions(true, true, false),
-                new OpcodeTracerOptions(false, false, true),
-                new OpcodeTracerOptions(false, true, false),
-                new OpcodeTracerOptions(true, false, false),
-                new OpcodeTracerOptions(false, false, false)
-        };
-
-        for (var options : tracerOptions) {
-            mockMvc.perform(opcodesRequest(transactionIdOrHash, options))
-                    .andExpect(status().isOk())
-                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
-
-            assertEquals(options, tracerOptionsCaptor.getValue());
-            assertEquals(
-                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
-                    callServiceParametersCaptor.getValue());
-        }
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransactionMocksProvider.class)
-    void callWithRecordFileNotFoundExceptionTest(final Transaction transaction,
-                                                 final EthereumTransaction ethTransaction,
-                                                 final RecordFile recordFile) throws Exception {
-        setUp(transaction, ethTransaction, recordFile);
-
-        when(recordFileRepository.findByTimestamp(anyLong())).thenReturn(Optional.empty());
-
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isNotFound())
-                .andExpect(responseBody(new GenericErrorResponse("Record file with transaction not found")));
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(TransactionMocksProvider.class)
-    void callWithTransactionNotFoundExceptionTest(final Transaction transaction,
-                                                  final EthereumTransaction ethTransaction,
-                                                  final RecordFile recordFile) throws Exception {
-        setUp(transaction, ethTransaction, recordFile);
-
-        when(transactionRepository.findById(anyLong())).thenReturn(Optional.empty());
-        when(transactionRepository.findByPayerAccountIdAndValidStartNsAndConsensusTimestampBefore(
-                any(EntityId.class), anyLong(), anyLong()
-        )).thenReturn(Optional.empty());
-
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, ethTransaction);
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isNotFound())
-                .andExpect(responseBody(new GenericErrorResponse("Transaction not found")));
-    }
-
-    @ParameterizedTest
-    @ValueSource(
-            strings = {
-                    " ",
-                    "0x",
-                    "0xghijklmno",
-                    "0x00000000000000000000000000000000000004e",
-                    "0x00000000000000000000000000000000000004e2a",
-                    "00000000001239847e",
-                    "0.0.1234-1234567890", // missing nanos
-                    "0.0.1234-0-1234567890", // nanos overflow
-                    "0.0.1234-1-123456789-",  // dash after nanos
-            })
-    void callInvalidTransactionIdOrHash(final String transactionIdOrHash) throws Exception {
-        when(rateLimitBucket.tryConsume(1)).thenReturn(true);
-
-        final var expectedMessage = StringUtils.hasText(transactionIdOrHash) ?
-                "Invalid transaction ID or hash" :
-                "Transaction ID or hash is required";
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(new StringContains(expectedMessage)));
-    }
-
-    @Test
-    void exceedingRateLimit() throws Exception {
-        final Transaction transaction = getContractCallTransaction();
-        final RecordFile recordFile = getContractCallRecordFile();
-        setUp(transaction, null, recordFile);
-
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, null);
-
-        for (var i = 0; i < 3; i++) {
-            mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                    .andExpect(status().isOk())
-                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
-
-            assertEquals(new OpcodeTracerOptions(), tracerOptionsCaptor.getValue());
-            assertEquals(
-                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
-                    callServiceParametersCaptor.getValue());
+            mockMvc.perform(buildRequest())
+                    .andExpect(status().isNotFound())
+                    .andExpect(responseBody(new GenericErrorResponse("Transaction not found")));
         }
 
-        when(rateLimitBucket.tryConsume(1)).thenReturn(false);
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isTooManyRequests());
-    }
+        @ParameterizedTest
+        @ValueSource(
+                strings = {
+                        " ",
+                        "0x",
+                        "0xghijklmno",
+                        "0x00000000000000000000000000000000000004e",
+                        "0x00000000000000000000000000000000000004e2a",
+                        "00000000001239847e",
+                        "0.0.1234-1234567890", // missing nanos
+                        "0.0.1234-0-1234567890", // nanos overflow
+                        "0.0.1234-1-123456789-",  // dash after nanos
+                })
+        void callInvalidTransactionIdOrHash(final String transactionIdOrHash) throws Exception {
+            final var expectedMessage = StringUtils.hasText(transactionIdOrHash) ?
+                    "Invalid transaction ID or hash" :
+                    "Transaction ID or hash is required";
 
-    @Test
-    void exceedingGasLimit() throws Exception {
-        final Transaction transaction = getContractCallTransaction();
-        final RecordFile recordFile = getContractCallRecordFile();
-        setUp(transaction, null, recordFile);
+            this.transactionIdOrHash = transactionIdOrHash;
 
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, null);
-
-        for (var i = 0; i < 3; i++) {
-            mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                    .andExpect(status().isOk())
-                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get())));
-
-            assertEquals(new OpcodeTracerOptions(), tracerOptionsCaptor.getValue());
-            assertEquals(
-                    callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash),
-                    callServiceParametersCaptor.getValue());
+            mockMvc.perform(buildRequest())
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().string(new StringContains(expectedMessage)));
         }
 
-        when(gasLimitBucket.tryConsume(anyLong())).thenReturn(false);
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isTooManyRequests());
-    }
+        private String getTransactionIdOrHash(final Transaction transaction,
+                                                                    final EthereumTransaction ethereumTransaction) {
+            if (ethereumTransaction != null) {
+                return Bytes.of(ethereumTransaction.getHash()).toHexString();
+            } else {
+                return buildTransactionIdString(
+                        toAccountID(transaction.getPayerAccountId()),
+                        timestamp(transaction.getValidStartNs())
+                );
+            }
+        }
 
-    /*
-     * https://stackoverflow.com/questions/62723224/webtestclient-cors-with-spring-boot-and-webflux
-     * The Spring WebTestClient CORS testing requires that the URI contain any hostname and port.
-     */
-    @Test
-    void callSuccessCors() throws Exception {
-        final Transaction transaction = getContractCallTransaction();
-        final RecordFile recordFile = getContractCallRecordFile();
-        setUp(transaction, null, recordFile);
-
-        final TransactionIdOrHashParameter transactionIdOrHash = getTransactionIdOrHash(transaction, null);
-        final String param = transactionIdOrHash.isTransactionId() ?
-                transactionIdOrHash.transactionID().toString() :
-                Bytes.of(transactionIdOrHash.hash().toByteArray()).toHexString();
-
-        mockMvc.perform(options(OPCODES_URI, param)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Origin", "https://example.com")
-                        .header("Access-Control-Request-Method", "GET"))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Access-Control-Allow-Origin", "*"))
-                .andExpect(header().string("Access-Control-Allow-Methods", "GET"));
+        private String buildTransactionIdString(final AccountID accountID, final Timestamp transactionValidStart) {
+            final String entityId = "%d.%d.%d".formatted(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum());
+            return "%s-%d-%d".formatted(
+                    entityId,
+                    transactionValidStart.getSeconds(),
+                    transactionValidStart.getNanos());
+        }
     }
 
     /**
@@ -587,27 +489,7 @@ class OpcodesControllerTest {
     }
 
     @TestConfiguration
-    public static class TestConfig {
-
-        @Bean
-        MirrorNodeEvmProperties evmProperties() {
-            return new MirrorNodeEvmProperties();
-        }
-
-        @Bean
-        MeterRegistry meterRegistry() {
-            return new SimpleMeterRegistry();
-        }
-
-        @Bean
-        EntityManager entityManager() {
-            return mock(EntityManager.class);
-        }
-
-        @Bean
-        TransactionOperations transactionOperations() {
-            return mock(TransactionOperations.class);
-        }
+    public static class Config {
 
         @Bean
         TransactionService transactionService(final TransactionRepository transactionRepository) {
