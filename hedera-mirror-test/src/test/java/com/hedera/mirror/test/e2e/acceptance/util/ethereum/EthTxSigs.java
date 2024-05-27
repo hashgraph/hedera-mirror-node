@@ -48,7 +48,6 @@ public record EthTxSigs(byte[] publicKey, byte[] address) {
         }
 
         return new EthTxData(
-                ethTx.rawTx(),
                 ethTx.type(),
                 ethTx.chainId(),
                 ethTx.nonce(),

@@ -19,7 +19,15 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
+import com.hedera.hashgraph.sdk.ContractFunctionParameters;
+import com.hedera.hashgraph.sdk.ContractFunctionResult;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.EthereumTransaction;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.ethereum.EthTxData;
@@ -28,6 +36,7 @@ import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.support.RetryTemplate;
@@ -66,15 +75,13 @@ public class EthereumClient extends AbstractNetworkClient {
         byte[] chainId = Integers.toBytes(acceptanceTestProperties.getNetwork().getChainId());
         byte[] maxPriorityGas = gasLongToBytes(20_000L);
         byte[] maxGas = gasLongToBytes(maxFeePerGas.longValueExact());
-        byte[] to = new byte[] {};
         BigInteger value = payableAmount != null
                 ? WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(payableAmount.toTinybars()))
                 : BigInteger.ZERO;
-        // FUTURE - construct bytecode with constructor arguments
+
         byte[] callData = Bytes.fromHexString(fileContents).toArray();
 
         var ethTxData = new EthTxData(
-                null,
                 EthTxData.EthTransactionType.LEGACY_ETHEREUM,
                 chainId,
                 nonce,
@@ -82,10 +89,10 @@ public class EthereumClient extends AbstractNetworkClient {
                 maxPriorityGas,
                 maxGas,
                 gas, // gasLimit
-                to, // to
+                ArrayUtils.EMPTY_BYTE_ARRAY, // to
                 value, // value
                 callData,
-                new byte[] {}, // accessList
+                ArrayUtils.EMPTY_BYTE_ARRAY, // accessList
                 0,
                 null,
                 null,
@@ -107,12 +114,10 @@ public class EthereumClient extends AbstractNetworkClient {
 
         TransactionRecord transactionRecord = getTransactionRecord(response.getTransactionId());
         logContractFunctionResult("constructor", transactionRecord.contractFunctionResult);
-
-        incrementNonce(signerKey);
         return response;
     }
 
-    public ExecuteContractResult executeContract(
+    public ContractClient.ExecuteContractResult executeContract(
             PrivateKey signerKey,
             ContractId contractId,
             long gas,
@@ -139,7 +144,6 @@ public class EthereumClient extends AbstractNetworkClient {
                 : BigInteger.ZERO;
 
         var ethTxData = new EthTxData(
-                null,
                 type,
                 chainId,
                 nonce,
@@ -150,7 +154,7 @@ public class EthereumClient extends AbstractNetworkClient {
                 to, // to
                 value, // value
                 callData,
-                new byte[] {}, // accessList
+                ArrayUtils.EMPTY_BYTE_ARRAY, // accessList
                 0,
                 null,
                 null,
@@ -167,8 +171,7 @@ public class EthereumClient extends AbstractNetworkClient {
         logContractFunctionResult(functionName, transactionRecord.contractFunctionResult);
 
         log.info("Called contract {} function {} via {}", contractId, functionName, response.getTransactionId());
-        incrementNonce(signerKey);
-        return new ExecuteContractResult(transactionRecord.contractFunctionResult, response);
+        return new ContractClient.ExecuteContractResult(transactionRecord.contractFunctionResult, response);
     }
 
     private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
@@ -184,18 +187,7 @@ public class EthereumClient extends AbstractNetworkClient {
                 contractFunctionResult.logs.size());
     }
 
-    public record ExecuteContractResult(
-            ContractFunctionResult contractFunctionResult, NetworkTransactionResponse networkTransactionResponse) {}
-
     private Integer getNonce(PrivateKey accountKey) {
-        return accountNonce.getOrDefault(accountKey, 0);
-    }
-
-    private void incrementNonce(PrivateKey accountKey) {
-        if (accountNonce.containsKey(accountKey)) {
-            accountNonce.put(accountKey, accountNonce.get(accountKey) + 1);
-        } else {
-            accountNonce.put(accountKey, 1);
-        }
+        return accountNonce.merge(accountKey, 1, Math::addExact) - 1;
     }
 }

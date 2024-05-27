@@ -16,15 +16,19 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.rest.model.TransactionTypes.*;
+import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOCREATEACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractFunctionParameters;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.mirror.rest.model.ContractResult;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionDetail;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.EthereumClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
@@ -35,7 +39,6 @@ import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Comparator;
-import java.util.List;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -62,8 +65,8 @@ public class EthereumFeature extends BaseContractFeature {
 
         networkTransactionResponse = accountClient.sendCryptoTransfer(ethereumSignerAccount, Hbar.from(5L), null);
 
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
     }
 
     @Then("validate the signer account and its balance")
@@ -148,7 +151,7 @@ public class EthereumFeature extends BaseContractFeature {
 
         childContractBytecodeFromParent =
                 executeContractResult.contractFunctionResult().getBytes(0);
-        assertNotNull(childContractBytecodeFromParent);
+        assertThat(childContractBytecodeFromParent).isNotNull();
     }
 
     public DeployedContract ethereumContractCreate(ContractResource contractResource) {
@@ -178,14 +181,14 @@ public class EthereumFeature extends BaseContractFeature {
         }
     }
 
-    private EthereumClient.ExecuteContractResult executeEthereumTransaction(
+    private ContractClient.ExecuteContractResult executeEthereumTransaction(
             ContractId contractId,
             String functionName,
             ContractFunctionParameters parameters,
             Hbar payableAmount,
             EthTxData.EthTransactionType type) {
 
-        EthereumClient.ExecuteContractResult executeContractResult = ethereumClient.executeContract(
+        ContractClient.ExecuteContractResult executeContractResult = ethereumClient.executeContract(
                 ethereumSignerPrivateKey,
                 contractId,
                 contractClient
@@ -199,9 +202,9 @@ public class EthereumFeature extends BaseContractFeature {
                 type);
 
         networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        assertNotNull(executeContractResult.contractFunctionResult());
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+        assertThat(executeContractResult.contractFunctionResult()).isNotNull();
 
         return executeContractResult;
     }
@@ -217,12 +220,9 @@ public class EthereumFeature extends BaseContractFeature {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         TransactionByIdResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
-        List<TransactionDetail> transactions = mirrorTransactionsResponse.getTransactions();
-        assertNotNull(transactions);
+        var transactions = mirrorTransactionsResponse.getTransactions();
         assertThat(transactions).isNotEmpty();
-        TransactionDetail mirrorTransaction;
-
-        mirrorTransaction = finalizeHollowAccount ? transactions.get(1) : transactions.get(0);
+        var mirrorTransaction = finalizeHollowAccount ? transactions.get(1) : transactions.get(0);
 
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");

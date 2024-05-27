@@ -1,7 +1,6 @@
-@contractbase @fullsuite
+@contractbase @fullsuite @acceptance @critical @release @ethereum
 Feature: Ethereum transactions Coverage Feature
 
-  @critical @release @acceptance
   Scenario Outline: Validate Ethereum Contract create and call
 
 

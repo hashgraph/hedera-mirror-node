@@ -17,7 +17,6 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.hedera.mirror.rest.model.ContractResponse;
 import com.hedera.mirror.rest.model.ContractResult;
@@ -31,7 +30,7 @@ public class BaseContractFeature extends AbstractFeature {
         var mirrorContract =
                 mirrorClient.getContractInfo(deployedParentContract.contractId().toString());
 
-        assertNotNull(mirrorContract);
+        assertThat(mirrorContract).isNotNull();
         assertThat(mirrorContract.getAutoRenewPeriod()).isNotNull();
         assertThat(mirrorContract.getBytecode()).isNotBlank();
         assertThat(mirrorContract.getContractId())
