@@ -24,7 +24,6 @@ import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTra
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -45,17 +44,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
+    // Account addresses
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1043));
     private static final Address SENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1014));
-    private static final long expiry = 1_234_567_890L;
 
     // System addresses
-    protected static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
-    protected static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
+    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
+    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
+
+    private static final long expiry = 1_234_567_890L;
 
     @Autowired
-    protected ContractCallService contractCallService;
-
+    private ContractCallService contractCallService;
 
     @BeforeEach
     void setup() {
