@@ -48,7 +48,6 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1043));
     private static final Address SENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1014));
     private static final long expiry = 1_234_567_890L;
-    private static final long EVM_V_34_BLOCK = 50L;
 
     // System addresses
     protected static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
@@ -57,14 +56,10 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
     @Autowired
     protected ContractCallService contractCallService;
 
-    protected RecordFile recordFileAfterEvm34;
 
     @BeforeEach
     void setup() {
-        recordFileAfterEvm34 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_34_BLOCK))
-                .persist();
+        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         // reset gas metrics
         meterRegistry.clear();
     }
@@ -82,7 +77,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
         final var data = hash.concat(v).concat(r).concat(s);
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.ECREC, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.ECREC, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -97,7 +92,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
         final var correctResult = "0xa8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89";
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.SHA256, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.SHA256, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -112,7 +107,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
         final var correctResult = "0x0000000000000000000000002c0c45d3ecab80fe060e5f1d7057cd2f8de5e557";
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.RIPEMD160, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.RIPEMD160, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -127,7 +122,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
         final var correctResult = "0xff";
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.ID, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.ID, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -146,7 +141,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
         final var correctResult = "0x08";
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.MODEXP, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.MODEXP, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -166,7 +161,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
                 "0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd315ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4";
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.ALTBN128_ADD, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.ALTBN128_ADD, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -186,7 +181,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
                 "0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd315ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4";
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.ALTBN128_MUL, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.ALTBN128_MUL, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -224,7 +219,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
         final var correctResult = "0x0000000000000000000000000000000000000000000000000000000000000001";
         System.out.println(data);
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.ALTBN128_PAIRING, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.ALTBN128_PAIRING, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -248,7 +243,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
                 "0xba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923";
 
         final var serviceParameters = serviceParametersForExecution(
-                Bytes.fromHexString(data), Address.BLAKE2B_F_COMPRESSION, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+                Bytes.fromHexString(data), Address.BLAKE2B_F_COMPRESSION, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
@@ -260,8 +255,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
             final Address contractAddress,
             final CallServiceParameters.CallType callType,
             final long value,
-            final BlockType block,
-            final long gasLimit) {
+            final BlockType block) {
         HederaEvmAccount sender;
         if (block != BlockType.LATEST) {
             sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
@@ -278,7 +272,7 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
                 .value(value)
                 .receiver(contractAddress)
                 .callData(callData)
-                .gas(gasLimit)
+                .gas(15_000_000L)
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
