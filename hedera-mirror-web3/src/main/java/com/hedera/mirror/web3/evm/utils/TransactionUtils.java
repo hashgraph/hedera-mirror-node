@@ -25,7 +25,7 @@ import lombok.experimental.UtilityClass;
 import org.springframework.util.Assert;
 
 @UtilityClass
-public class TransactionUtils {
+public final class TransactionUtils {
 
     private static final Pattern ETH_HASH_PATTERN = Pattern.compile("^(0x)?([0-9A-Fa-f]{64})$");
     private static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");

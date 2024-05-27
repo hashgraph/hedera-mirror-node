@@ -22,9 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.web3.evm.utils.TransactionUtils;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -98,5 +103,21 @@ class TransactionUtilsTest {
         assertEquals(num, parsedTransactionId.getAccountID().getAccountNum());
         assertEquals(seconds, parsedTransactionId.getTransactionValidStart().getSeconds());
         assertEquals(nanos, parsedTransactionId.getTransactionValidStart().getNanos());
+    }
+
+    @Test
+    void assertUtilityClassWellDefined() throws NoSuchMethodException {
+        assertTrue(Modifier.isFinal(TransactionUtils.class.getModifiers()));
+        assertEquals(1, TransactionUtils.class.getDeclaredConstructors().length);
+
+        final Constructor<?> constructor = ((Class<?>) TransactionUtils.class).getDeclaredConstructor();
+        assertTrue(Modifier.isPrivate(constructor.getModifiers()));
+
+        final Stream<Method> methods = Arrays.stream(TransactionUtils.class.getDeclaredMethods());
+        assertTrue(methods.allMatch(m -> Modifier.isStatic(m.getModifiers())));
+
+        constructor.setAccessible(true);
+        assertThatThrownBy(constructor::newInstance)
+                .hasRootCauseInstanceOf(UnsupportedOperationException.class);
     }
 }
