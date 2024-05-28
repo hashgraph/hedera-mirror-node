@@ -160,31 +160,13 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
             value =
                     """
                     with token_allowances as (
-                        select *
-                        from
-                        (
-                            select *, row_number() over (
-                                partition by token_id, spender
-                                order by lower(timestamp_range) desc
-                            ) as row_number
-                            from
-                            (
-                                (
-                                    select *
-                                    from token_allowance
-                                    where owner = :owner
-                                        and lower(timestamp_range) <= :blockTimestamp
-                                )
-                                union all
-                                (
-                                    select *
-                                    from token_allowance_history
-                                    where owner = :owner
-                                        and lower(timestamp_range) <= :blockTimestamp
-                                )
-                            ) as all_token_allowances
-                        ) as grouped_token_allowances
-                        where row_number = 1 and amount_granted > 0
+                      select *
+                      from token_allowance_history
+                      where owner = :owner and amount_granted > 0 and timestamp_range @> :blockTimestamp
+                      union all
+                      select *
+                      from token_allowance
+                      where owner = :owner and amount_granted > 0 and :blockTimestamp >= lower(timestamp_range)
                     ), approved_transfers as (
                         select tt.token_id, tt.payer_account_id, tt.consensus_timestamp, tt.amount, tt.account_id
                         from token_transfer tt
@@ -198,16 +180,12 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                             join token_allowances ta on tt.payer_account_id = ta.spender and tt.token_id = ta.token_id
                             and tt.consensus_timestamp > lower(ta.timestamp_range)
                         group by tt.token_id, tt.payer_account_id, tt.consensus_timestamp
-                    ), owner_transfers as (
-                        select ta.spender, tt.account_id, tt.consensus_timestamp, tt.token_id, tt.amount
-                        from approved_transfers tt
-                            join token_allowances ta on tt.account_id = ta.owner and tt.token_id = ta.token_id
-                            and tt.consensus_timestamp > lower(ta.timestamp_range)
-                        where tt.consensus_timestamp not in (select consensus_timestamp from spender_transfers)
                     ), contract_call_transfers as (
                         select cr.sender_id, tt.consensus_timestamp, tt.token_id, sum(tt.amount) as amount
-                        from owner_transfers tt
-                             join contract_result cr on tt.consensus_timestamp = cr.consensus_timestamp and cr.sender_id = tt.spender
+                        from approved_transfers tt
+                             join token_allowances ta on tt.account_id = ta.owner and tt.token_id = ta.token_id and tt.consensus_timestamp > lower(ta.timestamp_range)
+                             join contract_result cr on tt.consensus_timestamp = cr.consensus_timestamp and cr.sender_id = ta.spender
+                        where tt.consensus_timestamp not in (select consensus_timestamp from spender_transfers)
                         group by cr.sender_id, tt.token_id, tt.consensus_timestamp
                     )
                     select *
