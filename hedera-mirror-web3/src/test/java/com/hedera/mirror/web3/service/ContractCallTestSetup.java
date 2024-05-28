@@ -1677,7 +1677,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void fileDataPersist() {
+    protected void fileDataPersist() {
         final long nanos = 1_234_567_890L;
         final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
                 .setCurrentRate(ExchangeRate.newBuilder()
@@ -2590,7 +2590,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return modificationContractEntityId;
     }
 
-    private EntityId ercContractPersist() {
+    protected EntityId ercContractPersist() {
         final var ercContractBytes = functionEncodeDecoder.getContractBytes(ERC_CONTRACT_BYTES_PATH);
         final var ercContractEntityId = fromEvmAddress(ERC_CONTRACT_ADDRESS.toArrayUnsafe());
         final var ercContractEvmAddress = toEvmAddress(ercContractEntityId);

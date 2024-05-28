@@ -292,33 +292,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
-    /*private CallServiceParameters serviceParametersForExecution(
-            final Bytes callData,
-            final Address contractAddress,
-            final CallServiceParameters.CallType callType,
-            final long value,
-            final BlockType block) {
-        HederaEvmAccount sender;
-        if (block != BlockType.LATEST) {
-            sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
-        } else {
-            sender = new HederaEvmAccount(SENDER_ADDRESS);
-        }
-        persist();
-
-        return CallServiceParameters.builder()
-                .sender(sender)
-                .value(value)
-                .receiver(contractAddress)
-                .callData(callData)
-                .gas(15_000_000L)
-                .isStatic(false)
-                .callType(callType)
-                .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(block)
-                .build();
-    }*/
-
     @Override
     protected void historicalDataPersist() {
         final var ownerEntityId = ownerEntityPersistHistorical();
@@ -382,11 +355,16 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         genesisRecordFileForBlockHash =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         historicalBlocksPersist();
+        historicalDataPersist();
+
+        final var ercContract = ercContractPersist(); //needed for ercReadOnlyPrecompileHistoricalOperationsTest
+        final var redirectContract = redirectContractPersist();
         final var ownerEntityId = ownerEntityPersist();
         final var senderEntityId = senderEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
         final var treasuryEntityId = treasureEntityPersist();
         autoRenewAccountPersist();
+
         final var tokenTreasuryEntityId = fungibleTokenPersist(
                 treasuryEntityId,
                 new byte[0],
@@ -395,7 +373,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 9999999999999L,
                 TokenPauseStatusEnum.UNPAUSED,
                 false);
-        final var redirectContract = redirectContractPersist();
         final var tokenEntityId = fungibleTokenPersist(
                 ownerEntityId,
                 KEY_PROTO,
@@ -413,16 +390,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 KEY_PROTO,
                 TokenPauseStatusEnum.PAUSED,
                 true);
-        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(redirectContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(redirectContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        ercContractTokenPersist(REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        nftCustomFeePersist(senderEntityId, nftEntityId);
         final var nftEntityId3 = nftPersist(
                 NFT_TRANSFER_ADDRESS,
                 AUTO_RENEW_ACCOUNT_ADDRESS,
@@ -433,9 +400,24 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 TokenPauseStatusEnum.UNPAUSED,
                 false);
 
+        tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersist(senderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ercContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ercContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(redirectContract, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(redirectContract, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        tokenAccountPersist(spenderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        ercContractTokenPersist(REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        nftCustomFeePersist(senderEntityId, nftEntityId);
+
         tokenAccountPersist(ownerEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         tokenAccountPersist(spenderEntityId, nftEntityId3, TokenFreezeStatusEnum.UNFROZEN);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
+        allowancesPersist(ownerEntityId, ercContract, tokenEntityId, nftEntityId);
         allowancesPersist(ownerEntityId, redirectContract, tokenEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
@@ -464,75 +446,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 .persist();
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
     }
-    /*void persistEntities() {
-
-        ercContractTokenPersist(ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, TokenFreezeStatusEnum.UNFROZEN);
-
-        exchangeRatesPersist();
-        feeSchedulesPersist();
-    }*/
-
-    /*private long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
-        return ContractCallContext.run(ctx -> {
-            ctx.initializeStackFrames(store.getStackedStateFrames());
-            long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas())
-                    .getGasUsed();
-
-            assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
-            return result;
-        });
-    }
-
-    private static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
-        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
-    }
-
-    private void feeSchedulesPersist() {
-        CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
-                .setCurrentFeeSchedule(FeeSchedule.newBuilder()
-                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
-                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                                .setHederaFunctionality(ContractCall)
-                                .addFees(FeeData.newBuilder()
-                                        .setServicedata(FeeComponents.newBuilder()
-                                                .setGas(852000)
-                                                .build())))
-                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                                .setHederaFunctionality(EthereumTransaction)
-                                .addFees(FeeData.newBuilder()
-                                        .setServicedata(FeeComponents.newBuilder()
-                                                .setGas(852000)
-                                                .build()))))
-                .build();
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(feeSchedules.toByteArray())
-                        .entityId(FEE_SCHEDULE_ENTITY_ID)
-                        .consensusTimestamp(expiry + 1))
-                .persist();
-    }
-
-    private void exchangeRatesPersist() {
-        final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
-                .setCurrentRate(ExchangeRate.newBuilder()
-                        .setCentEquiv(12)
-                        .setHbarEquiv(1)
-                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
-                        .build())
-                .setNextRate(ExchangeRate.newBuilder()
-                        .setCentEquiv(15)
-                        .setHbarEquiv(1)
-                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
-                        .build())
-                .build();
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
-                        .entityId(EXCHANGE_RATE_ENTITY_ID)
-                        .consensusTimestamp(expiry))
-                .persist();
-    }*/
 
     @RequiredArgsConstructor
     public enum ErcContractReadOnlyFunctions {
