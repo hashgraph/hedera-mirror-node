@@ -87,7 +87,7 @@ class ContractController {
             params = constructServiceParameters(request);
             result = contractCallService.processCall(params);
         } catch (QueryTimeoutException e) {
-            log.error("Query timed out: {}", e.getMessage() + " request: " + request);
+            log.error("Query timed out: {} request: {}", e.getMessage(), request);
             throw e;
         } catch (InvalidParametersException e) {
             // The validation failed but no processing was made - restore the consumed gas back to the bucket.
