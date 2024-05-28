@@ -208,6 +208,131 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
+    void findByOwnerAndTimestampWithHistoryTransferOverlaps() {
+        var ownerId = 1L;
+        var tokenId = 2L;
+        var spenderId = 3L;
+
+        var tokenAllowanceTimestamp = System.currentTimeMillis();
+        var tokenTransferTimestamp = tokenAllowanceTimestamp + 1;
+        var historyRange = Range.openClosed(tokenAllowanceTimestamp - 1000000, tokenAllowanceTimestamp - 1);
+        var blockTimestamp = tokenAllowanceTimestamp + 3;
+
+        var initialAmount = 3L;
+        var initialHistoryAmount = 10L;
+        var amountForTransfer = -1L;
+        var amountForHistoryTransfer = -2L;
+        var amountForContractCallTransfer = -5L;
+
+        var allowance = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(spenderId)
+                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                .persist();
+
+        var allowance2 = domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialAmount)
+                        .amount(initialAmount)
+                        .tokenId(tokenId)
+                        .spender(spenderId + 1)
+                        .timestampRange(Range.atLeast(historyRange.lowerEndpoint())))
+                .persist();
+
+        var tokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(tokenTransferTimestamp)
+                                .build()))
+                .persist();
+
+        var historyTokenTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForHistoryTransfer)
+                        .payerAccountId(EntityId.of(spenderId))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(historyRange.lowerEndpoint() + 2)
+                                .build()))
+                .persist();
+
+        var allowanceHistory = domainBuilder
+                .tokenAllowanceHistory()
+                .customize(a -> a.owner(ownerId)
+                        .amountGranted(initialHistoryAmount)
+                        .amount(initialHistoryAmount + historyTokenTransfer.getAmount())
+                        .tokenId(tokenId)
+                        .spender(spenderId)
+                        .timestampRange(historyRange))
+                .persist();
+
+        var tokenTransfer1 = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForTransfer)
+                        .payerAccountId(EntityId.of(spenderId + 1))
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(historyRange.lowerEndpoint() + 1)
+                                .build()))
+                .persist();
+
+        var contractCallTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.isApproval(true)
+                        .amount(amountForContractCallTransfer)
+                        .id(TokenTransfer.Id.builder()
+                                .tokenId(EntityId.of(tokenId))
+                                .accountId(EntityId.of(ownerId))
+                                .consensusTimestamp(historyRange.lowerEndpoint() + 3)
+                                .build()))
+                .persist();
+
+        var contractResult = domainBuilder
+                .contractResult()
+                .customize(
+                        c -> c.consensusTimestamp(contractCallTransfer.getId().getConsensusTimestamp())
+                                .senderId(EntityId.of(spenderId)))
+                .persist();
+
+        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
+        assertThat(result.get(1)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
+
+        result = repository.findByOwnerAndTimestamp(
+                allowance.getOwner(), historyTokenTransfer.getId().getConsensusTimestamp());
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0)).returns(initialHistoryAmount + amountForHistoryTransfer, TokenAllowance::getAmount);
+        assertThat(result.get(1)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
+
+        result = repository.findByOwnerAndTimestamp(
+                allowance.getOwner(), contractCallTransfer.getId().getConsensusTimestamp());
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0))
+                .returns(
+                        initialHistoryAmount + amountForHistoryTransfer + amountForContractCallTransfer,
+                        TokenAllowance::getAmount);
+        assertThat(result.get(1)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
+    }
+
+    @Test
     void findByOwnerAndTimestampWithTransferMultipleEntries() {
         long ownerId = 1L;
         long tokenId = 2L;
