@@ -23,7 +23,7 @@ import com.hedera.mirror.rest.model.ContractResult;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 import java.util.List;
 
-public class BaseContractFeature extends AbstractFeature {
+public abstract class BaseContractFeature extends AbstractFeature {
     protected DeployedContract deployedParentContract;
 
     protected ContractResponse verifyContractFromMirror(boolean isDeleted) {
