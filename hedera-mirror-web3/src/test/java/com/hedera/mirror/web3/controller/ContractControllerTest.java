@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -56,13 +57,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, OutputCaptureExtension.class})
 @WebMvcTest(controllers = ContractController.class)
 class ContractControllerTest {
 
@@ -432,6 +436,20 @@ class ContractControllerTest {
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(header().string("Access-Control-Allow-Origin", "*"))
                 .andExpect(header().string("Access-Control-Allow-Methods", "POST"));
+    }
+
+    @Test
+    @SneakyThrows
+    void handlesQueryTimeoutException(CapturedOutput capturedOutput) {
+        final var request = request();
+        given(service.processCall(any())).willThrow(new QueryTimeoutException("Query timeout"));
+
+        contractCall(request)
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().string(convert(new GenericErrorResponse("Service Unavailable"))));
+
+        var expected = "request: " + request;
+        assertThat(capturedOutput.getOut()).contains(expected);
     }
 
     private ContractCallRequest request() {
