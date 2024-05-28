@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.AccountBalanceRepository;
@@ -115,7 +116,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
                 entity.getType().equals(CONTRACT),
-                parseJkey(entity.getKey(), entity.getId(), entity.getType().equals(CONTRACT)),
+                parseJkey(entity),
                 entity.getCreatedTimestamp() != null
                         ? TimeUnit.SECONDS.convert(entity.getCreatedTimestamp(), TimeUnit.NANOSECONDS)
                         : 0L);
@@ -215,18 +216,21 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return Suppliers.memoize(() -> new TokenAccountBalances(allAggregated, positiveAggregated));
     }
 
-    private JKey parseJkey(byte[] keyBytes, Long entityId, boolean isContract) {
+    private JKey parseJkey(Entity entity) {
         try {
-            if (keyBytes == null) {
-                if (isContract) {
-                    return new JContractIDKey(
-                            ContractID.newBuilder().setContractNum(entityId).build());
-                }
-                return null;
-            } else {
+            final byte[] keyBytes = entity.getKey();
+            if (keyBytes != null) {
                 return asFcKeyUnchecked(Key.parseFrom(keyBytes));
             }
+            if (entity.getType() == EntityType.CONTRACT) {
+                return new JContractIDKey(ContractID.newBuilder()
+                        .setContractNum(entity.getNum())
+                        .setRealmNum(entity.getRealm())
+                        .setShardNum(entity.getShard())
+                        .build());
+            }
 
+            return null;
         } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
             return null;
         }
