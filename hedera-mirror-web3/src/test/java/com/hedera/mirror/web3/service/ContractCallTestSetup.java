@@ -1025,7 +1025,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         } else {
             sender = new HederaEvmAccount(SENDER_ADDRESS);
         }
-        persist();
+        persistEntities();
 
         return CallServiceParameters.builder()
                 .sender(sender)
@@ -1043,7 +1043,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected CallServiceParameters serviceParametersForTopLevelContractCreate(
             final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
         final var sender = new HederaEvmAccount(senderAddress);
-        persist();
+        persistEntities();
 
         final var callData = Bytes.wrap(functionEncodeDecoder.getContractBytes(contractInitCodePath));
         return CallServiceParameters.builder()
@@ -1069,9 +1069,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
             return result;
         });
-    }
-
-    protected void persist() {
     }
 
     protected void persistEntities() {
@@ -1343,7 +1340,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }
 
-    private void historicalBlocksPersist() {
+    protected void historicalBlocksPersist() {
         recordFileBeforeEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK - 1))
@@ -1363,9 +1360,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
     }
 
-    protected void historicalDataPersist2() {}
-
-    private void historicalDataPersist() {
+    protected void historicalDataPersist() {
         // Accounts
         final var ownerEntityId = ownerEntityPersistHistorical();
         final var senderEntityId = senderEntityPersistHistorical();
@@ -1975,7 +1970,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
-        domainBuilder
+        final var token = domainBuilder
                 .entity()
                 .customize(e -> e.id(tokenEntityId.getId())
                         .autoRenewAccountId(autoRenewEntityId.getId())

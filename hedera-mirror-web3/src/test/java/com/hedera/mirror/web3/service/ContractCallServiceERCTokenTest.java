@@ -320,7 +320,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }*/
 
     @Override
-    protected void historicalDataPersist2() {
+    protected void historicalDataPersist() {
         final var ownerEntityId = ownerEntityPersistHistorical();
         final var senderEntityId = senderEntityPersistHistorical();
         final var spenderEntityId = spenderEntityPersistHistorical();
@@ -378,11 +378,10 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     }
 
     @Override
-    protected void persist() {
+    protected void persistEntities() {
         genesisRecordFileForBlockHash =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         historicalBlocksPersist();
-        historicalDataPersist2();
         final var ownerEntityId = ownerEntityPersist();
         final var senderEntityId = senderEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
@@ -445,7 +444,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         feeSchedulesPersist();
     }
 
-    private void historicalBlocksPersist() {
+    @Override
+    protected void historicalBlocksPersist() {
         recordFileBeforeEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK - 1))
