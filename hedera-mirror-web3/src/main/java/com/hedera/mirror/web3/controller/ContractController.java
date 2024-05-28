@@ -79,12 +79,11 @@ class ContractController {
         }
 
         String result;
-        CallServiceParameters params = null;
         try {
             validateContractData(request);
             validateContractMaxGasLimit(request);
 
-            params = constructServiceParameters(request);
+            final var params = constructServiceParameters(request);
             result = contractCallService.processCall(params);
         } catch (QueryTimeoutException e) {
             log.error("Query timed out: {} request: {}", e.getMessage(), request);
