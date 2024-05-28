@@ -17,15 +17,15 @@
 package com.hedera.mirror.importer.addressbook;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import jakarta.annotation.Nonnull;
 import java.security.PublicKey;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * Represents a consensus node while abstracting away the possible different sources of node information.
  */
 public interface ConsensusNode extends Comparable<ConsensusNode> {
 
-    default int compareTo(@NotNull ConsensusNode other) {
+    default int compareTo(@Nonnull ConsensusNode other) {
         return Long.compare(getNodeId(), other.getNodeId());
     }
 

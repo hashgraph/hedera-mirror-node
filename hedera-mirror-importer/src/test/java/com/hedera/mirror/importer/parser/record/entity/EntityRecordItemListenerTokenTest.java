@@ -91,6 +91,7 @@ import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -3805,7 +3806,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(transactionRepository.findById(consensusTimestamp))
                 .get()
                 .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getNftTransfer)
-                .asList()
+                .asInstanceOf(InstanceOfAssertFactories.LIST)
                 .containsExactlyInAnyOrderElementsOf(Arrays.asList(nftTransfers));
     }
 

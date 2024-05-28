@@ -49,11 +49,19 @@ import lombok.NoArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.NotNull;
 
 @NoArgsConstructor
 @Named
 public class FunctionEncodeDecoder {
+    public static final String TRIPLE_ADDRESS_INT64S = "(address,address[],address[],int64[])";
+    public static final String ADDRESS_ADDRESS_ADDRESS_INT64 = "(address,address,address,int64)";
+    public static final String ADDRESS_ADDRESS_ADDRESS_UINT256_UINT256 = "(address,address,address,uint256,uint256)";
+    public static final String ADDRESS_ADDRESS_UINT256_UINT256 = "(address,address,uint256,uint256)";
+    public static final String TRANSFER_LIST_TOKEN_TRANSFER_LIST =
+            "(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])";
+    public static final String ADDRESS_ARRAY_OF_KEYS = "(address,(uint256,(bool,address,bytes,bytes,address))[])";
+    public static final String ADDRESS_ARRAY_OF_KEYS_KEY_TYPE =
+            "(address,(uint256,(bool,address,bytes,bytes,address))[],uint256)";
     private static final String ADDRESS_DUO = "(address,address)";
     private static final String ADDRESS_DUO_BOOL = "(address,address,bool)";
     private static final String INT = "(int256)";
@@ -62,7 +70,6 @@ public class FunctionEncodeDecoder {
     private static final String ADDRESS_UINT = "(address,uint256)";
     private static final String ADDRESS_DUO_UINT = "(address,address,uint256)";
     private static final String TRIPLE_ADDRESS_UINT = "(address,address,address,uint256)";
-    public static final String TRIPLE_ADDRESS_INT64S = "(address,address[],address[],int64[])";
     private static final String ADDRESS_INT64 = "(address,int64)";
     private static final String KEY_VALUE = "((bool,address,bytes,bytes,address))";
     private static final String CUSTOM_FEE = "(bytes,bytes,bytes)";
@@ -83,20 +90,12 @@ public class FunctionEncodeDecoder {
             "((string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)),(int64,address,bool,bool,address)[],(int64,int64,int64,address,bool,address)[])";
     private static final String ADDRESS_ARRAY_OF_ADDRESSES_ARRAY_OF_INT64 = "(address,address[],int64[])";
     private static final String UINT32_ADDRESS_UINT32 = "((uint32,address,uint32))";
-    public static final String ADDRESS_ADDRESS_ADDRESS_INT64 = "(address,address,address,int64)";
-    public static final String ADDRESS_ADDRESS_ADDRESS_UINT256_UINT256 = "(address,address,address,uint256,uint256)";
-    public static final String ADDRESS_ADDRESS_UINT256_UINT256 = "(address,address,uint256,uint256)";
     private static final String ADDRESS_TOKEN =
             "(address,(string,string,address,string,bool,int64,bool,(uint256,(bool,address,bytes,bytes,address))[],(int64,address,int64)))";
     private static final String ADDRESS_EXPIRY = "(address,(int64,address,int64))";
-    public static final String TRANSFER_LIST_TOKEN_TRANSFER_LIST =
-            "(((address,int64,bool)[]),(address,(address,int64,bool)[],(address,address,int64,bool)[])[])";
     private static final String ADDRESS_EXPIRY_V1 = "(address,(uint32,address,uint32))";
     private static final String EXPIRY = "(int64,address,int64)";
     private static final String EXPIRY_V1 = "(uint32,address,uint32)";
-    public static final String ADDRESS_ARRAY_OF_KEYS = "(address,(uint256,(bool,address,bytes,bytes,address))[])";
-    public static final String ADDRESS_ARRAY_OF_KEYS_KEY_TYPE =
-            "(address,(uint256,(bool,address,bytes,bytes,address))[],uint256)";
     private static final String TRIPLE_BOOL = "(bool,bool,bool)";
     private static final String INT256_INT64_INT64_ARRAY = "(int256,int64,int64[])";
     private static final String INT256_INT64 = "(int256,int64)";
@@ -324,7 +323,6 @@ public class FunctionEncodeDecoder {
                 convertAddress((Address) parameters[5]));
     }
 
-    @NotNull
     private Tuple encodeTokenInfo(Object[] parameters) {
         return Tuple.of(
                 encodeToken((TokenCreateWrapper) parameters[0]),

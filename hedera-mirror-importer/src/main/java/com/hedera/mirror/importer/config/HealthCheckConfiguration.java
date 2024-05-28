@@ -21,7 +21,7 @@ import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.ParserProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;

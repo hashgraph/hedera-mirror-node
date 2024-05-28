@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -327,7 +326,6 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 .persist();
     }
 
-    @NotNull
     private Pair<List<CryptoTransfer>, List<CryptoTransfer>> getCryptoTransfersPair(
             EntityId contractId,
             EntityId contractId2,
@@ -350,7 +348,6 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 thresholdTwoKeyEntity);
     }
 
-    @NotNull
     private Pair<List<TokenTransfer>, List<TokenTransfer>> getTokenTransfersPair(
             EntityId contractId,
             EntityId contractId2,
@@ -373,7 +370,6 @@ class SyntheticCryptoTransferApprovalMigrationTest extends ImporterIntegrationTe
                 thresholdTwoKeyEntity);
     }
 
-    @NotNull
     private Pair<List<NftTransfer>, List<NftTransfer>> getNftTransfersTransactionPair(
             EntityId contractId,
             EntityId contractId2,
