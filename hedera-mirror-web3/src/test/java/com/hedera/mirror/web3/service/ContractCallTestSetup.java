@@ -141,6 +141,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1269));
     protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1270));
     protected static final Address SELF_DESTRUCT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1278));
+    protected static final Address MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1279));
 
     // Account addresses
     protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
@@ -1084,6 +1085,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         pseudoRandomNumberGeneratorContractPersist();
         addressThisContractPersist();
         final var modificationContract = modificationContractPersist();
+        modificationWithoutKeyContractPersist();
         final var ercContract = ercContractPersist();
         final var nestedContractId = dynamicEthCallContractPresist();
         nestedEthCallsContractPersist();
@@ -2573,6 +2575,29 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(c -> c.id(modificationContractEntityId.getId()).runtimeBytecode(modificationContractBytes))
                 .persist();
         return modificationContractEntityId;
+    }
+
+    private void modificationWithoutKeyContractPersist() {
+        final var modificationContractBytes = functionEncodeDecoder.getContractBytes(MODIFICATION_CONTRACT_BYTES_PATH);
+        final var modificationWithoutKeyContractEntityId =
+                fromEvmAddress(MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var modificationWithoutKeyContractEvmAddress = toEvmAddress(modificationWithoutKeyContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(modificationWithoutKeyContractEntityId.getId())
+                        .num(modificationWithoutKeyContractEntityId.getNum())
+                        .evmAddress(modificationWithoutKeyContractEvmAddress)
+                        .key(null)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c ->
+                        c.id(modificationWithoutKeyContractEntityId.getId()).runtimeBytecode(modificationContractBytes))
+                .persist();
     }
 
     private EntityId ercContractPersist() {
