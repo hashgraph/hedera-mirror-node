@@ -448,30 +448,8 @@ class ContractControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(content().string(convert(new GenericErrorResponse("Service Unavailable"))));
 
-        var expected = "Params:  sender: " + request.getFrom() + " receiver: " + request.getTo() + " gas: "
-                + request.getGas() + " value: " + request.getValue() + " data: " + request.getData();
+        var expected = "request: " + request;
         assertThat(capturedOutput.getOut()).contains(expected);
-    }
-
-    @Test
-    @SneakyThrows
-    void handlesQueryTimeoutExceptionLargeData(CapturedOutput capturedOutput) {
-        final var request = request();
-        StringBuilder data = new StringBuilder("0x");
-        for (int i = 0; i < evmProperties.getMaxDataSize().toBytes() * 2; i++) {
-            data.append("a");
-        }
-        request.setData(data.toString());
-        given(service.processCall(any())).willThrow(new QueryTimeoutException("Query timeout"));
-
-        contractCall(request)
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(content().string(convert(new GenericErrorResponse("Service Unavailable"))));
-
-        var expected = "Params:  sender: " + request.getFrom() + " receiver: " + request.getTo() + " gas: "
-                + request.getGas() + " value: " + request.getValue();
-        assertThat(capturedOutput.getOut()).contains(expected);
-        assertThat(capturedOutput.getOut()).doesNotContain("data: " + data);
     }
 
     private ContractCallRequest request() {

@@ -87,28 +87,8 @@ class ContractController {
             params = constructServiceParameters(request);
             result = contractCallService.processCall(params);
         } catch (QueryTimeoutException e) {
-            final var paramsString = new StringBuilder();
-
-            if (params != null) {
-                if (params.getSender() != null) {
-                    paramsString.append(" sender: ").append(params.getSender().canonicalAddress());
-                }
-                paramsString
-                        .append(" receiver: ")
-                        .append(params.getReceiver())
-                        .append(" gas: ")
-                        .append(params.getGas())
-                        .append(" value: ")
-                        .append(params.getValue());
-
-                if (params.getCallData() != null
-                        && params.getCallData().size()
-                                < ((evmProperties.getMaxDataSize().toBytes()) * .75)) {
-                    paramsString.append(" data: ").append(params.getCallData().toHexString());
-                }
-            }
-
-            throw new QueryTimeoutException(e.getMessage() + " Params: " + paramsString);
+            log.error("Query timed out: {}", e.getMessage() + " request: " + request);
+            throw e;
         } catch (InvalidParametersException e) {
             // The validation failed but no processing was made - restore the consumed gas back to the bucket.
             gasLimitBucket.addTokens(request.getGas());
@@ -255,7 +235,6 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(SERVICE_UNAVAILABLE)
     private GenericErrorResponse queryTimeout(final QueryTimeoutException e) {
-        log.error("Query timed out: {}", e.getMessage());
         return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase());
     }
 
