@@ -35,6 +35,11 @@ class MetricsConfigurationTest extends ImporterIntegrationTest {
     private final MetricsConfiguration metricsConfiguration;
     private final DomainBuilder domainBuilder;
 
+    @Override
+    protected void reset() {
+        // Skip so we don't clear the metric
+    }
+
     @EnumSource(TableMetric.class)
     @ParameterizedTest
     void partitionedTable(TableMetric metric) {
