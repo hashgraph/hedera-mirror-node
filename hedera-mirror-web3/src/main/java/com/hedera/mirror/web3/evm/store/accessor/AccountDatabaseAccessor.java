@@ -38,11 +38,13 @@ import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.mirror.web3.utils.Suppliers;
+import com.hedera.services.jproto.JContractIDKey;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
 import java.util.Collections;
@@ -113,7 +115,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
                 entity.getType().equals(CONTRACT),
-                parseJkey(entity.getKey()),
+                parseJkey(entity.getKey(), entity.getId(), entity.getType().equals(CONTRACT)),
                 entity.getCreatedTimestamp() != null
                         ? TimeUnit.SECONDS.convert(entity.getCreatedTimestamp(), TimeUnit.NANOSECONDS)
                         : 0L);
@@ -213,9 +215,18 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return Suppliers.memoize(() -> new TokenAccountBalances(allAggregated, positiveAggregated));
     }
 
-    private JKey parseJkey(byte[] keyBytes) {
+    private JKey parseJkey(byte[] keyBytes, Long entityId, boolean isContract) {
         try {
-            return keyBytes == null ? null : asFcKeyUnchecked(Key.parseFrom(keyBytes));
+            if (keyBytes == null) {
+                if (isContract) {
+                    return new JContractIDKey(
+                            ContractID.newBuilder().setContractNum(entityId).build());
+                }
+                return null;
+            } else {
+                return asFcKeyUnchecked(Key.parseFrom(keyBytes));
+            }
+
         } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
             return null;
         }
