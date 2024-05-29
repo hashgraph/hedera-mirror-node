@@ -431,7 +431,7 @@ class ContractControllerTest {
                         .header("Origin", "http://example.com")
                         .header("Access-Control-Request-Method", "POST"))
                 .andExpect(header().string("Access-Control-Allow-Origin", "*"))
-                .andExpect(header().string("Access-Control-Allow-Methods", "POST"));
+                .andExpect(header().string("Access-Control-Allow-Methods", "GET,HEAD,POST"));
     }
 
     private ContractCallRequest request() {

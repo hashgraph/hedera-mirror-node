@@ -94,7 +94,7 @@ public class ContractCallService {
                     // if we have historical call then set corresponding file record
                     if (block != BlockType.LATEST) {
                         var recordFileOptional = recordFileService
-                                .findRecordFileByBlock(block)
+                                .findByBlockType(block)
                                 .orElseThrow(BlockNumberNotFoundException::new);
                         ctx.setRecordFile(recordFileOptional);
                     }

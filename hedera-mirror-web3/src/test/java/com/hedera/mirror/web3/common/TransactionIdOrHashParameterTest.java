@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.service.utils;
+package com.hedera.mirror.web3.common;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.mirror.web3.evm.utils.TransactionUtils;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.Test;
+import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -37,7 +35,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
-class TransactionUtilsTest {
+class TransactionIdOrHashParameterTest {
 
     private static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
 
@@ -61,28 +59,23 @@ class TransactionUtilsTest {
 
     @ParameterizedTest
     @MethodSource("provideEthHashes")
-    void testIsValidEthHash(String hash, boolean expected) {
-        assertEquals(expected, TransactionUtils.isValidEthHash(hash));
-    }
+    void testParseTransactionHash(String hash, boolean isValidHash) {
+        if (!isValidHash) {
+            assertThrows(InvalidParametersException.class, () -> TransactionIdOrHashParameter.valueOf(hash));
+            return;
+        }
 
-    @ParameterizedTest
-    @MethodSource("provideTransactionIds")
-    void testIsValidTransactionId(String transactionId, boolean expected) {
-        assertEquals(expected, TransactionUtils.isValidTransactionId(transactionId));
+        final var parameter = assertDoesNotThrow(() -> TransactionIdOrHashParameter.valueOf(hash));
+        assertNotNull(parameter);
+        assertInstanceOf(TransactionHashParameter.class, parameter);
+        assertEquals(Bytes.fromHexString(hash), ((TransactionHashParameter) parameter).hash());
     }
 
     @ParameterizedTest
     @MethodSource("provideTransactionIds")
     void testParseTransactionId(String transactionId, boolean isValidTransactionId) {
         if (!isValidTransactionId) {
-            final var expectedExceptionType = IllegalArgumentException.class;
-            final var expectedMessage = transactionId == null ?
-                    "Transaction ID cannot be null" :
-                    "Invalid Transaction ID. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds";
-
-            assertThatThrownBy(() -> TransactionUtils.parseTransactionId(transactionId))
-                    .isInstanceOf(expectedExceptionType)
-                    .hasMessageContaining(expectedMessage);
+            assertThrows(InvalidParametersException.class, () -> TransactionIdOrHashParameter.valueOf(transactionId));
             return;
         }
 
@@ -96,28 +89,15 @@ class TransactionUtilsTest {
         final long seconds = Long.parseLong(matcher.group(4));
         final int nanos = Integer.parseInt(matcher.group(5));
 
-        TransactionID parsedTransactionId = TransactionUtils.parseTransactionId(transactionId);
+        final var parameter = assertDoesNotThrow(() -> TransactionIdOrHashParameter.valueOf(transactionId));
+        assertNotNull(parameter);
+        assertInstanceOf(TransactionIdParameter.class, parameter);
 
-        assertEquals(shard, parsedTransactionId.getAccountID().getShardNum());
-        assertEquals(realm, parsedTransactionId.getAccountID().getRealmNum());
-        assertEquals(num, parsedTransactionId.getAccountID().getAccountNum());
-        assertEquals(seconds, parsedTransactionId.getTransactionValidStart().getSeconds());
-        assertEquals(nanos, parsedTransactionId.getTransactionValidStart().getNanos());
-    }
-
-    @Test
-    void assertUtilityClassWellDefined() throws NoSuchMethodException {
-        assertTrue(Modifier.isFinal(TransactionUtils.class.getModifiers()));
-        assertEquals(1, TransactionUtils.class.getDeclaredConstructors().length);
-
-        final Constructor<?> constructor = ((Class<?>) TransactionUtils.class).getDeclaredConstructor();
-        assertTrue(Modifier.isPrivate(constructor.getModifiers()));
-
-        final Stream<Method> methods = Arrays.stream(TransactionUtils.class.getDeclaredMethods());
-        assertTrue(methods.allMatch(m -> Modifier.isStatic(m.getModifiers())));
-
-        constructor.setAccessible(true);
-        assertThatThrownBy(constructor::newInstance)
-                .hasRootCauseInstanceOf(UnsupportedOperationException.class);
+        final var transactionIdParameter = ((TransactionIdParameter) parameter);
+        assertEquals(shard, transactionIdParameter.payerAccountId().getShard());
+        assertEquals(realm, transactionIdParameter.payerAccountId().getRealm());
+        assertEquals(num, transactionIdParameter.payerAccountId().getNum());
+        assertEquals(seconds, transactionIdParameter.validStart().getEpochSecond());
+        assertEquals(nanos, transactionIdParameter.validStart().getNano());
     }
 }
