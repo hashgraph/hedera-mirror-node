@@ -19,9 +19,9 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.*;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -47,6 +47,7 @@ public class CallServiceParametersBuilderImpl implements CallServiceParametersBu
     private final TransactionService transactionService;
     private final EthereumTransactionService ethereumTransactionService;
     private final RecordFileService recordFileService;
+    private final EntityService entityService;
 
     @Override
     @SneakyThrows
@@ -123,8 +124,12 @@ public class CallServiceParametersBuilderImpl implements CallServiceParametersBu
         } else {
             senderId = recordItem.getPayerAccountId();
         }
+        Entity entity = entityService.findById(senderId.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Entity not found"));
+        byte[] addressToReturn = Optional.ofNullable(entity.getEvmAddress())
+                .orElseThrow(() -> new NullPointerException("EVM address is null"));
 
-        return Address.fromHexString(Bytes.of(DomainUtils.toEvmAddress(senderId)).toHexString());
+        return Address.fromHexString(Bytes.of(addressToReturn).toHexString());
     }
 
     private Address getReceiverAddress(RecordItem recordItem) {
@@ -143,6 +148,7 @@ public class CallServiceParametersBuilderImpl implements CallServiceParametersBu
         }
         return Address.ZERO;
     }
+
 
     private Long getGasLimit(RecordItem recordItem) {
         return Optional.ofNullable(recordItem.getEthereumTransaction())
