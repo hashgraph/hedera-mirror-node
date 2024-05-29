@@ -56,8 +56,6 @@ spec:
     postgresql:
       enabled: false
     rest:
-      env:
-        HEDERA_MIRROR_REST_REDIS_ENABLED: "false"
       monitor:
         enabled: false
     test:
