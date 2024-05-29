@@ -2346,7 +2346,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .spender(spenderEntityId.getNum())
                         .amount(amount)
                         .amountGranted(amount)
-                        .timestampRange(Range.closedOpen(
+                        .timestampRange(Range.closed(
                                 recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
                 .persist();
     }
