@@ -126,21 +126,26 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
         long owner = 1L;
         long tokenId = 2L;
         long spenderId = 3L;
+        Range<Long> historyTimestampRange1 = Range.closedOpen(1L, 10L);
+        Range<Long> historyTimestampRange2 = Range.closedOpen(10L, 20L);
+
         final var allowanceHistory1 = domainBuilder
                 .tokenAllowanceHistory()
-                .customize(a -> a.owner(owner).tokenId(tokenId).spender(spenderId))
+                .customize(
+                        a -> a.owner(owner).tokenId(tokenId).spender(spenderId).timestampRange(historyTimestampRange1))
                 .persist();
 
         final var allowanceHistory2 = domainBuilder
                 .tokenAllowanceHistory()
-                .customize(a -> a.owner(owner).tokenId(tokenId).spender(spenderId))
+                .customize(
+                        a -> a.owner(owner).tokenId(tokenId).spender(spenderId).timestampRange(historyTimestampRange2))
                 .persist();
 
         final var latestTimestamp =
                 Math.max(allowanceHistory1.getTimestampLower(), allowanceHistory2.getTimestampLower());
 
         assertThat(repository
-                        .findByOwnerAndTimestamp(allowanceHistory1.getOwner(), latestTimestamp + 1)
+                        .findByOwnerAndTimestamp(owner, latestTimestamp + 1)
                         .get(0))
                 .returns(latestTimestamp, TokenAllowance::getTimestampLower);
     }
@@ -174,7 +179,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .amount(initialAmount)
                         .tokenId(tokenId)
                         .spender(spenderId + 1)
-                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                        .timestampRange(Range.open(tokenAllowanceTimestamp, tokenAllowanceTimestamp + 1000)))
                 .persist();
 
         final var tokenTransfer = domainBuilder
@@ -202,6 +207,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+
         assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(initialAmount + 2 * amountForTransfer, TokenAllowance::getAmount);
         assertThat(result.get(1)).returns(initialAmount, TokenAllowance::getAmount);
@@ -362,7 +368,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                         .amount(initialAmount)
                         .tokenId(tokenId)
                         .spender(spenderId + 1)
-                        .timestampRange(Range.atLeast(tokenAllowanceTimestamp)))
+                        .timestampRange(Range.open(tokenAllowanceTimestamp, tokenAllowanceTimestamp + 1000)))
                 .persist();
 
         final var tokenTransfer = domainBuilder
@@ -390,6 +396,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
+
         assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
         assertThat(result.get(1)).returns(initialAmount + amountForTransfer1, TokenAllowance::getAmount);
