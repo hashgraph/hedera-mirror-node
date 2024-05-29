@@ -26,9 +26,10 @@ public class ModelBuilder {
 
     private static final String DEFAULT_CONTRACT_CALL_BLOCK = "latest";
     private static final Boolean DEFAULT_CONTRACT_CALL_ESTIMATE = Boolean.FALSE;
-    private static final Long DEFAULT_CONTRACT_CALL_GAS = 15_000_000L;
+    private static final Long DEFAULT_CONTRACT_CALL_GAS = 3_000_000L;
     private static final Long DEFAULT_CONTRACT_CALL_GAS_PRICE = 100_000_000L;
     private static final Long DEFAULT_CONTRACT_CALL_VALUE = 0L;
+    private static final int DEFAULT_PERCENTAGE_OF_ACTUAL_GAS_USED = 30;
 
     public static ContractCallRequest contractCallRequest() {
         return new ContractCallRequest()
@@ -37,5 +38,12 @@ public class ModelBuilder {
                 .gas(DEFAULT_CONTRACT_CALL_GAS)
                 .gasPrice(DEFAULT_CONTRACT_CALL_GAS_PRICE)
                 .value(DEFAULT_CONTRACT_CALL_VALUE);
+    }
+
+    public static ContractCallRequest contractCallRequest(final int actualGasUsed) {
+        final Long calculatedContractCallGas = Math.round(actualGasUsed * (1 + (DEFAULT_PERCENTAGE_OF_ACTUAL_GAS_USED / 100.0)));
+        final ContractCallRequest contractCallRequest = contractCallRequest();
+        contractCallRequest.setGas(calculatedContractCallGas);
+        return contractCallRequest;
     }
 }
