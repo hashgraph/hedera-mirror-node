@@ -210,6 +210,7 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
                         from token_allowances ta
                     ) result
                     where amount > 0
+                    order by spender,token_id
                     """,
             nativeQuery = true)
     List<TokenAllowance> findByOwnerAndTimestamp(long owner, long blockTimestamp);

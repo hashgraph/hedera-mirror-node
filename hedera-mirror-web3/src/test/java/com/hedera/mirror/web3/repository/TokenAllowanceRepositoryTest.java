@@ -23,8 +23,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import java.util.Comparator;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
@@ -208,9 +206,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp).stream()
-                .sorted(Comparator.comparing(TokenAllowance::getTokenId).thenComparing(TokenAllowance::getSpender))
-                .collect(Collectors.toList());
+        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(initialAmount + 2 * amountForTransfer, TokenAllowance::getAmount);
@@ -399,9 +395,7 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
                                 .build()))
                 .persist();
 
-        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp).stream()
-                .sorted(Comparator.comparing(TokenAllowance::getTokenId).thenComparing(TokenAllowance::getSpender))
-                .collect(Collectors.toList());
+        var result = repository.findByOwnerAndTimestamp(allowance.getOwner(), blockTimestamp);
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0)).returns(initialAmount + amountForTransfer, TokenAllowance::getAmount);
