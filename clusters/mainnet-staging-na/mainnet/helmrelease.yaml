@@ -13,14 +13,14 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.105.0-rc2'
+      version: '0.106.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
   driftDetection:
     mode: warn
     ignore:
-      - paths: [""]
+      - paths: [ "" ]
         target:
           kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
   install:
