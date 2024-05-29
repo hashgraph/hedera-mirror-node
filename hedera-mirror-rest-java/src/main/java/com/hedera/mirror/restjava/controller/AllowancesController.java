@@ -68,7 +68,7 @@ public class AllowancesController {
     private final NftAllowanceMapper nftAllowanceMapper;
 
     @GetMapping(value = "/nfts")
-    NftAllowancesResponse getNftAllowancesByAccountId(
+    NftAllowancesResponse getNftAllowances(
             @PathVariable EntityIdParameter id,
             @RequestParam(name = ACCOUNT_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> accountIds,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
