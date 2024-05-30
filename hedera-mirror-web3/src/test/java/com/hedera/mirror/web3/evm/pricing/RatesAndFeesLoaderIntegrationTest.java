@@ -130,13 +130,32 @@ class RatesAndFeesLoaderIntegrationTest extends Web3IntegrationTest {
                         .consensusTimestamp(210L))
                 .persist();
 
-        var fileData = corrupt ? "corrupt".getBytes() : exchangeRatesSet2.toByteArray();
+        var exchangeSet2Bytes = exchangeRatesSet2.toByteArray();
+        var exchangeSet2Part1 = Arrays.copyOfRange(exchangeSet2Bytes, 0, 10);
+        var exchangeSet2Part2 = Arrays.copyOfRange(exchangeSet2Bytes, 10, 20);
+        var exchangeSet2Part3 = Arrays.copyOfRange(exchangeSet2Bytes, 20, exchangeSet2Bytes.length);
         domainBuilder
                 .fileData()
                 .customize(f -> f.transactionType(FILEUPDATE.getProtoId())
-                        .fileData(fileData)
+                        .fileData(exchangeSet2Part1)
                         .entityId(EXCHANGE_RATE_ENTITY_ID)
                         .consensusTimestamp(300L))
+                .persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.transactionType(FILEAPPEND.getProtoId())
+                        .fileData(exchangeSet2Part2)
+                        .entityId(EXCHANGE_RATE_ENTITY_ID)
+                        .consensusTimestamp(305L))
+                .persist();
+
+        var fileData = corrupt ? "corrupt".getBytes() : exchangeSet2Part3;
+        domainBuilder
+                .fileData()
+                .customize(f -> f.transactionType(FILEAPPEND.getProtoId())
+                        .fileData(fileData)
+                        .entityId(EXCHANGE_RATE_ENTITY_ID)
+                        .consensusTimestamp(310L))
                 .persist();
 
         var expected = corrupt ? exchangeRatesSet : exchangeRatesSet2;
@@ -173,13 +192,32 @@ class RatesAndFeesLoaderIntegrationTest extends Web3IntegrationTest {
                         .consensusTimestamp(210L))
                 .persist();
 
-        var fileData = corrupt ? "corrupt".getBytes() : feeSchedules2.toByteArray();
+        var feeSchedules2Bytes = feeSchedules2.toByteArray();
+        var feeSchedules2Part1 = Arrays.copyOfRange(feeSchedules2Bytes, 0, 10);
+        var feeSchedules2Part2 = Arrays.copyOfRange(feeSchedules2Bytes, 10, 20);
+        var feeSchedules2Part3 = Arrays.copyOfRange(feeSchedules2Bytes, 20, feeSchedules2Bytes.length);
         domainBuilder
                 .fileData()
                 .customize(f -> f.transactionType(FILEUPDATE.getProtoId())
-                        .fileData(fileData)
+                        .fileData(feeSchedules2Part1)
                         .entityId(FEE_SCHEDULE_ENTITY_ID)
                         .consensusTimestamp(300L))
+                .persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.transactionType(FILEAPPEND.getProtoId())
+                        .fileData(feeSchedules2Part2)
+                        .entityId(FEE_SCHEDULE_ENTITY_ID)
+                        .consensusTimestamp(305L))
+                .persist();
+
+        var fileData = corrupt ? "corrupt".getBytes() : feeSchedules2Part3;
+        domainBuilder
+                .fileData()
+                .customize(f -> f.transactionType(FILEAPPEND.getProtoId())
+                        .fileData(fileData)
+                        .entityId(FEE_SCHEDULE_ENTITY_ID)
+                        .consensusTimestamp(310L))
                 .persist();
 
         var expected = corrupt ? feeSchedules : feeSchedules2;

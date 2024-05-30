@@ -34,7 +34,6 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.util.CollectionUtils;
 
 /**
  * Rates and fees loader, currently working only with current timestamp.
@@ -87,8 +86,8 @@ public class RatesAndFeesLoader {
 
         // Fallback to an older version of the file if the current file cannot be parsed
         while (true) {
-            var file = fileDataRepository.getFileAtTimestamp(fileId, nanoSeconds);
-            var fileDataBytes = getBytesFromFileData(file);
+            var fileDataList = fileDataRepository.getFileAtTimestamp(fileId, nanoSeconds);
+            var fileDataBytes = getBytesFromFileData(fileDataList);
             try {
                 return parser.parse(fileDataBytes.toByteArray());
             } catch (InvalidProtocolBufferException e) {
@@ -103,7 +102,7 @@ public class RatesAndFeesLoader {
                         nanoSeconds,
                         retry,
                         e);
-                nanoSeconds = CollectionUtils.lastElement(file).getConsensusTimestamp() - 1;
+                nanoSeconds = fileDataList.getFirst().getConsensusTimestamp() - 1;
             }
         }
     }
