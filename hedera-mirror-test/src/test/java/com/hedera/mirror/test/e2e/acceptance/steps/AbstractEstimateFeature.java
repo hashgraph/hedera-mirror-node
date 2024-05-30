@@ -34,7 +34,7 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.HttpClientErrorException;
 
-abstract class AbstractEstimateFeature extends AbstractFeature {
+abstract class AbstractEstimateFeature extends BaseContractFeature {
 
     private static final int BASE_GAS_FEE = 21_000;
     private static final int ADDITIONAL_FEE_FOR_CREATE = 32_000;

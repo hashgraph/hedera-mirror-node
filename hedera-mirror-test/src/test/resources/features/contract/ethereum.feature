@@ -8,18 +8,18 @@ Feature: Ethereum transactions Coverage Feature
   Then validate the signer account and its balance
 
   Given I successfully create contract by Legacy ethereum transaction
-  Then the mirror node contract results API should return an accurate gas consumed
-  And the mirror node REST API should return status <httpStatusCode> for the eth contract creation transaction
+  Then the mirror node REST API should return status <httpStatusCode> for the eth contract creation transaction
+  And the mirror node contract results API should return an accurate gas consumed
   And the mirror node REST API should verify the deployed contract entity by eth call
 
   When I successfully call function using EIP-1559 ethereum transaction
-  Then the mirror node contract results API should return an accurate gas consumed
-  And the mirror node REST API should return status <httpStatusCode> for the ethereum transaction
+  Then the mirror node REST API should return status <httpStatusCode> for the ethereum transaction
+  And the mirror node contract results API should return an accurate gas consumed
   And the mirror node REST API should verify the ethereum called contract function
 
   Given I successfully call function using EIP-2930 ethereum transaction
-  Then the mirror node contract results API should return an accurate gas consumed
-  And the mirror node REST API should return status <httpStatusCode> for the ethereum transaction
+  Then the mirror node REST API should return status <httpStatusCode> for the ethereum transaction
+  And the mirror node contract results API should return an accurate gas consumed
   And the mirror node REST API should verify the ethereum called contract function
 
   Examples:

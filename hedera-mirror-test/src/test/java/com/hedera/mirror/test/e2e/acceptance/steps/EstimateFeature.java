@@ -800,10 +800,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
         IERC20_TOKEN_ASSOCIATE("associate()", 728033),
         IERC20_TOKEN_DISSOCIATE("dissociate()", 728033),
         CREATE_CHILD("createChild", 0),
-        GET_BYTE_CODE("getBytecode", 0),
-        GET_ADDRESS("getAddress", 0),
-        CREATE_2_DEPLOY("create2Deploy", 0),
-        VACATE_ADDRESS("vacateAddress", 0);
+        GET_BYTE_CODE("getBytecode", 0);
 
         private final String selector;
         private final int actualGas;

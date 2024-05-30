@@ -48,7 +48,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
-public class EthereumFeature extends BaseContractFeature {
+public class EthereumFeature extends AbstractEstimateFeature {
 
     @Autowired
     protected EthereumClient ethereumClient;
