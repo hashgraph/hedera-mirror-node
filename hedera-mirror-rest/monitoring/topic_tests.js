@@ -89,6 +89,53 @@ const checkSingleField = (elements, option) => {
 };
 
 /**
+ * Verifies /topics/:topicId
+ *
+ * @param {String} server API host endpoint
+ * @return {{url: String, passed: boolean, message: String}}
+ */
+const getTopicById = async (server) => {
+  let url = getUrl(server, `/topics/${topicId}`, {limit: resourceLimit});
+  let topic = await getAPIResponse(url, jsonRespKey);
+  const requiredParams = [
+    'admin_key',
+    'auto_renew_account',
+    'auto_renew_period',
+    'created_timestamp',
+    'deleted',
+    'memo',
+    'submit_key',
+    'timestamp',
+    'topic_id',
+  ];
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'topic is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements, limit) => `topic.length of ${elements.length} is less than limit ${limit}`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: requiredParams,
+      message: 'topic object is missing some mandatory fields',
+    })
+    .withCheckSpec(checkElementsOrder, {asc: true, key: 'consensus_timestamp', name: 'consensus timestamp'})
+    .withCheckSpec(checkSequenceNumberOrder, {asc: true})
+    .run(topic);
+
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: `Successfully called topics for ${topicId}`,
+  };
+};
+
+/**
  * Verifies /topics/:topicId/messages
  *
  * @param {String} server API host endpoint
@@ -313,6 +360,7 @@ const runTests = async (server, testResult) => {
 
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
+    runTest(getTopicById),
     runTest(getTopicMessages),
     runTest(getTopicMessagesBySequenceNumberFilter),
     runTest(getTopicMessagesByTopicIDAndSequenceNumberPath),

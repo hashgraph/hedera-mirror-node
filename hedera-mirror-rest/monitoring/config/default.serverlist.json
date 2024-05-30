@@ -33,7 +33,17 @@
     "intervalMultiplier": 1,
     "limit": 10
   },
+  "contract": {
+    "enabled": true,
+    "intervalMultiplier": 1,
+    "limit": 10
+  },
   "network": {
+    "enabled": true,
+    "intervalMultiplier": 1,
+    "limit": 2
+  },
+  "schedule": {
     "enabled": true,
     "intervalMultiplier": 1,
     "limit": 2
