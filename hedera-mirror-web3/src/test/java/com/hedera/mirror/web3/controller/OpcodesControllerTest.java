@@ -25,7 +25,7 @@ import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -98,6 +98,7 @@ import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -299,7 +300,7 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @EnumSource(TransactionProviderEnum.class)
-    void callRevertMethodAndExpectDetailMessage(final TransactionProviderEnum providerEnum) throws Exception {
+    void callThrowsExceptionAndExpectDetailMessage(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
         final var detailedErrorMessage = "Custom revert message";
@@ -310,12 +311,34 @@ class OpcodesControllerTest {
         when(contractCallService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
-        )).thenThrow(new MirrorEvmTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage, hexDataErrorMessage));
+        )).thenThrow(new MirrorEvmTransactionException(CONTRACT_EXECUTION_EXCEPTION, detailedErrorMessage, hexDataErrorMessage));
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isBadRequest())
                 .andExpect(responseBody(new GenericErrorResponse(
-                        CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage)));
+                        CONTRACT_EXECUTION_EXCEPTION.name(), detailedErrorMessage, hexDataErrorMessage)));
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void unsuccessfulCall(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        opcodesResultCaptor.set(new OpcodesProcessingResult(
+                HederaEvmTransactionProcessingResult.failed(
+                        1000L , 0, 2, Optional.of(Bytes.of("0x".getBytes())), Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR)),
+                List.of()
+        ));
+
+        reset(contractCallService);
+        when(contractCallService.processOpcodeCall(
+                callServiceParametersCaptor.capture(),
+                tracerOptionsCaptor.capture()
+        )).thenReturn(opcodesResultCaptor.get());
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
     }
 
     @ParameterizedTest
