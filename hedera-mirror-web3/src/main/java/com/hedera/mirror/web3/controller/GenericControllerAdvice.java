@@ -145,7 +145,6 @@ class GenericControllerAdvice {
 
     @ExceptionHandler
     private ResponseEntity<?> queryTimeoutError(final QueryTimeoutException e) {
-        log.error("Query timed out: {}", e.getMessage());
         return new ResponseEntity<>(
                 new GenericErrorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()),
                 SERVICE_UNAVAILABLE
