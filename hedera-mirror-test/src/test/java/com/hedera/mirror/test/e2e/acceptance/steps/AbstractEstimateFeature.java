@@ -19,18 +19,29 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.mirror.rest.model.ContractAction;
+import com.hedera.mirror.rest.model.ContractActionsResponse;
 import com.hedera.mirror.rest.model.ContractCallResponse;
+import com.hedera.mirror.rest.model.ContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
+import java.util.List;
 import java.util.Optional;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.client.HttpClientErrorException;
 
-abstract class AbstractEstimateFeature extends AbstractFeature {
+abstract class AbstractEstimateFeature extends BaseContractFeature {
+
+    private static final int BASE_GAS_FEE = 21_000;
+    private static final int ADDITIONAL_FEE_FOR_CREATE = 32_000;
 
     protected int lowerDeviation;
     protected int upperDeviation;
+    protected Object gasConsumedSelector;
 
     @Autowired
     protected MirrorNodeClient mirrorClient;
@@ -114,5 +125,67 @@ abstract class AbstractEstimateFeature extends AbstractFeature {
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(HttpClientErrorException.BadRequest.class);
+    }
+
+    protected void verifyGasConsumed(String txId) {
+        int totalGasFee;
+        try {
+            totalGasFee = calculateIntrinsicValue(gasConsumedSelector);
+        } catch (DecoderException e) {
+            throw new RuntimeException("Failed to decode hexadecimal string.", e);
+        }
+        var gasConsumed = getGasConsumedByTransactionId(txId);
+        var gasUsed = getGasFromActions(txId);
+        AssertionsForClassTypes.assertThat(gasConsumed).isEqualTo(gasUsed + totalGasFee);
+    }
+
+    /**
+     * Calculates the total intrinsic gas required for a given operation, taking into account the
+     * operation type and the data involved. This method adjusts the gas calculation based
+     * on the type of operation: contract creation (CREATE) operations, indicated by a hexadecimal
+     * string input, include an additional fee on top of the base gas fee. The intrinsic gas for
+     * the data payload is calculated by adding a specific gas amount for each byte in the payload,
+     * with different amounts for zero and non-zero bytes.
+     *
+     * @param data The operation data, which can be a hexadecimal string for CREATE operations or
+     *             a byte array for contract call operations.
+     * @return The total intrinsic gas calculated for the operation
+     * @throws DecoderException If the data parameter is a String and cannot be decoded from hexadecimal
+     *                          format, indicating an issue with the input format.
+     * @throws IllegalArgumentException If the data parameter is not an instance of String or byte[],
+     *                                  indicating that the provided data type is unsupported for gas
+     *                                  calculation in the context of this method and tests.
+     */
+    private int calculateIntrinsicValue(Object data) throws DecoderException {
+        int total = BASE_GAS_FEE;
+        byte[] values;
+        if (data instanceof String) {
+            values = Hex.decodeHex(((String) data).replaceFirst("0x", ""));
+            total += ADDITIONAL_FEE_FOR_CREATE;
+        } else if (data instanceof byte[]) {
+            values = (byte[]) data;
+        } else {
+            throw new IllegalArgumentException("Unsupported data type for gas calculation.");
+        }
+
+        // Calculates the intrinsic value by adding 4 for each 0 bytes and 16 for non-zero bytes
+        for (byte value : values) {
+            total += (value == 0) ? 4 : 16;
+        }
+        return total;
+    }
+
+    private long getGasFromActions(String transactionId) {
+        return Optional.ofNullable(mirrorClient.getContractResultActionsByTransactionId(transactionId))
+                .map(ContractActionsResponse::getActions)
+                .filter(actions -> !actions.isEmpty())
+                .map(List::getFirst)
+                .map(ContractAction::getGasUsed)
+                .orElse(0L); // Provide a default value in case any step results in null
+    }
+
+    private Long getGasConsumedByTransactionId(String transactionId) {
+        ContractResult contractResult = mirrorClient.getContractResultByTransactionId(transactionId);
+        return contractResult.getGasConsumed();
     }
 }

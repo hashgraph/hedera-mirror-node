@@ -17,6 +17,9 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOCREATEACCOUNT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PARENT_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.CREATE_CHILD;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.GET_BYTE_CODE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.hashgraph.sdk.AccountId;
@@ -39,12 +42,13 @@ import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Comparator;
+import java.util.Objects;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 @CustomLog
-public class EthereumFeature extends BaseContractFeature {
+public class EthereumFeature extends AbstractEstimateFeature {
 
     @Autowired
     protected EthereumClient ethereumClient;
@@ -101,7 +105,11 @@ public class EthereumFeature extends BaseContractFeature {
 
     @Given("I successfully create contract by Legacy ethereum transaction")
     public void createNewERCtestContract() {
-        deployedParentContract = ethereumContractCreate(ContractResource.PARENT_CONTRACT);
+        deployedParentContract = ethereumContractCreate(PARENT_CONTRACT);
+
+        gasConsumedSelector = Objects.requireNonNull(mirrorClient
+                .getContractInfo(deployedParentContract.contractId().toSolidityAddress())
+                .getBytecode());
     }
 
     @Then("the mirror node REST API should return status {int} for the eth contract creation transaction")
@@ -135,6 +143,8 @@ public class EthereumFeature extends BaseContractFeature {
                 parameters,
                 null,
                 EthTxData.EthTransactionType.EIP1559);
+
+        gasConsumedSelector = encodeDataToByteArray(PARENT_CONTRACT, CREATE_CHILD, BigInteger.valueOf(1000));
     }
 
     @Then("the mirror node REST API should verify the ethereum called contract function")
@@ -152,6 +162,14 @@ public class EthereumFeature extends BaseContractFeature {
         childContractBytecodeFromParent =
                 executeContractResult.contractFunctionResult().getBytes(0);
         assertThat(childContractBytecodeFromParent).isNotNull();
+
+        gasConsumedSelector = encodeDataToByteArray(PARENT_CONTRACT, GET_BYTE_CODE);
+    }
+
+    @Then("the mirror node contract results API should return an accurate gas consumed")
+    public void verifyGasConsumedIsCorrect() {
+        String txId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        verifyGasConsumed(txId);
     }
 
     public DeployedContract ethereumContractCreate(ContractResource contractResource) {
