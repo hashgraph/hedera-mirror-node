@@ -18,8 +18,10 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -55,18 +57,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith({SpringExtension.class, OutputCaptureExtension.class})
 @WebMvcTest(controllers = ContractController.class)
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
     private static final String ONE_BYTE_HEX = "80";
+    private static final long THROTTLE_GAS_LIMIT = 10_000_000L;
 
     @Resource
     private MockMvc mockMvc;
@@ -77,15 +83,19 @@ class ContractControllerTest {
     @MockBean
     private ContractCallService service;
 
-    @MockBean
-    private Bucket bucket;
+    @MockBean(name = "rateLimitBucket")
+    private Bucket rateLimitBucket;
+
+    @MockBean(name = "gasLimitBucket")
+    private Bucket gasLimitBucket;
 
     @Autowired
     private MirrorNodeEvmProperties evmProperties;
 
     @BeforeEach
     void setUp() {
-        given(bucket.tryConsume(1)).willReturn(true);
+        given(rateLimitBucket.tryConsume(1)).willReturn(true);
+        given(gasLimitBucket.tryConsume(THROTTLE_GAS_LIMIT)).willReturn(true);
     }
 
     @SneakyThrows
@@ -107,16 +117,18 @@ class ContractControllerTest {
     void estimateGas(String to) throws Exception {
         final var request = request();
         request.setEstimate(true);
+        request.setValue(0);
         request.setTo(to);
         contractCall(request).andExpect(status().isOk());
     }
 
-    @ValueSource(longs = {2000, -2000, Long.MAX_VALUE, 0})
+    @ValueSource(longs = {2000, -2000, 16_000_000L, 0})
     @ParameterizedTest
     void estimateGasWithInvalidGasParameter(long gas) throws Exception {
         final var errorString = gas < 21000L
                 ? numberErrorString("gas", "greater", 21000L)
                 : numberErrorString("gas", "less", 15_000_000L);
+        given(gasLimitBucket.tryConsume(gas)).willReturn(true);
         final var request = request();
         request.setEstimate(true);
         request.setGas(gas);
@@ -131,11 +143,25 @@ class ContractControllerTest {
             contractCall(request()).andExpect(status().isOk());
         }
 
-        given(bucket.tryConsume(1)).willReturn(false);
+        given(rateLimitBucket.tryConsume(1)).willReturn(false);
         contractCall(request()).andExpect(status().isTooManyRequests());
     }
 
-    @NullAndEmptySource
+    @Test
+    void exceedingGasLimit() throws Exception {
+        given(gasLimitBucket.tryConsume(THROTTLE_GAS_LIMIT)).willReturn(false);
+        contractCall(request()).andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    void restoreGasInThrottleBucketOnValidationFail() throws Exception {
+        var request = request();
+        request.setData("With invalid symbol!");
+        contractCall(request).andExpect(status().isBadRequest());
+        verify(gasLimitBucket).tryConsume(request.getGas());
+        verify(gasLimitBucket).addTokens(request.getGas());
+    }
+
     @ValueSource(
             strings = {
                 " ",
@@ -149,7 +175,17 @@ class ContractControllerTest {
     @ParameterizedTest
     void callInvalidTo(String to) throws Exception {
         final var request = request();
+        request.setValue(0);
         request.setTo(to);
+        contractCall(request)
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(new StringContains("to field")));
+    }
+
+    @Test
+    void callInvalidToDueToTransfer() throws Exception {
+        final var request = request();
+        request.setTo(null);
         contractCall(request)
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string(new StringContains("to field")));
@@ -200,7 +236,7 @@ class ContractControllerTest {
 
     @Test
     void exceedingDataCallSizeOnEstimate() throws Exception {
-        var error = "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters";
+        var error = "data field of size 262148 contains invalid hexadecimal characters or exceeds 262144 characters";
         final var request = request();
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
@@ -213,11 +249,12 @@ class ContractControllerTest {
 
     @Test
     void exceedingDataCreateSizeOnEstimate() throws Exception {
-        var error = "data field of size 51204 contains invalid hexadecimal characters or exceeds 51200 characters";
+        var error = "data field of size 262148 contains invalid hexadecimal characters or exceeds 262144 characters";
         final var request = request();
         final var dataAsHex =
                 ONE_BYTE_HEX.repeat((int) evmProperties.getMaxDataSize().toBytes() + 1);
         request.setTo(null);
+        request.setValue(0);
         request.setData("0x" + dataAsHex);
         request.setEstimate(true);
 
@@ -401,12 +438,26 @@ class ContractControllerTest {
                 .andExpect(header().string("Access-Control-Allow-Methods", "POST"));
     }
 
+    @Test
+    @SneakyThrows
+    void handlesQueryTimeoutException(CapturedOutput capturedOutput) {
+        final var request = request();
+        given(service.processCall(any())).willThrow(new QueryTimeoutException("Query timeout"));
+
+        contractCall(request)
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(content().string(convert(new GenericErrorResponse("Service Unavailable"))));
+
+        var expected = "request: " + request;
+        assertThat(capturedOutput.getOut()).contains(expected);
+    }
+
     private ContractCallRequest request() {
         final var request = new ContractCallRequest();
         request.setBlock(BlockType.LATEST);
         request.setData("0x1079023a");
         request.setFrom("0x00000000000000000000000000000000000004e2");
-        request.setGas(200000L);
+        request.setGas(THROTTLE_GAS_LIMIT);
         request.setGasPrice(78282329L);
         request.setTo("0x00000000000000000000000000000000000004e4");
         request.setValue(23);

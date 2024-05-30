@@ -35,7 +35,8 @@
   },
   "network": {
     "enabled": true,
-    "intervalMultiplier": 1
+    "intervalMultiplier": 1,
+    "limit": 2
   },
   "stateproof": {
     "enabled": true,

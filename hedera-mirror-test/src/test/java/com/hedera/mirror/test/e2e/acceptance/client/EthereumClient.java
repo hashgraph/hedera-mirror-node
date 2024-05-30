@@ -19,26 +19,34 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
 import com.esaulpaugh.headlong.util.Integers;
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.ContractExecuteTransaction;
+import com.hedera.hashgraph.sdk.ContractFunctionParameters;
+import com.hedera.hashgraph.sdk.ContractFunctionResult;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.EthereumTransaction;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.TransactionRecord;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.ethereum.EthTxData;
 import com.hedera.mirror.test.e2e.acceptance.util.ethereum.EthTxSigs;
 import jakarta.inject.Named;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import lombok.RequiredArgsConstructor;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tuweni.bytes.Bytes;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.support.RetryTemplate;
 
 @Named
 public class EthereumClient extends AbstractNetworkClient {
+    @Autowired
+    private AcceptanceTestProperties acceptanceTestProperties;
 
-    private final Collection<ContractId> contractIds = new CopyOnWriteArrayList<>();
-
-    private final HashMap<PrivateKey, Integer> accountNonce = new HashMap<>();
+    private final Map<PrivateKey, Integer> accountNonce = new ConcurrentHashMap<>();
 
     public EthereumClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
@@ -46,8 +54,8 @@ public class EthereumClient extends AbstractNetworkClient {
 
     @Override
     public void clean() {
-        // can't delete ethereum contracts, they are immutable
-        log.info("Deleting {} contracts", contractIds.size());
+        // Contracts created by ethereum transactions are immutable
+        log.info("Can't delete contracts created by ethereum transactions");
     }
 
     private final TupleType LONG_TUPLE = TupleType.parse("(int64)");
@@ -57,41 +65,34 @@ public class EthereumClient extends AbstractNetworkClient {
     }
 
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
-    private BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
-    private BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private final BigInteger maxFeePerGas = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
+    private final BigInteger gasPrice = WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(50L));
 
     public NetworkTransactionResponse createContract(
-            PrivateKey signerKey,
-            FileId fileId,
-            String fileContents,
-            long gas,
-            Hbar payableAmount,
-            ContractFunctionParameters contractFunctionParameters) {
+            PrivateKey signerKey, FileId fileId, String fileContents, long gas, Hbar payableAmount) {
 
         int nonce = getNonce(signerKey);
-        byte[] chainId = Integers.toBytes(298);
+        byte[] chainId = Integers.toBytes(acceptanceTestProperties.getNetwork().getChainId());
         byte[] maxPriorityGas = gasLongToBytes(20_000L);
         byte[] maxGas = gasLongToBytes(maxFeePerGas.longValueExact());
-        byte[] to = new byte[] {};
         BigInteger value = payableAmount != null
                 ? WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(payableAmount.toTinybars()))
                 : BigInteger.ZERO;
-        // FUTURE - construct bytecode with constructor arguments
+
         byte[] callData = Bytes.fromHexString(fileContents).toArray();
 
         var ethTxData = new EthTxData(
-                null,
-                EthTxData.EthTransactionType.EIP1559,
+                EthTxData.EthTransactionType.LEGACY_ETHEREUM,
                 chainId,
                 nonce,
                 gasLongToBytes(gasPrice.longValueExact()),
                 maxPriorityGas,
                 maxGas,
                 gas, // gasLimit
-                to, // to
+                ArrayUtils.EMPTY_BYTE_ARRAY, // to
                 value, // value
                 callData,
-                new byte[] {}, // accessList
+                ArrayUtils.EMPTY_BYTE_ARRAY, // accessList
                 0,
                 null,
                 null,
@@ -113,12 +114,10 @@ public class EthereumClient extends AbstractNetworkClient {
 
         TransactionRecord transactionRecord = getTransactionRecord(response.getTransactionId());
         logContractFunctionResult("constructor", transactionRecord.contractFunctionResult);
-        contractIds.add(contractId);
-        incrementNonce(signerKey);
         return response;
     }
 
-    public ExecuteContractResult executeContract(
+    public ContractClient.ExecuteContractResult executeContract(
             PrivateKey signerKey,
             ContractId contractId,
             long gas,
@@ -128,7 +127,7 @@ public class EthereumClient extends AbstractNetworkClient {
             EthTxData.EthTransactionType type) {
 
         int nonce = getNonce(signerKey);
-        byte[] chainId = Integers.toBytes(298);
+        byte[] chainId = Integers.toBytes(acceptanceTestProperties.getNetwork().getChainId());
         byte[] maxPriorityGas = gasLongToBytes(20_000L);
         byte[] maxGas = gasLongToBytes(maxFeePerGas.longValueExact());
         final var address = contractId.toSolidityAddress();
@@ -140,10 +139,11 @@ public class EthereumClient extends AbstractNetworkClient {
                 .getFunctionParameters()
                 .toByteArray();
 
-        BigInteger value = payableAmount != null ? payableAmount.getValue().toBigInteger() : BigInteger.ZERO;
+        BigInteger value = payableAmount != null
+                ? WEIBARS_TO_TINYBARS.multiply(BigInteger.valueOf(payableAmount.toTinybars()))
+                : BigInteger.ZERO;
 
         var ethTxData = new EthTxData(
-                null,
                 type,
                 chainId,
                 nonce,
@@ -154,7 +154,7 @@ public class EthereumClient extends AbstractNetworkClient {
                 to, // to
                 value, // value
                 callData,
-                new byte[] {}, // accessList
+                ArrayUtils.EMPTY_BYTE_ARRAY, // accessList
                 0,
                 null,
                 null,
@@ -171,8 +171,7 @@ public class EthereumClient extends AbstractNetworkClient {
         logContractFunctionResult(functionName, transactionRecord.contractFunctionResult);
 
         log.info("Called contract {} function {} via {}", contractId, functionName, response.getTransactionId());
-        incrementNonce(signerKey);
-        return new ExecuteContractResult(transactionRecord.contractFunctionResult, response);
+        return new ContractClient.ExecuteContractResult(transactionRecord.contractFunctionResult, response);
     }
 
     private void logContractFunctionResult(String functionName, ContractFunctionResult contractFunctionResult) {
@@ -188,38 +187,7 @@ public class EthereumClient extends AbstractNetworkClient {
                 contractFunctionResult.logs.size());
     }
 
-    @RequiredArgsConstructor
-    public enum NodeNameEnum {
-        CONSENSUS("consensus"),
-        MIRROR("mirror");
-
-        private final String name;
-
-        static Optional<NodeNameEnum> of(String name) {
-            try {
-                return Optional.ofNullable(name).map(NodeNameEnum::valueOf);
-            } catch (Exception e) {
-                return Optional.empty();
-            }
-        }
-    }
-
-    public String getClientAddress() {
-        return sdkClient.getClient().getOperatorAccountId().toSolidityAddress();
-    }
-
-    public record ExecuteContractResult(
-            ContractFunctionResult contractFunctionResult, NetworkTransactionResponse networkTransactionResponse) {}
-
     private Integer getNonce(PrivateKey accountKey) {
-        return accountNonce.getOrDefault(accountKey, 0);
-    }
-
-    private void incrementNonce(PrivateKey accountKey) {
-        if (accountNonce.containsKey(accountKey)) {
-            accountNonce.put(accountKey, accountNonce.get(accountKey) + 1);
-        } else {
-            accountNonce.put(accountKey, 1);
-        }
+        return accountNonce.merge(accountKey, 1, Math::addExact) - 1;
     }
 }

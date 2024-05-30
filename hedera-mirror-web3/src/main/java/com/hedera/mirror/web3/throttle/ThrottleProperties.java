@@ -14,20 +14,30 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.cache;
+package com.hedera.mirror.web3.throttle;
 
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-@Data
+@Setter
 @Validated
-@ConfigurationProperties(prefix = "hedera.mirror.rest-java.cache")
-public class CacheProperties {
+@ConfigurationProperties(prefix = "hedera.mirror.web3.throttle")
+public class ThrottleProperties {
 
-    private boolean enabled = true;
+    @Getter
+    @Min(100)
+    private long requestsPerSecond = 500;
 
-    @NotBlank
-    private String entity = "maximumSize=100000,expireAfterWrite=10s,recordStats";
+    @Getter
+    @Min(21_000)
+    private long gasPerSecond = 1_000_000_000L;
+
+    @Getter
+    @Min(0)
+    @Max(100)
+    private float gasLimitRefundPercent = 100;
 }

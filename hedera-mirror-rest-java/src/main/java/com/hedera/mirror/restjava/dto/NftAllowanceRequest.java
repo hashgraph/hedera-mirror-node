@@ -14,19 +14,30 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.exception;
+package com.hedera.mirror.restjava.dto;
 
-import java.io.Serial;
+import com.hedera.mirror.restjava.common.EntityIdParameter;
+import com.hedera.mirror.restjava.service.Bound;
+import lombok.Builder;
+import lombok.Data;
+import org.springframework.data.domain.Sort;
 
-@SuppressWarnings("java:S110")
-public class MismatchedTypeException extends RestJavaException {
+@Data
+@Builder
+public class NftAllowanceRequest {
 
-    private static final String MESSAGE = "Expected type %s but got %s";
+    private EntityIdParameter accountId;
 
-    @Serial
-    private static final long serialVersionUID = -1216734672367851011L;
+    @Builder.Default
+    private int limit = 25;
 
-    public MismatchedTypeException(Class<?> expected, Class<?> actual) {
-        super(MESSAGE.formatted(expected.getName(), actual.getName()));
-    }
+    @Builder.Default
+    private Sort.Direction order = Sort.Direction.ASC;
+
+    @Builder.Default
+    private boolean isOwner = true;
+
+    private Bound ownerOrSpenderIds;
+
+    private Bound tokenIds;
 }

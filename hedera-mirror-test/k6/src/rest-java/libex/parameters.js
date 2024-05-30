@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.common;
+const setupTestParameters = (requiredParameters) => {
+  const testParameters = {
+    BASE_URL_PREFIX: __ENV.BASE_URL_PREFIX,
+    DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_OWNER: __ENV['DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_OWNER'],
+    DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_SPENDER: __ENV['DEFAULT_ACCOUNT_ID_NFTS_ALLOWANCE_SPENDER'],
+    DEFAULT_LIMIT: __ENV['DEFAULT_LIMIT'],
+  };
+  console.info(`Test parameters - ${JSON.stringify(testParameters, null, '\t')}`);
+  return testParameters;
+};
 
-import org.jooq.Condition;
-import org.jooq.Field;
-
-public record Filter<T>(Field<T> field, RangeOperator operator, T value) {
-
-    public Condition getCondition() {
-        return operator.getFunction().apply(field, value);
-    }
-}
+export {setupTestParameters};

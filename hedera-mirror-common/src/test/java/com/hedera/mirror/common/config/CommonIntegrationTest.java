@@ -58,6 +58,9 @@ public abstract class CommonIntegrationTest {
         if (cacheManagers != null) {
             cacheManagers.forEach(this::resetCacheManager);
         }
+        if (meterRegistry != null) {
+            meterRegistry.clear();
+        }
     }
 
     protected final void resetCacheManager(CacheManager cacheManager) {

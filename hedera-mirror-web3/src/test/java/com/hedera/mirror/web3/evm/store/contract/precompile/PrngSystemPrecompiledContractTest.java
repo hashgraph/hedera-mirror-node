@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
@@ -86,6 +87,7 @@ class PrngSystemPrecompiledContractTest {
     void testComputePrngResult_Throws_InvalidTransactionException() {
         // Given low remaining gas
         given(frame.getRemainingGas()).willReturn(500L);
+        given(frame.getValue()).willReturn(Wei.ZERO);
 
         // When
         final var result = subject.computePrngResult(1000L, random256BitGeneratorInput(), frame);
@@ -96,6 +98,21 @@ class PrngSystemPrecompiledContractTest {
                 ExceptionalHaltReason.INVALID_OPERATION,
                 result.getLeft().getHaltReason().orElse(null));
         assertEquals(ResponseCodeEnum.INSUFFICIENT_GAS, result.getRight());
+    }
+
+    @Test
+    void testComputePrngResultWithValueThrowsInvalidTransactionException() {
+        given(frame.getValue()).willReturn(Wei.ONE);
+
+        // When
+        final var result = subject.computePrngResult(10L, random256BitGeneratorInput(), frame);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(
+                ExceptionalHaltReason.INVALID_OPERATION,
+                result.getLeft().getHaltReason().orElse(null));
+        assertEquals(ResponseCodeEnum.INVALID_FEE_SUBMITTED, result.getRight());
     }
 
     @Test
@@ -112,6 +129,7 @@ class PrngSystemPrecompiledContractTest {
         initialSetUp();
 
         given(frame.getBlockValues()).willReturn(new HederaBlockValues(10L, 123L, consensusNow));
+        given(frame.getValue()).willReturn(Wei.ZERO);
 
         final var response = subject.computePrngResult(10L, input, frame);
         assertEquals(Optional.empty(), response.getLeft().getHaltReason());

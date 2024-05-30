@@ -21,6 +21,7 @@ import static com.hedera.services.store.contracts.precompile.utils.PrecompilePri
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION_BODY;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
@@ -28,6 +29,8 @@ import com.hedera.services.contracts.execution.LivePricesSource;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.txns.util.PrngLogic;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import jakarta.annotation.Nonnull;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.Pair;
@@ -39,23 +42,19 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.precompile.AbstractPrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * This is a modified copy of the PRNGSystemPrecompiledContract class from the hedera-services repository.
- *
- * The main differences from the original version are as follows:
- * 1. The seed is generated based on the running hash of the latest record file retrieved from the database.
- * 2. The childRecord logic has been removed.
+ * <p>
+ * The main differences from the original version are as follows: 1. The seed is generated based on the running hash of
+ * the latest record file retrieved from the database. 2. The childRecord logic has been removed.
  */
 public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
-    private static final Logger log = LogManager.getLogger(PrngSystemPrecompiledContract.class);
-    private static final String PRECOMPILE_NAME = "PRNG";
-
     // random256BitGenerator(uint256)
     public static final int PSEUDORANDOM_SEED_GENERATOR_SELECTOR = 0xd83bf9a1;
     public static final String PRNG_PRECOMPILE_ADDRESS = "0x169";
-
+    private static final Logger log = LogManager.getLogger(PrngSystemPrecompiledContract.class);
+    private static final String PRECOMPILE_NAME = "PRNG";
     private final LivePricesSource livePricesSource;
     private final PrecompilePricingUtils pricingUtils;
     private final PrngLogic prngLogic;
@@ -79,7 +78,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
     }
 
     @Override
-    @NotNull
+    @Nonnull
     public PrecompileContractResult computePrecompile(final Bytes input, final MessageFrame frame) {
         gasRequirement =
                 calculateGas(Instant.ofEpochSecond(frame.getBlockValues().getTimestamp()));
@@ -91,6 +90,7 @@ public class PrngSystemPrecompiledContract extends AbstractPrecompiledContract {
             final long gasNeeded, final Bytes input, final MessageFrame frame) {
         try {
             validateTrue(input.size() >= 4, INVALID_TRANSACTION_BODY);
+            validateTrue(frame.getValue().getAsBigInteger().equals(BigInteger.ZERO), INVALID_FEE_SUBMITTED);
             validateTrue(frame.getRemainingGas() >= gasNeeded, INSUFFICIENT_GAS);
             final var randomNum = generatePseudoRandomData(input);
             return Pair.of(PrecompiledContract.PrecompileContractResult.success(randomNum), null);

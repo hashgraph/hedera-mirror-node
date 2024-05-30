@@ -16,29 +16,16 @@
 
 package com.hedera.mirror.restjava.repository;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 @RequiredArgsConstructor
- class EntityRepositoryTest extends RestJavaIntegrationTest {
+class EntityRepositoryTest extends RestJavaIntegrationTest {
 
     private final EntityRepository entityRepository;
-
-    @Test
-    void exists() {
-        var entity = domainBuilder.entity().persist();
-        var entityDeleted =
-                domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
-        var entityDeletedNull =
-                domainBuilder.entity().customize((b) -> b.deleted(null)).persist();
-
-        assertThat(entityRepository.existsById(entity.getId())).isTrue();
-        assertThat(entityRepository.existsById(entityDeleted.getId())).isFalse();
-        assertThat(entityRepository.existsById(entityDeletedNull.getId())).isFalse();
-    }
 
     @Test
     void findByAlias() {
@@ -70,5 +57,11 @@ import static org.assertj.core.api.Assertions.assertThat;
         assertThat(entityRepository.findByEvmAddress(new byte[] {1, 2, 3})).isEmpty();
         assertThat(entityRepository.findByEvmAddress(entityDeletedNull.getEvmAddress()))
                 .isEmpty();
+    }
+
+    @Test
+    void findById() {
+        var entity = domainBuilder.entity().persist();
+        assertThat(entityRepository.findById(entity.getId())).get().isEqualTo(entity);
     }
 }

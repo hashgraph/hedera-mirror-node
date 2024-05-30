@@ -18,6 +18,7 @@ package com.hedera.mirror.importer.parser.domain;
 
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
+import static com.hedera.mirror.common.domain.transaction.RecordFile.HAPI_VERSION_0_49_0;
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
@@ -256,7 +257,7 @@ public class RecordItemBuilder {
         ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
                 .setAmount(5_000L)
                 .setContractID(contractId)
-                .setFunctionParameters(bytes(64))
+                .setFunctionParameters(nonZeroBytes(64))
                 .setGas(10_000L);
 
         return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
@@ -779,7 +780,8 @@ public class RecordItemBuilder {
                 .setToken(tokenId())
                 .setTreasury(accountId())
                 .setWipeKey(key());
-        return new Builder<>(TransactionType.TOKENUPDATE, transactionBody);
+        return new Builder<>(TransactionType.TOKENUPDATE, transactionBody)
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_49_0));
     }
 
     public Builder<TokenCreateTransactionBody.Builder> tokenCreate() {
@@ -804,6 +806,7 @@ public class RecordItemBuilder {
                 .addCustomFees(customFee(FIXED_FEE))
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENCREATION, transactionBody)
+                .recordItem(r -> r.hapiVersion(HAPI_VERSION_0_49_0))
                 .receipt(r -> r.setTokenID(tokenId))
                 .record(r -> r.addAutomaticTokenAssociations(
                         TokenAssociation.newBuilder().setAccountId(treasury).setTokenId(tokenId)));
@@ -847,6 +850,16 @@ public class RecordItemBuilder {
 
     public ByteString bytes(int length) {
         byte[] bytes = randomBytes(length);
+        return ByteString.copyFrom(bytes);
+    }
+
+    public ByteString nonZeroBytes(int length) {
+        byte[] bytes = randomBytes(length);
+        for (int i = 0; i < length; i++) {
+            if (bytes[i] == 0) {
+                bytes[i] = (byte) random.nextInt(1, Byte.MAX_VALUE);
+            }
+        }
         return ByteString.copyFrom(bytes);
     }
 

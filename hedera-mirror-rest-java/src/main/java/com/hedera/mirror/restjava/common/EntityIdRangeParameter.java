@@ -17,25 +17,32 @@
 package com.hedera.mirror.restjava.common;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import org.jooq.tools.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 public record EntityIdRangeParameter(RangeOperator operator, EntityId value) implements RangeParameter<EntityId> {
 
     public static final EntityIdRangeParameter EMPTY = new EntityIdRangeParameter(null, null);
 
     public static EntityIdRangeParameter valueOf(String entityIdRangeParam) {
-
         if (StringUtils.isBlank(entityIdRangeParam)) {
             return EMPTY;
         }
 
-        String[] splitVal = entityIdRangeParam.split(":");
-
+        var splitVal = entityIdRangeParam.split(":");
         return switch (splitVal.length) {
             case 1 -> new EntityIdRangeParameter(RangeOperator.EQ, EntityId.of(splitVal[0]));
             case 2 -> new EntityIdRangeParameter(RangeOperator.of(splitVal[0]), EntityId.of(splitVal[1]));
             default -> throw new IllegalArgumentException(
                     "Invalid range operator %s. Should have format rangeOperator:Id".formatted(entityIdRangeParam));
         };
+    }
+
+    // Considering EQ in the same category as GT,GTE as an assumption
+    public boolean hasLowerBound() {
+        return operator == RangeOperator.GT || operator == RangeOperator.GTE || operator == RangeOperator.EQ;
+    }
+
+    public boolean hasUpperBound() {
+        return operator == RangeOperator.LT || operator == RangeOperator.LTE;
     }
 }

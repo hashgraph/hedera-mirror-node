@@ -17,7 +17,8 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.ContractCallService.GAS_METRIC;
+import static com.hedera.mirror.web3.service.ContractCallService.GAS_LIMIT_METRIC;
+import static com.hedera.mirror.web3.service.ContractCallService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
@@ -27,12 +28,25 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.INCLUDE;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
+import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import io.github.bucket4j.Bucket;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -45,8 +59,28 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
 
 class ContractCallServiceTest extends ContractCallTestSetup {
+
+    @Mock
+    private Bucket gasLimitBucket;
+
+    @Autowired
+    private BinaryGasEstimator binaryGasEstimator;
+
+    @Autowired
+    private Store store;
+
+    @Autowired
+    private MirrorEvmTxProcessor mirrorEvmTxProcessor;
+
+    @Autowired
+    private RecordFileRepository recordFileRepository;
+
+    @Autowired
+    private ThrottleProperties throttleProperties;
 
     static Stream<BlockType> provideBlockTypes() {
         return Stream.of(
@@ -66,6 +100,14 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                         true));
     }
 
+    private static Stream<Arguments> ercPrecompileCallTypeArgumentsProvider() {
+        List<Long> gasLimits = List.of(15_000_000L, 30_000L);
+
+        return Arrays.stream(CallType.values())
+                .filter(callType -> !callType.equals(ERROR))
+                .flatMap(callType -> gasLimits.stream().map(gasLimit -> Arguments.of(callType, gasLimit)));
+    }
+
     @BeforeEach
     void setup() {
         // reset gas metrics
@@ -81,6 +123,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
@@ -96,6 +139,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
@@ -122,6 +166,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
             assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
             assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
         }
+
+        assertGasLimit(serviceParameters);
     }
 
     @ParameterizedTest
@@ -151,6 +197,8 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
             }
         }
+
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -172,6 +220,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThrows(BlockNumberOutOfRangeException.class, () -> {
             contractCallService.processCall(serviceParameters);
         });
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -187,6 +236,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
@@ -200,6 +250,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -216,6 +267,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
@@ -231,6 +283,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -242,6 +295,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
@@ -259,19 +313,21 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var isSuccessful = contractCallService.processCall(serviceParameters);
         assertThat(isSuccessful).isEqualTo(expectedBalance);
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
     @Test
     void balanceCallToSystemAccountReturnsZero() {
         // getAccountBalance(address)
-        final var balanceCall = "0x93423e9c000000000000000000000000" + SENDER_ADDRESS.toUnprefixedHexString();
+        final var balanceCall = "0x93423e9c000000000000000000000000" + SYSTEM_ACCOUNT_ADDRESS.toUnprefixedHexString();
         final var expectedBalance = "0x0000000000000000000000000000000000000000000000000000000000000000";
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         final var result = contractCallService.processCall(serviceParameters);
         assertThat(result).isEqualTo(expectedBalance);
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -284,6 +340,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         final var result = contractCallService.processCall(serviceParameters);
         assertThat(Long.parseLong(result.substring(2), 16)).isNotZero();
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -298,6 +355,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -317,6 +375,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .hasFieldOrPropertyWithValue(
                         "data",
                         "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000");
+        assertGasLimit(serviceParameters);
     }
 
     @ParameterizedTest
@@ -334,6 +393,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name())
                 .hasFieldOrPropertyWithValue("detail", revertFunctions.errorDetail)
                 .hasFieldOrPropertyWithValue("data", revertFunctions.errorData);
+        assertGasLimit(serviceParameters);
     }
 
     @ParameterizedTest
@@ -347,6 +407,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 functionHash, evm46ValidationCalls.contractAddress, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
+        assertGasLimit(serviceParameters);
     }
 
     @ParameterizedTest
@@ -362,14 +423,15 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 functionHash, INTERNAL_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
+        assertGasLimit(serviceParameters);
     }
 
     @Test
     void nonExistingFunctionCall() {
-
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString("1ab4f82c"), ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -385,6 +447,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .hasMessage("CONTRACT_REVERT_EXECUTED")
                 .hasFieldOrPropertyWithValue("data", "0x");
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
     }
 
@@ -395,6 +458,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -404,6 +468,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -414,6 +479,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 Bytes.fromHexString(transferHbarsInput), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L, BlockType.LATEST);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -434,6 +500,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
@@ -451,6 +518,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
@@ -473,6 +541,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
@@ -489,6 +558,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
                 .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
     }
 
@@ -504,7 +574,21 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
+    void ethCallForContractDeploy() {
+        final var serviceParameters = serviceParametersForTopLevelContractCreate(
+                ADDRESS_THIS_CONTRACT_INIT_BYTES_PATH, ETH_CALL, SENDER_ADDRESS);
+
+        String result = contractCallService.processCall(serviceParameters);
+
+        assertGasLimit(serviceParameters);
+        assertThat(result)
+                .isEqualTo(Bytes.wrap(functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_BYTES_PATH))
+                        .toHexString());
     }
 
     @Test
@@ -517,6 +601,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(contractCallService.processCall(serviceParameters))
                 .isEqualTo(
                         "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000046976616e00000000000000000000000000000000000000000000000000000000");
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -529,6 +614,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(contractCallService.processCall(serviceParameters))
                 .isEqualTo(
                         "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000086976616e6976616e000000000000000000000000000000000000000000000000");
+        assertGasLimit(serviceParameters);
     }
 
     @Test
@@ -544,6 +630,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x" + stateChange);
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
@@ -560,7 +647,94 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
+        assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = CallType.class,
+            names = {"ETH_CALL", "ETH_ESTIMATE_GAS"},
+            mode = INCLUDE)
+    void ercPrecompileExceptionalHaltReturnsExpectedGasToBucket(final CallType callType) {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "approve", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L);
+        final var serviceParameters =
+                serviceParametersForExecution(functionHash, Address.ZERO, callType, 100L, BlockType.LATEST);
+        final var expectedUsedGasByThrottle =
+                (long) (serviceParameters.getGas() * throttleProperties.getGasLimitRefundPercent() / 100f);
+        final var contractCallServiceWithMockedGasLimitBucket = new ContractCallService(
+                meterRegistry,
+                binaryGasEstimator,
+                store,
+                mirrorEvmTxProcessor,
+                recordFileRepository,
+                throttleProperties,
+                gasLimitBucket);
+
+        try {
+            contractCallServiceWithMockedGasLimitBucket.processCall(serviceParameters);
+        } catch (MirrorEvmTransactionException e) {
+            // Ignore as this is not what we want to verify here.
+        }
+        verify(gasLimitBucket).addTokens(expectedUsedGasByThrottle);
+        verify(gasLimitBucket, times(1)).addTokens(anyLong());
+    }
+
+    @ParameterizedTest
+    @MethodSource("ercPrecompileCallTypeArgumentsProvider")
+    void ercPrecompileContractRevertReturnsExpectedGasToBucket(final CallType callType, final long gasLimit) {
+        final var tokenNameCall = "0x6f0fccab0000000000000000000000000000000000000000000000000000000000000416";
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(tokenNameCall), ETH_CALL_CONTRACT_ADDRESS, callType, 0, BlockType.LATEST, gasLimit);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+        final var gasLimitToRestoreBaseline =
+                (long) (serviceParameters.getGas() * throttleProperties.getGasLimitRefundPercent() / 100f);
+        final var expectedUsedGasByThrottle = Math.min(gasLimit - expectedGasUsed, gasLimitToRestoreBaseline);
+        final var contractCallServiceWithMockedGasLimitBucket = new ContractCallService(
+                meterRegistry,
+                binaryGasEstimator,
+                store,
+                mirrorEvmTxProcessor,
+                recordFileRepository,
+                throttleProperties,
+                gasLimitBucket);
+
+        try {
+            contractCallServiceWithMockedGasLimitBucket.processCall(serviceParameters);
+        } catch (MirrorEvmTransactionException e) {
+            // Ignore as this is not what we want to verify here.
+        }
+        verify(gasLimitBucket).addTokens(expectedUsedGasByThrottle);
+        verify(gasLimitBucket, times(1)).addTokens(anyLong());
+    }
+
+    @ParameterizedTest
+    @MethodSource("ercPrecompileCallTypeArgumentsProvider")
+    void ercPrecompileSuccessReturnsExpectedGasToBucket(final CallType callType, final long gasLimit) {
+        final var tokenNameCall = "0x019848920000000000000000000000000000000000000000000000000000000000000416";
+        final var serviceParameters = serviceParametersForExecution(
+                Bytes.fromHexString(tokenNameCall), ERC_CONTRACT_ADDRESS, callType, 0, BlockType.LATEST, gasLimit);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+        final var gasLimitToRestoreBaseline =
+                (long) (serviceParameters.getGas() * throttleProperties.getGasLimitRefundPercent() / 100f);
+        final var expectedUsedGasByThrottle = Math.min(gasLimit - expectedGasUsed, gasLimitToRestoreBaseline);
+        final var contractCallServiceWithMockedGasLimitBucket = new ContractCallService(
+                meterRegistry,
+                binaryGasEstimator,
+                store,
+                mirrorEvmTxProcessor,
+                recordFileRepository,
+                throttleProperties,
+                gasLimitBucket);
+
+        try {
+            contractCallServiceWithMockedGasLimitBucket.processCall(serviceParameters);
+        } catch (MirrorEvmTransactionException e) {
+            // Ignore as this is not what we want to verify here.
+        }
+        verify(gasLimitBucket).addTokens(expectedUsedGasByThrottle);
+        verify(gasLimitBucket, times(1)).addTokens(anyLong());
     }
 
     @ParameterizedTest
@@ -580,7 +754,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     private double getGasUsedBeforeExecution(final CallType callType) {
-        final var callCounter = meterRegistry.find(GAS_METRIC).counters().stream()
+        final var callCounter = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst();
 
@@ -593,13 +767,22 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     }
 
     private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {
-        final var afterExecution = meterRegistry.find(GAS_METRIC).counters().stream()
+        final var counter = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst()
                 .get();
 
-        final var gasConsumed = afterExecution.count() - gasUsedBeforeExecution;
+        final var gasConsumed = counter.count() - gasUsedBeforeExecution;
         assertThat(gasConsumed).isPositive();
+    }
+
+    private void assertGasLimit(CallServiceParameters parameters) {
+        final var counter = meterRegistry.find(GAS_LIMIT_METRIC).counters().stream()
+                .filter(c -> parameters.getCallType().name().equals(c.getId().getTag("type")))
+                .findFirst()
+                .get();
+
+        assertThat(counter.count()).isEqualTo(parameters.getGas());
     }
 
     @RequiredArgsConstructor

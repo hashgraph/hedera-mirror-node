@@ -66,22 +66,33 @@ import org.springframework.web.server.ServerWebInputException;
 @RestController
 class ContractController {
     private final ContractCallService contractCallService;
-    private final Bucket bucket;
+    private final Bucket rateLimitBucket;
+    private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties evmProperties;
 
     @CrossOrigin(origins = "*")
     @PostMapping(value = "/call")
     ContractCallResponse call(@RequestBody @Valid ContractCallRequest request) {
 
-        if (!bucket.tryConsume(1)) {
+        if (!rateLimitBucket.tryConsume(1) || !gasLimitBucket.tryConsume(request.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
 
-        validateContractData(request);
-        validateContractMaxGasLimit(request);
+        String result;
+        try {
+            validateContractData(request);
+            validateContractMaxGasLimit(request);
 
-        final var params = constructServiceParameters(request);
-        final var result = contractCallService.processCall(params);
+            final var params = constructServiceParameters(request);
+            result = contractCallService.processCall(params);
+        } catch (QueryTimeoutException e) {
+            log.error("Query timed out: {} request: {}", e.getMessage(), request);
+            throw e;
+        } catch (InvalidParametersException e) {
+            // The validation failed but no processing was made - restore the consumed gas back to the bucket.
+            gasLimitBucket.addTokens(request.getGas());
+            throw e;
+        }
 
         return new ContractCallResponse(result);
     }
@@ -92,9 +103,9 @@ class ContractController {
 
         Address receiver;
 
-        /*When performing estimateGas with an empty "to" field, we set a default value of the zero address
+        /*In case of an empty "to" field, we set a default value of the zero address
         to avoid any potential NullPointerExceptions throughout the process.*/
-        if ((request.getTo() == null || request.getTo().isEmpty()) && request.isEstimate()) {
+        if (request.getTo() == null || request.getTo().isEmpty()) {
             receiver = Address.ZERO;
         } else {
             receiver = Address.fromHexString(request.getTo());
@@ -223,7 +234,6 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(SERVICE_UNAVAILABLE)
     private GenericErrorResponse queryTimeout(final QueryTimeoutException e) {
-        log.error("Query timed out: {}", e.getMessage());
         return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase());
     }
 

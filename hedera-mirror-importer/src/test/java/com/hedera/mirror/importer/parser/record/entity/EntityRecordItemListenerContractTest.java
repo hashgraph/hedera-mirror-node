@@ -138,6 +138,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     }
                     b.clearAutoRenewAccountId()
                             .setDeclineReward(true)
+                            .setMaxAutomaticTokenAssociations(-1)
                             .setStakedAccountId(AccountID.newBuilder()
                                     .setAccountNum(domainBuilder.id())
                                     .build());
@@ -156,7 +157,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractEntity(recordItem),
                 () -> assertThat(entityRepository.findById(entityId.getId()))
                         .get()
-                        .returns(1L, Entity::getEthereumNonce),
+                        .returns(1L, Entity::getEthereumNonce)
+                        .returns(-1, Entity::getMaxAutomaticTokenAssociations),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertContractCreateResult(transactionBody, record),
                 () -> assertContractStateChanges(recordItem),
@@ -260,6 +262,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .get()
                         .returns(2L, Entity::getEthereumNonce));
     }
+
     // Issue #5637 caused by an invalid receipt.ContractID sent by consensus nodes in testnet.
     @Test
     void contractCreateWithInvalidId() {

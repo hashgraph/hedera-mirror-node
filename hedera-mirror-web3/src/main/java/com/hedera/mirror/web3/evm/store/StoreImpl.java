@@ -18,8 +18,12 @@ package com.hedera.mirror.web3.evm.store;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateFalse;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_WAS_DELETED;
 
 import com.google.protobuf.ByteString;
@@ -34,9 +38,12 @@ import com.hedera.services.store.models.NftId;
 import com.hedera.services.store.models.Token;
 import com.hedera.services.store.models.TokenRelationship;
 import com.hedera.services.store.models.UniqueToken;
+import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
@@ -49,8 +56,11 @@ public class StoreImpl implements Store {
 
     private final StackedStateFrames stackedStateFrames;
 
-    public StoreImpl(final StackedStateFrames stackedStateFrames) {
+    private final OptionValidator validator;
+
+    public StoreImpl(final StackedStateFrames stackedStateFrames, final OptionValidator validator) {
         this.stackedStateFrames = stackedStateFrames;
+        this.validator = validator;
     }
 
     @Override
@@ -289,12 +299,40 @@ public class StoreImpl implements Store {
     }
 
     /**
+     * Returns a {@link Account} model with loaded account from the state and throws the given code if an exception
+     * occurs due to an invalid account.
+     *
+     * @param evmAddress of the account to load
+     * @param code       the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
+     * @return a usable model of the account if available
+     */
+    @Override
+    public Account loadAccountOrFailWith(final Address evmAddress, @Nullable ResponseCodeEnum code) {
+        final var account = getAccount(evmAddress, OnMissing.DONT_THROW);
+        validateUsable(account, code, INVALID_ACCOUNT_ID, ACCOUNT_DELETED);
+        return account;
+    }
+
+    private void validateUsable(
+            final Account account,
+            @Nullable final ResponseCodeEnum explicitResponse,
+            final ResponseCodeEnum nonExistingCode,
+            final ResponseCodeEnum deletedCode) {
+        validateTrue(account != null, explicitResponse != null ? explicitResponse : nonExistingCode);
+        validateFalse(account.isDeleted(), explicitResponse != null ? explicitResponse : deletedCode);
+        final var expiryStatus =
+                validator.expiryStatusGiven(this, accountIdFromEvmAddress(account.getAccountAddress()));
+        validateTrue(expiryStatus == OK, expiryStatus);
+    }
+
+    /**
      * Returns a {@link Token} model with loaded unique tokens
      *
      * @param token         the token model, on which to load the unique tokens
      * @param serialNumbers the serial numbers to load
-     * @throws com.hedera.node.app.service.evm.exceptions.InvalidTransactionException if the requested token class is missing, deleted, or
-     *                                                                                expired and pending removal
+     * @throws com.hedera.node.app.service.evm.exceptions.InvalidTransactionException if the requested token class is
+     *                                                                                missing, deleted, or expired and
+     *                                                                                pending removal
      */
     public Token loadUniqueTokens(final Token token, final List<Long> serialNumbers) {
         final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
@@ -307,8 +345,8 @@ public class StoreImpl implements Store {
     }
 
     /**
-     * Returns a {@link UniqueToken} model of the requested unique token, with operations that can
-     * be used to implement business logic in a transaction.
+     * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to implement
+     * business logic in a transaction.
      *
      * @param tokenId   TokenId of the NFT
      * @param serialNum Serial number of the NFT

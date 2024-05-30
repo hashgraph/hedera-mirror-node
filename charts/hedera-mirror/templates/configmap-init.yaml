@@ -43,9 +43,6 @@ data:
     create user :ownerUsername with login password :'ownerPassword';
     create database :dbName with owner :ownerUsername;
 
-    -- Add extensions
-    create extension if not exists pg_stat_statements;
-
     -- Create roles
     create role readonly;
     create role readwrite in role readonly;
@@ -63,7 +60,12 @@ data:
     -- Grant temp schema admin privileges
     grant temporary_admin to :ownerUsername;
     grant temporary_admin to :importerUsername;
-    
+
+    -- Add extensions
+    \connect :dbName
+    create extension if not exists btree_gist;
+    create extension if not exists pg_stat_statements;
+
     -- Create schema
     \connect :dbName :ownerUsername
     create schema if not exists :dbSchema authorization :ownerUsername;

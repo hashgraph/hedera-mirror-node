@@ -17,14 +17,13 @@
 package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
+import com.hedera.mirror.restjava.common.ParameterNames;
 import com.hedera.mirror.restjava.common.RangeOperator;
+import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
 
 @Named
 @RequiredArgsConstructor
@@ -33,69 +32,45 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
     private final NftAllowanceRepository repository;
     private final EntityService entityService;
 
-    private static final String TOKEN_ID = "token_id";
-    private static final String OWNER = "owner";
-    private static final String SPENDER = "spender";
-    public static final Sort OWNER_TOKEN_ASC_ORDER = sort(Sort.Direction.ASC, OWNER);
-    public static final Sort OWNER_TOKEN_DESC_ORDER = sort(Sort.Direction.DESC, OWNER);
-    public static final Sort SPENDER_TOKEN_ASC_ORDER = sort(Sort.Direction.ASC, SPENDER);
-    public static final Sort SPENDER_TOKEN_DESC_ORDER = sort(Sort.Direction.DESC, SPENDER);
-
     public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
-        var accountId = request.getAccountId();
-        var limit = request.getLimit();
-        var order = request.getOrder();
-        var ownerOrSpenderId = request.getOwnerOrSpenderId();
-        var token = request.getTokenId();
-        var id = entityService.lookup(accountId);
+        var ownerOrSpenderId = request.getOwnerOrSpenderIds();
+        var token = request.getTokenIds();
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
-        //  LT,LTE,EQ,NE are not supported right now. Default is GT.
-        var tokenId = verifyAndGetRangeId(token);
-        var filterId = verifyAndGetRangeId(ownerOrSpenderId);
-        // Set the value depending on the owner flag
-        if (request.isOwner()) {
-            var pageable =
-                    PageRequest.of(0, limit, order.isAscending() ? SPENDER_TOKEN_ASC_ORDER : SPENDER_TOKEN_DESC_ORDER);
-            return repository.findByOwnerAndFilterBySpenderAndToken(id.getId(), filterId, tokenId, pageable);
+        var id = entityService.lookup(request.getAccountId());
 
-        } else {
-            var pageable =
-                    PageRequest.of(0, limit, order.isAscending() ? OWNER_TOKEN_ASC_ORDER : OWNER_TOKEN_DESC_ORDER);
-            return repository.findBySpenderAndFilterByOwnerAndToken(id.getId(), filterId, tokenId, pageable);
-        }
+        return repository.findAll(request, id);
     }
 
-    private static long verifyAndGetRangeId(EntityIdRangeParameter idParam) {
-        long id = 0;
-        // Setting default to 0.static queries will return all values with ids > 0 .
-        if (idParam != null) {
-            if (idParam.operator() == RangeOperator.NE) {
-                throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
-            }
-            id = getUpdatedEntityId(idParam);
-        }
-        return id;
-    }
+    private static void checkOwnerSpenderParamValidity(Bound ownerOrSpenderParams, Bound tokenParams) {
 
-    private static void checkOwnerSpenderParamValidity(
-            EntityIdRangeParameter ownerOrSpenderId, EntityIdRangeParameter token) {
-        if (ownerOrSpenderId == null && token != null) {
+        if (ownerOrSpenderParams.isEmpty() && !tokenParams.isEmpty()) {
             throw new IllegalArgumentException("token.id parameter must have account.id present");
         }
-    }
 
-    private static long getUpdatedEntityId(EntityIdRangeParameter idParam) {
-        long id = idParam.value().getId();
-        if (idParam.operator() == RangeOperator.GTE) {
-            id = id > 0 ? id - 1 : id;
+        verifyRangeId(ownerOrSpenderParams);
+        verifyRangeId(tokenParams);
+
+        if (!ownerOrSpenderParams.hasLowerAndUpper()
+                && tokenParams.adjustLowerBound() > tokenParams.adjustUpperBound()) {
+            throw new IllegalArgumentException("Invalid range provided for %s".formatted(ParameterNames.TOKEN_ID));
         }
-        return id;
+
+        if (tokenParams.getCardinality(RangeOperator.LT, RangeOperator.LTE) > 0
+                && ownerOrSpenderParams.getCardinality(RangeOperator.EQ, RangeOperator.LTE) == 0) {
+            throw new IllegalArgumentException("Requires the presence of an lte or eq account.id parameter");
+        }
+        if (tokenParams.getCardinality(RangeOperator.GT, RangeOperator.GTE) > 0
+                && ownerOrSpenderParams.getCardinality(RangeOperator.EQ, RangeOperator.GTE) == 0) {
+            throw new IllegalArgumentException("Requires the presence of an gte or eq account.id parameter");
+        }
     }
 
-    private static Sort sort(Sort.Direction direction, String account) {
-        return Sort.by(direction, account).and(Sort.by(direction, TOKEN_ID));
+    private static void verifyRangeId(Bound ids) {
+        ids.verifyUnsupported(RangeOperator.NE);
+        ids.verifySingleOccurrence();
+        ids.verifyEqualOrRange();
     }
 }

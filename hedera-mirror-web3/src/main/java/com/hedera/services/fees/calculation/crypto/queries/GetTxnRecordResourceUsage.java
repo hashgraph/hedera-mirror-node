@@ -22,13 +22,12 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.ResponseType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import jakarta.annotation.Nullable;
 import java.util.Map;
-import org.jetbrains.annotations.Nullable;
 
 /**
- *  Copied Logic type from hedera-services. Differences with the original:
- *  1. Removed child record logic
- *  2. Removed retching TransactionRecord from AnswerFunctions, since we do not save records in TxnIdRecentHistory
+ * Copied Logic type from hedera-services. Differences with the original: 1. Removed child record logic 2. Removed
+ * retching TransactionRecord from AnswerFunctions, since we do not save records in TxnIdRecentHistory
  */
 public class GetTxnRecordResourceUsage implements QueryResourceUsageEstimator {
     static final TransactionRecord MISSING_RECORD_STANDIN = TransactionRecord.getDefaultInstance();

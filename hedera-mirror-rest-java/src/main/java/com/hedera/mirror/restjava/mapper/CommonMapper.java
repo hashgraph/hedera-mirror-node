@@ -18,15 +18,23 @@ package com.hedera.mirror.restjava.mapper;
 
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.rest.model.Key;
+import com.hedera.mirror.rest.model.Key.TypeEnum;
 import com.hedera.mirror.rest.model.TimestampRange;
+import java.util.regex.Pattern;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingInheritanceStrategy;
+import org.mapstruct.Named;
 
 @Mapper(mappingInheritanceStrategy = MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG)
 public interface CommonMapper {
 
+    String QUALIFIER_TIMESTAMP = "timestamp";
     int NANO_DIGITS = 9;
+    Pattern PATTERN_ECDSA = Pattern.compile("^(3a21|32250a233a21|2a29080112250a233a21)([A-Fa-f0-9]{66})$");
+    Pattern PATTERN_ED25519 = Pattern.compile("^(1220|32240a221220|2a28080112240a221220)([A-Fa-f0-9]{64})$");
 
     default String mapEntityId(Long source) {
         if (source == null || source == 0) {
@@ -39,6 +47,27 @@ public interface CommonMapper {
 
     default String mapEntityId(com.hedera.mirror.common.domain.entity.EntityId source) {
         return source != null ? source.toString() : null;
+    }
+
+    default Key mapKey(byte[] source) {
+        if (source == null) {
+            return null;
+        }
+
+        var hex = Hex.encodeHexString(source);
+        var ed25519 = PATTERN_ED25519.matcher(hex);
+
+        if (ed25519.matches()) {
+            return new Key().key(ed25519.group(2)).type(TypeEnum.ED25519);
+        }
+
+        var ecdsa = PATTERN_ECDSA.matcher(hex);
+
+        if (ecdsa.matches()) {
+            return new Key().key(ecdsa.group(2)).type(TypeEnum.ECDSA_SECP256K1);
+        }
+
+        return new Key().key(hex).type(TypeEnum.PROTOBUFENCODED);
     }
 
     default TimestampRange mapRange(Range<Long> source) {
@@ -58,15 +87,15 @@ public interface CommonMapper {
         return target;
     }
 
+    @Named(QUALIFIER_TIMESTAMP)
     default String mapTimestamp(long timestamp) {
         if (timestamp == 0) {
             return "0.0";
         }
 
-        var timestampString = StringUtils.leftPad(String.valueOf(timestamp), 10, '0');
-
-        var nanos = timestampString.substring(timestampString.length() - NANO_DIGITS);
-        var secs = timestampString.substring(0, timestampString.length() - NANO_DIGITS);
-        return secs + "." + nanos;
+        var timestampString = StringUtils.leftPad(String.valueOf(timestamp), NANO_DIGITS + 1, '0');
+        return new StringBuilder(timestampString)
+                .insert(timestampString.length() - NANO_DIGITS, '.')
+                .toString();
     }
 }
