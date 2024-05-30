@@ -17,6 +17,7 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.file.FileData;
+import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
@@ -26,17 +27,20 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
     @Query(
             value =
                     """
-                with latest_create as (
-                      select max(file_data.consensus_timestamp) as consensus_timestamp
-                      from file_data
-                      where file_data.entity_id = ?1 and file_data.transaction_type in (17, 19)
-                    )
-                    select
-                    string_agg(file_data.file_data, '' order by file_data.consensus_timestamp) as file_data
-                    from file_data
-                    join latest_create l on file_data.consensus_timestamp >= l.consensus_timestamp
-                    where file_data.entity_id = ?1 and file_data.transaction_type in (16, 17, 19)
-                      and ?2 >= l.consensus_timestamp""",
+            select * from file_data
+            where file_data.entity_id = ?1
+              and file_data.consensus_timestamp >= (
+                select file_data.consensus_timestamp
+                from file_data
+                where file_data.entity_id = ?1
+                  and file_data.consensus_timestamp <= ?2
+                  and (file_data.transaction_type = 17
+                         or (file_data.transaction_type = 19
+                              and
+                             length(file_data.file_data) <> 0))
+              order by file_data.consensus_timestamp desc
+              limit 1
+            ) and file_data.consensus_timestamp <= ?2""",
             nativeQuery = true)
-    byte[] getFileAtTimestamp(long fileId, long timestamp);
+    List<FileData> getFileAtTimestamp(long fileId, long timestamp);
 }
