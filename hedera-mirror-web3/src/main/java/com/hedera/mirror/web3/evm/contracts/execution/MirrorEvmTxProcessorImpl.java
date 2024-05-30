@@ -23,7 +23,7 @@ import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -92,7 +92,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.tokenAccessor = tokenAccessor;
     }
 
-    public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params,
+    public HederaEvmTransactionProcessingResult execute(final BaseCallServiceParameters params,
                                                         final long estimatedGas,
                                                         final TracerType tracerType,
                                                         final ContractCallContext ctx) {

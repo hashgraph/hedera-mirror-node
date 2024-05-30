@@ -20,15 +20,16 @@ import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import org.springframework.lang.NonNull;
 
 public interface OpcodeService {
 
     /**
      * @param transactionIdOrHash the {@link TransactionIdOrHashParameter}
-     * @return the {@link CallServiceParameters} for the given transaction id or hash
+     * @return the {@link ContractCallDebugServiceParameters} for the given transaction id or hash
      */
-    CallServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash);
+    ContractCallDebugServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash);
 
     /**
      * @param opcodesProcessingResult the {@link OpcodesProcessingResult}

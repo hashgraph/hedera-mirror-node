@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
@@ -39,7 +38,7 @@ import com.hedera.mirror.web3.repository.ContractResultRepository;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.math.BigInteger;
@@ -66,7 +65,7 @@ public class OpcodeServiceImpl implements OpcodeService {
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Override
-    public CallServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
+    public ContractCallDebugServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
         final Long consensusTimestamp;
         final Optional<EthereumTransaction> ethereumTransaction;
 
@@ -128,7 +127,7 @@ public class OpcodeServiceImpl implements OpcodeService {
                                 .depth(opcode.depth())
                                 .gas(opcode.gas())
                                 .gasCost(opcode.gasCost())
-                                .op(opcode.op())
+                                .op(opcode.op().isPresent() ? opcode.op().get() : null)
                                 .pc(opcode.pc())
                                 .reason(opcode.reason())
                                 .stack(opcode.stack().isPresent() ?
@@ -153,7 +152,7 @@ public class OpcodeServiceImpl implements OpcodeService {
                         .orElse(Bytes.EMPTY.toHexString()));
     }
 
-    private CallServiceParameters buildCallServiceParameters(Long consensusTimestamp,
+    private ContractCallDebugServiceParameters buildCallServiceParameters(Long consensusTimestamp,
                                                              Optional<EthereumTransaction> ethTransaction) {
         final ContractResult contractResult = contractResultRepository.findById(consensusTimestamp)
                 .orElseThrow(() -> new EntityNotFoundException("Contract result not found"));
@@ -168,15 +167,12 @@ public class OpcodeServiceImpl implements OpcodeService {
                 .map(recordFile -> BlockType.of(recordFile.getIndex().toString()))
                 .orElse(BlockType.LATEST);
 
-        return CallServiceParameters.builder()
+        return ContractCallDebugServiceParameters.builder()
                 .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
                 .receiver(getReceiverAddress(contractEntity))
                 .gas(getGasLimit(ethTransaction, contractResult))
                 .value(getValue(ethTransaction, contractResult).longValue())
                 .callData(getCallData(ethTransaction, contractResult))
-                .isStatic(false)
-                .callType(ETH_DEBUG_TRACE_TRANSACTION)
-                .isEstimate(false)
                 .block(blockType)
                 .build();
     }

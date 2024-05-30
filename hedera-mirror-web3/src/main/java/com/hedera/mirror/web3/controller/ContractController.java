@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.web3.controller;
 
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.InvalidParametersException;

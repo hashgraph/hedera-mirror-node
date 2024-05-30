@@ -20,7 +20,7 @@ import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.ContractCallDebugService;
 import com.hedera.mirror.web3.service.OpcodeService;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
@@ -42,7 +42,7 @@ import org.springframework.web.bind.annotation.RestController;
 class OpcodesController {
 
     private final OpcodeService opcodeService;
-    private final ContractCallService contractCallService;
+    private final ContractCallDebugService contractCallDebugService;
     private final Bucket rateLimitBucket;
     private final Bucket gasLimitBucket;
 
@@ -81,7 +81,7 @@ class OpcodesController {
         }
 
         final var options = new OpcodeTracerOptions(stack, memory, storage);
-        final var result = contractCallService.processOpcodeCall(params, options, transactionIdOrHash);
+        final var result = contractCallDebugService.processOpcodeCall(params, options, transactionIdOrHash);
 
         return opcodeService.buildOpcodesResponse(result);
     }
