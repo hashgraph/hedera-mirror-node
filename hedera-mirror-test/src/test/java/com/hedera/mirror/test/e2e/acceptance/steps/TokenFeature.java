@@ -172,7 +172,6 @@ public class TokenFeature extends AbstractFeature {
     public void setNonFungibleTokenAllowance(AccountClient.AccountNameEnum accountName) {
         var spenderAccountId = accountClient.getAccount(accountName).getAccountId();
         networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, spenderAccountId);
-        associateWithToken(accountClient.getAccount(accountName), tokenId);
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
         assertThat(networkTransactionResponse.getReceipt()).isNotNull();
     }
@@ -217,11 +216,13 @@ public class TokenFeature extends AbstractFeature {
             TokenClient.TokenNameEnum tokenName, AccountClient.AccountNameEnum spenderName) {
         verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
 
-        var tokenId = tokenClient.getToken(tokenName).tokenId();
-        var spender = accountClient.getAccount(spenderName);
+        var owner = accountClient.getClient().getOperatorAccountId().toString();
+        var spender = accountClient.getAccount(spenderName).getAccountId().toString();
+        var token = tokenClient.getToken(tokenName).tokenId().toString();
 
-        // Once we change this API to not return approved_for_all=false this test will change to check for an empty list
-        verifyMirrorAPIApprovedNftAllowanceResponse(tokenId, spender, false, true);
+        var mirrorNftAllowanceResponse = mirrorClient.getAccountNftAllowanceByOwner(owner, token, spender);
+
+        assertThat(mirrorNftAllowanceResponse.getAllowances()).isEmpty();
     }
 
     @Then("the mirror node REST API should confirm the debit of {long} from {token} allowance of {long} for {account}")
@@ -363,14 +364,15 @@ public class TokenFeature extends AbstractFeature {
         transferNfts(this.tokenId, serialNumbers, ownerAccountId, recipientAccountId, false);
     }
 
-    @Then("{account} transfers NFT {token} to {account}")
-    public void transferNftsToRecipient(AccountNameEnum spender, TokenNameEnum token, AccountNameEnum recipient) {
+    @Then("{account} transfers NFT {token} to {account} with approval={bool}")
+    public void transferNftsToRecipient(
+            AccountNameEnum spender, TokenNameEnum token, AccountNameEnum recipient, boolean isApproval) {
         var nftTokenId = tokenClient.getToken(token).tokenId();
         var serialNumbers = getSerialsForToken(nftTokenId);
         var spenderAccountId = accountClient.getAccount(spender);
         var recipientAccountId = accountClient.getAccount(recipient).getAccountId();
 
-        transferNfts(nftTokenId, serialNumbers, spenderAccountId, recipientAccountId, true);
+        transferNfts(nftTokenId, serialNumbers, spenderAccountId, recipientAccountId, isApproval);
     }
 
     @Then("{account} transfers {int} tokens to {account} with fractional fee {int}")
@@ -653,7 +655,7 @@ public class TokenFeature extends AbstractFeature {
                 .contains(expectedTokenTransfer));
     }
 
-    @Then("the mirror node REST API should confirm the approved transfer of NFT and confirm the new owner is {account}")
+    @Then("the mirror node REST API should confirm the NFT transfer and confirm the new owner is {account}")
     @RetryAsserts
     public void verifyMirrorNftTransfer(AccountClient.AccountNameEnum accountName) {
         Long serialNumber = tokenNftInfoMap.get(tokenId).getFirst().serialNumber();

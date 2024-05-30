@@ -96,6 +96,35 @@ contract ModificationPrecompileTestContract is HederaTokenService {
         }
     }
 
+    function createFungibleTokenWithInheritKeysExternal() external payable returns (address)
+    {
+        IHederaTokenService.TokenKey[] memory keys = new IHederaTokenService.TokenKey[](5);
+        IHederaTokenService.KeyValue memory inheritKey;
+        inheritKey.inheritAccountKey = true;
+        keys[0] = IHederaTokenService.TokenKey(1, inheritKey);
+        keys[1] = IHederaTokenService.TokenKey(2, inheritKey);
+        keys[2] = IHederaTokenService.TokenKey(4, inheritKey);
+        keys[3] = IHederaTokenService.TokenKey(8, inheritKey);
+        keys[4] = IHederaTokenService.TokenKey(16, inheritKey);
+
+        IHederaTokenService.Expiry memory expiry = IHederaTokenService.Expiry(
+            0, address(this), 8000000
+        );
+
+        IHederaTokenService.HederaToken memory token = IHederaTokenService.HederaToken(
+            "NAME", "SYMBOL", address(this), "memo", true, 1000, false, keys, expiry
+        );
+
+        (int responseCode, address tokenAddress) =
+        HederaTokenService.createFungibleToken(token, 10, 10);
+
+        if (responseCode != HederaResponseCodes.SUCCESS) {
+            revert ();
+        }
+
+        return tokenAddress;
+    }
+
     function createFungibleTokenWithCustomFeesExternal(IHederaTokenService.HederaToken memory token,
         int64 initialTotalSupply,
         int32 decimals,

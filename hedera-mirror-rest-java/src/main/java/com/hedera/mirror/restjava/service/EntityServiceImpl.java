@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.service;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.restjava.RestJavaProperties;
 import com.hedera.mirror.restjava.common.EntityIdAliasParameter;
@@ -23,6 +24,7 @@ import com.hedera.mirror.restjava.common.EntityIdEvmAddressParameter;
 import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.repository.EntityRepository;
+import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
@@ -30,21 +32,25 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-public class EntityServiceImpl implements EntityService {
+class EntityServiceImpl implements EntityService {
 
     private final EntityRepository entityRepository;
     private final RestJavaProperties properties;
 
     @Override
-    @SuppressWarnings("java:S1481")
-    public EntityId lookup(EntityIdParameter accountId) {
+    public Entity findById(@Nonnull EntityId id) {
+        validateShard(id, id.getShard());
 
-        if (accountId.shard() != properties.getShard()) {
-            throw new IllegalArgumentException("ID %s has invalid shard".formatted(accountId));
-        }
+        return entityRepository.findById(id.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Entity not found: " + id));
+    }
+
+    @Override
+    public EntityId lookup(@Nonnull EntityIdParameter accountId) {
+        validateShard(accountId, accountId.shard());
 
         if (accountId.realm() != 0) {
-            throw new IllegalArgumentException("ID %s has invalid realm".formatted(accountId));
+            throw new IllegalArgumentException("ID %s has an invalid realm".formatted(accountId));
         }
 
         var id = switch (accountId) {
@@ -54,5 +60,12 @@ public class EntityServiceImpl implements EntityService {
         };
 
         return id.orElseThrow(() -> new EntityNotFoundException("No account found for the given ID"));
+    }
+
+    private void validateShard(Object id, long shard) {
+        long expected = properties.getShard();
+        if (shard != expected) {
+            throw new IllegalArgumentException("ID %s has an invalid shard. Shard must be %d".formatted(id, expected));
+        }
     }
 }

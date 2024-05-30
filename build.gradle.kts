@@ -38,7 +38,7 @@ extra.apply {
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.7")
+    set("vertxVersion", "4.5.8")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
@@ -99,7 +99,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.1")
         api("org.testcontainers:junit-jupiter:1.19.8")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.55")
+        api("software.amazon.awssdk:bom:2.25.60")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
     }
 }

@@ -691,6 +691,12 @@ public class TokenClient extends AbstractNetworkClient {
                 TokenKycStatus.KycNotApplicable,
                 TokenFreezeStatus.FreezeNotApplicable,
                 false),
+        ALLOWANCE_NON_FUNGIBLE(
+                "allowance_non_fungible",
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenKycStatus.KycNotApplicable,
+                TokenFreezeStatus.FreezeNotApplicable,
+                false),
         NFT(
                 "non_fungible",
                 TokenType.NON_FUNGIBLE_UNIQUE,

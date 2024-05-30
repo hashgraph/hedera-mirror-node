@@ -47,10 +47,10 @@ dependencies {
     implementation("org.gradle:test-retry-gradle-plugin:1.5.9")
     implementation("org.jooq:jooq-codegen-gradle:$jooqVersion")
     implementation("org.jooq:jooq-meta:$jooqVersion")
-    implementation("org.openapitools:openapi-generator-gradle-plugin:7.5.0")
+    implementation("org.openapitools:openapi-generator-gradle-plugin:7.6.0")
     implementation("org.owasp:dependency-check-gradle:9.2.0")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.0.0.4638")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.2.5")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.0")
     implementation("org.testcontainers:postgresql:1.19.8")
 }
 
