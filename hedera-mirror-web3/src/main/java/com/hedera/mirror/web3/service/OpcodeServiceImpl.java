@@ -43,7 +43,6 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
@@ -131,22 +130,17 @@ public class OpcodeServiceImpl implements OpcodeService {
                                 .op(opcode.op())
                                 .pc(opcode.pc())
                                 .reason(opcode.reason())
-                                .stack(opcode.stack().isPresent() ?
-                                        Arrays.stream(opcode.stack().get())
-                                                .map(Bytes::toHexString)
-                                                .toList() :
-                                        null)
-                                .memory(opcode.memory().isPresent() ?
-                                        Arrays.stream(opcode.memory().get())
-                                                .map(Bytes::toHexString)
-                                                .toList() :
-                                        null)
-                                .storage(opcode.storage().isPresent() ?
-                                        opcode.storage().get().entrySet().stream()
-                                                .collect(Collectors.toMap(
-                                                        entry -> entry.getKey().toHexString(),
-                                                        entry -> entry.getValue().toHexString())) :
-                                        null))
+                                .stack(opcode.stack().stream()
+                                        .map(Bytes::toHexString)
+                                        .toList())
+                                .memory(opcode.memory().stream()
+                                        .map(Bytes::toHexString)
+                                        .toList())
+                                .storage(opcode.storage()
+                                        .entrySet().stream()
+                                        .collect(Collectors.toMap(
+                                                entry -> entry.getKey().toHexString(),
+                                                entry -> entry.getValue().toHexString()))))
                         .toList())
                 .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
                         .map(Bytes::toHexString)

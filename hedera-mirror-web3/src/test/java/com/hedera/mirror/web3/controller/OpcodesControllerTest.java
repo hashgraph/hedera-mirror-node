@@ -518,22 +518,16 @@ class OpcodesControllerTest {
                                     .op(opcode.op())
                                     .pc(opcode.pc())
                                     .reason(opcode.reason())
-                                    .stack(opcode.stack().isPresent() ?
-                                            Arrays.stream(opcode.stack().get())
-                                                    .map(Bytes::toHexString)
-                                                    .toList() :
-                                            null)
-                                    .memory(opcode.memory().isPresent() ?
-                                            Arrays.stream(opcode.memory().get())
-                                                    .map(Bytes::toHexString)
-                                                    .toList() :
-                                            null)
-                                    .storage(opcode.storage().isPresent() ?
-                                            opcode.storage().get().entrySet().stream()
-                                                    .collect(Collectors.toMap(
-                                                            entry -> entry.getKey().toHexString(),
-                                                            entry -> entry.getValue().toHexString())) :
-                                            null))
+                                    .stack(opcode.stack().stream()
+                                            .map(Bytes::toHexString)
+                                            .toList())
+                                    .memory(opcode.memory().stream()
+                                            .map(Bytes::toHexString)
+                                            .toList())
+                                    .storage(opcode.storage().entrySet().stream()
+                                            .collect(Collectors.toMap(
+                                                    entry -> entry.getKey().toHexString(),
+                                                    entry -> entry.getValue().toHexString()))))
                             .toList())
                     .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
                             .map(Bytes::toHexString)
@@ -546,11 +540,11 @@ class OpcodesControllerTest {
             final List<Opcode> opcodes = opcodes(options);
             final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
             final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
-            return OpcodesProcessingResult.builder()
-                    .transactionProcessingResult(HederaEvmTransactionProcessingResult
-                            .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, recipient))
-                    .opcodes(opcodes)
-                    .build();
+            return new OpcodesProcessingResult(
+                    HederaEvmTransactionProcessingResult
+                            .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, recipient),
+                    opcodes
+            );
         }
 
         private static List<Opcode> opcodes(final OpcodeTracerOptions options) {
@@ -562,17 +556,16 @@ class OpcodesControllerTest {
                             3,
                             2,
                             options.isStack() ?
-                                    Optional.of(new Bytes[]{
+                                    List.of(
                                             Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
-                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
-                                    }) : Optional.empty(),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")) :
+                                    Collections.emptyList(),
                             options.isMemory() ?
-                                    Optional.of(new Bytes[]{
+                                    List.of(
                                             Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
-                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
-                                    }) : Optional.empty(),
-                            options.isStorage() ?
-                                    Optional.of(Collections.emptySortedMap()) : Optional.empty(),
+                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")) :
+                                    Collections.emptyList(),
+                            Collections.emptySortedMap(),
                             null
                     ),
                     new Opcode(
@@ -582,17 +575,16 @@ class OpcodesControllerTest {
                             0,
                             2,
                             options.isStack() ?
-                                    Optional.of(new Bytes[]{
+                                    List.of(
                                             Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
-                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")
-                                    }) : Optional.empty(),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")) :
+                                    Collections.emptyList(),
                             options.isMemory() ?
-                                    Optional.of(new Bytes[]{
+                                    List.of(
                                             Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
-                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")
-                                    }) : Optional.empty(),
-                            options.isStorage() ?
-                                    Optional.of(Collections.emptySortedMap()) : Optional.empty(),
+                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")) :
+                                    Collections.emptyList(),
+                            Collections.emptySortedMap(),
                             "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"
                     ),
                     new Opcode(
@@ -602,20 +594,20 @@ class OpcodesControllerTest {
                             3,
                             1,
                             options.isStack() ?
-                                    Optional.of(new Bytes[]{
+                                    List.of(
                                             Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
-                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")
-                                    }) : Optional.empty(),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")) :
+                                    Collections.emptyList(),
                             options.isMemory() ?
-                                    Optional.of(new Bytes[]{
+                                    List.of(
                                             Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
-                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")
-                                    }) : Optional.empty(),
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")) :
+                                    Collections.emptyList(),
                             options.isStorage() ?
-                                    Optional.of(ImmutableSortedMap.of(
+                                    ImmutableSortedMap.of(
                                             Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
-                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")
-                                    )) : Optional.empty(),
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")) :
+                                    Collections.emptySortedMap(),
                             null
                     )
             );
