@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -120,7 +121,7 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
 
         var fileData3 = fileDataRepository.getFileAtTimestamp(
                 EXCHANGE_RATE_ENTITY_ID.getId(), fileData2.get(0).getConsensusTimestamp() - 1);
-        assertThat(fileData3).asList().isEmpty();
+        assertTrue(fileData3.isEmpty());
     }
 
     @Test
