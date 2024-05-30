@@ -27,9 +27,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
@@ -52,6 +50,7 @@ import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
@@ -77,6 +76,7 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -132,6 +132,11 @@ class OpcodesControllerTest {
     private static final int LEGACY_TYPE_BYTE = 0;
     private static final int EIP2930_TYPE_BYTE = 1;
     private static final int EIP1559_TYPE_BYTE = 2;
+    private static final byte[] PARSABLE_EVM_ADDRESS = new byte[] {
+            0, 0, 0, 0, // shard
+            0, 0, 0, 0, 0, 0, 0, 0, // realm
+            0, 0, 0, 0, 0, 0, 0, 100, // num
+    };
 
     @Resource
     private MockMvc mockMvc;
@@ -235,9 +240,9 @@ class OpcodesControllerTest {
         final var payerAccountId = transaction.getPayerAccountId();
         final var validStartNs = transaction.getValidStartNs();
         final var senderId = contractResult.getSenderId();
-        final var senderAddress = Address.wrap(Bytes.wrap(senderEntity.getEvmAddress()));
+        final var senderAddress = Builder.entityAddress(senderEntity);
         final var contractId = transaction.getEntityId();
-        final var contractAddress = Address.wrap(Bytes.wrap(contractEntity.getEvmAddress()));
+        final var contractAddress = Builder.entityAddress(contractEntity);
 
         expectedCallServiceParameters.set(CallServiceParameters.builder()
                 .sender(new HederaEvmAccount(senderAddress))
@@ -353,27 +358,17 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @EnumSource(TransactionProviderEnum.class)
-    void callWithContractNotFoundExceptionTest(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        when(entityDatabaseAccessor.get(any(Address.class), eq(Optional.empty()))).thenReturn(Optional.empty());
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isNotFound())
-                .andExpect(responseBody(new GenericErrorResponse("Contract not found")));
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
     void callWithTransactionNotFoundExceptionTest(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
         final GenericErrorResponse expectedError = switch (transactionIdOrHash) {
             case TransactionHashParameter parameter -> {
+                reset(contractTransactionHashRepository);
                 when(contractTransactionHashRepository.findById(parameter.hash().toArray())).thenReturn(Optional.empty());
                 yield new GenericErrorResponse("Contract transaction hash not found");
             }
             case TransactionIdParameter parameter -> {
+                reset(transactionRepository);
                 when(transactionRepository.findByPayerAccountIdAndValidStartNs(
                         parameter.payerAccountId(),
                         convertToNanosMax(parameter.validStart())
@@ -385,6 +380,222 @@ class OpcodesControllerTest {
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isNotFound())
                 .andExpect(responseBody(expectedError));
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void callForSenderWithAliasAndEvmAddressShouldUseEvmAddress(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        final var senderEntity = providerEnum.getSenderEntity();
+        senderEntity.setEvmAddress(DOMAIN_BUILDER.evmAddress());
+        senderEntity.setAlias(DomainUtils.fromBytes(new byte[] {
+                0, 0, 0, 0, // shard
+                0, 0, 0, 0, 0, 0, 0, 0, // realm
+                0, 0, 0, 0, 0, 0, 0, senderEntity.getNum().byteValue(), // num
+        }).toByteArray());
+        final var senderAddress = Address.wrap(Bytes.wrap(senderEntity.getEvmAddress()));
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+                .sender(new HederaEvmAccount(senderAddress))
+                .build());
+
+        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(senderEntity.getId()), Optional.empty()))
+                .thenReturn(senderAddress);
+        when(entityDatabaseAccessor.get(senderAddress, Optional.empty()))
+                .thenReturn(Optional.of(senderEntity));
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void callForSenderOnlyWithEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        final var senderEntity = providerEnum.getSenderEntity();
+        senderEntity.setEvmAddress(null);
+        senderEntity.setAlias(DomainUtils.fromBytes(new byte[] {
+                0, 0, 0, 0, // shard
+                0, 0, 0, 0, 0, 0, 0, 0, // realm
+                0, 0, 0, 0, 0, 0, 0, senderEntity.getNum().byteValue(), // num
+        }).toByteArray());
+        final var senderAddress = Address.wrap(Bytes.wrap(senderEntity.getAlias()));
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+                .sender(new HederaEvmAccount(senderAddress))
+                .build());
+
+        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(senderEntity.getId()), Optional.empty()))
+                .thenReturn(senderAddress);
+        when(entityDatabaseAccessor.get(senderAddress, Optional.empty()))
+                .thenReturn(Optional.of(senderEntity));
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void callForSenderOnlyWithNonEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        final var senderEntity = providerEnum.getSenderEntity();
+        senderEntity.setEvmAddress(null);
+        senderEntity.setAlias(DOMAIN_BUILDER.key(Key.KeyCase.ED25519));
+        final var senderAddress = toAddress(senderEntity.toEntityId());
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+                .sender(new HederaEvmAccount(senderAddress))
+                .build());
+
+        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(senderEntity.getId()), Optional.empty()))
+                .thenReturn(senderAddress);
+        when(entityDatabaseAccessor.get(senderAddress, Optional.empty()))
+                .thenReturn(Optional.of(senderEntity));
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void callForSenderOnlyWithMirrorAddressShouldUseMirrorAddress(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        final var senderEntity = providerEnum.getSenderEntity();
+        senderEntity.setEvmAddress(null);
+        senderEntity.setAlias(null);
+        final var senderAddress = toAddress(senderEntity.toEntityId());
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+                .sender(new HederaEvmAccount(senderAddress))
+                .build());
+
+        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(senderEntity.getId()), Optional.empty()))
+                .thenReturn(senderAddress);
+        when(entityDatabaseAccessor.get(senderAddress, Optional.empty()))
+                .thenReturn(Optional.of(senderEntity));
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void callForContractWithAliasAndEvmAddressShouldUseEvmAddress(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        final var contractEntity = providerEnum.getContractEntity();
+        contractEntity.setEvmAddress(DOMAIN_BUILDER.evmAddress());
+        contractEntity.setAlias(DomainUtils.fromBytes(new byte[] {
+                0, 0, 0, 0, // shard
+                0, 0, 0, 0, 0, 0, 0, 0, // realm
+                0, 0, 0, 0, 0, 0, 0, contractEntity.getNum().byteValue(), // num
+        }).toByteArray());
+        final var contractAddress = Address.wrap(Bytes.wrap(contractEntity.getEvmAddress()));
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+                .receiver(contractAddress)
+                .build());
+
+        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractEntity.getId()), Optional.empty()))
+                .thenReturn(contractAddress);
+        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
+                .thenReturn(Optional.of(contractEntity));
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void callForContractOnlyWithEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        final var contractEntity = providerEnum.getContractEntity();
+        contractEntity.setEvmAddress(null);
+        contractEntity.setAlias(DomainUtils.fromBytes(new byte[] {
+                0, 0, 0, 0, // shard
+                0, 0, 0, 0, 0, 0, 0, 0, // realm
+                0, 0, 0, 0, 0, 0, 0, contractEntity.getNum().byteValue(), // num
+        }).toByteArray());
+        final var contractAddress = Address.wrap(Bytes.wrap(contractEntity.getAlias()));
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+                .receiver(contractAddress)
+                .build());
+
+        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractEntity.getId()), Optional.empty()))
+                .thenReturn(contractAddress);
+        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
+                .thenReturn(Optional.of(contractEntity));
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void callForContractOnlyWithNonEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        final var contractEntity = providerEnum.getContractEntity();
+        contractEntity.setEvmAddress(null);
+        contractEntity.setAlias(DOMAIN_BUILDER.key(Key.KeyCase.ED25519));
+        final var contractAddress = toAddress(contractEntity.toEntityId());
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+                .receiver(contractAddress)
+                .build());
+
+        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractEntity.getId()), Optional.empty()))
+                .thenReturn(contractAddress);
+        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
+                .thenReturn(Optional.of(contractEntity));
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+    }
+
+    @ParameterizedTest
+    @EnumSource(TransactionProviderEnum.class)
+    void callForContractOnlyWithMirrorAddressShouldUseMirrorAddress(final TransactionProviderEnum providerEnum) throws Exception {
+        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        final var contractEntity = providerEnum.getContractEntity();
+        contractEntity.setEvmAddress(null);
+        contractEntity.setAlias(null);
+        final var contractAddress = toAddress(contractEntity.toEntityId());
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+                .receiver(contractAddress)
+                .build());
+
+        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractEntity.getId()), Optional.empty()))
+                .thenReturn(contractAddress);
+        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
+                .thenReturn(Optional.of(contractEntity));
+
+        mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
     }
 
     @ParameterizedTest
@@ -612,6 +823,19 @@ class OpcodesControllerTest {
                     )
             );
         }
+
+        private static Address entityAddress(Entity entity) {
+            if (entity == null) {
+                return Address.ZERO;
+            }
+            if (entity.getEvmAddress() != null) {
+                return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
+            }
+            if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
+                return Address.wrap(Bytes.wrap(entity.getAlias()));
+            }
+            return toAddress(entity.toEntityId());
+        }
     }
 
     @Getter
@@ -650,6 +874,9 @@ class OpcodesControllerTest {
         }
 
         public EthereumTransaction getEthTransaction() {
+            if (transactionType != ETHEREUMTRANSACTION) {
+                return null;
+            }
             return DOMAIN_BUILDER.ethereumTransaction(true)
                     .customize(tx -> {
                         tx.type(typeByte);

@@ -24,7 +24,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class CallServiceParameters {
     HederaEvmAccount sender;
     Address receiver;

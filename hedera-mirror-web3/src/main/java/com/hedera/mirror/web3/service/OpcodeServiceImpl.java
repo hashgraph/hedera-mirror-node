@@ -152,19 +152,13 @@ public class OpcodeServiceImpl implements OpcodeService {
         final ContractResult contractResult = contractResultRepository.findById(consensusTimestamp)
                 .orElseThrow(() -> new EntityNotFoundException("Contract result not found"));
 
-        final Address contractAddress =
-                entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractResult.getContractId()), Optional.empty());
-
-        final Entity contractEntity = entityDatabaseAccessor.get(contractAddress, Optional.empty())
-                .orElseThrow(() -> new EntityNotFoundException("Contract not found"));
-
         final BlockType blockType = recordFileService.findByTimestamp(consensusTimestamp)
                 .map(recordFile -> BlockType.of(recordFile.getIndex().toString()))
                 .orElse(BlockType.LATEST);
 
         return CallServiceParameters.builder()
                 .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
-                .receiver(getReceiverAddress(contractEntity))
+                .receiver(getReceiverAddress(contractResult))
                 .gas(getGasLimit(ethTransaction, contractResult))
                 .value(getValue(ethTransaction, contractResult).longValue())
                 .callData(getCallData(ethTransaction, contractResult))
@@ -179,8 +173,8 @@ public class OpcodeServiceImpl implements OpcodeService {
         return entityDatabaseAccessor.evmAddressFromId(contractResult.getSenderId(), Optional.empty());
     }
 
-    private Address getReceiverAddress(Entity contractEntity) {
-        return Address.fromHexString(Bytes.of(contractEntity.getEvmAddress()).toHexString());
+    private Address getReceiverAddress(ContractResult contractResult) {
+        return entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractResult.getContractId()), Optional.empty());
     }
 
     private Long getGasLimit(Optional<EthereumTransaction> ethereumTransaction, ContractResult contractResult) {
