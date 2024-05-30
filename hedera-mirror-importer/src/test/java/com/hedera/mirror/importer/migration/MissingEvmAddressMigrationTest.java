@@ -51,13 +51,11 @@ class MissingEvmAddressMigrationTest extends ImporterIntegrationTest {
     private static final String TABLE_IDS = "id";
 
     private static final String TABLE_NAME = "contract";
+    private final AtomicLong id = new AtomicLong(10);
+    private final AtomicLong timestamp = new AtomicLong(200);
 
     @Value("classpath:db/migration/v1/V1.55.5__missing_evm_address.sql")
     private File migrationSql;
-
-    private final AtomicLong id = new AtomicLong(10);
-
-    private final AtomicLong timestamp = new AtomicLong(200);
 
     @Test
     void empty() {
@@ -103,10 +101,10 @@ class MissingEvmAddressMigrationTest extends ImporterIntegrationTest {
 
         // then
         assertThat(findEntity(MigrationContract.class, TABLE_IDS, TABLE_NAME))
-                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "evm_address", "timestamp_range")
+                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "evmAddress", "timestampRange")
                 .containsExactlyInAnyOrderElementsOf(expectedCurrentContracts);
         assertThat(findHistory(MigrationContract.class, TABLE_IDS, TABLE_NAME))
-                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "evm_address", "timestamp_range")
+                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "evmAddress", "timestampRange")
                 .containsExactlyInAnyOrderElementsOf(expectedHistoricalContracts);
     }
 

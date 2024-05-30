@@ -74,6 +74,11 @@ class BalanceReconciliationServiceTest extends ImporterIntegrationTest {
         reconciliationService.status.set(UNKNOWN);
     }
 
+    @Override
+    protected void reset() {
+        // Skip so we don't clear the metric
+    }
+
     @Test
     void cryptoTransfersSuccess() {
         // given

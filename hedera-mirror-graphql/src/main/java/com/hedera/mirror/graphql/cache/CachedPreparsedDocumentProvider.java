@@ -16,27 +16,27 @@
 
 package com.hedera.mirror.graphql.cache;
 
-import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import graphql.ExecutionInput;
 import graphql.execution.preparsed.PreparsedDocumentEntry;
 import graphql.execution.preparsed.PreparsedDocumentProvider;
 import jakarta.inject.Named;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 @Named
 final class CachedPreparsedDocumentProvider implements PreparsedDocumentProvider {
 
-    private final Cache<String, PreparsedDocumentEntry> cache;
+    private final AsyncCache<String, PreparsedDocumentEntry> cache;
 
     CachedPreparsedDocumentProvider(CacheProperties properties) {
-        cache = Caffeine.from(properties.getQuery()).build();
+        cache = Caffeine.from(properties.getQuery()).buildAsync();
     }
 
     @Override
-    @SuppressWarnings("deprecation")
-    public PreparsedDocumentEntry getDocument(
-            ExecutionInput executionInput, Function<ExecutionInput, PreparsedDocumentEntry> parseCallback) {
-        return cache.get(executionInput.getQuery(), key -> parseCallback.apply(executionInput));
+    public CompletableFuture<PreparsedDocumentEntry> getDocumentAsync(
+            ExecutionInput executionInput, Function<ExecutionInput, PreparsedDocumentEntry> parseAndValidateFunction) {
+        return cache.get(executionInput.getQuery(), key -> parseAndValidateFunction.apply(executionInput));
     }
 }

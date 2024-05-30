@@ -94,6 +94,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Condition;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -1494,10 +1495,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(transactionRepository.findById(recordItem2.getConsensusTimestamp()))
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .map(transfer ->
                                 ((ItemizedTransfer) transfer).getEntityId().getNum())
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .containsExactly(newAccount.getAccountNum(), entity.getNum(), entity.getNum()));
         System.setProperty(HALT_ON_ERROR_PROPERTY, haltOnError);
     }
@@ -1528,7 +1529,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .hasSize(1)
                         .allSatisfy(transfer -> {
                             assertThat(((ItemizedTransfer) transfer).getEntityId())
@@ -1576,9 +1577,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .map(transfer -> ((ItemizedTransfer) transfer).getEntityId())
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .containsExactlyInAnyOrderElementsOf(expectedEntityIds));
     }
 

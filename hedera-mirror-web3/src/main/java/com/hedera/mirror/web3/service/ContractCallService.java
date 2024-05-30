@@ -51,11 +51,13 @@ import org.apache.tuweni.bytes.Bytes;
 @Named
 public class ContractCallService {
 
-    static final String GAS_METRIC = "hedera.mirror.web3.call.gas";
+    static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
+    static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
     private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
 
     private final BinaryGasEstimator binaryGasEstimator;
-    private final MeterProvider<Counter> gasCounter;
+    private final MeterProvider<Counter> gasLimitCounter;
+    private final MeterProvider<Counter> gasUsedCounter;
     private final Store store;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final RecordFileRepository recordFileRepository;
@@ -71,7 +73,10 @@ public class ContractCallService {
             ThrottleProperties throttleProperties,
             Bucket gasLimitBucket) {
         this.binaryGasEstimator = binaryGasEstimator;
-        this.gasCounter = Counter.builder(GAS_METRIC)
+        this.gasLimitCounter = Counter.builder(GAS_LIMIT_METRIC)
+                .description("The amount of gas limit sent in the request")
+                .withRegistry(meterRegistry);
+        this.gasUsedCounter = Counter.builder(GAS_USED_METRIC)
                 .description("The amount of gas consumed by the EVM")
                 .withRegistry(meterRegistry);
         this.store = store;
@@ -87,6 +92,10 @@ public class ContractCallService {
             var stringResult = "";
 
             try {
+                gasLimitCounter
+                        .withTags("type", params.getCallType().toString())
+                        .increment(params.getGas());
+
                 Bytes result;
                 if (params.isEstimate()) {
                     // eth_estimateGas initialization - historical timestamp is Optional.empty()
@@ -190,7 +199,7 @@ public class ContractCallService {
     }
 
     private void updateGasMetric(final CallType callType, final long gasUsed, final int iterations) {
-        gasCounter
+        gasUsedCounter
                 .withTags("type", callType.toString(), "iteration", String.valueOf(iterations))
                 .increment(gasUsed);
     }
@@ -207,6 +216,7 @@ public class ContractCallService {
         if (block.number() > latestBlock) {
             throw new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER);
         }
+
         return recordFileRepository.findByIndex(block.number());
     }
 }
