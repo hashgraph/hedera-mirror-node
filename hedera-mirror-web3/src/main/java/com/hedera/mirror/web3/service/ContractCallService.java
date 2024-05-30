@@ -117,12 +117,10 @@ public class ContractCallService {
 
     public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params,
                                                      final OpcodeTracerOptions opcodeTracerOptions,
-                                                     @Nullable final TransactionIdOrHashParameter transactionIdOrHash) {
+                                                     final TransactionIdOrHashParameter transactionIdOrHash) {
         return ContractCallContext.run(ctx -> {
-            if (transactionIdOrHash != null && transactionIdOrHash.isValid()) {
-                List<ContractAction> contractActions = contractActionService.findFromTransaction(transactionIdOrHash);
-                ctx.setContractActions(contractActions);
-            }
+            List<ContractAction> contractActions = contractActionService.findFromTransaction(transactionIdOrHash);
+            ctx.setContractActions(contractActions);
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             final var ethCallTxnResult = callContract(params, TracerType.OPCODE, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
@@ -157,7 +155,7 @@ public class ContractCallService {
         // if we have historical call, then set the corresponding record file in the context
         if (params.getBlock() != BlockType.LATEST) {
             ctx.setRecordFile(recordFileService
-                    .findRecordFileByBlock(params.getBlock())
+                        .findByBlockType(params.getBlock())
                     .orElseThrow(BlockNumberNotFoundException::new));
         }
         // initializes the stack frame with the current state or historical state (if the call is historical)

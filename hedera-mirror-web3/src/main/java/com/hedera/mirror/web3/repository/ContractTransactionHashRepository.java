@@ -17,12 +17,10 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
-import java.util.Optional;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ContractTransactionHashRepository extends CrudRepository<ContractTransactionHash, byte[]> {
 
-    Optional<ContractTransactionHash> findByHash(byte[] hash);
 }

@@ -16,23 +16,16 @@
 
 package com.hedera.mirror.web3.controller;
 
-import com.hedera.mirror.rest.model.Opcode;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.CallServiceParametersBuilder;
 import com.hedera.mirror.web3.service.ContractCallService;
-import com.hedera.services.utils.EntityIdUtils;
+import com.hedera.mirror.web3.service.OpcodeService;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,10 +39,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/contracts/results")
 @ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
-@SuppressWarnings("java:S5122") // "Make sure that enabling CORS is safe here"
 class OpcodesController {
 
-    private final CallServiceParametersBuilder callServiceParametersBuilder;
+    private final OpcodeService opcodeService;
     private final ContractCallService contractCallService;
     private final Bucket rateLimitBucket;
     private final Bucket gasLimitBucket;
@@ -63,13 +55,6 @@ class OpcodesController {
      * <p>
      *     Note that to provide the output, the transaction needs to be re-executed on the EVM,
      *     which may take a significant amount of time to complete if stack and memory information is requested.
-     * </p>
-     * <p>
-     *     The endpoint depends on the following properties to be set to true when starting up the mirror-node:
-     *     <ul>
-     *         <li>{@systemProperty hedera.mirror.importer.parser.record.entity.persist.transactionBytes}</li>
-     *         <li>{@systemProperty hedera.mirror.importer.parser.record.entity.persist.transactionRecordBytes}</li>
-     *     </ul>
      * </p>
      *
      * @param transactionIdOrHash The transaction ID or hash
@@ -90,7 +75,7 @@ class OpcodesController {
             throw new RateLimitException("Rate limit exceeded.");
         }
 
-        final var params = callServiceParametersBuilder.buildFromTransaction(transactionIdOrHash);
+        final var params = opcodeService.buildCallServiceParameters(transactionIdOrHash);
         if (!gasLimitBucket.tryConsume(params.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
@@ -98,48 +83,6 @@ class OpcodesController {
         final var options = new OpcodeTracerOptions(stack, memory, storage);
         final var result = contractCallService.processOpcodeCall(params, options, transactionIdOrHash);
 
-        return new OpcodesResponse()
-                .address(result.transactionProcessingResult()
-                        .getRecipient()
-                        .map(Address::toHexString)
-                        .orElse(Address.ZERO.toHexString()))
-                .contractId(result.transactionProcessingResult()
-                        .getRecipient()
-                        .map(EntityIdUtils::contractIdFromEvmAddress)
-                        .map(contractId -> "%d.%d.%d".formatted(
-                                contractId.getShardNum(),
-                                contractId.getRealmNum(),
-                                contractId.getContractNum()))
-                        .orElse(null))
-                .failed(!result.transactionProcessingResult().isSuccessful())
-                .gas(result.transactionProcessingResult().getGasUsed())
-                .opcodes(result.opcodes().stream()
-                        .map(opcode -> new Opcode()
-                                .depth(opcode.depth())
-                                .gas(opcode.gas())
-                                .gasCost(opcode.gasCost())
-                                .op(opcode.op().orElse(""))
-                                .pc(opcode.pc())
-                                .reason(opcode.reason())
-                                .stack(opcode.stack().isPresent() ?
-                                        Arrays.stream(opcode.stack().get())
-                                                .map(Bytes::toHexString)
-                                                .toList() :
-                                        null)
-                                .memory(opcode.memory().isPresent() ?
-                                        Arrays.stream(opcode.memory().get())
-                                                .map(Bytes::toHexString)
-                                                .toList() :
-                                        null)
-                                .storage(opcode.storage().isPresent() ?
-                                        opcode.storage().get().entrySet().stream()
-                                                .collect(Collectors.toMap(
-                                                        entry -> entry.getKey().toHexString(),
-                                                        entry -> entry.getValue().toHexString())) :
-                                        null))
-                        .toList())
-                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
-                        .map(Bytes::toHexString)
-                        .orElse(Bytes.EMPTY.toHexString()));
+        return opcodeService.buildOpcodesResponse(result);
     }
 }

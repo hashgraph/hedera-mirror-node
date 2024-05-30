@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ public interface RecordFileService {
      * @param block the {@link BlockType} with the block number
      * @return the record file associated with the given block
      */
-    Optional<RecordFile> findRecordFileByBlock(BlockType block);
+    Optional<RecordFile> findByBlockType(BlockType block);
 
     /**
      * @param timestamp the consensus timestamp of a transaction
      * @return the record file containing the transaction with the given timestamp
      */
-    Optional<RecordFile> findRecordFileForTimestamp(Long timestamp);
+    Optional<RecordFile> findByTimestamp(Long timestamp);
 }

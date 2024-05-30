@@ -16,19 +16,23 @@
 
 package com.hedera.mirror.web3.controller;
 
-import static com.hedera.mirror.web3.service.CallServiceParametersBuilder.buildFromContractCallRequest;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -44,7 +48,6 @@ class ContractController {
     private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties evmProperties;
 
-    @CrossOrigin(origins = "*")
     @PostMapping(value = "/call")
     ContractCallResponse call(@RequestBody @Valid ContractCallRequest request) {
 
@@ -56,7 +59,7 @@ class ContractController {
             validateContractData(request);
             validateContractMaxGasLimit(request);
 
-            final var params = buildFromContractCallRequest(request);
+            final var params = constructServiceParameters(request);
             final var result = contractCallService.processCall(params);
             return new ContractCallResponse(result);
         } catch (InvalidParametersException e) {
@@ -64,6 +67,43 @@ class ContractController {
             gasLimitBucket.addTokens(request.getGas());
             throw e;
         }
+    }
+
+    private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
+        final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
+        final var sender = new HederaEvmAccount(fromAddress);
+
+        Address receiver;
+
+         /*In case of an empty "to" field, we set a default value of the zero address
+         to avoid any potential NullPointerExceptions throughout the process.*/
+        if (request.getTo() == null || request.getTo().isEmpty()) {
+            receiver = Address.ZERO;
+        } else {
+            receiver = Address.fromHexString(request.getTo());
+        }
+        Bytes data;
+        try {
+            data = request.getData() != null ? Bytes.fromHexString(request.getData()) : Bytes.EMPTY;
+        } catch (Exception e) {
+            throw new InvalidParametersException(
+                    "data field '%s' contains invalid odd length characters".formatted(request.getData()));
+        }
+        final var isStaticCall = false;
+        final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
+        final var block = request.getBlock();
+
+        return CallServiceParameters.builder()
+                .sender(sender)
+                .receiver(receiver)
+                .callData(data)
+                .gas(request.getGas())
+                .value(request.getValue())
+                .isStatic(isStaticCall)
+                .callType(callType)
+                .isEstimate(request.isEstimate())
+                .block(block)
+                .build();
     }
 
     /*

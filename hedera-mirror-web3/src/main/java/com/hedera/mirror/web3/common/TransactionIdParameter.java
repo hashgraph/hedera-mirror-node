@@ -1,0 +1,52 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.hedera.mirror.web3.common;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
+import java.time.Instant;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public record TransactionIdParameter(EntityId payerAccountId, Instant validStart) implements TransactionIdOrHashParameter {
+
+    private static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
+    private static final String INVALID_TRANSACTION_ID_FORMAT = 
+            "Invalid Transaction ID. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds";
+    
+    public static TransactionIdParameter valueOf(String transactionId) throws InvalidParametersException {
+        if (transactionId == null) {
+            return null;
+        }
+
+        Matcher matcher = TRANSACTION_ID_PATTERN.matcher(transactionId);
+        if (!matcher.matches() || matcher.groupCount() != 5) {
+            return null;
+        }
+
+        long shard = Long.parseLong(matcher.group(1));
+        long realm = Long.parseLong(matcher.group(2));
+        long num = Long.parseLong(matcher.group(3));
+        long seconds = Long.parseLong(matcher.group(4));
+        int nanos = Integer.parseInt(matcher.group(5));
+        if (shard < 0 || realm < 0 || num < 0 || seconds < 0) {
+            throw new InvalidParametersException(INVALID_TRANSACTION_ID_FORMAT);
+        }
+
+        return new TransactionIdParameter(EntityId.of(shard, realm, num), Instant.ofEpochSecond(seconds, nanos));
+    }
+}

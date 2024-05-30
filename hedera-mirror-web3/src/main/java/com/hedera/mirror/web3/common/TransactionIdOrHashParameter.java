@@ -16,63 +16,23 @@
 
 package com.hedera.mirror.web3.common;
 
-import com.google.protobuf.ByteString;
-import com.hedera.mirror.web3.evm.utils.TransactionUtils;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import jakarta.validation.constraints.AssertTrue;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import org.springframework.util.StringUtils;
 
-/**
- * A class used to parse and store an input parameter for transaction ID or hash.
- *
- * @author vyanev
- * @param transactionID this will be populated if the input is a valid transaction ID
- * @param hash this will be populated if the input is a valid transaction hash
- */
-public record TransactionIdOrHashParameter(TransactionID transactionID, ByteString hash) {
+public sealed interface TransactionIdOrHashParameter permits TransactionHashParameter, TransactionIdParameter {
 
-    /**
-     * Parses the input parameter and returns a TransactionIdOrHashParameter object.
-     * <li>
-     *     If the input is a string representing an ethereum transaction hash,
-     *     it will be parsed and stored in the {@code hash} field.
-     * </li>
-     * <li>
-     *     If the input is a string representing a transaction ID,
-     *     it will be parsed and stored in the {@code transactionID} field.
-     * </li>
-     *
-     * @param transactionIdOrHash The input string to be parsed
-     * @return {@link TransactionIdOrHashParameter} holding the parsed transaction ID or hash
-     * @throws IllegalArgumentException if the input string is empty or has an invalid format
-     * @see TransactionUtils#isValidEthHash
-     * @see TransactionUtils#isValidTransactionId
-     */
-    public static TransactionIdOrHashParameter valueOf(String transactionIdOrHash) {
+    static TransactionIdOrHashParameter valueOf(String transactionIdOrHash) throws InvalidParametersException {
         if (!StringUtils.hasText(transactionIdOrHash)) {
-            throw new IllegalArgumentException("Transaction ID or hash is required");
+            throw new InvalidParametersException("Missing transaction ID or hash");
         }
 
-        if (TransactionUtils.isValidEthHash(transactionIdOrHash)) {
-            final var sanitizedHash = transactionIdOrHash.replace("0x", "");
-            return new TransactionIdOrHashParameter(null, ByteString.fromHex(sanitizedHash));
-        } else if (TransactionUtils.isValidTransactionId(transactionIdOrHash)) {
-            return new TransactionIdOrHashParameter(TransactionUtils.parseTransactionId(transactionIdOrHash), null);
+        TransactionIdOrHashParameter parameter;
+        if ((parameter = TransactionHashParameter.valueOf(transactionIdOrHash)) != null) {
+            return parameter;
+        } else if ((parameter = TransactionIdParameter.valueOf(transactionIdOrHash)) != null) {
+            return parameter;
         } else {
-            throw new IllegalArgumentException("Invalid transaction ID or hash: %s".formatted(transactionIdOrHash));
+            throw new InvalidParametersException("Unsupported ID format: '%s'".formatted(transactionIdOrHash));
         }
-    }
-
-    @AssertTrue(message = "Transaction ID or hash is required")
-    public boolean isValid() {
-        return isTransactionId() || isHash();
-    }
-
-    public boolean isTransactionId() {
-        return transactionID() != null;
-    }
-
-    public boolean isHash() {
-        return hash() != null;
     }
 }
