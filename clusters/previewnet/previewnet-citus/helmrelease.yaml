@@ -33,6 +33,9 @@ spec:
     - kind: Secret
       name: mirror
   values:
+    grpc:
+      ingress:
+        enabled: false  # disable ingress so as to utilize the manually managed IngressRoute
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
@@ -43,6 +46,8 @@ spec:
         HEDERA_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
         HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "false"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.5"
+      ingress:
+        enabled: false  # disable ingress so as to utilize the manually managed IngressRoute
       prometheusRules:
         MonitorPublishErrors:
           enabled: false
@@ -51,6 +56,9 @@ spec:
         MonitorSubscribeLatency:
           enabled: false
     rest:
+      ingress:
+        enabled: false  # disable ingress so as to utilize the manually managed IngressRoute
+    restjava:
       ingress:
         enabled: false  # disable ingress so as to utilize the manually managed IngressRoute
     test:
