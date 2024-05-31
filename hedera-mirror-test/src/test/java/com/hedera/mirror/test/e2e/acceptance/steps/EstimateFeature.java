@@ -16,6 +16,30 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.assertj.core.api.Assertions;
+
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Objects;
+import java.util.Optional;
+
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_GAS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
@@ -62,29 +86,6 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.extractTransactionId;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
-import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
-import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
-import io.cucumber.java.en.And;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Objects;
-import java.util.Optional;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.api.Assertions;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -262,7 +263,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with request body that contains wrong method signature")
     public void wrongMethodSignatureEstimateCall() {
-        assertContractCallReturnsBadRequest(encodeData(WRONG_METHOD_SIGNATURE), mockAddress);
+        assertContractCallReturnsBadRequest(encodeData(WRONG_METHOD_SIGNATURE), WRONG_METHOD_SIGNATURE.actualGas, mockAddress);
     }
 
     @Then("I call estimateGas with wrong encoded parameter")
@@ -276,7 +277,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with non-existing from address in the request body")
     public void wrongFromParameterEstimateCall() {
         var data = encodeData(ESTIMATE_GAS, MESSAGE_SIGNER);
-        var contractCallRequest = ModelBuilder.contractCallRequest()
+        var contractCallRequest = ModelBuilder.contractCallRequest(MESSAGE_SIGNER.actualGas)
                 .data(data)
                 .estimate(true)
                 .from(newAccountEvmAddress)
@@ -353,12 +354,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
     public void progressiveStateUpdateContractFunction() {
         // making 5 times to state update
         var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("5"));
-        var firstResponse = estimateContract(data, contractSolidityAddress)
+        var firstResponse = estimateContract(data, STATE_UPDATE_OF_CONTRACT.actualGas, contractSolidityAddress)
                 .getResultAsNumber()
                 .intValue();
         // making 10 times to state update
         var secondData = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("10"));
-        var secondResponse = estimateContract(secondData, contractSolidityAddress)
+        var secondResponse = estimateContract(secondData, STATE_UPDATE_OF_CONTRACT.actualGas, contractSolidityAddress)
                 .getResultAsNumber()
                 .intValue();
         // verifying that estimateGas for 10 state updates is higher than 5 state updates
