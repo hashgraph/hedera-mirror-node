@@ -9,27 +9,17 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerO
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import io.github.bucket4j.Bucket;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
 import lombok.CustomLog;
-import org.apache.tuweni.bytes.Bytes;
 
 import java.util.List;
-
-import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
-import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
-import static com.hedera.mirror.web3.service.ContractCallService.GAS_METRIC;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ERROR;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 
 @CustomLog
 @Named
@@ -38,7 +28,7 @@ public class ContractCallDebugService extends BaseService {
     private final ContractActionService contractActionService;
     private final RecordFileService recordFileService;
     private final Store store;
-    private final Meter.MeterProvider<Counter> gasCounter;
+
 
     public ContractCallDebugService(
             ContractActionService contractActionService,
@@ -49,15 +39,11 @@ public class ContractCallDebugService extends BaseService {
             ThrottleProperties throttleProperties,
             MeterRegistry meterRegistry
     ) {
-        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties);
+        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties, meterRegistry);
         this.contractActionService = contractActionService;
         this.recordFileService = recordFileService;
         this.store = store;
-        this.gasCounter = Counter.builder(GAS_METRIC)
-                .description("The amount of gas consumed by the EVM")
-                .withRegistry(meterRegistry);;
     }
-
 
     public OpcodesProcessingResult processOpcodeCall(final ContractCallDebugServiceParameters params,
                                                      final OpcodeTracerOptions opcodeTracerOptions,
@@ -73,28 +59,6 @@ public class ContractCallDebugService extends BaseService {
                     .opcodes(ctx.getOpcodes())
                     .build();
         });
-    }
-
-    private void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallServiceParameters.CallType type) {
-        if (!txnResult.isSuccessful()) {
-            updateGasMetric(ERROR, txnResult.getGasUsed(), 1);
-            var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
-            var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            if (type == ETH_DEBUG_TRACE_TRANSACTION) {
-                log.warn("Transaction failed with status: {}, detail: {}, revertReason: {}",
-                        getStatusOrDefault(txnResult), detail, revertReason.toHexString());
-            } else {
-                throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
-            }
-        } else {
-            updateGasMetric(type, txnResult.getGasUsed(), 1);
-        }
-    }
-
-    private void updateGasMetric(final ContractCallDebugServiceParameters.CallType callType, final long gasUsed, final int iterations) {
-        gasCounter
-                .withTags("type", callType.toString(), "iteration", String.valueOf(iterations))
-                .increment(gasUsed);
     }
 
     /**
