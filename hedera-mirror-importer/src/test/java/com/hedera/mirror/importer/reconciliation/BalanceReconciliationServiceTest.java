@@ -51,8 +51,11 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.DirtiesContext.ClassMode;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@DirtiesContext(classMode = ClassMode.BEFORE_CLASS)
 @RequiredArgsConstructor
 class BalanceReconciliationServiceTest extends ImporterIntegrationTest {
 
