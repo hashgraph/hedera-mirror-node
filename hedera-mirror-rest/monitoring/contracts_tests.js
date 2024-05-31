@@ -27,7 +27,6 @@ import {
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
-  hasEmptyList,
   testRunner,
 } from './utils';
 
@@ -54,46 +53,10 @@ const mandatoryParams = [
 const contractResultParams = ['address', 'bloom', 'contract_id', 'from', 'gas_limit', 'hash', 'timestamp', 'to'];
 
 /**
- * Verify base contracts call
- * Also ensure a contract mentioned in the contracts can be confirmed as existing
- * @param {Object} server API host endpoint
- * @returns {{url: string, passed: boolean, message: string}}
- */
-const getContractsWithCheck = async (server) => {
-  let {url, contracts, result} = await getContractsList(server);
-
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  const contract = _.max(_.map(contracts, (contract) => contract.contract_id));
-  url = getUrl(server, contractsPath, {
-    'contract.id': contract,
-    limit: 1,
-  });
-  const singleContract = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
-
-  result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'singleContract is undefined'})
-    .withCheckSpec(checkEntityId, {contractId: singleContract, message: 'contract check was not found'})
-    .run(singleContract);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: 'Successfully called contracts and performed contract check',
-  };
-};
-
-/**
- * Verify single contract can be retrieved
+ * Verify Verify /contracts and /contracts/{contractId} can be retrieved
  * @param {Object} server API host endpoint
  */
-const getSingleContract = async (server) => {
+const getContractById = async (server) => {
   let {url, contracts, result} = await getContractsList(server);
 
   if (!result.passed) {
@@ -304,8 +267,7 @@ async function getContractsResultsList(server) {
 const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
-    runTest(getContractsWithCheck),
-    runTest(getSingleContract),
+    runTest(getContractById),
     runTest(getContractResults),
     runTest(getContractResultsLogs),
     runTest(getContractState),

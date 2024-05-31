@@ -38,14 +38,14 @@ const jsonRespKey = 'schedules';
  * @param {String} server API host endpoint
  */
 const getScheduleById = async (server) => {
-  let url = getUrl(server, schedulesPath, {limit: 10});
+  let url = getUrl(server, schedulesPath, {limit: resourceLimit});
   const schedules = await getAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'schedules is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: 10,
+      limit: resourceLimit,
       message: (elements) => `schedules.length of ${elements.length} was expected to be ${resourceLimit}`,
     })
     .run(schedules);

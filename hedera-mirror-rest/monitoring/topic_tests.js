@@ -112,16 +112,10 @@ const getTopicById = async (server) => {
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'topic is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
-      message: (elements, limit) => `topic.length of ${elements.length} is less than limit ${limit}`,
-    })
     .withCheckSpec(checkMandatoryParams, {
       params: requiredParams,
       message: 'topic object is missing some mandatory fields',
     })
-    .withCheckSpec(checkElementsOrder, {asc: true, key: 'consensus_timestamp', name: 'consensus timestamp'})
-    .withCheckSpec(checkSequenceNumberOrder, {asc: true})
     .run(topic);
 
   if (!result.passed) {
