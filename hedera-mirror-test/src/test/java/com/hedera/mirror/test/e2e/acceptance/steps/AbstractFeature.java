@@ -165,8 +165,23 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
         return callContract("LATEST", data, contractAddress);
     }
 
+    protected ContractCallResponseWrapper callContract(String data, String contractAddress, int actualGas) {
+        return callContract("LATEST", data, contractAddress, actualGas);
+    }
+
     protected ContractCallResponseWrapper callContract(String blockNumber, String data, String contractAddress) {
         var contractCallRequest = ModelBuilder.contractCallRequest()
+                .block(blockNumber)
+                .data(data)
+                .from(contractClient.getClientAddress())
+                .to(contractAddress);
+
+        return callContract(contractCallRequest);
+    }
+
+    protected ContractCallResponseWrapper callContract(
+            String blockNumber, String data, String contractAddress, int actualGas) {
+        var contractCallRequest = ModelBuilder.contractCallRequest(actualGas)
                 .block(blockNumber)
                 .data(data)
                 .from(contractClient.getClientAddress())
@@ -190,8 +205,8 @@ public abstract class AbstractFeature extends EncoderDecoderFacade {
                 node, false, from, getContract(contractResource), method, data, returnTupleType));
     }
 
-    protected ContractCallResponseWrapper estimateContract(String data, String contractAddress) {
-        var contractCallRequest = ModelBuilder.contractCallRequest()
+    protected ContractCallResponseWrapper estimateContract(String data, int actualGas, String contractAddress) {
+        var contractCallRequest = ModelBuilder.contractCallRequest(actualGas)
                 .data(data)
                 .estimate(true)
                 .from(contractClient.getClientAddress())

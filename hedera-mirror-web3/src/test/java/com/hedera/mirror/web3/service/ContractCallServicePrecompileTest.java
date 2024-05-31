@@ -261,6 +261,41 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
+    @Test
+    void createFungibleTokenWithInheritKeysEstimateGas() {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "createFungibleTokenWithInheritKeysExternal", MODIFICATION_CONTRACT_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash,
+                MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS,
+                ETH_ESTIMATE_GAS,
+                10000 * 100_000_000L,
+                BlockType.LATEST);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+    }
+
+    @Test
+    void createFungibleTokenWithInheritKeysCall() {
+        final String funcName = "createFungibleTokenWithInheritKeysExternal";
+        final var functionHash = functionEncodeDecoder.functionHashFor(funcName, MODIFICATION_CONTRACT_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash,
+                MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS,
+                ETH_CALL,
+                10000 * 100_000_000L,
+                BlockType.LATEST);
+
+        final var result = contractCallService.processCall(serviceParameters);
+        final var decodedAddress = functionEncodeDecoder.decodeResult(funcName, MODIFICATION_CONTRACT_ABI_PATH, result);
+        assertThat(decodedAddress.size()).isEqualTo(1);
+        assertThat(decodedAddress.get(0).getClass()).isEqualTo(com.esaulpaugh.headlong.abi.Address.class);
+    }
+
     @ParameterizedTest
     @EnumSource(value = TokenCreateNegativeCases.class)
     void invalidTokenCreateCases(final TokenCreateNegativeCases tokenCreateNegativeCase) {

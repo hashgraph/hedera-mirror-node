@@ -85,6 +85,9 @@ class ContractController {
 
             final var params = constructServiceParameters(request);
             result = contractCallService.processCall(params);
+        } catch (QueryTimeoutException e) {
+            log.error("Query timed out: {} request: {}", e.getMessage(), request);
+            throw e;
         } catch (InvalidParametersException e) {
             // The validation failed but no processing was made - restore the consumed gas back to the bucket.
             gasLimitBucket.addTokens(request.getGas());
@@ -231,7 +234,6 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(SERVICE_UNAVAILABLE)
     private GenericErrorResponse queryTimeout(final QueryTimeoutException e) {
-        log.error("Query timed out: {}", e.getMessage());
         return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase());
     }
 

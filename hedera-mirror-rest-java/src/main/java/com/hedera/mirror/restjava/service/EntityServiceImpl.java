@@ -24,11 +24,11 @@ import com.hedera.mirror.restjava.common.EntityIdEvmAddressParameter;
 import com.hedera.mirror.restjava.common.EntityIdNumParameter;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.repository.EntityRepository;
+import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 
 @Named
 @RequiredArgsConstructor
@@ -38,7 +38,7 @@ class EntityServiceImpl implements EntityService {
     private final RestJavaProperties properties;
 
     @Override
-    public Entity findById(@NotNull EntityId id) {
+    public Entity findById(@Nonnull EntityId id) {
         validateShard(id, id.getShard());
 
         return entityRepository.findById(id.getId())
@@ -46,7 +46,7 @@ class EntityServiceImpl implements EntityService {
     }
 
     @Override
-    public EntityId lookup(@NotNull EntityIdParameter accountId) {
+    public EntityId lookup(@Nonnull EntityIdParameter accountId) {
         validateShard(accountId, accountId.shard());
 
         if (accountId.realm() != 0) {

@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import lombok.Data;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -94,10 +95,13 @@ public class AcceptanceTestProperties {
     @NotNull
     private NodeNameEnum nodeType = NodeNameEnum.MIRROR;
 
+    @Getter
+    @RequiredArgsConstructor
     public enum HederaNetwork {
-        MAINNET,
-        OTHER,
-        PREVIEWNET,
-        TESTNET,
+        MAINNET(295),
+        TESTNET(296),
+        PREVIEWNET(297),
+        OTHER(298);
+        private final int chainId;
     }
 }

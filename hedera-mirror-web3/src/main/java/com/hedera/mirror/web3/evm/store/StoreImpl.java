@@ -43,13 +43,13 @@ import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
+import jakarta.annotation.Nullable;
 import jakarta.inject.Named;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.Nullable;
 
 @Named
 public class StoreImpl implements Store {
@@ -299,11 +299,11 @@ public class StoreImpl implements Store {
     }
 
     /**
-     * Returns a {@link Account} model with loaded account from the state and throws the given code if an exception occurs due
-     * to an invalid account.
+     * Returns a {@link Account} model with loaded account from the state and throws the given code if an exception
+     * occurs due to an invalid account.
      *
      * @param evmAddress of the account to load
-     * @param code the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
+     * @param code       the {@link ResponseCodeEnum} to fail with if the account is deleted/missing
      * @return a usable model of the account if available
      */
     @Override
@@ -330,8 +330,9 @@ public class StoreImpl implements Store {
      *
      * @param token         the token model, on which to load the unique tokens
      * @param serialNumbers the serial numbers to load
-     * @throws com.hedera.node.app.service.evm.exceptions.InvalidTransactionException if the requested token class is missing, deleted, or
-     *                                                                                expired and pending removal
+     * @throws com.hedera.node.app.service.evm.exceptions.InvalidTransactionException if the requested token class is
+     *                                                                                missing, deleted, or expired and
+     *                                                                                pending removal
      */
     public Token loadUniqueTokens(final Token token, final List<Long> serialNumbers) {
         final var loadedUniqueTokens = new HashMap<Long, UniqueToken>();
@@ -344,8 +345,8 @@ public class StoreImpl implements Store {
     }
 
     /**
-     * Returns a {@link UniqueToken} model of the requested unique token, with operations that can
-     * be used to implement business logic in a transaction.
+     * Returns a {@link UniqueToken} model of the requested unique token, with operations that can be used to implement
+     * business logic in a transaction.
      *
      * @param tokenId   TokenId of the NFT
      * @param serialNum Serial number of the NFT

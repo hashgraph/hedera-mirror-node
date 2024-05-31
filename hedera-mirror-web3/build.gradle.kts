@@ -39,7 +39,7 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
-    testImplementation("org.flywaydb:flyway-core")
+    testImplementation("org.flywaydb:flyway-database-postgresql")
     testImplementation("org.mockito:mockito-inline")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")

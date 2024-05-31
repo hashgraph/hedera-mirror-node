@@ -67,19 +67,27 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
             OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, NftTransfer.class);
 
     private static final String REVERT_DDL = "alter table transaction drop column if exists nft_transfer";
-
-    private final @Owner JdbcTemplate jdbcTemplate;
-
     private static final RowMapper<MigrationTransaction> ROW_MAPPER = rowMapper(MigrationTransaction.class);
-
-    @Value("classpath:db/migration/v1/V1.81.0__nest_nft_transfer.sql")
-    private final Resource sql;
 
     static {
         var module = new SimpleModule();
         module.addDeserializer(EntityId.class, EntityIdDeserializer.INSTANCE);
         OBJECT_MAPPER.registerModule(module);
         OBJECT_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    }
+
+    private final @Owner JdbcTemplate jdbcTemplate;
+
+    @Value("classpath:db/migration/v1/V1.81.0__nest_nft_transfer.sql")
+    private final Resource sql;
+
+    private static List<NftTransfer> toDomainNftTransfers(List<MigrationNftTransfer> nftTransfers) {
+        if (nftTransfers != null) {
+            return nftTransfers.stream()
+                    .map(MigrationNftTransfer::toDomainNftTransfer)
+                    .toList();
+        }
+        return null;
     }
 
     @BeforeEach
@@ -303,7 +311,7 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
                 .map(MigrationTransaction::toDomainTransaction)
                 .toList();
         assertThat(actualTransactions)
-                .usingRecursiveFieldByFieldElementComparatorOnFields("consensus_timestamp", "nft_transfer")
+                .usingRecursiveFieldByFieldElementComparatorOnFields("consensusTimestamp", "nftTransfer")
                 .containsExactlyInAnyOrder(transactions);
     }
 
@@ -354,15 +362,6 @@ class NestNftTransferMigrationTest extends ImporterIntegrationTest {
         } else {
             ps.setNull(index, Types.BIGINT);
         }
-    }
-
-    private static List<NftTransfer> toDomainNftTransfers(List<MigrationNftTransfer> nftTransfers) {
-        if (nftTransfers != null) {
-            return nftTransfers.stream()
-                    .map(MigrationNftTransfer::toDomainNftTransfer)
-                    .toList();
-        }
-        return null;
     }
 
     @AllArgsConstructor
