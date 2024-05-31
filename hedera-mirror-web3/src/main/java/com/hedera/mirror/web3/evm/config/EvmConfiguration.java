@@ -80,7 +80,6 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class EvmConfiguration {
 
-    public static final String CACHE_MANAGER_CONTRACT = "contract";
     public static final String CACHE_MANAGER_ENTITY = "entity";
     public static final String CACHE_MANAGER_RECORD_FILE_LATEST = "recordFileLatest";
     public static final String CACHE_MANAGER_RECORD_FILE_EARLIEST = "recordFileEarliest";
@@ -89,7 +88,6 @@ public class EvmConfiguration {
     public static final String CACHE_MANAGER_SYSTEM_FILE = "systemFile";
     public static final String CACHE_MANAGER_TOKEN = "token";
     public static final String CACHE_NAME = "default";
-    public static final String CACHE_NAME_CONTRACT_RUNTIME_BYTECODE = "contractRuntimeBytecode";
     public static final String CACHE_NAME_EVM_ADDRESS = "evmAddress";
     public static final String CACHE_NAME_EXCHANGE_RATE = "exchangeRate";
     public static final String CACHE_NAME_FEE_SCHEDULE = "feeSchedule";
@@ -117,14 +115,6 @@ public class EvmConfiguration {
     private final PrecompiledContractProvider precompilesHolder;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
-
-    @Bean(CACHE_MANAGER_CONTRACT)
-    CacheManager contract() {
-        final var cacheManager = new CaffeineCacheManager();
-        cacheManager.setCacheNames(Set.of(CACHE_NAME_CONTRACT_RUNTIME_BYTECODE));
-        cacheManager.setCacheSpecification(cacheProperties.getContract());
-        return cacheManager;
-    }
 
     @Bean(CACHE_MANAGER_CONTRACT_STATE)
     CacheManager cacheManagerState() {
