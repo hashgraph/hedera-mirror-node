@@ -32,7 +32,7 @@ public class CacheProperties {
     private static final String ENTITY_CACHE_CONFIG = "expireAfterWrite=1s,maximumSize=10000,recordStats";
 
     @NotBlank
-    private String contract = "expireAfterWrite=60m,maximumSize=1000,recordStats";
+    private String contract = "expireAfterAccess=10m,maximumSize=1000,recordStats";
 
     @NotBlank
     private String contractState = ENTITY_CACHE_CONFIG;
