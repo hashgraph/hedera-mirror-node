@@ -132,7 +132,7 @@ const getContractResults = async (server) => {
     if (!result.passed) {
       return {url, ...result};
     }
-    contractId = _.max(_.map(contractsResults, (contract) => contract.contract_id));
+    contractId = _.max(_.map(contractsResults, (result) => result.contract_id));
   }
 
   let url = getUrl(server, `${contractsPath}/${contractId}/results`);
@@ -213,6 +213,41 @@ const getContractResultsLogs = async (server) => {
 };
 
 /**
+ * Verify contract state can be retrieved
+ * @param {Object} server API host endpoint
+ */
+const getContractState = async (server) => {
+  let {url, contracts, result} = await getContractsList(server);
+
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  const contractStateParams = ['address', 'contract_id', 'timestamp', 'slot', 'value'];
+  const jsonStateRespKey = 'state';
+  const contract = _.max(_.map(contracts, (contract) => contract.contract_id));
+  url = getUrl(server, `${contractsPath}/${contract}/state`);
+  const contractState = await getAPIResponse(url, jsonStateRespKey);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'contracts state is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: contractStateParams,
+      message: 'contract state object is missing some mandatory fields',
+    })
+    .run(contractState);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called contracts for contract state',
+  };
+};
+/**
  * Retrieves contract list
  * @param {Object} server API host endpoint
  */
@@ -273,6 +308,7 @@ const runTests = async (server, testResult) => {
     runTest(getSingleContract),
     runTest(getContractResults),
     runTest(getContractResultsLogs),
+    runTest(getContractState),
   ]);
 };
 
