@@ -25,12 +25,12 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.NotNull;
 
 @Named
 @RequiredArgsConstructor
@@ -38,7 +38,7 @@ public class EntityDatabaseAccessor extends DatabaseAccessor<Object, Entity> {
     private final EntityRepository entityRepository;
 
     @Override
-    public @NotNull Optional<Entity> get(@NotNull Object key, final Optional<Long> timestamp) {
+    public @Nonnull Optional<Entity> get(@Nonnull Object key, final Optional<Long> timestamp) {
         if (key instanceof Address address) {
             final var addressBytes = address.toArrayUnsafe();
             if (isMirror(addressBytes)) {

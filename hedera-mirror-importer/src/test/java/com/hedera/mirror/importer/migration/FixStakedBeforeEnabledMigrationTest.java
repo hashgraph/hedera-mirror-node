@@ -255,7 +255,7 @@ class FixStakedBeforeEnabledMigrationTest extends AbstractStakingMigrationTest {
 
     private ListAssert<MigrationEntityStake> assertEntityStakes() {
         return assertThat(findAllEntityStakes())
-                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pending_reward", "staked_node_id_start");
+                .usingRecursiveFieldByFieldElementComparatorOnFields("id", "pendingReward", "stakedNodeIdStart");
     }
 
     private void setupForMainnet() {

@@ -99,6 +99,9 @@ rest:
   service:
     type: LoadBalancer
 
+restjava:
+  enabled: false
+
 rosetta:
   enabled: false
 

@@ -34,10 +34,10 @@ public class ThrottleProperties {
 
     @Getter
     @Min(21_000)
-    private long gasPerSecond = 25_000_000L;
+    private long gasPerSecond = 1_000_000_000L;
 
     @Getter
     @Min(0)
     @Max(100)
-    private float gasLimitRefundPercent = 20;
+    private float gasLimitRefundPercent = 100;
 }

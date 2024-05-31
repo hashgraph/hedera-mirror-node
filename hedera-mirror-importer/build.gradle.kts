@@ -35,7 +35,7 @@ dependencies {
     implementation("org.apache.commons:commons-compress")
     implementation("org.apache.commons:commons-collections4")
     implementation("org.apache.velocity:velocity-engine-core")
-    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.hyperledger.besu:secp256k1")
     implementation("org.msgpack:jackson-dataformat-msgpack")
     implementation("org.postgresql:postgresql")
