@@ -281,14 +281,14 @@ stackgres:
     config:
       autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
-      citus.executor_slow_start_interval: "100ms"
-      citus.max_cached_conns_per_worker: "4"
-      citus.max_shared_pool_size: "380"
+      citus.executor_slow_start_interval: "20ms"
+      citus.max_cached_conns_per_worker: "1"
+      citus.max_shared_pool_size: "850"
       full_page_writes: "false"  # Not needed with ZFS
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       maintenance_work_mem: "256MB"
-      max_connections: "1200"
+      max_connections: "800"
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
@@ -312,12 +312,19 @@ stackgres:
       version: stable
   nameOverride: citus
   pgbouncer:
-    default_pool_size: "1000"
-    ignore_startup_parameters: extra_float_digits,options,statement_timeout
-    max_client_conn: "1000"
-    max_db_connections: "0"
-    max_user_connections: "0"
-    pool_mode: session
+    pgbouncer:
+      default_pool_size: "800"
+      ignore_startup_parameters: extra_float_digits,options,statement_timeout
+      max_client_conn: "800"
+      max_db_connections: "0"
+      max_prepared_statements: "256"
+      max_user_connections: "0"
+      pool_mode: transaction
+    users:
+      mirror_node:
+        pool_mode: session
+      mirror_importer:
+        pool_mode: session
   podAntiAffinity: true
   postgresVersion: 16
   worker:
@@ -328,7 +335,7 @@ stackgres:
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       maintenance_work_mem: "256MB"
-      max_connections: "400"
+      max_connections: "900"
       max_wal_size: "24GB"
       password_encryption: "scram-sha-256"
       random_page_cost: "1.1"
