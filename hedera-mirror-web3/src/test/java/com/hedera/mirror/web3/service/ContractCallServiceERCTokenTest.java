@@ -99,23 +99,10 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
             58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
             77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
-    private static final long expiry = 1_234_567_890L;
     private static final long EVM_V_34_BLOCK = 50L;
 
-    // System addresses
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
-
-    // Fee schedules
     private static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
-
-    /*@Autowired
-    private ContractCallService contractCallService;
-    @Autowired
-    private FunctionEncodeDecoder functionEncodeDecoder;
-    @Autowired
-    private RecordFileRepository recordFileRepository;*/
 
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
     private Path ERC_ABI_PATH;

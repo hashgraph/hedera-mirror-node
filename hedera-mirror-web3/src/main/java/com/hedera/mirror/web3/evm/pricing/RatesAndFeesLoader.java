@@ -39,8 +39,8 @@ import org.springframework.cache.annotation.Cacheable;
 @RequiredArgsConstructor
 @CustomLog
 public class RatesAndFeesLoader {
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
+    public static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
+    public static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
     private final FileDataRepository fileDataRepository;
 
     /**

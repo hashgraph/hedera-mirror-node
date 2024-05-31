@@ -16,46 +16,17 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FeeSchedule;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
-public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
+public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-    // Account addresses
-    private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1043));
-    private static final Address SENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1014));
-
-    // System addresses
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
-
-    private static final long expiry = 1_234_567_890L;
-
-    @Autowired
-    private ContractCallService contractCallService;
 
     @BeforeEach
     void setup() {
@@ -248,82 +219,6 @@ public class ContractCallNativePrecompileTest extends Web3IntegrationTest {
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(correctResult);
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
-    }
-
-    private CallServiceParameters serviceParametersForExecution(
-            final Bytes callData,
-            final Address contractAddress,
-            final CallServiceParameters.CallType callType,
-            final long value,
-            final BlockType block) {
-        HederaEvmAccount sender;
-        if (block != BlockType.LATEST) {
-            sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
-        } else {
-            sender = new HederaEvmAccount(SENDER_ADDRESS);
-        }
-
-        // persist needed entities
-        exchangeRatesPersist();
-        feeSchedulesPersist();
-
-        return CallServiceParameters.builder()
-                .sender(sender)
-                .value(value)
-                .receiver(contractAddress)
-                .callData(callData)
-                .gas(15_000_000L)
-                .isStatic(false)
-                .callType(callType)
-                .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(block)
-                .build();
-    }
-
-    private void feeSchedulesPersist() {
-        CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
-                .setCurrentFeeSchedule(FeeSchedule.newBuilder()
-                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
-                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                                .setHederaFunctionality(ContractCall)
-                                .addFees(FeeData.newBuilder()
-                                        .setServicedata(FeeComponents.newBuilder()
-                                                .setGas(852000)
-                                                .build())))
-                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                                .setHederaFunctionality(EthereumTransaction)
-                                .addFees(FeeData.newBuilder()
-                                        .setServicedata(FeeComponents.newBuilder()
-                                                .setGas(852000)
-                                                .build()))))
-                .build();
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(feeSchedules.toByteArray())
-                        .entityId(FEE_SCHEDULE_ENTITY_ID)
-                        .consensusTimestamp(expiry + 1))
-                .persist();
-    }
-
-    private void exchangeRatesPersist() {
-        final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
-                .setCurrentRate(ExchangeRate.newBuilder()
-                        .setCentEquiv(12)
-                        .setHbarEquiv(1)
-                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
-                        .build())
-                .setNextRate(ExchangeRate.newBuilder()
-                        .setCentEquiv(15)
-                        .setHbarEquiv(1)
-                        .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
-                        .build())
-                .build();
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
-                        .entityId(EXCHANGE_RATE_ENTITY_ID)
-                        .consensusTimestamp(expiry))
-                .persist();
     }
 
     private double getGasUsedBeforeExecution(final CallServiceParameters.CallType callType) {
