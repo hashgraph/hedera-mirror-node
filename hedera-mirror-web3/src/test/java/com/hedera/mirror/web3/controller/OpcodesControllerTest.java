@@ -708,7 +708,7 @@ class OpcodesControllerTest {
                         .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "*"))
-                .andExpect(header().string("Access-Control-Allow-Methods", "GET"));
+                .andExpect(header().string("Access-Control-Allow-Methods", "GET,HEAD,POST"));
     }
 
     /**
