@@ -25,9 +25,7 @@ import java.util.regex.Pattern;
 public record TransactionIdParameter(EntityId payerAccountId, Instant validStart) implements TransactionIdOrHashParameter {
 
     private static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
-    private static final String INVALID_TRANSACTION_ID_FORMAT = 
-            "Invalid Transaction ID. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds";
-    
+
     public static TransactionIdParameter valueOf(String transactionId) throws InvalidParametersException {
         if (transactionId == null) {
             return null;
@@ -38,15 +36,19 @@ public record TransactionIdParameter(EntityId payerAccountId, Instant validStart
             return null;
         }
 
-        long shard = Long.parseLong(matcher.group(1));
-        long realm = Long.parseLong(matcher.group(2));
-        long num = Long.parseLong(matcher.group(3));
-        long seconds = Long.parseLong(matcher.group(4));
-        int nanos = Integer.parseInt(matcher.group(5));
-        if (shard < 0 || realm < 0 || num < 0 || seconds < 0) {
-            throw new InvalidParametersException(INVALID_TRANSACTION_ID_FORMAT);
-        }
+        try {
+            long shard = Long.parseLong(matcher.group(1));
+            long realm = Long.parseLong(matcher.group(2));
+            long num = Long.parseLong(matcher.group(3));
+            long seconds = Long.parseLong(matcher.group(4));
+            int nanos = Integer.parseInt(matcher.group(5));
 
-        return new TransactionIdParameter(EntityId.of(shard, realm, num), Instant.ofEpochSecond(seconds, nanos));
+            EntityId entityId = EntityId.of(shard, realm, num);
+            Instant validStart = Instant.ofEpochSecond(seconds, nanos);
+
+            return new TransactionIdParameter(entityId, validStart);
+        } catch (Exception e) {
+            throw new InvalidParametersException(e.getMessage());
+        }
     }
 }
