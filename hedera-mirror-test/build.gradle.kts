@@ -58,6 +58,7 @@ dependencies {
     testImplementation("org.springframework.retry:spring-retry")
     testImplementation("org.apache.tuweni:tuweni-bytes")
     testImplementation("commons-codec:commons-codec")
+    testImplementation("org.web3j:core:4.11.0")
 }
 
 // Disable the default test task and only run acceptance tests during the standalone "acceptance"
