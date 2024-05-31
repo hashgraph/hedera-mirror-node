@@ -34,6 +34,7 @@
     "limit": 10
   },
   "contract": {
+    "contractId": "",
     "enabled": true,
     "intervalMultiplier": 1,
     "limit": 10

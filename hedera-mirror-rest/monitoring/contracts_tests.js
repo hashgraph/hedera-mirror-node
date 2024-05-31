@@ -35,6 +35,7 @@ const contractsPath = '/contracts';
 const resource = 'contract';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const jsonRespKey = 'contracts';
+const jsonResultsRespKey = 'results';
 const mandatoryParams = [
   'admin_key',
   'auto_renew_account',
@@ -50,6 +51,7 @@ const mandatoryParams = [
   'proxy_account_id',
   'timestamp',
 ];
+const contractResultParams = ['address', 'bloom', 'contract_id', 'from', 'gas_limit', 'hash', 'timestamp', 'to'];
 
 /**
  * Verify base contracts call
@@ -123,19 +125,20 @@ const getSingleContract = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getContractResults = async (server) => {
-  let {url, contracts, result} = await getContractsList(server);
+  let contractId = config[resource].contractId;
+  if (!contractId) {
+    let {url, contractsResults, result} = await getContractsResultsList(server);
 
-  if (!result.passed) {
-    return {url, ...result};
+    if (!result.passed) {
+      return {url, ...result};
+    }
+    contractId = _.max(_.map(contractsResults, (contract) => contract.contract_id));
   }
 
-  const jsonResultsRespKey = 'results';
-  const contractResultParams = ['address', 'bloom', 'contract_id', 'from', 'gas_limit', 'hash', 'timestamp', 'to'];
-  const contract = _.max(_.map(contracts, (contract) => contract.contract_id));
-  url = getUrl(server, `${contractsPath}/${contract}/results`);
+  let url = getUrl(server, `${contractsPath}/${contractId}/results`);
   const contractResults = await getAPIResponse(url, jsonResultsRespKey);
 
-  result = new CheckRunner()
+  let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'contract results is undefined'})
     .withCheckSpec(checkMandatoryParams, {
@@ -148,7 +151,7 @@ const getContractResults = async (server) => {
   }
 
   const timestamp = _.max(_.map(contractResults, (result) => result.timestamp));
-  url = getUrl(server, `${contractsPath}/${contract}/results/${timestamp}`);
+  url = getUrl(server, `${contractsPath}/${contractId}/results/${timestamp}`);
   const contractResultsAtTimestamp = await getAPIResponse(url);
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -166,6 +169,46 @@ const getContractResults = async (server) => {
     url,
     passed: true,
     message: 'Successfully called contracts for contract results at a given timestamp',
+  };
+};
+
+/**
+ * Verify contract result logs can be retrieved for a given contractId
+ * @param {Object} server API host endpoint
+ */
+const getContractResultsLogs = async (server) => {
+  let contractId = config[resource].contractId;
+  if (!contractId) {
+    let {url, contractsResults, result} = await getContractsResultsList(server);
+
+    if (!result.passed) {
+      return {url, ...result};
+    }
+
+    contractId = _.max(_.map(contractsResults, (contract) => contract.contract_id));
+  }
+
+  const jsonLogsRespKey = 'logs';
+  const contractResultParams = ['address', 'bloom', 'contract_id', 'index', 'topics'];
+  let url = getUrl(server, `${contractsPath}/${contractId}/results/logs`);
+  const contractResults = await getAPIResponse(url, jsonLogsRespKey);
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'contract results logs is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: contractResultParams,
+      message: 'contract results logs object is missing some mandatory fields',
+    })
+    .run(contractResults);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called contracts for contract results logs ',
   };
 };
 
@@ -193,13 +236,44 @@ async function getContractsList(server) {
 }
 
 /**
+ * Retrieves contract results list
+ * @param {Object} server API host endpoint
+ */
+async function getContractsResultsList(server) {
+  const contractsResultsPath = '/contracts/results';
+  let url = getUrl(server, contractsResultsPath, {limit: resourceLimit});
+  const contractsResults = await getAPIResponse(url, jsonResultsRespKey);
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'contracts results list is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: resourceLimit,
+      message: (contracts, limit) =>
+        `contractsResults.length of ${contractsResults.length} was expected to be ${limit}`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: contractResultParams,
+      message: 'contracts results list object is missing some mandatory fields',
+    })
+    .run(contractsResults);
+
+  return {url, contractsResults, result};
+}
+
+/**
  * Run all contract tests in an asynchronous fashion waiting for all tests to complete
  * @param {Object} server object provided by the user
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
-  return Promise.all([runTest(getContractsWithCheck), runTest(getSingleContract), runTest(getContractResults)]);
+  return Promise.all([
+    runTest(getContractsWithCheck),
+    runTest(getSingleContract),
+    runTest(getContractResults),
+    runTest(getContractResultsLogs),
+  ]);
 };
 
 export default {
