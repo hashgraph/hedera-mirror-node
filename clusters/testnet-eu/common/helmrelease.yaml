@@ -16,7 +16,7 @@ spec:
     ignore:
       - paths: [""]
         target:
-          kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
+          kind: (MutatingWebhookConfiguration|PrometheusRule|SGConfig|ValidatingWebhookConfiguration)
   install:
     crds: CreateReplace
   interval: 1m
