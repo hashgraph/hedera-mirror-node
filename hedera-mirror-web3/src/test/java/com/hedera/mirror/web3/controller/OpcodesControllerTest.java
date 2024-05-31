@@ -16,11 +16,7 @@
 
 package com.hedera.mirror.web3.controller;
 
-import static com.hedera.mirror.common.domain.transaction.TransactionType.CONTRACTCALL;
-import static com.hedera.mirror.common.domain.transaction.TransactionType.CONTRACTCREATEINSTANCE;
-import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
 import static com.hedera.mirror.common.util.CommonUtils.instant;
-import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
@@ -40,16 +36,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSortedMap;
-import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
+import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionHashParameter;
@@ -72,19 +62,18 @@ import com.hedera.mirror.web3.service.OpcodeServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.mirror.web3.service.RecordFileServiceImpl;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.annotation.Resource;
 import jakarta.persistence.EntityManager;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -92,8 +81,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
@@ -126,18 +113,6 @@ class OpcodesControllerTest {
 
     private static final String OPCODES_URI = "/api/v1/contracts/results/{transactionIdOrHash}/opcodes";
     private static final DomainBuilder DOMAIN_BUILDER = new DomainBuilder();
-
-    /**
-     * ETH Transaction Types
-     */
-    private static final int LEGACY_TYPE_BYTE = 0;
-    private static final int EIP2930_TYPE_BYTE = 1;
-    private static final int EIP1559_TYPE_BYTE = 2;
-    private static final byte[] PARSABLE_EVM_ADDRESS = new byte[] {
-            0, 0, 0, 0, // shard
-            0, 0, 0, 0, 0, 0, 0, 0, // realm
-            0, 0, 0, 0, 0, 0, 0, 100, // num
-    };
 
     @Resource
     private MockMvc mockMvc;
@@ -228,13 +203,16 @@ class OpcodesControllerTest {
     }
 
     TransactionIdOrHashParameter setUp(final TransactionProviderEnum provider) {
-        final var transaction = provider.getTransaction();
-        final var ethTransaction = provider.getEthTransaction();
-        final var recordFile = provider.getRecordFile();
-        final var contractTransactionHash = provider.getContractTransactionHash();
-        final var contractResult = provider.getContractResult();
-        final var contractEntity = provider.getContractEntity();
-        final var senderEntity = provider.getSenderEntity();
+        provider.setDomainBuilder(DOMAIN_BUILDER);
+        final var transaction = provider.getTransaction().get();
+        final var ethTransaction = Optional.ofNullable(provider.getEthTransaction())
+                .map(DomainWrapper::get)
+                .orElse(null);
+        final var recordFile = provider.getRecordFile().get();
+        final var contractTransactionHash = provider.getContractTransactionHash().get();
+        final var contractResult = provider.getContractResult().get();
+        final var contractEntity = provider.getContractEntity().get();
+        final var senderEntity = provider.getSenderEntity().get();
 
         final var hash = ethTransaction != null ? ethTransaction.getHash() : transaction.getTransactionHash();
         final var consensusTimestamp = transaction.getConsensusTimestamp();
@@ -410,7 +388,7 @@ class OpcodesControllerTest {
     void callForSenderWithAliasAndEvmAddressShouldUseEvmAddress(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var senderEntity = providerEnum.getSenderEntity();
+        final var senderEntity = providerEnum.getSenderEntity().get();
         senderEntity.setEvmAddress(DOMAIN_BUILDER.evmAddress());
         senderEntity.setAlias(DomainUtils.fromBytes(new byte[] {
                 0, 0, 0, 0, // shard
@@ -439,7 +417,7 @@ class OpcodesControllerTest {
     void callForSenderOnlyWithEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var senderEntity = providerEnum.getSenderEntity();
+        final var senderEntity = providerEnum.getSenderEntity().get();
         senderEntity.setEvmAddress(null);
         senderEntity.setAlias(DomainUtils.fromBytes(new byte[] {
                 0, 0, 0, 0, // shard
@@ -468,7 +446,7 @@ class OpcodesControllerTest {
     void callForSenderOnlyWithNonEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var senderEntity = providerEnum.getSenderEntity();
+        final var senderEntity = providerEnum.getSenderEntity().get();
         senderEntity.setEvmAddress(null);
         senderEntity.setAlias(DOMAIN_BUILDER.key(Key.KeyCase.ED25519));
         final var senderAddress = toAddress(senderEntity.toEntityId());
@@ -493,7 +471,7 @@ class OpcodesControllerTest {
     void callForSenderOnlyWithMirrorAddressShouldUseMirrorAddress(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var senderEntity = providerEnum.getSenderEntity();
+        final var senderEntity = providerEnum.getSenderEntity().get();
         senderEntity.setEvmAddress(null);
         senderEntity.setAlias(null);
         final var senderAddress = toAddress(senderEntity.toEntityId());
@@ -518,7 +496,7 @@ class OpcodesControllerTest {
     void callForContractWithAliasAndEvmAddressShouldUseEvmAddress(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var contractEntity = providerEnum.getContractEntity();
+        final var contractEntity = providerEnum.getContractEntity().get();
         contractEntity.setEvmAddress(DOMAIN_BUILDER.evmAddress());
         contractEntity.setAlias(DomainUtils.fromBytes(new byte[] {
                 0, 0, 0, 0, // shard
@@ -547,7 +525,7 @@ class OpcodesControllerTest {
     void callForContractOnlyWithEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var contractEntity = providerEnum.getContractEntity();
+        final var contractEntity = providerEnum.getContractEntity().get();
         contractEntity.setEvmAddress(null);
         contractEntity.setAlias(DomainUtils.fromBytes(new byte[] {
                 0, 0, 0, 0, // shard
@@ -576,7 +554,7 @@ class OpcodesControllerTest {
     void callForContractOnlyWithNonEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var contractEntity = providerEnum.getContractEntity();
+        final var contractEntity = providerEnum.getContractEntity().get();
         contractEntity.setEvmAddress(null);
         contractEntity.setAlias(DOMAIN_BUILDER.key(Key.KeyCase.ED25519));
         final var contractAddress = toAddress(contractEntity.toEntityId());
@@ -601,7 +579,7 @@ class OpcodesControllerTest {
     void callForContractOnlyWithMirrorAddressShouldUseMirrorAddress(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var contractEntity = providerEnum.getContractEntity();
+        final var contractEntity = providerEnum.getContractEntity().get();
         contractEntity.setEvmAddress(null);
         contractEntity.setAlias(null);
         final var contractAddress = toAddress(contractEntity.toEntityId());
@@ -858,120 +836,6 @@ class OpcodesControllerTest {
                 return Address.wrap(Bytes.wrap(entity.getAlias()));
             }
             return toAddress(entity.toEntityId());
-        }
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    enum TransactionProviderEnum {
-        CONTRACT_CREATE(Instant.ofEpochSecond(1, 2000), CONTRACTCREATEINSTANCE, LEGACY_TYPE_BYTE),
-        CONTRACT_CALL(Instant.ofEpochSecond(2, 3000), CONTRACTCALL, LEGACY_TYPE_BYTE),
-        EIP1559(Instant.ofEpochSecond(3, 4000), ETHEREUMTRANSACTION, EIP1559_TYPE_BYTE),
-        EIP2930(Instant.ofEpochSecond(4, 5000), ETHEREUMTRANSACTION, EIP2930_TYPE_BYTE),
-        LEGACY(Instant.ofEpochSecond(5, 6000), ETHEREUMTRANSACTION, LEGACY_TYPE_BYTE);
-
-        private final long amount = 1000L;
-        private final byte[] hash = nextBytes(32);
-        private final EntityId payerAccountId = DOMAIN_BUILDER.entityId();
-        private final EntityId contractId = DOMAIN_BUILDER.entityId();
-        private final Instant consensusTimestamp;
-        private final TransactionType transactionType;
-        private final int typeByte;
-
-        public Transaction getTransaction() {
-            return DOMAIN_BUILDER.transaction()
-                    .customize(tx -> {
-                        tx.type(transactionType.getProtoId());
-                        tx.memo("%s_%d".formatted(transactionType.name(), typeByte).getBytes());
-                        tx.transactionHash(hash);
-                        tx.payerAccountId(payerAccountId);
-                        tx.entityId(contractId);
-                        tx.validStartNs(convertToNanosMax(
-                                consensusTimestamp.getEpochSecond(),
-                                consensusTimestamp.getNano() - 1000));
-                        tx.consensusTimestamp(convertToNanosMax(
-                                consensusTimestamp.getEpochSecond(),
-                                consensusTimestamp.getNano()));
-                    })
-                    .get();
-        }
-
-        public EthereumTransaction getEthTransaction() {
-            if (transactionType != ETHEREUMTRANSACTION) {
-                return null;
-            }
-            return DOMAIN_BUILDER.ethereumTransaction(true)
-                    .customize(tx -> {
-                        tx.type(typeByte);
-                        tx.hash(hash);
-                        tx.value(ByteBuffer.allocate(Long.BYTES).putLong(amount).array());
-                        tx.payerAccountId(payerAccountId);
-                        tx.consensusTimestamp(convertToNanosMax(
-                                consensusTimestamp.getEpochSecond(),
-                                consensusTimestamp.getNano()));
-                        if (typeByte == EIP1559_TYPE_BYTE) {
-                            tx.maxGasAllowance(Long.MAX_VALUE);
-                            tx.maxFeePerGas(nextBytes(32));
-                            tx.maxPriorityFeePerGas(nextBytes(32));
-                        }
-                        if (typeByte == EIP2930_TYPE_BYTE) {
-                            tx.accessList(nextBytes(100));
-                        }
-                    })
-                    .get();
-        }
-
-        public RecordFile getRecordFile() {
-            return DOMAIN_BUILDER.recordFile()
-                    .customize(recordFile -> {
-                        recordFile.consensusStart(convertToNanosMax(
-                                consensusTimestamp.getEpochSecond(),
-                                consensusTimestamp.getNano() - 1000));
-                        recordFile.consensusEnd(convertToNanosMax(
-                                consensusTimestamp.getEpochSecond(),
-                                consensusTimestamp.getNano() + 1000));
-                    })
-                    .get();
-        }
-
-        public ContractTransactionHash getContractTransactionHash() {
-            return DOMAIN_BUILDER.contractTransactionHash()
-                    .customize(contractTransactionHash -> {
-                        contractTransactionHash.consensusTimestamp(convertToNanosMax(
-                                consensusTimestamp.getEpochSecond(),
-                                consensusTimestamp.getNano()));
-                        contractTransactionHash.entityId(contractId.getId());
-                        contractTransactionHash.hash(hash);
-                        contractTransactionHash.payerAccountId(payerAccountId.getId());
-                        contractTransactionHash.transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
-                    })
-                    .get();
-        }
-
-        public ContractResult getContractResult() {
-            return DOMAIN_BUILDER.contractResult()
-                    .customize(result -> {
-                        result.amount(amount);
-                        result.consensusTimestamp(convertToNanosMax(
-                                consensusTimestamp.getEpochSecond(),
-                                consensusTimestamp.getNano()));
-                        result.contractId(contractId.getId());
-                        result.createdContractIds(transactionType == CONTRACTCREATEINSTANCE ?
-                                List.of(contractId.getId()) : Collections.emptyList());
-                        result.functionParameters(ByteString.copyFrom(nextBytes(256)).toByteArray());
-                        result.payerAccountId(payerAccountId);
-                        result.senderId(payerAccountId);
-                        result.transactionHash(hash);
-                    }).get();
-        }
-
-        public Entity getContractEntity() {
-            final long createdAt = convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano());
-            return DOMAIN_BUILDER.entity(contractId.getId(), createdAt).get();
-        }
-
-        public Entity getSenderEntity() {
-            return DOMAIN_BUILDER.entity(payerAccountId.getId(), DOMAIN_BUILDER.timestamp()).get();
         }
     }
 
