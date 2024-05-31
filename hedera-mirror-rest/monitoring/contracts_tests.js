@@ -84,7 +84,8 @@ const getContractById = async (server) => {
 };
 
 /**
- * Verify contract results can be retrieved for a given contractId and at a given timestamp
+ * Verify contract results can be retrieved for a given contractId (/contracts/{contractId}/results)
+ * and at a given timestamp (/contracts/{contractId}/results/{timestamp})
  * @param {Object} server API host endpoint
  */
 const getContractResults = async (server) => {
@@ -136,7 +137,8 @@ const getContractResults = async (server) => {
 };
 
 /**
- * Verify contract result logs can be retrieved for a given contractId
+ * Verify contract result logs can be retrieved for list (/contracts/results/logs)
+ * and a given contractId (/contracts/{contractId}/results/logs)
  * @param {Object} server API host endpoint
  */
 const getContractResultsLogs = async (server) => {
@@ -152,18 +154,39 @@ const getContractResultsLogs = async (server) => {
   }
 
   const jsonLogsRespKey = 'logs';
-  const contractResultParams = ['address', 'bloom', 'contract_id', 'index', 'topics'];
+  const contractLogsParams = ['address', 'bloom', 'contract_id', 'index', 'topics'];
   let url = getUrl(server, `${contractsPath}/${contractId}/results/logs`);
-  const contractResults = await getAPIResponse(url, jsonLogsRespKey);
+  let contractLogs = await getAPIResponse(url, jsonLogsRespKey);
 
+  // Verify contracts logs for a particular contractId
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'contract results logs is undefined'})
     .withCheckSpec(checkMandatoryParams, {
-      params: contractResultParams,
+      params: contractLogsParams,
       message: 'contract results logs object is missing some mandatory fields',
     })
-    .run(contractResults);
+    .run(contractLogs);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  // Verify contracts logs list
+  url = getUrl(server, `${contractsPath}/results/logs`, {limit: resourceLimit});
+  contractLogs = await getAPIResponse(url, jsonLogsRespKey);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'contract logs is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: resourceLimit,
+      message: (logs, limit) => `logs.length of ${logs.length} was expected to be ${limit}`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: contractLogsParams,
+      message: 'contract logs object is missing some mandatory fields',
+    })
+    .run(contractLogs);
   if (!result.passed) {
     return {url, ...result};
   }
@@ -210,6 +233,76 @@ const getContractState = async (server) => {
     message: 'Successfully called contracts for contract state',
   };
 };
+
+/**
+ * Verify contract result (/contracts/results/{transacionId})
+ * and actions (/contracts/results/{transacionId}/actions) can be retrieved for a given transaction
+ * @param {Object} server API host endpoint
+ */
+const getContractResultsByTransaction = async (server) => {
+  let {url, contractsResults, result} = await getContractsResultsList(server);
+
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  let transactionId = _.max(_.map(contractsResults, (result) => result.hash));
+
+  const contractResultParams = ['address', 'failed_initcode', 'hash', 'logs'];
+  url = getUrl(server, `${contractsPath}/results/${transactionId}`);
+  const contractResults = await getAPIResponse(url);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'contract results is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: contractResultParams,
+      message: 'contract results object is missing some mandatory fields',
+    })
+    .run(contractResults);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  const jsonActionsRespKey = 'actions';
+  const contractActionParams = [
+    'call_depth',
+    'call_operation_type',
+    'call_type',
+    'caller',
+    'caller_type',
+    'from',
+    'gas',
+    'gas_used',
+    'index',
+    'recipient',
+    'recipient_type',
+    'result_data_type',
+    'timestamp',
+    'to',
+    'value',
+  ];
+  url = getUrl(server, `${contractsPath}/results/${transactionId}/actions`);
+  const contractActions = await getAPIResponse(url, jsonActionsRespKey);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'contract actions is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: contractActionParams,
+      message: 'contract actions object is missing some mandatory fields',
+    })
+    .run(contractActions);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called contracts for contract actions ',
+  };
+};
 /**
  * Retrieves contract list
  * @param {Object} server API host endpoint
@@ -234,7 +327,7 @@ async function getContractsList(server) {
 }
 
 /**
- * Retrieves contract results list
+ * Retrieves contract results list (:/contracts/results)
  * @param {Object} server API host endpoint
  */
 async function getContractsResultsList(server) {
@@ -271,6 +364,7 @@ const runTests = async (server, testResult) => {
     runTest(getContractResults),
     runTest(getContractResultsLogs),
     runTest(getContractState),
+    runTest(getContractResultsByTransaction),
   ]);
 };
 
