@@ -33,7 +33,7 @@ public class RecordFileServiceImpl implements RecordFileService {
     private final RecordFileRepository recordFileRepository;
 
     @Override
-    public Optional<RecordFile> findRecordFileByBlock(BlockType block) {
+    public Optional<RecordFile> findByBlockType(BlockType block) {
         if (block == BlockType.EARLIEST) {
             return recordFileRepository.findEarliest();
         } else if (block == BlockType.LATEST) {
@@ -51,7 +51,7 @@ public class RecordFileServiceImpl implements RecordFileService {
     }
 
     @Override
-    public Optional<RecordFile> findRecordFileForTimestamp(Long timestamp) {
+    public Optional<RecordFile> findByTimestamp(Long timestamp) {
         return recordFileRepository.findByTimestamp(timestamp);
     }
 }

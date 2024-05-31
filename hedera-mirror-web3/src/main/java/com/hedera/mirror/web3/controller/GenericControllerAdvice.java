@@ -30,11 +30,12 @@ import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-import java.util.List;
 import java.util.Optional;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.TypeMismatchException;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.dao.QueryTimeoutException;
@@ -44,134 +45,119 @@ import org.springframework.validation.BindException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ServerWebInputException;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @ControllerAdvice
 @CustomLog
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class ControllerExceptionHandler {
+class GenericControllerAdvice {
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(@NotNull CorsRegistry registry) {
+                registry.addMapping("/api/v1/contracts/**").allowedOrigins("*");
+            }
+        };
+    }
 
     /**
      * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
      * of a precompile for gas estimation.
      **/
     @ExceptionHandler
-    @ResponseStatus(NOT_IMPLEMENTED)
     private ResponseEntity<?> unsupportedOpResponse(final UnsupportedOperationException e) {
-        return new ResponseEntity<>(errorResponse(e.getMessage()), NOT_IMPLEMENTED);
+        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), NOT_IMPLEMENTED);
     }
 
     @ExceptionHandler
-    @ResponseStatus(TOO_MANY_REQUESTS)
     private ResponseEntity<?> rateLimitError(final RateLimitException e) {
-        return new ResponseEntity<>(errorResponse(e.getMessage()), TOO_MANY_REQUESTS);
+        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), TOO_MANY_REQUESTS);
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<?> validationError(final BindException e) {
         final var errors = extractValidationError(e);
         log.warn("Validation error: {}", errors);
-        return new ResponseEntity<>(errorResponse(errors), BAD_REQUEST);
+        return new ResponseEntity<>(new GenericErrorResponse(errors), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<?> invalidInputError(final InvalidInputException e) {
         log.warn("Input validation error: {}", e.getMessage());
-        return new ResponseEntity<>(errorResponse(e.getMessage()), BAD_REQUEST);
+        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<?> illegalArgumentError(final IllegalArgumentException e) {
         log.warn("Invalid argument error: {}", e.getMessage());
-        return new ResponseEntity<>(errorResponse(e.getMessage()), BAD_REQUEST);
+        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<?> typeMismatchError(final TypeMismatchException e) {
         final var message = Optional.ofNullable(e.getRootCause()).orElse(e).getMessage();
         log.warn("Type mismatch error: {}", message);
-        return new ResponseEntity<>(errorResponse(message), BAD_REQUEST);
+        return new ResponseEntity<>(new GenericErrorResponse(message), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<?> mirrorEvmTransactionError(final MirrorEvmTransactionException e) {
         log.warn("Mirror EVM transaction error: {}", e.getMessage());
-        return new ResponseEntity<>(errorResponse(e.getMessage(), e.getDetail(), e.getData()), BAD_REQUEST);
+        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage(), e.getDetail(), e.getData()), BAD_REQUEST);
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<?> httpMessageConversionError(final HttpMessageConversionException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
         return new ResponseEntity<>(
-                errorResponse("Unable to parse JSON", e.getMessage(), StringUtils.EMPTY),
+                new GenericErrorResponse("Unable to parse JSON", e.getMessage(), StringUtils.EMPTY),
                 BAD_REQUEST
         );
     }
 
     @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
     private ResponseEntity<?> serverWebInputError(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
         return new ResponseEntity<>(
-                errorResponse(e.getReason(), e.getMessage(), StringUtils.EMPTY),
+                new GenericErrorResponse(e.getReason(), e.getMessage(), StringUtils.EMPTY),
                 BAD_REQUEST
         );
     }
 
     @ExceptionHandler
-    @ResponseStatus(NOT_FOUND)
     private ResponseEntity<?> notFoundError(final EntityNotFoundException e) {
         log.warn("Not found: {}", e.getMessage());
-        return new ResponseEntity<>(errorResponse(e.getMessage()), NOT_FOUND);
+        return new ResponseEntity<>(new GenericErrorResponse(e.getMessage()), NOT_FOUND);
     }
 
     @ExceptionHandler
-    @ResponseStatus(UNSUPPORTED_MEDIA_TYPE)
     private ResponseEntity<?> unsupportedMediaTypeError(final HttpMediaTypeNotSupportedException e) {
         log.warn("Unsupported media type error: {}", e.getMessage());
         return new ResponseEntity<>(
-                errorResponse(UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(), e.getMessage(), StringUtils.EMPTY),
+                new GenericErrorResponse(UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(), e.getMessage(), StringUtils.EMPTY),
                 UNSUPPORTED_MEDIA_TYPE
         );
     }
 
     @ExceptionHandler
-    @ResponseStatus(SERVICE_UNAVAILABLE)
     private ResponseEntity<?> queryTimeoutError(final QueryTimeoutException e) {
         log.error("Query timed out: {}", e.getMessage());
         return new ResponseEntity<>(
-                errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()),
+                new GenericErrorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()),
                 SERVICE_UNAVAILABLE
         );
     }
 
     @ExceptionHandler
-    @ResponseStatus(INTERNAL_SERVER_ERROR)
     private ResponseEntity<?> genericError(final Exception e) {
         log.error("Generic error: ", e);
         return new ResponseEntity<>(
-                errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase()),
+                new GenericErrorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase()),
                 INTERNAL_SERVER_ERROR
         );
-    }
-
-    private GenericErrorResponse errorResponse(final List<String> errors) {
-        return new GenericErrorResponse(errors);
-    }
-
-    private GenericErrorResponse errorResponse(final String errorMessage) {
-        return new GenericErrorResponse(errorMessage);
-    }
-
-    private GenericErrorResponse errorResponse(
-            final String errorMessage, final String detailedErrorMessage, final String hexErrorMessage) {
-        return new GenericErrorResponse(errorMessage, detailedErrorMessage, hexErrorMessage);
     }
 }

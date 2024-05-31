@@ -16,14 +16,11 @@
 
 package com.hedera.mirror.web3.repository;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import java.util.Optional;
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface TransactionRepository extends CrudRepository<Transaction, Long> {
+public interface ContractResultRepository extends CrudRepository<ContractResult, Long> {
 
-    Optional<Transaction> findByPayerAccountIdAndValidStartNs(EntityId payerAccountId, long validStartNs);
 }

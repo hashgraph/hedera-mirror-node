@@ -1547,6 +1547,7 @@ components:
       type: object
       required:
         - address
+        - contract_id
         - failed
         - gas
         - opcodes
@@ -1583,8 +1584,11 @@ components:
         - depth
         - gas
         - gas_cost
+        - memory
         - op
         - pc
+        - stack
+        - storage
       properties:
         depth:
           description: The current call depth
@@ -1599,7 +1603,7 @@ components:
           type: integer
           format: int64
         memory:
-          description: The EVM memory
+          description: The EVM memory with items in hex
           type: array
           items:
             type: string
@@ -1618,14 +1622,14 @@ components:
           format: binary
           nullable: true
         stack:
-          description: The EVM stack
+          description: The EVM stack with items in hex
           type: array
           items:
             type: string
             format: binary
           nullable: true
         storage:
-          description: The storage slots of the current contract which is read from and written to
+          description: The storage slots (keys and values in hex) of the current contract which is read from and written to
           type: object
           additionalProperties:
             type: string

@@ -23,8 +23,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import java.security.SecureRandom;
+import java.time.Instant;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
@@ -59,16 +59,9 @@ public class CommonUtils {
         return Duration.newBuilder().setSeconds(seconds).build();
     }
 
-    public static Timestamp timestamp(long nanos) {
+    public static Instant instant(long nanos) {
         final long seconds = nanos / 1_000_000_000;
         final int remainingNanos = (int) (nanos % 1_000_000_000);
-        return timestamp(seconds, remainingNanos);
-    }
-
-    public static Timestamp timestamp(long seconds, int nanos) {
-        return Timestamp.newBuilder()
-                .setSeconds(seconds)
-                .setNanos(nanos)
-                .build();
+        return Instant.ofEpochSecond(seconds, remainingNanos);
     }
 }
