@@ -27,7 +27,6 @@ import jakarta.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,7 +62,6 @@ class OpcodesController {
      * @param storage Include storage information
      * @return {@link OpcodesResponse} containing the result of the transaction execution
      */
-    @CrossOrigin(origins = "*")
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")
     OpcodesResponse getContractOpcodes(
             @PathVariable @Valid TransactionIdOrHashParameter transactionIdOrHash,
