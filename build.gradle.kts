@@ -101,6 +101,7 @@ dependencies {
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.25.60")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
+        api("org.web3j:core:4.12.0")
     }
 }
 
