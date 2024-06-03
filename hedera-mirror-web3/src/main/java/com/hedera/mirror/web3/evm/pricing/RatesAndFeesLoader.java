@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import jakarta.inject.Named;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -50,16 +49,17 @@ import org.springframework.retry.support.RetryTemplate;
 public class RatesAndFeesLoader {
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
+    private static final String RETRY_NANOS = "nanos";
     private final RetryListener retryListener = new RetryListener() {
         @Override
         public <T, E extends Throwable> void onError(
                 RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
             var fileId = (long) context.getAttribute("fileId");
-            var nanos = (long) context.getAttribute("nanos");
+            var nanosLog = (long) context.getAttribute("nanosLog");
             log.warn(
                     "Failed to load file data for fileId {} at {}, failing back to previous file. Retry attempt {}. Exception: ",
                     fileId,
-                    nanos,
+                    nanosLog,
                     context.getRetryCount(),
                     throwable);
         }
@@ -81,7 +81,7 @@ public class RatesAndFeesLoader {
     @Cacheable(cacheNames = CACHE_NAME_EXCHANGE_RATE, key = "'now'", unless = "#result == null")
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
         try {
-            return getFileData(EXCHANGE_RATE_ENTITY_ID.getId(), Arrays.asList(nanoSeconds), ExchangeRateSet::parseFrom);
+            return getFileData(EXCHANGE_RATE_ENTITY_ID.getId(), nanoSeconds, ExchangeRateSet::parseFrom);
         } catch (InvalidProtocolBufferException e) {
             log.warn("Corrupt rate file at {}, may require remediation!", EXCHANGE_RATE_ENTITY_ID);
             throw new IllegalStateException(String.format("Rates %s are corrupt!", EXCHANGE_RATE_ENTITY_ID));
@@ -97,26 +97,26 @@ public class RatesAndFeesLoader {
     @Cacheable(cacheNames = CACHE_NAME_FEE_SCHEDULE, key = "'now'", unless = "#result == null")
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         try {
-            return getFileData(
-                    FEE_SCHEDULE_ENTITY_ID.getId(), Arrays.asList(nanoSeconds), CurrentAndNextFeeSchedule::parseFrom);
+            return getFileData(FEE_SCHEDULE_ENTITY_ID.getId(), nanoSeconds, CurrentAndNextFeeSchedule::parseFrom);
         } catch (InvalidProtocolBufferException e) {
             log.warn("Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID, e);
             throw new IllegalStateException(String.format("Fee schedule %s is corrupt!", FEE_SCHEDULE_ENTITY_ID));
         }
     }
 
-    private <T> T getFileData(long fileId, final List<Long> nanoSeconds, FileDataParser<T> parser)
+    private <T> T getFileData(long fileId, final long nanoSeconds, FileDataParser<T> parser)
             throws InvalidProtocolBufferException {
         return retryTemplate.execute(retryContext -> {
-            long nanos = nanoSeconds.getFirst();
+            long nanos = retryContext.hasAttribute(RETRY_NANOS)
+                    ? (long) retryContext.getAttribute(RETRY_NANOS)
+                    : nanoSeconds;
+
             var fileDataList = fileDataRepository.getFileAtTimestamp(fileId, nanos);
 
-            // If unable to parse the file, decrement the timestamp and parse the previous file
-            // The decremented value will be used by the RetryTemplate upon the next try
-            nanoSeconds.set(0, fileDataList.getFirst().getConsensusTimestamp() - 1);
-            // Set the values for exception handling in the RetryListener
+            // Set the values used by the RetryListener
             retryContext.setAttribute("fileId", fileId);
-            retryContext.setAttribute("nanos", nanos);
+            retryContext.setAttribute("nanosLog", nanos);
+            retryContext.setAttribute(RETRY_NANOS, fileDataList.getFirst().getConsensusTimestamp() - 1);
 
             var fileDataBytes = getBytesFromFileData(fileDataList);
             return parser.parse(fileDataBytes);
