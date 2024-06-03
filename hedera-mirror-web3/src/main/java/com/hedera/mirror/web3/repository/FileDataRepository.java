@@ -28,19 +28,20 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
             value =
                     """
             select * from file_data
-            where file_data.entity_id = ?1
-              and file_data.consensus_timestamp >= (
-                select file_data.consensus_timestamp
+            where entity_id = ?1
+              and consensus_timestamp >= (
+                select consensus_timestamp
                 from file_data
-                where file_data.entity_id = ?1
-                  and file_data.consensus_timestamp <= ?2
-                  and (file_data.transaction_type = 17
-                         or (file_data.transaction_type = 19
+                where entity_id = ?1
+                  and consensus_timestamp <= ?2
+                  and (transaction_type = 17
+                         or (transaction_type = 19
                               and
-                             length(file_data.file_data) <> 0))
-              order by file_data.consensus_timestamp desc
+                             length(file_data) <> 0))
+              order by consensus_timestamp desc
               limit 1
-            ) and file_data.consensus_timestamp <= ?2""",
+            ) and consensus_timestamp <= ?2
+            order by consensus_timestamp""",
             nativeQuery = true)
     List<FileData> getFileAtTimestamp(long fileId, long timestamp);
 }

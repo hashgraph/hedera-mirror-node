@@ -21,6 +21,7 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.FILECR
 import static com.hedera.mirror.common.domain.transaction.TransactionType.FILEUPDATE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -34,12 +35,10 @@ import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import jakarta.annotation.Resource;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
 @RequiredArgsConstructor
 class RatesAndFeesLoaderIntegrationTest extends Web3IntegrationTest {
 
@@ -223,5 +222,21 @@ class RatesAndFeesLoaderIntegrationTest extends Web3IntegrationTest {
         var expected = corrupt ? feeSchedules : feeSchedules2;
         var actual = subject.loadFeeSchedules(350L);
         assertThat(actual).isEqualTo(expected);
+    }
+
+    @Test
+    void fallbackToException() {
+        for (long i = 1; i <= 11; i++) {
+            long timestamp = i;
+            domainBuilder
+                    .fileData()
+                    .customize(f -> f.transactionType(FILECREATE.getProtoId())
+                            .fileData("corrupt".getBytes())
+                            .entityId(FEE_SCHEDULE_ENTITY_ID)
+                            .consensusTimestamp(timestamp))
+                    .persist();
+        }
+
+        assertThrows(IllegalStateException.class, () -> subject.loadFeeSchedules(12L));
     }
 }

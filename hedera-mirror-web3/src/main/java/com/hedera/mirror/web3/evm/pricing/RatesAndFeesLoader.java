@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_S
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_EXCHANGE_RATE;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_FEE_SCHEDULE;
 
+import com.google.common.primitives.Bytes;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -27,13 +28,17 @@ import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import jakarta.inject.Named;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.RetryListener;
+import org.springframework.retry.support.RetryTemplate;
 
 /**
  * Rates and fees loader, currently working only with current timestamp.
@@ -45,18 +50,38 @@ import org.springframework.cache.annotation.Cacheable;
 public class RatesAndFeesLoader {
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
+    private final RetryListener retryListener = new RetryListener() {
+        @Override
+        public <T, E extends Throwable> void onError(
+                RetryContext context, RetryCallback<T, E> callback, Throwable throwable) {
+            var fileId = (long) context.getAttribute("fileId");
+            var nanos = (long) context.getAttribute("nanos");
+            log.warn(
+                    "Failed to load file data for fileId {} at {}, failing back to previous file. Retry attempt {}. Exception: ",
+                    fileId,
+                    nanos,
+                    context.getRetryCount(),
+                    throwable);
+        }
+    };
+    private final RetryTemplate retryTemplate = RetryTemplate.builder()
+            .maxAttempts(10)
+            .withListener(retryListener)
+            .retryOn(InvalidProtocolBufferException.class)
+            .build();
+
     private final FileDataRepository fileDataRepository;
 
     /**
-     * Loads the exchange rates for a given time.
+     * Loads the exchange rates for a given time. Currently, works only with current timestamp.
      *
      * @param nanoSeconds timestamp
      * @return exchange rates set
      */
-    @Cacheable(cacheNames = CACHE_NAME_EXCHANGE_RATE, unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME_EXCHANGE_RATE, key = "'now'", unless = "#result == null")
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
         try {
-            return getFileData(EXCHANGE_RATE_ENTITY_ID.getId(), nanoSeconds, ExchangeRateSet::parseFrom);
+            return getFileData(EXCHANGE_RATE_ENTITY_ID.getId(), Arrays.asList(nanoSeconds), ExchangeRateSet::parseFrom);
         } catch (InvalidProtocolBufferException e) {
             log.warn("Corrupt rate file at {}, may require remediation!", EXCHANGE_RATE_ENTITY_ID);
             throw new IllegalStateException(String.format("Rates %s are corrupt!", EXCHANGE_RATE_ENTITY_ID));
@@ -64,58 +89,46 @@ public class RatesAndFeesLoader {
     }
 
     /**
-     * Load the fee schedules for a given time.
+     * Load the fee schedules for a given time. Currently, works only with current timestamp.
      *
      * @param nanoSeconds timestamp
      * @return current and next fee schedules
      */
-    @Cacheable(cacheNames = CACHE_NAME_FEE_SCHEDULE, unless = "#result == null")
+    @Cacheable(cacheNames = CACHE_NAME_FEE_SCHEDULE, key = "'now'", unless = "#result == null")
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         try {
-            return getFileData(FEE_SCHEDULE_ENTITY_ID.getId(), nanoSeconds, CurrentAndNextFeeSchedule::parseFrom);
+            return getFileData(
+                    FEE_SCHEDULE_ENTITY_ID.getId(), Arrays.asList(nanoSeconds), CurrentAndNextFeeSchedule::parseFrom);
         } catch (InvalidProtocolBufferException e) {
             log.warn("Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID, e);
             throw new IllegalStateException(String.format("Fee schedule %s is corrupt!", FEE_SCHEDULE_ENTITY_ID));
         }
     }
 
-    private <T> T getFileData(long fileId, long nanoSeconds, FileDataParser<T> parser)
+    private <T> T getFileData(long fileId, final List<Long> nanoSeconds, FileDataParser<T> parser)
             throws InvalidProtocolBufferException {
-        int retry = 1;
-        int maxRetries = 10;
+        return retryTemplate.execute(retryContext -> {
+            long nanos = nanoSeconds.getFirst();
+            var fileDataList = fileDataRepository.getFileAtTimestamp(fileId, nanos);
 
-        // Fallback to an older version of the file if the current file cannot be parsed
-        while (true) {
-            var fileDataList = fileDataRepository.getFileAtTimestamp(fileId, nanoSeconds);
+            // If unable to parse the file, decrement the timestamp and parse the previous file
+            // The decremented value will be used by the RetryTemplate upon the next try
+            nanoSeconds.set(0, fileDataList.getFirst().getConsensusTimestamp() - 1);
+            // Set the values for exception handling in the RetryListener
+            retryContext.setAttribute("fileId", fileId);
+            retryContext.setAttribute("nanos", nanos);
+
             var fileDataBytes = getBytesFromFileData(fileDataList);
-            try {
-                return parser.parse(fileDataBytes.toByteArray());
-            } catch (InvalidProtocolBufferException e) {
-                if (retry >= maxRetries) {
-                    throw e;
-                }
-
-                retry++;
-                log.warn(
-                        "Failed to load file data for fileId {} at {}, failing back to previous file. Retry attempt {}",
-                        fileId,
-                        nanoSeconds,
-                        retry,
-                        e);
-                nanoSeconds = fileDataList.getFirst().getConsensusTimestamp() - 1;
-            }
-        }
+            return parser.parse(fileDataBytes);
+        });
     }
 
-    private ByteArrayOutputStream getBytesFromFileData(List<FileData> files) {
-        try (var bos = new ByteArrayOutputStream()) {
-            for (var i = 0; i < files.size(); i++) {
-                bos.write(files.get(i).getFileData());
-            }
-            return bos;
-        } catch (IOException ex) {
-            throw new IllegalStateException("Error concatenating fileData entries", ex);
+    private byte[] getBytesFromFileData(List<FileData> files) {
+        List<byte[]> fileDataBytesList = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            fileDataBytesList.add(files.get(i).getFileData());
         }
+        return Bytes.concat(fileDataBytesList.toArray(new byte[0][]));
     }
 
     private interface FileDataParser<T> {
