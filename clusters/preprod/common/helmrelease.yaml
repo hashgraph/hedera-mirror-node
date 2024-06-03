@@ -69,7 +69,7 @@ spec:
           replicaExternalLabelName: __replica__
           resources:
             limits:
-              memory: 3Gi
+              memory: 4Gi
             requests:
               memory: 1Gi
           storageSpec:
