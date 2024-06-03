@@ -30,6 +30,8 @@ import com.hedera.hashgraph.sdk.ReceiptStatusException;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.mirror.rest.model.Key.TypeEnum;
+import com.hedera.mirror.rest.model.Topic;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
@@ -71,6 +73,7 @@ public class TopicFeature {
     private Instant testInstantReference;
     private List<TransactionReceipt> publishedTransactionReceipts;
     private NetworkTransactionResponse networkTransactionResponse;
+    private boolean deleted = false;
 
     @Given("I successfully create a new topic id")
     public void createNewTopic() {
@@ -114,6 +117,26 @@ public class TopicFeature {
     public void deleteTopic() {
         networkTransactionResponse = topicClient.deleteTopic(consensusTopicId);
         assertNotNull(networkTransactionResponse.getReceipt());
+        deleted = true;
+    }
+
+    @Then("the mirror node should retrieve the topic")
+    public void verifyTopic() {
+        var topicId = consensusTopicId.toString();
+        var topic = mirrorClient.getTopic(topicId);
+        var operator = sdkClient.getExpandedOperatorAccountId();
+
+        assertThat(topic)
+                .isNotNull()
+                .returns(operator.getPublicKey().toStringRaw(), t -> t.getAdminKey()
+                        .getKey())
+                .returns(TypeEnum.ED25519, t -> topic.getAdminKey().getType())
+                .returns(TopicClient.autoRenewPeriod.getSeconds(), Topic::getAutoRenewPeriod)
+                .returns(deleted, Topic::getDeleted)
+                .returns(topicId, Topic::getTopicId)
+                .satisfies(t -> assertThat(t.getTimestamp().getFrom()).isNotEmpty())
+                .satisfies(t -> assertThat(t.getCreatedTimestamp()).isNotEmpty())
+                .satisfies(t -> assertThat(t.getMemo()).isNotEmpty());
     }
 
     @And("the mirror node should successfully observe the transaction")

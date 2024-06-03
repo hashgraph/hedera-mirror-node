@@ -16,125 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT_KYC_UNFROZEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ALLOWANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ALLOWANCE_ERC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_ERC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_FUNGIBLE_GET_ALLOWANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_NFT_GET_ALLOWANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.APPROVE_NFT_TOKEN_AND_TRANSFER_FROM;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.ASSOCIATE_TOKENS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BALANCE_OF;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BURN_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BURN_NFT_GET_TOTAL_SUPPLY_AND_BALANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.BURN_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_FUNGIBLE_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CREATE_NFT_WITH_CUSTOM_FEES;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CRYPTO_TRANSFER;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CRYPTO_TRANSFER_HBARS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.CRYPTO_TRANSFER_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DECIMALS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DELETE_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_AND_ASSOCIATE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_FUNGIBLE_TOKEN_AND_TRANSFER;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_NFT_AND_TRANSFER;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.DISSOCIATE_TOKENS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.EXCHANGE_RATE_TINYBARS_TO_TINYCENTS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.EXCHANGE_RATE_TINYCENTS_TO_TINYBARS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.FREEZE_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.FREEZE_UNFREEZE_GET_STATUS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_APPROVED;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_APPROVED_ERC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_NON_FUNGIBLE_TOKEN_INFO;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_DEFAULT_FREEZE_STATUS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_DEFAULT_KYC_STATUS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_EXPIRY_INFO;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_INFO;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_INFO_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_KEY;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GET_TOKEN_TYPE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.GRANT_KYC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_APPROVED_FOR_ALL;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_APPROVED_FOR_ALL_ERC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_FROZEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_KYC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.IS_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_NFT_GET_TOTAL_SUPPLY_AND_BALANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.MINT_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NAME;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NAME_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NESTED_ASSOCIATE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NESTED_FREEZE_UNFREEZE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.NESTED_GRANT_REVOKE_KYC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.OWNER_OF;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_UNPAUSE_GET_STATUS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PAUSE_UNPAUSE_NESTED_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PSEUDO_RANDOM_NUMBER;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.PSEUDO_RANDOM_SEED;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_ALLOWANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_APPROVE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_BALANCE_OF;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_DECIMALS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_GET_OWNER_OF;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_IS_APPROVED_FOR_ALL;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_NAME;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_SYMBOL;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_TOKEN_URI;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.REVOKE_KYC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.SET_APPROVAL_FOR_ALL;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.SYMBOL;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.SYMBOL_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TOKEN_URI;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TOTAL_SUPPLY;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TOTAL_SUPPLY_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_ERC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_FROM;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_FROM_ERC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_FROM_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_NFT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_NFTS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.TRANSFER_TOKENS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UNFREEZE_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UNPAUSE_TOKEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_EXPIRY;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_INFO;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.UPDATE_TOKEN_KEYS;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_FUNGIBLE_TOKEN_GET_TOTAL_SUPPLY_AND_BALANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_NFT_ACCOUNT;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_NFT_GET_TOTAL_SUPPLY_AND_BALANCE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.WIPE_TOKEN_ACCOUNT;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddressArray;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
-
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -158,6 +39,12 @@ import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.tuweni.bytes.Bytes;
+
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -167,11 +54,24 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.tuweni.bytes.Bytes;
+
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT_KYC_UNFROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.*;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddressArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -278,7 +178,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, DISSOCIATE_TOKEN.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with dissociate token function without association for NFT")
@@ -288,7 +188,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, DISSOCIATE_TOKEN.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with nested associate function that executes it twice for fungible token")
@@ -298,7 +198,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, NESTED_ASSOCIATE, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, NESTED_ASSOCIATE.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with nested associate function that executes it twice for NFT")
@@ -308,7 +208,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, NESTED_ASSOCIATE, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, NESTED_ASSOCIATE.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I associate the receiver account with the fungible token")
@@ -374,7 +274,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 new BigInteger("10"));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, APPROVE.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with setApprovalForAll function without association")
@@ -386,7 +286,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 true);
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, SET_APPROVAL_FOR_ALL.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with approveNFT function without association")
@@ -398,7 +298,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 new BigInteger("1"));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, APPROVE_NFT.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I associate contracts with the tokens and approve all nft serials")
@@ -447,7 +347,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 new BigInteger("5"));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, TRANSFER_FROM.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC transferFrom function without approval")
@@ -460,7 +360,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 new BigInteger("10"));
 
-        assertContractCallReturnsBadRequest(data, ercTestContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, TRANSFER_FROM_ERC.actualGas, ercTestContractSolidityAddress);
     }
 
     @And("I approve the contract to use fungible token")
@@ -494,7 +394,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 new BigInteger("500"));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, TRANSFER_FROM.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with ERC transferFrom function with more than the approved allowance")
@@ -507,7 +407,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 new BigInteger("500"));
 
-        assertContractCallReturnsBadRequest(data, ercTestContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, TRANSFER_FROM_ERC.actualGas, ercTestContractSolidityAddress);
     }
 
     @And("I approve receiver account to use the NFT with id 1")
@@ -526,7 +426,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 new BigInteger("50"));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, TRANSFER_FROM_NFT.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with transferNFT function")
@@ -802,7 +702,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 100000000000000000L);
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, WIPE_TOKEN_ACCOUNT.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I transfer NFT to receiver account")
@@ -838,7 +738,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 asLongArray(List.of(66L)));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, WIPE_NFT_ACCOUNT.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with GrantKYC function for fungible token")
@@ -977,7 +877,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     public void deleteTokenRandomAddressEstimateGas() {
         var data = encodeData(ESTIMATE_PRECOMPILE, DELETE_TOKEN, asAddress(RANDOM_ADDRESS));
 
-        assertContractCallReturnsBadRequest(data, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(data, DELETE_TOKEN.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with pause function for fungible token")
@@ -1535,7 +1435,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
 
     public int validateAndReturnGas(byte[] data, ContractMethods contractMethods, String contractAddress) {
         var encodedData = Strings.encode(ByteBuffer.wrap(data));
-        var response = estimateContract(encodedData, contractAddress);
+        var response = estimateContract(encodedData, contractMethods.actualGas, contractAddress);
         var estimateGasValue = response.getResultAsNumber().intValue();
         assertWithinDeviation(contractMethods.getActualGas(), estimateGasValue, lowerDeviation, upperDeviation);
         return estimateGasValue;
@@ -1908,7 +1808,7 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
     }
 
     private void validateGasEstimationForCreateToken(String data, int actualGasUsed, long value) {
-        var contractCallRequest = ModelBuilder.contractCallRequest()
+        var contractCallRequest = ModelBuilder.contractCallRequest(actualGasUsed)
                 .data(data)
                 .estimate(true)
                 .from(contractClient.getClientAddress())
@@ -1959,9 +1859,9 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES("createFungibleTokenWithCustomFeesPublic", 176628),
         CREATE_NFT("createNonFungibleTokenPublic", 192472),
         CREATE_NFT_WITH_CUSTOM_FEES("createNonFungibleTokenWithCustomFeesPublic", 195579),
-        CRYPTO_TRANSFER("cryptoTransferExternal", 44438),
-        CRYPTO_TRANSFER_HBARS("cryptoTransferExternal", 29698),
-        CRYPTO_TRANSFER_NFT("cryptoTransferExternal", 57934),
+        CRYPTO_TRANSFER("cryptoTransferExternal", 47206),
+        CRYPTO_TRANSFER_HBARS("cryptoTransferExternal", 31819),
+        CRYPTO_TRANSFER_NFT("cryptoTransferExternal", 60258),
         DECIMALS("decimals", 27143),
         DELETE_TOKEN("deleteTokenExternal", 39095),
         DISSOCIATE_AND_ASSOCIATE("dissociateAndAssociateTokenExternal", 1434814),
@@ -2012,23 +1912,23 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         REDIRECT_FOR_TOKEN_SET_APPROVAL_FOR_ALL("setApprovalForAllRedirect", 737243),
         REDIRECT_FOR_TOKEN_TOTAL_SUPPLY("totalSupplyRedirect", 23422),
         REDIRECT_FOR_TOKEN_TOKEN_URI("tokenURIRedirect", 33997),
-        REDIRECT_FOR_TOKEN_TRANSFER("transferRedirect", 47048),
-        REDIRECT_FOR_TOKEN_TRANSFER_FROM("transferFromRedirect", 47350),
-        REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT("transferFromNFTRedirect", 61457),
+        REDIRECT_FOR_TOKEN_TRANSFER("transferRedirect", 47842),
+        REDIRECT_FOR_TOKEN_TRANSFER_FROM("transferFromRedirect", 48274),
+        REDIRECT_FOR_TOKEN_TRANSFER_FROM_NFT("transferFromNFTRedirect", 62336),
         SET_APPROVAL_FOR_ALL("setApprovalForAllExternal", 729608),
         SYMBOL("symbol", 27815),
         SYMBOL_NFT("symbolIERC721", 27814),
         TOTAL_SUPPLY("totalSupply", 27100),
         TOTAL_SUPPLY_NFT("totalSupplyIERC721", 27078),
         TOKEN_URI("tokenURI", 27856),
-        TRANSFER_ERC("transfer", 41414),
-        TRANSFER_FROM("transferFromExternal", 40822),
-        TRANSFER_FROM_ERC("transferFrom", 39511),
-        TRANSFER_FROM_NFT("transferFromNFTExternal", 54938),
-        TRANSFER_NFT("transferNFTExternal", 53751),
-        TRANSFER_NFTS("transferNFTsExternal", 57015),
+        TRANSFER_ERC("transfer", 42138),
+        TRANSFER_FROM("transferFromExternal", 41307),
+        TRANSFER_FROM_ERC("transferFrom", 42475),
+        TRANSFER_FROM_NFT("transferFromNFTExternal", 55478),
+        TRANSFER_NFT("transferNFTExternal", 54596),
+        TRANSFER_NFTS("transferNFTsExternal", 58999),
         TRANSFER_TOKEN("transferTokenExternal", 39666),
-        TRANSFER_TOKENS("transferTokensExternal", 43314),
+        TRANSFER_TOKENS("transferTokensExternal", 48326),
         UNFREEZE_TOKEN("unfreezeTokenExternal", 39323),
         WIPE_TOKEN_ACCOUNT("wipeTokenAccountExternal", 39496),
         WIPE_NFT_ACCOUNT("wipeTokenAccountNFTExternal", 40394),
@@ -2048,10 +1948,10 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         FREEZE_UNFREEZE_GET_STATUS("freezeTokenGetFreezeStatusUnfreezeGetFreezeStatus", 57387),
         APPROVE_FUNGIBLE_GET_ALLOWANCE("approveTokenGetAllowance", 733080),
         APPROVE_NFT_GET_ALLOWANCE("approveTokenGetAllowance", 733127),
-        DISSOCIATE_FUNGIBLE_TOKEN_AND_TRANSFER("associateTokenDissociateFailTransfer", 1481983),
-        DISSOCIATE_NFT_AND_TRANSFER("associateTokenDissociateFailTransfer", 1481983),
-        APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER("approveFungibleTokenTransferFromGetAllowanceGetBalance", 752505),
-        APPROVE_NFT_TOKEN_AND_TRANSFER_FROM("approveNftAndTransfer", 765896);
+        DISSOCIATE_FUNGIBLE_TOKEN_AND_TRANSFER("associateTokenDissociateFailTransfer", 1482987),
+        DISSOCIATE_NFT_AND_TRANSFER("associateTokenDissociateFailTransfer", 1525177),
+        APPROVE_FUNGIBLE_TOKEN_AND_TRANSFER("approveFungibleTokenTransferFromGetAllowanceGetBalance", 785631),
+        APPROVE_NFT_TOKEN_AND_TRANSFER_FROM("approveNftAndTransfer", 797670);
 
         private final String selector;
         private final int actualGas;
