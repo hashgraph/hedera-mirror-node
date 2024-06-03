@@ -740,18 +740,22 @@ class OpcodesControllerTest {
 
         @Bean
         OpcodeService opcodeService(final RecordFileService recordFileService,
+                                    final ContractCallService contractCallService,
                                     final ContractTransactionHashRepository contractTransactionHashRepository,
                                     final EthereumTransactionRepository ethereumTransactionRepository,
                                     final TransactionRepository transactionRepository,
                                     final ContractResultRepository contractResultRepository,
-                                    final EntityDatabaseAccessor entityDatabaseAccessor) {
+                                    final EntityDatabaseAccessor entityDatabaseAccessor,
+                                    final Bucket gasLimitBucket) {
             return new OpcodeServiceImpl(
                     recordFileService,
+                    contractCallService,
                     contractTransactionHashRepository,
                     ethereumTransactionRepository,
                     transactionRepository,
                     contractResultRepository,
-                    entityDatabaseAccessor
+                    entityDatabaseAccessor,
+                    gasLimitBucket
             );
         }
     }

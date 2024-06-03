@@ -18,21 +18,16 @@ package com.hedera.mirror.web3.service;
 
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
-import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import org.springframework.lang.NonNull;
 
 public interface OpcodeService {
 
     /**
      * @param transactionIdOrHash the {@link TransactionIdOrHashParameter}
-     * @return the {@link CallServiceParameters} for the given transaction id or hash
+     * @param options the {@link OpcodeTracerOptions}
+     * @return the {@link OpcodesResponse} holding the result of the opcode call
      */
-    CallServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash);
-
-    /**
-     * @param opcodesProcessingResult the {@link OpcodesProcessingResult}
-     * @return the {@link OpcodesResponse} for the given {@link OpcodesProcessingResult}
-     */
-    OpcodesResponse buildOpcodesResponse(@NonNull OpcodesProcessingResult opcodesProcessingResult);
+    OpcodesResponse processOpcodeCall(@NonNull TransactionIdOrHashParameter transactionIdOrHash,
+                                      @NonNull OpcodeTracerOptions options);
 }
