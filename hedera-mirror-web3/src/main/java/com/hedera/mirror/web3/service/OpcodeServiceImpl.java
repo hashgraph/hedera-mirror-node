@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
@@ -41,7 +40,6 @@ import com.hedera.mirror.web3.repository.ContractResultRepository;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -62,7 +60,7 @@ import org.springframework.stereotype.Service;
 public class OpcodeServiceImpl implements OpcodeService {
 
     private final RecordFileService recordFileService;
-    private final ContractCallDebugService contractCallDebugService;
+    private final ContractDebugService contractDebugService;
     private final ContractTransactionHashRepository contractTransactionHashRepository;
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final TransactionRepository transactionRepository;
@@ -77,7 +75,7 @@ public class OpcodeServiceImpl implements OpcodeService {
         if (!gasLimitBucket.tryConsume(params.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
-        final OpcodesProcessingResult result = contractCallDebugService.processOpcodeCall(params, options, transactionIdOrHashParameter);
+        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options, transactionIdOrHashParameter);
         return buildOpcodesResponse(result);
     }
 

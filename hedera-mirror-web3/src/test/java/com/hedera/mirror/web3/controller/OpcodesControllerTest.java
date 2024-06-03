@@ -20,7 +20,6 @@ import static com.hedera.mirror.common.util.CommonUtils.instant;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hedera.mirror.web3.utils.TransactionProviderEnum.entityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -123,7 +122,7 @@ class OpcodesControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private ContractCallDebugService contractCallDebugService;
+    private ContractDebugService contractDebugService;
 
     @MockBean(name = "rateLimitBucket")
     private Bucket rateLimitBucket;
@@ -193,7 +192,7 @@ class OpcodesControllerTest {
     void setUp() {
         when(rateLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
-        when(contractCallDebugService.processOpcodeCall(
+        when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture(),
                 null
@@ -263,8 +262,8 @@ class OpcodesControllerTest {
     void shouldThrowUnsupportedOperationFromContractCallService(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        reset(contractCallDebugService);
-        when(contractCallDebugService.processOpcodeCall(
+        reset(contractDebugService);
+        when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture(),
                 null
@@ -284,8 +283,8 @@ class OpcodesControllerTest {
         final var hexDataErrorMessage =
                 "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
 
-        reset(contractCallDebugService);
-        when(contractCallDebugService.processOpcodeCall(
+        reset(contractDebugService);
+        when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture(),
                 null
@@ -302,8 +301,8 @@ class OpcodesControllerTest {
     void unsuccessfulCall(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        reset(contractCallDebugService);
-        when(contractCallDebugService.processOpcodeCall(
+        reset(contractDebugService);
+        when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture(),
                 null
@@ -738,7 +737,7 @@ class OpcodesControllerTest {
 
         @Bean
         OpcodeService opcodeService(final RecordFileService recordFileService,
-                                    final ContractCallService contractCallService,
+                                    final ContractDebugService contractExecutionService,
                                     final ContractTransactionHashRepository contractTransactionHashRepository,
                                     final EthereumTransactionRepository ethereumTransactionRepository,
                                     final TransactionRepository transactionRepository,
@@ -747,7 +746,7 @@ class OpcodesControllerTest {
                                     final Bucket gasLimitBucket) {
             return new OpcodeServiceImpl(
                     recordFileService,
-                    contractCallService,
+                    contractExecutionService,
                     contractTransactionHashRepository,
                     ethereumTransactionRepository,
                     transactionRepository,

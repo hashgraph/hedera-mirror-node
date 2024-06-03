@@ -22,7 +22,7 @@ import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.Cal
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 class ContractController {
-    private final ContractCallService contractCallService;
+    private final ContractExecutionService contractExecutionService;
     private final Bucket rateLimitBucket;
     private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties evmProperties;
@@ -61,7 +61,7 @@ class ContractController {
             validateContractMaxGasLimit(request);
 
             final var params = constructServiceParameters(request);
-            final var result = contractCallService.processCall(params);
+            final var result = contractExecutionService.processCall(params);
             return new ContractCallResponse(result);
         } catch (QueryTimeoutException e) {
             log.error("Query timed out: {} request: {}", e.getMessage(), request);

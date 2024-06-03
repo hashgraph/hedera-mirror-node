@@ -23,14 +23,14 @@ import java.util.List;
 
 @CustomLog
 @Named
-public class ContractCallDebugService extends BaseService {
+public class ContractDebugService extends ContractCallService {
 
     private final ContractActionService contractActionService;
     private final RecordFileService recordFileService;
     private final Store store;
 
 
-    public ContractCallDebugService(
+    public ContractDebugService(
             ContractActionService contractActionService,
             RecordFileService recordFileService,
             Store store,

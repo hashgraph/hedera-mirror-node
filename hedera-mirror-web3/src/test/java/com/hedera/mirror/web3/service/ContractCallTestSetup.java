@@ -501,7 +501,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected FunctionEncodeDecoder functionEncodeDecoder;
 
     @Autowired
-    protected ContractCallService contractCallService;
+    protected ContractExecutionService contractExecutionService;
 
     @Autowired
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
