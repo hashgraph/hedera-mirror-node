@@ -71,7 +71,8 @@ public class OpcodeServiceImpl implements OpcodeService {
 
         switch (transactionIdOrHash) {
             case TransactionHashParameter transactionHash -> {
-                ContractTransactionHash contractTransactionHash = contractTransactionHashRepository.findById(transactionHash.hash().toArray())
+                ContractTransactionHash contractTransactionHash = contractTransactionHashRepository
+                        .findByHash(transactionHash.hash().toArray())
                         .orElseThrow(() -> new EntityNotFoundException("Contract transaction hash not found"));
 
                 consensusTimestamp = contractTransactionHash.getConsensusTimestamp();
@@ -158,7 +159,7 @@ public class OpcodeServiceImpl implements OpcodeService {
 
         return CallServiceParameters.builder()
                 .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
-                .receiver(getReceiverAddress(contractResult))
+                .receiver(getReceiverAddress(ethTransaction, contractResult))
                 .gas(getGasLimit(ethTransaction, contractResult))
                 .value(getValue(ethTransaction, contractResult).longValue())
                 .callData(getCallData(ethTransaction, contractResult))
@@ -173,8 +174,14 @@ public class OpcodeServiceImpl implements OpcodeService {
         return entityDatabaseAccessor.evmAddressFromId(contractResult.getSenderId(), Optional.empty());
     }
 
-    private Address getReceiverAddress(ContractResult contractResult) {
-        return entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractResult.getContractId()), Optional.empty());
+    private Address getReceiverAddress(Optional<EthereumTransaction> ethereumTransaction, ContractResult contractResult) {
+        return ethereumTransaction
+                .filter(transaction -> transaction.getToAddress() != null)
+                .map(transaction -> Address.wrap(Bytes.wrap(transaction.getToAddress())))
+                .orElseGet(() -> {
+                    final var contractId = EntityId.of(contractResult.getContractId());
+                    return entityDatabaseAccessor.evmAddressFromId(contractId, Optional.empty());
+                });
     }
 
     private Long getGasLimit(Optional<EthereumTransaction> ethereumTransaction, ContractResult contractResult) {

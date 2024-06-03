@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.common;
 
+import static com.hedera.mirror.web3.common.TransactionIdParameterTest.TRANSACTION_ID_PATTERN;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -23,9 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
+import java.time.Instant;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,8 +38,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 class TransactionIdOrHashParameterTest {
-
-    private static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
 
     private static Stream<Arguments> provideEthHashes() {
         return Stream.of(
@@ -83,21 +83,12 @@ class TransactionIdOrHashParameterTest {
         assertTrue(matcher.matches());
         assertEquals(5, matcher.groupCount());
 
-        final long shard = Integer.parseInt(matcher.group(1));
-        final long realm = Integer.parseInt(matcher.group(2));
-        final long num = Integer.parseInt(matcher.group(3));
-        final long seconds = Long.parseLong(matcher.group(4));
-        final int nanos = Integer.parseInt(matcher.group(5));
-
         final var parameter = assertDoesNotThrow(() -> TransactionIdOrHashParameter.valueOf(transactionId));
         assertNotNull(parameter);
         assertInstanceOf(TransactionIdParameter.class, parameter);
-
-        final var transactionIdParameter = ((TransactionIdParameter) parameter);
-        assertEquals(shard, transactionIdParameter.payerAccountId().getShard());
-        assertEquals(realm, transactionIdParameter.payerAccountId().getRealm());
-        assertEquals(num, transactionIdParameter.payerAccountId().getNum());
-        assertEquals(seconds, transactionIdParameter.validStart().getEpochSecond());
-        assertEquals(nanos, transactionIdParameter.validStart().getNano());
+        assertEquals(new TransactionIdParameter(
+                EntityId.of(0, 0, 3),
+                Instant.ofEpochSecond(1234567890, 123)
+        ), parameter);
     }
 }

@@ -23,7 +23,6 @@ import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.OpcodeService;
 import io.github.bucket4j.Bucket;
-import jakarta.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -64,7 +63,7 @@ class OpcodesController {
      */
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")
     OpcodesResponse getContractOpcodes(
-            @PathVariable @Valid TransactionIdOrHashParameter transactionIdOrHash,
+            @PathVariable TransactionIdOrHashParameter transactionIdOrHash,
             @RequestParam(required = false, defaultValue = "true") boolean stack,
             @RequestParam(required = false, defaultValue = "false") boolean memory,
             @RequestParam(required = false, defaultValue = "false") boolean storage
