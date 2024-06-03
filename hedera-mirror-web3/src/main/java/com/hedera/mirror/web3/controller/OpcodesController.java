@@ -20,10 +20,8 @@ import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.OpcodeService;
 import io.github.bucket4j.Bucket;
-import jakarta.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -41,9 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 class OpcodesController {
 
     private final OpcodeService opcodeService;
-    private final ContractCallService contractCallService;
     private final Bucket rateLimitBucket;
-    private final Bucket gasLimitBucket;
 
     /**
      * <p>
@@ -64,7 +60,7 @@ class OpcodesController {
      */
     @GetMapping(value = "/{transactionIdOrHash}/opcodes")
     OpcodesResponse getContractOpcodes(
-            @PathVariable @Valid TransactionIdOrHashParameter transactionIdOrHash,
+            @PathVariable TransactionIdOrHashParameter transactionIdOrHash,
             @RequestParam(required = false, defaultValue = "true") boolean stack,
             @RequestParam(required = false, defaultValue = "false") boolean memory,
             @RequestParam(required = false, defaultValue = "false") boolean storage
@@ -73,14 +69,7 @@ class OpcodesController {
             throw new RateLimitException("Rate limit exceeded.");
         }
 
-        final var params = opcodeService.buildCallServiceParameters(transactionIdOrHash);
-        if (!gasLimitBucket.tryConsume(params.getGas())) {
-            throw new RateLimitException("Rate limit exceeded.");
-        }
-
         final var options = new OpcodeTracerOptions(stack, memory, storage);
-        final var result = contractCallService.processOpcodeCall(params, options);
-
-        return opcodeService.buildOpcodesResponse(result);
+        return opcodeService.processOpcodeCall(transactionIdOrHash, options);
     }
 }

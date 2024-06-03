@@ -16,11 +16,8 @@
 
 package com.hedera.mirror.web3.common;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
@@ -47,13 +44,14 @@ class TransactionHashParameterTest {
     void testParseTransactionHash(String hash, boolean isValidHash) {
         if (!isValidHash) {
             final var parameter = assertDoesNotThrow(() -> TransactionHashParameter.valueOf(hash));
-            assertNull(parameter);
+            assertThat(parameter).isNull();
             return;
         }
 
         final var parameter = assertDoesNotThrow(() -> TransactionHashParameter.valueOf(hash));
-        assertNotNull(parameter);
-        assertInstanceOf(TransactionHashParameter.class, parameter);
-        assertEquals(Bytes.fromHexString(hash), parameter.hash());
+        assertThat(parameter)
+                .isNotNull()
+                .isInstanceOf(TransactionHashParameter.class)
+                .isEqualTo(new TransactionHashParameter(Bytes.fromHexString(hash)));
     }
 }

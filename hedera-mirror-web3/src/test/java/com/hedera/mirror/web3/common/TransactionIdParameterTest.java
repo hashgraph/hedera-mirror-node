@@ -16,17 +16,13 @@
 
 package com.hedera.mirror.web3.common;
 
-import static java.lang.Integer.parseInt;
-import static java.lang.Long.parseLong;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
+import java.time.Instant;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -39,7 +35,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 class TransactionIdParameterTest {
 
-    private static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
+    public static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
 
     private static Stream<Arguments> provideTransactionIds() {
         return Stream.of(
@@ -62,25 +58,26 @@ class TransactionIdParameterTest {
     void testParseTransactionId(String transactionId, boolean isValidTransactionId) {
         if (!isValidTransactionId) {
             if (transactionId == null || !TRANSACTION_ID_PATTERN.matcher(transactionId).matches()) {
-                final var parameter = assertDoesNotThrow(() -> TransactionIdParameter.valueOf(transactionId));
-                assertNull(parameter);
+                assertThat(TransactionIdParameter.valueOf(transactionId)).isNull();
                 return;
             }
-            assertThrows(InvalidParametersException.class, () -> TransactionIdParameter.valueOf(transactionId));
+            assertThatExceptionOfType(InvalidParametersException.class)
+                    .isThrownBy(() -> TransactionIdParameter.valueOf(transactionId))
+                    .withMessageContaining("Invalid entity ID: %s".formatted(transactionId.split("-")[0]));
             return;
         }
 
         Matcher matcher = TRANSACTION_ID_PATTERN.matcher(transactionId);
-        assertTrue(matcher.matches());
-        assertEquals(5, matcher.groupCount());
+        assertThat(matcher).matches();
+        assertThat(matcher.groupCount()).isEqualTo(5);
 
         final var parameter = assertDoesNotThrow(() -> TransactionIdParameter.valueOf(transactionId));
-        assertNotNull(parameter);
-        assertInstanceOf(TransactionIdParameter.class, parameter);
-        assertEquals(parseLong(matcher.group(1)), parameter.payerAccountId().getShard());
-        assertEquals(parseLong(matcher.group(2)), parameter.payerAccountId().getRealm());
-        assertEquals(parseLong(matcher.group(3)), parameter.payerAccountId().getNum());
-        assertEquals(parseLong(matcher.group(4)), parameter.validStart().getEpochSecond());
-        assertEquals(parseInt(matcher.group(5)), parameter.validStart().getNano());
+        assertThat(parameter)
+                .isNotNull()
+                .isInstanceOf(TransactionIdParameter.class)
+                .isEqualTo(new TransactionIdParameter(
+                        EntityId.of(0, 0, 3),
+                        Instant.ofEpochSecond(1234567890, 123)
+                ));
     }
 }

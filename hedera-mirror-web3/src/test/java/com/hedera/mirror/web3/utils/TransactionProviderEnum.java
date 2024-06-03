@@ -20,7 +20,9 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.CONTRA
 import static com.hedera.mirror.common.domain.transaction.TransactionType.CONTRACTCREATEINSTANCE;
 import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
 import static com.hedera.mirror.common.util.CommonUtils.nextBytes;
+import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -38,9 +40,12 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.jetbrains.annotations.NotNull;
 
 @Getter
@@ -80,6 +85,11 @@ public enum TransactionProviderEnum {
     @Setter
     private byte[] payerAlias = domainBuilder.key();
 
+    public TransactionProviderEnum customize(Consumer<TransactionProviderEnum> consumer) {
+        consumer.accept(this);
+        return this;
+    }
+
     public void setDomainBuilder(DomainBuilder domainBuilder) {
         this.domainBuilder = domainBuilder;
         this.contractId = domainBuilder.entityId();
@@ -105,7 +115,7 @@ public enum TransactionProviderEnum {
 
     public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> getEthTransaction() {
         if (transactionType != ETHEREUMTRANSACTION) {
-            return null;
+            return domainBuilder.wrap(EthereumTransaction.builder(), () -> null);
         }
         return domainBuilder.ethereumTransaction(true)
                 .customize(tx -> {
@@ -113,6 +123,7 @@ public enum TransactionProviderEnum {
                     tx.hash(hash);
                     tx.value(ByteBuffer.allocate(Long.BYTES).putLong(amount).array());
                     tx.payerAccountId(payerAccountId);
+                    tx.toAddress(contractEvmAddress);
                     tx.consensusTimestamp(convertToNanosMax(
                             consensusTimestamp.getEpochSecond(),
                             consensusTimestamp.getNano()));
@@ -184,5 +195,18 @@ public enum TransactionProviderEnum {
                     entity.alias(payerAlias);
                     entity.evmAddress(payerEvmAddress);
                 });
+    }
+
+    public static Address entityAddress(Entity entity) {
+        if (entity == null) {
+            return Address.ZERO;
+        }
+        if (entity.getEvmAddress() != null) {
+            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
+        }
+        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
+            return Address.wrap(Bytes.wrap(entity.getAlias()));
+        }
+        return toAddress(entity.toEntityId());
     }
 }

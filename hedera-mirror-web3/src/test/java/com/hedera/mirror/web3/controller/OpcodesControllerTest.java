@@ -21,8 +21,9 @@ import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
+import static com.hedera.mirror.web3.utils.TransactionProviderEnum.entityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -37,10 +38,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.rest.model.OpcodesResponse;
 import com.hedera.mirror.web3.common.TransactionHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
@@ -62,7 +61,6 @@ import com.hedera.mirror.web3.service.OpcodeServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.mirror.web3.service.RecordFileServiceImpl;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -80,17 +78,23 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -197,7 +201,7 @@ class OpcodesControllerTest {
         )).thenAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
-            opcodesResultCaptor.set(Builder.opcodesProcessingResult(params, options));
+            opcodesResultCaptor.set(Builder.successfulOpcodesProcessingResult(params, options));
             return opcodesResultCaptor.get();
         });
     }
@@ -205,9 +209,7 @@ class OpcodesControllerTest {
     TransactionIdOrHashParameter setUp(final TransactionProviderEnum provider) {
         provider.setDomainBuilder(DOMAIN_BUILDER);
         final var transaction = provider.getTransaction().get();
-        final var ethTransaction = Optional.ofNullable(provider.getEthTransaction())
-                .map(DomainWrapper::get)
-                .orElse(null);
+        final var ethTransaction = provider.getEthTransaction().get();
         final var recordFile = provider.getRecordFile().get();
         final var contractTransactionHash = provider.getContractTransactionHash().get();
         final var contractResult = provider.getContractResult().get();
@@ -219,9 +221,9 @@ class OpcodesControllerTest {
         final var payerAccountId = transaction.getPayerAccountId();
         final var validStartNs = transaction.getValidStartNs();
         final var senderId = contractResult.getSenderId();
-        final var senderAddress = Builder.entityAddress(senderEntity);
+        final var senderAddress = entityAddress(senderEntity);
         final var contractId = transaction.getEntityId();
-        final var contractAddress = Builder.entityAddress(contractEntity);
+        final var contractAddress = entityAddress(contractEntity);
 
         expectedCallServiceParameters.set(CallServiceParameters.builder()
                 .sender(new HederaEvmAccount(senderAddress))
@@ -237,7 +239,7 @@ class OpcodesControllerTest {
                 .block(BlockType.of(recordFile.getIndex().toString()))
                 .build());
 
-        when(contractTransactionHashRepository.findById(hash)).thenReturn(Optional.of(contractTransactionHash));
+        when(contractTransactionHashRepository.findByHash(hash)).thenReturn(Optional.of(contractTransactionHash));
         when(transactionRepository.findByPayerAccountIdAndValidStartNs(
                 payerAccountId,
                 validStartNs
@@ -302,47 +304,36 @@ class OpcodesControllerTest {
     void unsuccessfulCall(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        opcodesResultCaptor.set(new OpcodesProcessingResult(
-                HederaEvmTransactionProcessingResult.failed(
-                        1000L , 0, 2, Optional.of(Bytes.of("0x".getBytes())), Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR)),
-                List.of()
-        ));
-
         reset(contractCallService);
         when(contractCallService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
-        )).thenReturn(opcodesResultCaptor.get());
+        )).thenAnswer(context -> {
+            final CallServiceParameters params = context.getArgument(0);
+            final OpcodeTracerOptions options = context.getArgument(1);
+            opcodesResultCaptor.set(Builder.unsuccessfulOpcodesProcessingResult(params, options));
+            return opcodesResultCaptor.get();
+        });
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+
+        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
     @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callWithDifferentCombinationsOfTracerOptions(final TransactionProviderEnum providerEnum) throws Exception {
+    @MethodSource("transactionsWithDifferentTracerOptions")
+    void callWithDifferentCombinationsOfTracerOptions(final TransactionProviderEnum providerEnum,
+                                                      final OpcodeTracerOptions options) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var tracerOptions = new OpcodeTracerOptions[] {
-                new OpcodeTracerOptions(true, true, true),
-                new OpcodeTracerOptions(false, true, true),
-                new OpcodeTracerOptions(true, false, true),
-                new OpcodeTracerOptions(true, true, false),
-                new OpcodeTracerOptions(false, false, true),
-                new OpcodeTracerOptions(false, true, false),
-                new OpcodeTracerOptions(true, false, false),
-                new OpcodeTracerOptions(false, false, false)
-        };
+        mockMvc.perform(opcodesRequest(transactionIdOrHash, options))
+                .andExpect(status().isOk())
+                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        for (var options : tracerOptions) {
-            mockMvc.perform(opcodesRequest(transactionIdOrHash, options))
-                    .andExpect(status().isOk())
-                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
-
-            assertEquals(options, tracerOptionsCaptor.getValue());
-            assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
-        }
+        assertThat(tracerOptionsCaptor.getValue()).isEqualTo(options);
+        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
     @ParameterizedTest
@@ -365,7 +356,7 @@ class OpcodesControllerTest {
         final GenericErrorResponse expectedError = switch (transactionIdOrHash) {
             case TransactionHashParameter parameter -> {
                 reset(contractTransactionHashRepository);
-                when(contractTransactionHashRepository.findById(parameter.hash().toArray())).thenReturn(Optional.empty());
+                when(contractTransactionHashRepository.findByHash(parameter.hash().toArray())).thenReturn(Optional.empty());
                 yield new GenericErrorResponse("Contract transaction hash not found");
             }
             case TransactionIdParameter parameter -> {
@@ -384,219 +375,35 @@ class OpcodesControllerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callForSenderWithAliasAndEvmAddressShouldUseEvmAddress(final TransactionProviderEnum providerEnum) throws Exception {
+    @MethodSource("transactionsWithDifferentSenderAddresses")
+    void callWithDifferentSenderAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var senderEntity = providerEnum.getSenderEntity().get();
-        senderEntity.setEvmAddress(DOMAIN_BUILDER.evmAddress());
-        senderEntity.setAlias(DomainUtils.fromBytes(new byte[] {
-                0, 0, 0, 0, // shard
-                0, 0, 0, 0, 0, 0, 0, 0, // realm
-                0, 0, 0, 0, 0, 0, 0, senderEntity.getNum().byteValue(), // num
-        }).toByteArray());
-        final var senderAddress = Address.wrap(Bytes.wrap(senderEntity.getEvmAddress()));
         expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .sender(new HederaEvmAccount(senderAddress))
+                .sender(new HederaEvmAccount(entityAddress(providerEnum.getSenderEntity().get())))
                 .build());
-
-        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(senderEntity.getId()), Optional.empty()))
-                .thenReturn(senderAddress);
-        when(entityDatabaseAccessor.get(senderAddress, Optional.empty()))
-                .thenReturn(Optional.of(senderEntity));
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
     @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callForSenderOnlyWithEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
+    @MethodSource("transactionsWithDifferentReceiverAddresses")
+    void callWithDifferentReceiverAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final var senderEntity = providerEnum.getSenderEntity().get();
-        senderEntity.setEvmAddress(null);
-        senderEntity.setAlias(DomainUtils.fromBytes(new byte[] {
-                0, 0, 0, 0, // shard
-                0, 0, 0, 0, 0, 0, 0, 0, // realm
-                0, 0, 0, 0, 0, 0, 0, senderEntity.getNum().byteValue(), // num
-        }).toByteArray());
-        final var senderAddress = Address.wrap(Bytes.wrap(senderEntity.getAlias()));
         expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .sender(new HederaEvmAccount(senderAddress))
+                .receiver(entityAddress(providerEnum.getContractEntity().get()))
                 .build());
-
-        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(senderEntity.getId()), Optional.empty()))
-                .thenReturn(senderAddress);
-        when(entityDatabaseAccessor.get(senderAddress, Optional.empty()))
-                .thenReturn(Optional.of(senderEntity));
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callForSenderOnlyWithNonEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        final var senderEntity = providerEnum.getSenderEntity().get();
-        senderEntity.setEvmAddress(null);
-        senderEntity.setAlias(DOMAIN_BUILDER.key(Key.KeyCase.ED25519));
-        final var senderAddress = toAddress(senderEntity.toEntityId());
-        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .sender(new HederaEvmAccount(senderAddress))
-                .build());
-
-        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(senderEntity.getId()), Optional.empty()))
-                .thenReturn(senderAddress);
-        when(entityDatabaseAccessor.get(senderAddress, Optional.empty()))
-                .thenReturn(Optional.of(senderEntity));
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isOk())
-                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
-
-        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callForSenderOnlyWithMirrorAddressShouldUseMirrorAddress(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        final var senderEntity = providerEnum.getSenderEntity().get();
-        senderEntity.setEvmAddress(null);
-        senderEntity.setAlias(null);
-        final var senderAddress = toAddress(senderEntity.toEntityId());
-        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .sender(new HederaEvmAccount(senderAddress))
-                .build());
-
-        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(senderEntity.getId()), Optional.empty()))
-                .thenReturn(senderAddress);
-        when(entityDatabaseAccessor.get(senderAddress, Optional.empty()))
-                .thenReturn(Optional.of(senderEntity));
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isOk())
-                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
-
-        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callForContractWithAliasAndEvmAddressShouldUseEvmAddress(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        final var contractEntity = providerEnum.getContractEntity().get();
-        contractEntity.setEvmAddress(DOMAIN_BUILDER.evmAddress());
-        contractEntity.setAlias(DomainUtils.fromBytes(new byte[] {
-                0, 0, 0, 0, // shard
-                0, 0, 0, 0, 0, 0, 0, 0, // realm
-                0, 0, 0, 0, 0, 0, 0, contractEntity.getNum().byteValue(), // num
-        }).toByteArray());
-        final var contractAddress = Address.wrap(Bytes.wrap(contractEntity.getEvmAddress()));
-        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .receiver(contractAddress)
-                .build());
-
-        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractEntity.getId()), Optional.empty()))
-                .thenReturn(contractAddress);
-        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
-                .thenReturn(Optional.of(contractEntity));
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isOk())
-                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
-
-        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callForContractOnlyWithEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        final var contractEntity = providerEnum.getContractEntity().get();
-        contractEntity.setEvmAddress(null);
-        contractEntity.setAlias(DomainUtils.fromBytes(new byte[] {
-                0, 0, 0, 0, // shard
-                0, 0, 0, 0, 0, 0, 0, 0, // realm
-                0, 0, 0, 0, 0, 0, 0, contractEntity.getNum().byteValue(), // num
-        }).toByteArray());
-        final var contractAddress = Address.wrap(Bytes.wrap(contractEntity.getAlias()));
-        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .receiver(contractAddress)
-                .build());
-
-        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractEntity.getId()), Optional.empty()))
-                .thenReturn(contractAddress);
-        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
-                .thenReturn(Optional.of(contractEntity));
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isOk())
-                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
-
-        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callForContractOnlyWithNonEvmAliasAddressShouldUseAlias(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        final var contractEntity = providerEnum.getContractEntity().get();
-        contractEntity.setEvmAddress(null);
-        contractEntity.setAlias(DOMAIN_BUILDER.key(Key.KeyCase.ED25519));
-        final var contractAddress = toAddress(contractEntity.toEntityId());
-        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .receiver(contractAddress)
-                .build());
-
-        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractEntity.getId()), Optional.empty()))
-                .thenReturn(contractAddress);
-        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
-                .thenReturn(Optional.of(contractEntity));
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isOk())
-                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
-
-        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void callForContractOnlyWithMirrorAddressShouldUseMirrorAddress(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        final var contractEntity = providerEnum.getContractEntity().get();
-        contractEntity.setEvmAddress(null);
-        contractEntity.setAlias(null);
-        final var contractAddress = toAddress(contractEntity.toEntityId());
-        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .receiver(contractAddress)
-                .build());
-
-        when(entityDatabaseAccessor.evmAddressFromId(EntityId.of(contractEntity.getId()), Optional.empty()))
-                .thenReturn(contractAddress);
-        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
-                .thenReturn(Optional.of(contractEntity));
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isOk())
-                .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
-
-        assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
     @ParameterizedTest
@@ -634,13 +441,13 @@ class OpcodesControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-            assertEquals(new OpcodeTracerOptions(), tracerOptionsCaptor.getValue());
-            assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+            assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
         }
 
         when(rateLimitBucket.tryConsume(1)).thenReturn(false);
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isTooManyRequests());
+                .andExpect(status().isTooManyRequests())
+                .andExpect(responseBody(new GenericErrorResponse("Rate limit exceeded.")));
     }
 
     @ParameterizedTest
@@ -653,13 +460,13 @@ class OpcodesControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-            assertEquals(new OpcodeTracerOptions(), tracerOptionsCaptor.getValue());
-            assertEquals(expectedCallServiceParameters.get(), callServiceParametersCaptor.getValue());
+            assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
         }
 
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(false);
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isTooManyRequests());
+                .andExpect(status().isTooManyRequests())
+                .andExpect(responseBody(new GenericErrorResponse("Rate limit exceeded.")));
     }
 
     /*
@@ -687,6 +494,69 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "*"))
                 .andExpect(header().string("Access-Control-Allow-Methods", "GET,HEAD,POST"));
+    }
+
+    static Stream<Arguments> transactionsWithDifferentTracerOptions() {
+        final List<OpcodeTracerOptions> tracerOptions = List.of(
+                new OpcodeTracerOptions(true, true, true),
+                new OpcodeTracerOptions(false, true, true),
+                new OpcodeTracerOptions(true, false, true),
+                new OpcodeTracerOptions(true, true, false),
+                new OpcodeTracerOptions(false, false, true),
+                new OpcodeTracerOptions(false, true, false),
+                new OpcodeTracerOptions(true, false, false),
+                new OpcodeTracerOptions(false, false, false)
+        );
+        return Arrays.stream(TransactionProviderEnum.values())
+                .flatMap(providerEnum -> tracerOptions.stream()
+                        .map(options -> Arguments.of(providerEnum, options)));
+    }
+
+    static Stream<Arguments> transactionsWithDifferentSenderAddresses() {
+        return Arrays.stream(TransactionProviderEnum.values())
+                .flatMap(providerEnum -> entityAddressCombinations(providerEnum.getPayerAccountId())
+                        .map(addressPair -> Arguments.of(Named.of(
+                                "%s(evmAddress=%s, alias=%s)".formatted(
+                                        providerEnum.name(),
+                                        addressPair.getLeft() != null ? Bytes.of(addressPair.getLeft()) : null,
+                                        addressPair.getRight() != null ? Bytes.of(addressPair.getRight()) : null
+                                ),
+                                providerEnum.customize(p -> {
+                                    p.setPayerEvmAddress(addressPair.getLeft());
+                                    p.setPayerAlias(addressPair.getRight());
+                                })
+                        ))));
+    }
+
+    static Stream<Arguments> transactionsWithDifferentReceiverAddresses() {
+        return Arrays.stream(TransactionProviderEnum.values())
+                .flatMap(providerEnum -> entityAddressCombinations(providerEnum.getContractId())
+                        .map(addressPair -> Arguments.of(Named.of(
+                                "%s(evmAddress=%s, alias=%s)".formatted(
+                                        providerEnum.name(),
+                                        addressPair.getLeft() != null ? Bytes.of(addressPair.getLeft()) : null,
+                                        addressPair.getRight() != null ? Bytes.of(addressPair.getRight()) : null
+                                ),
+                                providerEnum.customize(p -> {
+                                    p.setContractEvmAddress(addressPair.getLeft());
+                                    p.setContractAlias(addressPair.getRight());
+                                })
+                        ))));
+    }
+
+    static Stream<Pair<byte[], byte[]>> entityAddressCombinations(EntityId entityId) {
+        Supplier<byte[]> validAlias = () -> new byte[] {
+                0, 0, 0, 0, // shard
+                0, 0, 0, 0, 0, 0, 0, 0, // realm
+                0, 0, 0, 0, 0, 0, 0, Long.valueOf(entityId.getNum()).byteValue(), // num
+        };
+        Supplier<byte[]> invalidAlias = () -> DOMAIN_BUILDER.key(Key.KeyCase.ED25519);
+        return Stream.of(
+                Pair.of(DOMAIN_BUILDER.evmAddress(), validAlias.get()),
+                Pair.of(null, validAlias.get()),
+                Pair.of(null, invalidAlias.get()),
+                Pair.of(null, null)
+        );
     }
 
     /**
@@ -746,8 +616,8 @@ class OpcodesControllerTest {
                             .orElse(Bytes.EMPTY.toHexString()));
         }
 
-        private static OpcodesProcessingResult opcodesProcessingResult(final CallServiceParameters params,
-                                                                       final OpcodeTracerOptions options) {
+        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final CallServiceParameters params,
+                                                                                 final OpcodeTracerOptions options) {
             final Address recipient = params != null ? params.getReceiver() : Address.ZERO;
             final List<Opcode> opcodes = opcodes(options);
             final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
@@ -755,6 +625,18 @@ class OpcodesControllerTest {
             return new OpcodesProcessingResult(
                     HederaEvmTransactionProcessingResult
                             .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, recipient),
+                    opcodes
+            );
+        }
+
+        private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final CallServiceParameters params,
+                                                                                   final OpcodeTracerOptions options) {
+            final List<Opcode> opcodes = opcodes(options);
+            final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
+            final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
+            return new OpcodesProcessingResult(
+                    HederaEvmTransactionProcessingResult.failed(
+                            gasUsed, 0, gasCost, Optional.of(Bytes.EMPTY), Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR)),
                     opcodes
             );
         }
@@ -824,19 +706,6 @@ class OpcodesControllerTest {
                     )
             );
         }
-
-        private static Address entityAddress(Entity entity) {
-            if (entity == null) {
-                return Address.ZERO;
-            }
-            if (entity.getEvmAddress() != null) {
-                return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-            }
-            if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-                return Address.wrap(Bytes.wrap(entity.getAlias()));
-            }
-            return toAddress(entity.toEntityId());
-        }
     }
 
     @TestConfiguration
@@ -869,18 +738,22 @@ class OpcodesControllerTest {
 
         @Bean
         OpcodeService opcodeService(final RecordFileService recordFileService,
+                                    final ContractCallService contractCallService,
                                     final ContractTransactionHashRepository contractTransactionHashRepository,
                                     final EthereumTransactionRepository ethereumTransactionRepository,
                                     final TransactionRepository transactionRepository,
                                     final ContractResultRepository contractResultRepository,
-                                    final EntityDatabaseAccessor entityDatabaseAccessor) {
+                                    final EntityDatabaseAccessor entityDatabaseAccessor,
+                                    final Bucket gasLimitBucket) {
             return new OpcodeServiceImpl(
                     recordFileService,
+                    contractCallService,
                     contractTransactionHashRepository,
                     ethereumTransactionRepository,
                     transactionRepository,
                     contractResultRepository,
-                    entityDatabaseAccessor
+                    entityDatabaseAccessor,
+                    gasLimitBucket
             );
         }
     }
