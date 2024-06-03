@@ -82,8 +82,10 @@ getCopySql() {
   local table="${1}"
   local columns="${2}"
   local where="${3}"
+  local join="${4}"
+  local selectColumns="${5:-$columns}"
 
-  local sourceSql="PGPASSWORD=${SOURCE_DB_PASSWORD} psql -q -t -h ${SOURCE_DB_HOST} -d ${SOURCE_DB_NAME} -p ${SOURCE_DB_PORT} -U ${SOURCE_DB_USER} -c \"copy (select ${columns} from ${table} ${where}) to stdout with binary\""
+  local sourceSql="PGPASSWORD=${SOURCE_DB_PASSWORD} psql -q -t -h ${SOURCE_DB_HOST} -d ${SOURCE_DB_NAME} -p ${SOURCE_DB_PORT} -U ${SOURCE_DB_USER} -c \"copy (select ${selectColumns} from ${table} ${join} ${where}) to stdout with binary\""
   local sql="\\copy ${table}(${columns}) from program '${sourceSql}' with binary;"
   echo "${sql}"
 }
@@ -189,11 +191,7 @@ migrateTableBinary() {
     where="where consensus_timestamp_start <= ${MAX_TIMESTAMP}"
   fi
 
-  log "Starting to copy '${table}' with filter: ${where}"
-
   queryTarget "$(getCopySql "${table}" "${columns}" "${where}")"
-
-  log "Copied '${table}' table in ${SECONDS}s"
 }
 
 migrateTableAsyncBinary() {
@@ -220,7 +218,13 @@ migrateTableAsyncBinary() {
 
   local tableCursors=$(PGPASSWORD="${TARGET_DB_PASSWORD}" psql -q --csv -t -h "${TARGET_DB_HOST}" -d "${TARGET_DB_NAME}" -p "${TARGET_DB_PORT}" -U "${TARGET_DB_USER}" -c "${cursorQuery}")
 
-  while IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound lower_inc upper_inc; do
+  while read -r line; do
+    if [[ -z "${line}" ]]; then
+      log "No more cursors to process for table ${table}"
+      break
+    fi
+
+    IFS="," read -r cursor_id cursor_lower_bound cursor_upper_bound lower_inc upper_inc <<< "${line}"
     ACTIVE_COPIES=$(find . -maxdepth 1 -name "process-${table}*" -printf '.' | wc -m)
     while [[ "${ACTIVE_COPIES}" -ge ${CONCURRENT_COPIES_PER_TABLE} ]]; do
       sleep .5
@@ -258,7 +262,6 @@ migrateTableAsyncBinary() {
   done <<<"${tableCursors}"
 
   wait
-  log "Copied '${table}' table in ${SECONDS}s"
   jobs
   popd || die "Couldn't change directory back to the original directory"
   rm -r "${tmpDir}"
@@ -280,11 +283,57 @@ migrateTable() {
   local columns
   columns=$(getColumns "${table}")
 
+  log "Starting to copy table '${table}'"
+
   if [[ "${ASYNC_TABLES}" =~ $table ]]; then
-    migrateTableAsyncBinary "${table}" "${columns}" &
+    migrateTableAsyncBinary "${table}" "${columns}"
+  elif [[ "${table}" = "transaction_hash" ]]; then
+
+    local selectColumns="th.consensus_timestamp, th.hash, t.payer_account_id"
+    local join="th join transaction t on th.consensus_timestamp = t.consensus_timestamp"
+    local where="where th.consensus_timestamp <= ${MAX_TIMESTAMP}"
+
+    queryTarget "$(getCopySql "${table}" "${columns}" "${where}" "${join}" "${selectColumns}")"
   else
     migrateTableBinary "${table}" "${columns}"
   fi
+
+  log "Copied '${table}' table in ${SECONDS}s"
+}
+
+insertRepeatableMigrations() {
+  local migrationsSql="select description, type, script, checksum, installed_by, installed_on, execution_time, success from flyway_schema_history where version is null and upper(type)='JDBC' and script not ilike '%TopicMessageLookupMigration%' and success order by installed_rank asc;"
+  local currentRank=$(queryTarget "select max(installed_rank) from flyway_schema_history;")
+  local migrations="$(PGPASSWORD="${SOURCE_DB_PASSWORD}" psql -q --csv -t -h "${SOURCE_DB_HOST}" -d "${SOURCE_DB_NAME}" -p "${SOURCE_DB_PORT}" -U "${SOURCE_DB_USER}" -c "${migrationsSql}")"
+  local rows=()
+
+  while read -r line; do
+    local description="$(echo "${line}" | csvcut -c 1)-migrated-from-v1"
+    local type="$(echo "${line}" | csvcut -c 2)"
+    local script="$(echo "${line}" | csvcut -c 3)"
+    local checksum="$(echo "${line}" | csvcut -c 4)"
+    local installed_by="$(echo "${line}" | csvcut -c 5)"
+    local installed_on="$(echo "${line}" | csvcut -c 6)"
+    local execution_time="$(echo "${line}" | csvcut -c 7)"
+
+    local existsOnTarget=$(queryTarget "select exists (select from flyway_schema_history where script = '${script}' and checksum=${checksum});")
+    if [[ "${existsOnTarget}" != "t" ]]; then
+      currentRank=$((currentRank + 1))
+      rows+=("${currentRank},${description}-migrated-from-v1,${type},${script},${checksum},${installed_by},${installed_on},${execution_time},true")
+    else
+      log "Skipping migration ${script} with checksum ${checksum} since it already exists on the target"
+    fi
+  done <<< "${migrations}"
+
+  if [[ "${#rows[@]}" -eq 0 ]]; then
+    log "No repeatable migrations to insert"
+    return
+  fi
+
+  local sqlTemp="/tmp/migrations-$$.csv"
+  local insertSql="\\copy flyway_schema_history(installed_rank, description, type, script, checksum, installed_by, installed_on, execution_time, success) from program 'cat ${sqlTemp}' with csv delimiter ',';"
+  IFS=$'\n'; echo "${rows[*]}" > "${sqlTemp}"
+  queryTarget "${insertSql}"
 }
 
 # Export the functions so they can be invoked via parallel xargs
@@ -383,6 +432,9 @@ insertCursors
 
 log "Migrating ${COUNT} tables from ${SOURCE_DB_HOST}:${SOURCE_DB_PORT} to ${TARGET_DB_HOST}:${TARGET_DB_PORT}. With max consensus_timestamp ${MAX_TIMESTAMP} and Tables: ${tablesArray[*]}"
 echo "${tablesArray[*]}" | tr " " "\n" |ASYNC_TABLES=$ASYNC_TABLES xargs -n 1 -P "${CONCURRENCY}" -I {} bash -c 'migrateTable "$@"' _ {}
+
+log "inserting repeatable migrations"
+insertRepeatableMigrations
 
 log "migration completed in $SECONDS seconds."
 popd || die "Couldn't change directory back to ${SCRIPTS_DIR}"

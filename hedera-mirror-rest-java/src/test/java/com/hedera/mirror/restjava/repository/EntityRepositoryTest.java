@@ -58,4 +58,10 @@ class EntityRepositoryTest extends RestJavaIntegrationTest {
         assertThat(entityRepository.findByEvmAddress(entityDeletedNull.getEvmAddress()))
                 .isEmpty();
     }
+
+    @Test
+    void findById() {
+        var entity = domainBuilder.entity().persist();
+        assertThat(entityRepository.findById(entity.getId())).get().isEqualTo(entity);
+    }
 }

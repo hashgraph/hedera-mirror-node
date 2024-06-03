@@ -16,18 +16,17 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 
 public record Opcode(int pc,
-                     Optional<String> op,
+                     String op,
                      long gas,
                      long gasCost,
                      int depth,
-                     Optional<Bytes[]> stack,
-                     Optional<Bytes[]> memory,
-                     Optional<Map<UInt256, UInt256>> storage,
+                     List<Bytes> stack,
+                     List<Bytes> memory,
+                     Map<Bytes, Bytes> storage,
                      String reason) {
 }

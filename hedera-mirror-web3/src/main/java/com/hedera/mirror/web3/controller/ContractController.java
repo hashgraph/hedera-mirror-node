@@ -33,6 +33,7 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.springframework.dao.QueryTimeoutException;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,6 +63,9 @@ class ContractController {
             final var params = constructServiceParameters(request);
             final var result = contractCallService.processCall(params);
             return new ContractCallResponse(result);
+        } catch (QueryTimeoutException e) {
+            log.error("Query timed out: {} request: {}", e.getMessage(), request);
+            throw e;
         } catch (InvalidParametersException e) {
             // The validation failed but no processing was made - restore the consumed gas back to the bucket.
             gasLimitBucket.addTokens(request.getGas());
@@ -75,8 +79,8 @@ class ContractController {
 
         Address receiver;
 
-         /*In case of an empty "to" field, we set a default value of the zero address
-         to avoid any potential NullPointerExceptions throughout the process.*/
+        /*In case of an empty "to" field, we set a default value of the zero address
+        to avoid any potential NullPointerExceptions throughout the process.*/
         if (request.getTo() == null || request.getTo().isEmpty()) {
             receiver = Address.ZERO;
         } else {

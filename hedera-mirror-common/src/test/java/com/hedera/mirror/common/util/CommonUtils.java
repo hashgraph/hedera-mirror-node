@@ -16,13 +16,6 @@
 
 package com.hedera.mirror.common.util;
 
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-
-import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Duration;
 import java.security.SecureRandom;
 import java.time.Instant;
 import lombok.experimental.UtilityClass;
@@ -36,27 +29,6 @@ public class CommonUtils {
         var bytes = new byte[length];
         RANDOM.nextBytes(bytes);
         return bytes;
-    }
-
-    public static AccountID toAccountID(EntityId entityId) {
-        return AccountID.newBuilder()
-                .setShardNum(entityId.getShard())
-                .setRealmNum(entityId.getRealm())
-                .setAccountNum(entityId.getNum())
-                .build();
-    }
-
-    public static ContractID toContractID(EntityId entityId) {
-        return ContractID.newBuilder()
-                .setShardNum(entityId.getShard())
-                .setRealmNum(entityId.getRealm())
-                .setContractNum(entityId.getNum())
-                .setEvmAddress(ByteString.copyFrom(toEvmAddress(entityId)))
-                .build();
-    }
-
-    public static Duration duration(int seconds) {
-        return Duration.newBuilder().setSeconds(seconds).build();
     }
 
     public static Instant instant(long nanos) {

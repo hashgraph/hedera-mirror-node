@@ -568,6 +568,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "createFungibleTokenWithInheritKeysExternal",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "components": [

@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
+import com.google.protobuf.Int32Value;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
@@ -88,10 +89,12 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         RecordItem withStakedNodeIdSet = recordItemBuilder
                 .cryptoUpdate()
                 .recordItem(r -> r.hapiVersion(new Version(0, 28, 0)))
-                .transactionBody(body -> body.clear().setStakedAccountId(accountId))
+                .transactionBody(body ->
+                        body.clear().setStakedAccountId(accountId).setMaxAutomaticTokenAssociations(Int32Value.of(-1)))
                 .build();
         setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(null, Entity::getDeclineReward)
+                .returns(-1, Entity::getMaxAutomaticTokenAssociations)
                 .returns(accountNum, Entity::getStakedAccountId)
                 .returns(-1L, Entity::getStakedNodeId)
                 .returns(

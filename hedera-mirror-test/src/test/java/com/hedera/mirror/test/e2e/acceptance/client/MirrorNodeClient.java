@@ -47,6 +47,7 @@ import com.hedera.mirror.rest.model.TokenBalancesResponse;
 import com.hedera.mirror.rest.model.TokenInfo;
 import com.hedera.mirror.rest.model.TokenRelationshipResponse;
 import com.hedera.mirror.rest.model.TokensResponse;
+import com.hedera.mirror.rest.model.Topic;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 import com.hedera.mirror.rest.model.TransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
@@ -328,6 +329,10 @@ public class MirrorNodeClient {
     public TokensResponse getTokens(String tokenId) {
         log.debug("Verify token with query parameter '{}' is returned by Mirror Node", tokenId);
         return callRestEndpoint("/tokens/?token.id={tokenId}", TokensResponse.class, tokenId);
+    }
+
+    public Topic getTopic(String topicId) {
+        return callRestJavaEndpoint("/topics/{topicId}", Topic.class, topicId);
     }
 
     public TransactionsResponse getTransactionInfoByTimestamp(String timestamp) {

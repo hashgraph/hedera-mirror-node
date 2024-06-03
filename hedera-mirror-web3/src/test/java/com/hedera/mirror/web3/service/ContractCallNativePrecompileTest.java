@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.ContractCallService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -23,17 +24,9 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
-    private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
-
-    @BeforeEach
-    void setup() {
-        // reset gas metrics
-        meterRegistry.clear();
-    }
 
     @Test
     void directCallToNativePrecompileECRecover() {
@@ -222,7 +215,7 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
     }
 
     private double getGasUsedBeforeExecution(final CallServiceParameters.CallType callType) {
-        final var callCounter = meterRegistry.find(GAS_METRICS).counters().stream()
+        final var callCounter = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst();
 
@@ -236,7 +229,7 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
 
     private void assertGasUsedIsPositive(
             final double gasUsedBeforeExecution, final CallServiceParameters.CallType callType) {
-        final var afterExecution = meterRegistry.find(GAS_METRICS).counters().stream()
+        final var afterExecution = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst()
                 .get();
