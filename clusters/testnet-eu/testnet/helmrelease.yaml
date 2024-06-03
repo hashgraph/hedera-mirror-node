@@ -38,7 +38,6 @@ spec:
     grpc:
       enabled: false
     importer:
-      enabled: false
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
