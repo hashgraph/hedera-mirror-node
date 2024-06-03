@@ -80,14 +80,16 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class EvmConfiguration {
 
+    public static final String CACHE_MANAGER_CONTRACT = "contract";
+    public static final String CACHE_MANAGER_CONTRACT_STATE = "contractState";
     public static final String CACHE_MANAGER_ENTITY = "entity";
     public static final String CACHE_MANAGER_RECORD_FILE_LATEST = "recordFileLatest";
     public static final String CACHE_MANAGER_RECORD_FILE_EARLIEST = "recordFileEarliest";
     public static final String CACHE_MANAGER_RECORD_FILE_INDEX = "recordFileIndex";
-    public static final String CACHE_MANAGER_CONTRACT_STATE = "contractState";
     public static final String CACHE_MANAGER_SYSTEM_FILE = "systemFile";
     public static final String CACHE_MANAGER_TOKEN = "token";
     public static final String CACHE_NAME = "default";
+    public static final String CACHE_NAME_CONTRACT = "contract";
     public static final String CACHE_NAME_EXCHANGE_RATE = "exchangeRate";
     public static final String CACHE_NAME_FEE_SCHEDULE = "fee_schedule";
     public static final String CACHE_NAME_NFT = "nft";
@@ -113,6 +115,14 @@ public class EvmConfiguration {
     private final PrecompiledContractProvider precompilesHolder;
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
+
+    @Bean(CACHE_MANAGER_CONTRACT)
+    CacheManager cacheManagerContract() {
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME_CONTRACT));
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getContract());
+        return caffeineCacheManager;
+    }
 
     @Bean(CACHE_MANAGER_CONTRACT_STATE)
     CacheManager cacheManagerState() {
