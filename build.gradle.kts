@@ -57,8 +57,8 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.5")
         api("org.bouncycastle:bcprov-jdk18on:1.78.1")
         api("com.bucket4j:bucket4j-core:8.10.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.3.0")
-        api("com.google.guava:guava:33.2.0-jre")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.4.1")
+        api("com.google.guava:guava:33.2.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
@@ -99,8 +99,9 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.1")
         api("org.testcontainers:junit-jupiter:1.19.8")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.60")
+        api("software.amazon.awssdk:bom:2.25.64")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
+        api("org.web3j:core:4.12.0")
     }
 }
 
