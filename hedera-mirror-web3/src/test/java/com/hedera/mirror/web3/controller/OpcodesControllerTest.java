@@ -20,7 +20,7 @@ import static com.hedera.mirror.common.util.CommonUtils.instant;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hedera.mirror.web3.utils.TransactionProviderEnum.entityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -55,12 +55,9 @@ import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.ContractCallService;
-import com.hedera.mirror.web3.service.OpcodeService;
-import com.hedera.mirror.web3.service.OpcodeServiceImpl;
-import com.hedera.mirror.web3.service.RecordFileService;
-import com.hedera.mirror.web3.service.RecordFileServiceImpl;
+import com.hedera.mirror.web3.service.*;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -126,7 +123,7 @@ class OpcodesControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private ContractCallService contractCallService;
+    private ContractCallDebugService contractCallDebugService;
 
     @MockBean(name = "rateLimitBucket")
     private Bucket rateLimitBucket;
@@ -153,14 +150,14 @@ class OpcodesControllerTest {
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Captor
-    private ArgumentCaptor<CallServiceParameters> callServiceParametersCaptor;
+    private ArgumentCaptor<ContractCallDebugServiceParameters> callServiceParametersCaptor;
 
     @Captor
     private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
 
     private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
 
-    private final AtomicReference<CallServiceParameters> expectedCallServiceParameters = new AtomicReference<>();
+    private final AtomicReference<ContractCallDebugServiceParameters> expectedCallServiceParameters = new AtomicReference<>();
 
     private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter) {
         return opcodesRequest(parameter, new OpcodeTracerOptions());
@@ -196,9 +193,10 @@ class OpcodesControllerTest {
     void setUp() {
         when(rateLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
-        when(contractCallService.processOpcodeCall(
+        when(contractCallDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
+                tracerOptionsCaptor.capture(),
+                null
         )).thenAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
@@ -226,7 +224,7 @@ class OpcodesControllerTest {
         final var contractId = transaction.getEntityId();
         final var contractAddress = entityAddress(contractEntity);
 
-        expectedCallServiceParameters.set(CallServiceParameters.builder()
+        expectedCallServiceParameters.set(ContractCallDebugServiceParameters.builder()
                 .sender(new HederaEvmAccount(senderAddress))
                 .receiver(contractAddress)
                 .gas(ethTransaction != null ? ethTransaction.getGasLimit() : contractResult.getGasLimit())
@@ -234,9 +232,6 @@ class OpcodesControllerTest {
                         new BigInteger(ethTransaction.getValue()).longValue() : contractResult.getAmount())
                 .callData(Bytes.of(
                         ethTransaction != null ? ethTransaction.getCallData() : contractResult.getFunctionParameters()))
-                .isStatic(false)
-                .callType(ETH_DEBUG_TRACE_TRANSACTION)
-                .isEstimate(false)
                 .block(BlockType.of(recordFile.getIndex().toString()))
                 .build());
 
@@ -268,10 +263,11 @@ class OpcodesControllerTest {
     void shouldThrowUnsupportedOperationFromContractCallService(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        reset(contractCallService);
-        when(contractCallService.processOpcodeCall(
+        reset(contractCallDebugService);
+        when(contractCallDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
+                tracerOptionsCaptor.capture(),
+                null
         )).thenCallRealMethod();
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
@@ -288,10 +284,11 @@ class OpcodesControllerTest {
         final var hexDataErrorMessage =
                 "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
 
-        reset(contractCallService);
-        when(contractCallService.processOpcodeCall(
+        reset(contractCallDebugService);
+        when(contractCallDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
+                tracerOptionsCaptor.capture(),
+                null
         )).thenThrow(new MirrorEvmTransactionException(CONTRACT_EXECUTION_EXCEPTION, detailedErrorMessage, hexDataErrorMessage));
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
@@ -305,10 +302,11 @@ class OpcodesControllerTest {
     void unsuccessfulCall(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        reset(contractCallService);
-        when(contractCallService.processOpcodeCall(
+        reset(contractCallDebugService);
+        when(contractCallDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
+                tracerOptionsCaptor.capture(),
+                null
         )).thenAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
