@@ -63,7 +63,7 @@ class TransactionIdParameterTest {
             }
             assertThatExceptionOfType(InvalidParametersException.class)
                     .isThrownBy(() -> TransactionIdParameter.valueOf(transactionId))
-                    .withCause(new NumberFormatException("For input string: \"%s\"".formatted(transactionId)));
+                    .withMessageContaining("Invalid entity ID: %s".formatted(transactionId.split("-")[0]));
             return;
         }
 
