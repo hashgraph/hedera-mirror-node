@@ -17,12 +17,9 @@
 package com.hedera.mirror.web3.common;
 
 import static com.hedera.mirror.web3.common.TransactionIdParameterTest.TRANSACTION_ID_PATTERN;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
@@ -61,34 +58,38 @@ class TransactionIdOrHashParameterTest {
     @MethodSource("provideEthHashes")
     void testParseTransactionHash(String hash, boolean isValidHash) {
         if (!isValidHash) {
-            assertThrows(InvalidParametersException.class, () -> TransactionIdOrHashParameter.valueOf(hash));
+            assertThatExceptionOfType(InvalidParametersException.class)
+                    .isThrownBy(() -> TransactionIdOrHashParameter.valueOf(hash));
             return;
         }
 
         final var parameter = assertDoesNotThrow(() -> TransactionIdOrHashParameter.valueOf(hash));
-        assertNotNull(parameter);
-        assertInstanceOf(TransactionHashParameter.class, parameter);
-        assertEquals(Bytes.fromHexString(hash), ((TransactionHashParameter) parameter).hash());
+        assertThat(parameter)
+                .isNotNull()
+                .isInstanceOf(TransactionHashParameter.class)
+                .isEqualTo(new TransactionHashParameter(Bytes.fromHexString(hash)));
     }
 
     @ParameterizedTest
     @MethodSource("provideTransactionIds")
     void testParseTransactionId(String transactionId, boolean isValidTransactionId) {
         if (!isValidTransactionId) {
-            assertThrows(InvalidParametersException.class, () -> TransactionIdOrHashParameter.valueOf(transactionId));
+            assertThatExceptionOfType(InvalidParametersException.class)
+                    .isThrownBy(() -> TransactionIdOrHashParameter.valueOf(transactionId));
             return;
         }
 
         Matcher matcher = TRANSACTION_ID_PATTERN.matcher(transactionId);
-        assertTrue(matcher.matches());
-        assertEquals(5, matcher.groupCount());
+        assertThat(matcher).matches();
+        assertThat(matcher.groupCount()).isEqualTo(5);
 
         final var parameter = assertDoesNotThrow(() -> TransactionIdOrHashParameter.valueOf(transactionId));
-        assertNotNull(parameter);
-        assertInstanceOf(TransactionIdParameter.class, parameter);
-        assertEquals(new TransactionIdParameter(
-                EntityId.of(0, 0, 3),
-                Instant.ofEpochSecond(1234567890, 123)
-        ), parameter);
+        assertThat(parameter)
+                .isNotNull()
+                .isInstanceOf(TransactionIdParameter.class)
+                .isEqualTo(new TransactionIdParameter(
+                        EntityId.of(0, 0, 3),
+                        Instant.ofEpochSecond(1234567890, 123)
+                ));
     }
 }

@@ -37,7 +37,7 @@ class TransactionIdParameterTest {
 
     public static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
 
-    public static Stream<Arguments> provideTransactionIds() {
+    private static Stream<Arguments> provideTransactionIds() {
         return Stream.of(
                 Arguments.of("0.0.3-1234567890-123", true),
                 Arguments.of("0.0.3--1234567890-123", false),
