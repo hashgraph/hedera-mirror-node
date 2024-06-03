@@ -113,8 +113,12 @@ public enum TransactionProviderEnum {
                 });
     }
 
+    public boolean hasEthTransaction() {
+        return transactionType == ETHEREUMTRANSACTION;
+    }
+
     public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> getEthTransaction() {
-        if (transactionType != ETHEREUMTRANSACTION) {
+        if (!hasEthTransaction()) {
             return domainBuilder.wrap(EthereumTransaction.builder(), () -> null);
         }
         return domainBuilder.ethereumTransaction(true)
