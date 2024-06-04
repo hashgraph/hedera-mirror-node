@@ -16,9 +16,32 @@
 
 description = "Hedera Mirror Node Web3"
 
-plugins { id("spring-conventions") }
+plugins {
+    id("spring-conventions")
+    id("org.web3j.solidity") version "0.5.0"
+}
+
+sourceSets {
+    main {
+        solidity {
+            allowPaths.add(
+                "hedera-mirror-web3/src/test/resources/contracts/EvmCodes"
+            )
+            setOutputComponents(
+                org.web3j.solidity.gradle.plugin.OutputComponent.ABI,
+                org.web3j.solidity.gradle.plugin.OutputComponent.BIN
+            )
+            output.resourcesDir = file("out/compiledSol")
+            setEvmVersion(org.web3j.solidity.gradle.plugin.EVMVersion.SHANGHAI)
+            setOptimize(true)
+            setOptimizeRuns(500)
+            setVersion("0.46.0")
+        }
+    }
+}
 
 dependencies {
+    implementation("org.web3j:core:4.12.0")
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("com.bucket4j:bucket4j-core")
