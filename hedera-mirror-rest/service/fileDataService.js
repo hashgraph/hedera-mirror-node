@@ -18,6 +18,7 @@ import _ from 'lodash';
 
 import BaseService from './baseService';
 import {ExchangeRate, FileData, FeeSchedule} from '../model';
+import * as utils from '../utils.js';
 
 /**
  * File data retrieval business logic
@@ -103,13 +104,48 @@ class FileDataService extends BaseService {
   };
 
   getExchangeRate = async (filterQueries) => {
-    const row = await this.getLatestFileDataContents(FileDataService.exchangeRateFileId, filterQueries);
-    return _.isNil(row) ? null : new ExchangeRate(row);
+    return this.fallbackRetry(FileDataService.exchangeRateFileId, filterQueries, ExchangeRate);
   };
 
   getFeeSchedule = async (filterQueries) => {
-    const row = await this.getLatestFileDataContents(FileDataService.feeScheduleFileId, filterQueries);
-    return _.isNil(row) ? null : new FeeSchedule(row);
+    return this.fallbackRetry(FileDataService.feeScheduleFileId, filterQueries, FeeSchedule);
+  };
+
+  fallbackRetry = async (fileEntityId, filterQueries, resultConstructor) => {
+    let retries = 0;
+    let caughtError = null;
+
+    while (retries++ <= 10) {
+      const row = await this.getLatestFileDataContents(fileEntityId, filterQueries);
+      if (_.isNil(row)) {
+        break;
+      }
+
+      try {
+        return new resultConstructor(row);
+      } catch (error) {
+        caughtError = error;
+        logger.warn(
+          `Failed to load file data for file id ${fileEntityId} at ${filterQueries.timestamp}, failing back to previous file. Retry attempt ${retries}. Error: ${error}`
+        );
+
+        const fallBackTimestamp = row.consensus_timestamp - 1n;
+        if (_.isNil(filterQueries.whereQuery[0]?.param)) {
+          // The query has no timestamp filters, add one to fall back to the previous file
+          filterQueries.whereQuery.push({
+            query: FileData.CONSENSUS_TIMESTAMP + utils.opsMap.lte,
+            param: fallBackTimestamp,
+          });
+        } else {
+          filterQueries.whereQuery[0].param = fallBackTimestamp;
+        }
+      }
+    }
+
+    if (caughtError) {
+      throw caughtError;
+    }
+    return null;
   };
 }
 
