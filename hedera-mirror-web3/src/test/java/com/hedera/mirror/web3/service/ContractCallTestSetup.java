@@ -16,12 +16,15 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.EXCHANGE_RATE_ENTITY_ID;
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.FEE_SCHEDULE_ENTITY_ID;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -117,10 +120,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
                     .build())
             .build();
-
-    // System addresses
-    protected static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
-    protected static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
 
     // Contract addresses
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
@@ -1341,7 +1340,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }
 
-    private void historicalBlocksPersist() {
+    protected void historicalBlocksPersist() {
         recordFileBeforeEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK - 1))
@@ -1361,7 +1360,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
     }
 
-    private void historicalDataPersist() {
+    protected void historicalDataPersist() {
         // Accounts
         final var ownerEntityId = ownerEntityPersistHistorical();
         final var senderEntityId = senderEntityPersistHistorical();
@@ -1666,7 +1665,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
+    protected void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
         domainBuilder
                 .customFee()
                 .customize(f -> f.tokenId(nftEntityId.getId())
@@ -1703,7 +1702,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     // Account persist
-    private void tokenAccountPersist(
+    protected void tokenAccountPersist(
             final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
         domainBuilder
                 .tokenAccount()
@@ -1728,7 +1727,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void tokenAccountPersistHistorical(
+    protected void tokenAccountPersistHistorical(
             final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
         domainBuilder
                 .tokenAccountHistory()
@@ -1743,7 +1742,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void ercContractTokenPersist(
+    protected void ercContractTokenPersist(
             final Address contractAddress, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatusEnum) {
         final var contractEntityId = fromEvmAddress(contractAddress.toArrayUnsafe());
         domainBuilder
@@ -1770,7 +1769,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
-    private EntityId spenderEntityPersist() {
+    protected EntityId spenderEntityPersist() {
         final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS.toArrayUnsafe());
         domainBuilder
                 .entity()
@@ -1783,7 +1782,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
-    private EntityId spenderEntityPersistHistorical() {
+    protected EntityId spenderEntityPersistHistorical() {
         final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
 
         domainBuilder
@@ -1813,7 +1812,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ethAccount;
     }
 
-    private EntityId senderEntityPersist() {
+    protected EntityId senderEntityPersist() {
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -1828,7 +1827,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return senderEntityId;
     }
 
-    private EntityId senderEntityPersistHistorical() {
+    protected EntityId senderEntityPersistHistorical() {
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
 
         domainBuilder
@@ -1861,7 +1860,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return systemAccountEntityId;
     }
 
-    private EntityId ownerEntityPersist() {
+    protected EntityId ownerEntityPersist() {
         final var ownerEntityId = fromEvmAddress(OWNER_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -1875,7 +1874,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ownerEntityId;
     }
 
-    private EntityId ownerEntityPersistHistorical() {
+    protected EntityId ownerEntityPersistHistorical() {
         final var ownerEntityId = fromEvmAddress(OWNER_ADDRESS_HISTORICAL.toArrayUnsafe());
 
         domainBuilder
@@ -1892,7 +1891,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ownerEntityId;
     }
 
-    private EntityId autoRenewAccountPersist() {
+    protected EntityId autoRenewAccountPersist() {
         final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -1905,10 +1904,19 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return autoRenewEntityId;
     }
 
-    private EntityId autoRenewAccountPersistHistorical() {
+    protected EntityId autoRenewAccountPersistHistorical() {
         final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL.toArrayUnsafe());
 
-        domainBuilder
+        final var test = domainBuilder
+                .entity()
+                .customize(e -> e.type(ACCOUNT)
+                        .evmAddress(null)
+                        .alias(toEvmAddress(autoRenewEntityId))
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+
+        /*domainBuilder
                 .entity()
                 .customize(e -> e.id(autoRenewEntityId.getId())
                         .num(autoRenewEntityId.getNum())
@@ -1916,12 +1924,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .alias(toEvmAddress(autoRenewEntityId))
                         .timestampRange(Range.closedOpen(
                                 recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
-                .persist();
+                .persist();*/
 
-        return autoRenewEntityId;
+        return test.toEntityId();
     }
 
-    private EntityId treasureEntityPersist() {
+    protected EntityId treasureEntityPersist() {
         final var treasuryEntityId = fromEvmAddress(TREASURY_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -1948,7 +1956,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     // Token persist
-    private EntityId fungibleTokenPersist(
+    protected EntityId fungibleTokenPersist(
             final EntityId treasuryId,
             final byte[] key,
             final Address tokenAddress,
@@ -1998,7 +2006,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return tokenEntityId;
     }
 
-    private EntityId balancePersistHistorical(final Address tokenAddress, final Range<Long> historicalBlock) {
+    protected EntityId balancePersistHistorical(final Address tokenAddress, final Range<Long> historicalBlock) {
         final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
         final var accountId = EntityIdUtils.entityIdFromId(
                 Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS_HISTORICAL)));
@@ -2019,7 +2027,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return tokenEntityId;
     }
 
-    private EntityId fungibleTokenPersistHistorical(
+    protected EntityId fungibleTokenPersistHistorical(
             final EntityId treasuryId,
             final byte[] key,
             final Address tokenAddress,
@@ -2074,7 +2082,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return tokenEntityId;
     }
 
-    private EntityId nftPersist(
+    protected EntityId nftPersist(
             final Address nftAddress,
             final Address autoRenewAddress,
             final EntityId ownerEntityId,
@@ -2137,7 +2145,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return nftEntityId;
     }
 
-    private EntityId nftPersistHistorical(
+    protected EntityId nftPersistHistorical(
             final Address nftAddress,
             final Address autoRenewAddress,
             final EntityId ownerEntityId,
@@ -2308,7 +2316,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     // Allowances persist
-    private void allowancesPersist(
+    protected void allowancesPersist(
             final EntityId senderEntityId,
             final EntityId spenderEntityId,
             final EntityId tokenEntityId,
@@ -2332,7 +2340,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void tokenAllowancePersistHistorical(
+    protected void tokenAllowancePersistHistorical(
             final EntityId tokenEntityId,
             final EntityId payerAccountId,
             final EntityId ownerEntityId,
@@ -2351,7 +2359,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void nftAllowancePersistHistorical(
+    protected void nftAllowancePersistHistorical(
             final EntityId tokenEntityId,
             final EntityId payerAccountId,
             final EntityId ownerEntityId,
@@ -2368,7 +2376,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void contractAllowancesPersist(
+    protected void contractAllowancesPersist(
             final EntityId senderEntityId,
             final Address contractAddress,
             final EntityId tokenEntityId,
@@ -2600,7 +2608,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private EntityId ercContractPersist() {
+    protected EntityId ercContractPersist() {
         final var ercContractBytes = functionEncodeDecoder.getContractBytes(ERC_CONTRACT_BYTES_PATH);
         final var ercContractEntityId = fromEvmAddress(ERC_CONTRACT_ADDRESS.toArrayUnsafe());
         final var ercContractEvmAddress = toEvmAddress(ercContractEntityId);
@@ -2634,7 +2642,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ercContractEntityId;
     }
 
-    private EntityId redirectContractPersist() {
+    protected EntityId redirectContractPersist() {
         final var redirectContractBytes = functionEncodeDecoder.getContractBytes(REDIRECT_CONTRACT_BYTES_PATH);
         final var redirectContractEntityId = fromEvmAddress(REDIRECT_CONTRACT_ADDRESS.toArrayUnsafe());
         final var redirectContractEvmAddress = toEvmAddress(redirectContractEntityId);
