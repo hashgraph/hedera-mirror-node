@@ -1023,6 +1023,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         } else {
             sender = new HederaEvmAccount(SENDER_ADDRESS);
         }
+        // in the end, this persist will be removed because every test
+        // will be responsible to persist its own needed data
         persistEntities();
 
         return CallServiceParameters.builder()
@@ -1041,6 +1043,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected CallServiceParameters serviceParametersForTopLevelContractCreate(
             final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
         final var sender = new HederaEvmAccount(senderAddress);
+        // in the end, this persist will be removed because every test
+        // will be responsible to persist its own needed data
         persistEntities();
 
         final var callData = Bytes.wrap(functionEncodeDecoder.getContractBytes(contractInitCodePath));
