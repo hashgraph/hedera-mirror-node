@@ -1,5 +1,5 @@
 {
-  "description": "Network exchange rate with corrupted file data and fallback",
+  "description": "Network exchange rate with corrupted file data and fallback with maximum retries",
   "setup": {
     "filedata": [
       {
