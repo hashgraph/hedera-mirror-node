@@ -52,7 +52,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, NESTED_CALLS_ABI_PATH, contractFunc.expectedResultFields);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
@@ -75,7 +75,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
 
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+        assertThat(longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)))
                 .as("result must be within 5-20% bigger than the gas used from the first call")
                 .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
                 .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
@@ -92,7 +92,7 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         final var successfulResponse =
                 functionEncodeDecoder.encodedResultFor(func.name, NESTED_CALLS_ABI_PATH, func.expectedResultFields);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @RequiredArgsConstructor

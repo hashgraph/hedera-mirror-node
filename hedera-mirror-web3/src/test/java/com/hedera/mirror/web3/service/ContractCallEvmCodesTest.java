@@ -50,7 +50,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("chainId", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isEqualTo(mirrorNodeEvmProperties.chainIdBytes32().toHexString());
     }
 
@@ -59,7 +59,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("recoverAddress", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isNotEmpty();
+        assertThat(contractExecutionService.processCall(serviceParameters)).isNotEmpty();
     }
 
     @Test
@@ -67,7 +67,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("calculateSHA256", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        final var result = contractCallService.processCall(serviceParameters);
+        final var result = contractExecutionService.processCall(serviceParameters);
         final var decodedResult = functionEncodeDecoder.decodeResult("calculateSHA256", EVM_CODES_ABI_PATH, result);
 
         assertThat(Bytes.wrap((byte[]) decodedResult.get(0)).toHexString())
@@ -79,7 +79,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("calculateRIPEMD160", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        final var result = contractCallService.processCall(serviceParameters);
+        final var result = contractExecutionService.processCall(serviceParameters);
         final var decodedResult = functionEncodeDecoder.decodeResult("calculateRIPEMD160", EVM_CODES_ABI_PATH, result);
 
         assertThat(Bytes.wrap((byte[]) decodedResult.get(0)).toHexString())
@@ -91,7 +91,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("identity", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        final var result = contractCallService.processCall(serviceParameters);
+        final var result = contractExecutionService.processCall(serviceParameters);
         final var decodedResult = functionEncodeDecoder.decodeResult("identity", EVM_CODES_ABI_PATH, result);
 
         assertThat(Bytes.wrap((byte[]) decodedResult.get(0)).toHexString()).contains("48656c6c6f2c20576f726c64");
@@ -102,7 +102,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("modExp", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000004");
     }
 
@@ -111,7 +111,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("addPoints", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isEqualTo(
                         "0x030644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd315ed738c0e0a7c92e7845f96b2ae9c0a68a6a449e3538fc7ff3ebf7a5a18a2c4");
     }
@@ -121,7 +121,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("multiplyPoints", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isEqualTo(
                         "0x0769bf9ac56bea3ff40232bcb1b6bd159315d84715b8e679f2d355961915abf02ab799bee0489429554fdb7c8d086475319e63b40b9c5b57cdf1ff3dd9fe2261");
     }
@@ -131,7 +131,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("pairingCheck", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(TRUE);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(TRUE);
     }
 
     @Test
@@ -139,7 +139,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("blake2", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isEqualTo(
                         "0xba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923");
     }
@@ -149,7 +149,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("getBlockPrevrandao", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        String result = contractCallService.processCall(serviceParameters);
+        String result = contractExecutionService.processCall(serviceParameters);
         assertThat(result).isNotBlank();
         assertTrue(result.length() > "0x".length());
     }
@@ -165,7 +165,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 "getBlockHash", EVM_CODES_ABI_PATH, recordFileForBlockHash.getIndex());
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isEqualTo("0x" + recordFileForBlockHash.getHash().substring(0, 64));
     }
 
@@ -179,7 +179,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, 0L);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isEqualTo("0x" + genesisRecordFileForBlockHash.getHash().substring(0, 64));
     }
 
@@ -188,7 +188,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var functionHash = functionEncodeDecoder.functionHashFor("getLatestBlockHash", EVM_CODES_ABI_PATH);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isNotEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
     }
 
@@ -198,7 +198,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 functionEncodeDecoder.functionHashFor("getBlockHash", EVM_CODES_ABI_PATH, Long.MAX_VALUE);
         final var serviceParameters = serviceParametersForEvmCodes(functionHash);
 
-        assertThat(contractCallService.processCall(serviceParameters))
+        assertThat(contractExecutionService.processCall(serviceParameters))
                 .isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000000");
     }
 
@@ -220,7 +220,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 0L,
                 BlockType.of(String.valueOf(EVM_V_34_BLOCK)));
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
@@ -236,7 +236,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(input), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedOutput);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(expectedOutput);
     }
 
     @ParameterizedTest
@@ -250,7 +250,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(input), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedOutput);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(expectedOutput);
     }
 
     @Test
@@ -260,7 +260,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -274,7 +274,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -288,7 +288,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, ADDRESS_THIS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @Test
@@ -298,7 +298,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -309,7 +309,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(destroyContractInput), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
     @Test
@@ -320,7 +320,7 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(destroyContractInput), EVM_CODES_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .satisfies(ex -> {
                     MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;

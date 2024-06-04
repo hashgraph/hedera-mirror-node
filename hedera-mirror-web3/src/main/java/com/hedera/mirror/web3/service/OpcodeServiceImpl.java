@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
@@ -41,7 +40,7 @@ import com.hedera.mirror.web3.repository.ContractResultRepository;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.github.bucket4j.Bucket;
@@ -61,7 +60,7 @@ import org.springframework.stereotype.Service;
 public class OpcodeServiceImpl implements OpcodeService {
 
     private final RecordFileService recordFileService;
-    private final ContractCallService contractCallService;
+    private final ContractDebugService contractDebugService;
     private final ContractTransactionHashRepository contractTransactionHashRepository;
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final TransactionRepository transactionRepository;
@@ -72,15 +71,15 @@ public class OpcodeServiceImpl implements OpcodeService {
     @Override
     public OpcodesResponse processOpcodeCall(@NonNull TransactionIdOrHashParameter transactionIdOrHashParameter,
                                              @NonNull OpcodeTracerOptions options) {
-        final CallServiceParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
+        final ContractCallDebugServiceParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
         if (!gasLimitBucket.tryConsume(params.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
-        final OpcodesProcessingResult result = contractCallService.processOpcodeCall(params, options);
+        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options, transactionIdOrHashParameter);
         return buildOpcodesResponse(result);
     }
 
-    private CallServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
+    private ContractCallDebugServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
         final Long consensusTimestamp;
         final Optional<EthereumTransaction> ethereumTransaction;
 
@@ -162,7 +161,7 @@ public class OpcodeServiceImpl implements OpcodeService {
                         .orElse(Bytes.EMPTY.toHexString()));
     }
 
-    private CallServiceParameters buildCallServiceParameters(Long consensusTimestamp,
+    private ContractCallDebugServiceParameters buildCallServiceParameters(Long consensusTimestamp,
                                                              Optional<EthereumTransaction> ethTransaction) {
         final ContractResult contractResult = contractResultRepository.findById(consensusTimestamp)
                 .orElseThrow(() -> new EntityNotFoundException("Contract result not found"));
@@ -171,15 +170,12 @@ public class OpcodeServiceImpl implements OpcodeService {
                 .map(recordFile -> BlockType.of(recordFile.getIndex().toString()))
                 .orElse(BlockType.LATEST);
 
-        return CallServiceParameters.builder()
+        return ContractCallDebugServiceParameters.builder()
                 .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
                 .receiver(getReceiverAddress(ethTransaction, contractResult))
                 .gas(getGasLimit(ethTransaction, contractResult))
                 .value(getValue(ethTransaction, contractResult).longValue())
                 .callData(getCallData(ethTransaction, contractResult))
-                .isStatic(false)
-                .callType(ETH_DEBUG_TRACE_TRANSACTION)
-                .isEstimate(false)
                 .block(blockType)
                 .build();
     }

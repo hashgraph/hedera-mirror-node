@@ -18,7 +18,10 @@ package com.hedera.node.app.service.evm.contracts.execution;
 
 import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
@@ -57,7 +60,7 @@ public class HederaEvmTxProcessor {
     protected final PricesAndFeesProvider livePricesSource;
     protected final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps;
     protected final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps;
-    protected final HederaEvmOperationTracer tracer;
+    protected final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap;
     protected final EvmProperties dynamicProperties;
 
     @SuppressWarnings("java:S107")
@@ -69,7 +72,7 @@ public class HederaEvmTxProcessor {
             final Map<SemanticVersion, Provider<MessageCallProcessor>> mcps,
             final Map<SemanticVersion, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
-            final HederaEvmOperationTracer tracer) {
+            final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap) {
         this.worldState = worldState;
         this.livePricesSource = livePricesSource;
         this.dynamicProperties = dynamicProperties;
@@ -77,7 +80,7 @@ public class HederaEvmTxProcessor {
         this.mcps = mcps;
         this.ccps = ccps;
         this.blockMetaSource = blockMetaSource;
-        this.tracer = tracer;
+        this.tracerMap = tracerMap;
     }
 
     /**
@@ -106,7 +109,9 @@ public class HederaEvmTxProcessor {
             final Bytes payload,
             final boolean isStatic,
             final Address mirrorReceiver,
-            final boolean contractCreation) {
+            final boolean contractCreation,
+            final TracerType tracerType,
+            final ContractCallContext contractCallContext) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
         final var gasAvailable = gasLimit - intrinsicGas;
@@ -136,11 +141,13 @@ public class HederaEvmTxProcessor {
                         "HederaFunctionality",
                         getFunctionType(contractCreation),
                         PRECOMPILE_CONTEXT,
-                        precompileContext));
+                        precompileContext,
+                        ContractCallContext.CONTEXT_NAME,
+                        contractCallContext));
 
         final var initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         final var messageFrameStack = initialFrame.getMessageFrameStack();
-
+        HederaEvmOperationTracer tracer = this.getTracer(tracerType);
         tracer.init(initialFrame);
 
         final var evmVersion = ((MirrorNodeEvmProperties) dynamicProperties).getSemanticEvmVersion();
@@ -153,6 +160,9 @@ public class HederaEvmTxProcessor {
 
         tracer.finalizeOperation(initialFrame);
 
+        if (tracer instanceof OpcodeTracer opcodeTracer) {
+            contractCallContext.setOpcodes(opcodeTracer.getOpcodes());
+        }
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return HederaEvmTransactionProcessingResult.successful(
@@ -209,5 +219,9 @@ public class HederaEvmTxProcessor {
             case MESSAGE_CALL -> mcps.get(evmVersion).get();
             case CONTRACT_CREATION -> ccps.get(evmVersion).get();
         };
+    }
+
+    private HederaEvmOperationTracer getTracer(TracerType tracerType) {
+        return tracerMap.get(tracerType).get();
     }
 }

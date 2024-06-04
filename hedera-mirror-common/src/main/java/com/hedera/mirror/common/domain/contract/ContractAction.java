@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.common.domain.contract;
 
+import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -96,6 +98,11 @@ public class ContractAction implements Persistable<ContractAction.Id> {
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
+
+    @JsonIgnore
+    public boolean hasRevertReason() {
+        return resultDataType == REVERT_REASON.getNumber();
     }
 
     @Data

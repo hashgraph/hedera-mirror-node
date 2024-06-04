@@ -86,6 +86,7 @@ dependencies {
         api("org.apache.commons:commons-compress:1.26.1")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
+        api("org.apache.tuweni:tuweni-units:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2")
         api("org.gaul:s3proxy:2.2.0")

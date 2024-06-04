@@ -16,18 +16,20 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.MirrorOperationTracer;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
@@ -69,10 +71,10 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final AbstractCodeCache codeCache,
-            final MirrorOperationTracer operationTracer,
+            final Map<TracerType, Provider<HederaEvmOperationTracer>> tracerMap,
             final Store store,
             final EntityAddressSequencer entityAddressSequencer,
-            TokenAccessor tokenAccessor) {
+            final TokenAccessor tokenAccessor) {
         super(
                 worldState,
                 pricesAndFeesProvider,
@@ -81,7 +83,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 mcps,
                 ccps,
                 blockMetaSource,
-                operationTracer);
+                tracerMap);
 
         this.aliasManager = aliasManager;
         this.codeCache = codeCache;
@@ -90,7 +92,10 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.tokenAccessor = tokenAccessor;
     }
 
-    public HederaEvmTransactionProcessingResult execute(CallServiceParameters params, long estimatedGas) {
+    public HederaEvmTransactionProcessingResult execute(final BaseCallServiceParameters params,
+                                                        final long estimatedGas,
+                                                        final TracerType tracerType,
+                                                        final ContractCallContext ctx) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();
@@ -112,7 +117,9 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.getCallData(),
                 params.isStatic(),
                 aliasManager.resolveForEvm(params.getReceiver()),
-                params.getReceiver().equals(Address.ZERO));
+                params.getReceiver().equals(Address.ZERO),
+                tracerType,
+                ctx);
     }
 
     @Override

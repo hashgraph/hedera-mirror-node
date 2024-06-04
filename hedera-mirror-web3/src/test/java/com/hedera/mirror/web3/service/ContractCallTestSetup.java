@@ -52,6 +52,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -500,7 +501,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected FunctionEncodeDecoder functionEncodeDecoder;
 
     @Autowired
-    protected ContractCallService contractCallService;
+    protected ContractExecutionService contractExecutionService;
 
     @Autowired
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -1063,7 +1064,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ContractCallContext.run(ctx -> {
             ctx.initializeStackFrames(store.getStackedStateFrames());
             long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas())
+                    .execute(serviceParameters, serviceParameters.getGas(), TracerType.OPERATION, ctx)
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);

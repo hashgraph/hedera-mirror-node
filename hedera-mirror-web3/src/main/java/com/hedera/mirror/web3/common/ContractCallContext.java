@@ -16,10 +16,14 @@
 
 package com.hedera.mirror.web3.common;
 
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import java.util.EmptyStackException;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import lombok.Getter;
@@ -44,6 +48,15 @@ public class ContractCallContext {
 
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     private CachingStateFrame<Object> stackBase;
+
+    @Setter
+    private OpcodeTracerOptions opcodeTracerOptions;
+
+    @Setter
+    private List<Opcode> opcodes = List.of();
+
+    @Setter
+    private List<ContractAction> contractActions = List.of();
 
     private ContractCallContext() {}
 

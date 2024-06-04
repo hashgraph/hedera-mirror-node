@@ -24,8 +24,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @Value
-@Builder(toBuilder = true)
-public class CallServiceParameters {
+@Builder
+public class CallServiceParameters implements BaseCallServiceParameters {
     HederaEvmAccount sender;
     Address receiver;
     long gas;
@@ -33,13 +33,6 @@ public class CallServiceParameters {
     Bytes callData;
     boolean isStatic;
     CallType callType;
-    boolean isEstimate;
     BlockType block;
-
-    public enum CallType {
-        ETH_CALL,
-        ETH_DEBUG_TRACE_TRANSACTION,
-        ETH_ESTIMATE_GAS,
-        ERROR
-    }
+    boolean isEstimate;
 }
