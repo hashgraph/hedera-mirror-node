@@ -196,7 +196,6 @@ class ServerTestResult {
   }
 
   addTestResult(testResult) {
-    logger.log(`Test result for ${testResult.message}`);
     this.result.testResults.push(testResult);
     if (testResult.result === 'passed') {
       this.result.numPassedTests += 1;
