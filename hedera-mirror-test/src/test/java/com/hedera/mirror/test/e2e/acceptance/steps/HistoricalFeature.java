@@ -16,43 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
-import com.hedera.hashgraph.sdk.ContractFunctionParameters;
-import com.hedera.hashgraph.sdk.CustomFee;
-import com.hedera.hashgraph.sdk.CustomFixedFee;
-import com.hedera.hashgraph.sdk.CustomFractionalFee;
-import com.hedera.hashgraph.sdk.CustomRoyaltyFee;
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.KeyList;
-import com.hedera.hashgraph.sdk.NftId;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.ReceiptStatusException;
-import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.props.Order;
-import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
-import io.cucumber.java.en.And;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_GAS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
@@ -84,6 +47,42 @@ import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeat
 import static com.hedera.mirror.test.e2e.acceptance.steps.PrecompileContractFeature.ContractMethods.IS_TOKEN_FROZEN_SELECTOR;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static org.assertj.core.api.Assertions.assertThat;
+
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.AccountUpdateTransaction;
+import com.hedera.hashgraph.sdk.ContractFunctionParameters;
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.CustomFixedFee;
+import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.CustomRoyaltyFee;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.NftId;
+import com.hedera.hashgraph.sdk.PrecheckStatusException;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.Order;
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.ContractCallResponseWrapper;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -213,14 +212,15 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         networkTransactionResponse =
                 accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
-        var initialResponse =
-                callContract(data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas()).getResultAsNumber();
+        var initialResponse = callContract(data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas())
+                .getResultAsNumber();
         var initialBlockNumber = getLastBlockNumber();
         waitForNextBlock();
         networkTransactionResponse =
                 accountClient.sendCryptoTransfer(receiverAccountId.getAccountId(), Hbar.fromTinybars(50000000), null);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var response = callContract(initialBlockNumber, data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas())
+        var response = callContract(
+                        initialBlockNumber, data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas())
                 .getResultAsNumber();
         assertThat(initialResponse).isEqualTo(response);
     }
@@ -241,7 +241,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ADDRESS_BALANCE,
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
         var currentBlock = getLastBlockNumber();
-        assertEthCallReturnsBadRequest(currentBlock + "0", data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas());
+        assertEthCallReturnsBadRequest(
+                currentBlock + "0", data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas());
     }
 
     @Then("I verify that historical data for {string} block is treated as latest")
@@ -250,10 +251,11 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 ESTIMATE_GAS,
                 ADDRESS_BALANCE,
                 asAddress(receiverAccountId.getAccountId().toSolidityAddress()));
-        var responseFromType =
-                callContract(blockType, data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas()).getResultAsNumber();
-        var responseFromLatest =
-                callContract(data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas()).getResultAsNumber();
+        var responseFromType = callContract(
+                        blockType, data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas())
+                .getResultAsNumber();
+        var responseFromLatest = callContract(data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas())
+                .getResultAsNumber();
         assertThat(responseFromLatest).isEqualTo(responseFromType);
     }
 
@@ -275,7 +277,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         networkTransactionResponse = accountClient.delete(deletableAccountId);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlock, data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas());
+        var historicalResponse =
+                callContract(initialBlock, data, estimateContractSolidityAddress, ADDRESS_BALANCE.getActualGas());
         assertThat(initialResponse).isEqualTo(historicalResponse);
     }
 
@@ -291,7 +294,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         networkTransactionResponse = tokenClient.updateToken(tokenId, admin);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress, GET_TOKEN_INFO.getActualGas());
+        var historicalResponse = callContract(
+                initialBlockNumber, data, precompileContractSolidityAddress, GET_TOKEN_INFO.getActualGas());
         assertThat(response).isEqualTo(historicalResponse);
     }
 
@@ -307,7 +311,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         networkTransactionResponse = tokenClient.burnFungible(tokenId, 5L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress, GET_TOKEN_INFO.getActualGas());
+        var historicalResponse = callContract(
+                initialBlockNumber, data, precompileContractSolidityAddress, GET_TOKEN_INFO.getActualGas());
         assertThat(response).isEqualTo(historicalResponse);
     }
 
@@ -323,7 +328,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         networkTransactionResponse = tokenClient.mint(tokenId, 5L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress, GET_TOKEN_INFO.getActualGas());
+        var historicalResponse = callContract(
+                initialBlockNumber, data, precompileContractSolidityAddress, GET_TOKEN_INFO.getActualGas());
         assertThat(response).isEqualTo(historicalResponse);
     }
 
@@ -378,7 +384,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress, BALANCE_OF.getActualGas());
+        var historicalResponse =
+                callContract(initialBlockNumber, data, ercContractSolidityAddress, BALANCE_OF.getActualGas());
         var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertThat(initialBalance).isEqualTo(balanceOfHistorical);
     }
@@ -422,7 +429,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             tokenClient.burnNonFungible(tokenId, 3L);
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress, BALANCE_OF.getActualGas());
+        var historicalResponse =
+                callContract(initialBlockNumber, data, ercContractSolidityAddress, BALANCE_OF.getActualGas());
         var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertThat(initialBalance).isEqualTo(balanceOfHistorical);
     }
@@ -443,7 +451,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             tokenClient.wipeNonFungible(tokenId, 2L, receiverAccountId);
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, ercContractSolidityAddress, BALANCE_OF.getActualGas());
+        var historicalResponse =
+                callContract(initialBlockNumber, data, ercContractSolidityAddress, BALANCE_OF.getActualGas());
         var balanceOfHistorical = historicalResponse.getResultAsNumber();
         assertThat(initialBalance).isEqualTo(balanceOfHistorical);
     }
@@ -462,7 +471,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         networkTransactionResponse = accountClient.approveToken(tokenId, receiverAccountId.getAccountId(), 100L);
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
-        var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress, ALLOWANCE.getActualGas());
+        var historicalResponse = callContract(
+                initialBlockNumber, data, estimatePrecompileContractSolidityAddress, ALLOWANCE.getActualGas());
         var historicalAllowance = historicalResponse.getResultAsNumber();
         assertThat(initialAllowance).isEqualTo(historicalAllowance);
     }
@@ -482,7 +492,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
 
         networkTransactionResponse = accountClient.approveNft(nftId, secondReceiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress, GET_APPROVED.getActualGas());
+        var historicalResponse = callContract(
+                initialBlockNumber, data, estimatePrecompileContractSolidityAddress, GET_APPROVED.getActualGas());
         var historicalApprovedAddress = historicalResponse.getResultAsAddress();
         assertThat(initialApprovedAddress).isEqualTo(historicalApprovedAddress);
     }
@@ -573,14 +584,19 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                 asAddress(tokenId.toSolidityAddress()),
                 asAddress(admin),
                 asAddress(receiverAccountId));
-        var response = callContract(data, estimatePrecompileContractSolidityAddress, IS_APPROVED_FOR_ALL.getActualGas());
+        var response =
+                callContract(data, estimatePrecompileContractSolidityAddress, IS_APPROVED_FOR_ALL.getActualGas());
         var initialResult = response.getResultAsAddress();
 
         waitForNextBlock();
 
         networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, receiverAccountId.getAccountId());
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress, IS_APPROVED_FOR_ALL.getActualGas());
+        var historicalResponse = callContract(
+                initialBlockNumber,
+                data,
+                estimatePrecompileContractSolidityAddress,
+                IS_APPROVED_FOR_ALL.getActualGas());
         var historicalResult = historicalResponse.getResultAsAddress();
         assertThat(initialResult).isEqualTo(historicalResult);
     }
@@ -654,7 +670,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             }
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress, GET_FUNGIBLE_TOKEN_INFO.getActualGas());
+        var historicalResponse = callContract(
+                initialBlockNumber, data, precompileContractSolidityAddress, GET_FUNGIBLE_TOKEN_INFO.getActualGas());
         assertThat(response).isEqualTo(historicalResponse);
     }
 
@@ -694,7 +711,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
                     10L);
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress, GET_FUNGIBLE_TOKEN_INFO.getActualGas());
+        var historicalResponse = callContract(
+                initialBlockNumber, data, precompileContractSolidityAddress, GET_FUNGIBLE_TOKEN_INFO.getActualGas());
         assertThat(response).isEqualTo(historicalResponse);
     }
 
@@ -708,7 +726,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         } else {
             data = encodeData(PRECOMPILE, GET_NON_FUNGIBLE_TOKEN_INFO, asAddress(tokenId.toSolidityAddress()), 4L);
         }
-        var response = callContract(data, precompileContractSolidityAddress, GET_NON_FUNGIBLE_TOKEN_INFO.getActualGas());
+        var response =
+                callContract(data, precompileContractSolidityAddress, GET_NON_FUNGIBLE_TOKEN_INFO.getActualGas());
 
         waitForNextBlock();
 
@@ -722,7 +741,10 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             }
         }
         verifyMirrorTransactionsResponse(mirrorClient, 200);
-        var historicalResponse = callContract(initialBlockNumber, data, precompileContractSolidityAddress,
+        var historicalResponse = callContract(
+                initialBlockNumber,
+                data,
+                precompileContractSolidityAddress,
                 GET_NON_FUNGIBLE_TOKEN_INFO.getActualGas());
         assertThat(response).isEqualTo(historicalResponse);
     }
@@ -763,7 +785,9 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         // Collect current responses
         for (BigInteger keyValue : tokenKeyValues) {
             var data = encodeData(ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(tokenId.toSolidityAddress()), keyValue);
-            currentResponses.put(keyValue, callContract(data, estimatePrecompileContractSolidityAddress, GET_TOKEN_KEY.getActualGas()));
+            currentResponses.put(
+                    keyValue,
+                    callContract(data, estimatePrecompileContractSolidityAddress, GET_TOKEN_KEY.getActualGas()));
         }
 
         waitForNextBlock();
@@ -778,8 +802,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         // Collect and compare historical responses
         for (BigInteger keyValue : tokenKeyValues) {
             var data = encodeData(ESTIMATE_PRECOMPILE, GET_TOKEN_KEY, asAddress(tokenId.toSolidityAddress()), keyValue);
-            var historicalResponse = callContract(initialBlockNumber, data, estimatePrecompileContractSolidityAddress,
-                    GET_TOKEN_KEY.getActualGas());
+            var historicalResponse = callContract(
+                    initialBlockNumber, data, estimatePrecompileContractSolidityAddress, GET_TOKEN_KEY.getActualGas());
             assertThat(currentResponses).containsEntry(keyValue, historicalResponse);
         }
     }
@@ -821,8 +845,12 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         for (Selector selector : selectors) {
             var data = encodeData(selector.resource(), selector.selector(), asAddress(tokenId));
             if (isEstimatePrecompileFeatureContractMethod(selector)) {
-                currentResponses.put(selector, callContract(data, selector.contractAddress(),
-                        ((EstimatePrecompileFeature.ContractMethods)selector.selector()).getActualGas()));
+                currentResponses.put(
+                        selector,
+                        callContract(
+                                data,
+                                selector.contractAddress(),
+                                ((EstimatePrecompileFeature.ContractMethods) selector.selector()).getActualGas()));
             } else {
                 currentResponses.put(selector, callContract(data, selector.contractAddress()));
             }
@@ -839,8 +867,11 @@ public class HistoricalFeature extends AbstractEstimateFeature {
             var data = encodeData(selector.resource(), selector.selector(), asAddress(tokenId));
             ContractCallResponseWrapper historicalResponse = null;
             if (isEstimatePrecompileFeatureContractMethod(selector)) {
-                historicalResponse = callContract(initialBlockNumber, data, selector.contractAddress(),
-                        ((EstimatePrecompileFeature.ContractMethods)selector.selector()).getActualGas());
+                historicalResponse = callContract(
+                        initialBlockNumber,
+                        data,
+                        selector.contractAddress(),
+                        ((EstimatePrecompileFeature.ContractMethods) selector.selector()).getActualGas());
             } else {
                 historicalResponse = callContract(initialBlockNumber, data, selector.contractAddress());
             }
@@ -866,7 +897,8 @@ public class HistoricalFeature extends AbstractEstimateFeature {
         verifyMirrorTransactionsResponse(mirrorClient, 200);
 
         var data = encodeData(PRECOMPILE, GET_TOKEN_INFO, asAddress(tokenResponse.tokenId()));
-        assertEthCallReturnsBadRequest(previousBlock, data, estimatePrecompileContractSolidityAddress, GET_TOKEN_INFO.getActualGas());
+        assertEthCallReturnsBadRequest(
+                previousBlock, data, estimatePrecompileContractSolidityAddress, GET_TOKEN_INFO.getActualGas());
     }
 
     private String getLastBlockNumber() {
@@ -908,8 +940,10 @@ public class HistoricalFeature extends AbstractEstimateFeature {
     }
 
     private boolean isEstimatePrecompileFeatureContractMethod(final Selector selector) {
-        return selector.selector().getClass()
-                .getCanonicalName().equals("com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods");
+        return selector.selector()
+                .getClass()
+                .getCanonicalName()
+                .equals("com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods");
     }
 
     @Getter

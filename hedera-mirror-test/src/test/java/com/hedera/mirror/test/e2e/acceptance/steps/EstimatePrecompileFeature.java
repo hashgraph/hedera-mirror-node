@@ -16,6 +16,24 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
+import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT_KYC_UNFROZEN;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.*;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddressArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.util.Strings;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -39,12 +57,6 @@ import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.tuweni.bytes.Bytes;
-
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -54,24 +66,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE_KYC_UNFROZEN;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT;
-import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.NFT_KYC_UNFROZEN;
-import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ERC;
-import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_PRECOMPILE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
-import static com.hedera.mirror.test.e2e.acceptance.steps.EstimatePrecompileFeature.ContractMethods.*;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.TokenTransferListBuilder;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.accountAmount;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddressArray;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asByteArray;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asLongArray;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nftAmount;
-import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.tuweni.bytes.Bytes;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -178,7 +177,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
-        assertContractCallReturnsBadRequest(data, DISSOCIATE_TOKEN.actualGas, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(
+                data, DISSOCIATE_TOKEN.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with dissociate token function without association for NFT")
@@ -188,7 +188,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, DISSOCIATE_TOKEN, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
-        assertContractCallReturnsBadRequest(data, DISSOCIATE_TOKEN.actualGas, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(
+                data, DISSOCIATE_TOKEN.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with nested associate function that executes it twice for fungible token")
@@ -198,7 +199,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, NESTED_ASSOCIATE, asAddress(receiverAccountAlias), asAddress(fungibleTokenId));
 
-        assertContractCallReturnsBadRequest(data, NESTED_ASSOCIATE.actualGas, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(
+                data, NESTED_ASSOCIATE.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with nested associate function that executes it twice for NFT")
@@ -208,7 +210,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
         var data = encodeData(
                 ESTIMATE_PRECOMPILE, NESTED_ASSOCIATE, asAddress(receiverAccountAlias), asAddress(nonFungibleTokenId));
 
-        assertContractCallReturnsBadRequest(data, NESTED_ASSOCIATE.actualGas, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(
+                data, NESTED_ASSOCIATE.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I associate the receiver account with the fungible token")
@@ -286,7 +289,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 true);
 
-        assertContractCallReturnsBadRequest(data, SET_APPROVAL_FOR_ALL.actualGas, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(
+                data, SET_APPROVAL_FOR_ALL.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with approveNFT function without association")
@@ -426,7 +430,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 new BigInteger("50"));
 
-        assertContractCallReturnsBadRequest(data, TRANSFER_FROM_NFT.actualGas, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(
+                data, TRANSFER_FROM_NFT.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with transferNFT function")
@@ -702,7 +707,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 100000000000000000L);
 
-        assertContractCallReturnsBadRequest(data, WIPE_TOKEN_ACCOUNT.actualGas, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(
+                data, WIPE_TOKEN_ACCOUNT.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @And("I transfer NFT to receiver account")
@@ -738,7 +744,8 @@ public class EstimatePrecompileFeature extends AbstractEstimateFeature {
                 asAddress(receiverAccountAlias),
                 asLongArray(List.of(66L)));
 
-        assertContractCallReturnsBadRequest(data, WIPE_NFT_ACCOUNT.actualGas, estimatePrecompileContractSolidityAddress);
+        assertContractCallReturnsBadRequest(
+                data, WIPE_NFT_ACCOUNT.actualGas, estimatePrecompileContractSolidityAddress);
     }
 
     @Then("I call estimateGas with GrantKYC function for fungible token")
