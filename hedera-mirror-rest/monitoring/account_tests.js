@@ -37,6 +37,7 @@ const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const tokenRelationshipEnabled = config[resource].tokenRelationshipEnabled || false;
 const stakingRewardAccountId = config[resource].stakingRewardAccountId;
 const jsonRespKey = 'accounts';
+const allowancesJsonRespKey = 'allowances';
 const mandatoryParams = [
   'balance',
   'account',
@@ -245,6 +246,137 @@ const getAccountStakingRewards = async (server) => {
 };
 
 /**
+ * Verify that we return crypto allowances for an existing account
+ * @param {Object} server API host endpoint
+ */
+const getCryptoAllowances = async (server) => {
+  const accountId = config[resource].cryptoAllowanceOwnerId;
+  const cryptoAllowancesPath = `${accountsPath}/${accountId}/allowances/crypto`;
+  let url = getUrl(server, cryptoAllowancesPath, {limit: resourceLimit});
+  const allowances = await getAPIResponse(url, allowancesJsonRespKey);
+  const allowancesMandatoryParams = ['amount', 'amount_granted', 'owner', 'spender', 'timestamp'];
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'crypto allowances is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: allowancesMandatoryParams,
+      message: 'crypto allowances object is missing some mandatory fields',
+    })
+    .run(allowances);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: `Successfully called crypto allowances for account ${accountId}.`,
+  };
+};
+
+/**
+ * Verify that we return token allowances for an existing account
+ * @param {Object} server API host endpoint
+ */
+const getTokenAllowances = async (server) => {
+  const accountId = config[resource].tokenAllowanceOwnerId;
+  const tokenAllowancesPath = `${accountsPath}/${accountId}/allowances/tokens`;
+  let url = getUrl(server, tokenAllowancesPath, {limit: resourceLimit});
+  const allowances = await getAPIResponse(url, allowancesJsonRespKey);
+  const tokenAllowancesMandatoryParams = ['amount', 'amount_granted', 'owner', 'spender', 'timestamp', 'token_id'];
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'token allowances is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: tokenAllowancesMandatoryParams,
+      message: 'token allowances object is missing some mandatory fields',
+    })
+    .run(allowances);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: `Successfully called token allowances for account ${accountId}.`,
+  };
+};
+
+/**
+ * Verify that we return nft allowances for an existing account
+ * @param {Object} server API host endpoint
+ */
+const getNftAllowances = async (server) => {
+  const accountId = config[resource].nftAllowanceOwnerId;
+  const nftAllowancesPath = `${accountsPath}/${accountId}/allowances/nfts`;
+  let url = getUrl(server, nftAllowancesPath, {limit: resourceLimit});
+  const allowances = await getAPIResponse(url, allowancesJsonRespKey);
+  const nftAllowancesMandatoryParams = ['approved_for_all', 'owner', 'spender', 'timestamp', 'token_id'];
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'nft allowances is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: nftAllowancesMandatoryParams,
+      message: 'nft allowances object is missing some mandatory fields',
+    })
+    .run(allowances);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: `Successfully called nft allowances for account ${accountId}.`,
+  };
+};
+
+/**
+ * Verify that we return nfts for an existing account
+ * @param {Object} server API host endpoint
+ */
+const getNfts = async (server) => {
+  const accountId = config[resource].nftAccountId;
+  const nftsPath = `${accountsPath}/${accountId}/nfts`;
+  let url = getUrl(server, nftsPath, {limit: resourceLimit});
+  const nftJsonResponseKey = 'nfts';
+  const allowances = await getAPIResponse(url, nftJsonResponseKey);
+  const nftsMandatoryParams = [
+    'account_id',
+    'created_timestamp',
+    'delegating_spender',
+    'deleted',
+    'metadata',
+    'modified_timestamp',
+    'serial_number',
+    'spender',
+    'token_id',
+  ];
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'nfts is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: nftsMandatoryParams,
+      message: 'nfts object is missing some mandatory fields',
+    })
+    .run(allowances);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: `Successfully called nfts for account ${accountId}.`,
+  };
+};
+
+/**
  * Run all account tests in an asynchronous fashion waiting for all tests to complete
  * @param {Object} server object provided by the user
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
@@ -256,6 +388,10 @@ const runTests = async (server, testResult) => {
     runTest(getSingleAccount),
     tokenRelationshipEnabled ? runTest(getSingleAccountTokenRelationships) : '',
     stakingRewardAccountId !== null ? runTest(getAccountStakingRewards) : '',
+    runTest(getCryptoAllowances),
+    runTest(getTokenAllowances),
+    runTest(getNftAllowances),
+    runTest(getNfts),
   ]);
 };
 

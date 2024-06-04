@@ -28,6 +28,7 @@ import {
   getAPIResponse,
   getUrl,
   testRunner,
+  postAPICall,
 } from './utils';
 
 const contractsPath = '/contracts';
@@ -53,7 +54,7 @@ const mandatoryParams = [
 const contractResultParams = ['address', 'bloom', 'contract_id', 'from', 'gas_limit', 'hash', 'timestamp', 'to'];
 
 /**
- * Verify Verify /contracts and /contracts/{contractId} can be retrieved
+ * Verify /contracts and /contracts/{contractId} can be retrieved
  * @param {Object} server API host endpoint
  */
 const getContractById = async (server) => {
@@ -80,6 +81,37 @@ const getContractById = async (server) => {
     url,
     passed: true,
     message: 'Successfully called contracts for single contract',
+  };
+};
+
+/**
+ * Verify /contracts/call can be called
+ * @param {Object} server API host endpoint
+ */
+const postContractCall = async (server) => {
+  let url = getUrl(server, `${contractsPath}/call`);
+  let body = `{
+      "block": "latest",
+          "data": "0x2e3cff6a0000000000000000000000000000000000000000000000000000000000000064",
+          "estimate": false,
+          "gas": 15000000,
+          "gasPrice": 100000000,
+          "to": "0x0000000000000000000000000000000000000168"
+    }`;
+  const singleContract = await postAPICall(url, body);
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'contracts call is undefined'})
+    .run(singleContract);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called contracts call for single contract',
   };
 };
 
@@ -361,6 +393,7 @@ const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
     runTest(getContractById),
+    runTest(postContractCall),
     runTest(getContractResults),
     runTest(getContractResultsLogs),
     runTest(getContractState),

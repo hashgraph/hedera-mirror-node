@@ -141,6 +141,47 @@ const getAPIResponse = async (url, key = undefined, retryPredicate = noRetry) =>
   }
 };
 
+/**
+ * Make an http POST call to mirror-node api
+ * Host info is prepended to if only path is provided
+ * @param {*} url rest-api endpoint
+ * @param {String} body body to be posted
+ * @param {Function} retryPredicate An optional predicate that returns true if a successful request should be retried.
+ * @return {Object} JSON object representing api response or error
+ */
+const postAPICall = async (url, body, retryPredicate = noRetry) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(
+    () => {
+      controller.abort();
+    },
+    config.timeout * 1000 // in ms
+  );
+
+  try {
+    return await fetchWithRetry(
+      url,
+      {
+        // Adding method type
+        method: 'POST',
+
+        // Adding body or contents to send
+        body: body,
+
+        // Adding headers to the request
+        headers: {
+          'Content-type': 'application/json; charset=UTF-8',
+        },
+      },
+      retryPredicate
+    );
+  } catch (error) {
+    return error;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 class ServerTestResult {
   constructor() {
     this.result = {
@@ -155,6 +196,7 @@ class ServerTestResult {
   }
 
   addTestResult(testResult) {
+    logger.log(`Test result for ${testResult.message}`);
     this.result.testResults.push(testResult);
     if (testResult.result === 'passed') {
       this.result.numPassedTests += 1;
@@ -461,5 +503,6 @@ export {
   getAPIResponse,
   getUrl,
   hasEmptyList,
+  postAPICall,
   testRunner,
 };

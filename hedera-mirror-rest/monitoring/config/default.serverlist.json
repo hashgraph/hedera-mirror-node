@@ -19,6 +19,11 @@
     "intervalMultiplier": 1,
     "limit": 10,
     "stakingRewardAccountId": null,
+    "cryptoAllowanceOwnerId": "",
+    "nftAllowanceOwnerId": "",
+    "_comment": "nftAccountId value might not be the same as nftAllowanceOwnerId in different environments",
+    "nftAccountId": "",
+    "tokenAllowanceOwnerId": "",
     "tokenRelationshipEnabled": true
   },
   "balance": {
