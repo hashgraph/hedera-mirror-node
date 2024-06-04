@@ -21,7 +21,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -55,8 +55,8 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -1007,7 +1007,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected CallServiceParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
-            final CallType callType,
+            final BaseCallServiceParameters.CallType callType,
             final long value,
             final BlockType block) {
         return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
@@ -1016,7 +1016,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected CallServiceParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
-            final CallType callType,
+            final BaseCallServiceParameters.CallType callType,
             final long value,
             final BlockType block,
             final long gasLimit) {
@@ -1042,7 +1042,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected CallServiceParameters serviceParametersForTopLevelContractCreate(
-            final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
+            final Path contractInitCodePath, final BaseCallServiceParameters.CallType callType, final Address senderAddress) {
         final var sender = new HederaEvmAccount(senderAddress);
         persistEntities();
 
@@ -1337,12 +1337,12 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         feeSchedulesPersist();
     }
 
-    private void genesisBlockPersist() {
+    protected void genesisBlockPersist() {
         genesisRecordFileForBlockHash =
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }
 
-    private void historicalBlocksPersist() {
+    protected void historicalBlocksPersist() {
         recordFileBeforeEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK - 1))
@@ -1362,7 +1362,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
     }
 
-    private void historicalDataPersist() {
+    protected void historicalDataPersist() {
         // Accounts
         final var ownerEntityId = ownerEntityPersistHistorical();
         final var senderEntityId = senderEntityPersistHistorical();
@@ -1814,7 +1814,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ethAccount;
     }
 
-    private EntityId senderEntityPersist() {
+    protected EntityId senderEntityPersist() {
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -2601,7 +2601,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private EntityId ercContractPersist() {
+    protected EntityId ercContractPersist() {
         final var ercContractBytes = functionEncodeDecoder.getContractBytes(ERC_CONTRACT_BYTES_PATH);
         final var ercContractEntityId = fromEvmAddress(ERC_CONTRACT_ADDRESS.toArrayUnsafe());
         final var ercContractEvmAddress = toEvmAddress(ercContractEntityId);

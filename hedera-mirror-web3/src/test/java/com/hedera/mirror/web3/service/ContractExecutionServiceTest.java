@@ -17,11 +17,11 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_LIMIT_METRIC;
-import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.service.ContractCallService.GAS_LIMIT_METRIC;
+import static com.hedera.mirror.web3.service.ContractCallService.GAS_USED_METRIC;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ERROR;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -38,8 +38,8 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -105,7 +105,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
     private static Stream<Arguments> ercPrecompileCallTypeArgumentsProvider() {
         List<Long> gasLimits = List.of(15_000_000L, 30_000L);
 
-        return Arrays.stream(CallType.values())
+        return Arrays.stream(BaseCallServiceParameters.CallType.values())
                 .filter(callType -> !callType.equals(ERROR))
                 .flatMap(callType -> gasLimits.stream().map(gasLimit -> Arguments.of(callType, gasLimit)));
     }
@@ -655,10 +655,10 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @EnumSource(
-            value = CallType.class,
+            value = BaseCallServiceParameters.CallType.class,
             names = {"ETH_CALL", "ETH_ESTIMATE_GAS"},
             mode = INCLUDE)
-    void ercPrecompileExceptionalHaltReturnsExpectedGasToBucket(final CallType callType) {
+    void ercPrecompileExceptionalHaltReturnsExpectedGasToBucket(final BaseCallServiceParameters.CallType callType) {
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "approve", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L);
         final var serviceParameters =
@@ -671,7 +671,6 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
-                contractActionService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -686,7 +685,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @MethodSource("ercPrecompileCallTypeArgumentsProvider")
-    void ercPrecompileContractRevertReturnsExpectedGasToBucket(final CallType callType, final long gasLimit) {
+    void ercPrecompileContractRevertReturnsExpectedGasToBucket(final BaseCallServiceParameters.CallType callType, final long gasLimit) {
         final var tokenNameCall = "0x6f0fccab0000000000000000000000000000000000000000000000000000000000000416";
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(tokenNameCall), ETH_CALL_CONTRACT_ADDRESS, callType, 0, BlockType.LATEST, gasLimit);
@@ -700,7 +699,6 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
-                contractActionService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -715,7 +713,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
 
     @ParameterizedTest
     @MethodSource("ercPrecompileCallTypeArgumentsProvider")
-    void ercPrecompileSuccessReturnsExpectedGasToBucket(final CallType callType, final long gasLimit) {
+    void ercPrecompileSuccessReturnsExpectedGasToBucket(final BaseCallServiceParameters.CallType callType, final long gasLimit) {
         final var tokenNameCall = "0x019848920000000000000000000000000000000000000000000000000000000000000416";
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(tokenNameCall), ERC_CONTRACT_ADDRESS, callType, 0, BlockType.LATEST, gasLimit);
@@ -729,7 +727,6 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
-                contractActionService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -758,7 +755,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
     }
 
-    private double getGasUsedBeforeExecution(final CallType callType) {
+    private double getGasUsedBeforeExecution(final BaseCallServiceParameters.CallType callType) {
         final var callCounter = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst();
@@ -771,7 +768,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         return gasUsedBeforeExecution;
     }
 
-    private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {
+    private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final BaseCallServiceParameters.CallType callType) {
         final var counter = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst()

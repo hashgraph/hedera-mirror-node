@@ -1,15 +1,15 @@
 package com.hedera.mirror.web3.service;
 
-import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.repository.ContractActionRepository;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -19,19 +19,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
 import lombok.CustomLog;
 
-import java.util.List;
-
 @CustomLog
 @Named
 public class ContractDebugService extends ContractCallService {
 
-    private final ContractActionService contractActionService;
-    private final RecordFileService recordFileService;
-    private final Store store;
-
+    private final ContractActionRepository contractActionRepository;
 
     public ContractDebugService(
-            ContractActionService contractActionService,
+            ContractActionRepository contractActionRepository,
             RecordFileService recordFileService,
             Store store,
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
@@ -39,19 +34,24 @@ public class ContractDebugService extends ContractCallService {
             ThrottleProperties throttleProperties,
             MeterRegistry meterRegistry
     ) {
-        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties, meterRegistry);
-        this.contractActionService = contractActionService;
-        this.recordFileService = recordFileService;
-        this.store = store;
+        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties, recordFileService, store, meterRegistry);
+        this.contractActionRepository = contractActionRepository;
+    }
+
+    @Override
+    protected void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallServiceParameters.CallType type) {
+        try {
+            super.validateResult(txnResult, type);
+        } catch (MirrorEvmTransactionException e) {
+            log.warn(e.getMessage(), e);
+        }
     }
 
     public OpcodesProcessingResult processOpcodeCall(final ContractCallDebugServiceParameters params,
-                                                     final OpcodeTracerOptions opcodeTracerOptions,
-                                                     final TransactionIdOrHashParameter transactionIdOrHash) {
+                                                     final OpcodeTracerOptions opcodeTracerOptions) {
         return ContractCallContext.run(ctx -> {
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
-            List<ContractAction> contractActions = contractActionService.findFromTransaction(transactionIdOrHash, params);
-            ctx.setContractActions(contractActions);
+            ctx.setContractActions(contractActionRepository.findAllByConsensusTimestamp(params.getConsensusTimestamp()));
             final var ethCallTxnResult = callContract(params, TracerType.OPCODE, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
             return OpcodesProcessingResult.builder()

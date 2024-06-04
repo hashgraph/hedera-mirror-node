@@ -17,8 +17,8 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.math.BigInteger;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
@@ -102,6 +103,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
+    @Getter
     @RequiredArgsConstructor
     enum DynamicCallsContractFunctions {
         MINT_FUNGIBLE_TOKEN(

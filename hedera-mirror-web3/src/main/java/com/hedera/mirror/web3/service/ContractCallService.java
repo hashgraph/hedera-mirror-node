@@ -1,12 +1,17 @@
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
+import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ERROR;
+import static org.apache.logging.log4j.util.Strings.EMPTY;
+
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
+import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import io.github.bucket4j.Bucket;
@@ -17,33 +22,41 @@ import jakarta.inject.Named;
 import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
 
-import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
-import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
-import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_METRIC;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ERROR;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
-import static org.apache.logging.log4j.util.Strings.EMPTY;
-
 @Named
 @CustomLog
 public class ContractCallService {
+
+    static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
+    static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
+
+    protected final RecordFileService recordFileService;
+    protected final Store store;
+
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
-    private final Bucket gasLimitBucket;
     private final ThrottleProperties throttleProperties;
-    private final Meter.MeterProvider<Counter> gasCounter;
+    private final Bucket gasLimitBucket;
+    private final Meter.MeterProvider<Counter> gasLimitCounter;
+    private final Meter.MeterProvider<Counter> gasUsedCounter;
 
     public ContractCallService(
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
             Bucket gasLimitBucket,
             ThrottleProperties throttleProperties,
+            RecordFileService recordFileService,
+            Store store,
             MeterRegistry meterRegistry
     ) {
         this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
         this.gasLimitBucket = gasLimitBucket;
         this.throttleProperties = throttleProperties;
-        this.gasCounter = Counter.builder(GAS_METRIC)
+        this.recordFileService = recordFileService;
+        this.store = store;
+        this.gasLimitCounter = Counter.builder(GAS_LIMIT_METRIC)
+                .description("The amount of gas limit sent in the request")
+                .withRegistry(meterRegistry);
+        this.gasUsedCounter = Counter.builder(GAS_USED_METRIC)
                 .description("The amount of gas consumed by the EVM")
-                .withRegistry(meterRegistry);;
+                .withRegistry(meterRegistry);
     }
     protected HederaEvmTransactionProcessingResult doProcessCall(BaseCallServiceParameters params,
                                                               long estimatedGas,
@@ -78,23 +91,24 @@ public class ContractCallService {
 
     protected void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallServiceParameters.CallType type) {
         if (!txnResult.isSuccessful()) {
-            updateGasMetric(ERROR, txnResult.getGasUsed(), 1);
+            updateGasUsedMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            if (type == ETH_DEBUG_TRACE_TRANSACTION) {
-                log.warn("Transaction failed with status: {}, detail: {}, revertReason: {}",
-                        getStatusOrDefault(txnResult), detail, revertReason.toHexString());
-            } else {
-                throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
-            }
+            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
         } else {
-            updateGasMetric(type, txnResult.getGasUsed(), 1);
+            updateGasUsedMetric(type, txnResult.getGasUsed(), 1);
         }
     }
 
-    protected void updateGasMetric(final ContractCallDebugServiceParameters.CallType callType, final long gasUsed, final int iterations) {
-        gasCounter
+    protected void updateGasUsedMetric(final BaseCallServiceParameters.CallType callType, final long gasUsed, final int iterations) {
+        gasUsedCounter
                 .withTags("type", callType.toString(), "iteration", String.valueOf(iterations))
                 .increment(gasUsed);
+    }
+
+    protected void updateGasLimitMetric(final BaseCallServiceParameters.CallType callType, final long gasLimit) {
+        gasLimitCounter
+                .withTags("type", callType.toString())
+                .increment(gasLimit);
     }
 }

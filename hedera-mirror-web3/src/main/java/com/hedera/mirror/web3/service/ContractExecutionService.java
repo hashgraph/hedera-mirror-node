@@ -31,11 +31,8 @@ import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import io.github.bucket4j.Bucket;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-
 import java.util.Objects;
 import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
@@ -44,14 +41,7 @@ import org.apache.tuweni.bytes.Bytes;
 @Named
 public class ContractExecutionService extends ContractCallService {
 
-    static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
-    static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
-
     private final BinaryGasEstimator binaryGasEstimator;
-    private final MeterProvider<Counter> gasLimitCounter;
-    private final MeterProvider<Counter> gasUsedCounter;
-    private final Store store;
-    private final RecordFileService recordFileService;
 
     public ContractExecutionService(
             MeterRegistry meterRegistry,
@@ -61,16 +51,8 @@ public class ContractExecutionService extends ContractCallService {
             RecordFileService recordFileService,
             ThrottleProperties throttleProperties,
             Bucket gasLimitBucket) {
-        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties, meterRegistry);
+        super(mirrorEvmTxProcessor, gasLimitBucket, throttleProperties, recordFileService, store, meterRegistry);
         this.binaryGasEstimator = binaryGasEstimator;
-        this.gasLimitCounter = Counter.builder(GAS_LIMIT_METRIC)
-                .description("The amount of gas limit sent in the request")
-                .withRegistry(meterRegistry);
-        this.gasUsedCounter = Counter.builder(GAS_USED_METRIC)
-                .description("The amount of gas consumed by the EVM")
-                .withRegistry(meterRegistry);
-        this.store = store;
-        this.recordFileService = recordFileService;
     }
 
     public String processCall(final CallServiceParameters params) {
@@ -79,9 +61,7 @@ public class ContractExecutionService extends ContractCallService {
             var stringResult = "";
 
             try {
-                gasLimitCounter
-                        .withTags("type", params.getCallType().toString())
-                        .increment(params.getGas());
+                updateGasLimitMetric(params.getCallType(), params.getGas());
 
                 Bytes result;
                 if (params.isEstimate()) {
@@ -160,7 +140,7 @@ public class ContractExecutionService extends ContractCallService {
         }
 
         final var estimatedGas = binaryGasEstimator.search(
-                (totalGas, iterations) -> updateGasMetric(CallType.ETH_ESTIMATE_GAS, totalGas, iterations),
+                (totalGas, iterations) -> updateGasUsedMetric(CallType.ETH_ESTIMATE_GAS, totalGas, iterations),
                 gas -> doProcessCall(params, gas, false, TracerType.OPERATION, ctx),
                 gasUsedByInitialCall,
                 params.getGas());

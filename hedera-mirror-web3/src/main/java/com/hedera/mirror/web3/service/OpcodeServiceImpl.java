@@ -75,7 +75,7 @@ public class OpcodeServiceImpl implements OpcodeService {
         if (!gasLimitBucket.tryConsume(params.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
-        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options, transactionIdOrHashParameter);
+        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options);
         return buildOpcodesResponse(result);
     }
 

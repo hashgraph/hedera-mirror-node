@@ -54,7 +54,11 @@ import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.*;
+import com.hedera.mirror.web3.service.ContractDebugService;
+import com.hedera.mirror.web3.service.OpcodeService;
+import com.hedera.mirror.web3.service.OpcodeServiceImpl;
+import com.hedera.mirror.web3.service.RecordFileService;
+import com.hedera.mirror.web3.service.RecordFileServiceImpl;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
@@ -194,8 +198,7 @@ class OpcodesControllerTest {
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
@@ -205,7 +208,8 @@ class OpcodesControllerTest {
     }
 
     TransactionIdOrHashParameter setUp(final TransactionProviderEnum provider) {
-        provider.setDomainBuilder(DOMAIN_BUILDER);
+        provider.init(DOMAIN_BUILDER);
+
         final var transaction = provider.getTransaction().get();
         final var ethTransaction = provider.getEthTransaction().get();
         final var recordFile = provider.getRecordFile().get();
@@ -265,8 +269,7 @@ class OpcodesControllerTest {
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenCallRealMethod();
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
@@ -286,8 +289,7 @@ class OpcodesControllerTest {
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenThrow(new MirrorEvmTransactionException(CONTRACT_EXECUTION_EXCEPTION, detailedErrorMessage, hexDataErrorMessage));
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
@@ -304,8 +306,7 @@ class OpcodesControllerTest {
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
             final CallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
