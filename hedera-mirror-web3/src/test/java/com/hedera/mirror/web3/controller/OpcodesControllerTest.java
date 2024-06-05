@@ -17,9 +17,7 @@
 package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.common.util.CommonUtils.instant;
-import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.TransactionProviderEnum.entityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,7 +57,6 @@ import com.hedera.mirror.web3.service.OpcodeService;
 import com.hedera.mirror.web3.service.OpcodeServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.mirror.web3.service.RecordFileServiceImpl;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -153,14 +150,14 @@ class OpcodesControllerTest {
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Captor
-    private ArgumentCaptor<ContractDebugParameters> callServiceParametersCaptor;
+    private ArgumentCaptor<ContractDebugParameters> ContractDebugParametersCaptor;
 
     @Captor
     private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
 
     private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
 
-    private final AtomicReference<ContractDebugParameters> expectedCallServiceParameters = new AtomicReference<>();
+    private final AtomicReference<ContractDebugParameters> expectedContractDebugParameters = new AtomicReference<>();
 
     private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter) {
         return opcodesRequest(parameter, new OpcodeTracerOptions());
@@ -197,10 +194,10 @@ class OpcodesControllerTest {
         when(rateLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractDebugService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
+                ContractDebugParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
-            final CallServiceParameters params = context.getArgument(0);
+            final ContractDebugParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
             opcodesResultCaptor.set(Builder.successfulOpcodesProcessingResult(params, options));
             return opcodesResultCaptor.get();
@@ -218,7 +215,7 @@ class OpcodesControllerTest {
         final var contractEntity = provider.getContractEntity().get();
         final var senderEntity = provider.getSenderEntity().get();
 
-        final var hash = ethTransaction != null ? ethTransaction.getHash() : transaction.getTransactionHash();
+        final var hash = provider.hasEthTransaction() ? ethTransaction.getHash() : transaction.getTransactionHash();
         final var consensusTimestamp = transaction.getConsensusTimestamp();
         final var payerAccountId = transaction.getPayerAccountId();
         final var validStartNs = transaction.getValidStartNs();
@@ -227,14 +224,18 @@ class OpcodesControllerTest {
         final var contractId = transaction.getEntityId();
         final var contractAddress = entityAddress(contractEntity);
 
-        expectedCallServiceParameters.set(ContractDebugParameters.builder()
+        expectedContractDebugParameters.set(ContractDebugParameters.builder()
                 .sender(new HederaEvmAccount(senderAddress))
                 .receiver(contractAddress)
-                .gas(ethTransaction != null ? ethTransaction.getGasLimit() : contractResult.getGasLimit())
-                .value(ethTransaction != null ?
-                        new BigInteger(ethTransaction.getValue()).longValue() : contractResult.getAmount())
-                .callData(Bytes.of(
-                        ethTransaction != null ? ethTransaction.getCallData() : contractResult.getFunctionParameters()))
+                .gas(provider.hasEthTransaction() ?
+                        ethTransaction.getGasLimit() :
+                        contractResult.getGasLimit())
+                .value(provider.hasEthTransaction() ?
+                        new BigInteger(ethTransaction.getValue()).longValue() :
+                        contractResult.getAmount())
+                .callData(provider.hasEthTransaction() ?
+                        Bytes.of(ethTransaction.getCallData()) :
+                        Bytes.of(contractResult.getFunctionParameters()))
                 .block(BlockType.of(recordFile.getIndex().toString()))
                 .build());
 
@@ -272,7 +273,7 @@ class OpcodesControllerTest {
 
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
+                ContractDebugParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenThrow(new MirrorEvmTransactionException(CONTRACT_EXECUTION_EXCEPTION, detailedErrorMessage, hexDataErrorMessage));
 
@@ -289,7 +290,7 @@ class OpcodesControllerTest {
 
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
+                ContractDebugParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
             final OpcodeTracerOptions options = context.getArgument(1);
@@ -301,7 +302,7 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
+        assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
     }
 
     @ParameterizedTest
@@ -315,7 +316,7 @@ class OpcodesControllerTest {
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
         assertThat(tracerOptionsCaptor.getValue()).isEqualTo(options);
-        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
+        assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
     }
 
     @ParameterizedTest
@@ -361,7 +362,7 @@ class OpcodesControllerTest {
     void callWithDifferentSenderAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+        expectedContractDebugParameters.set(expectedContractDebugParameters.get().toBuilder()
                 .sender(new HederaEvmAccount(entityAddress(providerEnum.getSenderEntity().get())))
                 .build());
 
@@ -369,7 +370,7 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
+        assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
     }
 
     @ParameterizedTest
@@ -377,7 +378,7 @@ class OpcodesControllerTest {
     void callWithDifferentReceiverAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
+        expectedContractDebugParameters.set(expectedContractDebugParameters.get().toBuilder()
                 .receiver(entityAddress(providerEnum.getContractEntity().get()))
                 .build());
 
@@ -385,7 +386,7 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
+        assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
     }
 
     @ParameterizedTest
@@ -423,7 +424,7 @@ class OpcodesControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-            assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
+            assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
         }
 
         when(rateLimitBucket.tryConsume(1)).thenReturn(false);
@@ -442,7 +443,7 @@ class OpcodesControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-            assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
+            assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
         }
 
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(false);
@@ -556,15 +557,7 @@ class OpcodesControllerTest {
             return new OpcodesResponse()
                     .address(result.transactionProcessingResult().getRecipient()
                             .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
-                            .map(entity -> {
-                                if (entity.getEvmAddress() != null) {
-                                    return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-                                }
-                                if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-                                    return Address.wrap(Bytes.wrap(entity.getAlias()));
-                                }
-                                return toAddress(entity.toEntityId());
-                            })
+                            .map(TransactionProviderEnum::entityAddress)
                             .map(Address::toHexString)
                             .orElse(Address.ZERO.toHexString()))
                     .contractId(result.transactionProcessingResult().getRecipient()
@@ -598,14 +591,15 @@ class OpcodesControllerTest {
                             .orElse(Bytes.EMPTY.toHexString()));
         }
 
-        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final CallServiceParameters params,
+        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final ContractDebugParameters params,
                                                                                  final OpcodeTracerOptions options) {
+            final Address recipient = params != null ? params.getReceiver() : Address.ZERO;
             final List<Opcode> opcodes = opcodes(options);
             final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
             final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
             return new OpcodesProcessingResult(
                     HederaEvmTransactionProcessingResult
-                            .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, params.getReceiver()),
+                            .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, recipient),
                     opcodes
             );
         }
@@ -718,7 +712,7 @@ class OpcodesControllerTest {
 
         @Bean
         OpcodeService opcodeService(final RecordFileService recordFileService,
-                                    final ContractDebugService contractExecutionService,
+                                    final ContractDebugService contractDebugService,
                                     final ContractTransactionHashRepository contractTransactionHashRepository,
                                     final EthereumTransactionRepository ethereumTransactionRepository,
                                     final TransactionRepository transactionRepository,
@@ -727,7 +721,7 @@ class OpcodesControllerTest {
                                     final Bucket gasLimitBucket) {
             return new OpcodeServiceImpl(
                     recordFileService,
-                    contractExecutionService,
+                    contractDebugService,
                     contractTransactionHashRepository,
                     ethereumTransactionRepository,
                     transactionRepository,

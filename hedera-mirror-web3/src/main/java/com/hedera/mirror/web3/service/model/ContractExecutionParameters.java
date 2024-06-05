@@ -30,7 +30,6 @@ public class ContractExecutionParameters implements CallServiceParameters {
     BlockType block;
     Bytes callData;
     CallType callType;
-    long consensusTimestamp;
     long gas;
     boolean isEstimate;
     boolean isStatic;

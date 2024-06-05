@@ -25,16 +25,15 @@ import org.apache.tuweni.bytes.Bytes;
 @Named
 @CustomLog
 public abstract class ContractCallService {
-
     static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
     static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
-
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
     private final Bucket gasLimitBucket;
     private final ThrottleProperties throttleProperties;
     private final MeterProvider<Counter> gasLimitCounter;
     private final MeterProvider<Counter> gasUsedCounter;
     private final RecordFileService recordFileService;
+
     protected final Store store;
 
     protected ContractCallService(
@@ -43,7 +42,8 @@ public abstract class ContractCallService {
             ThrottleProperties throttleProperties,
             MeterRegistry meterRegistry,
             RecordFileService recordFileService,
-            Store store) {
+            Store store
+    ) {
         this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
         this.gasLimitBucket = gasLimitBucket;
         this.throttleProperties = throttleProperties;

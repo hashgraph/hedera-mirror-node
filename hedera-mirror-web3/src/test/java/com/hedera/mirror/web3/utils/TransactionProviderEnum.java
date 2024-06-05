@@ -96,24 +96,6 @@ public enum TransactionProviderEnum {
         this.payerAccountId = domainBuilder.entityId();
     }
 
-    public void init(DomainBuilder domainBuilder, Entity contract, Entity payerAccount) {
-        this.domainBuilder = domainBuilder;
-        setContract(contract);
-        setPayerAccount(payerAccount);
-    }
-
-    public void setContract(Entity contract) {
-        this.contractId = contract.toEntityId();
-        this.contractEvmAddress = contract.getEvmAddress();
-        this.contractAlias = contract.getAlias();
-    }
-
-    public void setPayerAccount(Entity payerAccount) {
-        this.payerAccountId = payerAccount.toEntityId();
-        this.payerEvmAddress = payerAccount.getEvmAddress();
-        this.payerAlias = payerAccount.getAlias();
-    }
-
     public DomainWrapper<Transaction, Transaction.TransactionBuilder> getTransaction() {
         return domainBuilder.transaction()
                 .customize(tx -> {
@@ -214,12 +196,8 @@ public enum TransactionProviderEnum {
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> getSenderEntity() {
         return domainBuilder.entity(payerAccountId.getId(), domainBuilder.timestamp())
                 .customize(entity -> {
-                    entity.id(payerAccountId.getId());
-                    entity.num(payerAccountId.getNum());
-                    entity.evmAddress(payerEvmAddress);
                     entity.alias(payerAlias);
-                    entity.balance(10000 * 100_000_000L);
-                    entity.deleted(false);
+                    entity.evmAddress(payerEvmAddress);
                 });
     }
 
