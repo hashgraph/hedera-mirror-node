@@ -54,7 +54,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
-import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
 import com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
@@ -1009,7 +1008,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final ContractFunctionProviderEnum function,
             final Path contractAbiPath,
             final Address contractAddress,
-            final CallServiceParameters.CallType callType,
+            final CallType callType,
             final Long value) {
         return serviceParametersForExecution(
                 functionEncodeDecoder.functionHashFor(function.getName(), contractAbiPath, function.getFunctionParameters()),
@@ -1023,7 +1022,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected CallServiceParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
-            final BaseCallServiceParameters.CallType callType,
+            final CallType callType,
             final long value,
             final BlockType block) {
         return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
@@ -1032,7 +1031,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected CallServiceParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
-            final BaseCallServiceParameters.CallType callType,
+            final CallType callType,
             final long value,
             final BlockType block,
             final long gasLimit) {
@@ -1058,7 +1057,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected CallServiceParameters serviceParametersForTopLevelContractCreate(
-            final Path contractInitCodePath, final BaseCallServiceParameters.CallType callType, final Address senderAddress) {
+            final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
         final var sender = new HederaEvmAccount(senderAddress);
         persistEntities();
 
