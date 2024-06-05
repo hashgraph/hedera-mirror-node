@@ -150,14 +150,14 @@ class OpcodesControllerTest {
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Captor
-    private ArgumentCaptor<ContractDebugParameters> ContractDebugParametersCaptor;
+    private ArgumentCaptor<ContractDebugParameters> callServiceParametersCaptor;
 
     @Captor
     private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
 
     private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
 
-    private final AtomicReference<ContractDebugParameters> expectedContractDebugParameters = new AtomicReference<>();
+    private final AtomicReference<ContractDebugParameters> expectedCallServiceParameters = new AtomicReference<>();
 
     private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter) {
         return opcodesRequest(parameter, new OpcodeTracerOptions());
@@ -194,7 +194,7 @@ class OpcodesControllerTest {
         when(rateLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractDebugService.processOpcodeCall(
-                ContractDebugParametersCaptor.capture(),
+                callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
             final ContractDebugParameters params = context.getArgument(0);
@@ -224,7 +224,7 @@ class OpcodesControllerTest {
         final var contractId = transaction.getEntityId();
         final var contractAddress = entityAddress(contractEntity);
 
-        expectedContractDebugParameters.set(ContractDebugParameters.builder()
+        expectedCallServiceParameters.set(ContractDebugParameters.builder()
                 .sender(new HederaEvmAccount(senderAddress))
                 .receiver(contractAddress)
                 .gas(provider.hasEthTransaction() ?
@@ -273,7 +273,7 @@ class OpcodesControllerTest {
 
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
-                ContractDebugParametersCaptor.capture(),
+                callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenThrow(new MirrorEvmTransactionException(CONTRACT_EXECUTION_EXCEPTION, detailedErrorMessage, hexDataErrorMessage));
 
@@ -290,7 +290,7 @@ class OpcodesControllerTest {
 
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
-                ContractDebugParametersCaptor.capture(),
+                callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
             final OpcodeTracerOptions options = context.getArgument(1);
@@ -302,7 +302,7 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
+        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
     @ParameterizedTest
@@ -316,7 +316,7 @@ class OpcodesControllerTest {
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
         assertThat(tracerOptionsCaptor.getValue()).isEqualTo(options);
-        assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
+        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
     @ParameterizedTest
@@ -362,7 +362,7 @@ class OpcodesControllerTest {
     void callWithDifferentSenderAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        expectedContractDebugParameters.set(expectedContractDebugParameters.get().toBuilder()
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
                 .sender(new HederaEvmAccount(entityAddress(providerEnum.getSenderEntity().get())))
                 .build());
 
@@ -370,7 +370,7 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
+        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
     @ParameterizedTest
@@ -378,7 +378,7 @@ class OpcodesControllerTest {
     void callWithDifferentReceiverAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        expectedContractDebugParameters.set(expectedContractDebugParameters.get().toBuilder()
+        expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
                 .receiver(entityAddress(providerEnum.getContractEntity().get()))
                 .build());
 
@@ -386,7 +386,7 @@ class OpcodesControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-        assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
+        assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
     @ParameterizedTest
@@ -424,7 +424,7 @@ class OpcodesControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-            assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
+            assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
         }
 
         when(rateLimitBucket.tryConsume(1)).thenReturn(false);
@@ -443,7 +443,7 @@ class OpcodesControllerTest {
                     .andExpect(status().isOk())
                     .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
-            assertThat(ContractDebugParametersCaptor.getValue()).isEqualTo(expectedContractDebugParameters.get());
+            assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
         }
 
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(false);
