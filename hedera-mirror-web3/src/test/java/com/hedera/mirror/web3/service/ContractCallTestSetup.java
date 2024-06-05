@@ -55,6 +55,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
@@ -1004,19 +1005,29 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
-    protected ContractExecutionParameters serviceParametersForExecution(
+    protected ContractDebugParameters serviceParametersForDebug(
             final ContractFunctionProviderEnum function,
             final Path contractAbiPath,
             final Address contractAddress,
             final CallType callType,
             final Long value) {
-        return serviceParametersForExecution(
-                functionEncodeDecoder.functionHashFor(function.getName(), contractAbiPath, function.getFunctionParameters()),
-                contractAddress,
-                callType,
-                value,
-                function.getBlock()
-        );
+        Bytes callData = functionEncodeDecoder.functionHashFor(function.getName(), contractAbiPath, function.getFunctionParameters());
+
+        HederaEvmAccount sender;
+        if (function.getBlock() != BlockType.LATEST) {
+            sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
+        } else {
+            sender = new HederaEvmAccount(SENDER_ADDRESS);
+        }
+
+        return ContractDebugParameters.builder()
+                .sender(sender)
+                .value(value)
+                .receiver(contractAddress)
+                .callData(callData)
+                .gas(15_000_000L)
+                .block(function.getBlock())
+                .build();
     }
 
     protected ContractExecutionParameters serviceParametersForExecution(
