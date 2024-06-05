@@ -9,7 +9,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 @RequiredArgsConstructor
 public class ContractCallDebugServiceParameters implements BaseCallServiceParameters {
     HederaEvmAccount sender;
