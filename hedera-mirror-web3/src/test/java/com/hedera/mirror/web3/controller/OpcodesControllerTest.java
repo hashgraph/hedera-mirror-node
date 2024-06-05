@@ -55,7 +55,6 @@ import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
 import com.hedera.mirror.web3.service.*;
-import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -196,7 +195,7 @@ class OpcodesControllerTest {
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
-            final ContractExecutionParameters params = context.getArgument(0);
+            final ContractDebugParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
             opcodesResultCaptor.set(Builder.successfulOpcodesProcessingResult(params, options));
             return opcodesResultCaptor.get();
@@ -263,22 +262,6 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @EnumSource(TransactionProviderEnum.class)
-    void shouldThrowUnsupportedOperationFromContractCallService(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        reset(contractDebugService);
-        when(contractDebugService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
-        )).thenCallRealMethod();
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isNotImplemented())
-                .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
     void callThrowsExceptionAndExpectDetailMessage(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
@@ -308,7 +291,6 @@ class OpcodesControllerTest {
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
-            final ContractExecutionParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
             opcodesResultCaptor.set(Builder.unsuccessfulOpcodesProcessingResult(options));
             return opcodesResultCaptor.get();
@@ -608,7 +590,7 @@ class OpcodesControllerTest {
                             .orElse(Bytes.EMPTY.toHexString()));
         }
 
-        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final ContractExecutionParameters params,
+        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final ContractDebugParameters params,
                                                                                  final OpcodeTracerOptions options) {
             final Address recipient = params != null ? params.getReceiver() : Address.ZERO;
             final List<Opcode> opcodes = opcodes(options);
@@ -729,7 +711,7 @@ class OpcodesControllerTest {
 
         @Bean
         OpcodeService opcodeService(final RecordFileService recordFileService,
-                                    final ContractDebugService contractExecutionService,
+                                    final ContractDebugService contractDebugService,
                                     final ContractTransactionHashRepository contractTransactionHashRepository,
                                     final EthereumTransactionRepository ethereumTransactionRepository,
                                     final TransactionRepository transactionRepository,
@@ -738,7 +720,7 @@ class OpcodesControllerTest {
                                     final Bucket gasLimitBucket) {
             return new OpcodeServiceImpl(
                     recordFileService,
-                    contractExecutionService,
+                    contractDebugService,
                     contractTransactionHashRepository,
                     ethereumTransactionRepository,
                     transactionRepository,
