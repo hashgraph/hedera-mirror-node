@@ -261,7 +261,7 @@ const emptyTransactionsPromise = Promise.resolve({transactions: [], links: {next
  */
 const getAccountQuery = (
   entityAccountQuery,
-  tokenBalanceQuery = {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts},
+  tokenBalanceQuery,
   accountBalanceQuery = {query: '', params: []},
   entityBalanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
@@ -332,10 +332,17 @@ const getAccounts = async (req, res) => {
   const includeBalance = getBalanceParamValue(req.query);
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
   const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'public_key'));
-
+  const tokenBalanceQuery =
+    entityAccountQuery && entityAccountQuery.query
+      ? {
+          query: entityAccountQuery.query.replace('e.id', 'account_id'),
+          params: [...entityAccountQuery.params],
+          limit: tokenBalanceResponseLimit.multipleAccounts,
+        }
+      : {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts};
   const {query, params} = getAccountQuery(
     entityAccountQuery,
-    undefined,
+    tokenBalanceQuery,
     undefined,
     balanceQuery,
     limitAndOrderQuery,
