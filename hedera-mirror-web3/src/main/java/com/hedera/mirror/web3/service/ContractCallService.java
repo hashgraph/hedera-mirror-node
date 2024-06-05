@@ -72,14 +72,12 @@ public abstract class ContractCallService {
      * </p>
      *
      * @param params the call service parameters
-     * @param tracerType the type of tracer to use
      * @param ctx the contract call context
      * @return {@link HederaEvmTransactionProcessingResult} of the contract call
      * @throws MirrorEvmTransactionException if any pre-checks
      * fail with {@link IllegalStateException} or {@link IllegalArgumentException}
      */
     protected HederaEvmTransactionProcessingResult callContract(CallServiceParameters params,
-                                                                TracerType tracerType,
                                                                 ContractCallContext ctx) throws MirrorEvmTransactionException {
         // if we have historical call, then set the corresponding record file in the context
         if (params.getBlock() != BlockType.LATEST) {
@@ -89,16 +87,15 @@ public abstract class ContractCallService {
         }
         // initializes the stack frame with the current state or historical state (if the call is historical)
         ctx.initializeStackFrames(store.getStackedStateFrames());
-        return doProcessCall(params, params.getGas(), true, tracerType, ctx);
+        return doProcessCall(params, params.getGas(), true, ctx);
     }
 
     protected HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params,
                                                                  long estimatedGas,
                                                                  boolean restoreGasToThrottleBucket,
-                                                                 TracerType tracerType,
                                                                  ContractCallContext ctx) throws MirrorEvmTransactionException {
         try {
-            var result = mirrorEvmTxProcessor.execute(params, estimatedGas, tracerType, ctx);
+            var result = mirrorEvmTxProcessor.execute(params, estimatedGas, params.getTracerType(), ctx);
             if (!restoreGasToThrottleBucket) {
                 return result;
             }
@@ -128,12 +125,7 @@ public abstract class ContractCallService {
             updateGasUsedMetric(ERROR, txnResult.getGasUsed(), 1);
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             var detail = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-            if (type == ETH_DEBUG_TRACE_TRANSACTION) {
-                log.warn("Transaction failed with status: {}, detail: {}, revertReason: {}",
-                        getStatusOrDefault(txnResult), detail, revertReason.toHexString());
-            } else {
-                throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
-            }
+            throw new MirrorEvmTransactionException(getStatusOrDefault(txnResult), detail, revertReason.toHexString());
         } else {
             updateGasUsedMetric(type, txnResult.getGasUsed(), 1);
         }

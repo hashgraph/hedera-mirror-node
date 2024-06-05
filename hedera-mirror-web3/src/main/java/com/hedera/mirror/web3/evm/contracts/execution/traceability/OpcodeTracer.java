@@ -21,14 +21,16 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import jakarta.inject.Named;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import lombok.CustomLog;
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -58,12 +60,12 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
     @Override
     public void tracePostExecution(final MessageFrame frame, final Operation.OperationResult operationResult) {
-        final Optional<Bytes[]> memory = captureMemory(frame);
-        final Optional<Bytes[]> stack = captureStack(frame);
-        final Optional<Map<UInt256, UInt256>> storage = captureStorage(frame);
+        final List<Bytes> memory = captureMemory(frame);
+        final List<Bytes> stack = captureStack(frame);
+        final Map<Bytes, Bytes> storage = captureStorage(frame);
         opcodes.add(new Opcode(
                 frame.getPC(),
-                Optional.of(frame.getCurrentOperation().getName()),
+                frame.getCurrentOperation().getName(),
                 frame.getRemainingGas(),
                 operationResult.getGasCost(),
                 frame.getDepth(),
@@ -83,32 +85,32 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
         opcodes.add(new Opcode(
                 frame.getPC(),
-                Optional.ofNullable(frame.getCurrentOperation()).map(Operation::getName),
+                frame.getCurrentOperation() != null ? frame.getCurrentOperation().getName() : StringUtils.EMPTY,
                 frame.getRemainingGas(),
                 output != null ? gasRequirement : 0L,
                 frame.getDepth(),
-                Optional.empty(),
-                Optional.empty(),
-                Optional.empty(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap(),
                 revertReason.map(Bytes::toString).orElse(null)
         ));
     }
 
-    private Optional<Bytes[]> captureMemory(final MessageFrame frame) {
+    private List<Bytes> captureMemory(final MessageFrame frame) {
         if (!options.isMemory()) {
-            return Optional.empty();
+            return Collections.emptyList();
         }
 
         final Bytes[] memoryContents = new Bytes[frame.memoryWordSize()];
         for (int i = 0; i < memoryContents.length; i++) {
             memoryContents[i] = frame.readMemory(i * 32L, 32);
         }
-        return Optional.of(memoryContents);
+        return Arrays.asList(memoryContents);
     }
 
-    private Optional<Bytes[]> captureStack(final MessageFrame frame) {
+    private List<Bytes> captureStack(final MessageFrame frame) {
         if (!options.isStack()) {
-            return Optional.empty();
+            return Collections.emptyList();
         }
 
         final Bytes[] stackContents = new Bytes[frame.stackSize()];
@@ -116,12 +118,12 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
             // Record stack contents in reverse
             stackContents[i] = frame.getStackItem(stackContents.length - i - 1);
         }
-        return Optional.of(stackContents);
+        return Arrays.asList(stackContents);
     }
 
-    private Optional<Map<UInt256, UInt256>> captureStorage(final MessageFrame frame) {
+    private Map<Bytes, Bytes> captureStorage(final MessageFrame frame) {
         if (!options.isStorage()) {
-            return Optional.empty();
+            return Collections.emptyMap();
         }
 
         try {
@@ -130,13 +132,13 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
             if (account == null) {
                 log.warn("Failed to retrieve storage contents. Account not found in WorldUpdater");
-                return Optional.of(new TreeMap<>());
+                return Collections.emptyMap();
             }
 
-            return Optional.of(new TreeMap<>(account.getUpdatedStorage()));
+            return new TreeMap<>(account.getUpdatedStorage());
         } catch (final ModificationNotAllowedException e) {
             log.warn(e.getMessage(), e);
-            return Optional.of(new TreeMap<>());
+            return Collections.emptyMap();
         }
     }
 

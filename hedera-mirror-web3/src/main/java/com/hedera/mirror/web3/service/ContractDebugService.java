@@ -5,12 +5,13 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.repository.ContractActionRepository;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
@@ -44,7 +45,7 @@ public class ContractDebugService extends ContractCallService {
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             List<ContractAction> contractActions = contractActionRepository.findAllByConsensusTimestamp(params.getConsensusTimestamp());
             ctx.setContractActions(contractActions);
-            final var ethCallTxnResult = callContract(params, TracerType.OPCODE, ctx);
+            final var ethCallTxnResult = callContract(params, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
             return OpcodesProcessingResult.builder()
                     .transactionProcessingResult(ethCallTxnResult)
@@ -53,14 +54,13 @@ public class ContractDebugService extends ContractCallService {
         });
     }
 
-
     @Override
-    protected void validateResult() {
+    protected void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallServiceParameters.CallType type) {
         try {
-            super.validateResult();
+            super.validateResult(txnResult, type);
         } catch (MirrorEvmTransactionException e) {
-                log.warn("Transaction failed with status: {}, detail: {}, revertReason: {}",
-                        getStatusOrDefault(txnResult), detail, revertReason.toHexString());
+            log.warn("Transaction failed with status: {}, detail: {}, revertReason: {}",
+                    getStatusOrDefault(txnResult), e.getDetail(), e.getData());
         }
     }
 }

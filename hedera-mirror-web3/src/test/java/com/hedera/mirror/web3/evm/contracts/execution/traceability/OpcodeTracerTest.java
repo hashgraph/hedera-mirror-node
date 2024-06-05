@@ -192,18 +192,18 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("given stack is enabled in tracer options, should record stack")
     void shouldRecordStackWhenEnabled() {
-        tracerOptions.setStack(true);
+        tracerOptions = tracerOptions.toBuilder().stack(true).build();
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.stack()).isNotEmpty();
-        assertThat(opcode.stack().get()).containsExactly(stackItems);
+        assertThat(opcode.stack()).containsExactly(stackItems);
     }
 
     @Test
     @DisplayName("given stack is disabled in tracer options, should not record stack")
     void shouldNotRecordStackWhenDisabled() {
-        tracerOptions.setStack(false);
+        tracerOptions = tracerOptions.toBuilder().stack(false).build();
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame);
@@ -213,18 +213,18 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("given memory is enabled in tracer options, should record memory")
     void shouldRecordMemoryWhenEnabled() {
-        tracerOptions.setMemory(true);
+        tracerOptions = tracerOptions.toBuilder().memory(true).build();
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.memory()).isNotEmpty();
-        assertThat(opcode.memory().get()).containsExactly(wordsInMemory);
+        assertThat(opcode.memory()).containsExactly(wordsInMemory);
     }
 
     @Test
     @DisplayName("given memory is disabled in tracer options, should not record memory")
     void shouldNotRecordMemoryWhenDisabled() {
-        tracerOptions.setMemory(false);
+        tracerOptions = tracerOptions.toBuilder().memory(false).build();
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame);
@@ -234,45 +234,43 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("given storage is enabled in tracer options, should record storage")
     void shouldRecordStorageWhenEnabled() {
-        tracerOptions.setStorage(true);
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.storage()).isNotEmpty();
-        assertThat(opcode.storage().get()).containsAllEntriesOf(updatedStorage);
+        assertThat(opcode.storage()).containsAllEntriesOf(updatedStorage);
     }
 
     @Test
     @DisplayName("given account is missing in the world updater, should only log a warning and return empty storage")
     void shouldNotThrowExceptionWhenAccountIsMissingInWorldUpdater() {
-        tracerOptions.setStorage(true);
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
         frame = setupMessageFrame(tracerOptions);
 
         when(worldUpdater.getAccount(any())).thenReturn(null);
 
         final Opcode opcode = executeOperation(frame);
-        assertThat(opcode.storage()).isNotEmpty();
-        assertThat(opcode.storage()).hasValue(new TreeMap<>());
+        assertThat(opcode.storage()).containsExactlyEntriesOf(new TreeMap<>());
     }
 
     @Test
     @DisplayName("given ModificationNotAllowedException thrown when trying to retrieve account through WorldUpdater, " +
             "should only log a warning and return empty storage")
     void shouldNotThrowExceptionWhenWorldUpdaterThrowsModificationNotAllowedException() {
-        tracerOptions.setStorage(true);
+        tracerOptions = tracerOptions.toBuilder().storage(true).build();
         frame = setupMessageFrame(tracerOptions);
 
         when(worldUpdater.getAccount(any())).thenThrow(new ModificationNotAllowedException());
 
         final Opcode opcode = executeOperation(frame);
-        assertThat(opcode.storage()).isNotEmpty();
-        assertThat(opcode.storage()).hasValue(new TreeMap<>());
+        assertThat(opcode.storage()).containsExactlyEntriesOf(new TreeMap<>());
     }
 
     @Test
     @DisplayName("given storage is disabled in tracer options, should not record storage")
     void shouldNotRecordStorageWhenDisabled() {
-        tracerOptions.setStorage(false);
+        tracerOptions = tracerOptions.toBuilder().storage(false).build();
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame);
@@ -282,16 +280,18 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("given exceptional halt occurs, should capture frame data and halt reason")
     void shouldCaptureFrameWhenExceptionalHaltOccurs() {
-        tracerOptions.setStack(true);
-        tracerOptions.setMemory(true);
-        tracerOptions.setStorage(true);
+        tracerOptions = tracerOptions.toBuilder()
+                .stack(true)
+                .memory(true)
+                .storage(true)
+                .build();
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame, ExceptionalHaltReason.INSUFFICIENT_GAS);
         assertThat(opcode.reason()).contains(Hex.encodeHexString(ExceptionalHaltReason.INSUFFICIENT_GAS.getDescription().getBytes()));
         assertThat(opcode.stack()).contains(stackItems);
         assertThat(opcode.memory()).contains(wordsInMemory);
-        assertThat(opcode.storage()).contains(updatedStorage);
+        assertThat(opcode.storage()).containsExactlyEntriesOf(updatedStorage);
     }
 
     @Test
@@ -301,7 +301,7 @@ class OpcodeTracerTest {
 
         final Opcode opcode = executePrecompileOperation(frame, Bytes.fromHexString("0x01"));
         assertThat(opcode.pc()).isEqualTo(frame.getPC());
-        assertThat(opcode.op()).isNotEmpty().hasValue(OPERATION.getName());
+        assertThat(opcode.op()).isNotEmpty().isEqualTo(OPERATION.getName());
         assertThat(opcode.gas()).isEqualTo(REMAINING_GAS.get());
         assertThat(opcode.gasCost()).isEqualTo(GAS_REQUIREMENT);
         assertThat(opcode.depth()).isEqualTo(frame.getDepth());

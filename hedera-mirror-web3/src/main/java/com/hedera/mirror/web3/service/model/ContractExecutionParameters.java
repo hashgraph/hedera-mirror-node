@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service.model;
 
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import lombok.Builder;
@@ -34,5 +35,6 @@ public class ContractExecutionParameters implements CallServiceParameters {
     boolean isStatic;
     Address receiver;
     HederaEvmAccount sender;
+    TracerType tracerType = TracerType.OPERATION;
     long value;
 }

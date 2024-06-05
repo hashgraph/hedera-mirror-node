@@ -68,7 +68,7 @@ public class ContractExecutionService extends ContractCallService {
                     ctx.initializeStackFrames(store.getStackedStateFrames());
                     result = estimateGas(params, ctx);
                 } else {
-                    final var ethCallTxnResult = callContract(params, TracerType.OPERATION, ctx);
+                    final var ethCallTxnResult = callContract(params, ctx);
 
                     validateResult(ethCallTxnResult, params.getCallType());
 
@@ -96,7 +96,7 @@ public class ContractExecutionService extends ContractCallService {
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
     private Bytes estimateGas(final ContractExecutionParameters params, final ContractCallContext ctx) {
-        final var processingResult = doProcessCall(params, params.getGas(), true, TracerType.OPERATION, ctx);
+        final var processingResult = doProcessCall(params, params.getGas(), true, ctx);
         validateResult(processingResult, CallType.ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -108,7 +108,7 @@ public class ContractExecutionService extends ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasUsedMetric(CallType.ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas, false, TracerType.OPERATION, ctx),
+                gas -> doProcessCall(params, gas, false, ctx),
                 gasUsedByInitialCall,
                 params.getGas());
 

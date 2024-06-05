@@ -194,8 +194,7 @@ class OpcodesControllerTest {
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
             final ContractExecutionParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
@@ -265,8 +264,7 @@ class OpcodesControllerTest {
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenCallRealMethod();
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
@@ -286,8 +284,7 @@ class OpcodesControllerTest {
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenThrow(new MirrorEvmTransactionException(CONTRACT_EXECUTION_EXCEPTION, detailedErrorMessage, hexDataErrorMessage));
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
@@ -304,8 +301,7 @@ class OpcodesControllerTest {
         reset(contractDebugService);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
             final ContractExecutionParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
