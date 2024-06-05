@@ -67,11 +67,11 @@
     "topicId": ""
   },
   "token": {
-    "enabled": false,
+    "enabled": true,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
-    "tokenBalancesLimit": 10,
     "tokenId": "",
-    "limit": 10
+    "nftId": "",
+    "limit": 2
   }
 }
