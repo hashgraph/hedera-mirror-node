@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
@@ -40,7 +41,7 @@ import com.hedera.mirror.web3.repository.ContractResultRepository;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.github.bucket4j.Bucket;
@@ -71,15 +72,15 @@ public class OpcodeServiceImpl implements OpcodeService {
     @Override
     public OpcodesResponse processOpcodeCall(@NonNull TransactionIdOrHashParameter transactionIdOrHashParameter,
                                              @NonNull OpcodeTracerOptions options) {
-        final ContractCallDebugServiceParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
+        final ContractDebugParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
         if (!gasLimitBucket.tryConsume(params.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
-        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options, transactionIdOrHashParameter);
+        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options);
         return buildOpcodesResponse(result);
     }
 
-    private ContractCallDebugServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
+    private ContractDebugParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
         final Long consensusTimestamp;
         final Optional<EthereumTransaction> ethereumTransaction;
 
@@ -119,15 +120,7 @@ public class OpcodeServiceImpl implements OpcodeService {
 
         return new OpcodesResponse()
                 .address(recipientEntity
-                        .map(entity -> {
-                            if (entity.getEvmAddress() != null) {
-                                return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-                            }
-                            if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-                                return Address.wrap(Bytes.wrap(entity.getAlias()));
-                            }
-                            return toAddress(entity.toEntityId());
-                        })
+                        .map(this::getEntityAddress)
                         .map(Address::toHexString)
                         .orElse(Address.ZERO.toHexString()))
                 .contractId(recipientEntity
@@ -161,8 +154,8 @@ public class OpcodeServiceImpl implements OpcodeService {
                         .orElse(Bytes.EMPTY.toHexString()));
     }
 
-    private ContractCallDebugServiceParameters buildCallServiceParameters(Long consensusTimestamp,
-                                                             Optional<EthereumTransaction> ethTransaction) {
+    private ContractDebugParameters buildCallServiceParameters(Long consensusTimestamp,
+                                                               Optional<EthereumTransaction> ethTransaction) {
         final ContractResult contractResult = contractResultRepository.findById(consensusTimestamp)
                 .orElseThrow(() -> new EntityNotFoundException("Contract result not found"));
 
@@ -170,7 +163,7 @@ public class OpcodeServiceImpl implements OpcodeService {
                 .map(recordFile -> BlockType.of(recordFile.getIndex().toString()))
                 .orElse(BlockType.LATEST);
 
-        return ContractCallDebugServiceParameters.builder()
+        return ContractDebugParameters.builder()
                 .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
                 .receiver(getReceiverAddress(ethTransaction, contractResult))
                 .gas(getGasLimit(ethTransaction, contractResult))
@@ -188,6 +181,12 @@ public class OpcodeServiceImpl implements OpcodeService {
         return ethereumTransaction
                 .filter(transaction -> transaction.getToAddress() != null)
                 .map(transaction -> Address.wrap(Bytes.wrap(transaction.getToAddress())))
+                .flatMap(address -> {
+                    if (isMirror(address.toArrayUnsafe())) {
+                        return entityDatabaseAccessor.get(address, Optional.empty()).map(this::getEntityAddress);
+                    }
+                    return Optional.of(address);
+                })
                 .orElseGet(() -> {
                     final var contractId = EntityId.of(contractResult.getContractId());
                     return entityDatabaseAccessor.evmAddressFromId(contractId, Optional.empty());
@@ -215,5 +214,15 @@ public class OpcodeServiceImpl implements OpcodeService {
         return Optional.ofNullable(callData)
                 .map(Bytes::of)
                 .orElse(Bytes.EMPTY);
+    }
+
+    private Address getEntityAddress(Entity entity) {
+        if (entity.getEvmAddress() != null) {
+            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
+        }
+        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
+            return Address.wrap(Bytes.wrap(entity.getAlias()));
+        }
+        return toAddress(entity.toEntityId());
     }
 }

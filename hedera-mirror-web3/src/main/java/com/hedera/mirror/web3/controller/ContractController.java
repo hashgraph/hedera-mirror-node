@@ -16,14 +16,14 @@
 
 package com.hedera.mirror.web3.controller;
 
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractExecutionService;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -73,7 +73,7 @@ class ContractController {
         }
     }
 
-    private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
+    private ContractExecutionParameters constructServiceParameters(ContractCallRequest request) {
         final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
         final var sender = new HederaEvmAccount(fromAddress);
 
@@ -97,16 +97,16 @@ class ContractController {
         final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
         final var block = request.getBlock();
 
-        return CallServiceParameters.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .callData(data)
-                .gas(request.getGas())
-                .value(request.getValue())
-                .isStatic(isStaticCall)
-                .callType(callType)
-                .isEstimate(request.isEstimate())
+        return ContractExecutionParameters.builder()
                 .block(block)
+                .callData(data)
+                .callType(callType)
+                .gas(request.getGas())
+                .isEstimate(request.isEstimate())
+                .isStatic(isStaticCall)
+                .receiver(receiver)
+                .sender(sender)
+                .value(request.getValue())
                 .build();
     }
 

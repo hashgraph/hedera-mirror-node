@@ -40,7 +40,6 @@ class OpcodesController {
 
     private final OpcodeService opcodeService;
     private final Bucket rateLimitBucket;
-    private final Bucket gasLimitBucket;
 
     /**
      * <p>

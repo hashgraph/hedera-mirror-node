@@ -39,7 +39,7 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
 import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -198,7 +198,7 @@ class MirrorEvmTxProcessorTest {
             given(store.getAccount(sender.canonicalAddress(), OnMissing.DONT_THROW))
                     .willReturn(Account.getDummySenderAccount(sender.canonicalAddress()));
         }
-        final var params = CallServiceParameters.builder()
+        final var params = ContractExecutionParameters.builder()
                 .sender(sender)
                 .receiver(receiver.canonicalAddress())
                 .gas(33_333L)
@@ -229,9 +229,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ONE)
                 .apparentValue(Wei.ONE)
                 .blockValues(hederaBlockValues)
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(_ -> null);
+                .blockHashLookup(ignored -> null);
 
         assertThatExceptionOfType(MirrorEvmTransactionException.class)
                 .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(
@@ -255,9 +255,9 @@ class MirrorEvmTxProcessorTest {
                 .value(oneWei)
                 .apparentValue(oneWei)
                 .blockValues(mock(BlockValues.class))
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(_ -> null);
+                .blockHashLookup(ignored -> null);
         // when:
         final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
                 commonInitialFrame, receiver.canonicalAddress(), Bytes.EMPTY, 0L);
@@ -287,9 +287,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ZERO)
                 .apparentValue(Wei.ZERO)
                 .blockValues(mock(BlockValues.class))
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(_ -> null);
+                .blockHashLookup(ignored -> null);
 
         // when:
         final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
@@ -321,9 +321,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ZERO)
                 .apparentValue(Wei.ZERO)
                 .blockValues(mock(BlockValues.class))
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(_ -> null);
+                .blockHashLookup(ignored -> null);
 
         // when:
         assertThatExceptionOfType(MirrorEvmTransactionException.class)

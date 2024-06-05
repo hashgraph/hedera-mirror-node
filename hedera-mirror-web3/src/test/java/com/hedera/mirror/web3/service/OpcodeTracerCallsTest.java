@@ -16,7 +16,7 @@
 //
 //package com.hedera.mirror.web3.service;
 //
-//import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
+//import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 //import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 //
 //import com.hedera.mirror.web3.common.ContractCallContext;

@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import org.apache.tuweni.bytes.Bytes;
@@ -328,13 +328,13 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 });
     }
 
-    private CallServiceParameters serviceParametersForEvmCodes(final Bytes callData) {
+    private ContractExecutionParameters serviceParametersForEvmCodes(final Bytes callData) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         if (!areEntitiesPersisted) {
             persistEntities();
         }
 
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(sender)
                 .value(0L)
                 .receiver(EVM_CODES_CONTRACT_ADDRESS)
@@ -346,13 +346,13 @@ class ContractCallEvmCodesTest extends ContractCallTestSetup {
                 .build();
     }
 
-    private CallServiceParameters serviceParametersForAddressThis(final Bytes callData) {
+    private ContractExecutionParameters serviceParametersForAddressThis(final Bytes callData) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         if (!areEntitiesPersisted) {
             persistEntities();
         }
 
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(sender)
                 .value(0L)
                 .receiver(Address.ZERO)

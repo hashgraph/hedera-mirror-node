@@ -21,7 +21,6 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -55,8 +54,8 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType;
+import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -91,7 +90,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.ToLongFunction;
 import org.apache.tuweni.bytes.Bytes;
-import org.aspectj.weaver.ast.Call;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1006,11 +1004,11 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
-    protected CallServiceParameters serviceParametersForExecution(
+    protected ContractExecutionParameters serviceParametersForExecution(
             final ContractFunctionProviderEnum function,
             final Path contractAbiPath,
             final Address contractAddress,
-            final CallServiceParameters.CallType callType,
+            final CallType callType,
             final Long value) {
         return serviceParametersForExecution(
                 functionEncodeDecoder.functionHashFor(function.getName(), contractAbiPath, function.getFunctionParameters()),
@@ -1021,7 +1019,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         );
     }
 
-    protected CallServiceParameters serviceParametersForExecution(
+    protected ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
             final CallType callType,
@@ -1030,7 +1028,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
     }
 
-    protected CallServiceParameters serviceParametersForExecution(
+    protected ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
             final CallType callType,
@@ -1045,7 +1043,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         }
         persistEntities();
 
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(sender)
                 .value(value)
                 .receiver(contractAddress)
@@ -1058,13 +1056,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .build();
     }
 
-    protected CallServiceParameters serviceParametersForTopLevelContractCreate(
+    protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
             final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
         final var sender = new HederaEvmAccount(senderAddress);
         persistEntities();
 
         final var callData = Bytes.wrap(functionEncodeDecoder.getContractBytes(contractInitCodePath));
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(sender)
                 .callData(callData)
                 .receiver(Address.ZERO)
@@ -1077,7 +1075,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     @SuppressWarnings("try")
-    protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
+    protected long gasUsedAfterExecution(final ContractExecutionParameters serviceParameters) {
         return ContractCallContext.run(ctx -> {
             ctx.initializeStackFrames(store.getStackedStateFrames());
             long result = processor
