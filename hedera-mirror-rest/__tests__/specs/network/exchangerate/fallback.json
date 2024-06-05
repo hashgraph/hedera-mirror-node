@@ -15,10 +15,16 @@
         "transaction_type": 16
       },
       {
+        "consensus_timestamp": 1234567890900800650,
+        "entity_id": 112,
+        "file_data": "0a1008b0ea",
+        "transaction_type": 19
+      },
+      {
         "consensus_timestamp": 1234567890900800700,
         "entity_id": 112,
         "file_data": "0a1008corrupt",
-        "transaction_type": 19
+        "transaction_type": 16
       }
     ]
   },

@@ -17,8 +17,8 @@
 import _ from 'lodash';
 
 import BaseService from './baseService';
-import {ExchangeRate, FileData, FeeSchedule} from '../model';
-import * as utils from '../utils.js';
+import {ExchangeRate, FeeSchedule, FileData} from '../model';
+import * as utils from '../utils';
 
 /**
  * File data retrieval business logic
@@ -44,6 +44,7 @@ class FileDataService extends BaseService {
     )
     select
       max(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP},
+      min(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as fallback_timestamp,
       string_agg(${FileData.getFullName(FileData.FILE_DATA)}, '' order by ${FileData.getFullName(
     FileData.CONSENSUS_TIMESTAMP
   )}) as ${FileData.FILE_DATA}
@@ -112,39 +113,26 @@ class FileDataService extends BaseService {
   };
 
   fallbackRetry = async (fileEntityId, filterQueries, resultConstructor) => {
+    const currentFilterQueries = {...filterQueries};
     let retries = 0;
-    let caughtError = null;
-
     while (retries++ <= 10) {
-      const row = await this.getLatestFileDataContents(fileEntityId, filterQueries);
-      if (_.isNil(row)) {
-        break;
-      }
-
+      const row = await this.getLatestFileDataContents(fileEntityId, currentFilterQueries);
       try {
-        return new resultConstructor(row);
+        return _.isNil(row) ? null : new resultConstructor(row);
       } catch (error) {
-        caughtError = error;
         logger.warn(
-          `Failed to load file data for file id ${fileEntityId} at ${filterQueries.timestamp}, failing back to previous file. Retry attempt ${retries}. Error: ${error}`
+          `Failed to load file data for file id ${fileEntityId} at ${row.consensus_timestamp}, failing back to previous file. Retry attempt ${retries}. Error: ${error}`
         );
 
-        const fallBackTimestamp = row.consensus_timestamp - 1n;
-        if (_.isNil(filterQueries.whereQuery[0]?.param)) {
-          // The query has no timestamp filters, add one to fall back to the previous file
-          filterQueries.whereQuery.push({
-            query: FileData.CONSENSUS_TIMESTAMP + utils.opsMap.lte,
-            param: fallBackTimestamp,
-          });
-        } else {
-          filterQueries.whereQuery[0].param = fallBackTimestamp;
-        }
+        currentFilterQueries.whereQuery = [
+          {
+            query: FileData.CONSENSUS_TIMESTAMP + utils.opsMap.lt,
+            param: row.fallback_timestamp,
+          },
+        ];
       }
     }
 
-    if (caughtError) {
-      throw caughtError;
-    }
     return null;
   };
 }
