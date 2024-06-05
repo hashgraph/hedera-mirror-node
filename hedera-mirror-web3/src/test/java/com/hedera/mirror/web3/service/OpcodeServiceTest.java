@@ -38,7 +38,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.utils.ResultCaptor;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
@@ -87,14 +87,14 @@ class OpcodeServiceTest extends ContractCallTestSetup {
     class ProcessOpcodeCall {
 
         @Captor
-        private ArgumentCaptor<ContractCallDebugServiceParameters> serviceParametersCaptor;
+        private ArgumentCaptor<ContractDebugParameters> serviceParametersCaptor;
 
         @Captor
         private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
 
         private final ResultCaptor<OpcodesProcessingResult> opcodesResultCaptor = new ResultCaptor<>(OpcodesProcessingResult.class);
 
-        private final AtomicReference<ContractCallDebugServiceParameters> expectedServiceParameters = new AtomicReference<>();
+        private final AtomicReference<ContractDebugParameters> expectedServiceParameters = new AtomicReference<>();
 
         @BeforeEach
         void setUp() {
@@ -226,7 +226,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                         .persist();
             }
 
-            expectedServiceParameters.set(ContractCallDebugServiceParameters.builder()
+            expectedServiceParameters.set(ContractDebugParameters.builder()
                     .sender(new HederaEvmAccount(SENDER_ALIAS))
                     .receiver(entityDatabaseAccessor.get(contractAddress, Optional.empty())
                             .map(TransactionProviderEnum::entityAddress)

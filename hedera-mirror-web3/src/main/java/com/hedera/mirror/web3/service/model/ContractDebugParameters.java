@@ -11,7 +11,7 @@ import org.hyperledger.besu.datatypes.Address;
 @Value
 @Builder(toBuilder = true)
 @RequiredArgsConstructor
-public class ContractCallDebugServiceParameters implements BaseCallServiceParameters {
+public class ContractDebugParameters implements CallServiceParameters {
     HederaEvmAccount sender;
     Address receiver;
     long gas;
