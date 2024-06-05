@@ -1,5 +1,7 @@
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
+
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
@@ -43,7 +45,8 @@ public class ContractDebugService extends ContractCallService {
         try {
             super.validateResult(txnResult, type);
         } catch (MirrorEvmTransactionException e) {
-            log.warn(e.getMessage(), e);
+            log.warn("Transaction failed with status: {}, detail: {}, revertReason: {}",
+                    getStatusOrDefault(txnResult), e.getDetail(), e.getData());
         }
     }
 
