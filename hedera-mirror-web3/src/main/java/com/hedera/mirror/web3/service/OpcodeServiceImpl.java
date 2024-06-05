@@ -40,7 +40,7 @@ import com.hedera.mirror.web3.repository.ContractResultRepository;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.github.bucket4j.Bucket;
@@ -71,15 +71,15 @@ public class OpcodeServiceImpl implements OpcodeService {
     @Override
     public OpcodesResponse processOpcodeCall(@NonNull TransactionIdOrHashParameter transactionIdOrHashParameter,
                                              @NonNull OpcodeTracerOptions options) {
-        final ContractCallDebugServiceParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
+        final ContractDebugParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
         if (!gasLimitBucket.tryConsume(params.getGas())) {
             throw new RateLimitException("Rate limit exceeded.");
         }
-        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options, transactionIdOrHashParameter);
+        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options);
         return buildOpcodesResponse(result);
     }
 
-    private ContractCallDebugServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
+    private ContractDebugParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
         final Long consensusTimestamp;
         final Optional<EthereumTransaction> ethereumTransaction;
 
@@ -161,8 +161,8 @@ public class OpcodeServiceImpl implements OpcodeService {
                         .orElse(Bytes.EMPTY.toHexString()));
     }
 
-    private ContractCallDebugServiceParameters buildCallServiceParameters(Long consensusTimestamp,
-                                                             Optional<EthereumTransaction> ethTransaction) {
+    private ContractDebugParameters buildCallServiceParameters(Long consensusTimestamp,
+                                                               Optional<EthereumTransaction> ethTransaction) {
         final ContractResult contractResult = contractResultRepository.findById(consensusTimestamp)
                 .orElseThrow(() -> new EntityNotFoundException("Contract result not found"));
 
@@ -170,13 +170,14 @@ public class OpcodeServiceImpl implements OpcodeService {
                 .map(recordFile -> BlockType.of(recordFile.getIndex().toString()))
                 .orElse(BlockType.LATEST);
 
-        return ContractCallDebugServiceParameters.builder()
-                .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
-                .receiver(getReceiverAddress(ethTransaction, contractResult))
-                .gas(getGasLimit(ethTransaction, contractResult))
-                .value(getValue(ethTransaction, contractResult).longValue())
-                .callData(getCallData(ethTransaction, contractResult))
+        return ContractDebugParameters.builder()
                 .block(blockType)
+                .callData(getCallData(ethTransaction, contractResult))
+                .consensusTimestamp(consensusTimestamp)
+                .gas(getGasLimit(ethTransaction, contractResult))
+                .receiver(getReceiverAddress(ethTransaction, contractResult))
+                .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
+                .value(getValue(ethTransaction, contractResult).longValue())
                 .build();
     }
 

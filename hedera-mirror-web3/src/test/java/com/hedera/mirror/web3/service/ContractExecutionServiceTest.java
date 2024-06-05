@@ -38,7 +38,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
@@ -671,7 +671,6 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
-                contractActionService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -700,7 +699,6 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
-                contractActionService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -729,7 +727,6 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 store,
                 mirrorEvmTxProcessor,
                 recordFileService,
-                contractActionService,
                 throttleProperties,
                 gasLimitBucket);
 
@@ -781,7 +778,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         assertThat(gasConsumed).isPositive();
     }
 
-    private void assertGasLimit(CallServiceParameters parameters) {
+    private void assertGasLimit(ContractExecutionParameters parameters) {
         final var counter = meterRegistry.find(GAS_LIMIT_METRIC).counters().stream()
                 .filter(c -> parameters.getCallType().name().equals(c.getId().getTag("type")))
                 .findFirst()

@@ -55,8 +55,8 @@ import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
 import com.hedera.mirror.web3.service.*;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -149,14 +149,14 @@ class OpcodesControllerTest {
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Captor
-    private ArgumentCaptor<ContractCallDebugServiceParameters> callServiceParametersCaptor;
+    private ArgumentCaptor<ContractDebugParameters> callServiceParametersCaptor;
 
     @Captor
     private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
 
     private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
 
-    private final AtomicReference<ContractCallDebugServiceParameters> expectedCallServiceParameters = new AtomicReference<>();
+    private final AtomicReference<ContractDebugParameters> expectedCallServiceParameters = new AtomicReference<>();
 
     private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter) {
         return opcodesRequest(parameter, new OpcodeTracerOptions());
@@ -197,7 +197,7 @@ class OpcodesControllerTest {
                 tracerOptionsCaptor.capture(),
                 null
         )).thenAnswer(context -> {
-            final CallServiceParameters params = context.getArgument(0);
+            final ContractExecutionParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
             opcodesResultCaptor.set(Builder.successfulOpcodesProcessingResult(params, options));
             return opcodesResultCaptor.get();
@@ -223,7 +223,7 @@ class OpcodesControllerTest {
         final var contractId = transaction.getEntityId();
         final var contractAddress = entityAddress(contractEntity);
 
-        expectedCallServiceParameters.set(ContractCallDebugServiceParameters.builder()
+        expectedCallServiceParameters.set(ContractDebugParameters.builder()
                 .sender(new HederaEvmAccount(senderAddress))
                 .receiver(contractAddress)
                 .gas(ethTransaction != null ? ethTransaction.getGasLimit() : contractResult.getGasLimit())
@@ -307,7 +307,7 @@ class OpcodesControllerTest {
                 tracerOptionsCaptor.capture(),
                 null
         )).thenAnswer(context -> {
-            final CallServiceParameters params = context.getArgument(0);
+            final ContractExecutionParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
             opcodesResultCaptor.set(Builder.unsuccessfulOpcodesProcessingResult(params, options));
             return opcodesResultCaptor.get();
@@ -615,7 +615,7 @@ class OpcodesControllerTest {
                             .orElse(Bytes.EMPTY.toHexString()));
         }
 
-        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final CallServiceParameters params,
+        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final ContractExecutionParameters params,
                                                                                  final OpcodeTracerOptions options) {
             final Address recipient = params != null ? params.getReceiver() : Address.ZERO;
             final List<Opcode> opcodes = opcodes(options);
@@ -628,7 +628,7 @@ class OpcodesControllerTest {
             );
         }
 
-        private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final CallServiceParameters params,
+        private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final ContractExecutionParameters params,
                                                                                    final OpcodeTracerOptions options) {
             final List<Opcode> opcodes = opcodes(options);
             final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);

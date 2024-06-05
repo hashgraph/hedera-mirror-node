@@ -55,7 +55,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -1004,7 +1004,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         9_000_000_000L, EntityIdUtils.accountIdFromEvmAddress(ownerAddress), 8_000_000L));
     }
 
-    protected CallServiceParameters serviceParametersForExecution(
+    protected ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
             final CallType callType,
@@ -1013,7 +1013,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
     }
 
-    protected CallServiceParameters serviceParametersForExecution(
+    protected ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
             final CallType callType,
@@ -1028,7 +1028,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         }
         persistEntities();
 
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(sender)
                 .value(value)
                 .receiver(contractAddress)
@@ -1041,13 +1041,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .build();
     }
 
-    protected CallServiceParameters serviceParametersForTopLevelContractCreate(
+    protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
             final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
         final var sender = new HederaEvmAccount(senderAddress);
         persistEntities();
 
         final var callData = Bytes.wrap(functionEncodeDecoder.getContractBytes(contractInitCodePath));
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(sender)
                 .callData(callData)
                 .receiver(Address.ZERO)
@@ -1060,7 +1060,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     @SuppressWarnings("try")
-    protected long gasUsedAfterExecution(final CallServiceParameters serviceParameters) {
+    protected long gasUsedAfterExecution(final ContractExecutionParameters serviceParameters) {
         return ContractCallContext.run(ctx -> {
             ctx.initializeStackFrames(store.getStackedStateFrames());
             long result = processor
