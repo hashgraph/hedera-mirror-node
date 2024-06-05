@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.ContractCallService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.FEE_SCHEDULE_ENTITY_ID;
@@ -23,6 +24,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -264,10 +266,13 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
             final BlockType block,
             final long gasLimit) {
         HederaEvmAccount sender;
+        final Address senderAddress = toAddress(EntityId.of(0, 0, 1043));
+        final Address senderAddressHistorical = toAddress(EntityId.of(0, 0, 1014));
+
         if (block != BlockType.LATEST) {
-            sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
+            sender = new HederaEvmAccount(senderAddressHistorical);
         } else {
-            sender = new HederaEvmAccount(SENDER_ADDRESS);
+            sender = new HederaEvmAccount(senderAddress);
         }
 
         return CallServiceParameters.builder()
@@ -285,6 +290,7 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
 
     @Override
     protected void feeSchedulesPersist() {
+        final long expiry = 1_234_567_890L;
         final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
                 .setNextFeeSchedule(FeeSchedule.newBuilder()
                         .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
