@@ -120,10 +120,7 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
                 .toList());
 
         log.info("Migrating topic_message_lookup for partition {} synchronously", activePartition.getName());
-        getTransactionOperations().executeWithoutResult(status -> {
-            migratePartition(activePartition.getName());
-            log.info("Migrated topic_message_lookup for partition {}", activePartition.getName());
-        });
+        getTransactionOperations().executeWithoutResult(status -> migratePartition(activePartition.getName()));
 
         return !partitions.isEmpty();
     }
@@ -144,6 +141,7 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
         if (BooleanUtils.isFalse(alreadyMigrated)) {
             var sql = String.format(UPDATE_PARTITION_SQL, partitionName);
             jdbcTemplate.update(sql);
+            log.info("Migrated topic_message_lookup for partition {}", partitionName);
         } else {
             log.info("Partition {} already migrated", partitionName);
         }

@@ -176,7 +176,6 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
                         .sequenceNumber(1)
                         .topicId(topicId2))
                 .persist();
-
         domainBuilder
                 .topicMessage()
                 .customize(t -> t.consensusTimestamp(consensusStart + 3)
