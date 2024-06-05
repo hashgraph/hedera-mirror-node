@@ -20,21 +20,21 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 /**
-* Captures the result of a method call for later inspection
-* @param <T> the type of the result
-* @author vyanev
-*/
+ * Captures the result of a method call for later inspection
+ * @param <T> the type of the result
+ * @author vyanev
+ */
 public class ResultCaptor<T> implements Answer<T> {
     private T result = null;
     private final Class<T> clazz;
 
     public ResultCaptor(Class<T> clazz) {
-     this.clazz = clazz;
- }
+        this.clazz = clazz;
+    }
 
     public T getValue() {
-     return result;
- }
+        return result;
+    }
 
     @Override
     public T answer(InvocationOnMock invocationOnMock) throws Throwable {
