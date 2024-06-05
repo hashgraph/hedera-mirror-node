@@ -98,15 +98,15 @@ class ContractController {
         final var block = request.getBlock();
 
         return ContractExecutionParameters.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .callData(data)
-                .gas(request.getGas())
-                .value(request.getValue())
-                .isStatic(isStaticCall)
-                .callType(callType)
-                .isEstimate(request.isEstimate())
                 .block(block)
+                .callData(data)
+                .callType(callType)
+                .gas(request.getGas())
+                .isEstimate(request.isEstimate())
+                .isStatic(isStaticCall)
+                .receiver(receiver)
+                .sender(sender)
+                .value(request.getValue())
                 .build();
     }
 

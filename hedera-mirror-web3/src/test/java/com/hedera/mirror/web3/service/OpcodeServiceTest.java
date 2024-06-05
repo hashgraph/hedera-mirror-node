@@ -132,9 +132,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             expectedServiceParameters.set(null);
             doAnswer(opcodesResultCaptor)
                     .when(contractCallService)
-                    .processOpcodeCall(
-                            serviceParametersCaptor.capture(),
-                            tracerOptionsCaptor.capture());
+                    .processOpcodeCall(serviceParametersCaptor.capture(), tracerOptionsCaptor.capture());
         }
 
         @SneakyThrows
@@ -192,16 +190,17 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                             .transactionHash(transaction.getTransactionHash()));
             final var contractResult = persistContractResult ? contractResultBuilder.persist() : contractResultBuilder.get();
 
-            final var expectedResult = provider.getExpectedResultFields() != null ?
-                    Bytes.fromHexString(functionEncodeDecoder
-                            .encodedResultFor(provider.getName(), contractAbiPath, provider.getExpectedResultFields()))
-                            .toArray():
-                    null;
-            final var expectedError = provider.getExpectedErrorMessage() != null ?
-                    provider.getExpectedErrorMessage().getBytes() :
-                    null;
+            final var expectedResult = provider.getExpectedResultFields() != null
+                    ? Bytes.fromHexString(functionEncodeDecoder.encodedResultFor(
+                                    provider.getName(), contractAbiPath, provider.getExpectedResultFields()))
+                            .toArray()
+                    : null;
+            final var expectedError = provider.getExpectedErrorMessage() != null
+                    ? provider.getExpectedErrorMessage().getBytes()
+                    : null;
 
-            domainBuilder.contractAction()
+            domainBuilder
+                    .contractAction()
                     .customize(a -> a
                             .caller(senderEntityId)
                             .callerType(EntityType.ACCOUNT)
@@ -216,7 +215,8 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                     .persist();
 
             if (persistTransaction) {
-                domainBuilder.contractTransactionHash()
+                domainBuilder
+                        .contractTransactionHash()
                         .customize(h -> h
                                 .consensusTimestamp(consensusTimestamp)
                                 .entityId(contractEntityId.getId())
@@ -228,7 +228,8 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
             expectedServiceParameters.set(ContractDebugParameters.builder()
                     .sender(new HederaEvmAccount(SENDER_ALIAS))
-                    .receiver(entityDatabaseAccessor.get(contractAddress, Optional.empty())
+                    .receiver(entityDatabaseAccessor
+                            .get(contractAddress, Optional.empty())
                             .map(TransactionProviderEnum::entityAddress)
                             .orElse(Address.ZERO))
                     .gas(GAS)
@@ -240,21 +241,21 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             if (ethTransaction != null) {
                 return new TransactionHashParameter(Bytes.of(ethTransaction.getHash()));
             } else {
-                return new TransactionIdParameter(transaction.getPayerAccountId(), instant(transaction.getValidStartNs()));
+                return new TransactionIdParameter(
+                        transaction.getPayerAccountId(), instant(transaction.getValidStartNs()));
             }
         }
 
         static Stream<Arguments> tracerOptions() {
-            return Stream
-                    .of(
-                        new OpcodeTracerOptions(true, true, true),
-                        new OpcodeTracerOptions(false, true, true),
-                        new OpcodeTracerOptions(true, false, true),
-                        new OpcodeTracerOptions(true, true, false),
-                        new OpcodeTracerOptions(false, false, true),
-                        new OpcodeTracerOptions(false, true, false),
-                        new OpcodeTracerOptions(true, false, false),
-                        new OpcodeTracerOptions(false, false, false))
+            return Stream.of(
+                            new OpcodeTracerOptions(true, true, true),
+                            new OpcodeTracerOptions(false, true, true),
+                            new OpcodeTracerOptions(true, false, true),
+                            new OpcodeTracerOptions(true, true, false),
+                            new OpcodeTracerOptions(false, false, true),
+                            new OpcodeTracerOptions(false, true, false),
+                            new OpcodeTracerOptions(true, false, false),
+                            new OpcodeTracerOptions(false, false, false))
                     .map(Arguments::of);
         }
 
@@ -350,23 +351,27 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                     .withMessage("Contract transaction hash not found");
         }
 
-        private void verifyOpcodesResponse(final ContractFunctionProviderEnum providerEnum,
-                                           final Path contractAbiPath,
-                                           final OpcodesResponse opcodesResponse,
-                                           final OpcodeTracerOptions options) {
+        private void verifyOpcodesResponse(
+                final ContractFunctionProviderEnum providerEnum,
+                final Path contractAbiPath,
+                final OpcodesResponse opcodesResponse,
+                final OpcodeTracerOptions options) {
             assertThat(opcodesResponse).isEqualTo(expectedOpcodesResponse(opcodesResultCaptor.getValue()));
             assertThat(serviceParametersCaptor.getValue()).isEqualTo(expectedServiceParameters.get());
             assertThat(tracerOptionsCaptor.getValue()).isEqualTo(options);
 
             if (providerEnum.getExpectedErrorMessage() != null) {
                 assertThat(opcodesResponse.getOpcodes().getLast().getReason())
-                        .isEqualTo(Hex.encodeHexString(providerEnum.getExpectedErrorMessage().getBytes()));
+                        .isEqualTo(Hex.encodeHexString(
+                                providerEnum.getExpectedErrorMessage().getBytes()));
             } else if (!opcodesResponse.getFailed() && providerEnum.getExpectedResultFields() != null) {
                 assertThat(opcodesResponse.getReturnValue())
                         .isEqualTo(Bytes
                                 // trims the leading zeros
                                 .fromHexString(functionEncodeDecoder.encodedResultFor(
-                                        providerEnum.getName(), contractAbiPath, providerEnum.getExpectedResultFields()))
+                                        providerEnum.getName(),
+                                        contractAbiPath,
+                                        providerEnum.getExpectedResultFields()))
                                 .toHexString());
             }
         }
@@ -374,12 +379,14 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
     private OpcodesResponse expectedOpcodesResponse(final OpcodesProcessingResult result) {
         return new OpcodesResponse()
-                .address(result.transactionProcessingResult().getRecipient()
+                .address(result.transactionProcessingResult()
+                        .getRecipient()
                         .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
                         .map(TransactionProviderEnum::entityAddress)
                         .map(Address::toHexString)
                         .orElse(Address.ZERO.toHexString()))
-                .contractId(result.transactionProcessingResult().getRecipient()
+                .contractId(result.transactionProcessingResult()
+                        .getRecipient()
                         .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
                         .map(Entity::toEntityId)
                         .map(EntityId::toString)

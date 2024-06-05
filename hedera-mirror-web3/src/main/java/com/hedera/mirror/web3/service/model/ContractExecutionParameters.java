@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service.model;
 
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import lombok.Builder;
@@ -26,13 +27,15 @@ import org.hyperledger.besu.datatypes.Address;
 @Value
 @Builder
 public class ContractExecutionParameters implements CallServiceParameters {
-    HederaEvmAccount sender;
-    Address receiver;
-    long gas;
-    long value;
-    Bytes callData;
-    boolean isStatic;
-    CallType callType;
     BlockType block;
+    Bytes callData;
+    CallType callType;
+    long consensusTimestamp;
+    long gas;
     boolean isEstimate;
+    boolean isStatic;
+    Address receiver;
+    HederaEvmAccount sender;
+    TracerType tracerType = TracerType.OPERATION;
+    long value;
 }
