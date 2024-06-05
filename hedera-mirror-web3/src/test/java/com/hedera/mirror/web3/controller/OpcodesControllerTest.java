@@ -60,7 +60,6 @@ import com.hedera.mirror.web3.service.OpcodeServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.mirror.web3.service.RecordFileServiceImpl;
 import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -199,8 +198,7 @@ class OpcodesControllerTest {
         when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture(),
-                null
+                tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
             final BaseCallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
