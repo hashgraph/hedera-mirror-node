@@ -47,10 +47,7 @@ public class ContractDebugService extends ContractCallService {
             ctx.setContractActions(contractActions);
             final var ethCallTxnResult = callContract(params, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
-            return OpcodesProcessingResult.builder()
-                    .transactionProcessingResult(ethCallTxnResult)
-                    .opcodes(ctx.getOpcodes())
-                    .build();
+            return new OpcodesProcessingResult(ethCallTxnResult, ctx.getOpcodes());
         });
     }
 
