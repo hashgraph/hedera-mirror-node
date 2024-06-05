@@ -45,7 +45,7 @@ import org.springframework.retry.support.RetryTemplate;
 @Named
 public class TopicClient extends AbstractNetworkClient {
 
-    private static final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+    public static final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
 
     private final Map<Long, Instant> recordPublishInstants;
     private final Collection<TopicId> topicIds = new CopyOnWriteArrayList<>();

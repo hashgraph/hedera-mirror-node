@@ -94,7 +94,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.aspectj.weaver.ast.Call;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -145,6 +144,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1269));
     protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1270));
     protected static final Address SELF_DESTRUCT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1278));
+    protected static final Address MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1279));
 
     // Account addresses
     protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
@@ -503,7 +503,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected FunctionEncodeDecoder functionEncodeDecoder;
 
     @Autowired
-    protected ContractCallService contractCallService;
+    protected ContractExecutionService contractExecutionService;
 
     @Autowired
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -1103,6 +1103,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         pseudoRandomNumberGeneratorContractPersist();
         addressThisContractPersist();
         final var modificationContract = modificationContractPersist();
+        modificationWithoutKeyContractPersist();
         final var ercContract = ercContractPersist();
         final var nestedContractId = dynamicEthCallContractPresist();
         nestedEthCallsContractPersist();
@@ -1774,7 +1775,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     // Entity persist
-    @Nullable
     private EntityId notAssociatedSpenderEntityPersist() {
         final var spenderEntityId = fromEvmAddress(NOT_ASSOCIATED_SPENDER_ADDRESS.toArrayUnsafe());
         domainBuilder
@@ -1788,7 +1788,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
-    @Nullable
     private EntityId spenderEntityPersist() {
         final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS.toArrayUnsafe());
         domainBuilder
@@ -1802,7 +1801,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return spenderEntityId;
     }
 
-    @Nullable
     private EntityId spenderEntityPersistHistorical() {
         final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
 
@@ -1833,7 +1831,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ethAccount;
     }
 
-    @Nullable
     private EntityId senderEntityPersist() {
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
 
@@ -1849,7 +1846,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return senderEntityId;
     }
 
-    @Nullable
     private EntityId senderEntityPersistHistorical() {
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
 
@@ -1869,7 +1865,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return senderEntityId;
     }
 
-    @Nullable
     private EntityId systemAccountEntityPersist() {
         final var systemAccountEntityId = fromEvmAddress(SYSTEM_ACCOUNT_ADDRESS.toArrayUnsafe());
 
@@ -1884,7 +1879,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return systemAccountEntityId;
     }
 
-    @Nullable
     private EntityId ownerEntityPersist() {
         final var ownerEntityId = fromEvmAddress(OWNER_ADDRESS.toArrayUnsafe());
 
@@ -1899,7 +1893,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ownerEntityId;
     }
 
-    @Nullable
     private EntityId ownerEntityPersistHistorical() {
         final var ownerEntityId = fromEvmAddress(OWNER_ADDRESS_HISTORICAL.toArrayUnsafe());
 
@@ -1917,7 +1910,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ownerEntityId;
     }
 
-    @Nullable
     private EntityId autoRenewAccountPersist() {
         final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS.toArrayUnsafe());
 
@@ -1931,7 +1923,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return autoRenewEntityId;
     }
 
-    @Nullable
     private EntityId autoRenewAccountPersistHistorical() {
         final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL.toArrayUnsafe());
 
@@ -1948,7 +1939,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return autoRenewEntityId;
     }
 
-    @Nullable
     private EntityId treasureEntityPersist() {
         final var treasuryEntityId = fromEvmAddress(TREASURY_ADDRESS.toArrayUnsafe());
 
@@ -2102,7 +2092,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return tokenEntityId;
     }
 
-    @Nullable
     private EntityId nftPersist(
             final Address nftAddress,
             final Address autoRenewAddress,
@@ -2166,7 +2155,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return nftEntityId;
     }
 
-    @Nullable
     private EntityId nftPersistHistorical(
             final Address nftAddress,
             final Address autoRenewAddress,
@@ -2276,7 +2264,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return nftEntityId;
     }
 
-    @Nullable
     private EntityId nftPersistWithoutKycKey(
             final Address nftAddress,
             final Address autoRenewAddress,
@@ -2377,7 +2364,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .spender(spenderEntityId.getNum())
                         .amount(amount)
                         .amountGranted(amount)
-                        .timestampRange(Range.closedOpen(
+                        .timestampRange(Range.closed(
                                 recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
                 .persist();
     }
@@ -2606,6 +2593,29 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(c -> c.id(modificationContractEntityId.getId()).runtimeBytecode(modificationContractBytes))
                 .persist();
         return modificationContractEntityId;
+    }
+
+    private void modificationWithoutKeyContractPersist() {
+        final var modificationContractBytes = functionEncodeDecoder.getContractBytes(MODIFICATION_CONTRACT_BYTES_PATH);
+        final var modificationWithoutKeyContractEntityId =
+                fromEvmAddress(MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var modificationWithoutKeyContractEvmAddress = toEvmAddress(modificationWithoutKeyContractEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(modificationWithoutKeyContractEntityId.getId())
+                        .num(modificationWithoutKeyContractEntityId.getNum())
+                        .evmAddress(modificationWithoutKeyContractEvmAddress)
+                        .key(null)
+                        .type(CONTRACT)
+                        .balance(1500L))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c ->
+                        c.id(modificationWithoutKeyContractEntityId.getId()).runtimeBytecode(modificationContractBytes))
+                .persist();
     }
 
     private EntityId ercContractPersist() {

@@ -39,7 +39,7 @@ public class SelfDestructOperationTest extends ContractCallTestSetup {
                 ETH_CALL,
                 0L,
                 BlockType.LATEST);
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
     @Test
@@ -57,7 +57,7 @@ public class SelfDestructOperationTest extends ContractCallTestSetup {
                 INVALID_SOLIDITY_ADDRESS.name(),
                 assertThrows(
                                 MirrorEvmTransactionException.class,
-                                () -> contractCallService.processCall(serviceParameters))
+                                () -> contractExecutionService.processCall(serviceParameters))
                         .getMessage());
     }
 }

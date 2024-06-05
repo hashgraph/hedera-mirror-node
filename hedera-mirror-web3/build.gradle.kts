@@ -43,7 +43,7 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("io.vertx:vertx-core")
-    testImplementation("org.flywaydb:flyway-core")
+    testImplementation("org.flywaydb:flyway-database-postgresql")
     testImplementation("org.mockito:mockito-inline")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")

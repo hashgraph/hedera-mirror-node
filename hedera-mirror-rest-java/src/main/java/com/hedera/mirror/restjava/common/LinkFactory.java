@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.restjava.mapper;
+package com.hedera.mirror.restjava.common;
 
-import static org.mapstruct.MappingInheritanceStrategy.AUTO_INHERIT_FROM_CONFIG;
+import com.hedera.mirror.rest.model.Links;
+import jakarta.annotation.Nonnull;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import org.springframework.data.domain.Pageable;
 
-import com.hedera.mirror.rest.model.NftAllowance;
-import org.mapstruct.MapperConfig;
-import org.mapstruct.Mapping;
-
-@MapperConfig(mappingInheritanceStrategy = AUTO_INHERIT_FROM_CONFIG, uses = CommonMapper.class)
-public interface RestJavaMapperConfig {
-
-    @Mapping(source = "timestampRange", target = "timestamp")
-    NftAllowance map(com.hedera.mirror.common.domain.entity.NftAllowance source);
+public interface LinkFactory {
+    <T> Links create(List<T> items, @Nonnull Pageable pageable, @Nonnull Function<T, Map<String, String>> extractor);
 }

@@ -17,8 +17,9 @@
 package com.hedera.mirror.restjava.service;
 
 import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
+import com.hedera.mirror.restjava.common.ParameterNames;
 import com.hedera.mirror.restjava.common.RangeOperator;
+import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.repository.NftAllowanceRepository;
 import jakarta.inject.Named;
 import java.util.Collection;
@@ -33,28 +34,43 @@ public class NftAllowanceServiceImpl implements NftAllowanceService {
 
     public Collection<NftAllowance> getNftAllowances(NftAllowanceRequest request) {
 
-        var ownerOrSpenderId = request.getOwnerOrSpenderId();
-        var token = request.getTokenId();
-        var id = entityService.lookup(request.getAccountId());
+        var ownerOrSpenderId = request.getOwnerOrSpenderIds();
+        var token = request.getTokenIds();
 
         checkOwnerSpenderParamValidity(ownerOrSpenderId, token);
 
-        verifyRangeId(token);
-        verifyRangeId(ownerOrSpenderId);
+        var id = entityService.lookup(request.getAccountId());
 
         return repository.findAll(request, id);
     }
 
-    private static void verifyRangeId(EntityIdRangeParameter idParam) {
-        if (idParam != null && idParam.operator() == RangeOperator.NE) {
-            throw new IllegalArgumentException("Invalid range operator ne. This operator is not supported");
+    private static void checkOwnerSpenderParamValidity(Bound ownerOrSpenderParams, Bound tokenParams) {
+
+        if (ownerOrSpenderParams.isEmpty() && !tokenParams.isEmpty()) {
+            throw new IllegalArgumentException("token.id parameter must have account.id present");
+        }
+
+        verifyRangeId(ownerOrSpenderParams);
+        verifyRangeId(tokenParams);
+
+        if (!ownerOrSpenderParams.hasLowerAndUpper()
+                && tokenParams.adjustLowerBound() > tokenParams.adjustUpperBound()) {
+            throw new IllegalArgumentException("Invalid range provided for %s".formatted(ParameterNames.TOKEN_ID));
+        }
+
+        if (tokenParams.getCardinality(RangeOperator.LT, RangeOperator.LTE) > 0
+                && ownerOrSpenderParams.getCardinality(RangeOperator.EQ, RangeOperator.LTE) == 0) {
+            throw new IllegalArgumentException("Requires the presence of an lte or eq account.id parameter");
+        }
+        if (tokenParams.getCardinality(RangeOperator.GT, RangeOperator.GTE) > 0
+                && ownerOrSpenderParams.getCardinality(RangeOperator.EQ, RangeOperator.GTE) == 0) {
+            throw new IllegalArgumentException("Requires the presence of an gte or eq account.id parameter");
         }
     }
 
-    private static void checkOwnerSpenderParamValidity(
-            EntityIdRangeParameter ownerOrSpenderId, EntityIdRangeParameter token) {
-        if (ownerOrSpenderId == null && token != null) {
-            throw new IllegalArgumentException("token.id parameter must have account.id present");
-        }
+    private static void verifyRangeId(Bound ids) {
+        ids.verifyUnsupported(RangeOperator.NE);
+        ids.verifySingleOccurrence();
+        ids.verifyEqualOrRange();
     }
 }

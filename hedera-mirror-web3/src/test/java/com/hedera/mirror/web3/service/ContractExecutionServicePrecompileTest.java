@@ -47,7 +47,7 @@ import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class ContractCallServicePrecompileTest extends ContractCallTestSetup {
+class ContractExecutionServicePrecompileTest extends ContractCallTestSetup {
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
@@ -75,7 +75,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
@@ -114,15 +114,15 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     // stack frame overrides the result with the one from Besu and the zero address
                     // is returned.
                 case HTS_GET_APPROVED, HTS_ALLOWANCE, HTS_IS_APPROVED_FOR_ALL -> {
-                    assertThat(contractCallService.processCall(serviceParameters))
+                    assertThat(contractExecutionService.processCall(serviceParameters))
                             .isEqualTo(String.valueOf(Bytes32.ZERO));
                     return;
                 }
             }
-            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
-            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+            assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
         }
     }
 
@@ -146,12 +146,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         // Block number (Long.MAX_VALUE - 1) does not exist in the DB and is after the
         // latest block available in the DB => returning error
         if (blockNumber > latestBlockNumber) {
-            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberOutOfRangeException.class);
         } else if (blockNumber == 51) {
             // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but it is before the latest
             // block available in the DB => throw an exception
-            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberNotFoundException.class);
         }
     }
@@ -167,7 +167,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -184,7 +184,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -199,7 +199,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -226,7 +226,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_CALL, value, BlockType.LATEST);
         final var expectedResult = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, MODIFICATION_CONTRACT_ABI_PATH, contractFunc.expectedResult);
-        final var result = contractCallService.processCall(serviceParameters);
+        final var result = contractExecutionService.processCall(serviceParameters);
         assertThat(result).isEqualTo(expectedResult);
     }
 
@@ -237,7 +237,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
@@ -248,7 +248,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
@@ -259,8 +259,43 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
+    }
+
+    @Test
+    void createFungibleTokenWithInheritKeysEstimateGas() {
+        final var functionHash = functionEncodeDecoder.functionHashFor(
+                "createFungibleTokenWithInheritKeysExternal", MODIFICATION_CONTRACT_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash,
+                MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS,
+                ETH_ESTIMATE_GAS,
+                10000 * 100_000_000L,
+                BlockType.LATEST);
+
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+
+        assertThat(isWithinExpectedGasRange(
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                .isTrue();
+    }
+
+    @Test
+    void createFungibleTokenWithInheritKeysCall() {
+        final String funcName = "createFungibleTokenWithInheritKeysExternal";
+        final var functionHash = functionEncodeDecoder.functionHashFor(funcName, MODIFICATION_CONTRACT_ABI_PATH);
+        final var serviceParameters = serviceParametersForExecution(
+                functionHash,
+                MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS,
+                ETH_CALL,
+                10000 * 100_000_000L,
+                BlockType.LATEST);
+
+        final var result = contractExecutionService.processCall(serviceParameters);
+        final var decodedAddress = functionEncodeDecoder.decodeResult(funcName, MODIFICATION_CONTRACT_ABI_PATH, result);
+        assertThat(decodedAddress.size()).isEqualTo(1);
+        assertThat(decodedAddress.get(0).getClass()).isEqualTo(com.esaulpaugh.headlong.abi.Address.class);
     }
 
     @ParameterizedTest
@@ -300,7 +335,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 10000 * 100_000_000L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 

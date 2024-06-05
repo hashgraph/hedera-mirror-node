@@ -19,21 +19,26 @@ package com.hedera.mirror.restjava.controller;
 import static com.hedera.mirror.restjava.common.ParameterNames.ACCOUNT_ID;
 import static com.hedera.mirror.restjava.common.ParameterNames.TOKEN_ID;
 
-import com.hedera.mirror.rest.model.Links;
+import com.google.common.collect.ImmutableSortedMap;
+import com.hedera.mirror.rest.model.NftAllowance;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.common.EntityIdParameter;
 import com.hedera.mirror.restjava.common.EntityIdRangeParameter;
-import com.hedera.mirror.restjava.common.Utils;
+import com.hedera.mirror.restjava.common.LinkFactory;
+import com.hedera.mirror.restjava.dto.NftAllowanceRequest;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
-import com.hedera.mirror.restjava.service.NftAllowanceRequest;
+import com.hedera.mirror.restjava.service.Bound;
 import com.hedera.mirror.restjava.service.NftAllowanceService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Positive;
-import java.util.LinkedHashMap;
+import jakarta.validation.constraints.Size;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,45 +51,47 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AllowancesController {
 
-    private static final int MAX_LIMIT = 100;
     private static final String DEFAULT_LIMIT = "25";
+    private static final Map<Boolean, Function<NftAllowance, Map<String, String>>> EXTRACTORS = Map.of(
+            true,
+            nftAllowance -> ImmutableSortedMap.of(
+                    ACCOUNT_ID, nftAllowance.getSpender(),
+                    TOKEN_ID, nftAllowance.getTokenId()),
+            false,
+            nftAllowance -> ImmutableSortedMap.of(
+                    ACCOUNT_ID, nftAllowance.getOwner(),
+                    TOKEN_ID, nftAllowance.getTokenId()));
+    private static final int MAX_LIMIT = 100;
 
+    private final LinkFactory linkFactory;
     private final NftAllowanceService service;
     private final NftAllowanceMapper nftAllowanceMapper;
 
     @GetMapping(value = "/nfts")
-    NftAllowancesResponse getNftAllowancesByAccountId(
+    NftAllowancesResponse getNftAllowances(
             @PathVariable EntityIdParameter id,
-            @RequestParam(name = ACCOUNT_ID, required = false) EntityIdRangeParameter accountId,
+            @RequestParam(name = ACCOUNT_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> accountIds,
             @RequestParam(defaultValue = DEFAULT_LIMIT) @Positive @Max(MAX_LIMIT) int limit,
             @RequestParam(defaultValue = "asc") Sort.Direction order,
             @RequestParam(defaultValue = "true") boolean owner,
-            @RequestParam(name = TOKEN_ID, required = false) EntityIdRangeParameter tokenId) {
+            @RequestParam(name = TOKEN_ID, required = false) @Size(max = 2) List<EntityIdRangeParameter> tokenIds) {
 
-        var builder = NftAllowanceRequest.builder()
+        var request = NftAllowanceRequest.builder()
                 .accountId(id)
                 .isOwner(owner)
                 .limit(limit)
                 .order(order)
-                .ownerOrSpenderId(accountId)
-                .tokenId(tokenId);
+                .ownerOrSpenderIds(new Bound(accountIds, true, ACCOUNT_ID))
+                .tokenIds(new Bound(tokenIds, false, TOKEN_ID))
+                .build();
 
-        var serviceResponse = service.getNftAllowances(builder.build());
+        var serviceResponse = service.getNftAllowances(request);
+        var allowances = nftAllowanceMapper.map(serviceResponse);
 
-        var response = new NftAllowancesResponse();
-        response.setAllowances(nftAllowanceMapper.map(serviceResponse));
-        var last = CollectionUtils.lastElement(response.getAllowances());
-        String next = null;
+        var sort = Sort.by(order, ACCOUNT_ID, TOKEN_ID);
+        var pageable = PageRequest.of(0, limit, sort);
+        var links = linkFactory.create(allowances, pageable, EXTRACTORS.get(owner));
 
-        if (last != null && serviceResponse.size() == limit) {
-            var lastAccountId = owner ? last.getSpender() : last.getOwner();
-            var lastValues = new LinkedHashMap<String, String>();
-            lastValues.put(ACCOUNT_ID, lastAccountId);
-            lastValues.put(TOKEN_ID, last.getTokenId());
-            next = Utils.getPaginationLink(false, lastValues, order);
-        }
-
-        response.links(new Links().next(next));
-        return response;
+        return new NftAllowancesResponse().allowances(allowances).links(links);
     }
 }

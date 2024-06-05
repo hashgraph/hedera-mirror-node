@@ -94,6 +94,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Condition;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -889,7 +890,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var recordItem = recordItemBuilder
                 .cryptoUpdate()
                 .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_27_0))
-                .transactionBody(b -> b.setStakedNodeId(newStakedNodeId).setAccountIDToUpdate(protoAccountId))
+                .transactionBody(b -> b.setStakedNodeId(newStakedNodeId)
+                        .setAccountIDToUpdate(protoAccountId)
+                        .setMaxAutomaticTokenAssociations(Int32Value.of(-1)))
                 .transactionBodyWrapper(w -> w.setTransactionID(transactionId))
                 .record(r -> r.addPaidStakingRewards(accountAmount(account.getId(), 200L))
                         .setTransactionID(transactionId)
@@ -911,7 +914,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(entityRepository.findById(account.getId()))
                         .get()
                         .returns(newStakedNodeId, Entity::getStakedNodeId)
-                        .returns(expectedStakePeriodStart, Entity::getStakePeriodStart));
+                        .returns(expectedStakePeriodStart, Entity::getStakePeriodStart)
+                        .returns(-1, Entity::getMaxAutomaticTokenAssociations));
     }
 
     @Test
@@ -1491,10 +1495,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(transactionRepository.findById(recordItem2.getConsensusTimestamp()))
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .map(transfer ->
                                 ((ItemizedTransfer) transfer).getEntityId().getNum())
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .containsExactly(newAccount.getAccountNum(), entity.getNum(), entity.getNum()));
         System.setProperty(HALT_ON_ERROR_PROPERTY, haltOnError);
     }
@@ -1525,7 +1529,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .hasSize(1)
                         .allSatisfy(transfer -> {
                             assertThat(((ItemizedTransfer) transfer).getEntityId())
@@ -1573,9 +1577,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(transactionRepository.findById(recordItem.getConsensusTimestamp()))
                         .get()
                         .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .map(transfer -> ((ItemizedTransfer) transfer).getEntityId())
-                        .asList()
+                        .asInstanceOf(InstanceOfAssertFactories.LIST)
                         .containsExactlyInAnyOrderElementsOf(expectedEntityIds));
     }
 
@@ -1663,7 +1667,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var evmAddress = recordItemBuilder.evmAddress();
         var cryptoCreate = recordItemBuilder
                 .cryptoCreate()
-                .transactionBody(b -> b.clearAlias().clearKey().setAlias(evmAddress.getValue()))
+                .transactionBody(b -> b.clearAlias()
+                        .clearKey()
+                        .setAlias(evmAddress.getValue())
+                        .setMaxAutomaticTokenAssociations(-1))
                 .receipt(r -> r.setAccountID(accountId))
                 .build();
 
@@ -1681,7 +1688,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         String[] fields = new String[] {"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
         assertThat(entityRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
-                .containsExactly(expectedAccount);
+                .containsExactly(expectedAccount)
+                .map(e -> e.getMaxAutomaticTokenAssociations())
+                .containsOnly(-1);
         assertThat(findHistory(Entity.class)).isEmpty();
 
         // when

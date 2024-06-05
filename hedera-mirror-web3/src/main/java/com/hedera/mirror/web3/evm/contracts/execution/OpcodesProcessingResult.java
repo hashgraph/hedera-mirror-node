@@ -19,8 +19,9 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import lombok.Builder;
+
+import java.util.List;
 
 @Builder
 public record OpcodesProcessingResult(

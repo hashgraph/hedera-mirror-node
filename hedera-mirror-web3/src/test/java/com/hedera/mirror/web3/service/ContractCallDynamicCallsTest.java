@@ -46,14 +46,14 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L, BlockType.LATEST);
         if (contractFunctions.expectedErrorMessage != null) {
-            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .satisfies(ex -> {
                         MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
                         assertEquals(exception.getDetail(), contractFunctions.expectedErrorMessage);
                     });
         } else {
-            contractCallService.processCall(serviceParameters);
+            contractExecutionService.processCall(serviceParameters);
         }
     }
 
@@ -65,7 +65,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
         if (contractFunctions.expectedErrorMessage != null) {
-            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class)
                     .satisfies(ex -> {
                         MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
@@ -73,7 +73,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
                     });
         } else {
             final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-            assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
+            assertThat(longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)))
                     .as("result must be within 5-20% bigger than the gas used from the first call")
                     .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
                     .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
@@ -89,7 +89,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ALIAS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @Test
@@ -101,7 +101,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @Getter

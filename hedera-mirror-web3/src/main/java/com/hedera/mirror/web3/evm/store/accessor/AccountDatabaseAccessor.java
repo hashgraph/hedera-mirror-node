@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.evm.exception.WrongTypeException;
 import com.hedera.mirror.web3.evm.store.DatabaseBackedStateFrame.DatabaseAccessIncorrectKeyTypeException;
 import com.hedera.mirror.web3.repository.AccountBalanceRepository;
@@ -38,11 +39,13 @@ import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
 import com.hedera.mirror.web3.utils.Suppliers;
+import com.hedera.services.jproto.JContractIDKey;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityNum;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
 import java.util.Collections;
@@ -113,7 +116,7 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 0,
                 Optional.ofNullable(entity.getEthereumNonce()).orElse(0L),
                 entity.getType().equals(CONTRACT),
-                parseJkey(entity.getKey()),
+                parseJkey(entity),
                 entity.getCreatedTimestamp() != null
                         ? TimeUnit.SECONDS.convert(entity.getCreatedTimestamp(), TimeUnit.NANOSECONDS)
                         : 0L);
@@ -213,9 +216,21 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
         return Suppliers.memoize(() -> new TokenAccountBalances(allAggregated, positiveAggregated));
     }
 
-    private JKey parseJkey(byte[] keyBytes) {
+    private JKey parseJkey(Entity entity) {
         try {
-            return keyBytes == null ? null : asFcKeyUnchecked(Key.parseFrom(keyBytes));
+            final byte[] keyBytes = entity.getKey();
+            if (keyBytes != null) {
+                return asFcKeyUnchecked(Key.parseFrom(keyBytes));
+            }
+            if (entity.getType() == EntityType.CONTRACT) {
+                return new JContractIDKey(ContractID.newBuilder()
+                        .setContractNum(entity.getNum())
+                        .setRealmNum(entity.getRealm())
+                        .setShardNum(entity.getShard())
+                        .build());
+            }
+
+            return null;
         } catch (InvalidProtocolBufferException | IllegalArgumentException e) {
             return null;
         }

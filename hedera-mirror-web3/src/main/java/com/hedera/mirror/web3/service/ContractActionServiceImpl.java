@@ -18,7 +18,7 @@ import org.springframework.util.Assert;
 
 @Service
 @RequiredArgsConstructor
-public class ContractActionServiceImpl implements ContractActionService{
+public class ContractActionServiceImpl implements ContractActionService {
 
     private final ContractActionRepository contractActionRepository;
 

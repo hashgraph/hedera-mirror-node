@@ -55,6 +55,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 class GenericControllerAdvice {
 
     @Bean
+    @SuppressWarnings("java:S5122") // Make sure that enabling CORS is safe here.
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
@@ -144,8 +145,7 @@ class GenericControllerAdvice {
     }
 
     @ExceptionHandler
-    private ResponseEntity<?> queryTimeoutError(final QueryTimeoutException e) {
-        log.error("Query timed out: {}", e.getMessage());
+    private ResponseEntity<?> queryTimeoutError(final QueryTimeoutException ignored) {
         return new ResponseEntity<>(
                 new GenericErrorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()),
                 SERVICE_UNAVAILABLE

@@ -65,7 +65,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.expectedResultFields);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
@@ -76,7 +76,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_CALL, 100L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name());
     }
@@ -91,7 +91,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, EXCHANGE_RATE_PRECOMPILE_ABI_PATH, contractFunc.expectedResultFields);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
@@ -105,7 +105,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -118,7 +118,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 100L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name());
     }
@@ -133,7 +133,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -144,7 +144,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, PRNG_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 100L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name());
     }
@@ -156,7 +156,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        final var result = contractCallService.processCall(serviceParameters);
+        final var result = contractExecutionService.processCall(serviceParameters);
 
         // Length of "0x" + 64 hex characters (2 per byte * 32 bytes)
         assertEquals(66, result.length(), "The string should represent a 32-byte long array");
@@ -169,7 +169,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 100L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name());
     }
@@ -182,7 +182,7 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, PRNG_CONTRACT_ADDRESS, ETH_CALL, 0L, blockNumber);
 
-        final var result = contractCallService.processCall(serviceParameters);
+        final var result = contractExecutionService.processCall(serviceParameters);
 
         // Length of "0x" + 64 hex characters (2 per byte * 32 bytes)
         assertEquals(66, result.length(), "The string should represent a 32-byte long array");

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
@@ -38,17 +37,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
     private static final String GET_LATEST_PARTITIONS =
             """
-            select distinct on (tp.parent_table) tp.parent_table,
-                           tp.partition_column,
-                           tp.partition,
-                           tp.from_value::bigint as current_from,
-                           tp.to_value::bigint as current_to,
-                           (greatest(0, extract(
-                             epoch from (to_timestamp(tp.from_value::bigint / 1000000000.0) - ?::interval))::bigint * 1000000000)
-                           ) as previous_from
-                    from time_partitions tp
-                    order by tp.parent_table, tp.from_value::bigint desc
-            """;
+                    select distinct on (tp.parent_table) tp.parent_table,
+                                   tp.partition_column,
+                                   tp.partition,
+                                   tp.from_value::bigint as current_from,
+                                   tp.to_value::bigint as current_to,
+                                   (greatest(0, extract(
+                                     epoch from (to_timestamp(tp.from_value::bigint / 1000000000.0) - ?::interval))::bigint * 1000000000)
+                                   ) as previous_from
+                            from time_partitions tp
+                            order by tp.parent_table, tp.from_value::bigint desc
+                    """;
     private final @Owner JdbcTemplate jdbcTemplate;
     private final PartitionMaintenance partitionMaintenance;
     private final FlywayProperties flywayProperties;
@@ -91,7 +90,6 @@ class PartitionMaintenanceV2Test extends ImporterIntegrationTest {
         assertThat(getCurrentPartitions()).isEqualTo(latestPartitions);
     }
 
-    @NotNull
     private List<PartitionInfo> getCurrentPartitions() {
         return jdbcTemplate.query(
                 GET_LATEST_PARTITIONS,
