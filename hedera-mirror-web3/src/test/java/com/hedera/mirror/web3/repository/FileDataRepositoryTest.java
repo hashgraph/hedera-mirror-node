@@ -49,6 +49,33 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                     .build())
             .build();
+
+    private static final ExchangeRateSet exchangeRatesSet200 = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(2)
+                    .setHbarEquiv(13)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(200))
+                    .build())
+            .setNextRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(3)
+                    .setHbarEquiv(32)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_893L))
+                    .build())
+            .build();
+
+    private static final ExchangeRateSet exchangeRatesSet300 = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(3)
+                    .setHbarEquiv(14)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(300))
+                    .build())
+            .setNextRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(4)
+                    .setHbarEquiv(33)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_893L))
+                    .build())
+            .build();
+
     private static final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
@@ -68,6 +95,35 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
     private final FileDataRepository fileDataRepository;
 
     @Test
+    void getHistoricalFileForExchangeRates() throws InvalidProtocolBufferException {
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(exchangeRatesSet200.toByteArray())
+                        .entityId(EXCHANGE_RATE_ENTITY_ID)
+                        .consensusTimestamp(200L))
+                .persist();
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(exchangeRatesSet300.toByteArray())
+                        .entityId(EXCHANGE_RATE_ENTITY_ID)
+                        .consensusTimestamp(300L))
+                .persist();
+
+        var fileDataCurrent = fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), 301);
+        var fileData1 = fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), 300);
+        assertThat(fileDataCurrent).isEqualTo(fileData1);
+        assertThat(ExchangeRateSet.parseFrom(fileData1.get(0).getFileData())).isEqualTo(exchangeRatesSet300);
+
+        var fileData2 = fileDataRepository.getFileAtTimestamp(
+                EXCHANGE_RATE_ENTITY_ID.getId(), fileData1.get(0).getConsensusTimestamp() - 1);
+        assertThat(ExchangeRateSet.parseFrom(fileData2.get(0).getFileData())).isEqualTo(exchangeRatesSet200);
+
+        var fileData3 = fileDataRepository.getFileAtTimestamp(
+                EXCHANGE_RATE_ENTITY_ID.getId(), fileData2.get(0).getConsensusTimestamp() - 1);
+        assert (fileData3).isEmpty();
+    }
+
+    @Test
     void getFileForExchangeRates() throws InvalidProtocolBufferException {
         domainBuilder
                 .fileData()
@@ -76,8 +132,8 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
                         .consensusTimestamp(expiry))
                 .persist();
 
-        final var actualBytes = fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), expiry);
-        assertThat(ExchangeRateSet.parseFrom(actualBytes)).isEqualTo(exchangeRatesSet);
+        final var fileData = fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ENTITY_ID.getId(), expiry);
+        assertThat(ExchangeRateSet.parseFrom(fileData.getFirst().getFileData())).isEqualTo(exchangeRatesSet);
     }
 
     @Test
@@ -89,7 +145,8 @@ class FileDataRepositoryTest extends Web3IntegrationTest {
                         .consensusTimestamp(expiry))
                 .persist();
 
-        final var actualBytes = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), expiry);
-        assertThat(CurrentAndNextFeeSchedule.parseFrom(actualBytes)).isEqualTo(feeSchedules);
+        final var fileData = fileDataRepository.getFileAtTimestamp(FEE_SCHEDULE_ENTITY_ID.getId(), expiry);
+        assertThat(CurrentAndNextFeeSchedule.parseFrom(fileData.getFirst().getFileData()))
+                .isEqualTo(feeSchedules);
     }
 }
