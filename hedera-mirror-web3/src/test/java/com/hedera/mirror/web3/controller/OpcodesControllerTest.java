@@ -17,8 +17,8 @@
 package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.common.util.CommonUtils.instant;
-import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.TransactionProviderEnum.entityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
@@ -204,7 +204,8 @@ class OpcodesControllerTest {
     }
 
     TransactionIdOrHashParameter setUp(final TransactionProviderEnum provider) {
-        provider.setDomainBuilder(DOMAIN_BUILDER);
+        provider.init(DOMAIN_BUILDER);
+
         final var transaction = provider.getTransaction().get();
         final var ethTransaction = provider.getEthTransaction().get();
         final var recordFile = provider.getRecordFile().get();
@@ -213,7 +214,7 @@ class OpcodesControllerTest {
         final var contractEntity = provider.getContractEntity().get();
         final var senderEntity = provider.getSenderEntity().get();
 
-        final var hash = ethTransaction != null ? ethTransaction.getHash() : transaction.getTransactionHash();
+        final var hash = provider.hasEthTransaction() ? ethTransaction.getHash() : transaction.getTransactionHash();
         final var consensusTimestamp = transaction.getConsensusTimestamp();
         final var payerAccountId = transaction.getPayerAccountId();
         final var validStartNs = transaction.getValidStartNs();
@@ -225,11 +226,18 @@ class OpcodesControllerTest {
         expectedCallServiceParameters.set(ContractDebugParameters.builder()
                 .sender(new HederaEvmAccount(senderAddress))
                 .receiver(contractAddress)
-                .gas(ethTransaction != null ? ethTransaction.getGasLimit() : contractResult.getGasLimit())
-                .value(ethTransaction != null ?
-                        new BigInteger(ethTransaction.getValue()).longValue() : contractResult.getAmount())
-                .callData(Bytes.of(
-                        ethTransaction != null ? ethTransaction.getCallData() : contractResult.getFunctionParameters()))
+                .gas(provider.hasEthTransaction() ?
+                        ethTransaction.getGasLimit() :
+                        contractResult.getGasLimit())
+                .value(provider.hasEthTransaction() ?
+                        new BigInteger(ethTransaction.getValue()).longValue() :
+                        contractResult.getAmount())
+                .callData(provider.hasEthTransaction() ?
+                        Bytes.of(ethTransaction.getCallData()) :
+                        Bytes.of(contractResult.getFunctionParameters()))
+                .isStatic(false)
+                .callType(ETH_DEBUG_TRACE_TRANSACTION)
+                .isEstimate(false)
                 .block(BlockType.of(recordFile.getIndex().toString()))
                 .build());
 
@@ -305,7 +313,7 @@ class OpcodesControllerTest {
         )).thenAnswer(context -> {
             final ContractExecutionParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
-            opcodesResultCaptor.set(Builder.unsuccessfulOpcodesProcessingResult(params, options));
+            opcodesResultCaptor.set(Builder.unsuccessfulOpcodesProcessingResult(options));
             return opcodesResultCaptor.get();
         });
 
@@ -569,15 +577,7 @@ class OpcodesControllerTest {
             return new OpcodesResponse()
                     .address(result.transactionProcessingResult().getRecipient()
                             .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
-                            .map(entity -> {
-                                if (entity.getEvmAddress() != null) {
-                                    return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-                                }
-                                if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-                                    return Address.wrap(Bytes.wrap(entity.getAlias()));
-                                }
-                                return toAddress(entity.toEntityId());
-                            })
+                            .map(TransactionProviderEnum::entityAddress)
                             .map(Address::toHexString)
                             .orElse(Address.ZERO.toHexString()))
                     .contractId(result.transactionProcessingResult().getRecipient()
@@ -624,6 +624,7 @@ class OpcodesControllerTest {
             );
         }
 
+        private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final OpcodeTracerOptions options) {
         private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final ContractExecutionParameters params,
                                                                                    final OpcodeTracerOptions options) {
             final List<Opcode> opcodes = opcodes(options);
