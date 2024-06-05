@@ -235,9 +235,6 @@ class OpcodesControllerTest {
                 .callData(provider.hasEthTransaction() ?
                         Bytes.of(ethTransaction.getCallData()) :
                         Bytes.of(contractResult.getFunctionParameters()))
-                .isStatic(false)
-                .callType(ETH_DEBUG_TRACE_TRANSACTION)
-                .isEstimate(false)
                 .block(BlockType.of(recordFile.getIndex().toString()))
                 .build());
 
@@ -625,8 +622,6 @@ class OpcodesControllerTest {
         }
 
         private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final OpcodeTracerOptions options) {
-        private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final ContractExecutionParameters params,
-                                                                                   final OpcodeTracerOptions options) {
             final List<Opcode> opcodes = opcodes(options);
             final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
             final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
