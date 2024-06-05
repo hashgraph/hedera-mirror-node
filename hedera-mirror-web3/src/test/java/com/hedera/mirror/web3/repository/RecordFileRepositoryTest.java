@@ -79,4 +79,15 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
         long nonExistentBlockNumber = 1L;
         assertThat(recordFileRepository.findByIndex(nonExistentBlockNumber)).isEmpty();
     }
+
+    @Test
+    void findRecordFileByTimeStamp() {
+        var timestamp = domainBuilder.timestamp();
+        var recordFile = domainBuilder.recordFile()
+                .customize(r -> r.consensusEnd(timestamp))
+                .persist();
+        var result = recordFileRepository.findByTimestamp(timestamp);
+        assertThat(result).isPresent();
+        assertThat(result.get()).isEqualTo(recordFile);
+    }
 }

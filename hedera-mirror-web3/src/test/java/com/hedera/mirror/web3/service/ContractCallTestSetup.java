@@ -21,7 +21,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -57,6 +57,8 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -90,6 +92,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.ToLongFunction;
 import org.apache.tuweni.bytes.Bytes;
+import org.aspectj.weaver.ast.Call;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1005,6 +1008,21 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected CallServiceParameters serviceParametersForExecution(
+            final ContractFunctionProviderEnum function,
+            final Path contractAbiPath,
+            final Address contractAddress,
+            final CallServiceParameters.CallType callType,
+            final Long value) {
+        return serviceParametersForExecution(
+                functionEncodeDecoder.functionHashFor(function.getName(), contractAbiPath, function.getFunctionParameters()),
+                contractAddress,
+                callType,
+                value,
+                function.getBlock()
+        );
+    }
+
+    protected CallServiceParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
             final BaseCallServiceParameters.CallType callType,
@@ -1036,7 +1054,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .gas(gasLimit)
                 .isStatic(false)
                 .callType(callType)
-                .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .isEstimate(CallType.ETH_ESTIMATE_GAS == callType)
                 .block(block)
                 .build();
     }
@@ -1054,7 +1072,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .gas(15_000_000L)
                 .isStatic(false)
                 .callType(callType)
-                .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .isEstimate(CallType.ETH_ESTIMATE_GAS == callType)
                 .block(BlockType.LATEST)
                 .build();
     }

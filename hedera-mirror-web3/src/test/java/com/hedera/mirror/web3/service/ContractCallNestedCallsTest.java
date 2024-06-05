@@ -21,9 +21,11 @@ import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.Cal
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.utils.EntityIdUtils;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
 import org.hyperledger.besu.datatypes.Address;
@@ -95,8 +97,9 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum NestedEthCallContractFunctions {
+    enum NestedEthCallContractFunctions implements ContractFunctionProviderEnum {
         UPDATE_TOKEN_KEYS_AND_GET_TOKEN_KEY_ADMIN_KEY_CONTRACT_ADDRESS(
                 "updateTokenKeysAndGetUpdatedTokenKey",
                 new Object[] {
@@ -897,8 +900,9 @@ class ContractCallNestedCallsTest extends ContractCallTestSetup {
         private final Object[] expectedResultFields;
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum NestedEthCallContractFunctionsNegativeCases {
+    enum NestedEthCallContractFunctionsNegativeCases implements ContractFunctionProviderEnum {
         GET_TOKEN_INFO_HISTORICAL(
                 "nestedGetTokenInfoAndHardcodedResult",
                 new Object[] {NFT_ADDRESS_HISTORICAL},
