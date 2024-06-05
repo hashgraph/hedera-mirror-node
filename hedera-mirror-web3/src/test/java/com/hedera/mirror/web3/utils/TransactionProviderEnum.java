@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.mirror.web3.utils;
 
 import static com.hedera.mirror.common.domain.transaction.TransactionType.CONTRACTCALL;
@@ -74,7 +90,7 @@ public enum TransactionProviderEnum {
         return this;
     }
 
-    public void setDomainBuilder(DomainBuilder domainBuilder) {
+    public void init(DomainBuilder domainBuilder) {
         this.domainBuilder = domainBuilder;
         this.contractId = domainBuilder.entityId();
         this.payerAccountId = domainBuilder.entityId();
@@ -97,8 +113,12 @@ public enum TransactionProviderEnum {
                 });
     }
 
+    public boolean hasEthTransaction() {
+        return transactionType == ETHEREUMTRANSACTION;
+    }
+
     public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> getEthTransaction() {
-        if (transactionType != ETHEREUMTRANSACTION) {
+        if (!hasEthTransaction()) {
             return domainBuilder.wrap(EthereumTransaction.builder(), () -> null);
         }
         return domainBuilder.ethereumTransaction(true)
