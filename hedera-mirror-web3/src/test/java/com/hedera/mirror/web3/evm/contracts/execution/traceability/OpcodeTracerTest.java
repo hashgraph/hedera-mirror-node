@@ -473,7 +473,7 @@ class OpcodeTracerTest {
                 .code(CodeV0.EMPTY_CODE)
                 .sender(Address.ZERO)
                 .originator(Address.ZERO)
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
                 .address(Address.ZERO)
                 .contract(Address.ZERO)
@@ -484,7 +484,7 @@ class OpcodeTracerTest {
                 .worldUpdater(worldUpdater)
                 .gasPrice(Wei.of(GAS_PRICE))
                 .blockValues(mock(BlockValues.class))
-                .blockHashLookup(_ -> Hash.wrap(Bytes32.ZERO));
+                .blockHashLookup(ignored -> Hash.wrap(Bytes32.ZERO));
     }
 
     private ContractAction contractAction(final CallOperationType callOperationType, final int resultDataType) {
