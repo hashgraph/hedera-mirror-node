@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractTransactionHash;
@@ -119,15 +120,7 @@ public class OpcodeServiceImpl implements OpcodeService {
 
         return new OpcodesResponse()
                 .address(recipientEntity
-                        .map(entity -> {
-                            if (entity.getEvmAddress() != null) {
-                                return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
-                            }
-                            if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
-                                return Address.wrap(Bytes.wrap(entity.getAlias()));
-                            }
-                            return toAddress(entity.toEntityId());
-                        })
+                        .map(this::getEntityAddress)
                         .map(Address::toHexString)
                         .orElse(Address.ZERO.toHexString()))
                 .contractId(recipientEntity
@@ -188,6 +181,12 @@ public class OpcodeServiceImpl implements OpcodeService {
         return ethereumTransaction
                 .filter(transaction -> transaction.getToAddress() != null)
                 .map(transaction -> Address.wrap(Bytes.wrap(transaction.getToAddress())))
+                .flatMap(address -> {
+                    if (isMirror(address.toArrayUnsafe())) {
+                        return entityDatabaseAccessor.get(address, Optional.empty()).map(this::getEntityAddress);
+                    }
+                    return Optional.of(address);
+                })
                 .orElseGet(() -> {
                     final var contractId = EntityId.of(contractResult.getContractId());
                     return entityDatabaseAccessor.evmAddressFromId(contractId, Optional.empty());
@@ -215,5 +214,15 @@ public class OpcodeServiceImpl implements OpcodeService {
         return Optional.ofNullable(callData)
                 .map(Bytes::of)
                 .orElse(Bytes.EMPTY);
+    }
+
+    private Address getEntityAddress(Entity entity) {
+        if (entity.getEvmAddress() != null) {
+            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
+        }
+        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
+            return Address.wrap(Bytes.wrap(entity.getAlias()));
+        }
+        return toAddress(entity.toEntityId());
     }
 }
