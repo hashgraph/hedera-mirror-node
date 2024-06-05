@@ -18,12 +18,16 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.common.util.CommonUtils.instant;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
+import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
+import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.doAnswer;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.rest.model.OpcodesResponse;
@@ -35,23 +39,25 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerO
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.utils.ResultCaptor;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
-import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.math.BigInteger;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -76,6 +82,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     @DisplayName("processOpcodeCall")
     class ProcessOpcodeCall {
 
@@ -91,7 +98,33 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
         @BeforeEach
         void setUp() {
-            persistEntities();
+            genesisBlockPersist();
+            historicalBlocksPersist();
+            historicalDataPersist();
+            precompileContractPersist();
+            fileDataPersist();
+            final var ownerEntityId = ownerEntityPersist();
+            final var spenderEntityId = spenderEntityPersist();
+            final var senderEntityId = senderEntityPersist();
+            fungibleTokenPersist(
+                    senderEntityId,
+                    KEY_PROTO,
+                    UNPAUSED_FUNGIBLE_TOKEN_ADDRESS,
+                    AUTO_RENEW_ACCOUNT_ADDRESS,
+                    9999999999999L,
+                    TokenPauseStatusEnum.UNPAUSED,
+                    false);
+            nftPersist(
+                    NFT_TRANSFER_ADDRESS,
+                    AUTO_RENEW_ACCOUNT_ADDRESS,
+                    ownerEntityId,
+                    spenderEntityId,
+                    ownerEntityId,
+                    KEY_PROTO,
+                    TokenPauseStatusEnum.UNPAUSED,
+                    false);
+            exchangeRatesPersist();
+            feeSchedulesPersist();
         }
 
         @BeforeEach
@@ -104,7 +137,8 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                             tracerOptionsCaptor.capture());
         }
 
-        TransactionIdOrHashParameter setUp(final ContractCallDynamicCallsTest.DynamicCallsContractFunctions provider,
+        @SneakyThrows
+        TransactionIdOrHashParameter setUp(final ContractFunctionProviderEnum provider,
                                            final TransactionType transactionType,
                                            final Address contractAddress,
                                            final Path contractAbiPath,
@@ -112,6 +146,8 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                                            final boolean persistContractResult) {
             final var contractEntityId = fromEvmAddress(contractAddress.toArrayUnsafe());
             final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
+            assertThat(contractEntityId).isNotNull();
+            assertThat(senderEntityId).isNotNull();
 
             final var ethHash = domainBuilder.bytes(32);
             final var consensusTimestamp = domainBuilder.timestamp();
@@ -156,6 +192,29 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                             .transactionHash(transaction.getTransactionHash()));
             final var contractResult = persistContractResult ? contractResultBuilder.persist() : contractResultBuilder.get();
 
+            final var expectedResult = provider.getExpectedResultFields() != null ?
+                    Bytes.fromHexString(functionEncodeDecoder
+                            .encodedResultFor(provider.getName(), contractAbiPath, provider.getExpectedResultFields()))
+                            .toArray():
+                    null;
+            final var expectedError = provider.getExpectedErrorMessage() != null ?
+                    provider.getExpectedErrorMessage().getBytes() :
+                    null;
+
+            domainBuilder.contractAction()
+                    .customize(a -> a
+                            .caller(senderEntityId)
+                            .callerType(EntityType.ACCOUNT)
+                            .consensusTimestamp(consensusTimestamp)
+                            .payerAccountId(senderEntityId)
+                            .recipientContract(contractEntityId)
+                            .recipientAddress(contractAddress.toArrayUnsafe())
+                            .gas(GAS)
+                            .resultData(expectedError != null ? expectedError : expectedResult)
+                            .resultDataType(expectedError != null ? REVERT_REASON.getNumber() : OUTPUT.getNumber())
+                            .value(AMOUNT))
+                    .persist();
+
             if (persistTransaction) {
                 domainBuilder.contractTransactionHash()
                         .customize(h -> h
@@ -169,11 +228,13 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
             expectedServiceParameters.set(ContractCallDebugServiceParameters.builder()
                     .sender(new HederaEvmAccount(SENDER_ALIAS))
-                    .receiver(DYNAMIC_ETH_CALLS_CONTRACT_ALIAS)
+                    .receiver(entityDatabaseAccessor.get(contractAddress, Optional.empty())
+                            .map(TransactionProviderEnum::entityAddress)
+                            .orElse(Address.ZERO))
                     .gas(GAS)
                     .value(AMOUNT)
                     .callData(Bytes.of(callData))
-                    .block(BlockType.LATEST)
+                    .block(provider.getBlock())
                     .build());
 
             if (ethTransaction != null) {
@@ -183,14 +244,67 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             }
         }
 
+        static Stream<Arguments> tracerOptions() {
+            return Stream
+                    .of(
+                        new OpcodeTracerOptions(true, true, true),
+                        new OpcodeTracerOptions(false, true, true),
+                        new OpcodeTracerOptions(true, false, true),
+                        new OpcodeTracerOptions(true, true, false),
+                        new OpcodeTracerOptions(false, false, true),
+                        new OpcodeTracerOptions(false, true, false),
+                        new OpcodeTracerOptions(true, false, false),
+                        new OpcodeTracerOptions(false, false, false))
+                    .map(Arguments::of);
+        }
+
         @ParameterizedTest
-        @EnumSource(ContractCallDynamicCallsTest.DynamicCallsContractFunctions.class)
-        void callWithContractResultNotFoundExceptionTest(final ContractCallDynamicCallsTest.DynamicCallsContractFunctions providerEnum) {
+        @MethodSource("tracerOptions")
+        void callWithDifferentCombinationsOfTracerOptions(final OpcodeTracerOptions options) {
+            dynamicEthCallContractPresist();
+            final var providerEnum = ContractCallDynamicCallsTest.DynamicCallsContractFunctions.MINT_NFT;
+
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
                     providerEnum,
-                    TransactionType.CONTRACTCALL,
+                    TransactionType.ETHEREUMTRANSACTION,
                     DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS,
                     DYNAMIC_ETH_CALLS_ABI_PATH,
+                    true,
+                    true);
+
+            final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+            verifyOpcodesResponse(providerEnum, DYNAMIC_ETH_CALLS_ABI_PATH, opcodesResponse, options);
+        }
+
+        @ParameterizedTest
+        @EnumSource(ContractCallNestedCallsTest.NestedEthCallContractFunctions.class)
+        void callWithNestedEthCalls(final ContractFunctionProviderEnum providerEnum) {
+            nestedEthCallsContractPersist();
+
+            final TransactionIdOrHashParameter transactionIdOrHash = setUp(
+                    providerEnum,
+                    TransactionType.ETHEREUMTRANSACTION,
+                    NESTED_ETH_CALLS_CONTRACT_ADDRESS,
+                    NESTED_CALLS_ABI_PATH,
+                    true,
+                    true);
+            final OpcodeTracerOptions options = new OpcodeTracerOptions();
+
+            final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
+
+            verifyOpcodesResponse(providerEnum, NESTED_CALLS_ABI_PATH, opcodesResponse, options);
+        }
+
+        @Test
+        void callWithContractResultNotFoundExceptionTest() {
+            systemExchangeRateContractPersist();
+
+            final TransactionIdOrHashParameter transactionIdOrHash = setUp(
+                    ContractCallSystemPrecompileTest.ExchangeRateFunctions.TINYBARS_TO_TINYCENTS,
+                    TransactionType.CONTRACTCALL,
+                    EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS,
+                    EXCHANGE_RATE_PRECOMPILE_ABI_PATH,
                     true,
                     false);
             final OpcodeTracerOptions options = new OpcodeTracerOptions();
@@ -200,14 +314,15 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                     .withMessage("Contract result not found");
         }
 
-        @ParameterizedTest
-        @EnumSource(ContractCallDynamicCallsTest.DynamicCallsContractFunctions.class)
-        void callWithTransactionNotFoundExceptionTest(final ContractCallDynamicCallsTest.DynamicCallsContractFunctions providerEnum) {
+        @Test
+        void callWithTransactionNotFoundExceptionTest() {
+            systemExchangeRateContractPersist();
+
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    providerEnum,
+                    ContractCallSystemPrecompileTest.ExchangeRateFunctions.TINYCENTS_TO_TINYBARS,
                     TransactionType.CONTRACTCALL,
-                    DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS,
-                    DYNAMIC_ETH_CALLS_ABI_PATH,
+                    EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS,
+                    EXCHANGE_RATE_PRECOMPILE_ABI_PATH,
                     false,
                     true);
             final OpcodeTracerOptions options = new OpcodeTracerOptions();
@@ -217,14 +332,15 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                     .withMessage("Transaction not found");
         }
 
-        @ParameterizedTest
-        @EnumSource(ContractCallDynamicCallsTest.DynamicCallsContractFunctions.class)
-        void callWithContractTransactionHashNotFoundExceptionTest(final ContractCallDynamicCallsTest.DynamicCallsContractFunctions providerEnum) {
+        @Test
+        void callWithContractTransactionHashNotFoundExceptionTest() {
+            nestedEthCallsContractPersist();
+
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    providerEnum,
+                    ContractCallNestedCallsTest.NestedEthCallContractFunctions.CREATE_FUNGIBLE_TOKEN_NO_KEYS,
                     TransactionType.ETHEREUMTRANSACTION,
-                    DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS,
-                    DYNAMIC_ETH_CALLS_ABI_PATH,
+                    NESTED_ETH_CALLS_CONTRACT_ADDRESS,
+                    NESTED_CALLS_ABI_PATH,
                     false,
                     true);
             final OpcodeTracerOptions options = new OpcodeTracerOptions();
@@ -234,38 +350,25 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                     .withMessage("Contract transaction hash not found");
         }
 
-        @ParameterizedTest
-        @MethodSource("transactionsWithDifferentTracerOptions")
-        void callWithDifferentCombinationsOfTracerOptions(final ContractCallDynamicCallsTest.DynamicCallsContractFunctions providerEnum,
-                                                          final OpcodeTracerOptions options) {
-            final TransactionIdOrHashParameter transactionIdOrHash = setUp(
-                    providerEnum,
-                    TransactionType.CONTRACTCALL,
-                    DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS,
-                    DYNAMIC_ETH_CALLS_ABI_PATH,
-                    true,
-                    true);
-
-            final var opcodesResponse = opcodeService.processOpcodeCall(transactionIdOrHash, options);
-
+        private void verifyOpcodesResponse(final ContractFunctionProviderEnum providerEnum,
+                                           final Path contractAbiPath,
+                                           final OpcodesResponse opcodesResponse,
+                                           final OpcodeTracerOptions options) {
             assertThat(opcodesResponse).isEqualTo(expectedOpcodesResponse(opcodesResultCaptor.getValue()));
             assertThat(serviceParametersCaptor.getValue()).isEqualTo(expectedServiceParameters.get());
             assertThat(tracerOptionsCaptor.getValue()).isEqualTo(options);
-        }
 
-        static Stream<Arguments> transactionsWithDifferentTracerOptions() {
-            final List<OpcodeTracerOptions> tracerOptions = List.of(
-                    new OpcodeTracerOptions(true, true, true),
-                    new OpcodeTracerOptions(false, true, true),
-                    new OpcodeTracerOptions(true, false, true),
-                    new OpcodeTracerOptions(true, true, false),
-                    new OpcodeTracerOptions(false, false, true),
-                    new OpcodeTracerOptions(false, true, false),
-                    new OpcodeTracerOptions(true, false, false),
-                    new OpcodeTracerOptions(false, false, false)
-            );
-            return Arrays.stream(ContractCallDynamicCallsTest.DynamicCallsContractFunctions.values())
-                    .flatMap(providerEnum -> tracerOptions.stream().map(options -> Arguments.of(providerEnum, options)));
+            if (providerEnum.getExpectedErrorMessage() != null) {
+                assertThat(opcodesResponse.getOpcodes().getLast().getReason())
+                        .isEqualTo(Hex.encodeHexString(providerEnum.getExpectedErrorMessage().getBytes()));
+            } else if (!opcodesResponse.getFailed() && providerEnum.getExpectedResultFields() != null) {
+                assertThat(opcodesResponse.getReturnValue())
+                        .isEqualTo(Bytes
+                                // trims the leading zeros
+                                .fromHexString(functionEncodeDecoder.encodedResultFor(
+                                        providerEnum.getName(), contractAbiPath, providerEnum.getExpectedResultFields()))
+                                .toHexString());
+            }
         }
     }
 

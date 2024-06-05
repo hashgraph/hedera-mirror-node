@@ -21,11 +21,8 @@ import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.utils.TransactionProviderEnum.entityAddress;
-import static com.hedera.mirror.web3.service.model.BaseCallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
@@ -62,7 +59,7 @@ import com.hedera.mirror.web3.service.OpcodeService;
 import com.hedera.mirror.web3.service.OpcodeServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.mirror.web3.service.RecordFileServiceImpl;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.BaseCallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractCallDebugServiceParameters;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -203,7 +200,7 @@ class OpcodesControllerTest {
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
-            final CallServiceParameters params = context.getArgument(0);
+            final BaseCallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
             opcodesResultCaptor.set(Builder.successfulOpcodesProcessingResult(params, options));
             return opcodesResultCaptor.get();
@@ -266,22 +263,6 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @EnumSource(TransactionProviderEnum.class)
-    void shouldThrowUnsupportedOperationFromContractCallService(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        reset(contractDebugService);
-        when(contractDebugService.processOpcodeCall(
-                callServiceParametersCaptor.capture(),
-                tracerOptionsCaptor.capture()
-        )).thenCallRealMethod();
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isNotImplemented())
-                .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
     void callThrowsExceptionAndExpectDetailMessage(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
@@ -311,9 +292,8 @@ class OpcodesControllerTest {
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
         )).thenAnswer(context -> {
-            final CallServiceParameters params = context.getArgument(0);
             final OpcodeTracerOptions options = context.getArgument(1);
-            opcodesResultCaptor.set(Builder.unsuccessfulOpcodesProcessingResult(params, options));
+            opcodesResultCaptor.set(Builder.unsuccessfulOpcodesProcessingResult(options));
             return opcodesResultCaptor.get();
         });
 
@@ -618,21 +598,19 @@ class OpcodesControllerTest {
                             .orElse(Bytes.EMPTY.toHexString()));
         }
 
-        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final CallServiceParameters params,
+        private static OpcodesProcessingResult successfulOpcodesProcessingResult(final BaseCallServiceParameters params,
                                                                                  final OpcodeTracerOptions options) {
-            final Address recipient = params != null ? params.getReceiver() : Address.ZERO;
             final List<Opcode> opcodes = opcodes(options);
             final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
             final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
             return new OpcodesProcessingResult(
                     HederaEvmTransactionProcessingResult
-                            .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, recipient),
+                            .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, params.getReceiver()),
                     opcodes
             );
         }
 
-        private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final CallServiceParameters params,
-                                                                                   final OpcodeTracerOptions options) {
+        private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final OpcodeTracerOptions options) {
             final List<Opcode> opcodes = opcodes(options);
             final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
             final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
