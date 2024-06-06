@@ -37,7 +37,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.repository.ContractResultRepository;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
@@ -45,7 +44,6 @@ import com.hedera.mirror.web3.repository.TransactionRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import io.github.bucket4j.Bucket;
 import java.math.BigInteger;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -68,15 +66,11 @@ public class OpcodeServiceImpl implements OpcodeService {
     private final TransactionRepository transactionRepository;
     private final ContractResultRepository contractResultRepository;
     private final EntityDatabaseAccessor entityDatabaseAccessor;
-    private final Bucket gasLimitBucket;
 
     @Override
     public OpcodesResponse processOpcodeCall(@NonNull TransactionIdOrHashParameter transactionIdOrHashParameter,
                                              @NonNull OpcodeTracerOptions options) {
         final CallServiceParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
-        if (!gasLimitBucket.tryConsume(params.getGas())) {
-            throw new RateLimitException("Rate limit exceeded.");
-        }
         final OpcodesProcessingResult result = contractCallService.processOpcodeCall(params, options);
         return buildOpcodesResponse(result);
     }
