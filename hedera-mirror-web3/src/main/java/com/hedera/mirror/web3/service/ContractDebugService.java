@@ -8,7 +8,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerO
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.repository.ContractActionRepository;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -20,6 +19,7 @@ import lombok.CustomLog;
 import java.util.List;
 
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 
 @CustomLog
 @Named
@@ -52,7 +52,7 @@ public class ContractDebugService extends ContractCallService {
     }
 
     @Override
-    protected void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallServiceParameters.CallType type) {
+    protected void validateResult(final HederaEvmTransactionProcessingResult txnResult, final CallType type) {
         try {
             super.validateResult(txnResult, type);
         } catch (MirrorEvmTransactionException e) {

@@ -25,6 +25,5 @@ public interface MirrorEvmTxProcessor {
 
     HederaEvmTransactionProcessingResult execute(final CallServiceParameters params,
                                                  final long estimatedGas,
-                                                 final TracerType tracerType,
                                                  final ContractCallContext context);
 }

@@ -208,7 +208,7 @@ class MirrorEvmTxProcessorTest {
                 .isEstimate(isEstimate)
                 .build();
         final var result = ContractCallContext.run(ctx ->
-                mirrorEvmTxProcessor.execute(params, params.getGas(), TracerType.OPERATION, ctx));
+                mirrorEvmTxProcessor.execute(params, params.getGas(), ctx));
 
         assertThat(result)
                 .isNotNull()
@@ -229,9 +229,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ONE)
                 .apparentValue(Wei.ONE)
                 .blockValues(hederaBlockValues)
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(_ -> null);
+                .blockHashLookup(ignored -> null);
 
         assertThatExceptionOfType(MirrorEvmTransactionException.class)
                 .isThrownBy(() -> mirrorEvmTxProcessor.buildInitialFrame(
@@ -255,9 +255,9 @@ class MirrorEvmTxProcessorTest {
                 .value(oneWei)
                 .apparentValue(oneWei)
                 .blockValues(mock(BlockValues.class))
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(_ -> null);
+                .blockHashLookup(ignored -> null);
         // when:
         final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
                 commonInitialFrame, receiver.canonicalAddress(), Bytes.EMPTY, 0L);
@@ -287,9 +287,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ZERO)
                 .apparentValue(Wei.ZERO)
                 .blockValues(mock(BlockValues.class))
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(_ -> null);
+                .blockHashLookup(ignored -> null);
 
         // when:
         final MessageFrame buildMessageFrame = mirrorEvmTxProcessor.buildInitialFrame(
@@ -321,9 +321,9 @@ class MirrorEvmTxProcessorTest {
                 .value(Wei.ZERO)
                 .apparentValue(Wei.ZERO)
                 .blockValues(mock(BlockValues.class))
-                .completer(_ -> {})
+                .completer(ignored -> {})
                 .miningBeneficiary(Address.ZERO)
-                .blockHashLookup(_ -> null);
+                .blockHashLookup(ignored -> null);
 
         // when:
         assertThatExceptionOfType(MirrorEvmTransactionException.class)

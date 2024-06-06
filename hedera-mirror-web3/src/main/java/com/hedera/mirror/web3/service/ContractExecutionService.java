@@ -21,7 +21,6 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
@@ -37,9 +36,6 @@ import org.apache.tuweni.bytes.Bytes;
 @CustomLog
 @Named
 public class ContractExecutionService extends ContractCallService {
-
-    static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
-    static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
 
     private final BinaryGasEstimator binaryGasEstimator;
 

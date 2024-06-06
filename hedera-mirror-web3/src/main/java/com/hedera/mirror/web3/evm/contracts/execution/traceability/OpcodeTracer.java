@@ -46,11 +46,13 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     private OpcodeTracerOptions options;
     private List<Opcode> opcodes;
     private List<ContractAction> contractActions;
+    private ContractCallContext context;
 
     @Override
     public void init(MessageFrame initialFrame) {
         opcodes = new ArrayList<>();
         ContractCallContext ctx = initialFrame.getContextVariable(ContractCallContext.CONTEXT_NAME);
+        this.context = ctx;
         options = ctx.getOpcodeTracerOptions();
         contractActions = ctx.getContractActions();
         if (CollectionUtils.isEmpty(contractActions)) {
@@ -94,6 +96,11 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
                 Collections.emptyMap(),
                 revertReason.map(Bytes::toString).orElse(null)
         ));
+    }
+
+    @Override
+    public void finalizeOperation(final MessageFrame frame) {
+        context.setOpcodes(opcodes);
     }
 
     private List<Bytes> captureMemory(final MessageFrame frame) {
