@@ -1340,7 +1340,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
     }
 
-    protected void historicalBlocksPersist() {
+    private void historicalBlocksPersist() {
         recordFileBeforeEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK - 1))
@@ -1665,7 +1665,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    protected void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
+    private void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {
         domainBuilder
                 .customFee()
                 .customize(f -> f.tokenId(nftEntityId.getId())
@@ -1742,7 +1742,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    protected void ercContractTokenPersist(
+    private void ercContractTokenPersist(
             final Address contractAddress, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatusEnum) {
         final var contractEntityId = fromEvmAddress(contractAddress.toArrayUnsafe());
         domainBuilder
@@ -1891,7 +1891,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ownerEntityId;
     }
 
-    protected EntityId autoRenewAccountPersist() {
+    private EntityId autoRenewAccountPersist() {
         final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -1929,7 +1929,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return test.toEntityId();
     }
 
-    protected EntityId treasureEntityPersist() {
+    private EntityId treasureEntityPersist() {
         final var treasuryEntityId = fromEvmAddress(TREASURY_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -2376,7 +2376,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    protected void contractAllowancesPersist(
+    private void contractAllowancesPersist(
             final EntityId senderEntityId,
             final Address contractAddress,
             final EntityId tokenEntityId,
