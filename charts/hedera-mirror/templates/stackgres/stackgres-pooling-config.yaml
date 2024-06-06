@@ -8,5 +8,5 @@ metadata:
 spec:
   pgBouncer:
     pgbouncer.ini:
-      pgbouncer: {{ toYaml .Values.stackgres.pgbouncer | nindent 8 }}
+      {{ toYaml .Values.stackgres.pgbouncer | nindent 6 }}
 {{- end -}}

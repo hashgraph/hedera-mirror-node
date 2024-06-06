@@ -17,13 +17,13 @@
 package com.hedera.mirror.web3.evm.pricing;
 
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -32,6 +32,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -46,12 +47,11 @@ class RatesAndFeesLoaderTest {
     @InjectMocks
     private RatesAndFeesLoader subject;
 
-    private static final long nanos = 1_234_567_890L;
     private static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setCentEquiv(1)
                     .setHbarEquiv(12)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(nanos))
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(200L))
                     .build())
             .setNextRate(ExchangeRate.newBuilder()
                     .setCentEquiv(2)
@@ -60,12 +60,9 @@ class RatesAndFeesLoaderTest {
                     .build())
             .build();
 
-    private static final String CORRUPT_RATES_MESSAGE = "Rates 0.0.112 are corrupt!";
-    private static final long EXCHANGE_RATES_ID = 112L;
-
     private static final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
-                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nanos))
+                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(200L))
                     .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
                             .setHederaFunctionality(ContractCall)
                             .addFees(FeeData.newBuilder().build())))
@@ -76,15 +73,34 @@ class RatesAndFeesLoaderTest {
                             .addFees(FeeData.newBuilder().build())))
             .build();
 
+    private static final List<FileData> exchangeRatesFileData = List.of(FileData.builder()
+            .consensusTimestamp(200L)
+            .fileData(exchangeRatesSet.toByteArray())
+            .build());
+
+    private static final List<FileData> feeScheduleFileData = List.of(FileData.builder()
+            .consensusTimestamp(200L)
+            .fileData(feeSchedules.toByteArray())
+            .build());
+
+    private static final List<FileData> fileDataCorrupt = List.of(FileData.builder()
+            .consensusTimestamp(300L)
+            .fileData("corrupt".getBytes())
+            .build());
+
+    private static final String CORRUPT_RATES_MESSAGE = "Rates 0.0.112 are corrupt!";
+    private static final long EXCHANGE_RATES_ID = 112L;
+
     private static final String CORRUPT_SCHEDULES_MESSAGE = "Fee schedule 0.0.111 is corrupt!";
     private static final long FEE_SCHEDULES_ID = 111L;
+    private static final long EXCHANGE_RATE_ID = 112L;
 
     @Test
     void loadExchangeRates() {
         when(fileDataRepository.getFileAtTimestamp(eq(EXCHANGE_RATES_ID), anyLong()))
-                .thenReturn(exchangeRatesSet.toByteArray());
+                .thenReturn(exchangeRatesFileData);
 
-        final var actual = subject.loadExchangeRates(nanos);
+        final var actual = subject.loadExchangeRates(250L);
 
         assertThat(actual).isEqualTo(exchangeRatesSet);
     }
@@ -92,28 +108,39 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadEmptyExchangeRates() {
         when(fileDataRepository.getFileAtTimestamp(eq(EXCHANGE_RATES_ID), anyLong()))
-                .thenReturn(EMPTY_BYTE_ARRAY);
+                .thenReturn(List.of());
 
-        final var actual = subject.loadExchangeRates(nanos);
+        final var actual = subject.loadExchangeRates(100L);
         assertThat(actual).isEqualTo(ExchangeRateSet.newBuilder().build());
     }
 
     @Test
     void loadWrongDataExchangeRates() {
         when(fileDataRepository.getFileAtTimestamp(eq(EXCHANGE_RATES_ID), anyLong()))
-                .thenReturn("corrupt".getBytes());
+                .thenReturn(fileDataCorrupt);
 
-        final var exception = assertThrows(IllegalStateException.class, () -> subject.loadExchangeRates(nanos));
+        final var exception = assertThrows(IllegalStateException.class, () -> subject.loadExchangeRates(350L));
 
         assertThat(exception.getMessage()).isEqualTo(CORRUPT_RATES_MESSAGE);
     }
 
     @Test
+    void getFileForExchangeRatesFallback() {
+        long currentNanos = 350L;
+        when(fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ID, currentNanos))
+                .thenReturn(fileDataCorrupt);
+        when(fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ID, 299L)).thenReturn(exchangeRatesFileData);
+
+        var actual = subject.loadExchangeRates(currentNanos);
+        assertThat(actual).isEqualTo(exchangeRatesSet);
+    }
+
+    @Test
     void loadFeeSchedules() {
         when(fileDataRepository.getFileAtTimestamp(eq(FEE_SCHEDULES_ID), anyLong()))
-                .thenReturn(feeSchedules.toByteArray());
+                .thenReturn(feeScheduleFileData);
 
-        final var actual = subject.loadFeeSchedules(nanos);
+        final var actual = subject.loadFeeSchedules(350L);
 
         assertThat(actual).isEqualTo(feeSchedules);
     }
@@ -121,19 +148,30 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadEmptyFeeSchedules() {
         when(fileDataRepository.getFileAtTimestamp(eq(FEE_SCHEDULES_ID), anyLong()))
-                .thenReturn(EMPTY_BYTE_ARRAY);
+                .thenReturn(List.of());
 
-        final var actual = subject.loadFeeSchedules(nanos);
+        final var actual = subject.loadFeeSchedules(100L);
         assertThat(actual).isEqualTo(CurrentAndNextFeeSchedule.newBuilder().build());
     }
 
     @Test
     void loadWrongDataFeeSchedules() {
         when(fileDataRepository.getFileAtTimestamp(eq(FEE_SCHEDULES_ID), anyLong()))
-                .thenReturn("corrupt".getBytes());
+                .thenReturn(fileDataCorrupt);
 
-        final var exception = assertThrows(IllegalStateException.class, () -> subject.loadFeeSchedules(nanos));
+        final var exception = assertThrows(IllegalStateException.class, () -> subject.loadFeeSchedules(350L));
 
         assertThat(exception.getMessage()).isEqualTo(CORRUPT_SCHEDULES_MESSAGE);
+    }
+
+    @Test
+    void getFileForFeeScheduleFallback() {
+        long currentNanos = 350L;
+        when(fileDataRepository.getFileAtTimestamp(FEE_SCHEDULES_ID, currentNanos))
+                .thenReturn(fileDataCorrupt);
+        when(fileDataRepository.getFileAtTimestamp(FEE_SCHEDULES_ID, 299L)).thenReturn(feeScheduleFileData);
+
+        var actual = subject.loadFeeSchedules(currentNanos);
+        assertThat(actual).isEqualTo(feeSchedules);
     }
 }

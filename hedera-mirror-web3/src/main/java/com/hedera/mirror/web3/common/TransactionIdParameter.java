@@ -32,7 +32,7 @@ public record TransactionIdParameter(EntityId payerAccountId, Instant validStart
         }
 
         Matcher matcher = TRANSACTION_ID_PATTERN.matcher(transactionId);
-        if (!matcher.matches() || matcher.groupCount() != 5) {
+        if (!matcher.matches()) {
             return null;
         }
 
