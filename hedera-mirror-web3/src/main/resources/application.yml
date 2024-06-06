@@ -9,6 +9,9 @@ hedera:
         sslMode: DISABLE
         statementTimeout: 10000
         username: mirror_web3
+      opcode:
+        tracer:
+          enabled: false
 logging:
   level:
     root: warn

@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import java.time.Instant;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,41 +33,35 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 class TransactionIdParameterTest {
 
-    public static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
-
     private static Stream<Arguments> provideTransactionIds() {
         return Stream.of(
-                Arguments.of("0.0.3-1234567890-123", true),
-                Arguments.of("0.0.3--1234567890-123", false),
-                Arguments.of("0.0.3-1234567890--123", false),
-                Arguments.of("0.0.3-1234567890-1234567890", false),
-                Arguments.of("0.0.3-12345678901234567890-123", false),
-                Arguments.of("%d.0.3-1234567890-123".formatted(Long.MAX_VALUE), false),
-                Arguments.of("0.%d.3-1234567890-123".formatted(Long.MAX_VALUE), false),
-                Arguments.of("0.0.%d-1234567890-123".formatted(Long.MAX_VALUE), false),
-                Arguments.of("0.0.3-%d-1234567890".formatted(Long.MAX_VALUE), false),
-                Arguments.of("0.0.3-1234567890-%d".formatted(Integer.MAX_VALUE), false),
-                Arguments.of(null, false)
+                Arguments.of("0.0.3-1234567890-123", true, null),
+                Arguments.of("0.0.3--1234567890-123", false, null),
+                Arguments.of("0.0.3-1234567890--123", false, null),
+                Arguments.of("0.0.3-1234567890-1234567890", false, null),
+                Arguments.of("0.0.3-12345678901234567890-123", false, null),
+                Arguments.of("%d.0.3-1234567890-123".formatted(Long.MAX_VALUE), false, InvalidParametersException.class),
+                Arguments.of("0.%d.3-1234567890-123".formatted(Long.MAX_VALUE), false, InvalidParametersException.class),
+                Arguments.of("0.0.%d-1234567890-123".formatted(Long.MAX_VALUE), false, InvalidParametersException.class),
+                Arguments.of("0.0.3-%d-1234567890".formatted(Long.MAX_VALUE), false, InvalidParametersException.class),
+                Arguments.of("0.0.3-1234567890-%d".formatted(Integer.MAX_VALUE), false, InvalidParametersException.class),
+                Arguments.of(null, false, null)
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideTransactionIds")
-    void testParseTransactionId(String transactionId, boolean isValidTransactionId) {
+    void testParseTransactionId(String transactionId, boolean isValidTransactionId, Class<? extends Exception> expectedException) {
         if (!isValidTransactionId) {
-            if (transactionId == null || !TRANSACTION_ID_PATTERN.matcher(transactionId).matches()) {
-                assertThat(TransactionIdParameter.valueOf(transactionId)).isNull();
+            if (expectedException != null) {
+                assertThatExceptionOfType(expectedException)
+                        .isThrownBy(() -> TransactionIdParameter.valueOf(transactionId))
+                        .withMessageContaining("Invalid entity ID: %s".formatted(transactionId.split("-")[0]));
                 return;
             }
-            assertThatExceptionOfType(InvalidParametersException.class)
-                    .isThrownBy(() -> TransactionIdParameter.valueOf(transactionId))
-                    .withMessageContaining("Invalid entity ID: %s".formatted(transactionId.split("-")[0]));
+            assertThat(TransactionIdParameter.valueOf(transactionId)).isNull();
             return;
         }
-
-        Matcher matcher = TRANSACTION_ID_PATTERN.matcher(transactionId);
-        assertThat(matcher).matches();
-        assertThat(matcher.groupCount()).isEqualTo(5);
 
         final var parameter = assertDoesNotThrow(() -> TransactionIdParameter.valueOf(transactionId));
         assertThat(parameter)

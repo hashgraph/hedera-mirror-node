@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.common;
 
-import static com.hedera.mirror.web3.common.TransactionIdParameterTest.TRANSACTION_ID_PATTERN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -24,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import java.time.Instant;
-import java.util.regex.Matcher;
 import java.util.stream.Stream;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,8 +39,7 @@ class TransactionIdOrHashParameterTest {
                 Arguments.of("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", true),
                 Arguments.of("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", true),
                 Arguments.of("0xGHIJKL", false),
-                Arguments.of(null, false)
-        );
+                Arguments.of(null, false));
     }
 
     private static Stream<Arguments> provideTransactionIds() {
@@ -50,8 +47,7 @@ class TransactionIdOrHashParameterTest {
                 Arguments.of("0.0.3-1234567890-123", true),
                 Arguments.of("0.0.3-1234567890-1234567890", false),
                 Arguments.of("0.0.3-12345678901234567890-123", false),
-                Arguments.of(null, false)
-        );
+                Arguments.of(null, false));
     }
 
     @ParameterizedTest
@@ -78,10 +74,6 @@ class TransactionIdOrHashParameterTest {
                     .isThrownBy(() -> TransactionIdOrHashParameter.valueOf(transactionId));
             return;
         }
-
-        Matcher matcher = TRANSACTION_ID_PATTERN.matcher(transactionId);
-        assertThat(matcher).matches();
-        assertThat(matcher.groupCount()).isEqualTo(5);
 
         final var parameter = assertDoesNotThrow(() -> TransactionIdOrHashParameter.valueOf(transactionId));
         assertThat(parameter)
