@@ -181,7 +181,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_RECORD_FILE_TIMESTAMP)
     CacheManager cacheManagerRecordFileTimestamp() {
         final var caffeine = Caffeine.newBuilder()
-                .expireAfterWrite(10, TimeUnit.MINUTES)
+                .expireAfterAccess(10, TimeUnit.MINUTES)
                 .maximumSize(10000)
                 .recordStats();
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
