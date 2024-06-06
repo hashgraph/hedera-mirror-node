@@ -79,9 +79,6 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     private RecordFileService recordFileService;
 
     @Autowired
-    private ContractActionService contractActionService;
-
-    @Autowired
     private ThrottleProperties throttleProperties;
 
     static Stream<BlockType> provideBlockTypes() {

@@ -94,7 +94,6 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
 
     public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params,
                                                         final long estimatedGas,
-                                                        final TracerType tracerType,
                                                         final ContractCallContext ctx) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
@@ -118,7 +117,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.isStatic(),
                 aliasManager.resolveForEvm(params.getReceiver()),
                 params.getReceiver().equals(Address.ZERO),
-                tracerType,
+                params.getTracerType(),
                 ctx);
     }
 
