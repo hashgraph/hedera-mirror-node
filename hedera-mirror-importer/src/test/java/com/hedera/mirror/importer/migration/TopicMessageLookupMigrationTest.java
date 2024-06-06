@@ -160,7 +160,7 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
     }
 
     @Test
-    void multipleActivePartitions(CapturedOutput output) {
+    void recordFileSpansPartitionOnlyMigratesLastPartition(CapturedOutput output) {
         var beforeRecordFilePartition = partitions.getFirst().getTimestampRange();
         var recrodFileRange = Optional.of(
                 Range.closed(beforeRecordFilePartition.lowerEndpoint(), beforeRecordFilePartition.upperEndpoint()));
@@ -169,9 +169,9 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
 
         assertThat(output)
                 .contains("Migrating topic_message_lookup for partition "
-                        + partitions.get(0).getName() + " synchronously")
-                .contains("Migrating topic_message_lookup for partition "
-                        + partitions.get(1).getName() + " synchronously");
+                        + partitions.get(1).getName() + " synchronously")
+                .doesNotContain("Migrating topic_message_lookup for partition "
+                        + partitions.get(0).getName() + " synchronously");
     }
 
     private void migrate(boolean loadData) {
