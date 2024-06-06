@@ -151,7 +151,7 @@ public abstract class ContractCallService {
                 .increment(gasUsed);
     }
 
-    protected void updateGasLimitMetric(final CallServiceParameters params) {
-        gasLimitCounter.withTags("type", params.getCallType().toString()).increment(params.getGas());
+    protected void updateGasLimitMetric(final CallType callType, final long gasLimit) {
+        gasLimitCounter.withTags("type", callType.toString()).increment(gasLimit);
     }
 }
