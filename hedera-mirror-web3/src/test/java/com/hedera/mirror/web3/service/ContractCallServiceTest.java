@@ -17,8 +17,8 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_LIMIT_METRIC;
-import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
+import static com.hedera.mirror.web3.service.ContractCallService.GAS_LIMIT_METRIC;
+import static com.hedera.mirror.web3.service.ContractCallService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
@@ -61,7 +61,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 
-class ContractExecutionServiceTest extends ContractCallTestSetup {
+class ContractCallServiceTest extends ContractCallTestSetup {
 
     @Mock
     private Bucket gasLimitBucket;
@@ -123,7 +123,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters =
                 serviceParametersForExecution(Bytes.EMPTY, ETH_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo("0x");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
 
         assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -139,7 +139,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
         assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -162,10 +162,10 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 Bytes.fromHexString(pureFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, blockType);
 
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
-            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
-            assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
+            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
             assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
         }
 
@@ -190,10 +190,10 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 .persist();
 
         if (blockType.number() < EVM_V_34_BLOCK) { // Before the block the data did not exist yet
-            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
-            assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(expectedResponse);
+            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(expectedResponse);
 
             if (checkGas) {
                 assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -220,7 +220,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 BlockType.of("0x2540BE3FF"));
 
         assertThrows(BlockNumberOutOfRangeException.class, () -> {
-            contractExecutionService.processCall(serviceParameters);
+            contractCallService.processCall(serviceParameters);
         });
         assertGasLimit(serviceParameters);
     }
@@ -235,7 +235,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
         assertGasLimit(serviceParameters);
@@ -250,7 +250,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
         assertGasLimit(serviceParameters);
     }
@@ -267,7 +267,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(viewFuncHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
 
         assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -283,7 +283,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
         assertGasLimit(serviceParameters);
     }
@@ -295,7 +295,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 7L, BlockType.LATEST);
 
-        assertThatCode(() -> contractExecutionService.processCall(serviceParameters)).doesNotThrowAnyException();
+        assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
 
         assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -312,7 +312,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        final var isSuccessful = contractExecutionService.processCall(serviceParameters);
+        final var isSuccessful = contractCallService.processCall(serviceParameters);
         assertThat(isSuccessful).isEqualTo(expectedBalance);
 
         assertGasLimit(serviceParameters);
@@ -327,7 +327,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        final var result = contractExecutionService.processCall(serviceParameters);
+        final var result = contractCallService.processCall(serviceParameters);
         assertThat(result).isEqualTo(expectedBalance);
         assertGasLimit(serviceParameters);
     }
@@ -340,7 +340,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(balanceCall), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        final var result = contractExecutionService.processCall(serviceParameters);
+        final var result = contractCallService.processCall(serviceParameters);
         assertThat(Long.parseLong(result.substring(2), 16)).isNotZero();
         assertGasLimit(serviceParameters);
     }
@@ -355,7 +355,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
         assertGasLimit(serviceParameters);
     }
@@ -370,7 +370,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 0L,
                 BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name())
                 .hasFieldOrPropertyWithValue("detail", "Custom revert message")
@@ -390,7 +390,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 0L,
                 BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_REVERT_EXECUTED.name())
                 .hasFieldOrPropertyWithValue("detail", revertFunctions.errorDetail)
@@ -408,7 +408,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, evm46ValidationCalls.contractAddress, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
         assertGasLimit(serviceParameters);
     }
 
@@ -424,7 +424,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, INTERNAL_CALLS_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(evm46ValidationCalls.data);
         assertGasLimit(serviceParameters);
     }
 
@@ -432,7 +432,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
     void nonExistingFunctionCall() {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString("1ab4f82c"), ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo("0x");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
         assertGasLimit(serviceParameters);
     }
 
@@ -444,7 +444,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(wrongFunctionSignature), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage("CONTRACT_REVERT_EXECUTED")
                 .hasFieldOrPropertyWithValue("data", "0x");
@@ -458,7 +458,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, -5L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
         assertGasLimit(serviceParameters);
     }
@@ -468,7 +468,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString("0x"), RECEIVER_ADDRESS, ETH_CALL, 1500000000000000000L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
         assertGasLimit(serviceParameters);
     }
@@ -480,7 +480,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(transferHbarsInput), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 90L, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo("0x");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
         assertGasLimit(serviceParameters);
     }
 
@@ -499,7 +499,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
         assertGasLimit(serviceParameters);
@@ -517,7 +517,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
         assertGasLimit(serviceParameters);
@@ -540,7 +540,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
         assertGasLimit(serviceParameters);
@@ -555,7 +555,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
                 ETH_CALL_INIT_CONTRACT_BYTES_PATH, ETH_ESTIMATE_GAS, SENDER_ADDRESS);
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
-        assertThat(longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)))
+        assertThat(longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)))
                 .as("result must be within 5-20% bigger than the gas used from the first call")
                 .isGreaterThanOrEqualTo((long) (expectedGasUsed * 1.05)) // expectedGasUsed value increased by 5%
                 .isCloseTo(expectedGasUsed, Percentage.withPercentage(20)); // Maximum percentage
@@ -573,7 +573,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
         assertGasLimit(serviceParameters);
@@ -585,7 +585,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForTopLevelContractCreate(
                 ADDRESS_THIS_CONTRACT_INIT_BYTES_PATH, ETH_CALL, SENDER_ADDRESS);
 
-        String result = contractExecutionService.processCall(serviceParameters);
+        String result = contractCallService.processCall(serviceParameters);
 
         assertGasLimit(serviceParameters);
         assertThat(result)
@@ -600,7 +600,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(stateChangeHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters))
+        assertThat(contractCallService.processCall(serviceParameters))
                 .isEqualTo(
                         "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000046976616e00000000000000000000000000000000000000000000000000000000");
         assertGasLimit(serviceParameters);
@@ -613,7 +613,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(deployHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters))
+        assertThat(contractCallService.processCall(serviceParameters))
                 .isEqualTo(
                         "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000086976616e6976616e000000000000000000000000000000000000000000000000");
         assertGasLimit(serviceParameters);
@@ -630,7 +630,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 Bytes.fromHexString(stateChangeHash), ETH_CALL_CONTRACT_ADDRESS, ETH_CALL, 0, BlockType.LATEST);
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo("0x" + stateChange);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x" + stateChange);
 
         assertGasLimit(serviceParameters);
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
@@ -646,7 +646,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
 
         assertGasLimit(serviceParameters);
@@ -750,7 +750,7 @@ class ContractExecutionServiceTest extends ContractCallTestSetup {
         final var serviceParameters =
                 serviceParametersForExecution(Bytes.EMPTY, address, ETH_CALL, 0L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .hasMessage(CONTRACT_EXECUTION_EXCEPTION.name());
     }

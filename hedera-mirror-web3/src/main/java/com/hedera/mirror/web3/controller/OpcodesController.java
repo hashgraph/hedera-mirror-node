@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/contracts/results")
-@ConditionalOnProperty(prefix = "hedera.mirror.opcode.tracer", name = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "hedera.mirror.web3.opcode.tracer", name = "enabled", havingValue = "true")
 class OpcodesController {
 
     private final OpcodeService opcodeService;
@@ -63,8 +63,7 @@ class OpcodesController {
             @PathVariable TransactionIdOrHashParameter transactionIdOrHash,
             @RequestParam(required = false, defaultValue = "true") boolean stack,
             @RequestParam(required = false, defaultValue = "false") boolean memory,
-            @RequestParam(required = false, defaultValue = "false") boolean storage
-    ) {
+            @RequestParam(required = false, defaultValue = "false") boolean storage) {
         if (!rateLimitBucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
