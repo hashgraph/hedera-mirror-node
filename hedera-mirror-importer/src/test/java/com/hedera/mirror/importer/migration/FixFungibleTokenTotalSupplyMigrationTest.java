@@ -134,10 +134,11 @@ class FixFungibleTokenTotalSupplyMigrationTest extends ImporterIntegrationTest {
                 .customize(tb -> tb.balance(token3.getTotalSupply() - 5000L)
                         .id(new TokenBalance.Id(accountBalanceTimestamp, treasury, token3EntityId)))
                 .persist();
+        // deduped so the timestamp is 100ns earlier
         domainBuilder
                 .tokenBalance()
-                .customize(tb ->
-                        tb.balance(5000L).id(new TokenBalance.Id(accountBalanceTimestamp, account, token3EntityId)))
+                .customize(tb -> tb.balance(5000L)
+                        .id(new TokenBalance.Id(accountBalanceTimestamp - 100, account, token3EntityId)))
                 .persist();
         // no token4 balance distribution in account balance file
 

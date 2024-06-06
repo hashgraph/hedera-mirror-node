@@ -16,30 +16,6 @@
 
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
-import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
-import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
-import io.cucumber.java.en.And;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import lombok.CustomLog;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.api.Assertions;
-
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Objects;
-import java.util.Optional;
-
 import static com.hedera.mirror.test.e2e.acceptance.client.TokenClient.TokenNameEnum.FUNGIBLE;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.ESTIMATE_GAS;
 import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PRECOMPILE;
@@ -86,6 +62,29 @@ import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.asAddress;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.extractTransactionId;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient.AccountNameEnum;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
+import io.cucumber.java.en.And;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.util.Objects;
+import java.util.Optional;
+import lombok.CustomLog;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.assertj.core.api.Assertions;
 
 @CustomLog
 @RequiredArgsConstructor
@@ -263,7 +262,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with request body that contains wrong method signature")
     public void wrongMethodSignatureEstimateCall() {
-        assertContractCallReturnsBadRequest(encodeData(WRONG_METHOD_SIGNATURE), WRONG_METHOD_SIGNATURE.actualGas, mockAddress);
+        assertContractCallReturnsBadRequest(
+                encodeData(WRONG_METHOD_SIGNATURE), WRONG_METHOD_SIGNATURE.actualGas, mockAddress);
     }
 
     @Then("I call estimateGas with wrong encoded parameter")

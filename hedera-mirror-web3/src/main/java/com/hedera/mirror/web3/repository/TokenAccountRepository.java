@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_TOKEN_ACCOUNT;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_TOKEN_ACCOUNT_COUNT;
 
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccount;
@@ -54,6 +55,7 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Abs
             nativeQuery = true)
     Optional<TokenAccount> findById(@Param("id") AbstractTokenAccount.Id id);
 
+    @Cacheable(cacheNames = CACHE_NAME_TOKEN_ACCOUNT_COUNT, cacheManager = CACHE_MANAGER_TOKEN)
     @Query(
             value = "select count(*) as tokenCount, balance>0 as isPositiveBalance from token_account "
                     + "where account_id = ?1 and associated is true group by balance>0",

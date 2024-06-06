@@ -25,7 +25,6 @@ import com.hedera.mirror.rest.model.ContractCallResponse;
 import com.hedera.mirror.rest.model.ContractResult;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.util.ModelBuilder;
-
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.codec.DecoderException;
@@ -85,8 +84,10 @@ abstract class AbstractEstimateFeature extends BaseContractFeature {
      */
     protected void validateGasEstimation(
             String data, ContractMethodInterface actualGasUsed, String solidityAddress, Optional<String> sender) {
-        var contractCallRequest =
-                ModelBuilder.contractCallRequest(actualGasUsed.getActualGas()).data(data).estimate(true).to(solidityAddress);
+        var contractCallRequest = ModelBuilder.contractCallRequest(actualGasUsed.getActualGas())
+                .data(data)
+                .estimate(true)
+                .to(solidityAddress);
         sender.ifPresent(contractCallRequest::from);
 
         ContractCallResponse msgSenderResponse = mirrorClient.contractsCall(contractCallRequest);
@@ -121,16 +122,20 @@ abstract class AbstractEstimateFeature extends BaseContractFeature {
     }
 
     protected void assertContractCallReturnsBadRequest(String data, int actualGas, String contractAddress) {
-        var contractCallRequest =
-                ModelBuilder.contractCallRequest(actualGas).data(data).estimate(true).to(contractAddress);
+        var contractCallRequest = ModelBuilder.contractCallRequest(actualGas)
+                .data(data)
+                .estimate(true)
+                .to(contractAddress);
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(HttpClientErrorException.BadRequest.class);
     }
 
     protected void assertEthCallReturnsBadRequest(String block, String data, String contractAddress, int actualGas) {
-        var contractCallRequest =
-                ModelBuilder.contractCallRequest(actualGas).block(block).data(data).to(contractAddress);
+        var contractCallRequest = ModelBuilder.contractCallRequest(actualGas)
+                .block(block)
+                .data(data)
+                .to(contractAddress);
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(contractCallRequest))
                 .isInstanceOf(HttpClientErrorException.BadRequest.class);

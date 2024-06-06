@@ -19,7 +19,7 @@ import config from './config';
 
 import {
   accountIdCompare,
-  checkAccountId,
+  checkEntityId,
   checkAPIResponseError,
   checkElementsOrder,
   checkMandatoryParams,
@@ -400,7 +400,7 @@ const getTokenBalancesForAccount = async (server) => {
   balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
 
   balancesResult = checkRunner
-    .withCheckSpec(checkAccountId, {accountId, message: 'account was not found'})
+    .withCheckSpec(checkEntityId, {accountId, message: 'account was not found'})
     .run(balances);
   if (!balancesResult.passed) {
     return {url, ...balancesResult};
