@@ -192,7 +192,6 @@ class OpcodesControllerTest {
     @BeforeEach
     void setUp() {
         when(rateLimitBucket.tryConsume(anyLong())).thenReturn(true);
-        when(gasLimitBucket.tryConsume(anyLong())).thenReturn(true);
         when(contractDebugService.processOpcodeCall(
                 callServiceParametersCaptor.capture(),
                 tracerOptionsCaptor.capture()
@@ -429,25 +428,6 @@ class OpcodesControllerTest {
         }
 
         when(rateLimitBucket.tryConsume(1)).thenReturn(false);
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isTooManyRequests())
-                .andExpect(responseBody(new GenericErrorResponse("Rate limit exceeded.")));
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
-    void exceedingGasLimit(final TransactionProviderEnum providerEnum) throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        for (var i = 0; i < 3; i++) {
-            mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                    .andExpect(status().isOk())
-                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
-
-            assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
-        }
-
-        when(gasLimitBucket.tryConsume(anyLong())).thenReturn(false);
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(responseBody(new GenericErrorResponse("Rate limit exceeded.")));
@@ -718,8 +698,7 @@ class OpcodesControllerTest {
                                     final EthereumTransactionRepository ethereumTransactionRepository,
                                     final TransactionRepository transactionRepository,
                                     final ContractResultRepository contractResultRepository,
-                                    final EntityDatabaseAccessor entityDatabaseAccessor,
-                                    final Bucket gasLimitBucket) {
+                                    final EntityDatabaseAccessor entityDatabaseAccessor) {
             return new OpcodeServiceImpl(
                     recordFileService,
                     contractDebugService,
@@ -727,9 +706,7 @@ class OpcodesControllerTest {
                     ethereumTransactionRepository,
                     transactionRepository,
                     contractResultRepository,
-                    entityDatabaseAccessor,
-                    gasLimitBucket
-            );
+                    entityDatabaseAccessor);
         }
     }
 }

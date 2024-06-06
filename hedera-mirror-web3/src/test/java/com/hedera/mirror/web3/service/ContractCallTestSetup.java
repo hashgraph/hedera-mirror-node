@@ -21,6 +21,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
@@ -1061,7 +1062,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .gas(gasLimit)
                 .isStatic(false)
                 .callType(callType)
-                .isEstimate(CallType.ETH_ESTIMATE_GAS == callType)
+                .isEstimate(ETH_ESTIMATE_GAS == callType)
                 .block(block)
                 .build();
     }
@@ -1079,7 +1080,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .gas(15_000_000L)
                 .isStatic(false)
                 .callType(callType)
-                .isEstimate(CallType.ETH_ESTIMATE_GAS == callType)
+                .isEstimate(ETH_ESTIMATE_GAS == callType)
                 .block(BlockType.LATEST)
                 .build();
     }
