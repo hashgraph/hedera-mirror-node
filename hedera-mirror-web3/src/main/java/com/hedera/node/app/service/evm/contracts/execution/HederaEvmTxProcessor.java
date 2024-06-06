@@ -20,7 +20,6 @@ import static com.hedera.mirror.web3.common.PrecompileContext.PRECOMPILE_CONTEXT
 
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.PrecompileContext;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
@@ -160,9 +159,6 @@ public class HederaEvmTxProcessor {
 
         tracer.finalizeOperation(initialFrame);
 
-        if (tracer instanceof OpcodeTracer opcodeTracer) {
-            contractCallContext.setOpcodes(opcodeTracer.getOpcodes());
-        }
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
             return HederaEvmTransactionProcessingResult.successful(
