@@ -157,7 +157,7 @@ class LinkFactoryTest {
                         List.of(transaction),
                         PageRequest.ofSize(1),
                         t -> Map.of("timestamp", t.getConsensusTimestamp())))
-                .returns("/api?timestamp=gt:123456789.000000123", Links::getNext);
+                .returns("/api?timestamp=123456789.000000123", Links::getNext);
     }
 
     @DisplayName("Get pagination links unknown parameter")

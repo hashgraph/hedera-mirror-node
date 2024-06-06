@@ -64,14 +64,22 @@ class LinkFactoryImpl implements LinkFactory {
         var sortOrders = pageable.getSort();
         var primarySort = Iterables.getFirst(sortOrders, null);
         var order = primarySort == null ? Direction.ASC : primarySort.getDirection();
-        var lastSort = Iterables.getLast(sortOrders, null);
-        // Only the last sort param's value is exclusive
-        var exclusiveParam = lastSort != null ? lastSort.getProperty() : null;
         var builder = UriComponentsBuilder.fromPath(request.getRequestURI());
         var paramsMap = request.getParameterMap();
         var paginationParamsMap = extractor.apply(lastItem);
         var linkedMultiValueMap = new LinkedMultiValueMap<String, String>();
 
+        addParamMapToLink(paramsMap, paginationParamsMap, order, linkedMultiValueMap);
+        addExtractedParamsToLink(sortOrders, paginationParamsMap, order, linkedMultiValueMap);
+        builder.queryParams(linkedMultiValueMap);
+        return builder.toUriString();
+    }
+
+    private void addParamMapToLink(
+            Map<String, String[]> paramsMap,
+            Map<String, String> paginationParamsMap,
+            Direction order,
+            LinkedMultiValueMap<String, String> linkedMultiValueMap) {
         for (var entry : paramsMap.entrySet()) {
             var key = entry.getKey();
             if (!paginationParamsMap.containsKey(key)) {
@@ -82,21 +90,6 @@ class LinkFactoryImpl implements LinkFactory {
                 addQueryParamToLink(entry, order, linkedMultiValueMap);
             }
         }
-
-        var sortKeys = sortOrders.map(Sort.Order::getProperty).toList();
-        for (var entry : paginationParamsMap.entrySet()) {
-            var key = entry.getKey();
-            if (linkedMultiValueMap.containsKey(key) && containsEq(linkedMultiValueMap.get(key))) {
-                // This query parameter has already been added with an eq
-                continue;
-            }
-
-            var exclusive = isExclusive(exclusiveParam, sortKeys, key, linkedMultiValueMap);
-            linkedMultiValueMap.add(key, getOperator(order, exclusive) + ":" + entry.getValue());
-        }
-
-        builder.queryParams(linkedMultiValueMap);
-        return builder.toUriString();
     }
 
     private void addQueryParamToLink(
@@ -115,6 +108,38 @@ class LinkFactoryImpl implements LinkFactory {
         }
     }
 
+    private void addExtractedParamsToLink(
+            Sort sort,
+            Map<String, String> paginationParamsMap,
+            Direction order,
+            LinkedMultiValueMap<String, String> linkedMultiValueMap) {
+        var sortKeys = sort.map(Sort.Order::getProperty).toList();
+        if (sortKeys.isEmpty()) {
+            for (var entry : paginationParamsMap.entrySet()) {
+                linkedMultiValueMap.add(entry.getKey(), entry.getValue());
+            }
+            return;
+        }
+
+        for (int i = 0; i < sortKeys.size(); i++) {
+            var key = sortKeys.get(i);
+            if (linkedMultiValueMap.containsKey(key) && containsEq(linkedMultiValueMap.get(key))) {
+                // This query parameter has already been added with an eq
+                continue;
+            }
+
+            var entry = paginationParamsMap.get(key);
+            var exclusive = true;
+            if (sortKeys.size() > i + 1) {
+                var succeedingKey = sortKeys.get(i + 1);
+                var succeedingEntry = linkedMultiValueMap.get(succeedingKey);
+                exclusive = containsEq(succeedingEntry);
+            }
+
+            linkedMultiValueMap.add(key, getOperator(order, exclusive) + ":" + entry);
+        }
+    }
+
     private static RangeOperator getOperator(Direction order, boolean exclusive) {
         return switch (order) {
             case ASC -> exclusive ? RangeOperator.GT : RangeOperator.GTE;
@@ -128,27 +153,6 @@ class LinkFactoryImpl implements LinkFactory {
             case ASC -> normalized.startsWith("gt:") || normalized.startsWith("gte:");
             case DESC -> normalized.startsWith("lt:") || normalized.startsWith("lte:");
         };
-    }
-
-    private static boolean isExclusive(
-            String exclusiveParam,
-            List<String> sortKeys,
-            String key,
-            LinkedMultiValueMap<String, String> linkedMultiValueMap) {
-        var exclusive = exclusiveParam == null || key.equals(exclusiveParam);
-        if (!exclusive) {
-            for (int i = 0; i < sortKeys.size() - 1; i++) {
-                if (sortKeys.get(i).equals(key)) {
-                    var succeedingKey = sortKeys.get(i + 1);
-                    if (containsEq(linkedMultiValueMap.get(succeedingKey))) {
-                        exclusive = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return exclusive;
     }
 
     private static boolean containsEq(List<String> values) {
