@@ -17,7 +17,12 @@
 package com.hedera.mirror.test.e2e.acceptance.steps;
 
 import static com.hedera.mirror.rest.model.TransactionTypes.CRYPTOCREATEACCOUNT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.AbstractFeature.ContractResource.PARENT_CONTRACT;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.CREATE_CHILD;
+import static com.hedera.mirror.test.e2e.acceptance.steps.EstimateFeature.ContractMethods.GET_BYTE_CODE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.web3j.crypto.transaction.type.TransactionType.EIP1559;
+import static org.web3j.crypto.transaction.type.TransactionType.EIP2930;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
@@ -33,18 +38,19 @@ import com.hedera.mirror.test.e2e.acceptance.client.EthereumClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
-import com.hedera.mirror.test.e2e.acceptance.util.ethereum.EthTxData;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Comparator;
+import java.util.Objects;
 import lombok.CustomLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.web3j.crypto.transaction.type.TransactionType;
 
 @CustomLog
-public class EthereumFeature extends BaseContractFeature {
+public class EthereumFeature extends AbstractEstimateFeature {
 
     @Autowired
     protected EthereumClient ethereumClient;
@@ -101,7 +107,11 @@ public class EthereumFeature extends BaseContractFeature {
 
     @Given("I successfully create contract by Legacy ethereum transaction")
     public void createNewERCtestContract() {
-        deployedParentContract = ethereumContractCreate(ContractResource.PARENT_CONTRACT);
+        deployedParentContract = ethereumContractCreate(PARENT_CONTRACT);
+
+        gasConsumedSelector = Objects.requireNonNull(mirrorClient
+                .getContractInfo(deployedParentContract.contractId().toSolidityAddress())
+                .getBytecode());
     }
 
     @Then("the mirror node REST API should return status {int} for the eth contract creation transaction")
@@ -129,12 +139,9 @@ public class EthereumFeature extends BaseContractFeature {
     public void callContract() {
         ContractFunctionParameters parameters = new ContractFunctionParameters().addUint256(BigInteger.valueOf(1000));
 
-        executeEthereumTransaction(
-                deployedParentContract.contractId(),
-                "createChild",
-                parameters,
-                null,
-                EthTxData.EthTransactionType.EIP1559);
+        executeEthereumTransaction(deployedParentContract.contractId(), "createChild", parameters, EIP1559);
+
+        gasConsumedSelector = encodeDataToByteArray(PARENT_CONTRACT, CREATE_CHILD, BigInteger.valueOf(1000));
     }
 
     @Then("the mirror node REST API should verify the ethereum called contract function")
@@ -146,12 +153,20 @@ public class EthereumFeature extends BaseContractFeature {
 
     @Given("I successfully call function using EIP-2930 ethereum transaction")
     public void getChildBytecode() {
-        var executeContractResult = executeEthereumTransaction(
-                deployedParentContract.contractId(), "getBytecode", null, null, EthTxData.EthTransactionType.EIP2930);
+        var executeContractResult =
+                executeEthereumTransaction(deployedParentContract.contractId(), "getBytecode", null, EIP2930);
 
         childContractBytecodeFromParent =
                 executeContractResult.contractFunctionResult().getBytes(0);
         assertThat(childContractBytecodeFromParent).isNotNull();
+
+        gasConsumedSelector = encodeDataToByteArray(PARENT_CONTRACT, GET_BYTE_CODE);
+    }
+
+    @Then("the mirror node contract results API should return an accurate gas consumed")
+    public void verifyGasConsumedIsCorrect() {
+        String txId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        verifyGasConsumed(txId);
     }
 
     public DeployedContract ethereumContractCreate(ContractResource contractResource) {
@@ -162,17 +177,7 @@ public class EthereumFeature extends BaseContractFeature {
             var fileId = persistContractBytes(fileContent);
 
             networkTransactionResponse = ethereumClient.createContract(
-                    ethereumSignerPrivateKey,
-                    fileId,
-                    fileContent,
-                    ethereumClient
-                            .getSdkClient()
-                            .getAcceptanceTestProperties()
-                            .getFeatureProperties()
-                            .getMaxContractFunctionGas(),
-                    contractResource.getInitialBalance() == 0
-                            ? null
-                            : Hbar.fromTinybars(contractResource.getInitialBalance()));
+                    ethereumSignerPrivateKey, fileId, fileContent, contractResource.getInitialBalance());
             ContractId contractId = verifyCreateContractNetworkResponse();
             return new DeployedContract(fileId, contractId, compiledSolidityArtifact);
         } catch (IOException e) {
@@ -182,24 +187,10 @@ public class EthereumFeature extends BaseContractFeature {
     }
 
     private ContractClient.ExecuteContractResult executeEthereumTransaction(
-            ContractId contractId,
-            String functionName,
-            ContractFunctionParameters parameters,
-            Hbar payableAmount,
-            EthTxData.EthTransactionType type) {
+            ContractId contractId, String functionName, ContractFunctionParameters parameters, TransactionType type) {
 
-        ContractClient.ExecuteContractResult executeContractResult = ethereumClient.executeContract(
-                ethereumSignerPrivateKey,
-                contractId,
-                contractClient
-                        .getSdkClient()
-                        .getAcceptanceTestProperties()
-                        .getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                functionName,
-                parameters,
-                payableAmount,
-                type);
+        ContractClient.ExecuteContractResult executeContractResult =
+                ethereumClient.executeContract(ethereumSignerPrivateKey, contractId, functionName, parameters, type);
 
         networkTransactionResponse = executeContractResult.networkTransactionResponse();
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();

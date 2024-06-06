@@ -21,20 +21,24 @@ import * as utils from './utils';
 import accountTests from './account_tests';
 import balanceTests from './balance_tests';
 import blockTests from './block_tests';
+import contractTests from './contracts_tests';
 import networkTests from './network_tests';
+import scheduleTests from './schedule_tests';
 import stateproofTests from './stateproof_tests';
 import tokenTests from './token_tests';
-import topicmessageTests from './topicmessage_tests';
+import topicTests from './topic_tests.js';
 import transactionTests from './transaction_tests';
 
 const allTestModules = [
   accountTests,
   balanceTests,
   blockTests,
+  contractTests,
   networkTests,
+  scheduleTests,
   stateproofTests,
   tokenTests,
-  topicmessageTests,
+  topicTests,
   transactionTests,
 ];
 

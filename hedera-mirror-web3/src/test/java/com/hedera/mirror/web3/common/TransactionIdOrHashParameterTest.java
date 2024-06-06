@@ -39,8 +39,7 @@ class TransactionIdOrHashParameterTest {
                 Arguments.of("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", true),
                 Arguments.of("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", true),
                 Arguments.of("0xGHIJKL", false),
-                Arguments.of(null, false)
-        );
+                Arguments.of(null, false));
     }
 
     private static Stream<Arguments> provideTransactionIds() {
@@ -48,8 +47,7 @@ class TransactionIdOrHashParameterTest {
                 Arguments.of("0.0.3-1234567890-123", true),
                 Arguments.of("0.0.3-1234567890-1234567890", false),
                 Arguments.of("0.0.3-12345678901234567890-123", false),
-                Arguments.of(null, false)
-        );
+                Arguments.of(null, false));
     }
 
     @ParameterizedTest
@@ -81,9 +79,6 @@ class TransactionIdOrHashParameterTest {
         assertThat(parameter)
                 .isNotNull()
                 .isInstanceOf(TransactionIdParameter.class)
-                .isEqualTo(new TransactionIdParameter(
-                        EntityId.of(0, 0, 3),
-                        Instant.ofEpochSecond(1234567890, 123)
-                ));
+                .isEqualTo(new TransactionIdParameter(EntityId.of(0, 0, 3), Instant.ofEpochSecond(1234567890, 123)));
     }
 }

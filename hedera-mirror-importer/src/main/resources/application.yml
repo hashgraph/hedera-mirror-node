@@ -2,7 +2,7 @@ hedera:
   mirror:
     importer:
       db:
-        connectionInitSql: set temp_buffers='256MB'; set timezone TO 'UTC';
+        connectionInitSql: set timezone TO 'UTC';
         host: 127.0.0.1
         loadBalance: true
         name: mirror_node

@@ -31,34 +31,44 @@ public class FixFungibleTokenTotalSupplyMigration extends RepeatableMigration {
 
     private static final String SQL =
             """
-            with snapshot_timestamp as (
+            with last as (
+              select max(consensus_end) as consensus_end from record_file
+            ), snapshot_timestamp as (
               select max(consensus_timestamp) as timestamp
               from account_balance
-              where consensus_timestamp <= (select max(consensus_end) from record_file)
+              where consensus_timestamp <= (select consensus_end from last)
+                and consensus_timestamp > (select consensus_end from last) - 2678400000000000
                and account_id = 2
-            ), token_balance_sum as (
-              select token_id, sum(balance) amount
+            ), token_balance_snapshot as (
+              select distinct on (account_id, token_id) token_id, balance
               from token_balance
-              where consensus_timestamp = (select timestamp from snapshot_timestamp)
+              where consensus_timestamp <= (select timestamp from snapshot_timestamp)
+                and consensus_timestamp > (select timestamp from snapshot_timestamp) - 2678400000000000
+              order by account_id, token_id, consensus_timestamp desc
+            ), token_balance_sum as (
+              select token_id, sum(balance) as amount
+              from token_balance_snapshot
               group by token_id
             ), initial as (
               select tb.*
-              from token_balance_sum tb
-              join token tk on tk.token_id = tb.token_id
+              from token_balance_sum as tb
+              join token as tk using (token_id)
               where tk.type = 'FUNGIBLE_COMMON'
             ), change as (
-              select token_id, sum(amount) amount
+              select token_id, sum(amount) as amount
               from token_transfer
               where consensus_timestamp > (select timestamp from snapshot_timestamp)
               group by token_id
             ), final as (
-              select coalesce(i.token_id, c.token_id) token_id, coalesce(i.amount, 0) + coalesce(c.amount, 0) amount
-              from initial i
-              full outer join change c on i.token_id = c.token_id
+              select
+                coalesce(i.token_id, c.token_id) as token_id,
+                coalesce(i.amount, 0) + coalesce(c.amount, 0) as amount
+              from initial as i
+              full outer join change as c using (token_id)
             )
-            update token t
+            update token as t
             set total_supply = amount
-            from final f
+            from final as f
             where t.token_id = f.token_id
             """;
 
@@ -84,6 +94,6 @@ public class FixFungibleTokenTotalSupplyMigration extends RepeatableMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.39.0"); // the version which adds token table
+        return MigrationVersion.fromVersion("1.89.2"); // the version which dedups balance tables
     }
 }

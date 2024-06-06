@@ -53,10 +53,17 @@ class EntityRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByEvmAddressAndDeletedIsFalseSuccessfulCall() {
-        Entity entity = domainBuilder.entity().persist();
-        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity.getEvmAddress()))
-                .get()
-                .isEqualTo(entity);
+        var entity1 = domainBuilder.entity().persist();
+        var entity2 = domainBuilder.entity().persist();
+        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity1.getEvmAddress()))
+                .contains(entity1);
+
+        // Validate entity1 is cached and entity2 can't be found since it's not cached
+        entityRepository.deleteAll();
+        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity1.getEvmAddress()))
+                .contains(entity1);
+        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity2.getEvmAddress()))
+                .isEmpty();
     }
 
     @Test

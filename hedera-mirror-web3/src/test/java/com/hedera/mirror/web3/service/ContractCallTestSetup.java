@@ -502,7 +502,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected FunctionEncodeDecoder functionEncodeDecoder;
 
     @Autowired
-    protected ContractExecutionService contractExecutionService;
+    protected ContractExecutionService contractCallService;
 
     @Autowired
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
@@ -1011,7 +1011,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final Address contractAddress,
             final CallType callType,
             final Long value) {
-        Bytes callData = functionEncodeDecoder.functionHashFor(function.getName(), contractAbiPath, function.getFunctionParameters());
+        Bytes callData = functionEncodeDecoder.functionHashFor(
+                function.getName(), contractAbiPath, function.getFunctionParameters());
 
         HederaEvmAccount sender;
         if (function.getBlock() != BlockType.LATEST) {

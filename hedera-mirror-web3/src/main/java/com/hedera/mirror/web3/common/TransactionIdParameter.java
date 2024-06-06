@@ -22,9 +22,11 @@ import java.time.Instant;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public record TransactionIdParameter(EntityId payerAccountId, Instant validStart) implements TransactionIdOrHashParameter {
+public record TransactionIdParameter(EntityId payerAccountId, Instant validStart)
+        implements TransactionIdOrHashParameter {
 
-    private static final Pattern TRANSACTION_ID_PATTERN = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
+    private static final Pattern TRANSACTION_ID_PATTERN =
+            Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)-(\\d{1,19})-(\\d{1,9})$");
 
     public static TransactionIdParameter valueOf(String transactionId) throws InvalidParametersException {
         if (transactionId == null) {
@@ -32,7 +34,7 @@ public record TransactionIdParameter(EntityId payerAccountId, Instant validStart
         }
 
         Matcher matcher = TRANSACTION_ID_PATTERN.matcher(transactionId);
-        if (!matcher.matches() || matcher.groupCount() != 5) {
+        if (!matcher.matches()) {
             return null;
         }
 

@@ -63,8 +63,7 @@ class OpcodesController {
             @PathVariable TransactionIdOrHashParameter transactionIdOrHash,
             @RequestParam(required = false, defaultValue = "true") boolean stack,
             @RequestParam(required = false, defaultValue = "false") boolean memory,
-            @RequestParam(required = false, defaultValue = "false") boolean storage
-    ) {
+            @RequestParam(required = false, defaultValue = "false") boolean storage) {
         if (!rateLimitBucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
