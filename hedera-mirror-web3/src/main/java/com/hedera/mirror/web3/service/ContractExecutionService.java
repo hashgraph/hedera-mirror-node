@@ -56,7 +56,8 @@ public class ContractExecutionService extends ContractCallService {
             var stringResult = "";
 
             try {
-                updateGasLimitMetric(params);
+                updateGasLimitMetric(params.getCallType(), params.getGas());
+
                 Bytes result;
                 if (params.isEstimate()) {
                     // eth_estimateGas initialization - historical timestamp is Optional.empty()
