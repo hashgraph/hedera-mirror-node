@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
+class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
     private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
         return Arrays.stream(ErcContractReadOnlyFunctions.values())
@@ -69,7 +69,7 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
 
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
@@ -89,10 +89,10 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
 
         // Before the block the data did not exist yet
         if (blockNumber.number() < EVM_V_34_BLOCK) {
-            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
-            assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
         }
     }
 
@@ -112,12 +112,12 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
         // Block number (Long.MAX_VALUE - 1) does not exist in the DB and is after the
         // latest block available in the DB => returning error
         if (blockNumber > latestBlockNumber) {
-            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberOutOfRangeException.class);
         } else if (blockNumber == 51) {
             // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but it is before the latest
             // block available in the DB => throw an exception
-            assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                     .isInstanceOf(BlockNumberNotFoundException.class);
         }
     }
@@ -135,7 +135,7 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -150,7 +150,7 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -166,7 +166,7 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -180,7 +180,7 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution(
                 functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractExecutionService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
@@ -196,7 +196,7 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
         final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractExecutionService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
                 .isTrue();
     }
 
@@ -206,7 +206,7 @@ class ContractExecutionServiceERCTokenTest extends ContractCallTestSetup {
                 "delegateTransfer", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
         final var serviceParameters =
                 serviceParametersForExecution(functionHash, ERC_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-        assertThat(contractExecutionService.processCall(serviceParameters)).isEqualTo("0x");
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
     @RequiredArgsConstructor
