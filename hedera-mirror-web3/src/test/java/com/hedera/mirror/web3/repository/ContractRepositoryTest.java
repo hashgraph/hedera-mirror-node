@@ -30,10 +30,18 @@ class ContractRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findRuntimeBytecodeSuccessfulCall() {
-        Contract contract = domainBuilder.contract().persist();
-        assertThat(contractRepository.findRuntimeBytecode(contract.getId()))
+        Contract contract1 = domainBuilder.contract().persist();
+        Contract contract2 = domainBuilder.contract().persist();
+        assertThat(contractRepository.findRuntimeBytecode(contract1.getId()))
                 .get()
-                .isEqualTo(contract.getRuntimeBytecode());
+                .isEqualTo(contract1.getRuntimeBytecode());
+
+        contractRepository.deleteAll();
+
+        assertThat(contractRepository.findRuntimeBytecode(contract1.getId()))
+                .get()
+                .isEqualTo(contract1.getRuntimeBytecode());
+        assertThat(contractRepository.findRuntimeBytecode(contract2.getId())).isEmpty();
     }
 
     @Test

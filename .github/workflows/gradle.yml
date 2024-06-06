@@ -57,7 +57,7 @@ jobs:
             schema: v2
           - project: test
             schema: v2
-    timeout-minutes: 20
+    timeout-minutes: 40 # increase it from 20 minutes since some jobs often run longer on self-hosted runners
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
