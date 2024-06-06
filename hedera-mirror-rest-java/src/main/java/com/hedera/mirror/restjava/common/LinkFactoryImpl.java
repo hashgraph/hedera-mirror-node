@@ -27,8 +27,10 @@ import java.util.Map.Entry;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -68,33 +70,48 @@ class LinkFactoryImpl implements LinkFactory {
         var builder = UriComponentsBuilder.fromPath(request.getRequestURI());
         var paramsMap = request.getParameterMap();
         var paginationParamsMap = extractor.apply(lastItem);
+        var linkedMultiValueMap = new LinkedMultiValueMap<String, String>();
 
         for (var entry : paramsMap.entrySet()) {
             var key = entry.getKey();
             if (!paginationParamsMap.containsKey(key)) {
-                builder.queryParam(key, (Object[]) entry.getValue());
+                for (var value : entry.getValue()) {
+                    linkedMultiValueMap.add(entry.getKey(), value);
+                }
             } else {
-                addQueryParamToLink(entry, builder, order);
+                addQueryParamToLink(entry, order, linkedMultiValueMap);
             }
         }
 
+        var sortKeys = sortOrders.map(Sort.Order::getProperty).toList();
         for (var entry : paginationParamsMap.entrySet()) {
             var key = entry.getKey();
-            var exclusive = exclusiveParam == null || key.equals(exclusiveParam);
-            builder.queryParam(key, getOperator(order, exclusive) + ":" + entry.getValue());
+            if (linkedMultiValueMap.containsKey(key) && containsEq(linkedMultiValueMap.get(key))) {
+                // This query parameter has already been added with an eq
+                continue;
+            }
+
+            var exclusive = isExclusive(exclusiveParam, sortKeys, key, linkedMultiValueMap);
+            linkedMultiValueMap.add(key, getOperator(order, exclusive) + ":" + entry.getValue());
         }
 
+        builder.queryParams(linkedMultiValueMap);
         return builder.toUriString();
     }
 
-    private void addQueryParamToLink(Entry<String, String[]> entry, UriComponentsBuilder builder, Direction order) {
+    private void addQueryParamToLink(
+            Entry<String, String[]> entry, Direction order, LinkedMultiValueMap<String, String> linkedMultiValueMap) {
         for (var value : entry.getValue()) {
             // Skip if it's in the same direction as the order, the new bound should come from the extracted value
             if (isSameDirection(order, value)) {
                 continue;
             }
 
-            builder.queryParam(entry.getKey(), value);
+            linkedMultiValueMap.add(entry.getKey(), value);
+            if (hasEq(value)) {
+                // Only 1 eq is allowed, return without adding additional values
+                return;
+            }
         }
     }
 
@@ -111,5 +128,43 @@ class LinkFactoryImpl implements LinkFactory {
             case ASC -> normalized.startsWith("gt:") || normalized.startsWith("gte:");
             case DESC -> normalized.startsWith("lt:") || normalized.startsWith("lte:");
         };
+    }
+
+    private static boolean isExclusive(
+            String exclusiveParam,
+            List<String> sortKeys,
+            String key,
+            LinkedMultiValueMap<String, String> linkedMultiValueMap) {
+        var exclusive = exclusiveParam == null || key.equals(exclusiveParam);
+        if (!exclusive) {
+            for (int i = 0; i < sortKeys.size() - 1; i++) {
+                if (sortKeys.get(i).equals(key)) {
+                    var succeedingKey = sortKeys.get(i + 1);
+                    if (containsEq(linkedMultiValueMap.get(succeedingKey))) {
+                        exclusive = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return exclusive;
+    }
+
+    private static boolean containsEq(List<String> values) {
+        if (values != null) {
+            for (var value : values) {
+                if (hasEq(value)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean hasEq(String value) {
+        var normalized = value.toLowerCase();
+        return normalized.startsWith("eq:") || (!normalized.startsWith("gt") && !normalized.startsWith("lt"));
     }
 }
