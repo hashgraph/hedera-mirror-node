@@ -332,14 +332,13 @@ const getAccounts = async (req, res) => {
   const includeBalance = getBalanceParamValue(req.query);
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
   const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'public_key'));
-  const tokenBalanceQuery =
-    entityAccountQuery && entityAccountQuery.query
-      ? {
-          query: entityAccountQuery.query.replace('e.id', 'account_id'),
-          params: [...entityAccountQuery.params],
-          limit: tokenBalanceResponseLimit.multipleAccounts,
-        }
-      : {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts};
+  const tokenBalanceQuery = {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts};
+
+  if (entityAccountQuery && entityAccountQuery.query) {
+    tokenBalanceQuery.query += ` and ${entityAccountQuery.query.replace('e.id', 'account_id')}`;
+    tokenBalanceQuery.params = [...entityAccountQuery.params];
+  }
+
   const {query, params} = getAccountQuery(
     entityAccountQuery,
     tokenBalanceQuery,
