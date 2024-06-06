@@ -36,9 +36,6 @@ import org.apache.tuweni.bytes.Bytes;
 @Named
 public class ContractExecutionService extends ContractCallService {
 
-    static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
-    static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
-
     private final BinaryGasEstimator binaryGasEstimator;
 
     public ContractExecutionService(
