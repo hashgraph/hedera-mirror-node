@@ -365,6 +365,7 @@ class OpcodesControllerTest {
         assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
+
     @ParameterizedTest
     @MethodSource("transactionsWithDifferentReceiverAddresses")
     void callWithDifferentReceiverAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
