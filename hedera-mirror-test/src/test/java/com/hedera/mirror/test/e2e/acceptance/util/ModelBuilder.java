@@ -41,7 +41,8 @@ public class ModelBuilder {
     }
 
     public static ContractCallRequest contractCallRequest(final int actualGasUsed) {
-        final Long calculatedContractCallGas = Math.round(actualGasUsed * (1 + (DEFAULT_PERCENTAGE_OF_ACTUAL_GAS_USED / 100.0)));
+        final Long calculatedContractCallGas =
+                Math.round(actualGasUsed * (1 + (DEFAULT_PERCENTAGE_OF_ACTUAL_GAS_USED / 100.0)));
         final ContractCallRequest contractCallRequest = contractCallRequest();
         contractCallRequest.setGas(calculatedContractCallGas);
         return contractCallRequest;

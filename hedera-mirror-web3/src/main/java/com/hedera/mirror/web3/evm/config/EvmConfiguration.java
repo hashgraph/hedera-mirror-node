@@ -80,22 +80,26 @@ import org.springframework.context.annotation.Primary;
 @RequiredArgsConstructor
 public class EvmConfiguration {
 
+    public static final String CACHE_MANAGER_CONTRACT = "contract";
+    public static final String CACHE_MANAGER_CONTRACT_STATE = "contractState";
     public static final String CACHE_MANAGER_ENTITY = "entity";
     public static final String CACHE_MANAGER_RECORD_FILE_LATEST = "recordFileLatest";
     public static final String CACHE_MANAGER_RECORD_FILE_EARLIEST = "recordFileEarliest";
     public static final String CACHE_MANAGER_RECORD_FILE_INDEX = "recordFileIndex";
-    public static final String CACHE_MANAGER_CONTRACT_STATE = "contractState";
     public static final String CACHE_MANAGER_SYSTEM_FILE = "systemFile";
     public static final String CACHE_MANAGER_TOKEN = "token";
     public static final String CACHE_NAME = "default";
+    public static final String CACHE_NAME_CONTRACT = "contract";
+    public static final String CACHE_NAME_EVM_ADDRESS = "evmAddress";
     public static final String CACHE_NAME_EXCHANGE_RATE = "exchangeRate";
-    public static final String CACHE_NAME_FEE_SCHEDULE = "fee_schedule";
+    public static final String CACHE_NAME_FEE_SCHEDULE = "feeSchedule";
     public static final String CACHE_NAME_NFT = "nft";
     public static final String CACHE_NAME_NFT_ALLOWANCE = "nftAllowance";
     public static final String CACHE_NAME_RECORD_FILE_LATEST = "latest";
     public static final String CACHE_NAME_RECORD_FILE_LATEST_INDEX = "latestIndex";
     public static final String CACHE_NAME_TOKEN = "token";
     public static final String CACHE_NAME_TOKEN_ACCOUNT = "tokenAccount";
+    public static final String CACHE_NAME_TOKEN_ACCOUNT_COUNT = "tokenAccountCount";
     public static final String CACHE_NAME_TOKEN_ALLOWANCE = "tokenAllowance";
     public static final SemanticVersion EVM_VERSION_0_30 = SemanticVersion.parse("0.30.0");
     public static final SemanticVersion EVM_VERSION_0_34 = SemanticVersion.parse("0.34.0");
@@ -114,6 +118,14 @@ public class EvmConfiguration {
     private final BiPredicate<Address, MessageFrame> addressValidator;
     private final Predicate<Address> systemAccountDetector;
 
+    @Bean(CACHE_MANAGER_CONTRACT)
+    CacheManager cacheManagerContract() {
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME_CONTRACT));
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getContract());
+        return caffeineCacheManager;
+    }
+
     @Bean(CACHE_MANAGER_CONTRACT_STATE)
     CacheManager cacheManagerState() {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
@@ -125,7 +137,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_ENTITY)
     CacheManager cacheManagerEntity() {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME));
+        caffeineCacheManager.setCacheNames(Set.of(CACHE_NAME, CACHE_NAME_EVM_ADDRESS));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getEntity());
         return caffeineCacheManager;
     }
@@ -138,6 +150,7 @@ public class EvmConfiguration {
                 CACHE_NAME_NFT_ALLOWANCE,
                 CACHE_NAME_TOKEN,
                 CACHE_NAME_TOKEN_ACCOUNT,
+                CACHE_NAME_TOKEN_ACCOUNT_COUNT,
                 CACHE_NAME_TOKEN_ALLOWANCE));
         caffeineCacheManager.setCacheSpecification(cacheProperties.getToken());
         return caffeineCacheManager;

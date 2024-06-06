@@ -261,7 +261,7 @@ const checkRespArrayLength = (elements, option) => {
   return {passed: true};
 };
 
-const checkAccountId = (elements, option) => {
+const checkEntityId = (elements, option) => {
   const {accountId, message} = option;
   const element = Array.isArray(elements) ? elements[0] : elements;
   if (element.account !== accountId) {
@@ -451,7 +451,7 @@ export {
   ServerTestResult,
   accountIdCompare,
   checkAPIResponseError,
-  checkAccountId,
+  checkEntityId,
   checkElementsOrder,
   checkMandatoryParams,
   checkResourceFreshness,

@@ -21,8 +21,8 @@ spec:
       http:
         paths:
         {{- range .paths }}
-          - path: {{ . }}
-            pathType: ImplementationSpecific
+          - path: {{ .path }}
+            pathType: {{ .type | default "ImplementationSpecific" }}
             backend:
               service:
                 name: {{ $fullName }}
