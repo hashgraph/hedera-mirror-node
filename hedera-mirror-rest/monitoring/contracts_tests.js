@@ -97,7 +97,7 @@ const postContractCall = async (server) => {
           "gasPrice": 100000000,
           "to": "0x0000000000000000000000000000000000000168"
     }`;
-  const singleContract = await fetchAPIResponse(url, body);
+  const singleContract = await fetchAPIResponse(url, '', undefined, body);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -234,19 +234,22 @@ const getContractResultsLogs = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getContractState = async (server) => {
-  let {url, contracts, result} = await getContractsList(server);
+  let contractId = config[resource].contractId;
+  if (!contractId) {
+    let {url, contracts, result} = await getContractsList(server);
 
-  if (!result.passed) {
-    return {url, ...result};
+    if (!result.passed) {
+      return {url, ...result};
+    }
+    contractId = _.max(_.map(contracts, (contract) => contract.contract_id));
   }
-
   const contractStateParams = ['address', 'contract_id', 'timestamp', 'slot', 'value'];
   const jsonStateRespKey = 'state';
-  const contract = _.max(_.map(contracts, (contract) => contract.contract_id));
-  url = getUrl(server, `${contractsPath}/${contract}/state`);
+
+  let url = getUrl(server, `${contractsPath}/${contractId}/state`);
   const contractState = await fetchAPIResponse(url, jsonStateRespKey);
 
-  result = new CheckRunner()
+  let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'contracts state is undefined'})
     .withCheckSpec(checkMandatoryParams, {
