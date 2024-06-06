@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.exception;
+package com.hedera.mirror.web3.repository;
 
-public class BlockNumberNotFoundException extends InvalidInputException {
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import java.util.Optional;
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
-    public static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
+@Repository
+public interface TransactionRepository extends CrudRepository<Transaction, Long> {
 
-    public BlockNumberNotFoundException() {
-        super(UNKNOWN_BLOCK_NUMBER);
-    }
+    Optional<Transaction> findByPayerAccountIdAndValidStartNs(EntityId payerAccountId, long validStartNs);
 }
