@@ -1907,16 +1907,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected EntityId autoRenewAccountPersistHistorical() {
         final var autoRenewEntityId = fromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL.toArrayUnsafe());
 
-        final var test = domainBuilder
-                .entity()
-                .customize(e -> e.type(ACCOUNT)
-                        .evmAddress(null)
-                        .alias(toEvmAddress(autoRenewEntityId))
-                        .timestampRange(Range.closedOpen(
-                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
-                .persist();
-
-        /*domainBuilder
+        domainBuilder
                 .entity()
                 .customize(e -> e.id(autoRenewEntityId.getId())
                         .num(autoRenewEntityId.getNum())
@@ -1924,9 +1915,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .alias(toEvmAddress(autoRenewEntityId))
                         .timestampRange(Range.closedOpen(
                                 recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
-                .persist();*/
+                .persist();
 
-        return test.toEntityId();
+        return autoRenewEntityId;
     }
 
     private EntityId treasureEntityPersist() {
