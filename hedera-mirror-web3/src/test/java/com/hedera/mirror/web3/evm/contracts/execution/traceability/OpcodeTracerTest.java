@@ -255,8 +255,8 @@ class OpcodeTracerTest {
     }
 
     @Test
-    @DisplayName("given ModificationNotAllowedException thrown when trying to retrieve account through WorldUpdater, " +
-            "should only log a warning and return empty storage")
+    @DisplayName("given ModificationNotAllowedException thrown when trying to retrieve account through WorldUpdater, "
+            + "should only log a warning and return empty storage")
     void shouldNotThrowExceptionWhenWorldUpdaterThrowsModificationNotAllowedException() {
         tracerOptions = tracerOptions.toBuilder().storage(true).build();
         frame = setupMessageFrame(tracerOptions);
@@ -280,15 +280,14 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("given exceptional halt occurs, should capture frame data and halt reason")
     void shouldCaptureFrameWhenExceptionalHaltOccurs() {
-        tracerOptions = tracerOptions.toBuilder()
-                .stack(true)
-                .memory(true)
-                .storage(true)
-                .build();
+        tracerOptions =
+                tracerOptions.toBuilder().stack(true).memory(true).storage(true).build();
         frame = setupMessageFrame(tracerOptions);
 
         final Opcode opcode = executeOperation(frame, ExceptionalHaltReason.INSUFFICIENT_GAS);
-        assertThat(opcode.reason()).contains(Hex.encodeHexString(ExceptionalHaltReason.INSUFFICIENT_GAS.getDescription().getBytes()));
+        assertThat(opcode.reason())
+                .contains(Hex.encodeHexString(
+                        ExceptionalHaltReason.INSUFFICIENT_GAS.getDescription().getBytes()));
         assertThat(opcode.stack()).contains(stackItems);
         assertThat(opcode.memory()).contains(wordsInMemory);
         assertThat(opcode.storage()).containsExactlyEntriesOf(updatedStorage);
@@ -308,7 +307,8 @@ class OpcodeTracerTest {
         assertThat(opcode.stack()).isEmpty();
         assertThat(opcode.memory()).isEmpty();
         assertThat(opcode.storage()).isEmpty();
-        assertThat(opcode.reason()).isEqualTo(frame.getRevertReason().map(Bytes::toString).orElse(null));
+        assertThat(opcode.reason())
+                .isEqualTo(frame.getRevertReason().map(Bytes::toString).orElse(null));
     }
 
     @Test
@@ -357,8 +357,7 @@ class OpcodeTracerTest {
         return executeOperation(frame, null);
     }
 
-    private Opcode executeOperation(final MessageFrame frame,
-                                    final ExceptionalHaltReason haltReason) {
+    private Opcode executeOperation(final MessageFrame frame, final ExceptionalHaltReason haltReason) {
         final var tracer = new OpcodeTracer();
         tracer.init(frame);
         tracer.tracePreExecution(frame);
@@ -394,9 +393,8 @@ class OpcodeTracerTest {
         return setupMessageFrame(options, false);
     }
 
-    private MessageFrame setupMessageFrame(final OpcodeTracerOptions options,
-                                           final boolean revertReason,
-                                           final ContractAction... contractActions) {
+    private MessageFrame setupMessageFrame(
+            final OpcodeTracerOptions options, final boolean revertReason, final ContractAction... contractActions) {
         when(contractCallContext.getOpcodeTracerOptions()).thenReturn(options);
         when(contractCallContext.getContractActions()).thenReturn(Lists.newArrayList(contractActions));
 
@@ -411,8 +409,7 @@ class OpcodeTracerTest {
     private Map<UInt256, UInt256> setupStorageForCapture(final MessageFrame frame) {
         final Map<UInt256, UInt256> storage = ImmutableSortedMap.of(
                 UInt256.ZERO, UInt256.valueOf(233),
-                UInt256.ONE, UInt256.valueOf(2424)
-        );
+                UInt256.ONE, UInt256.valueOf(2424));
 
         when(recipientAccount.getUpdatedStorage()).thenReturn(storage);
         when(worldUpdater.getAccount(frame.getRecipientAddress())).thenReturn(recipientAccount);
@@ -422,9 +419,7 @@ class OpcodeTracerTest {
 
     private UInt256[] setupStackForCapture(final MessageFrame frame) {
         final UInt256[] stack = new UInt256[] {
-                UInt256.fromHexString("0x01"),
-                UInt256.fromHexString("0x02"),
-                UInt256.fromHexString("0x03")
+            UInt256.fromHexString("0x01"), UInt256.fromHexString("0x02"), UInt256.fromHexString("0x03")
         };
 
         for (final UInt256 stackItem : stack) {
@@ -436,9 +431,7 @@ class OpcodeTracerTest {
 
     private Bytes[] setupMemoryForCapture(final MessageFrame frame) {
         final Bytes[] words = new Bytes[] {
-                Bytes.fromHexString("0x01", 32),
-                Bytes.fromHexString("0x02", 32),
-                Bytes.fromHexString("0x03", 32)
+            Bytes.fromHexString("0x01", 32), Bytes.fromHexString("0x02", 32), Bytes.fromHexString("0x03", 32)
         };
 
         for (int i = 0; i < words.length; i++) {

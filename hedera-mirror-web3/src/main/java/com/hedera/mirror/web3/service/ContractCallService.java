@@ -1,4 +1,26 @@
+/*
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.hedera.mirror.web3.service;
+
+import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
+import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
+import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
@@ -16,12 +38,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
 import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
-
-import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
-import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
-import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 @Named
 @CustomLog
@@ -42,8 +58,7 @@ public abstract class ContractCallService {
             ThrottleProperties throttleProperties,
             MeterRegistry meterRegistry,
             RecordFileService recordFileService,
-            Store store
-    ) {
+            Store store) {
         this.gasLimitCounter = Counter.builder(GAS_LIMIT_METRIC)
                 .description("The amount of gas limit sent in the request")
                 .withRegistry(meterRegistry);
@@ -74,8 +89,8 @@ public abstract class ContractCallService {
      * @throws MirrorEvmTransactionException if any pre-checks
      * fail with {@link IllegalStateException} or {@link IllegalArgumentException}
      */
-    protected HederaEvmTransactionProcessingResult callContract(CallServiceParameters params,
-                                                                ContractCallContext ctx) throws MirrorEvmTransactionException {
+    protected HederaEvmTransactionProcessingResult callContract(CallServiceParameters params, ContractCallContext ctx)
+            throws MirrorEvmTransactionException {
         // if we have historical call, then set the corresponding record file in the context
         if (params.getBlock() != BlockType.LATEST) {
             ctx.setRecordFile(recordFileService
@@ -87,10 +102,12 @@ public abstract class ContractCallService {
         return doProcessCall(params, params.getGas(), true, ctx);
     }
 
-    protected HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters params,
-                                                                 long estimatedGas,
-                                                                 boolean restoreGasToThrottleBucket,
-                                                                 ContractCallContext ctx) throws MirrorEvmTransactionException {
+    protected HederaEvmTransactionProcessingResult doProcessCall(
+            CallServiceParameters params,
+            long estimatedGas,
+            boolean restoreGasToThrottleBucket,
+            ContractCallContext ctx)
+            throws MirrorEvmTransactionException {
         try {
             var result = mirrorEvmTxProcessor.execute(params, estimatedGas, ctx);
             if (!restoreGasToThrottleBucket) {
@@ -135,8 +152,6 @@ public abstract class ContractCallService {
     }
 
     protected void updateGasLimitMetric(final CallServiceParameters params) {
-        gasLimitCounter
-                .withTags("type", params.getCallType().toString())
-                .increment(params.getGas());
+        gasLimitCounter.withTags("type", params.getCallType().toString()).increment(params.getGas());
     }
 }

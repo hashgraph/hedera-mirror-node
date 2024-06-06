@@ -74,28 +74,28 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
                 stack,
                 memory,
                 storage,
-                frame.getRevertReason().map(Bytes::toString).orElse(null)
-        ));
+                frame.getRevertReason().map(Bytes::toString).orElse(null)));
     }
 
     @Override
     public void tracePrecompileCall(final MessageFrame frame, final long gasRequirement, final Bytes output) {
-        final Optional<Bytes> revertReason = frame.getRevertReason().isPresent() ?
-                frame.getRevertReason() : getRevertReason(contractActions);
+        final Optional<Bytes> revertReason =
+                frame.getRevertReason().isPresent() ? frame.getRevertReason() : getRevertReason(contractActions);
 
         revertReason.ifPresent(bytes -> log.trace("Revert reason: {}", bytes.toHexString()));
 
         opcodes.add(new Opcode(
                 frame.getPC(),
-                frame.getCurrentOperation() != null ? frame.getCurrentOperation().getName() : StringUtils.EMPTY,
+                frame.getCurrentOperation() != null
+                        ? frame.getCurrentOperation().getName()
+                        : StringUtils.EMPTY,
                 frame.getRemainingGas(),
                 output != null ? gasRequirement : 0L,
                 frame.getDepth(),
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyMap(),
-                revertReason.map(Bytes::toString).orElse(null)
-        ));
+                revertReason.map(Bytes::toString).orElse(null)));
     }
 
     @Override
