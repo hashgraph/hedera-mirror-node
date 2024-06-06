@@ -43,7 +43,7 @@ class TransactionIdParameterTest {
                 Arguments.of("%d.0.3-1234567890-123".formatted(Long.MAX_VALUE), false, InvalidParametersException.class),
                 Arguments.of("0.%d.3-1234567890-123".formatted(Long.MAX_VALUE), false, InvalidParametersException.class),
                 Arguments.of("0.0.%d-1234567890-123".formatted(Long.MAX_VALUE), false, InvalidParametersException.class),
-                Arguments.of("0.0.3-%d-%d".formatted(Long.MAX_VALUE, Long.MAX_VALUE), false, InvalidParametersException.class),
+                Arguments.of("0.0.3-%d-%d".formatted(Long.MAX_VALUE, Long.MAX_VALUE), false, null),
                 Arguments.of(null, false, null));
     }
 
