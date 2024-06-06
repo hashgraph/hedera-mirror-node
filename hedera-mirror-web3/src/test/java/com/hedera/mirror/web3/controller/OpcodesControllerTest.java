@@ -52,11 +52,7 @@ import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.ContractDebugService;
-import com.hedera.mirror.web3.service.OpcodeService;
-import com.hedera.mirror.web3.service.OpcodeServiceImpl;
-import com.hedera.mirror.web3.service.RecordFileService;
-import com.hedera.mirror.web3.service.RecordFileServiceImpl;
+import com.hedera.mirror.web3.service.*;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -127,9 +123,6 @@ class OpcodesControllerTest {
 
     @MockBean(name = "rateLimitBucket")
     private Bucket rateLimitBucket;
-
-    @MockBean(name = "gasLimitBucket")
-    private Bucket gasLimitBucket;
 
     @MockBean
     private TransactionRepository transactionRepository;
