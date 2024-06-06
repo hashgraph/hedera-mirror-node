@@ -16,15 +16,15 @@
 
 package com.hedera.mirror.importer.migration;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.google.common.collect.Range;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.db.TimePartition;
 import com.hedera.mirror.importer.db.TimePartitionService;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Optional;
@@ -96,8 +96,9 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
             return false;
         }
 
-        var lastRecordFile = recordFileRepository.findLatest().map(RecordFile::getConsensusEnd);
-        if (lastRecordFile.isEmpty()) {
+        var lastRecordFileRange =
+                recordFileRepository.findLatest().map(r -> Range.closed(r.getConsensusStart(), r.getConsensusEnd()));
+        if (lastRecordFileRange.isEmpty()) {
             log.info("Skip the migration since there's no record file parsed");
             return false;
         }
@@ -109,18 +110,22 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
             return false;
         }
 
-        var activePartition = timePartitions.stream()
-                .filter(p -> p.getTimestampRange().contains(lastRecordFile.get()))
-                .findFirst()
-                .orElseThrow(() -> new ParserException("No active partition found for topic_message"));
+        var activePartitions = timePartitions.stream()
+                .filter(p -> p.getTimestampRange().isConnected(lastRecordFileRange.get()))
+                .map(TimePartition::getName)
+                .toList();
 
         partitions.addAll(timePartitions.stream()
-                .filter(p -> p.getTimestampRange().lowerEndpoint() <= lastRecordFile.get()
-                        && !p.getName().equals(activePartition.getName()))
-                .toList());
+                .filter(p -> p.getTimestampRange().upperEndpoint()
+                        < lastRecordFileRange.get().lowerEndpoint())
+                .sorted(Comparator.comparing(p -> p.getTimestampRange().upperEndpoint()))
+                .toList()
+                .reversed());
 
-        log.info("Migrating topic_message_lookup for partition {} synchronously", activePartition.getName());
-        getTransactionOperations().executeWithoutResult(status -> migratePartition(activePartition.getName()));
+        activePartitions.forEach(partitionName -> {
+            log.info("Migrating topic_message_lookup for partition {} synchronously", partitionName);
+            getTransactionOperations().executeWithoutResult(status -> migratePartition(partitionName));
+        });
 
         return !partitions.isEmpty();
     }

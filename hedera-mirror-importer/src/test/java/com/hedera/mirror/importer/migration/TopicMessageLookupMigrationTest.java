@@ -26,9 +26,11 @@ import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.parser.record.entity.topic.AbstractTopicMessageLookupIntegrationTest;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -150,77 +152,44 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
 
     @Test
     void onlyProcessPartitionsPriorToRecordFile() {
-        var beforeRecordFilePartition = partitions.getFirst();
+        var beforeRecordFilePartition = partitions.getFirst().getTimestampRange();
+        var recordFileRange = Optional.of(
+                Range.closed(beforeRecordFilePartition.lowerEndpoint(), beforeRecordFilePartition.upperEndpoint() - 1));
 
-        long consensusStart = beforeRecordFilePartition.getTimestampRange().lowerEndpoint();
-        long consensusEnd = beforeRecordFilePartition.getTimestampRange().upperEndpoint() - 1;
+        migrate(true, false, recordFileRange);
+    }
 
-        var topicId1 = EntityId.of(5000);
-        var topicId2 = EntityId.of(5001);
+    @Test
+    void multipleActivePartitions(CapturedOutput output) {
+        var beforeRecordFilePartition = partitions.getFirst().getTimestampRange();
+        var recrodFileRange = Optional.of(
+                Range.closed(beforeRecordFilePartition.lowerEndpoint(), beforeRecordFilePartition.upperEndpoint()));
 
-        domainBuilder
-                .recordFile()
-                .customize(r -> r.consensusStart(consensusStart).consensusEnd(consensusEnd))
-                .persist();
+        migrate(true, true, recrodFileRange);
 
-        // Before record file
-        domainBuilder
-                .topicMessage()
-                .customize(t -> t.consensusTimestamp(consensusStart + 1)
-                        .sequenceNumber(1)
-                        .topicId(topicId1))
-                .persist();
-        domainBuilder
-                .topicMessage()
-                .customize(t -> t.consensusTimestamp(consensusStart + 2)
-                        .sequenceNumber(1)
-                        .topicId(topicId2))
-                .persist();
-        domainBuilder
-                .topicMessage()
-                .customize(t -> t.consensusTimestamp(consensusStart + 3)
-                        .sequenceNumber(2)
-                        .topicId(topicId2))
-                .persist();
-
-        // Insert data later than latest record file to ensure it is not processed
-        domainBuilder
-                .topicMessage()
-                .customize(t ->
-                        t.consensusTimestamp(consensusEnd + 1).sequenceNumber(2).topicId(topicId1))
-                .persist();
-        domainBuilder
-                .topicMessage()
-                .customize(t ->
-                        t.consensusTimestamp(consensusEnd + 2).sequenceNumber(3).topicId(topicId2))
-                .persist();
-
-        var expected = List.of(
-                TopicMessageLookup.builder()
-                        .partition(beforeRecordFilePartition.getName())
-                        .sequenceNumberRange(Range.closedOpen(1L, 2L))
-                        .timestampRange(Range.closedOpen(consensusStart + 1, consensusStart + 2))
-                        .topicId(topicId1.getId())
-                        .build(),
-                TopicMessageLookup.builder()
-                        .partition(beforeRecordFilePartition.getName())
-                        .sequenceNumberRange(Range.closedOpen(1L, 3L))
-                        .timestampRange(Range.closedOpen(consensusStart + 2, consensusStart + 4))
-                        .topicId(topicId2.getId())
-                        .build());
-
-        runMigration();
-
-        assertThat(topicMessageLookupRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(output)
+                .contains("Migrating topic_message_lookup for partition "
+                        + partitions.get(0).getName() + " synchronously")
+                .contains("Migrating topic_message_lookup for partition "
+                        + partitions.get(1).getName() + " synchronously");
     }
 
     private void migrate(boolean loadData) {
+        migrate(loadData, true, Optional.empty());
+    }
+
+    private void migrate(boolean loadData, boolean expectPartition2, Optional<Range<Long>> recordFileBound) {
         // given
         // the first partition is closed
         var partition1 = partitions.get(0);
         var partition2 = partitions.get(1);
         long partition1Start = partition1.getTimestampRange().lowerEndpoint();
-        long consensusStart = plus(partition2.getTimestampRange().lowerEndpoint(), Duration.ofSeconds(10));
+        long partition2Start = partition2.getTimestampRange().lowerEndpoint();
+        long consensusStart = recordFileBound
+                .map(Range::lowerEndpoint)
+                .orElse(plus(partition2.getTimestampRange().lowerEndpoint(), Duration.ofSeconds(10)));
+        long consensusEnd =
+                recordFileBound.map(Range::upperEndpoint).orElse(plus(consensusStart, RECORD_FILE_INTERVAL));
         var topicId1 = EntityId.of(5000);
         var topicId2 = EntityId.of(5001);
         var topicId3 = EntityId.of(5002);
@@ -228,8 +197,7 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
         if (loadData) {
             domainBuilder
                     .recordFile()
-                    .customize(r ->
-                            r.consensusStart(consensusStart).consensusEnd(plus(consensusStart, RECORD_FILE_INTERVAL)))
+                    .customize(r -> r.consensusStart(consensusStart).consensusEnd(consensusEnd))
                     .persist();
 
             // partition 1
@@ -255,25 +223,25 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
             // partition 2
             domainBuilder
                     .topicMessage()
-                    .customize(t -> t.consensusTimestamp(consensusStart)
+                    .customize(t -> t.consensusTimestamp(partition2Start)
                             .sequenceNumber(2)
                             .topicId(topicId1))
                     .persist();
             domainBuilder
                     .topicMessage()
-                    .customize(t -> t.consensusTimestamp(consensusStart + 1)
+                    .customize(t -> t.consensusTimestamp(partition2Start + 1)
                             .sequenceNumber(3)
                             .topicId(topicId2))
                     .persist();
             domainBuilder
                     .topicMessage()
-                    .customize(t -> t.consensusTimestamp(consensusStart + 2)
+                    .customize(t -> t.consensusTimestamp(partition2Start + 2)
                             .sequenceNumber(1)
                             .topicId(topicId3))
                     .persist();
             domainBuilder
                     .topicMessage()
-                    .customize(t -> t.consensusTimestamp(consensusStart + 3)
+                    .customize(t -> t.consensusTimestamp(partition2Start + 3)
                             .sequenceNumber(2)
                             .topicId(topicId3))
                     .persist();
@@ -283,8 +251,7 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
         runMigration();
 
         // then
-        var expected = List.of(
-                // partition 1
+        var expected = new ArrayList<TopicMessageLookup>(List.of(
                 TopicMessageLookup.builder()
                         .partition(partition1.getName())
                         .sequenceNumberRange(Range.closedOpen(1L, 2L))
@@ -296,26 +263,30 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
                         .sequenceNumberRange(Range.closedOpen(1L, 3L))
                         .timestampRange(Range.closedOpen(partition1Start + 1, partition1Start + 3))
                         .topicId(topicId2.getId())
-                        .build(),
-                // partition 2
-                TopicMessageLookup.builder()
-                        .partition(partition2.getName())
-                        .sequenceNumberRange(Range.closedOpen(2L, 3L))
-                        .timestampRange(Range.closedOpen(consensusStart, consensusStart + 1))
-                        .topicId(topicId1.getId())
-                        .build(),
-                TopicMessageLookup.builder()
-                        .partition(partition2.getName())
-                        .sequenceNumberRange(Range.closedOpen(3L, 4L))
-                        .timestampRange(Range.closedOpen(consensusStart + 1, consensusStart + 2))
-                        .topicId(topicId2.getId())
-                        .build(),
-                TopicMessageLookup.builder()
-                        .partition(partition2.getName())
-                        .sequenceNumberRange(Range.closedOpen(1L, 3L))
-                        .timestampRange(Range.closedOpen(consensusStart + 2, consensusStart + 4))
-                        .topicId(topicId3.getId())
-                        .build());
+                        .build()));
+
+        if (expectPartition2) {
+            expected.addAll(List.of(
+                    TopicMessageLookup.builder()
+                            .partition(partition2.getName())
+                            .sequenceNumberRange(Range.closedOpen(2L, 3L))
+                            .timestampRange(Range.closedOpen(partition2Start, partition2Start + 1))
+                            .topicId(topicId1.getId())
+                            .build(),
+                    TopicMessageLookup.builder()
+                            .partition(partition2.getName())
+                            .sequenceNumberRange(Range.closedOpen(3L, 4L))
+                            .timestampRange(Range.closedOpen(partition2Start + 1, partition2Start + 2))
+                            .topicId(topicId2.getId())
+                            .build(),
+                    TopicMessageLookup.builder()
+                            .partition(partition2.getName())
+                            .sequenceNumberRange(Range.closedOpen(1L, 3L))
+                            .timestampRange(Range.closedOpen(partition2Start + 2, partition2Start + 4))
+                            .topicId(topicId3.getId())
+                            .build()));
+        }
+
         assertThat(topicMessageLookupRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(migration.getChecksum()).isOne();
     }
