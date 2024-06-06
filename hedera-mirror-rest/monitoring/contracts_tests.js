@@ -97,11 +97,17 @@ const postContractCall = async (server) => {
           "gasPrice": 100000000,
           "to": "0x0000000000000000000000000000000000000168"
     }`;
+  const contractCallResponseParams = ['result'];
+
   const singleContract = await fetchAPIResponse(url, '', undefined, body);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'contracts call is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: contractCallResponseParams,
+      message: 'contract call response object is missing some mandatory fields',
+    })
     .run(singleContract);
   if (!result.passed) {
     return {url, ...result};
