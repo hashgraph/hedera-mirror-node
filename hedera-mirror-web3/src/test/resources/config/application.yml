@@ -1,8 +1,5 @@
 hedera:
   mirror:
-    opcode:
-      tracer:
-        enabled: true
     web3:
       evm:
         evm_versions:
@@ -10,6 +7,9 @@ hedera:
           50: 0.34.0
           100: 0.38.0
           150: 0.46.0
+      opcode:
+        tracer:
+          enabled: true
 spring:
   test:
     database:
