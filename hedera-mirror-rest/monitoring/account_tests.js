@@ -25,7 +25,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   hasEmptyList,
   testRunner,
@@ -57,7 +57,7 @@ const mandatoryParams = [
  */
 const getAccountsWithAccountCheck = async (server) => {
   let url = getUrl(server, accountsPath, {limit: resourceLimit});
-  const accounts = await getAPIResponse(url, jsonRespKey);
+  const accounts = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -80,7 +80,7 @@ const getAccountsWithAccountCheck = async (server) => {
     'account.id': highestAccount,
     limit: 1,
   });
-  const singleAccount = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
+  const singleAccount = await fetchAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -104,7 +104,7 @@ const getAccountsWithAccountCheck = async (server) => {
  */
 const getSingleAccount = async (server) => {
   let url = getUrl(server, accountsPath, {limit: resourceLimit});
-  const accounts = await getAPIResponse(url, jsonRespKey);
+  const accounts = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -124,7 +124,7 @@ const getSingleAccount = async (server) => {
 
   const highestAccount = _.max(_.map(accounts, (acct) => acct.account));
   url = getUrl(server, `${accountsPath}/${highestAccount}`);
-  const singleAccount = await getAPIResponse(url);
+  const singleAccount = await fetchAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -153,7 +153,7 @@ const getSingleAccountTokenRelationships = async (server) => {
   const tokensLimit = 1;
   const tokenMandatoryParams = ['token_id'];
   const token_url = getUrl(server, tokensPath, {limit: tokensLimit, order: 'asc'});
-  const tokens = await getAPIResponse(token_url, tokensJsonRespKey);
+  const tokens = await fetchAPIResponse(token_url, tokensJsonRespKey);
 
   const tokenResult = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -180,7 +180,7 @@ const getSingleAccountTokenRelationships = async (server) => {
 
   const balancesLimit = 1;
   let balances_url = getUrl(server, tokenBalancesPath(token_id), {limit: balancesLimit});
-  let balances = await getAPIResponse(balances_url, tokenBalancesJsonRespKey);
+  let balances = await fetchAPIResponse(balances_url, tokenBalancesJsonRespKey);
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'});
@@ -199,7 +199,7 @@ const getSingleAccountTokenRelationships = async (server) => {
   const accountsTokenPath = `/accounts/${accountId}/tokens`;
   const accountsLimit = 1;
   let url = getUrl(server, accountsTokenPath, {limit: accountsLimit, order: 'asc'});
-  const tokenRelationships = await getAPIResponse(url, tokensJsonRespKey, hasEmptyList(tokensJsonRespKey));
+  const tokenRelationships = await fetchAPIResponse(url, tokensJsonRespKey, hasEmptyList(tokensJsonRespKey));
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined '})
@@ -224,7 +224,7 @@ const getAccountStakingRewards = async (server) => {
   const rewardsJsonRespKey = 'rewards';
   let url = getUrl(server, stakingRewardsPath, {limit: resourceLimit});
   const rewardMandatoryParams = ['account_id', 'amount', 'timestamp'];
-  const rewards = await getAPIResponse(url, rewardsJsonRespKey);
+  const rewards = await fetchAPIResponse(url, rewardsJsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -253,7 +253,7 @@ const getCryptoAllowances = async (server) => {
   const accountId = config[resource].cryptoAllowanceOwnerId;
   const cryptoAllowancesPath = `${accountsPath}/${accountId}/allowances/crypto`;
   let url = getUrl(server, cryptoAllowancesPath, {limit: resourceLimit});
-  const allowances = await getAPIResponse(url, allowancesJsonRespKey);
+  const allowances = await fetchAPIResponse(url, allowancesJsonRespKey);
   const allowancesMandatoryParams = ['amount', 'amount_granted', 'owner', 'spender', 'timestamp'];
 
   let result = new CheckRunner()
@@ -283,7 +283,7 @@ const getTokenAllowances = async (server) => {
   const accountId = config[resource].tokenAllowanceOwnerId;
   const tokenAllowancesPath = `${accountsPath}/${accountId}/allowances/tokens`;
   let url = getUrl(server, tokenAllowancesPath, {limit: resourceLimit});
-  const allowances = await getAPIResponse(url, allowancesJsonRespKey);
+  const allowances = await fetchAPIResponse(url, allowancesJsonRespKey);
   const tokenAllowancesMandatoryParams = ['amount', 'amount_granted', 'owner', 'spender', 'timestamp', 'token_id'];
 
   let result = new CheckRunner()
@@ -313,7 +313,7 @@ const getNftAllowances = async (server) => {
   const accountId = config[resource].nftAllowanceOwnerId;
   const nftAllowancesPath = `${accountsPath}/${accountId}/allowances/nfts`;
   let url = getUrl(server, nftAllowancesPath, {limit: resourceLimit});
-  const allowances = await getAPIResponse(url, allowancesJsonRespKey);
+  const allowances = await fetchAPIResponse(url, allowancesJsonRespKey);
   const nftAllowancesMandatoryParams = ['approved_for_all', 'owner', 'spender', 'timestamp', 'token_id'];
 
   let result = new CheckRunner()
@@ -344,7 +344,7 @@ const getNfts = async (server) => {
   const nftsPath = `${accountsPath}/${accountId}/nfts`;
   let url = getUrl(server, nftsPath, {limit: resourceLimit});
   const nftJsonResponseKey = 'nfts';
-  const allowances = await getAPIResponse(url, nftJsonResponseKey);
+  const allowances = await fetchAPIResponse(url, nftJsonResponseKey);
   const nftsMandatoryParams = [
     'account_id',
     'created_timestamp',

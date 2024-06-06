@@ -121,7 +121,7 @@ const noRetry = () => false;
  * @param {Function} retryPredicate An optional predicate that returns true if a successful request should be retried.
  * @return {Object} JSON object representing api response or error
  */
-const getAPIResponse = async (url, key = undefined, retryPredicate = noRetry) => {
+const fetchAPIResponse = async (url, key = undefined, retryPredicate = noRetry, body = undefined) => {
   const controller = new AbortController();
   const timeout = setTimeout(
     () => {
@@ -131,50 +131,13 @@ const getAPIResponse = async (url, key = undefined, retryPredicate = noRetry) =>
   );
 
   try {
-    const json = await fetchWithRetry(url, {signal: controller.signal}, retryPredicate);
+    let opts = {signal: controller.signal};
+    if (body !== undefined) {
+      opts = {method: 'POST', body: body, headers: {'Content-type': 'application/json; charset=UTF-8'}};
+    }
+    const json = await fetchWithRetry(url, opts, retryPredicate);
 
     return key ? json[key] : json;
-  } catch (error) {
-    return error;
-  } finally {
-    clearTimeout(timeout);
-  }
-};
-
-/**
- * Make an http POST call to mirror-node api
- * Host info is prepended to if only path is provided
- * @param {*} url rest-api endpoint
- * @param {String} body body to be posted
- * @param {Function} retryPredicate An optional predicate that returns true if a successful request should be retried.
- * @return {Object} JSON object representing api response or error
- */
-const postAPICall = async (url, body, retryPredicate = noRetry) => {
-  const controller = new AbortController();
-  const timeout = setTimeout(
-    () => {
-      controller.abort();
-    },
-    config.timeout * 1000 // in ms
-  );
-
-  try {
-    return await fetchWithRetry(
-      url,
-      {
-        // Adding method type
-        method: 'POST',
-
-        // Adding body or contents to send
-        body: body,
-
-        // Adding headers to the request
-        headers: {
-          'Content-type': 'application/json; charset=UTF-8',
-        },
-      },
-      retryPredicate
-    );
   } catch (error) {
     return error;
   } finally {
@@ -403,7 +366,7 @@ const checkResourceFreshness = async (
   }
 
   const url = getUrl(server, path, query);
-  const resp = await getAPIResponse(url, jsonRespKey);
+  const resp = await fetchAPIResponse(url, jsonRespKey);
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -499,9 +462,8 @@ export {
   checkRespArrayLength,
   checkRespObj,
   checkRespObjDefined,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   hasEmptyList,
-  postAPICall,
   testRunner,
 };
