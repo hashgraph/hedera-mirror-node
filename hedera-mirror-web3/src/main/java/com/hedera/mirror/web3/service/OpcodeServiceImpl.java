@@ -49,6 +49,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.lang.NonNull;
@@ -177,7 +178,7 @@ public class OpcodeServiceImpl implements OpcodeService {
 
     private Address getReceiverAddress(Optional<EthereumTransaction> ethereumTransaction, ContractResult contractResult) {
         return ethereumTransaction
-                .filter(transaction -> transaction.getToAddress() != null)
+                .filter(transaction -> ArrayUtils.isNotEmpty(transaction.getToAddress()))
                 .map(transaction -> Address.wrap(Bytes.wrap(transaction.getToAddress())))
                 .flatMap(address -> {
                     if (isMirror(address.toArrayUnsafe())) {
@@ -215,12 +216,12 @@ public class OpcodeServiceImpl implements OpcodeService {
     }
 
     private Address getEntityAddress(Entity entity) {
-        if (entity.getEvmAddress() != null) {
+        if (entity.getEvmAddress() != null && entity.getEvmAddress().length == EVM_ADDRESS_LENGTH) {
             return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
         }
         if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
             return Address.wrap(Bytes.wrap(entity.getAlias()));
         }
-        return toAddress(entity.toEntityId());
+        return EntityId.isEmpty(entity.toEntityId()) ? Address.ZERO : toAddress(entity.toEntityId());
     }
 }
