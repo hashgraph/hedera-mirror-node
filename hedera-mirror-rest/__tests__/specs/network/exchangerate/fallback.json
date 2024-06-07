@@ -28,26 +28,43 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/network/exchangerate?timestamp=1234567890.900800700",
-    "/api/v1/network/exchangerate?timestamp=eq:1234567890.900800700",
-    "/api/v1/network/exchangerate?timestamp=lt:1234567890.900800701",
-    "/api/v1/network/exchangerate?timestamp=lte:1234567890.900800700",
-    "/api/v1/network/exchangerate?timestamp=1234567890.900800200",
-    "/api/v1/network/exchangerate"
-  ],
-  "responseStatus": 200,
-  "responseJson": {
-    "current_rate": {
-      "cent_equivalent": 424437,
-      "expiration_time": 1651770000,
-      "hbar_equivalent": 30000
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/network/exchangerate?timestamp=1234567890.900800700",
+        "/api/v1/network/exchangerate?timestamp=eq:1234567890.900800700",
+        "/api/v1/network/exchangerate?timestamp=lt:1234567890.900800701",
+        "/api/v1/network/exchangerate?timestamp=lte:1234567890.900800700",
+        "/api/v1/network/exchangerate?timestamp=1234567890.900800200",
+        "/api/v1/network/exchangerate"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "current_rate": {
+          "cent_equivalent": 424437,
+          "expiration_time": 1651770000,
+          "hbar_equivalent": 30000
+        },
+        "next_rate": {
+          "cent_equivalent": 401610,
+          "expiration_time": 1651773600,
+          "hbar_equivalent": 30000
+        },
+        "timestamp": "1234567890.900800200"
+      }
     },
-    "next_rate": {
-      "cent_equivalent": 401610,
-      "expiration_time": 1651773600,
-      "hbar_equivalent": 30000
-    },
-    "timestamp": "1234567890.900800200"
-  }
+    {
+      "url": "/api/v1/network/exchangerate?timestamp=gt:1234567890.900800200",
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Not found"
+            }
+          ]
+        }
+      }
+    }
+  ]
 }

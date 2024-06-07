@@ -93,7 +93,7 @@ class FileDataService extends BaseService {
   };
 
   getLatestFileContentsQuery = (innerWhere = '') => {
-    const outerWhere = innerWhere.replace('and ', `and ${FileData.tableAlias}.`);
+    const outerWhere = innerWhere.replaceAll('and ', `and ${FileData.tableAlias}.`);
     return FileDataService.latestFileContentsQuery
       .replace(FileDataService.filterInnerPlaceholder, innerWhere)
       .replace(FileDataService.filterOuterPlaceholder, outerWhere);
@@ -113,18 +113,21 @@ class FileDataService extends BaseService {
   };
 
   fallbackRetry = async (fileEntityId, filterQueries, resultConstructor) => {
-    const currentFilterQueries = {...filterQueries};
-    let retries = 0;
-    while (retries++ <= 10) {
-      const row = await this.getLatestFileDataContents(fileEntityId, currentFilterQueries);
+    const whereQuery = filterQueries.whereQuery ?? [];
+    const filters = {whereQuery};
+
+    let attempts = 0;
+    while (++attempts <= 10) {
+      const row = await this.getLatestFileDataContents(fileEntityId, filters);
       try {
         return _.isNil(row) ? null : new resultConstructor(row);
       } catch (error) {
         logger.warn(
-          `Failed to load file data for file id ${fileEntityId} at ${row.consensus_timestamp}, failing back to previous file. Retry attempt ${retries}. Error: ${error}`
+          `Failed to load file data for file id ${fileEntityId} at ${row.consensus_timestamp}, failing back to previous file. Attempt ${attempts}. Error: ${error}`
         );
 
-        currentFilterQueries.whereQuery = [
+        filters.whereQuery = [
+          ...whereQuery,
           {
             query: FileData.CONSENSUS_TIMESTAMP + utils.opsMap.lt,
             param: row.fallback_timestamp,

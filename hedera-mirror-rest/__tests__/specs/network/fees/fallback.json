@@ -34,30 +34,47 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/network/fees?timestamp=1234567890.900800400",
-    "/api/v1/network/fees?timestamp=eq:1234567890.900800400",
-    "/api/v1/network/fees?timestamp=lte:1234567890.900800400",
-    "/api/v1/network/fees?timestamp=lt:1234567890.900800401",
-    "/api/v1/network/fees?timestamp=1234567890.900800200",
-    "/api/v1/network/fees"
-  ],
-  "responseStatus": 200,
-  "responseJson": {
-    "fees": [
-      {
-        "gas": 56,
-        "transaction_type": "ContractCall"
-      },
-      {
-        "gas": 67,
-        "transaction_type": "ContractCreate"
-      },
-      {
-        "gas": 64,
-        "transaction_type": "EthereumTransaction"
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/network/fees?timestamp=1234567890.900800400",
+        "/api/v1/network/fees?timestamp=eq:1234567890.900800400",
+        "/api/v1/network/fees?timestamp=lte:1234567890.900800400",
+        "/api/v1/network/fees?timestamp=lt:1234567890.900800401",
+        "/api/v1/network/fees?timestamp=1234567890.900800200",
+        "/api/v1/network/fees"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "fees": [
+          {
+            "gas": 56,
+            "transaction_type": "ContractCall"
+          },
+          {
+            "gas": 67,
+            "transaction_type": "ContractCreate"
+          },
+          {
+            "gas": 64,
+            "transaction_type": "EthereumTransaction"
+          }
+        ],
+        "timestamp": "1234567890.900800200"
       }
-    ],
-    "timestamp": "1234567890.900800200"
-  }
+    },
+    {
+      "url": "/api/v1/network/fees?timestamp=gt:1234567890.900800200",
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Not found"
+            }
+          ]
+        }
+      }
+    }
+  ]
 }
