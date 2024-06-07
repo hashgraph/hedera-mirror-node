@@ -25,8 +25,8 @@ import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import jakarta.inject.Named;
-import java.util.Comparator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 import lombok.Getter;
 import org.apache.commons.lang3.BooleanUtils;
@@ -59,7 +59,7 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
 
     private final EntityProperties entityProperties;
     private final JdbcTemplate jdbcTemplate;
-    private final LinkedList<String> partitions = new LinkedList<>();
+    private final List<String> partitions = new LinkedList<>();
 
     private final RecordFileRepository recordFileRepository;
     private final TimePartitionService timePartitionService;
@@ -118,10 +118,8 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
         partitions.addAll(timePartitions.stream()
                 .filter(p -> p.getTimestampRange().lowerEndpoint() <= lastRecordFile.get()
                         && !p.getName().equals(activePartition))
-                .sorted(Comparator.comparing(p -> p.getTimestampRange().upperEndpoint()))
                 .map(TimePartition::getName)
-                .toList()
-                .reversed());
+                .toList());
 
         log.info("Migrating topic_message_lookup for partition {} synchronously", activePartition);
         getTransactionOperations().executeWithoutResult(status -> migratePartition(activePartition));
@@ -131,13 +129,13 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
 
     @Override
     protected String getInitial() {
-        return partitions.poll();
+        return partitions.isEmpty() ? null : partitions.removeLast();
     }
 
     @Override
     protected Optional<String> migratePartial(String partitionName) {
         migratePartition(partitionName);
-        return Optional.ofNullable(partitions.poll());
+        return Optional.ofNullable(getInitial());
     }
 
     private void migratePartition(String partitionName) {

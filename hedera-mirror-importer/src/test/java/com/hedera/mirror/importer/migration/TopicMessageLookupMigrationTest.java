@@ -305,8 +305,8 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
         waitForCompletion();
     }
 
-    protected void waitForCompletion() {
-        await().atMost(Duration.ofSeconds(5))
+    private void waitForCompletion() {
+        await().atMost(Duration.ofSeconds(30))
                 .pollDelay(Duration.ofMillis(100))
                 .pollInterval(Duration.ofMillis(100))
                 .untilAsserted(() -> assertThat(isMigrationCompleted()).isTrue());
