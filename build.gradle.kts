@@ -57,8 +57,8 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.5")
         api("org.bouncycastle:bcprov-jdk18on:1.78.1")
         api("com.bucket4j:bucket4j-core:8.10.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.3.0")
-        api("com.google.guava:guava:33.2.0-jre")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.4.1")
+        api("com.google.guava:guava:33.2.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.4")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
@@ -83,6 +83,7 @@ dependencies {
         api("jakarta.inject:jakarta.inject-api:2.0.1")
         api("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
         api("net.java.dev.jna:jna:5.14.0")
+        api("org.apache.commons:commons-collections4:4.4")
         api("org.apache.commons:commons-compress:1.26.1")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
@@ -96,11 +97,12 @@ dependencies {
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.8")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.8.0")
-        api("org.springframework.cloud:spring-cloud-dependencies:2023.0.1")
+        api("org.springframework.cloud:spring-cloud-dependencies:2023.0.2")
         api("org.testcontainers:junit-jupiter:1.19.8")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.25.60")
+        api("software.amazon.awssdk:bom:2.25.64")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
+        api("org.web3j:core:4.12.0")
     }
 }
 

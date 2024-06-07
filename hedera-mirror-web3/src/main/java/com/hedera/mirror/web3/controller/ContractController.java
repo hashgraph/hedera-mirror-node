@@ -16,49 +16,28 @@
 
 package com.hedera.mirror.web3.controller;
 
-import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static org.apache.tuweni.bytes.Bytes.EMPTY;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
-import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
-import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
-import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.exception.EntityNotFoundException;
-import com.hedera.mirror.web3.exception.InvalidInputException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
-import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
-import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.github.bucket4j.Bucket;
 import jakarta.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.dao.QueryTimeoutException;
-import org.springframework.http.converter.HttpMessageConversionException;
-import org.springframework.validation.BindException;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ServerWebInputException;
 
 @CustomLog
 @RequestMapping("/api/v1/contracts")
@@ -70,7 +49,6 @@ class ContractController {
     private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties evmProperties;
 
-    @CrossOrigin(origins = "*")
     @PostMapping(value = "/call")
     ContractCallResponse call(@RequestBody @Valid ContractCallRequest request) {
 
@@ -78,13 +56,13 @@ class ContractController {
             throw new RateLimitException("Rate limit exceeded.");
         }
 
-        String result;
         try {
             validateContractData(request);
             validateContractMaxGasLimit(request);
 
             final var params = constructServiceParameters(request);
-            result = contractCallService.processCall(params);
+            final var result = contractCallService.processCall(params);
+            return new ContractCallResponse(result);
         } catch (QueryTimeoutException e) {
             log.error("Query timed out: {} request: {}", e.getMessage(), request);
             throw e;
@@ -93,8 +71,6 @@ class ContractController {
             gasLimitBucket.addTokens(request.getGas());
             throw e;
         }
-
-        return new ContractCallResponse(result);
     }
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
@@ -112,7 +88,7 @@ class ContractController {
         }
         Bytes data;
         try {
-            data = request.getData() != null ? Bytes.fromHexString(request.getData()) : EMPTY;
+            data = request.getData() != null ? Bytes.fromHexString(request.getData()) : Bytes.EMPTY;
         } catch (Exception e) {
             throw new InvalidParametersException(
                     "data field '%s' contains invalid odd length characters".formatted(request.getData()));
@@ -156,93 +132,5 @@ class ContractController {
             throw new InvalidParametersException(
                     "gas field must be less than or equal to %d".formatted(evmProperties.getMaxGasLimit()));
         }
-    }
-
-    /**
-     * Temporary handler, intended for dealing with forthcoming features that are not yet available, such as the absence
-     * of a precompile for gas estimation.
-     **/
-    @ExceptionHandler
-    @ResponseStatus(NOT_IMPLEMENTED)
-    private GenericErrorResponse unsupportedOpResponse(final UnsupportedOperationException e) {
-        return errorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(TOO_MANY_REQUESTS)
-    private GenericErrorResponse rateLimitError(final RateLimitException e) {
-        return errorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private GenericErrorResponse validationError(final BindException e) {
-        final var errors = extractValidationError(e);
-        log.warn("Validation error: {}", errors);
-        return new GenericErrorResponse(errors);
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private GenericErrorResponse inputValidationError(final InvalidInputException e) {
-        log.warn("Input validation error: {}", e.getMessage());
-        return new GenericErrorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private GenericErrorResponse mirrorEvmTransactionException(final MirrorEvmTransactionException e) {
-        log.warn("Mirror EVM transaction error: {}", e.getMessage());
-        return errorResponse(e.getMessage(), e.getDetail(), e.getData());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private GenericErrorResponse invalidJson(final ServerWebInputException e) {
-        log.warn("Transaction body parsing error: {}", e.getMessage());
-        return errorResponse(e.getReason(), "Unable to parse JSON", StringUtils.EMPTY);
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(BAD_REQUEST)
-    private GenericErrorResponse invalidJson(final HttpMessageConversionException e) {
-        log.warn("Transaction body parsing error: {}", e.getMessage());
-        return errorResponse("Unable to parse JSON", e.getMessage(), StringUtils.EMPTY);
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(NOT_FOUND)
-    private GenericErrorResponse notFound(final EntityNotFoundException e) {
-        log.warn("Not found: {}", e.getMessage());
-        return errorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(UNSUPPORTED_MEDIA_TYPE)
-    private GenericErrorResponse unsupportedMediaTypeError(final HttpMediaTypeNotSupportedException e) {
-        log.warn("Unsupported media type error: {}", e.getMessage());
-        return errorResponse(UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(), e.getMessage(), StringUtils.EMPTY);
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(INTERNAL_SERVER_ERROR)
-    private GenericErrorResponse genericError(final Exception e) {
-        log.error("Generic error: ", e);
-        return errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase());
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(SERVICE_UNAVAILABLE)
-    private GenericErrorResponse queryTimeout(final QueryTimeoutException e) {
-        return errorResponse(SERVICE_UNAVAILABLE.getReasonPhrase());
-    }
-
-    private GenericErrorResponse errorResponse(final String errorMessage) {
-        return new GenericErrorResponse(errorMessage);
-    }
-
-    private GenericErrorResponse errorResponse(
-            final String errorMessage, final String detailedErrorMessage, final String hexErrorMessage) {
-        return new GenericErrorResponse(errorMessage, detailedErrorMessage, hexErrorMessage);
     }
 }

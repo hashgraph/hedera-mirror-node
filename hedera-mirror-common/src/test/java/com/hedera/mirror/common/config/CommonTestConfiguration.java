@@ -22,6 +22,10 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import jakarta.persistence.EntityManager;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.flyway.FlywayProperties;
@@ -33,6 +37,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.transaction.support.TransactionOperations;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.output.OutputFrame;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -95,11 +100,29 @@ class CommonTestConfiguration {
         var imageName = v2 ? "gcr.io/mirrornode/citus:12.1.1" : "postgres:14-alpine";
         var dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor("postgres");
         var logger = LoggerFactory.getLogger(PostgreSQLContainer.class);
+        var excluded = "terminating connection due to unexpected postmaster exit";
+        var logConsumer = new FilteringConsumer(
+                new Slf4jLogConsumer(logger, true),
+                o -> !StringUtils.contains(o.getUtf8StringWithoutLineEnding(), excluded));
         return new PostgreSQLContainer<>(dockerImageName)
                 .withClasspathResourceMapping("init.sql", "/docker-entrypoint-initdb.d/init.sql", BindMode.READ_ONLY)
                 .withDatabaseName("mirror_node")
-                .withLogConsumer(new Slf4jLogConsumer(logger, true))
+                .withLogConsumer(logConsumer)
                 .withPassword("mirror_node_pass")
                 .withUsername("mirror_node");
+    }
+
+    @RequiredArgsConstructor
+    private class FilteringConsumer implements Consumer<OutputFrame> {
+
+        private final Consumer<OutputFrame> delegate;
+        private final Predicate<OutputFrame> filter;
+
+        @Override
+        public void accept(OutputFrame outputFrame) {
+            if (filter.test(outputFrame)) {
+                delegate.accept(outputFrame);
+            }
+        }
     }
 }

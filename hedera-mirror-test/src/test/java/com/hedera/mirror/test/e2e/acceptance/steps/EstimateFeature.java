@@ -262,7 +262,8 @@ public class EstimateFeature extends AbstractEstimateFeature {
 
     @Then("I call estimateGas with request body that contains wrong method signature")
     public void wrongMethodSignatureEstimateCall() {
-        assertContractCallReturnsBadRequest(encodeData(WRONG_METHOD_SIGNATURE), mockAddress);
+        assertContractCallReturnsBadRequest(
+                encodeData(WRONG_METHOD_SIGNATURE), WRONG_METHOD_SIGNATURE.actualGas, mockAddress);
     }
 
     @Then("I call estimateGas with wrong encoded parameter")
@@ -276,7 +277,7 @@ public class EstimateFeature extends AbstractEstimateFeature {
     @Then("I call estimateGas with non-existing from address in the request body")
     public void wrongFromParameterEstimateCall() {
         var data = encodeData(ESTIMATE_GAS, MESSAGE_SIGNER);
-        var contractCallRequest = ModelBuilder.contractCallRequest()
+        var contractCallRequest = ModelBuilder.contractCallRequest(MESSAGE_SIGNER.actualGas)
                 .data(data)
                 .estimate(true)
                 .from(newAccountEvmAddress)
@@ -353,12 +354,12 @@ public class EstimateFeature extends AbstractEstimateFeature {
     public void progressiveStateUpdateContractFunction() {
         // making 5 times to state update
         var data = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("5"));
-        var firstResponse = estimateContract(data, contractSolidityAddress)
+        var firstResponse = estimateContract(data, STATE_UPDATE_OF_CONTRACT.actualGas, contractSolidityAddress)
                 .getResultAsNumber()
                 .intValue();
         // making 10 times to state update
         var secondData = encodeData(ESTIMATE_GAS, STATE_UPDATE_OF_CONTRACT, new BigInteger("10"));
-        var secondResponse = estimateContract(secondData, contractSolidityAddress)
+        var secondResponse = estimateContract(secondData, STATE_UPDATE_OF_CONTRACT.actualGas, contractSolidityAddress)
                 .getResultAsNumber()
                 .intValue();
         // verifying that estimateGas for 10 state updates is higher than 5 state updates

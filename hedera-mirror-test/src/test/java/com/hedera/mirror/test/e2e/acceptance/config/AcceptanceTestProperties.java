@@ -98,10 +98,10 @@ public class AcceptanceTestProperties {
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
-        MAINNET(295),
-        TESTNET(296),
-        PREVIEWNET(297),
-        OTHER(298);
-        private final int chainId;
+        MAINNET(295L),
+        TESTNET(296L),
+        PREVIEWNET(297L),
+        OTHER(298L);
+        private final long chainId;
     }
 }

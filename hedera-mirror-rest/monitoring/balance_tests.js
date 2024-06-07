@@ -18,7 +18,7 @@ import _ from 'lodash';
 import config from './config';
 
 import {
-  checkAccountId,
+  checkEntityId,
   checkAPIResponseError,
   checkMandatoryParams,
   checkResourceFreshness,
@@ -104,7 +104,7 @@ const getSingleBalanceById = async (server) => {
       limit: 1,
       message: (elements) => `balances.length of ${elements.length} was expected to be 1`,
     })
-    .withCheckSpec(checkAccountId, {accountId: highestAccount, message: 'Highest acc check was not found'})
+    .withCheckSpec(checkEntityId, {accountId: highestAccount, message: 'Highest acc check was not found'})
     .run(singleBalance);
   if (!result.passed) {
     return {url, ...result};

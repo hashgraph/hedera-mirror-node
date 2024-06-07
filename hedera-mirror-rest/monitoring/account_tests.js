@@ -18,7 +18,7 @@ import _ from 'lodash';
 import config from './config';
 
 import {
-  checkAccountId,
+  checkEntityId,
   checkAPIResponseError,
   checkMandatoryParams,
   checkRespArrayLength,
@@ -84,7 +84,7 @@ const getAccountsWithAccountCheck = async (server) => {
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'singleAccount is undefined'})
-    .withCheckSpec(checkAccountId, {accountId: highestAccount, message: 'Highest acc check was not found'})
+    .withCheckSpec(checkEntityId, {accountId: highestAccount, message: 'Highest acc check was not found'})
     .run(singleAccount);
   if (!result.passed) {
     return {url, ...result};
@@ -128,7 +128,7 @@ const getSingleAccount = async (server) => {
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
-    .withCheckSpec(checkAccountId, {accountId: highestAccount, message: 'Highest account number was not found'})
+    .withCheckSpec(checkEntityId, {accountId: highestAccount, message: 'Highest account number was not found'})
     .run(singleAccount);
   if (!result.passed) {
     return {url, ...result};

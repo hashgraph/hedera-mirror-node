@@ -16,7 +16,10 @@
 
 description = "Hedera Mirror Node Web3"
 
-plugins { id("spring-conventions") }
+plugins {
+    id("openapi-conventions")
+    id("spring-conventions")
+}
 
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))

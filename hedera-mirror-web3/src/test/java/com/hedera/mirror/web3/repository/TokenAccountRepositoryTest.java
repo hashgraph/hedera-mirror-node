@@ -24,6 +24,7 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.repository.projections.TokenAccountAssociationsCount;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -86,6 +87,7 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
     @Test
     void countByAccountIdAndAssociatedGroupedByBalanceIsPositive() {
         long accountId = 22L;
+        long nextAccountId = accountId + 1L;
         domainBuilder
                 .tokenAccount()
                 .customize(a -> a.associated(true).balance(23).accountId(accountId))
@@ -103,12 +105,24 @@ class TokenAccountRepositoryTest extends Web3IntegrationTest {
                 .customize(a -> a.associated(false).accountId(accountId))
                 .persist();
 
+        domainBuilder.tokenAccount().customize(a -> a.accountId(nextAccountId)).persist();
+
+        var expected = List.of(tuple(true, 2), tuple(false, 1));
         assertThat(repository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId))
-                .hasSize(2)
                 .extracting(
                         TokenAccountAssociationsCount::getIsPositiveBalance,
                         TokenAccountAssociationsCount::getTokenCount)
-                .containsExactlyInAnyOrder(tuple(true, 2), tuple(false, 1));
+                .containsExactlyInAnyOrderElementsOf(expected);
+
+        // Verify cached result
+        repository.deleteAll();
+        assertThat(repository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(accountId))
+                .extracting(
+                        TokenAccountAssociationsCount::getIsPositiveBalance,
+                        TokenAccountAssociationsCount::getTokenCount)
+                .containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(repository.countByAccountIdAndAssociatedGroupedByBalanceIsPositive(nextAccountId))
+                .isEmpty();
     }
 
     @Test
