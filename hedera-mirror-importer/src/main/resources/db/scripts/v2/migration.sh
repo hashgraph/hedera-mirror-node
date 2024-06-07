@@ -319,7 +319,7 @@ insertRepeatableMigrations() {
     local existsOnTarget=$(queryTarget "select exists (select from flyway_schema_history where script = '${script}' and checksum=${checksum});")
     if [[ "${existsOnTarget}" != "t" ]]; then
       currentRank=$((currentRank + 1))
-      rows+=("${currentRank},${description}-migrated-from-v1,${type},${script},${checksum},${installed_by},${installed_on},${execution_time},true")
+      rows+=("${currentRank},${description},${type},${script},${checksum},${installed_by},${installed_on},${execution_time},true")
     else
       log "Skipping migration ${script} with checksum ${checksum} since it already exists on the target"
     fi
