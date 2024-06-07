@@ -28,6 +28,6 @@ public interface OpcodeService {
      * @param options the {@link OpcodeTracerOptions}
      * @return the {@link OpcodesResponse} holding the result of the opcode call
      */
-    OpcodesResponse processOpcodeCall(
-            @NonNull TransactionIdOrHashParameter transactionIdOrHash, @NonNull OpcodeTracerOptions options);
+    OpcodesResponse processOpcodeCall(@NonNull TransactionIdOrHashParameter transactionIdOrHash,
+                                      @NonNull OpcodeTracerOptions options);
 }

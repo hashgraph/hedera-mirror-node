@@ -35,7 +35,8 @@ class TransactionHashParameterTest {
                 Arguments.of("0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", true),
                 Arguments.of("1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef", true),
                 Arguments.of("0xGHIJKL", false),
-                Arguments.of(null, false));
+                Arguments.of(null, false)
+        );
     }
 
     @ParameterizedTest

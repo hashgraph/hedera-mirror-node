@@ -21,4 +21,6 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface ContractResultRepository extends CrudRepository<ContractResult, Long> {}
+public interface ContractResultRepository extends CrudRepository<ContractResult, Long> {
+
+}

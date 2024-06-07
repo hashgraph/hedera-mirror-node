@@ -57,11 +57,7 @@ public interface RecordFileRepository extends PagingAndSortingRepository<RecordF
     Optional<RecordFile> findLatest();
 
     @Caching(
-            cacheable =
-                    @Cacheable(
-                            cacheNames = CACHE_NAME,
-                            cacheManager = CACHE_MANAGER_RECORD_FILE_TIMESTAMP,
-                            unless = "#result == null"),
+            cacheable = @Cacheable(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_RECORD_FILE_TIMESTAMP, unless = "#result == null"),
             put = @CachePut(cacheNames = CACHE_NAME, cacheManager = CACHE_MANAGER_RECORD_FILE_INDEX))
     @Query("select r from RecordFile r where r.consensusEnd >= ?1 order by r.consensusEnd asc limit 1")
     Optional<RecordFile> findByTimestamp(long timestamp);

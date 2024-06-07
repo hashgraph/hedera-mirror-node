@@ -102,8 +102,9 @@ public class ContractCallService {
                     BlockType block = params.getBlock();
                     // if we have historical call then set corresponding file record
                     if (block != BlockType.LATEST) {
-                        var recordFileOptional =
-                                recordFileService.findByBlockType(block).orElseThrow(BlockNumberNotFoundException::new);
+                        var recordFileOptional = recordFileService
+                                .findByBlockType(block)
+                                .orElseThrow(BlockNumberNotFoundException::new);
                         ctx.setRecordFile(recordFileOptional);
                     }
                     // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
@@ -125,8 +126,8 @@ public class ContractCallService {
         });
     }
 
-    public OpcodesProcessingResult processOpcodeCall(
-            final CallServiceParameters params, final OpcodeTracerOptions options) {
+    public OpcodesProcessingResult processOpcodeCall(final CallServiceParameters params,
+                                                     final OpcodeTracerOptions options) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

@@ -115,14 +115,18 @@ class GenericControllerAdvice {
     private ResponseEntity<?> httpMessageConversionError(final HttpMessageConversionException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
         return new ResponseEntity<>(
-                new GenericErrorResponse("Unable to parse JSON", e.getMessage(), StringUtils.EMPTY), BAD_REQUEST);
+                new GenericErrorResponse("Unable to parse JSON", e.getMessage(), StringUtils.EMPTY),
+                BAD_REQUEST
+        );
     }
 
     @ExceptionHandler
     private ResponseEntity<?> serverWebInputError(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
         return new ResponseEntity<>(
-                new GenericErrorResponse(e.getReason(), e.getMessage(), StringUtils.EMPTY), BAD_REQUEST);
+                new GenericErrorResponse(e.getReason(), e.getMessage(), StringUtils.EMPTY),
+                BAD_REQUEST
+        );
     }
 
     @ExceptionHandler
@@ -136,19 +140,24 @@ class GenericControllerAdvice {
         log.warn("Unsupported media type error: {}", e.getMessage());
         return new ResponseEntity<>(
                 new GenericErrorResponse(UNSUPPORTED_MEDIA_TYPE.getReasonPhrase(), e.getMessage(), StringUtils.EMPTY),
-                UNSUPPORTED_MEDIA_TYPE);
+                UNSUPPORTED_MEDIA_TYPE
+        );
     }
 
     @ExceptionHandler
     private ResponseEntity<?> queryTimeoutError(final QueryTimeoutException ignored) {
         return new ResponseEntity<>(
-                new GenericErrorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()), SERVICE_UNAVAILABLE);
+                new GenericErrorResponse(SERVICE_UNAVAILABLE.getReasonPhrase()),
+                SERVICE_UNAVAILABLE
+        );
     }
 
     @ExceptionHandler
     private ResponseEntity<?> genericError(final Exception e) {
         log.error("Generic error: ", e);
         return new ResponseEntity<>(
-                new GenericErrorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase()), INTERNAL_SERVER_ERROR);
+                new GenericErrorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase()),
+                INTERNAL_SERVER_ERROR
+        );
     }
 }

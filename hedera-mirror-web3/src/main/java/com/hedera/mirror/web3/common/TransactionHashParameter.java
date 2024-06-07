@@ -24,7 +24,7 @@ import org.springframework.util.StringUtils;
 public record TransactionHashParameter(Bytes hash) implements TransactionIdOrHashParameter {
 
     private static final Pattern ETH_HASH_PATTERN = Pattern.compile("^(0x)?([0-9A-Fa-f]{64})$");
-
+    
     public static TransactionHashParameter valueOf(String hash) {
         if (!isValidEthHash(hash)) {
             return null;

@@ -25,6 +25,5 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface EthereumTransactionRepository extends CrudRepository<EthereumTransaction, Long> {
 
-    Optional<EthereumTransaction> findByConsensusTimestampAndPayerAccountId(
-            long consensusTimestamp, EntityId payerAccountId);
+    Optional<EthereumTransaction> findByConsensusTimestampAndPayerAccountId(long consensusTimestamp, EntityId payerAccountId);
 }
