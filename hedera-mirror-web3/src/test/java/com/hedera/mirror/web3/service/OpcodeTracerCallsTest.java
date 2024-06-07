@@ -87,12 +87,11 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
                 .execute(
                         paramsCaptor.capture(),
                         gasCaptor.capture(),
-                        tracerTypeCaptor.capture(),
                         any(ContractCallContext.class));
     }
 
     @ParameterizedTest
-    @EnumSource(ContractExecutionServicePrecompileTest.SupportedContractModificationFunctions.class)
+    @EnumSource(ContractCallServicePrecompileTest.SupportedContractModificationFunctions.class)
     void evmPrecompileSupportedModificationTokenFunctions(final ContractFunctionProviderEnum function) {
         final var params = serviceParametersForDebug(
                 function,
@@ -191,14 +190,13 @@ class OpcodeTracerCallsTest extends ContractCallTestSetup {
     private void verifyCaptors(final ContractDebugParameters params) {
         assertThat(paramsCaptor.getValue()).isEqualTo(params);
         assertThat(gasCaptor.getValue()).isEqualTo(params.getGas());
-        assertThat(tracerTypeCaptor.getValue()).isEqualTo(TracerType.OPCODE);
     }
 
     private OpcodesProcessingResult expectedOpcodeProcessingResult(final ContractDebugParameters params) {
         return ContractCallContext.run(ctx -> {
             ctx.setOpcodeTracerOptions(OPTIONS);
             ctx.initializeStackFrames(store.getStackedStateFrames());
-            final var result = processor.execute(params, params.getGas(), TracerType.OPCODE, ctx);
+            final var result = processor.execute(params, params.getGas(), ctx);
             return new OpcodesProcessingResult(result, ctx.getOpcodes());
         });
     }
