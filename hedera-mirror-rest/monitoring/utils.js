@@ -133,7 +133,12 @@ const fetchAPIResponse = async (url, key = undefined, retryPredicate = noRetry, 
   try {
     let opts = {signal: controller.signal};
     if (body !== undefined) {
-      opts = {method: 'POST', body: body, headers: {'Content-type': 'application/json; charset=UTF-8'}};
+      opts = {
+        method: 'POST',
+        body: body,
+        headers: {'Content-type': 'application/json; charset=UTF-8'},
+        signal: controller.signal,
+      };
     }
     const json = await fetchWithRetry(url, opts, retryPredicate);
 
