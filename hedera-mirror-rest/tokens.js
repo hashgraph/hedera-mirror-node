@@ -33,7 +33,6 @@ import {CustomFee, Entity, Nft, NftHistory, NftTransfer, Token, Transaction} fro
 import {NftService, TokenService} from './service';
 import * as utils from './utils';
 import {CustomFeeViewModel, NftTransactionHistoryViewModel, NftViewModel} from './viewmodel';
-import token from './model/token.js';
 
 const {default: defaultLimit} = getResponseLimit();
 
