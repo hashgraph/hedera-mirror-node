@@ -101,7 +101,7 @@ const getFirstTokenIdWithCheckResult = async (server) => {
 };
 
 const getFirstTokenIdForNft = async (server) => {
-  const url = getUrl(server, tokensPath);
+  const url = getUrl(server, tokensPath, {type: 'NON_FUNGIBLE_UNIQUE', limit: 1});
   const tokens = await getAPIResponse(url, tokensJsonRespKey);
 
   const result = new CheckRunner()
@@ -113,7 +113,7 @@ const getFirstTokenIdForNft = async (server) => {
     })
     .run(tokens);
   return {
-    tokenId: result.passed && tokens[0].type === 'NON_FUNGIBLE_UNIQUE' ? tokens[0].token_id : null,
+    tokenId: result.passed ? tokens[0].token_id : null,
     result: {
       url,
       ...result,
@@ -434,8 +434,6 @@ const getTokenBalancesForAccount = async (server) => {
   };
 };
 
-const tokenNftsPath = `${tokensPath}/${nftIdFromConfig}/nfts`;
-
 async function getNfts(url, tokenNftsJsonRespKey) {
   let nfts = await getAPIResponse(url, tokenNftsJsonRespKey);
   let nftsResult = new CheckRunner()
@@ -456,7 +454,7 @@ async function getNfts(url, tokenNftsJsonRespKey) {
  * @return {Promise<{message: String, passed: boolean, url: String}>}
  */
 const getTokenNfts = async (server) => {
-  let tokenId = config[resource].nftId;
+  let tokenId = nftIdFromConfig;
   const tokenNftsJsonRespKey = 'nfts';
   if (!tokenId) {
     const {tokenId: tokenIdFromAPI, result} = await getFirstTokenIdForNft(server);
@@ -466,6 +464,8 @@ const getTokenNfts = async (server) => {
 
     tokenId = tokenIdFromAPI;
   }
+
+  const tokenNftsPath = `${tokensPath}/${tokenId}/nfts`;
 
   let url = getUrl(server, tokenNftsPath, {limit: 1});
   let nfts = await getNfts(url, tokenNftsJsonRespKey);
