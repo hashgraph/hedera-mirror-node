@@ -19,9 +19,11 @@ description = "Hedera Mirror Node Web3"
 plugins {
     id("openapi-conventions")
     id("spring-conventions")
+    id("org.web3j") version "4.12.0"
 }
 
 dependencies {
+    implementation("org.web3j:core:4.12.0")
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("com.bucket4j:bucket4j-core")
