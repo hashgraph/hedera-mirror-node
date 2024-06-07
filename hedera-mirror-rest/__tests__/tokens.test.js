@@ -928,22 +928,22 @@ describe('token formatTokenInfoRow tests', () => {
 
   const rowInputWithEmptyMetadata = {
     ...rowInput,
-    metadata: []
+    metadata: [],
   };
 
   const rowInputWithMetadataAndKey = {
     ...rowInput,
-    metadata: Uint8Array.of(1,2,3),
-    metadata_key: [8, 8, 8]
+    metadata: Uint8Array.of(1, 2, 3),
+    metadata_key: [8, 8, 8],
   };
 
   const expectedWithMetadataAndKey = {
     ...expected,
-    metadata: "1,2,3",
+    metadata: '1,2,3',
     metadata_key: {
-      _type: "ProtobufEncoded",
-      key: "080808",
-    }
+      _type: 'ProtobufEncoded',
+      key: '080808',
+    },
   };
 
   test('Verify formatTokenRow', () => {
@@ -1326,63 +1326,35 @@ describe('token validateSerialNumberParam tests', () => {
 
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
   const getExpectedQuery = (order = constants.orderFilterValues.DESC, timestampFilters = []) => {
-    let paramIndex = 4;
-    const nftTimestampCondition = timestampFilters
-      .map((f) => `lower(timestamp_range) ${f.operator} $${paramIndex++}`)
-      .join(' and ');
-    const deleteTimestampCondition = nftTimestampCondition.replace('lower(timestamp_range)', 'consensus_timestamp');
-    const limitQuery = `limit $${paramIndex}`;
-    return `with nft_event as (
-      select lower(timestamp_range) as timestamp
-      from nft
-      where token_id = $2 and serial_number = $3 ${nftTimestampCondition && 'and ' + nftTimestampCondition}
-      union all
-      select lower(timestamp_range) as timestamp
-      from nft_history
-      where token_id = $2 and serial_number = $3 ${nftTimestampCondition && 'and ' + nftTimestampCondition}
-      order by timestamp ${order}
-      ${limitQuery}
-    ), nft_transaction as (
-      select
-        consensus_timestamp,
-        (select jsonb_path_query_array(
-          nft_transfer,
-          '$[*] ? (@.token_id == $token_id && @.serial_number == $serial_number)',
-          $1)
-        ) as nft_transfer,
-        nonce,
-        payer_account_id,
-        type,
-        valid_start_ns
-      from transaction
-      join nft_event on timestamp = consensus_timestamp
-    ), token_deletion as (
-      select
-        consensus_timestamp,
-        jsonb_build_array(jsonb_build_object(
-          'is_approval', false,
-          'receiver_account_id', null,
-          'sender_account_id', null,
-          'serial_number', $3,
-          'token_id', $2)) as nft_transfer,
-        nonce,
-        payer_account_id,
-        type,
-        valid_start_ns
-      from transaction
-      where consensus_timestamp = (select lower(timestamp_range) from entity where id = $2 and deleted is true)
-        ${deleteTimestampCondition && 'and ' + deleteTimestampCondition}
-    )
-    select * from nft_transaction
-    union all
-    select * from token_deletion
-    order by consensus_timestamp ${order}
-    ${limitQuery}`;
+    let index = 3;
+    const timestampConditions = timestampFilters.map(({operator}) => `lower(timestamp_range) ${operator} $${index++}`);
+    const nftCondition = ['token_id = $1', 'serial_number = $2', ...timestampConditions].join(' and ');
+    const tokenDeleteCondition = ['id = $1', 'deleted is true', ...timestampConditions].join(' and ');
+    const limitQuery = `limit $${index}`;
+    return `select timestamp
+      from (
+        (
+          select lower(timestamp_range) as timestamp
+          from nft
+          where ${nftCondition}
+          union all (
+            select lower(timestamp_range) as timestamp
+            from nft_history
+            where ${nftCondition}
+            order by timestamp ${order}
+            ${limitQuery})
+        ) union all (
+          select lower(timestamp_range) as timestamp
+          from entity
+          where ${tokenDeleteCondition}
+        )) as nft_event
+        order by timestamp ${order}
+        ${limitQuery}`;
   };
 
   const tokenId = 1009; // encoded
   const serialNumber = 9886299254743552n; // larger than MAX_SAFE_INTEGER
-  const defaultParams = [`{"token_id":${tokenId},"serial_number":${serialNumber}}`, tokenId, serialNumber];
+  const defaultParams = [tokenId, serialNumber];
 
   test('Verify simple query', () => {
     const expectedQuery = getExpectedQuery();
