@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,36 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.exception;
+package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
-public class BlockNumberNotFoundException extends InvalidInputException {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Value;
 
-    public static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
+/**
+ * Options for tracing opcodes
+ */
+@Data
+@Value
+@AllArgsConstructor
+public class OpcodeTracerOptions {
 
-    public BlockNumberNotFoundException() {
-        super(UNKNOWN_BLOCK_NUMBER);
+    /**
+     * Include stack information
+     */
+    boolean stack;
+
+    /**
+     * Include memory information
+     */
+    boolean memory;
+
+    /**
+     * Include storage information
+     */
+    boolean storage;
+
+    public OpcodeTracerOptions() {
+        this(true, false, false);
     }
 }

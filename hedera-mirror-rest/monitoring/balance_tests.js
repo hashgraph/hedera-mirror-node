@@ -26,7 +26,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   hasEmptyList,
   testRunner,
@@ -44,7 +44,7 @@ const mandatoryParams = ['account', 'balance'];
  */
 const getBalancesCheck = async (server) => {
   const url = getUrl(server, balancesPath, {limit: resourceLimit});
-  const balances = await getAPIResponse(url, jsonRespKey);
+  const balances = await fetchAPIResponse(url, jsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -75,7 +75,7 @@ const getBalancesCheck = async (server) => {
  */
 const getSingleBalanceById = async (server) => {
   let url = getUrl(server, balancesPath, {limit: 10});
-  const balances = await getAPIResponse(url, jsonRespKey);
+  const balances = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -95,7 +95,7 @@ const getSingleBalanceById = async (server) => {
 
   const highestAccount = _.max(_.map(balances, (balance) => balance.account));
   url = getUrl(server, balancesPath, {'account.id': highestAccount});
-  const singleBalance = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
+  const singleBalance = await fetchAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)

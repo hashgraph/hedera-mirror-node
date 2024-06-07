@@ -159,9 +159,9 @@ const getEntityBalanceQuery = (
     .join(' and ');
   const params = utils.mergeParams(
     [],
+    tokenBalanceQuery.params,
     entityBalanceQuery.params,
     entityAccountQuery.params,
-    tokenBalanceQuery.params,
     pubKeyQuery.params,
     accountBalanceQuery.params
   );
@@ -261,7 +261,7 @@ const emptyTransactionsPromise = Promise.resolve({transactions: [], links: {next
  */
 const getAccountQuery = (
   entityAccountQuery,
-  tokenBalanceQuery = {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts},
+  tokenBalanceQuery,
   accountBalanceQuery = {query: '', params: []},
   entityBalanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
@@ -332,10 +332,16 @@ const getAccounts = async (req, res) => {
   const includeBalance = getBalanceParamValue(req.query);
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
   const pubKeyQuery = toQueryObject(utils.parsePublicKeyQueryParam(req.query, 'public_key'));
+  const tokenBalanceQuery = {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts};
+
+  if (entityAccountQuery && entityAccountQuery.query) {
+    tokenBalanceQuery.query += ` and ${entityAccountQuery.query.replaceAll('e.id', 'account_id')}`;
+    tokenBalanceQuery.params = [...entityAccountQuery.params];
+  }
 
   const {query, params} = getAccountQuery(
     entityAccountQuery,
-    undefined,
+    tokenBalanceQuery,
     undefined,
     balanceQuery,
     limitAndOrderQuery,
@@ -408,20 +414,13 @@ const getOneAccount = async (req, res) => {
   let paramCount = accountIdParamIndex;
   const tokenBalanceQuery = {
     query: `account_id = $${accountIdParamIndex}`,
-    params: [],
+    params: [encodedId],
     limit: tokenBalanceResponseLimit.singleAccount,
   };
-  const entityAccountQuery = {query: `e.id = $${accountIdParamIndex}`, params: [encodedId]};
+  const entityAccountQuery = {query: `e.id = $${accountIdParamIndex}`, params: []};
 
   const accountBalanceQuery = {query: '', params: []};
   if (timestampFilters.length > 0) {
-    const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
-      Entity.getFullName(Entity.TIMESTAMP_RANGE),
-      timestampRange
-    );
-    entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
-    entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
-
     const [balanceSnapshotTsQuery, balanceSnapshotTsParams] = utils.buildTimestampQuery(
       'consensus_timestamp',
       timestampRange,
@@ -459,6 +458,14 @@ const getOneAccount = async (req, res) => {
       accountBalanceQuery.forceUnionEntityHistory = true;
       tokenBalanceQuery.query = '';
     }
+
+    const [entityTsQuery, entityTsParams] = utils.buildTimestampRangeQuery(
+      Entity.getFullName(Entity.TIMESTAMP_RANGE),
+      timestampRange
+    );
+
+    entityAccountQuery.query += ` and ${entityTsQuery.replaceAll('?', (_) => `$${++paramCount}`)}`;
+    entityAccountQuery.params = entityAccountQuery.params.concat(entityTsParams);
   }
 
   const {query: entityQuery, params: entityParams} = getAccountQuery(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.exception;
+package com.hedera.mirror.web3.utils;
 
-public class BlockNumberNotFoundException extends InvalidInputException {
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-    public static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
+@Getter
+@RequiredArgsConstructor
+enum EthTransactionType {
+    LEGACY(0),
+    EIP_2930(1),
+    EIP_1559(2);
 
-    public BlockNumberNotFoundException() {
-        super(UNKNOWN_BLOCK_NUMBER);
-    }
+    private final int typeByte;
 }

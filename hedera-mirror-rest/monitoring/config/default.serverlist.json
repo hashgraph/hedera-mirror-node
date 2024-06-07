@@ -2,7 +2,7 @@
   "port": 3000,
   "servers": [
     {
-      "baseUrl": "http://127.0.0.1:5551",
+      "baseUrl": "https://testnet.mirrornode.hedera.com",
       "name": "local"
     }
   ],
@@ -19,6 +19,11 @@
     "intervalMultiplier": 1,
     "limit": 10,
     "stakingRewardAccountId": null,
+    "cryptoAllowanceOwnerId": 2656149,
+    "nftAllowanceOwnerId": 14189,
+    "_comment": "nftAccountId value might not be the same as nftAllowanceOwnerId in different environments",
+    "nftAccountId": 10794,
+    "tokenAllowanceOwnerId": 2383287,
     "tokenRelationshipEnabled": true
   },
   "balance": {
@@ -34,7 +39,7 @@
     "limit": 10
   },
   "contract": {
-    "contractId": "",
+    "contractId": "0.0.2664875",
     "enabled": true,
     "intervalMultiplier": 1,
     "limit": 2
@@ -61,17 +66,17 @@
   },
   "topic": {
     "enabled": true,
-    "freshnessThreshold": 100,
+    "freshnessThreshold": 1000000000000,
     "intervalMultiplier": 1,
     "limit": 10,
-    "topicId": ""
+    "topicId": "0.0.1962"
   },
   "token": {
     "enabled": true,
-    "freshnessThreshold": 1000,
+    "freshnessThreshold": 1000000000000,
     "intervalMultiplier": 1,
-    "tokenId": "",
-    "nftId": "",
+    "tokenId": "0.0.4351851",
+    "nftId": "0.0.4351871",
     "limit": 2
   }
 }

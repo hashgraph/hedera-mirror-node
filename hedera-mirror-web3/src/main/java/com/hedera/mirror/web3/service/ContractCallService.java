@@ -23,14 +23,13 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import com.google.common.base.Stopwatch;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
-import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
@@ -43,7 +42,6 @@ import io.micrometer.core.instrument.Meter.MeterProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
 import java.util.Objects;
-import java.util.Optional;
 import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -53,14 +51,13 @@ public class ContractCallService {
 
     static final String GAS_LIMIT_METRIC = "hedera.mirror.web3.call.gas.limit";
     static final String GAS_USED_METRIC = "hedera.mirror.web3.call.gas.used";
-    private static final String UNKNOWN_BLOCK_NUMBER = "Unknown block number";
 
     private final BinaryGasEstimator binaryGasEstimator;
     private final MeterProvider<Counter> gasLimitCounter;
     private final MeterProvider<Counter> gasUsedCounter;
     private final Store store;
     private final MirrorEvmTxProcessor mirrorEvmTxProcessor;
-    private final RecordFileRepository recordFileRepository;
+    private final RecordFileService recordFileService;
     private final ThrottleProperties throttleProperties;
     private final Bucket gasLimitBucket;
 
@@ -69,7 +66,7 @@ public class ContractCallService {
             BinaryGasEstimator binaryGasEstimator,
             Store store,
             MirrorEvmTxProcessor mirrorEvmTxProcessor,
-            RecordFileRepository recordFileRepository,
+            RecordFileService recordFileService,
             ThrottleProperties throttleProperties,
             Bucket gasLimitBucket) {
         this.binaryGasEstimator = binaryGasEstimator;
@@ -81,7 +78,7 @@ public class ContractCallService {
                 .withRegistry(meterRegistry);
         this.store = store;
         this.mirrorEvmTxProcessor = mirrorEvmTxProcessor;
-        this.recordFileRepository = recordFileRepository;
+        this.recordFileService = recordFileService;
         this.throttleProperties = throttleProperties;
         this.gasLimitBucket = gasLimitBucket;
     }
@@ -106,7 +103,7 @@ public class ContractCallService {
                     // if we have historical call then set corresponding file record
                     if (block != BlockType.LATEST) {
                         var recordFileOptional =
-                                findRecordFileByBlock(block).orElseThrow(BlockNumberNotFoundException::new);
+                                recordFileService.findByBlockType(block).orElseThrow(BlockNumberNotFoundException::new);
                         ctx.setRecordFile(recordFileOptional);
                     }
                     // eth_call initialization - historical timestamp is Optional.of(recordFile.getConsensusEnd())
@@ -126,6 +123,11 @@ public class ContractCallService {
 
             return stringResult;
         });
+    }
+
+    public OpcodesProcessingResult processOpcodeCall(
+            final CallServiceParameters params, final OpcodeTracerOptions options) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     /**
@@ -202,21 +204,5 @@ public class ContractCallService {
         gasUsedCounter
                 .withTags("type", callType.toString(), "iteration", String.valueOf(iterations))
                 .increment(gasUsed);
-    }
-
-    private Optional<RecordFile> findRecordFileByBlock(BlockType block) {
-        if (block == BlockType.EARLIEST) {
-            return recordFileRepository.findEarliest();
-        }
-
-        long latestBlock = recordFileRepository
-                .findLatestIndex()
-                .orElseThrow(() -> new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER));
-
-        if (block.number() > latestBlock) {
-            throw new BlockNumberOutOfRangeException(UNKNOWN_BLOCK_NUMBER);
-        }
-
-        return recordFileRepository.findByIndex(block.number());
     }
 }
