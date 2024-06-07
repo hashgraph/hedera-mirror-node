@@ -44,7 +44,7 @@ class FileDataService extends BaseService {
     )
     select
       max(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP},
-      min(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as first_consenssu_timestamp,
+      min(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as first_consensus_timestamp,
       string_agg(${FileData.getFullName(FileData.FILE_DATA)}, '' order by ${FileData.getFullName(
     FileData.CONSENSUS_TIMESTAMP
   )}) as ${FileData.FILE_DATA}
@@ -130,7 +130,7 @@ class FileDataService extends BaseService {
           ...whereQuery,
           {
             query: FileData.CONSENSUS_TIMESTAMP + utils.opsMap.lt,
-            param: row.first_consenssu_timestamp,
+            param: row.first_consensus_timestamp,
           },
         ];
       }
