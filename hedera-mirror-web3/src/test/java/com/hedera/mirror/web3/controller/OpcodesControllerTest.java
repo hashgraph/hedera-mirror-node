@@ -52,7 +52,6 @@ import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.ContractDebugService;
 import com.hedera.mirror.web3.service.OpcodeService;
 import com.hedera.mirror.web3.service.OpcodeServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
