@@ -19,10 +19,6 @@
     "intervalMultiplier": 1,
     "limit": 10,
     "stakingRewardAccountId": null,
-    "cryptoAllowanceOwnerId": "",
-    "nftAllowanceOwnerId": "",
-    "nftAccountId": "",
-    "tokenAllowanceOwnerId": "",
     "tokenRelationshipEnabled": true
   },
   "balance": {
@@ -71,11 +67,11 @@
     "topicId": ""
   },
   "token": {
-    "enabled": false,
+    "enabled": true,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
-    "tokenBalancesLimit": 10,
     "tokenId": "",
-    "limit": 10
+    "nftId": "",
+    "limit": 2
   }
 }

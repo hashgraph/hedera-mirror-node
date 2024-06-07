@@ -32,7 +32,7 @@ import {
 
 const resource = 'topic';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
-const {topicId} = config[resource];
+const topicId = config[resource].topicId;
 const jsonRespKey = 'messages';
 const mandatoryParams = [
   'consensus_timestamp',
@@ -95,8 +95,8 @@ const checkSingleField = (elements, option) => {
  * @return {{url: String, passed: boolean, message: String}}
  */
 const getTopicById = async (server) => {
-  let url = getUrl(server, `/topics/${topicId}`, {limit: resourceLimit});
-  let topic = await fetchAPIResponse(url, jsonRespKey);
+  let url = getUrl(server, `/topics/${topicId}`);
+  let topic = await fetchAPIResponse(url);
   const requiredParams = [
     'admin_key',
     'auto_renew_account',
