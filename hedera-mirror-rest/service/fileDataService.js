@@ -17,7 +17,8 @@
 import _ from 'lodash';
 
 import BaseService from './baseService';
-import {ExchangeRate, FileData, FeeSchedule} from '../model';
+import {ExchangeRate, FeeSchedule, FileData} from '../model';
+import * as utils from '../utils';
 
 /**
  * File data retrieval business logic
@@ -43,6 +44,7 @@ class FileDataService extends BaseService {
     )
     select
       max(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP},
+      min(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as first_consensus_timestamp,
       string_agg(${FileData.getFullName(FileData.FILE_DATA)}, '' order by ${FileData.getFullName(
     FileData.CONSENSUS_TIMESTAMP
   )}) as ${FileData.FILE_DATA}
@@ -91,7 +93,7 @@ class FileDataService extends BaseService {
   };
 
   getLatestFileContentsQuery = (innerWhere = '') => {
-    const outerWhere = innerWhere.replace('and ', `and ${FileData.tableAlias}.`);
+    const outerWhere = innerWhere.replaceAll('and ', `and ${FileData.tableAlias}.`);
     return FileDataService.latestFileContentsQuery
       .replace(FileDataService.filterInnerPlaceholder, innerWhere)
       .replace(FileDataService.filterOuterPlaceholder, outerWhere);
@@ -103,13 +105,38 @@ class FileDataService extends BaseService {
   };
 
   getExchangeRate = async (filterQueries) => {
-    const row = await this.getLatestFileDataContents(FileDataService.exchangeRateFileId, filterQueries);
-    return _.isNil(row) ? null : new ExchangeRate(row);
+    return this.fallbackRetry(FileDataService.exchangeRateFileId, filterQueries, ExchangeRate);
   };
 
   getFeeSchedule = async (filterQueries) => {
-    const row = await this.getLatestFileDataContents(FileDataService.feeScheduleFileId, filterQueries);
-    return _.isNil(row) ? null : new FeeSchedule(row);
+    return this.fallbackRetry(FileDataService.feeScheduleFileId, filterQueries, FeeSchedule);
+  };
+
+  fallbackRetry = async (fileEntityId, filterQueries, resultConstructor) => {
+    const whereQuery = filterQueries.whereQuery ?? [];
+    const filters = {whereQuery};
+
+    let attempts = 0;
+    while (++attempts <= 10) {
+      const row = await this.getLatestFileDataContents(fileEntityId, filters);
+      try {
+        return _.isNil(row) ? null : new resultConstructor(row);
+      } catch (error) {
+        logger.warn(
+          `Failed to load file data for file id ${fileEntityId} at ${row.consensus_timestamp}, failing back to previous file. Attempt ${attempts}. Error: ${error}`
+        );
+
+        filters.whereQuery = [
+          ...whereQuery,
+          {
+            query: FileData.CONSENSUS_TIMESTAMP + utils.opsMap.lt,
+            param: row.first_consensus_timestamp,
+          },
+        ];
+      }
+    }
+
+    return null;
   };
 }
 
