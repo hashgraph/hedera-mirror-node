@@ -54,6 +54,7 @@ dependencies {
         val tuweniVersion: String by rootProject.extra
         val vertxVersion: String by rootProject.extra
 
+        api("org.web3j:core:4.12.0")
         api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.5")
