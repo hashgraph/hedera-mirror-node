@@ -33,6 +33,7 @@ import {
 const contractsPath = '/contracts';
 const resource = 'contract';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
+const contractCallEnabled = config[resource].contractCallEnabled;
 const jsonRespKey = 'contracts';
 const jsonResultsRespKey = 'results';
 const mandatoryParams = [
@@ -401,7 +402,7 @@ const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
     runTest(getContractById),
-    runTest(postContractCall),
+    contractCallEnabled ? runTest(postContractCall) : '',
     runTest(getContractResults),
     runTest(getContractResultsLogs),
     runTest(getContractState),

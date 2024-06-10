@@ -40,6 +40,7 @@
   "contract": {
     "contractId": "",
     "enabled": true,
+    "contractCallEnabled": false,
     "intervalMultiplier": 1,
     "limit": 2
   },
