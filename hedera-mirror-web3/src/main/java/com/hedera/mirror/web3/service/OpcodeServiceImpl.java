@@ -189,9 +189,11 @@ public class OpcodeServiceImpl implements OpcodeService {
                                        ContractResult contractResult,
                                        Integer transactionType) {
         return ethereumTransaction
-                .filter(t -> ArrayUtils.isNotEmpty(t.getToAddress()))
-                .map(t -> Address.wrap(Bytes.wrap(t.getToAddress())))
-                .flatMap(address -> {
+                .flatMap(transaction -> {
+                    if (ArrayUtils.isEmpty(transaction.getToAddress())) {
+                        return Optional.of(Address.ZERO);
+                    }
+                    Address address = Address.wrap(Bytes.wrap(transaction.getToAddress()));
                     if (isMirror(address.toArrayUnsafe())) {
                         return entityDatabaseAccessor.get(address, Optional.empty()).map(this::getEntityAddress);
                     }
