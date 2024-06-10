@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,15 @@
 
 package com.hedera.mirror.web3.exception;
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
 import java.io.Serial;
 
-public abstract class Web3Exception extends MirrorNodeException {
+@SuppressWarnings("java:S110")
+public class InvalidFileException extends Web3Exception {
 
     @Serial
-    private static final long serialVersionUID = 2799138943840105243L;
+    private static final long serialVersionUID = -595255800032756525L;
 
-    protected Web3Exception(String message) {
-        super(message);
-    }
-
-    protected Web3Exception(Throwable throwable) {
+    public InvalidFileException(Throwable throwable) {
         super(throwable);
     }
 }

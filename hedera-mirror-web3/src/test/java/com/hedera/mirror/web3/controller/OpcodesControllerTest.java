@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.common.util.CommonUtils.instant;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hedera.mirror.web3.utils.TransactionProviderEnum.entityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +53,7 @@ import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
+import com.hedera.mirror.web3.service.ContractDebugService;
 import com.hedera.mirror.web3.service.OpcodeService;
 import com.hedera.mirror.web3.service.OpcodeServiceImpl;
 import com.hedera.mirror.web3.service.RecordFileService;
@@ -79,14 +81,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -109,7 +111,6 @@ import org.springframework.util.StringUtils;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(controllers = OpcodesController.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OpcodesControllerTest {
 
     private static final String OPCODES_URI = "/api/v1/contracts/results/{transactionIdOrHash}/opcodes";
@@ -217,7 +218,7 @@ class OpcodesControllerTest {
         final var validStartNs = transaction.getValidStartNs();
         final var senderId = contractResult.getSenderId();
         final var senderAddress = entityAddress(senderEntity);
-        final var contractId = transaction.getEntityId();
+        final var contractId = EntityId.of(contractResult.getContractId());
         final var contractAddress = entityAddress(contractEntity);
 
         expectedCallServiceParameters.set(ContractDebugParameters.builder()
@@ -239,21 +240,20 @@ class OpcodesControllerTest {
         when(transactionRepository.findByPayerAccountIdAndValidStartNs(payerAccountId, validStartNs))
                 .thenReturn(Optional.of(transaction));
         when(ethereumTransactionRepository.findByConsensusTimestampAndPayerAccountId(
-                        contractTransactionHash.getConsensusTimestamp(), payerAccountId))
-                .thenReturn(Optional.ofNullable(ethTransaction));
+                contractTransactionHash.getConsensusTimestamp(),
+                EntityId.of(contractTransactionHash.getPayerAccountId())
+        )).thenReturn(Optional.ofNullable(ethTransaction));
         when(contractResultRepository.findById(consensusTimestamp)).thenReturn(Optional.of(contractResult));
         when(recordFileRepository.findByTimestamp(consensusTimestamp)).thenReturn(Optional.of(recordFile));
-        when(entityDatabaseAccessor.evmAddressFromId(contractId, Optional.empty()))
-                .thenReturn(contractAddress);
-        when(entityDatabaseAccessor.evmAddressFromId(senderId, Optional.empty()))
-                .thenReturn(senderAddress);
-        when(entityDatabaseAccessor.get(contractAddress, Optional.empty())).thenReturn(Optional.of(contractEntity));
+        when(entityDatabaseAccessor.evmAddressFromId(contractId, Optional.empty())).thenReturn(contractAddress);
+        when(entityDatabaseAccessor.evmAddressFromId(senderId, Optional.empty())).thenReturn(senderAddress);
+        when(entityDatabaseAccessor.get(contractAddress, Optional.empty())).thenReturn(Optional.ofNullable(contractEntity));
         when(entityDatabaseAccessor.get(senderAddress, Optional.empty())).thenReturn(Optional.of(senderEntity));
 
         if (ethTransaction != null) {
-            return new TransactionHashParameter(Bytes.of(ethTransaction.getHash()));
+            return new TransactionHashParameter(Bytes.of(hash));
         } else {
-            return new TransactionIdParameter(transaction.getPayerAccountId(), instant(transaction.getValidStartNs()));
+            return new TransactionIdParameter(payerAccountId, instant(validStartNs));
         }
     }
 
@@ -301,8 +301,8 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @MethodSource("transactionsWithDifferentTracerOptions")
-    void callWithDifferentCombinationsOfTracerOptions(
-            final TransactionProviderEnum providerEnum, final OpcodeTracerOptions options) throws Exception {
+    void callWithDifferentCombinationsOfTracerOptions(final TransactionProviderEnum providerEnum,
+                                                      final OpcodeTracerOptions options) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash, options))
@@ -330,23 +330,21 @@ class OpcodesControllerTest {
     void callWithTransactionNotFoundExceptionTest(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final GenericErrorResponse expectedError =
-                switch (transactionIdOrHash) {
-                    case TransactionHashParameter parameter -> {
-                        reset(contractTransactionHashRepository);
-                        when(contractTransactionHashRepository.findByHash(
-                                        parameter.hash().toArray()))
-                                .thenReturn(Optional.empty());
-                        yield new GenericErrorResponse("Contract transaction hash not found");
-                    }
-                    case TransactionIdParameter parameter -> {
-                        reset(transactionRepository);
-                        when(transactionRepository.findByPayerAccountIdAndValidStartNs(
-                                        parameter.payerAccountId(), convertToNanosMax(parameter.validStart())))
-                                .thenReturn(Optional.empty());
-                        yield new GenericErrorResponse("Transaction not found");
-                    }
-                };
+        final GenericErrorResponse expectedError = switch (transactionIdOrHash) {
+            case TransactionHashParameter parameter -> {
+                reset(contractTransactionHashRepository);
+                when(contractTransactionHashRepository.findByHash(parameter.hash().toArray())).thenReturn(Optional.empty());
+                yield new GenericErrorResponse("Contract transaction hash not found");
+            }
+            case TransactionIdParameter parameter -> {
+                reset(transactionRepository);
+                when(transactionRepository.findByPayerAccountIdAndValidStartNs(
+                        parameter.payerAccountId(),
+                        convertToNanosMax(parameter.validStart())
+                )).thenReturn(Optional.empty());
+                yield new GenericErrorResponse("Transaction not found");
+            }
+        };
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isNotFound())
@@ -355,13 +353,20 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @MethodSource("transactionsWithDifferentSenderAddresses")
-    void callWithDifferentSenderAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum)
-            throws Exception {
+    void callWithDifferentSenderAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
+        if (transactionIdOrHash instanceof TransactionIdParameter id && id.payerAccountId() == null) {
+            mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(responseBody(new GenericErrorResponse(
+                            "Unsupported ID format: 'null-%d-%d'"
+                                    .formatted(id.validStart().getEpochSecond(), id.validStart().getNano()))));
+            return;
+        }
+
         expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
-                .sender(new HederaEvmAccount(
-                        entityAddress(providerEnum.getSenderEntity().get())))
+                .sender(new HederaEvmAccount(entityAddress(providerEnum.getSenderEntity().get())))
                 .build());
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
@@ -371,10 +376,10 @@ class OpcodesControllerTest {
         assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
     }
 
+
     @ParameterizedTest
     @MethodSource("transactionsWithDifferentReceiverAddresses")
-    void callWithDifferentReceiverAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum)
-            throws Exception {
+    void callWithDifferentReceiverAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
         expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
@@ -391,22 +396,22 @@ class OpcodesControllerTest {
     @ParameterizedTest
     @ValueSource(
             strings = {
-                " ",
-                "0x",
-                "0xghijklmno",
-                "0x00000000000000000000000000000000000004e",
-                "0x00000000000000000000000000000000000004e2a",
-                "00000000001239847e",
-                "0.0.1234-1234567890", // missing nanos
-                "0.0.1234-0-1234567890", // nanos overflow
-                "0.0.1234-1-123456789-", // dash after nanos
+                    " ",
+                    "0x",
+                    "0xghijklmno",
+                    "0x00000000000000000000000000000000000004e",
+                    "0x00000000000000000000000000000000000004e2a",
+                    "00000000001239847e",
+                    "0.0.1234-1234567890", // missing nanos
+                    "0.0.1234-0-1234567890", // nanos overflow
+                    "0.0.1234-1-123456789-",  // dash after nanos
             })
     void callInvalidTransactionIdOrHash(final String transactionIdOrHash) throws Exception {
         when(rateLimitBucket.tryConsume(1)).thenReturn(true);
 
-        final var expectedMessage = StringUtils.hasText(transactionIdOrHash)
-                ? "Unsupported ID format: '%s'".formatted(transactionIdOrHash)
-                : "Missing transaction ID or hash";
+        final var expectedMessage = StringUtils.hasText(transactionIdOrHash) ?
+                "Unsupported ID format: '%s'".formatted(transactionIdOrHash) :
+                "Missing transaction ID or hash";
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isBadRequest())
@@ -421,8 +426,7 @@ class OpcodesControllerTest {
         for (var i = 0; i < 3; i++) {
             mockMvc.perform(opcodesRequest(transactionIdOrHash))
                     .andExpect(status().isOk())
-                    .andExpect(
-                            responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
+                    .andExpect(responseBody(Builder.opcodesResponse(opcodesResultCaptor.get(), entityDatabaseAccessor)));
 
             assertThat(callServiceParametersCaptor.getValue()).isEqualTo(expectedCallServiceParameters.get());
         }
@@ -442,14 +446,13 @@ class OpcodesControllerTest {
     void callSuccessCors(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
-        final String param =
-                switch (transactionIdOrHash) {
-                    case TransactionHashParameter hashParameter -> hashParameter
-                            .hash()
-                            .toHexString();
-                    case TransactionIdParameter transactionIdParameter -> Builder.transactionIdString(
-                            transactionIdParameter.payerAccountId(), transactionIdParameter.validStart());
-                };
+        final String param = switch (transactionIdOrHash) {
+            case TransactionHashParameter hashParameter -> hashParameter.hash().toHexString();
+            case TransactionIdParameter transactionIdParameter -> Builder.transactionIdString(
+                    transactionIdParameter.payerAccountId(),
+                    transactionIdParameter.validStart()
+            );
+        };
 
         mockMvc.perform(options(OPCODES_URI, param)
                         .accept(MediaType.APPLICATION_JSON)
@@ -476,64 +479,56 @@ class OpcodesControllerTest {
     }
 
     static Stream<Arguments> transactionsWithDifferentSenderAddresses() {
-        return Arrays.stream(TransactionProviderEnum.values()).flatMap(providerEnum -> entityAddressCombinations(
-                        providerEnum.getPayerAccountId())
-                .map(addressPair -> Arguments.of(Named.of(
-                        "%s(evmAddress=%s, alias=%s)"
-                                .formatted(
+        return Arrays.stream(TransactionProviderEnum.values())
+                .flatMap(providerEnum -> entityAddressCombinations(providerEnum.getPayerAccountId())
+                        .map(pair -> Arguments.of(Named.of(
+                                "%s(payerAccountId=%s, evmAddress=%s, alias=%s)".formatted(
                                         providerEnum.name(),
-                                        addressPair.getLeft() != null ? Bytes.of(addressPair.getLeft()) : null,
-                                        addressPair.getRight() != null ? Bytes.of(addressPair.getRight()) : null),
-                        providerEnum.customize(p -> {
-                            p.setPayerEvmAddress(addressPair.getLeft());
-                            p.setPayerAlias(addressPair.getRight());
-                        })))));
+                                        pair.getLeft() != null ? pair.getLeft().toString() : null,
+                                        pair.getMiddle() != null ? Bytes.of(pair.getMiddle()) : null,
+                                        pair.getRight() != null ? Bytes.of(pair.getRight()) : null),
+                                providerEnum.customize(p -> {
+                                    p.setPayerAccountId(pair.getLeft());
+                                    p.setPayerEvmAddress(pair.getMiddle());
+                                    p.setPayerAlias(pair.getRight());
+                                })
+                        ))));
     }
 
     static Stream<Arguments> transactionsWithDifferentReceiverAddresses() {
-        return Arrays.stream(TransactionProviderEnum.values()).flatMap(providerEnum -> entityAddressCombinations(
-                        providerEnum.getContractId())
-                .map(addressPair -> Arguments.of(Named.of(
-                        "%s(evmAddress=%s, alias=%s)"
-                                .formatted(
+        return Arrays.stream(TransactionProviderEnum.values())
+                .flatMap(providerEnum -> entityAddressCombinations(providerEnum.getContractId())
+                        .map(pair -> Arguments.of(Named.of(
+                                "%s(contractId=%s, evmAddress=%s, alias=%s)".formatted(
                                         providerEnum.name(),
-                                        addressPair.getLeft() != null ? Bytes.of(addressPair.getLeft()) : null,
-                                        addressPair.getRight() != null ? Bytes.of(addressPair.getRight()) : null),
-                        providerEnum.customize(p -> {
-                            p.setContractEvmAddress(addressPair.getLeft());
-                            p.setContractAlias(addressPair.getRight());
-                        })))));
+                                        pair.getLeft() != null ? pair.getLeft().toString() : null,
+                                        pair.getMiddle() != null ? Bytes.of(pair.getMiddle()) : null,
+                                        pair.getRight() != null ? Bytes.of(pair.getRight()) : null),
+                                providerEnum.customize(p -> {
+                                    p.setContractId(pair.getLeft());
+                                    p.setContractEvmAddress(pair.getMiddle());
+                                    p.setContractAlias(pair.getRight());
+                                })
+                        ))));
     }
 
-    static Stream<Pair<byte[], byte[]>> entityAddressCombinations(EntityId entityId) {
+    static Stream<Triple<EntityId, byte[], byte[]>> entityAddressCombinations(@Nullable EntityId entityId) {
+        long entityIdNum = entityId == null ? 0L : entityId.getNum();
+        // spotless:off
         Supplier<byte[]> validAlias = () -> new byte[] {
-            0,
-            0,
-            0,
-            0, // shard
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0, // realm
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            Long.valueOf(entityId.getNum()).byteValue(), // num
+                0, 0, 0, 0, // shard
+                0, 0, 0, 0, 0, 0, 0, 0, // realm
+                0, 0, 0, 0, 0, 0, 0, (byte) entityIdNum, // num
         };
+        // spotless:on
         Supplier<byte[]> invalidAlias = () -> DOMAIN_BUILDER.key(Key.KeyCase.ED25519);
         return Stream.of(
-                Pair.of(DOMAIN_BUILDER.evmAddress(), validAlias.get()),
-                Pair.of(null, validAlias.get()),
-                Pair.of(null, invalidAlias.get()),
-                Pair.of(null, null));
+                Triple.of(DOMAIN_BUILDER.entityId(), DOMAIN_BUILDER.evmAddress(), validAlias.get()),
+                Triple.of(DOMAIN_BUILDER.entityId(), null, validAlias.get()),
+                Triple.of(DOMAIN_BUILDER.entityId(), null, invalidAlias.get()),
+                Triple.of(DOMAIN_BUILDER.entityId(), null, null),
+                Triple.of(EntityId.EMPTY, new byte[0], new byte[0]),
+                Triple.of(null, null, null));
     }
 
     /**
@@ -543,20 +538,18 @@ class OpcodesControllerTest {
     private static class Builder {
 
         private static String transactionIdString(final EntityId payerAccountId, final Instant validStart) {
-            return "%s-%d-%d".formatted(payerAccountId.toString(), validStart.getEpochSecond(), validStart.getNano());
+            return "%s-%d-%d".formatted(payerAccountId, validStart.getEpochSecond(), validStart.getNano());
         }
 
-        private static OpcodesResponse opcodesResponse(
-                final OpcodesProcessingResult result, final EntityDatabaseAccessor entityDatabaseAccessor) {
+        private static OpcodesResponse opcodesResponse(final OpcodesProcessingResult result,
+                                                       final EntityDatabaseAccessor entityDatabaseAccessor) {
             return new OpcodesResponse()
-                    .address(result.transactionProcessingResult()
-                            .getRecipient()
+                    .address(result.transactionProcessingResult().getRecipient()
                             .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
                             .map(TransactionProviderEnum::entityAddress)
                             .map(Address::toHexString)
                             .orElse(Address.ZERO.toHexString()))
-                    .contractId(result.transactionProcessingResult()
-                            .getRecipient()
+                    .contractId(result.transactionProcessingResult().getRecipient()
                             .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
                             .map(Entity::toEntityId)
                             .map(EntityId::toString)
@@ -582,8 +575,7 @@ class OpcodesControllerTest {
                                                     entry -> entry.getKey().toHexString(),
                                                     entry -> entry.getValue().toHexString()))))
                             .toList())
-                    .returnValue(Optional.ofNullable(
-                                    result.transactionProcessingResult().getOutput())
+                    .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
                             .map(Bytes::toHexString)
                             .orElse(Bytes.EMPTY.toHexString()));
         }
@@ -592,30 +584,24 @@ class OpcodesControllerTest {
                 final ContractDebugParameters params, final OpcodeTracerOptions options) {
             final Address recipient = params != null ? params.getReceiver() : Address.ZERO;
             final List<Opcode> opcodes = opcodes(options);
-            final long gasUsed =
-                    opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
-            final long gasCost =
-                    opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
+            final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
+            final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
             return new OpcodesProcessingResult(
-                    HederaEvmTransactionProcessingResult.successful(
-                            List.of(), gasUsed, 0, gasCost, Bytes.EMPTY, recipient),
-                    opcodes);
+                    HederaEvmTransactionProcessingResult
+                            .successful(List.of(), gasUsed , 0, gasCost, Bytes.EMPTY, recipient),
+                    opcodes
+            );
         }
 
         private static OpcodesProcessingResult unsuccessfulOpcodesProcessingResult(final OpcodeTracerOptions options) {
             final List<Opcode> opcodes = opcodes(options);
-            final long gasUsed =
-                    opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
-            final long gasCost =
-                    opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
+            final long gasUsed = opcodes.stream().map(Opcode::gas).reduce(Long::sum).orElse(0L);
+            final long gasCost = opcodes.stream().map(Opcode::gasCost).reduce(Long::sum).orElse(0L);
             return new OpcodesProcessingResult(
                     HederaEvmTransactionProcessingResult.failed(
-                            gasUsed,
-                            0,
-                            gasCost,
-                            Optional.of(Bytes.EMPTY),
-                            Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR)),
-                    opcodes);
+                            gasUsed, 0, gasCost, Optional.of(Bytes.EMPTY), Optional.of(ExceptionalHaltReason.PRECOMPILE_ERROR)),
+                    opcodes
+            );
         }
 
         private static List<Opcode> opcodes(final OpcodeTracerOptions options) {
@@ -626,72 +612,62 @@ class OpcodesControllerTest {
                             2731,
                             3,
                             2,
-                            options.isStack()
-                                    ? List.of(
-                                            Bytes.fromHexString(
-                                                    "000000000000000000000000000000000000000000000000000000004700d305"),
-                                            Bytes.fromHexString(
-                                                    "00000000000000000000000000000000000000000000000000000000000000a7"))
-                                    : Collections.emptyList(),
-                            options.isMemory()
-                                    ? List.of(
-                                            Bytes.fromHexString(
-                                                    "4e487b7100000000000000000000000000000000000000000000000000000000"),
-                                            Bytes.fromHexString(
-                                                    "0000001200000000000000000000000000000000000000000000000000000000"))
-                                    : Collections.emptyList(),
+                            options.isStack() ?
+                                    List.of(
+                                            Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")) :
+                                    Collections.emptyList(),
+                            options.isMemory() ?
+                                    List.of(
+                                            Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")) :
+                                    Collections.emptyList(),
                             Collections.emptySortedMap(),
-                            null),
+                            null
+                    ),
                     new Opcode(
                             1275,
                             "REVERT",
                             2728,
                             0,
                             2,
-                            options.isStack()
-                                    ? List.of(
-                                            Bytes.fromHexString(
-                                                    "000000000000000000000000000000000000000000000000000000004700d305"),
-                                            Bytes.fromHexString(
-                                                    "00000000000000000000000000000000000000000000000000000000000000a7"))
-                                    : Collections.emptyList(),
-                            options.isMemory()
-                                    ? List.of(
-                                            Bytes.fromHexString(
-                                                    "4e487b7100000000000000000000000000000000000000000000000000000000"),
-                                            Bytes.fromHexString(
-                                                    "0000001200000000000000000000000000000000000000000000000000000000"))
-                                    : Collections.emptyList(),
+                            options.isStack() ?
+                                    List.of(
+                                            Bytes.fromHexString("000000000000000000000000000000000000000000000000000000004700d305"),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a7")) :
+                                    Collections.emptyList(),
+                            options.isMemory() ?
+                                    List.of(
+                                            Bytes.fromHexString("4e487b7100000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000001200000000000000000000000000000000000000000000000000000000")) :
+                                    Collections.emptyList(),
                             Collections.emptySortedMap(),
-                            "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"),
+                            "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"
+                    ),
                     new Opcode(
                             682,
                             "SWAP2",
                             2776,
                             3,
                             1,
-                            options.isStack()
-                                    ? List.of(
-                                            Bytes.fromHexString(
-                                                    "000000000000000000000000000000000000000000000000000000000135b7d0"),
-                                            Bytes.fromHexString(
-                                                    "00000000000000000000000000000000000000000000000000000000000000a0"))
-                                    : Collections.emptyList(),
-                            options.isMemory()
-                                    ? List.of(
-                                            Bytes.fromHexString(
-                                                    "0000000000000000000000000000000000000000000000000000000000000000"),
-                                            Bytes.fromHexString(
-                                                    "0000000000000000000000000000000000000000000000000000000000000000"))
-                                    : Collections.emptyList(),
-                            options.isStorage()
-                                    ? ImmutableSortedMap.of(
-                                            Bytes.fromHexString(
-                                                    "0000000000000000000000000000000000000000000000000000000000000000"),
-                                            Bytes.fromHexString(
-                                                    "0000000000000000000000000000000000000000000000000000000000000014"))
-                                    : Collections.emptySortedMap(),
-                            null));
+                            options.isStack() ?
+                                    List.of(
+                                            Bytes.fromHexString("000000000000000000000000000000000000000000000000000000000135b7d0"),
+                                            Bytes.fromHexString("00000000000000000000000000000000000000000000000000000000000000a0")) :
+                                    Collections.emptyList(),
+                            options.isMemory() ?
+                                    List.of(
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000")) :
+                                    Collections.emptyList(),
+                            options.isStorage() ?
+                                    ImmutableSortedMap.of(
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000000"),
+                                            Bytes.fromHexString("0000000000000000000000000000000000000000000000000000000000000014")) :
+                                    Collections.emptySortedMap(),
+                            null
+                    )
+            );
         }
     }
 

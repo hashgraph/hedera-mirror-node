@@ -28,7 +28,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   hasEmptyList,
   testRunner,
@@ -49,7 +49,7 @@ const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
  */
 const getTokensCheck = async (server) => {
   const url = getUrl(server, tokensPath, {limit: tokensLimit});
-  const tokens = await getAPIResponse(url, tokensJsonRespKey);
+  const tokens = await fetchAPIResponse(url, tokensJsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -76,7 +76,7 @@ const getTokensCheck = async (server) => {
 
 const getFirstTokenIdWithCheckResult = async (server) => {
   const url = getUrl(server, tokensPath, {limit: 1});
-  const tokens = await getAPIResponse(url, tokensJsonRespKey);
+  const tokens = await fetchAPIResponse(url, tokensJsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -125,7 +125,7 @@ const getTokensWithLimitParam = async (server) => {
  */
 const getTokensWithOrderParam = async (server) => {
   let url = getUrl(server, tokensPath, {order: 'asc'});
-  let tokens = await getAPIResponse(url, tokensJsonRespKey);
+  let tokens = await fetchAPIResponse(url, tokensJsonRespKey);
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -141,7 +141,7 @@ const getTokensWithOrderParam = async (server) => {
   }
 
   url = getUrl(server, tokensPath, {order: 'desc'});
-  tokens = await getAPIResponse(url, tokensJsonRespKey);
+  tokens = await fetchAPIResponse(url, tokensJsonRespKey);
 
   result = checkRunner
     .resetCheckSpec(checkElementsOrder, {asc: false, compare: accountIdCompare, key: 'token_id', name: 'token ID'})
@@ -197,7 +197,7 @@ const getTokenInfoCheck = async (server) => {
   }
 
   const url = getUrl(server, tokenInfoPath(tokenId));
-  const tokenInfo = await getAPIResponse(url);
+  const tokenInfo = await fetchAPIResponse(url);
 
   const tokenInfoResult = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -241,7 +241,7 @@ const getTokenBalancesCheck = async (server) => {
   }
 
   const url = getUrl(server, tokenBalancesPath(tokenId), {limit: tokenBalancesLimit});
-  const balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
+  const balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey);
 
   const balancesResult = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -284,7 +284,7 @@ const getTokenBalancesWithLimitParam = async (server) => {
   }
 
   const url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
-  const balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
+  const balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey);
 
   const balancesResult = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -327,7 +327,7 @@ const getTokenBalancesWithTimestampParam = async (server) => {
   }
 
   let url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
-  const resp = await getAPIResponse(url);
+  const resp = await fetchAPIResponse(url);
   let balances = resp instanceof Error ? resp : resp[tokenBalancesJsonRespKey];
 
   const checkRunner = new CheckRunner()
@@ -349,7 +349,7 @@ const getTokenBalancesWithTimestampParam = async (server) => {
     timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
     limit: 1,
   });
-  balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
+  balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey);
 
   balancesResult = checkRunner.run(balances);
   if (!balancesResult.passed) {
@@ -381,7 +381,7 @@ const getTokenBalancesForAccount = async (server) => {
   }
 
   let url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
-  let balances = await getAPIResponse(url, tokenBalancesJsonRespKey, hasEmptyList(tokenBalancesJsonRespKey));
+  let balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey, hasEmptyList(tokenBalancesJsonRespKey));
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -397,7 +397,7 @@ const getTokenBalancesForAccount = async (server) => {
 
   const accountId = balances[0].account;
   url = getUrl(server, tokenBalancesPath(tokenId), {'account.id': accountId});
-  balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
+  balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey);
 
   balancesResult = checkRunner
     .withCheckSpec(checkEntityId, {accountId, message: 'account was not found'})

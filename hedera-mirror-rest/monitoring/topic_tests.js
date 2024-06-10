@@ -24,7 +24,7 @@ import {
   checkMandatoryParams,
   checkResourceFreshness,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   testRunner,
   CheckRunner,
@@ -96,7 +96,7 @@ const checkSingleField = (elements, option) => {
  */
 const getTopicById = async (server) => {
   let url = getUrl(server, `/topics/${topicId}`, {limit: resourceLimit});
-  let topic = await getAPIResponse(url, jsonRespKey);
+  let topic = await fetchAPIResponse(url, jsonRespKey);
   const requiredParams = [
     'admin_key',
     'auto_renew_account',
@@ -137,7 +137,7 @@ const getTopicById = async (server) => {
  */
 const getTopicMessages = async (server) => {
   let url = getUrl(server, topicMessagesPath(topicId), {limit: resourceLimit});
-  let messages = await getAPIResponse(url, jsonRespKey);
+  let messages = await fetchAPIResponse(url, jsonRespKey);
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -158,7 +158,7 @@ const getTopicMessages = async (server) => {
   }
 
   url = getUrl(server, topicMessagesPath(topicId), {limit: resourceLimit, order: 'desc'});
-  messages = await getAPIResponse(url, jsonRespKey);
+  messages = await fetchAPIResponse(url, jsonRespKey);
 
   result = checkRunner
     .resetCheckSpec(checkElementsOrder, {asc: false, key: 'consensus_timestamp', name: 'consensus timestamp'})
@@ -183,7 +183,7 @@ const getTopicMessages = async (server) => {
  */
 const getTopicMessagesBySequenceNumberFilter = async (server) => {
   let url = getUrl(server, topicMessagesPath(topicId), {sequencenumber: 1});
-  let messages = await getAPIResponse(url, jsonRespKey);
+  let messages = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -207,7 +207,7 @@ const getTopicMessagesBySequenceNumberFilter = async (server) => {
   }
 
   url = getUrl(server, topicMessagesPath(topicId), {sequencenumber: ['gte:1', 'lte:3']});
-  messages = await getAPIResponse(url, jsonRespKey);
+  messages = await fetchAPIResponse(url, jsonRespKey);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -226,7 +226,7 @@ const getTopicMessagesBySequenceNumberFilter = async (server) => {
   }
 
   url = getUrl(server, topicMessagesPath(topicId), {sequencenumber: ['gte:3', 'lt:3']});
-  messages = await getAPIResponse(url, jsonRespKey);
+  messages = await fetchAPIResponse(url, jsonRespKey);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -255,7 +255,7 @@ const getTopicMessagesBySequenceNumberFilter = async (server) => {
  */
 const getTopicMessagesByTopicIDAndSequenceNumberPath = async (server) => {
   const url = getUrl(server, topicMessagesPath(topicId, 1));
-  const message = await getAPIResponse(url);
+  const message = await fetchAPIResponse(url);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -284,7 +284,7 @@ const getTopicMessagesByTopicIDAndSequenceNumberPath = async (server) => {
  */
 const getTopicMessagesByConsensusTimestamp = async (server) => {
   let url = getUrl(server, topicMessagesPath(topicId), {limit: resourceLimit});
-  const messages = await getAPIResponse(url, jsonRespKey);
+  const messages = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -304,7 +304,7 @@ const getTopicMessagesByConsensusTimestamp = async (server) => {
 
   const consensusTimestamp = messages[0].consensus_timestamp;
   url = getUrl(server, `/topics/messages/${consensusTimestamp}`);
-  const message = await getAPIResponse(url);
+  const message = await fetchAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
