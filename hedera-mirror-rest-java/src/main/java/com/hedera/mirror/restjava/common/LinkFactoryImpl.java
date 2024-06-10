@@ -110,13 +110,13 @@ class LinkFactoryImpl implements LinkFactory {
             Map<String, String> paginationParamsMap,
             Direction order,
             LinkedMultiValueMap<String, String> queryParams) {
-        var sortMap = new TreeMap<String, Boolean>();
-        sort.map(Sort.Order::getProperty).forEach(s -> sortMap.put(s, containsEq(queryParams.get(s))));
+        var sortEqMap = new TreeMap<String, Boolean>();
+        sort.map(Sort.Order::getProperty).forEach(s -> sortEqMap.put(s, containsEq(queryParams.get(s))));
 
-        var sortKeys = sortMap.keySet().toArray();
+        var sortKeys = sortEqMap.keySet().toArray();
         for (int i = 0; i < sortKeys.length; i++) {
             var key = sortKeys[i].toString();
-            if (queryParams.containsKey(key) && Boolean.TRUE.equals(sortMap.get(key))) {
+            if (queryParams.containsKey(key) && Boolean.TRUE.equals(sortEqMap.get(key))) {
                 // This query parameter has already been added with an eq
                 continue;
             }
@@ -124,7 +124,7 @@ class LinkFactoryImpl implements LinkFactory {
             var exclusive = true;
             if (sortKeys.length > i + 1) {
                 var succeedingKey = sortKeys[i + 1];
-                exclusive = sortMap.get(succeedingKey);
+                exclusive = sortEqMap.get(succeedingKey);
             }
 
             var value = paginationParamsMap.get(key);
