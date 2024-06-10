@@ -372,7 +372,9 @@ class OpcodeTracerTest {
         }
 
         tracer.tracePostExecution(frame, operationResult);
+        tracer.finalizeOperation(frame);
 
+        verify(contractCallContext, times(1)).setOpcodes(tracer.getOpcodes());
         assertThat(tracer.getOpcodes()).hasSize(1);
         return tracer.getOpcodes().getFirst();
     }
@@ -382,7 +384,9 @@ class OpcodeTracerTest {
         tracer.init(frame);
         tracer.tracePreExecution(frame);
         tracer.tracePrecompileCall(frame, GAS_REQUIREMENT, output);
+        tracer.finalizeOperation(frame);
 
+        verify(contractCallContext, times(1)).setOpcodes(tracer.getOpcodes());
         assertThat(tracer.getOptions()).isEqualTo(tracerOptions);
         assertThat(tracer.getOpcodes()).hasSize(1);
         assertThat(tracer.getContractActions()).isNotNull();
