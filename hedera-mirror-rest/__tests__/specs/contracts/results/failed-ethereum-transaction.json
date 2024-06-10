@@ -1,16 +1,6 @@
 {
   "description": "Contract results api call for all contracts with invalid account id contract results",
   "setup": {
-    "accounts": [
-      {
-        "num": 5999,
-        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57"
-      },
-      {
-        "num": 9001,
-        "evm_address": "fbb9a1be370150759408cd7af48e9eda2b8ead57"
-      }
-    ],
     "contracts": [
       {
         "created_timestamp": "987654999123200",
@@ -54,19 +44,6 @@
         "consensus_start": 1676540001234390000,
         "consensus_end": 1676540001234490000,
         "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
-        "gas_used": 400000
-      },
-      {
-        "index": 11,
-        "count": 1,
-        "hapi_version_major": "0",
-        "hapi_version_minor": "22",
-        "hapi_version_patch": "3",
-        "name": "2022-04-27T12_24_30.768994443Z.rcd",
-        "prev_hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
-        "consensus_start": 1676540001234500000,
-        "consensus_end": 1676540001234600000,
-        "hash": "b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216",
         "gas_used": 400000
       }
     ],
