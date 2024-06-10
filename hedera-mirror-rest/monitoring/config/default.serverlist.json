@@ -75,7 +75,7 @@
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
     "tokenId": "",
-    "nftId": "",
+    "nftTokenId": "",
     "limit": 2
   }
 }

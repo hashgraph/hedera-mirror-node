@@ -38,7 +38,7 @@ const tokensPath = '/tokens';
 const resource = 'token';
 const tokensLimit = config[resource].limit || DEFAULT_LIMIT;
 const tokenIdFromConfig = config[resource].tokenId;
-const nftIdFromConfig = config[resource].nftId;
+const nftIdFromConfig = config[resource].nftTokenId;
 const tokensJsonRespKey = 'tokens';
 const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
 
