@@ -71,7 +71,7 @@
     "topicId": ""
   },
   "token": {
-    "enabled": true,
+    "enabled": false,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
     "tokenId": "",
