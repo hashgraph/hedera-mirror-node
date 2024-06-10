@@ -95,6 +95,7 @@ import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
@@ -495,7 +496,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static RecordFile recordFileEvm46;
     protected static RecordFile recordFileEvm46Latest;
 
-    @Autowired
+    @SpyBean
     protected MirrorEvmTxProcessor processor;
 
     @Autowired
@@ -1731,7 +1732,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     // Account persist
-    private void tokenAccountPersist(
+    protected void tokenAccountPersist(
             final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
         domainBuilder
                 .tokenAccount()
@@ -1785,7 +1786,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     // Entity persist
-    private EntityId notAssociatedSpenderEntityPersist() {
+    protected EntityId notAssociatedSpenderEntityPersist() {
         final var spenderEntityId = fromEvmAddress(NOT_ASSOCIATED_SPENDER_ADDRESS.toArrayUnsafe());
         domainBuilder
                 .entity()
@@ -1949,7 +1950,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return autoRenewEntityId;
     }
 
-    private EntityId treasureEntityPersist() {
+    protected EntityId treasureEntityPersist() {
         final var treasuryEntityId = fromEvmAddress(TREASURY_ADDRESS.toArrayUnsafe());
 
         domainBuilder
@@ -1962,7 +1963,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return treasuryEntityId;
     }
 
-    private void receiverPersist() {
+    protected void receiverPersist() {
         final var receiverEntityId = fromEvmAddress(RECEIVER_ADDRESS.toArrayUnsafe());
         final var receiverEvmAddress = toEvmAddress(receiverEntityId);
         domainBuilder
@@ -2274,7 +2275,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return nftEntityId;
     }
 
-    private EntityId nftPersistWithoutKycKey(
+    protected EntityId nftPersistWithoutKycKey(
             final Address nftAddress,
             final Address autoRenewAddress,
             final EntityId ownerEntityId,
@@ -2336,7 +2337,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     // Allowances persist
-    private void allowancesPersist(
+    protected void allowancesPersist(
             final EntityId senderEntityId,
             final EntityId spenderEntityId,
             final EntityId tokenEntityId,
@@ -2396,7 +2397,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void contractAllowancesPersist(
+    protected void contractAllowancesPersist(
             final EntityId senderEntityId,
             final Address contractAddress,
             final EntityId tokenEntityId,
@@ -2584,7 +2585,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
     }
 
-    private EntityId modificationContractPersist() {
+    protected EntityId modificationContractPersist() {
         final var modificationContractBytes = functionEncodeDecoder.getContractBytes(MODIFICATION_CONTRACT_BYTES_PATH);
         final var modificationContractEntityId = fromEvmAddress(MODIFICATION_CONTRACT_ADDRESS.toArrayUnsafe());
         final var modificationContractEvmAddress = toEvmAddress(modificationContractEntityId);
