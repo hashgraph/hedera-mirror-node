@@ -2290,7 +2290,7 @@ components:
           example: "0x856739"
           type: string
         from:
-          $ref: "#/components/schemas/EvmAddress"
+          $ref: "#/components/schemas/EvmAddressNullable"
         function_parameters:
           description: The hex encoded parameters passed to the function
           example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
