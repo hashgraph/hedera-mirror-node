@@ -143,15 +143,15 @@ public enum TransactionProviderEnum {
             return domainBuilder.wrap(EthereumTransaction.builder(), () -> null);
         }
 
-        Address evmAddress;
+        final byte[] evmAddress;
         if (contractEvmAddress != null && contractEvmAddress.length == EVM_ADDRESS_LENGTH) {
-            evmAddress = Address.wrap(Bytes.wrap(contractEvmAddress));
+            evmAddress = contractEvmAddress;
         } else if (contractAlias != null && contractAlias.length == EVM_ADDRESS_LENGTH) {
-            evmAddress = Address.wrap(Bytes.wrap(contractAlias));
+            evmAddress = contractAlias;
         } else if (!EntityId.isEmpty(contractId)) {
-            evmAddress = toAddress(contractId);
+            evmAddress = toAddress(contractId).toArray();
         } else {
-            evmAddress = Address.ZERO;
+            evmAddress = new byte[0];
         }
 
         return domainBuilder.ethereumTransaction(true)
@@ -160,7 +160,7 @@ public enum TransactionProviderEnum {
                     tx.hash(hash);
                     tx.value(ByteBuffer.allocate(Long.BYTES).putLong(amount).array());
                     tx.payerAccountId(payerAccountId);
-                    tx.toAddress(evmAddress.toArray());
+                    tx.toAddress(evmAddress);
                     tx.callData(callData);
                     tx.consensusTimestamp(convertToNanosMax(
                             consensusTimestamp.getEpochSecond(),
