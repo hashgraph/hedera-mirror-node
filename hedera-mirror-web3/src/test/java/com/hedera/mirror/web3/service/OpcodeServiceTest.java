@@ -17,7 +17,6 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.common.util.CommonUtils.instant;
-import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -92,6 +91,9 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
         private final AtomicReference<ContractDebugParameters> expectedServiceParameters = new AtomicReference<>();
 
+        private EntityId senderEntityId;
+        private EntityId contractEntityId;
+
         @BeforeEach
         void setUp() {
             genesisBlockPersist();
@@ -99,9 +101,9 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             historicalDataPersist();
             precompileContractPersist();
             fileDataPersist();
+            senderEntityId = senderEntityPersist();
             final var ownerEntityId = ownerEntityPersist();
             final var spenderEntityId = spenderEntityPersist();
-            final var senderEntityId = senderEntityPersist();
             fungibleTokenPersist(
                     senderEntityId,
                     KEY_PROTO,
@@ -138,8 +140,6 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                                            final Path contractAbiPath,
                                            final boolean persistTransaction,
                                            final boolean persistContractResult) {
-            final var contractEntityId = fromEvmAddress(contractAddress.toArrayUnsafe());
-            final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
             assertThat(contractEntityId).isNotNull();
             assertThat(senderEntityId).isNotNull();
 
@@ -258,7 +258,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
         @ParameterizedTest
         @MethodSource("tracerOptions")
         void callWithDifferentCombinationsOfTracerOptions(final OpcodeTracerOptions options) {
-            dynamicEthCallContractPresist();
+            contractEntityId = dynamicEthCallContractPresist();
             final var providerEnum = ContractCallDynamicCallsTest.DynamicCallsContractFunctions.MINT_NFT;
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
@@ -277,7 +277,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
         @ParameterizedTest
         @EnumSource(ContractCallNestedCallsTest.NestedEthCallContractFunctions.class)
         void callWithNestedEthCalls(final ContractFunctionProviderEnum providerEnum) {
-            nestedEthCallsContractPersist();
+            contractEntityId = nestedEthCallsContractPersist();
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
                     providerEnum,
@@ -295,7 +295,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
         @Test
         void callWithContractResultNotFoundExceptionTest() {
-            systemExchangeRateContractPersist();
+            contractEntityId = systemExchangeRateContractPersist();
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
                     ContractCallSystemPrecompileTest.ExchangeRateFunctions.TINYBARS_TO_TINYCENTS,
@@ -313,7 +313,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
         @Test
         void callWithTransactionNotFoundExceptionTest() {
-            systemExchangeRateContractPersist();
+            contractEntityId = systemExchangeRateContractPersist();
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
                     ContractCallSystemPrecompileTest.ExchangeRateFunctions.TINYCENTS_TO_TINYBARS,
@@ -331,7 +331,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
         @Test
         void callWithContractTransactionHashNotFoundExceptionTest() {
-            nestedEthCallsContractPersist();
+            contractEntityId = nestedEthCallsContractPersist();
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
                     ContractCallNestedCallsTest.NestedEthCallContractFunctions.CREATE_FUNGIBLE_TOKEN_NO_KEYS,

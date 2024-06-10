@@ -2774,7 +2774,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return addressThisContractEntityId;
     }
 
-    protected void nestedEthCallsContractPersist() {
+    protected EntityId nestedEthCallsContractPersist() {
         final var contractBytes = functionEncodeDecoder.getContractBytes(NESTED_CALLS_CONTRACT_BYTES_PATH);
         final var contractEntityId = fromEvmAddress(NESTED_ETH_CALLS_CONTRACT_ADDRESS.toArrayUnsafe());
         final var contractEvmAddress = toEvmAddress(contractEntityId);
@@ -2812,6 +2812,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .recordFile()
                 .customize(f -> f.bytes(contractBytes))
                 .persist();
+
+        return contractEntityId;
     }
 
     protected EntityId systemExchangeRateContractPersist() {
