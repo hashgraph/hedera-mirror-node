@@ -65,15 +65,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 
 class OpcodeServiceTest extends ContractCallTestSetup {
 
     public static final long AMOUNT = 0L;
     public static final long GAS = 15_000_000L;
-
-    @SpyBean
-    private ContractDebugService contractCallService;
 
     @Autowired
     private OpcodeService opcodeService;
@@ -131,7 +127,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
         void setUpArgumentCaptors() {
             expectedServiceParameters.set(null);
             doAnswer(opcodesResultCaptor)
-                    .when(contractCallService)
+                    .when(contractDebugService)
                     .processOpcodeCall(serviceParametersCaptor.capture(), tracerOptionsCaptor.capture());
         }
 
