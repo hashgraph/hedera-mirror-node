@@ -23,7 +23,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowance;
-import com.hedera.mirror.rest.model.Transaction;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -147,19 +146,6 @@ class LinkFactoryTest {
                 .returns(expectedLink, Links::getNext);
     }
 
-    @Test
-    void testSortOmitted() {
-        // given
-        var transaction = new Transaction().consensusTimestamp("123456789.000000123");
-
-        // when then
-        assertThat(linkFactory.create(
-                        List.of(transaction),
-                        PageRequest.ofSize(1),
-                        t -> Map.of("timestamp", t.getConsensusTimestamp())))
-                .returns("/api?timestamp=123456789.000000123", Links::getNext);
-    }
-
     @DisplayName("Get pagination links unknown parameter")
     @Test
     void testUnknownParameter() {
@@ -186,10 +172,8 @@ class LinkFactoryTest {
         "desc,   gt:0.0.100,  gte:0.0.100, lte:0.0.7000, gt:0.0.6000,  /api?order=desc&account.id=gt:0.0.100&account.id=gte:0.0.100&account.id=lte:0.0.1000&token.id=gt:0.0.6000&token.id=lt:0.0.6458",
         "asc,   lt:0.0.2000,   gt:0.0.100,  gt:0.0.6000, lt:0.0.7000,  /api?order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=lt:0.0.7000&token.id=gt:0.0.6458",
         "desc,  lt:0.0.2000,   gt:0.0.100,  gt:0.0.6000, lt:0.0.7000,  /api?order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=gt:0.0.6000&token.id=lt:0.0.6458",
-        "asc,      0.0.1000,     0.0.1000,     0.0.1000,    0.0.1000,  /api?order=asc&account.id=0.0.1000&token.id=0.0.1000",
-        "desc,     0.0.1000,     0.0.1000,     0.0.1000,    0.0.1000,  /api?order=desc&account.id=0.0.1000&token.id=0.0.1000",
         "asc,      0.0.1000,  gt:0.0.1000, lte:0.0.7000, gt:0.0.6000,  /api?order=asc&account.id=0.0.1000&token.id=lte:0.0.7000&token.id=gt:0.0.6458",
-        "desc,     0.0.1000,  gt:0.0.1000, lte:0.0.7000, gt:0.0.6000,  /api?order=desc&account.id=0.0.1000&token.id=gt:0.0.6000&token.id=lt:0.0.6458",
+        "desc,     0.0.1000,  gt:0.0.1000, lte:0.0.7000, gt:0.0.6000,  /api?order=desc&account.id=0.0.1000&account.id=gt:0.0.1000&token.id=gt:0.0.6000&token.id=lt:0.0.6458",
     })
     void testMultipleParameters(
             String order,

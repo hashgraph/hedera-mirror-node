@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -67,76 +68,67 @@ class LinkFactoryImpl implements LinkFactory {
         var builder = UriComponentsBuilder.fromPath(request.getRequestURI());
         var paramsMap = request.getParameterMap();
         var paginationParamsMap = extractor.apply(lastItem);
-        var linkedMultiValueMap = new LinkedMultiValueMap<String, String>();
+        var queryParams = new LinkedMultiValueMap<String, String>();
 
-        addParamMapToLink(paramsMap, paginationParamsMap, order, linkedMultiValueMap);
-        addExtractedParamsToLink(sortOrders, paginationParamsMap, order, linkedMultiValueMap);
-        builder.queryParams(linkedMultiValueMap);
+        addParamMapToQueryParams(paramsMap, paginationParamsMap, order, queryParams);
+        addExtractedParamsToQueryParams(sortOrders, paginationParamsMap, order, queryParams);
+        builder.queryParams(queryParams);
         return builder.toUriString();
     }
 
-    private void addParamMapToLink(
+    private void addParamMapToQueryParams(
             Map<String, String[]> paramsMap,
             Map<String, String> paginationParamsMap,
             Direction order,
-            LinkedMultiValueMap<String, String> linkedMultiValueMap) {
+            LinkedMultiValueMap<String, String> queryParams) {
         for (var entry : paramsMap.entrySet()) {
             var key = entry.getKey();
             if (!paginationParamsMap.containsKey(key)) {
                 for (var value : entry.getValue()) {
-                    linkedMultiValueMap.add(entry.getKey(), value);
+                    queryParams.add(entry.getKey(), value);
                 }
             } else {
-                addQueryParamToLink(entry, order, linkedMultiValueMap);
+                addQueryParamToLink(entry, order, queryParams);
             }
         }
     }
 
     private void addQueryParamToLink(
-            Entry<String, String[]> entry, Direction order, LinkedMultiValueMap<String, String> linkedMultiValueMap) {
+            Entry<String, String[]> entry, Direction order, LinkedMultiValueMap<String, String> queryParams) {
         for (var value : entry.getValue()) {
             // Skip if it's in the same direction as the order, the new bound should come from the extracted value
             if (isSameDirection(order, value)) {
                 continue;
             }
 
-            linkedMultiValueMap.add(entry.getKey(), value);
-            if (hasEq(value)) {
-                // Only 1 eq is allowed, return without adding additional values
-                return;
-            }
+            queryParams.add(entry.getKey(), value);
         }
     }
 
-    private void addExtractedParamsToLink(
+    private void addExtractedParamsToQueryParams(
             Sort sort,
             Map<String, String> paginationParamsMap,
             Direction order,
-            LinkedMultiValueMap<String, String> linkedMultiValueMap) {
-        var sortKeys = sort.map(Sort.Order::getProperty).toList();
-        if (sortKeys.isEmpty()) {
-            for (var entry : paginationParamsMap.entrySet()) {
-                linkedMultiValueMap.add(entry.getKey(), entry.getValue());
-            }
-            return;
-        }
+            LinkedMultiValueMap<String, String> queryParams) {
+        var sortMap = new TreeMap<String, Boolean>();
+        sort.map(Sort.Order::getProperty).forEach(s -> sortMap.put(s, containsEq(queryParams.get(s))));
 
-        for (int i = 0; i < sortKeys.size(); i++) {
-            var key = sortKeys.get(i);
-            if (linkedMultiValueMap.containsKey(key) && containsEq(linkedMultiValueMap.get(key))) {
+        var sortKeys = sortMap.keySet().toArray();
+        for (int i = 0; i < sortKeys.length; i++) {
+            var key = sortKeys[i].toString();
+            if (queryParams.containsKey(key) && Boolean.TRUE.equals(sortMap.get(key))) {
                 // This query parameter has already been added with an eq
                 continue;
             }
 
-            var entry = paginationParamsMap.get(key);
             var exclusive = true;
-            if (sortKeys.size() > i + 1) {
-                var succeedingKey = sortKeys.get(i + 1);
-                var succeedingEntry = linkedMultiValueMap.get(succeedingKey);
-                exclusive = containsEq(succeedingEntry);
+            if (sortKeys.length > i + 1) {
+                var succeedingKey = sortKeys[i + 1];
+                exclusive = sortMap.get(succeedingKey);
             }
 
-            linkedMultiValueMap.add(key, getOperator(order, exclusive) + ":" + entry);
+            var value = paginationParamsMap.get(key);
+            queryParams.add(key, getOperator(order, exclusive) + ":" + value);
         }
     }
 
@@ -169,6 +161,10 @@ class LinkFactoryImpl implements LinkFactory {
 
     private static boolean hasEq(String value) {
         var normalized = value.toLowerCase();
-        return normalized.startsWith("eq:") || (!normalized.startsWith("gt") && !normalized.startsWith("lt"));
+        return normalized.startsWith("eq:")
+                || (!normalized.startsWith("gt:")
+                        && !normalized.startsWith("gte:")
+                        && !normalized.startsWith("lt:")
+                        && !normalized.startsWith("lte:"));
     }
 }

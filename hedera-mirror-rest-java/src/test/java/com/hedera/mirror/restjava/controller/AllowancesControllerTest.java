@@ -111,6 +111,8 @@ class AllowancesControllerTest extends ControllerTest {
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1), baseLink + nextParams));
 
+            System.out.println("Next params: " + nextParams);
+
             // When follow link
             result = restClient
                     .get()
