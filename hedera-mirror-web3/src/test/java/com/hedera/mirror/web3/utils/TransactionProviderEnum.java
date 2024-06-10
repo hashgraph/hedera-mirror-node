@@ -142,13 +142,25 @@ public enum TransactionProviderEnum {
         if (!hasEthTransaction()) {
             return domainBuilder.wrap(EthereumTransaction.builder(), () -> null);
         }
+
+        Address evmAddress;
+        if (contractEvmAddress != null && contractEvmAddress.length == EVM_ADDRESS_LENGTH) {
+            evmAddress = Address.wrap(Bytes.wrap(contractEvmAddress));
+        } else if (contractAlias != null && contractAlias.length == EVM_ADDRESS_LENGTH) {
+            evmAddress = Address.wrap(Bytes.wrap(contractAlias));
+        } else if (!EntityId.isEmpty(contractId)) {
+            evmAddress = toAddress(contractId);
+        } else {
+            evmAddress = Address.ZERO;
+        }
+
         return domainBuilder.ethereumTransaction(true)
                 .customize(tx -> {
                     tx.type(typeByte);
                     tx.hash(hash);
                     tx.value(ByteBuffer.allocate(Long.BYTES).putLong(amount).array());
                     tx.payerAccountId(payerAccountId);
-                    tx.toAddress(contractEvmAddress);
+                    tx.toAddress(evmAddress.toArray());
                     tx.callData(callData);
                     tx.consensusTimestamp(convertToNanosMax(
                             consensusTimestamp.getEpochSecond(),
