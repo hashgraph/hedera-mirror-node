@@ -21,10 +21,10 @@ import com.hedera.mirror.rest.model.Links;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -105,28 +105,29 @@ class LinkFactoryImpl implements LinkFactory {
         }
     }
 
+    @SuppressWarnings("java:S1125")
     private void addExtractedParamsToQueryParams(
             Sort sort,
             Map<String, String> paginationParamsMap,
             Direction order,
             LinkedMultiValueMap<String, String> queryParams) {
-        var sortEqMap = new TreeMap<String, Boolean>();
-        sort.map(Sort.Order::getProperty).forEach(s -> sortEqMap.put(s, containsEq(queryParams.get(s))));
+        var sortEqMap = new HashMap<String, Boolean>();
+        var sortList = sort.map(s -> {
+                    var property = s.getProperty();
+                    sortEqMap.put(property, containsEq(queryParams.get(property)));
+                    return property;
+                })
+                .toList();
 
-        var sortKeys = sortEqMap.keySet().toArray();
-        for (int i = 0; i < sortKeys.length; i++) {
-            var key = sortKeys[i].toString();
+        for (int i = 0; i < sortList.size(); i++) {
+            var key = sortList.get(i);
             if (queryParams.containsKey(key) && Boolean.TRUE.equals(sortEqMap.get(key))) {
                 // This query parameter has already been added with an eq
                 continue;
             }
 
-            var exclusive = true;
-            if (sortKeys.length > i + 1) {
-                var succeedingKey = sortKeys[i + 1];
-                exclusive = sortEqMap.get(succeedingKey);
-            }
-
+            int nextParamIndex = i + 1;
+            boolean exclusive = sortList.size() > nextParamIndex ? sortEqMap.get(sortList.get(nextParamIndex)) : true;
             var value = paginationParamsMap.get(key);
             queryParams.add(key, getOperator(order, exclusive) + ":" + value);
         }
@@ -148,11 +149,13 @@ class LinkFactoryImpl implements LinkFactory {
     }
 
     private static boolean containsEq(List<String> values) {
-        if (values != null) {
-            for (var value : values) {
-                if (hasEq(value)) {
-                    return true;
-                }
+        if (values == null) {
+            return false;
+        }
+
+        for (var value : values) {
+            if (hasEq(value)) {
+                return true;
             }
         }
 
