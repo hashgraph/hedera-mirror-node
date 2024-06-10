@@ -10,7 +10,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.5
 	github.com/go-playground/validator/v10 v10.21.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20240507130336-6f8f530d2c86
-	github.com/hashgraph/hedera-sdk-go/v2 v2.37.0
+	github.com/hashgraph/hedera-sdk-go/v2 v2.38.0
 	github.com/hellofresh/health-go/v4 v4.7.0
 	github.com/jackc/pgtype v1.14.3
 	github.com/lib/pq v1.10.9
@@ -101,7 +101,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	github.com/rs/zerolog v1.32.0 // indirect
+	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
