@@ -23,7 +23,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   testRunner,
 } from './utils';
@@ -41,7 +41,7 @@ const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
  */
 const getNetworkExchangeRate = async (server) => {
   let url = getUrl(server, network + '/exchangerate');
-  const networkExchangeRate = await getAPIResponse(url, jsonRespKey);
+  const networkExchangeRate = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -66,7 +66,7 @@ const getNetworkExchangeRate = async (server) => {
 const getNetworkFees = async (server) => {
   let url = getUrl(server, network + '/fees');
   const jsonFeesRespKey = 'fees';
-  const networkFees = await getAPIResponse(url, jsonFeesRespKey);
+  const networkFees = await fetchAPIResponse(url, jsonFeesRespKey);
   const returnParams = ['gas', 'transaction_type'];
 
   let result = new CheckRunner()
@@ -95,7 +95,7 @@ const getNetworkFees = async (server) => {
  */
 const getNetworkNodes = async (server) => {
   let url = getUrl(server, network + '/nodes', {limit: resourceLimit});
-  const networkNodes = await getAPIResponse(url, jsonNodesRespKey);
+  const networkNodes = await fetchAPIResponse(url, jsonNodesRespKey);
   const returnParams = [
     'description',
     'file_id',
@@ -145,7 +145,7 @@ const getNetworkNodes = async (server) => {
  */
 const getNetworkStake = async (server) => {
   let url = getUrl(server, network + '/stake');
-  const networkStake = await getAPIResponse(url, jsonRespKey);
+  const networkStake = await fetchAPIResponse(url, jsonRespKey);
   const mandatoryParams = [
     'max_stake_rewarded',
     'max_staking_reward_rate_per_hbar',
@@ -189,7 +189,7 @@ const getNetworkStake = async (server) => {
  */
 const getNetworkSupply = async (server) => {
   let url = getUrl(server, network + '/supply');
-  const networkSupply = await getAPIResponse(url, jsonRespKey);
+  const networkSupply = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)

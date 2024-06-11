@@ -28,7 +28,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   hasEmptyList,
   testRunner,
@@ -80,7 +80,7 @@ const checkTransactionTransfers = (transactions, option) => {
  */
 const getTransactionsWithAccountCheck = async (server) => {
   let url = getUrl(server, transactionsPath, {limit: resourceLimit, type: 'credit'});
-  const transactions = await getAPIResponse(url, jsonRespKey);
+  const transactions = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -121,7 +121,7 @@ const getTransactionsWithAccountCheck = async (server) => {
     type: 'credit',
     limit: 1,
   });
-  const accTransactions = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
+  const accTransactions = await fetchAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -156,7 +156,7 @@ const getTransactionsWithAccountCheck = async (server) => {
  */
 const getTransactionsWithOrderParam = async (server) => {
   const url = getUrl(server, transactionsPath, {order: 'asc', limit: resourceLimit});
-  const transactions = await getAPIResponse(url, jsonRespKey);
+  const transactions = await fetchAPIResponse(url, jsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -188,7 +188,7 @@ const getTransactionsWithOrderParam = async (server) => {
  */
 const getTransactionsWithLimitParams = async (server) => {
   const url = getUrl(server, transactionsPath, {limit: 10});
-  const transactions = await getAPIResponse(url, jsonRespKey);
+  const transactions = await fetchAPIResponse(url, jsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -215,7 +215,7 @@ const getTransactionsWithLimitParams = async (server) => {
  */
 const getTransactionsWithTimeAndLimitParams = async (server) => {
   let url = getUrl(server, transactionsPath, {limit: 1});
-  let transactions = await getAPIResponse(url, jsonRespKey);
+  let transactions = await fetchAPIResponse(url, jsonRespKey);
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -235,7 +235,7 @@ const getTransactionsWithTimeAndLimitParams = async (server) => {
     timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
     limit: 1,
   });
-  transactions = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
+  transactions = await fetchAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = checkRunner.run(transactions);
   if (!result.passed) {
@@ -256,7 +256,7 @@ const getTransactionsWithTimeAndLimitParams = async (server) => {
 const getSuccessfulTransactionById = async (server) => {
   // look for the latest successful transaction
   let url = getUrl(server, transactionsPath, {limit: 1, result: 'success'});
-  const transactions = await getAPIResponse(url, jsonRespKey);
+  const transactions = await fetchAPIResponse(url, jsonRespKey);
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -276,7 +276,7 @@ const getSuccessfulTransactionById = async (server) => {
 
   // filter the scheduled transaction
   url = getUrl(server, `${transactionsPath}/${transactions[0].transaction_id}`, {scheduled: false});
-  const singleTransactions = await getAPIResponse(url, jsonRespKey);
+  const singleTransactions = await fetchAPIResponse(url, jsonRespKey);
 
   // only verify the single successful transaction
   result = new CheckRunner()

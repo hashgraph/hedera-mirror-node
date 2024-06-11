@@ -25,7 +25,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   testRunner,
 } from './utils';
@@ -54,7 +54,7 @@ const mandatoryParams = [
  */
 const getSingleBlockById = async (server) => {
   let url = getUrl(server, blocksPath, {limit: 10});
-  const blocks = await getAPIResponse(url, jsonRespKey);
+  const blocks = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -74,7 +74,7 @@ const getSingleBlockById = async (server) => {
 
   const highestBlock = _.max(_.map(blocks, (block) => block.number));
   url = getUrl(server, `${blocksPath}/${highestBlock}`);
-  const singleBlock = await getAPIResponse(url);
+  const singleBlock = await fetchAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)

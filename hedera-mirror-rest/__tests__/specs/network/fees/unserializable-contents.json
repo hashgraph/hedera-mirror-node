@@ -35,12 +35,12 @@
     ]
   },
   "url": "/api/v1/network/fees",
-  "responseStatus": 500,
+  "responseStatus": 404,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Internal error"
+          "message": "Not found"
         }
       ]
     }

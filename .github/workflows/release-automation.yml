@@ -32,13 +32,13 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
         with:
           egress-policy: audit
 
       - name: Parse Version
         id: version_parser
-        uses: madhead/semver-utils@40bbdc6e50b258c09f35f574e83c51f60d2ce3a2 # latest
+        uses: madhead/semver-utils@ed58b1e544d13426a67fea39cb19638b3c5623d4 # latest
         with:
           lenient: false
           version: ${{ github.event.inputs.version }}
@@ -152,7 +152,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
+        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
         with:
           egress-policy: audit
 

@@ -20,7 +20,7 @@ import {
   checkRespArrayLength,
   checkRespObjDefined,
   CheckRunner,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   testRunner,
 } from './utils';
@@ -40,7 +40,7 @@ const stateproofPath = (transactionId) => `${transactionsPath}/${transactionId}/
  */
 const checkStateproofForValidTransaction = async (server) => {
   let url = getUrl(server, transactionsPath, {limit: 1, order: 'desc', result: 'success'});
-  const transactions = await getAPIResponse(url, transactionsJsonKey);
+  const transactions = await fetchAPIResponse(url, transactionsJsonKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -56,7 +56,7 @@ const checkStateproofForValidTransaction = async (server) => {
 
   const {transaction_id: transactionId, nonce, scheduled} = transactions[0];
   url = getUrl(server, stateproofPath(transactionId), {nonce, scheduled});
-  const stateproof = await getAPIResponse(url);
+  const stateproof = await fetchAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)

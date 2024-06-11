@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -73,6 +74,15 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
         this.schema = schema;
     }
 
+    /**
+     * Perform any synchronous portion of the migration
+     *
+     * @return boolean indicating if async migration should be performed
+     * */
+    protected boolean performSynchronousSteps() {
+        return true;
+    }
+
     @Override
     public Integer getChecksum() {
         if (!hasFlywaySchemaHistoryTable()) {
@@ -111,6 +121,11 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
             throw new IllegalArgumentException(String.format("Invalid non-positive success checksum %d", checksum));
         }
 
+        var shouldMigrate = performSynchronousSteps();
+        if (!shouldMigrate) {
+            onSuccess();
+            return;
+        }
         Mono.fromRunnable(this::migrateAsync)
                 .subscribeOn(Schedulers.single())
                 .doOnSuccess(t -> onSuccess())
@@ -170,7 +185,7 @@ abstract class AsyncJavaMigration<T> extends RepeatableMigration {
     private boolean hasFlywaySchemaHistoryTable() {
         var exists = namedParameterJdbcTemplate.queryForObject(
                 CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL, Map.of("schema", schema), Boolean.class);
-        return exists != null && exists;
+        return BooleanUtils.isTrue(exists);
     }
 
     private void onSuccess() {

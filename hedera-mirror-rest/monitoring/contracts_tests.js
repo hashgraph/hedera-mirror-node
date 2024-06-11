@@ -25,7 +25,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   testRunner,
 } from './utils';
@@ -33,6 +33,7 @@ import {
 const contractsPath = '/contracts';
 const resource = 'contract';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
+const contractCallEnabled = config[resource].contractCallEnabled;
 const jsonRespKey = 'contracts';
 const jsonResultsRespKey = 'results';
 const mandatoryParams = [
@@ -53,7 +54,7 @@ const mandatoryParams = [
 const contractResultParams = ['address', 'bloom', 'contract_id', 'from', 'gas_limit', 'hash', 'timestamp', 'to'];
 
 /**
- * Verify Verify /contracts and /contracts/{contractId} can be retrieved
+ * Verify /contracts and /contracts/{contractId} can be retrieved
  * @param {Object} server API host endpoint
  */
 const getContractById = async (server) => {
@@ -65,7 +66,7 @@ const getContractById = async (server) => {
 
   const contract = _.max(_.map(contracts, (contract) => contract.contract_id));
   url = getUrl(server, `${contractsPath}/${contract}`);
-  const singleContract = await getAPIResponse(url);
+  const singleContract = await fetchAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -80,6 +81,43 @@ const getContractById = async (server) => {
     url,
     passed: true,
     message: 'Successfully called contracts for single contract',
+  };
+};
+
+/**
+ * Verify /contracts/call can be called
+ * @param {Object} server API host endpoint
+ */
+const postContractCall = async (server) => {
+  let url = getUrl(server, `${contractsPath}/call`);
+  let body = `{
+      "block": "latest",
+          "data": "0x2e3cff6a0000000000000000000000000000000000000000000000000000000000000064",
+          "estimate": false,
+          "gas": 15000000,
+          "gasPrice": 100000000,
+          "to": "0x0000000000000000000000000000000000000168"
+    }`;
+  const contractCallResponseParams = ['result'];
+
+  const singleContract = await fetchAPIResponse(url, '', undefined, body);
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'contracts call is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: contractCallResponseParams,
+      message: 'contract call response object is missing some mandatory fields',
+    })
+    .run(singleContract);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called contracts call for single contract',
   };
 };
 
@@ -100,7 +138,7 @@ const getContractResults = async (server) => {
   }
 
   let url = getUrl(server, `${contractsPath}/${contractId}/results`);
-  const contractResults = await getAPIResponse(url, jsonResultsRespKey);
+  const contractResults = await fetchAPIResponse(url, jsonResultsRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -116,7 +154,7 @@ const getContractResults = async (server) => {
 
   const timestamp = _.max(_.map(contractResults, (result) => result.timestamp));
   url = getUrl(server, `${contractsPath}/${contractId}/results/${timestamp}`);
-  const contractResultsAtTimestamp = await getAPIResponse(url);
+  const contractResultsAtTimestamp = await fetchAPIResponse(url);
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'contract results at a given timestamp is undefined'})
@@ -156,7 +194,7 @@ const getContractResultsLogs = async (server) => {
   const jsonLogsRespKey = 'logs';
   const contractLogsParams = ['address', 'bloom', 'contract_id', 'index', 'topics'];
   let url = getUrl(server, `${contractsPath}/${contractId}/results/logs`);
-  let contractLogs = await getAPIResponse(url, jsonLogsRespKey);
+  let contractLogs = await fetchAPIResponse(url, jsonLogsRespKey);
 
   // Verify contracts logs for a particular contractId
   let result = new CheckRunner()
@@ -173,7 +211,7 @@ const getContractResultsLogs = async (server) => {
 
   // Verify contracts logs list
   url = getUrl(server, `${contractsPath}/results/logs`, {limit: resourceLimit});
-  contractLogs = await getAPIResponse(url, jsonLogsRespKey);
+  contractLogs = await fetchAPIResponse(url, jsonLogsRespKey);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -203,19 +241,22 @@ const getContractResultsLogs = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getContractState = async (server) => {
-  let {url, contracts, result} = await getContractsList(server);
+  let contractId = config[resource].contractId;
+  if (!contractId) {
+    let {url, contracts, result} = await getContractsList(server);
 
-  if (!result.passed) {
-    return {url, ...result};
+    if (!result.passed) {
+      return {url, ...result};
+    }
+    contractId = _.max(_.map(contracts, (contract) => contract.contract_id));
   }
-
   const contractStateParams = ['address', 'contract_id', 'timestamp', 'slot', 'value'];
   const jsonStateRespKey = 'state';
-  const contract = _.max(_.map(contracts, (contract) => contract.contract_id));
-  url = getUrl(server, `${contractsPath}/${contract}/state`);
-  const contractState = await getAPIResponse(url, jsonStateRespKey);
 
-  result = new CheckRunner()
+  let url = getUrl(server, `${contractsPath}/${contractId}/state`);
+  const contractState = await fetchAPIResponse(url, jsonStateRespKey);
+
+  let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'contracts state is undefined'})
     .withCheckSpec(checkMandatoryParams, {
@@ -250,7 +291,7 @@ const getContractResultsByTransaction = async (server) => {
 
   const contractResultParams = ['address', 'failed_initcode', 'hash', 'logs'];
   url = getUrl(server, `${contractsPath}/results/${transactionId}`);
-  const contractResults = await getAPIResponse(url);
+  const contractResults = await fetchAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -283,7 +324,7 @@ const getContractResultsByTransaction = async (server) => {
     'value',
   ];
   url = getUrl(server, `${contractsPath}/results/${transactionId}/actions`);
-  const contractActions = await getAPIResponse(url, jsonActionsRespKey);
+  const contractActions = await fetchAPIResponse(url, jsonActionsRespKey);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -309,7 +350,7 @@ const getContractResultsByTransaction = async (server) => {
  */
 async function getContractsList(server) {
   let url = getUrl(server, contractsPath, {limit: resourceLimit});
-  const contracts = await getAPIResponse(url, jsonRespKey);
+  const contracts = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -333,7 +374,7 @@ async function getContractsList(server) {
 async function getContractsResultsList(server) {
   const contractsResultsPath = '/contracts/results';
   let url = getUrl(server, contractsResultsPath, {limit: resourceLimit});
-  const contractsResults = await getAPIResponse(url, jsonResultsRespKey);
+  const contractsResults = await fetchAPIResponse(url, jsonResultsRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -361,6 +402,7 @@ const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
     runTest(getContractById),
+    contractCallEnabled ? runTest(postContractCall) : '',
     runTest(getContractResults),
     runTest(getContractResultsLogs),
     runTest(getContractState),
