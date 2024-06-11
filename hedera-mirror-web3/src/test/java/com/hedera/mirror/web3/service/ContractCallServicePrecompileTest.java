@@ -62,7 +62,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
 import org.web3j.tx.gas.ContractGasProvider;
@@ -76,8 +75,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     private ECKeyPair mockEcKeyPair;
     private ContractGasProvider gasProvider;
     private Web3j web3j;
-
-    private String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
 
     @BeforeAll
     void setup() {
@@ -217,13 +214,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
 
         // Deploy Contract
-        var contract = ContractDeployer.deploy(
-                PrecompileTestContract.class,
-                web3j,
-                domainBuilder,
-                Credentials.create(mockEcKeyPair),
-                gasProvider,
-                PrecompileTestContract.BINARY);
+        var contract = ContractDeployer.deploy(PrecompileTestContract.class, PrecompileTestContract.BINARY);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
 
         // Function Call signature
