@@ -6,7 +6,7 @@
 
 ## Goals
 
-- Ingest the following transactions and persist to the database:
+- Ingest the following transactions and persist them to the database:
   - `NodeCreate`
   - `NodeDelete`
   - `NodeUpdate`
