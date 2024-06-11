@@ -33,12 +33,14 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.CustomLog;
-import org.springframework.util.Assert;
+import org.springframework.validation.annotation.Validated;
 
 @CustomLog
 @Named
+@Validated
 public class ContractDebugService extends ContractCallService {
     private final ContractActionRepository contractActionRepository;
 
@@ -55,8 +57,7 @@ public class ContractDebugService extends ContractCallService {
     }
 
     public OpcodesProcessingResult processOpcodeCall(
-            final ContractDebugParameters params, final OpcodeTracerOptions opcodeTracerOptions) {
-        Assert.isTrue(params.getConsensusTimestamp() > 0, "Consensus timestamp is required");
+            final @Valid ContractDebugParameters params, final OpcodeTracerOptions opcodeTracerOptions) {
         return ContractCallContext.run(ctx -> {
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             List<ContractAction> contractActions =
