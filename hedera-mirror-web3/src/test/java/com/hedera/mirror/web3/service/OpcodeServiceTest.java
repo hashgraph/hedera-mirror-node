@@ -17,6 +17,8 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.common.util.CommonUtils.instant;
+import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,14 +42,13 @@ import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.utils.ResultCaptor;
-import com.hedera.mirror.web3.utils.TransactionProviderEnum;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
@@ -63,18 +64,15 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor
 class OpcodeServiceTest extends ContractCallTestSetup {
 
     public static final long AMOUNT = 0L;
     public static final long GAS = 15_000_000L;
 
-    @Autowired
-    private OpcodeService opcodeService;
-
-    @Autowired
-    private EntityDatabaseAccessor entityDatabaseAccessor;
+    private final OpcodeService opcodeService;
+    private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -89,8 +87,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
         private final ResultCaptor<OpcodesProcessingResult> opcodesResultCaptor = new ResultCaptor<>(OpcodesProcessingResult.class);
 
-        private final AtomicReference<ContractDebugParameters> expectedServiceParameters = new AtomicReference<>();
-
+        private ContractDebugParameters expectedServiceParameters;
         private EntityId senderEntityId;
         private EntityId contractEntityId;
 
@@ -127,7 +124,6 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
         @BeforeEach
         void setUpArgumentCaptors() {
-            expectedServiceParameters.set(null);
             doAnswer(opcodesResultCaptor)
                     .when(contractDebugService)
                     .processOpcodeCall(serviceParametersCaptor.capture(), tracerOptionsCaptor.capture());
@@ -222,17 +218,18 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                         .persist();
             }
 
-            expectedServiceParameters.set(ContractDebugParameters.builder()
+            expectedServiceParameters = ContractDebugParameters.builder()
                     .sender(new HederaEvmAccount(SENDER_ALIAS))
                     .receiver(entityDatabaseAccessor
                             .get(contractAddress, Optional.empty())
-                            .map(TransactionProviderEnum::entityAddress)
+                            .map(this::entityAddress)
                             .orElse(Address.ZERO))
+                    .consensusTimestamp(consensusTimestamp)
                     .gas(GAS)
                     .value(AMOUNT)
                     .callData(Bytes.of(callData))
                     .block(provider.getBlock())
-                    .build());
+                    .build();
 
             if (ethTransaction != null) {
                 return new TransactionHashParameter(Bytes.of(ethTransaction.getHash()));
@@ -353,7 +350,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                 final OpcodesResponse opcodesResponse,
                 final OpcodeTracerOptions options) {
             assertThat(opcodesResponse).isEqualTo(expectedOpcodesResponse(opcodesResultCaptor.getValue()));
-            assertThat(serviceParametersCaptor.getValue()).isEqualTo(expectedServiceParameters.get());
+            assertThat(serviceParametersCaptor.getValue()).isEqualTo(expectedServiceParameters);
             assertThat(tracerOptionsCaptor.getValue()).isEqualTo(options);
 
             if (providerEnum.getExpectedErrorMessage() != null) {
@@ -371,45 +368,58 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                                 .toHexString());
             }
         }
-    }
 
-    private OpcodesResponse expectedOpcodesResponse(final OpcodesProcessingResult result) {
-        return new OpcodesResponse()
-                .address(result.transactionProcessingResult()
-                        .getRecipient()
-                        .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
-                        .map(TransactionProviderEnum::entityAddress)
-                        .map(Address::toHexString)
-                        .orElse(Address.ZERO.toHexString()))
-                .contractId(result.transactionProcessingResult()
-                        .getRecipient()
-                        .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
-                        .map(Entity::toEntityId)
-                        .map(EntityId::toString)
-                        .orElse(null))
-                .failed(!result.transactionProcessingResult().isSuccessful())
-                .gas(result.transactionProcessingResult().getGasUsed())
-                .opcodes(result.opcodes().stream()
-                        .map(opcode -> new com.hedera.mirror.rest.model.Opcode()
-                                .depth(opcode.depth())
-                                .gas(opcode.gas())
-                                .gasCost(opcode.gasCost())
-                                .op(opcode.op())
-                                .pc(opcode.pc())
-                                .reason(opcode.reason())
-                                .stack(opcode.stack().stream()
-                                        .map(Bytes::toHexString)
-                                        .toList())
-                                .memory(opcode.memory().stream()
-                                        .map(Bytes::toHexString)
-                                        .toList())
-                                .storage(opcode.storage().entrySet().stream()
-                                        .collect(Collectors.toMap(
-                                                entry -> entry.getKey().toHexString(),
-                                                entry -> entry.getValue().toHexString()))))
-                        .toList())
-                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
-                        .map(Bytes::toHexString)
-                        .orElse(Bytes.EMPTY.toHexString()));
+        private OpcodesResponse expectedOpcodesResponse(final OpcodesProcessingResult result) {
+            return new OpcodesResponse()
+                    .address(result.transactionProcessingResult()
+                            .getRecipient()
+                            .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
+                            .map(this::entityAddress)
+                            .map(Address::toHexString)
+                            .orElse(Address.ZERO.toHexString()))
+                    .contractId(result.transactionProcessingResult()
+                            .getRecipient()
+                            .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
+                            .map(Entity::toEntityId)
+                            .map(EntityId::toString)
+                            .orElse(null))
+                    .failed(!result.transactionProcessingResult().isSuccessful())
+                    .gas(result.transactionProcessingResult().getGasUsed())
+                    .opcodes(result.opcodes().stream()
+                            .map(opcode -> new com.hedera.mirror.rest.model.Opcode()
+                                    .depth(opcode.depth())
+                                    .gas(opcode.gas())
+                                    .gasCost(opcode.gasCost())
+                                    .op(opcode.op())
+                                    .pc(opcode.pc())
+                                    .reason(opcode.reason())
+                                    .stack(opcode.stack().stream()
+                                            .map(Bytes::toHexString)
+                                            .toList())
+                                    .memory(opcode.memory().stream()
+                                            .map(Bytes::toHexString)
+                                            .toList())
+                                    .storage(opcode.storage().entrySet().stream()
+                                            .collect(Collectors.toMap(
+                                                    entry -> entry.getKey().toHexString(),
+                                                    entry -> entry.getValue().toHexString()))))
+                            .toList())
+                    .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                            .map(Bytes::toHexString)
+                            .orElse(Bytes.EMPTY.toHexString()));
+        }
+
+        public Address entityAddress(Entity entity) {
+            if (entity == null) {
+                return Address.ZERO;
+            }
+            if (entity.getEvmAddress() != null && entity.getEvmAddress().length == EVM_ADDRESS_LENGTH) {
+                return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
+            }
+            if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
+                return Address.wrap(Bytes.wrap(entity.getAlias()));
+            }
+            return toAddress(entity.toEntityId());
+        }
     }
 }

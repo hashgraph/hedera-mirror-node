@@ -35,6 +35,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
 import java.util.List;
 import lombok.CustomLog;
+import org.springframework.util.Assert;
 
 @CustomLog
 @Named
@@ -55,6 +56,7 @@ public class ContractDebugService extends ContractCallService {
 
     public OpcodesProcessingResult processOpcodeCall(
             final ContractDebugParameters params, final OpcodeTracerOptions opcodeTracerOptions) {
+        Assert.isTrue(params.getConsensusTimestamp() > 0, "Consensus timestamp is required");
         return ContractCallContext.run(ctx -> {
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             List<ContractAction> contractActions =
