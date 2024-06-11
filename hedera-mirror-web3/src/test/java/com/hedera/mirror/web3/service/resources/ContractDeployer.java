@@ -20,37 +20,58 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 
 import com.google.common.collect.Range;
+import com.hedera.mirror.common.config.CommonIntegrationTest;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.service.TestWeb3jService;
 import java.lang.reflect.InvocationTargetException;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
 import org.web3j.tx.Contract;
 import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.gas.DefaultGasProvider;
+import org.web3j.utils.Numeric;
 
 @RequiredArgsConstructor
-public class ContractDeployer {
+public class ContractDeployer extends CommonIntegrationTest {
     protected static final long EVM_V_34_BLOCK = 50L;
+    Web3j web3j;
+    Credentials credentials;
+    ContractGasProvider contractGasProvider;
 
-    public static <T extends Contract> T deploy(
-            Class<T> contractClass,
-            Web3j web3j,
-            DomainBuilder domainBuilder,
-            Credentials credentials,
-            ContractGasProvider contractGasProvider,
-            String binary)
-            throws Exception {
+    private String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
+    private static ContractDeployer instance;
+
+    public ContractDeployer getInstance() {
+        if (instance == null) {
+            final var mockEcKeyPair = ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY));
+            credentials = Credentials.create(mockEcKeyPair);
+            contractGasProvider = new DefaultGasProvider();
+            web3j = Web3j.build(new TestWeb3jService());
+            instance = new ContractDeployer();
+        }
+        return instance;
+    }
+
+    public static <T extends Contract> T deploy(Class<T> contractClass, String binary) throws Exception {
         T contract;
         try {
+            final var deployerInstance = ContractDeployer.instance;
             final var ctor = contractClass.getDeclaredConstructor(
                     String.class, Web3j.class, Credentials.class, ContractGasProvider.class);
-            final var contractEntityNum = ContractDeployer.precompileContractPersist(binary, domainBuilder);
+            final var contractEntityNum =
+                    ContractDeployer.precompileContractPersist(binary, deployerInstance.domainBuilder);
             final var contractAddress =
                     toAddress(EntityId.of(0, 0, contractEntityNum)).toHexString();
-            contract = ctor.newInstance(contractAddress, web3j, credentials, contractGasProvider);
+            contract = ctor.newInstance(
+                    contractAddress,
+                    deployerInstance.web3j,
+                    deployerInstance.credentials,
+                    deployerInstance.contractGasProvider);
         } catch (InstantiationException
                 | IllegalAccessException
                 | InvocationTargetException
