@@ -21,20 +21,18 @@ import {JSONParse, JSONStringify} from './utils.js';
 
 export class Cache {
   constructor() {
-    const enabled = config?.redis?.enabled;
-    const uri = config?.redis?.uri;
-    const uriSanitized = uri.replaceAll(RegExp('(?<=//).*:.+@', 'g'), '***:***@');
-    this.ready = false;
-
-    this.redis = new Redis(uri, {
-      commandTimeout: config?.redis?.commandTimeout,
-      connectTimeout: config?.redis?.connectTimeout,
+    const {redis: redisConfig} = config;
+    const {enabled, uri} = redisConfig;
+    const sentinelOptions = redisConfig.sentinel.name ? redisConfig.sentinel : {};
+    const options = {
+      commandTimeout: redisConfig.commandTimeout,
+      connectTimeout: redisConfig.connectTimeout,
       enableAutoPipelining: true,
       enableOfflineQueue: true,
       enableReadyCheck: true,
       keepAlive: 30000,
       lazyConnect: !enabled,
-      maxRetriesPerRequest: config?.redis?.maxRetriesPerRequest,
+      maxRetriesPerRequest: redisConfig.maxRetriesPerRequest,
       retryStrategy: (attempt) => {
         this.ready = false;
 
@@ -42,9 +40,14 @@ export class Cache {
           return null;
         }
 
-        return Math.min(attempt * 2000, config?.redis?.maxBackoff);
+        return Math.min(attempt * 2000, redisConfig.maxBackoff);
       },
-    });
+      ...sentinelOptions,
+    };
+    const uriSanitized = uri.replaceAll(RegExp('(?<=//).*:.+@', 'g'), '***:***@');
+    this.ready = false;
+
+    this.redis = new Redis(uri, options);
 
     this.redis.on('connect', () => logger.info(`Connected to ${uriSanitized}`));
     this.redis.on('error', (err) => logger.error(`Error connecting to ${uriSanitized}: ${err.message}`));

@@ -76,6 +76,10 @@ hedera:
         maxMemory: 250Mb
         maxMemoryPolicy: allkeys-lfu
         maxRetriesPerRequest: 1
+        sentinel:
+          name: ""
+          sentinelPassword: ""
+          sentinels: []
         uri: redis://127.0.0.1:6379
       response:
         compression: true
