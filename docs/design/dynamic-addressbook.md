@@ -7,9 +7,12 @@
 ## Goals
 
 - Ingest the following transactions and persist them to the database:
+
   - `NodeCreate`
   - `NodeDelete`
   - `NodeUpdate`
+
+- Expose `domain_name` in the `/network/nodes` endpoint
 
 ## Architecture
 
@@ -49,7 +52,49 @@ Write `transaction_bytes` and `transaction_record_bytes` in the following handle
 
 ### REST API
 
-Might not need to update the REST API until a later phase.
+Update the `api/v1/network/nodes` endpoint to return `domain_name`
+
+Response:
+
+```json
+{
+  "nodes": [
+    {
+      "description": "address book 1",
+      "file_id": "0.0.102",
+      "max_stake": 50000,
+      "memo": "0.0.4",
+      "min_stake": 1000,
+      "node_account_id": "0.0.4",
+      "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
+      "node_id": 1,
+      "public_key": "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f",
+      "reward_rate_start": 1000000,
+      "service_endpoints": [
+        {
+          "ip_address_v4": "128.0.0.6",
+          "port": 50216,
+          "domain_name": "examplenode.com"
+        }
+      ],
+      "stake": 20000,
+      "stake_not_rewarded": 19900,
+      "stake_rewarded": 100,
+      "staking_period": {
+        "from": "1655164800.000000000",
+        "to": "1655251200.000000000"
+      },
+      "timestamp": {
+        "from": "187654.000123457",
+        "to": null
+      }
+    }
+  ],
+  "links": {
+    "next": null
+  }
+}
+```
 
 ## Non-Functional Requirements
 
