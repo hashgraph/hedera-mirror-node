@@ -34,6 +34,7 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.web3.config.CommonWeb3TestConfiguration;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -53,7 +54,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -62,26 +62,17 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.web3j.crypto.ECKeyPair;
-import org.web3j.protocol.Web3j;
-import org.web3j.tx.gas.ContractGasProvider;
-import org.web3j.tx.gas.DefaultGasProvider;
-import org.web3j.utils.Numeric;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 
+@Import(CommonWeb3TestConfiguration.class)
+@SuppressWarnings("unchecked")
 @RequiredArgsConstructor
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@TestInstance(TestInstance.Lifecycle.PER_METHOD)
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
-    private ECKeyPair mockEcKeyPair;
-    private ContractGasProvider gasProvider;
-    private Web3j web3j;
-
-    @BeforeAll
-    void setup() {
-        mockEcKeyPair = ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY));
-        gasProvider = new DefaultGasProvider();
-        web3j = Web3j.build(new TestWeb3jService());
-    }
+    @Autowired
+    private ContractDeployer contractDeployer;
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
@@ -214,7 +205,39 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
 
         // Deploy Contract
-        var contract = ContractDeployer.deploy(PrecompileTestContract.class, PrecompileTestContract.BINARY);
+        var contract = contractDeployer.deploy(PrecompileTestContract.class, PrecompileTestContract.BINARY);
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+
+        // Function Call signature
+        var result = contract.isTokenFrozen(tokenAddress, senderAddress);
+        var functionSignature = Bytes.fromHexString(result.encodeFunctionCall());
+
+        final var serviceParameters = serviceParametersForExecutionSingle(
+                functionSignature, contractAddress, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
+
+        final var mirrorNodeResponse = contractCallService.processCall(serviceParameters);
+        assertThat(mirrorNodeResponse).isEqualTo(successfulResponse);
+    }
+
+    @Test
+    void evmPrecompileReadOnlyTokenFunctionsTestEthCallTokenFrozenWithAlias() throws Exception {
+        // Test setup
+        historicalBlocksPersist();
+        fileDataPersist();
+        feeSchedulesPersist();
+        final var tokenEntity = fungibleTokenPersist();
+        final var tokenAddress =
+                toAddress(EntityId.of(0, 0, tokenEntity.getNum())).toHexString();
+        final var senderEntity = senderEntityPersistDynamic();
+        final var senderAddress =
+                toAddress(EntityId.of(0, 0, senderEntity.getNum())).toHexString();
+        tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
+
+        // Deploy Contract
+        var contract = contractDeployer.deploy(PrecompileTestContract.class, PrecompileTestContract.BINARY);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
 
         // Function Call signature

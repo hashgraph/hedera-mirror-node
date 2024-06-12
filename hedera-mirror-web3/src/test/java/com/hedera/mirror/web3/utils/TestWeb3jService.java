@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.service;
+package com.hedera.mirror.web3.utils;
 
 import io.reactivex.Flowable;
 import java.io.IOException;
@@ -22,7 +22,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.BatchRequest;
 import org.web3j.protocol.core.BatchResponse;
@@ -33,10 +32,9 @@ import org.web3j.protocol.core.methods.response.EthSyncing;
 import org.web3j.protocol.http.HttpService;
 import org.web3j.protocol.websocket.events.Notification;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 @RequiredArgsConstructor
 public class TestWeb3jService implements Web3jService {
-    @Autowired
-    protected ContractCallService contractCallService;
 
     private final Web3jService delegateService;
 
@@ -69,8 +67,6 @@ public class TestWeb3jService implements Web3jService {
     }
 
     private <T extends Response> T call(List serviceParameters, Class<T> responseType, Request request) {
-        // invoke contractCallService.processCall
-        // contractCallService.processCall(serviceParameters);
         T res = getResObj(responseType);
         res.setResult("Good");
 
