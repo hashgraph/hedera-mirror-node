@@ -22,6 +22,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
@@ -53,7 +54,7 @@ public class ContractCallContext {
     private OpcodeTracerOptions opcodeTracerOptions;
 
     @Setter
-    private List<Opcode> opcodes = List.of();
+    private List<Opcode> opcodes = new ArrayList<Opcode>();
 
     @Setter
     private List<ContractAction> contractActions = List.of();
@@ -89,6 +90,10 @@ public class ContractCallContext {
             throw new EmptyStackException();
         }
         setStack(stack.getUpstream().orElseThrow(EmptyStackException::new));
+    }
+
+    public void addOpcodes(Opcode opcode) {
+        opcodes.add(opcode);
     }
 
     /**

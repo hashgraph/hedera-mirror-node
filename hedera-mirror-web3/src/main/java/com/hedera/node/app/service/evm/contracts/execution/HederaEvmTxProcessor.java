@@ -147,6 +147,7 @@ public class HederaEvmTxProcessor {
         final var initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         final var messageFrameStack = initialFrame.getMessageFrameStack();
         HederaEvmOperationTracer tracer = this.getTracer(tracerType);
+
         tracer.init(initialFrame);
 
         final var evmVersion = ((MirrorNodeEvmProperties) dynamicProperties).getSemanticEvmVersion();

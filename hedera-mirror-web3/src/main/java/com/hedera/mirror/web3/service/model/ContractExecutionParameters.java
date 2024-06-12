@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,14 @@ import org.hyperledger.besu.datatypes.Address;
 @Value
 @Builder
 public class ContractExecutionParameters implements CallServiceParameters {
-    BlockType block;
-    Bytes callData;
-    CallType callType;
-    long gas;
-    boolean isEstimate;
-    boolean isStatic;
-    Address receiver;
-    HederaEvmAccount sender;
-    TracerType tracerType = TracerType.OPERATION;
-    long value;
+    private final BlockType block;
+    private final Bytes callData;
+    private final CallType callType;
+    private final long gas;
+    private final boolean isEstimate;
+    private final boolean isStatic;
+    private final Address receiver;
+    private final HederaEvmAccount sender;
+    private final TracerType tracerType = TracerType.OPERATION;
+    private final long value;
 }

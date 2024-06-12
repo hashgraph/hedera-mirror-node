@@ -18,9 +18,11 @@ package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 public interface ContractActionRepository extends CrudRepository<ContractAction, Long> {
 
+    @Query(value = "select * from contract_action where consensus_timestamp = ? order by index asc", nativeQuery = true)
     List<ContractAction> findAllByConsensusTimestamp(long consensusTimestamp);
 }

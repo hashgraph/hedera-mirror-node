@@ -167,6 +167,7 @@ public class OpcodeServiceImpl implements OpcodeService {
                 .gas(getGasLimit(ethTransaction, contractResult))
                 .value(getValue(ethTransaction, contractResult).longValue())
                 .callData(getCallData(ethTransaction, contractResult))
+                .consensusTimestamp(consensusTimestamp)
                 .block(blockType)
                 .build();
     }
