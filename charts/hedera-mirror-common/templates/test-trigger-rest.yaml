@@ -1,22 +1,32 @@
 {{- if and .Values.testkube.enabled .Values.testkube.trigger.enabled -}}
+{{- range $idx, $target := $.Values.testkube.test.targets }}
+---
 apiVersion: tests.testkube.io/v1
 kind: TestTrigger
 metadata:
-  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
-  name: test-trigger-rest
-  namespace: {{ .Values.testkube.namespace }}
+  labels: {{ include "hedera-mirror-common.labels" $ | nindent 4 }}
+  name: test-trigger-rest-{{ $target.namespace }}
+  namespace: {{ $.Values.testkube.namespace }}
 spec:
   resource: pod
   resourceSelector:
-    namespace: {{ .Values.testkube.test.target.namespace }}
+{{- if eq $idx 0 }}
+    namespace: {{ $target.namespace }}
     labelSelector:
       matchLabels:
-        test-trigger: rest-trigger
+        test-trigger: rest-trigger-{{ $target.namespace }}
+{{- else }}
+    namespace: {{ $.Values.testkube.namespace }}
+    labelSelector:
+      matchLabels:
+        test-name: {{ $previous := sub $idx 1 | index $.Values.testkube.test.targets }}test-web3-{{ $previous.namespace }}
+{{- end }}
   event: deleted
   action: run
   execution: testsuite
   delay: 10s
   testSelector:
-    name: test-suite-rest
-    namespace: {{ .Values.testkube.namespace }}
+    name: test-suite-rest-{{ $target.namespace }}
+    namespace: {{ $.Values.testkube.namespace }}
+{{- end }}
 {{- end }}
