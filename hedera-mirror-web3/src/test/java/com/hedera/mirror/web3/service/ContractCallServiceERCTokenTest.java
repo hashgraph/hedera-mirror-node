@@ -16,20 +16,28 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.EXCHANGE_RATE_ENTITY_ID;
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.FEE_SCHEDULE_ENTITY_ID;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -43,6 +51,16 @@ import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
+import com.hederahashgraph.api.proto.java.ExchangeRate;
+import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.FeeSchedule;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -103,13 +121,28 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     };
     private static final long EVM_V_34_BLOCK = 50L;
 
+    private static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
+            .setCurrentRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(12)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
+                    .build())
+            .setNextRate(ExchangeRate.newBuilder()
+                    .setCentEquiv(15)
+                    .setHbarEquiv(1)
+                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
+                    .build())
+            .build();
+    //private static RecordFile recordFileAfterEvm34;
+    //private static RecordFile recordFileEvm46Latest;
+
     private static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
 
     @Value("classpath:contracts/ERCTestContract/ERCTestContract.json")
-    private Path ERC_ABI_PATH;
+    private Path ercAbiPath;
     @Value("classpath:contracts/RedirectTestContract/RedirectTestContract.json")
-    private Path REDIRECT_CONTRACT_ABI_PATH;
+    private Path redirectContractAbiPath;
 
     private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
         return Arrays.stream(ErcContractReadOnlyFunctions.values())
@@ -138,22 +171,20 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @MethodSource("ercContractFunctionArgumentsProvider")
     void ercReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
-        persistForErcSupportedErcReadOnlyPrecompileOperationsTest();
-        final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
-        
+        final Address ercContractAddress = persistForErcSupportedErcReadOnlyPrecompileOperationsTest();
         final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
-                functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
+                functionEncodeDecoder.functionHashFor(functionName, ercAbiPath, ercFunction.functionParameters);
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, ercContractAddress, ETH_CALL, 0L, BlockType.LATEST);
+                serviceParametersForExecution2(functionHash, ercContractAddress, ETH_CALL, BlockType.LATEST);
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
+                ercFunction.name, ercAbiPath, ercFunction.expectedResultFields);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+        assertThat(contractCallService.processCall(serviceParameters.build())).isEqualTo(successfulResponse);
     }
 
-    private void persistForErcSupportedErcReadOnlyPrecompileOperationsTest() {
+    private Address persistForErcSupportedErcReadOnlyPrecompileOperationsTest() {
         recordFileAfterEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK))
@@ -162,28 +193,14 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var ownerEntityId = ownerEntityPersist();
         final var senderEntityId = senderEntityPersist();
         final var spenderEntityId = spenderEntityPersist();
-        ercContractPersist();
+        final var ercContractAddress = ercContractPersist2();
 
-        final var tokenEntityId = fungibleTokenPersist(
-                ownerEntityId,
-                KEY_PROTO,
-                FUNGIBLE_TOKEN_ADDRESS,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                9999999999999L,
-                TokenPauseStatusEnum.PAUSED,
-                true);
-        final var nftEntityId = nftPersist(
-                NFT_ADDRESS,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                ownerEntityId,
-                spenderEntityId,
-                ownerEntityId,
-                KEY_PROTO,
-                TokenPauseStatusEnum.PAUSED,
-                true);
-        tokenAccountPersist(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
-        tokenAccountPersist(senderEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
+        final var tokenEntityId = fungibleTokenPersist(ownerEntityId);
+        final var nftEntityId = nftPersist(ownerEntityId, spenderEntityId, ownerEntityId);
+        tokenAccountPersist(senderEntityId, tokenEntityId);
+        tokenAccountPersist(senderEntityId, nftEntityId);
         allowancesPersist(senderEntityId, spenderEntityId, tokenEntityId, nftEntityId);
+        return ercContractAddress;
     }
 
     @ParameterizedTest
@@ -192,28 +209,27 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
             final ErcContractReadOnlyFunctionsHistorical ercFunction,
             final boolean isStatic,
             final BlockType blockNumber) {
-        persistForErcReadOnlyPrecompileHistoricalOperationsTest();
-        final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
-        
+
+        final Address ercContractAddress = persistForErcReadOnlyPrecompileHistoricalOperationsTest();
         final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
-                functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
+                functionEncodeDecoder.functionHashFor(functionName, ercAbiPath, ercFunction.functionParameters);
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, ercContractAddress, ETH_CALL, 0L, blockNumber);
+                serviceParametersForExecution2(functionHash, ercContractAddress, ETH_CALL, blockNumber);
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                ercFunction.name, ERC_ABI_PATH, ercFunction.expectedResultFields);
+                ercFunction.name, ercAbiPath, ercFunction.expectedResultFields);
 
         // Before the block the data did not exist yet
         if (blockNumber.number() < EVM_V_34_BLOCK) {
-            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters.build()))
                     .isInstanceOf(MirrorEvmTransactionException.class);
         } else {
-            assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+            assertThat(contractCallService.processCall(serviceParameters.build())).isEqualTo(successfulResponse);
         }
     }
 
-    private void persistForErcReadOnlyPrecompileHistoricalOperationsTest() {
+    private Address persistForErcReadOnlyPrecompileHistoricalOperationsTest() {
         recordFileBeforeEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK - 1))
@@ -224,7 +240,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 .persist();
 
         historicalDataPersist();
-        ercContractPersist();
+        return ercContractPersist2();
     }
 
     @ParameterizedTest
@@ -233,25 +249,25 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "isApprovedForAll",
-                ERC_ABI_PATH,
+                ercAbiPath,
                 NFT_ADDRESS_HISTORICAL,
                 SENDER_ADDRESS_HISTORICAL,
                 SPENDER_ADDRESS_HISTORICAL);
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
 
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, ercContractAddress, ETH_CALL, 0L, BlockType.of(String.valueOf(blockNumber)));
+        final var serviceParameters = serviceParametersForExecution2(
+                functionHash, ercContractAddress, ETH_CALL, BlockType.of(String.valueOf(blockNumber)));
         final var latestBlockNumber = recordFileRepository.findLatestIndex().orElse(Long.MAX_VALUE);
 
         // Block number (Long.MAX_VALUE - 1) does not exist in the DB and is after the
         // latest block available in the DB => returning error
         if (blockNumber > latestBlockNumber) {
-            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters.build()))
                     .isInstanceOf(BlockNumberOutOfRangeException.class);
         } else if (blockNumber == 51) {
             // Block number 51 = (EVM_V_34_BLOCK + 1) does not exist in the DB but it is before the latest
             // block available in the DB => throw an exception
-            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+            assertThatThrownBy(() -> contractCallService.processCall(serviceParameters.build()))
                     .isInstanceOf(BlockNumberNotFoundException.class);
         }
     }
@@ -266,14 +282,14 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
         final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
-                functionEncodeDecoder.functionHashFor(functionName, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, ercContractAddress, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+                functionEncodeDecoder.functionHashFor(functionName, ercAbiPath, ercFunction.functionParameters);
+        final var serviceParameters = serviceParametersForExecution2(
+                functionHash, ercContractAddress, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters.build())), expectedGasUsed))
                 .isTrue();
     }
 
@@ -285,14 +301,14 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
         final var functionHash =
-                functionEncodeDecoder.functionHashFor(ercFunction.name, ERC_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, ercContractAddress, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+                functionEncodeDecoder.functionHashFor(ercFunction.name, ercAbiPath, ercFunction.functionParameters);
+        final var serviceParameters = serviceParametersForExecution2(
+                functionHash, ercContractAddress, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters.build())), expectedGasUsed))
                 .isTrue();
     }
 
@@ -304,14 +320,14 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         final var functionName = ercFunction.name + REDIRECT_SUFFIX;
         final var functionHash = functionEncodeDecoder.functionHashFor(
-                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+                functionName, redirectContractAbiPath, ercFunction.functionParameters);
+        final var serviceParameters = serviceParametersForExecution2(
+                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters.build())), expectedGasUsed))
                 .isTrue();
     }
 
@@ -323,11 +339,11 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         final var functionName = ercFunction.name + REDIRECT_SUFFIX;
         final var functionHash = functionEncodeDecoder.functionHashFor(
-                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+                functionName, redirectContractAbiPath, ercFunction.functionParameters);
+        final var serviceParameters = serviceParametersForExecution2(
+                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters.build()))
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
@@ -335,14 +351,7 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
         redirectContractPersist();
         final var ownerEntityId = ownerEntityPersist();
-        fungibleTokenPersist(
-                ownerEntityId,
-                KEY_PROTO,
-                FUNGIBLE_TOKEN_ADDRESS,
-                AUTO_RENEW_ACCOUNT_ADDRESS,
-                9999999999999L,
-                TokenPauseStatusEnum.PAUSED,
-                true);
+        fungibleTokenPersist(ownerEntityId);
     }
 
     @ParameterizedTest
@@ -353,14 +362,14 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         final var functionName = ercFunction.name + "Redirect";
         final var functionHash = functionEncodeDecoder.functionHashFor(
-                functionName, REDIRECT_CONTRACT_ABI_PATH, ercFunction.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+                functionName, redirectContractAbiPath, ercFunction.functionParameters);
+        final var serviceParameters = serviceParametersForExecution2(
+                functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
 
         assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
+                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters.build())), expectedGasUsed))
                 .isTrue();
     }
 
@@ -371,28 +380,25 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
         final var functionHash = functionEncodeDecoder.functionHashFor(
-                "delegateTransfer", ERC_ABI_PATH, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
+                "delegateTransfer", ercAbiPath, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
         final var serviceParameters =
-                serviceParametersForExecution(functionHash, ercContractAddress, ETH_CALL, 0L, BlockType.LATEST);
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
+                serviceParametersForExecution2(functionHash, ercContractAddress, ETH_CALL, BlockType.LATEST);
+        assertThat(contractCallService.processCall(serviceParameters.build())).isEqualTo("0x");
     }
 
-    protected CallServiceParameters serviceParametersForExecution(
+    protected CallServiceParameters.CallServiceParametersBuilder serviceParametersForExecution2(
             final Bytes callData,
             final Address contractAddress,
             final CallServiceParameters.CallType callType,
-            final long value,
             final BlockType block) {
-        return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
+        return serviceParametersForExecution(callData, contractAddress, callType, block);
     }
 
-    protected CallServiceParameters serviceParametersForExecution(
+    protected CallServiceParameters.CallServiceParametersBuilder serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
             final CallServiceParameters.CallType callType,
-            final long value,
-            final BlockType block,
-            final long gasLimit) {
+            final BlockType block) {
         HederaEvmAccount sender;
         if (block != BlockType.LATEST) {
             sender = new HederaEvmAccount(SENDER_ADDRESS_HISTORICAL);
@@ -402,15 +408,331 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
         return CallServiceParameters.builder()
                 .sender(sender)
-                .value(value)
+                .value(0L)
                 .receiver(contractAddress)
                 .callData(callData)
-                .gas(gasLimit)
+                .gas(15_000_000L)
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(block)
-                .build();
+                .block(block);
+    }
+
+    protected EntityId ownerEntityPersist() {
+        final var ownerEntityId = fromEvmAddress(OWNER_ADDRESS.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(ownerEntityId.getId())
+                        .num(ownerEntityId.getNum())
+                        .evmAddress(null)
+                        .alias(toEvmAddress(ownerEntityId)))
+                .persist();
+        return ownerEntityId;
+    }
+
+    protected EntityId senderEntityPersist() {
+        final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(senderEntityId.getId())
+                        .num(senderEntityId.getNum())
+                        .evmAddress(SENDER_ALIAS.toArray())
+                        .alias(SENDER_PUBLIC_KEY.toByteArray()))
+                .persist();
+        return senderEntityId;
+    }
+
+    protected EntityId spenderEntityPersist() {
+        final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS.toArrayUnsafe());
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(spenderEntityId.getId())
+                        .num(spenderEntityId.getNum())
+                        .evmAddress(SPENDER_ALIAS.toArray())
+                        .alias(SPENDER_PUBLIC_KEY.toByteArray()))
+                .persist();
+        return spenderEntityId;
+    }
+
+    private void tokenAccountPersist(
+            final EntityId senderEntityId, final EntityId tokenEntityId) {
+        domainBuilder
+                .tokenAccount()
+                .customize(e -> e
+                        .accountId(senderEntityId.getId())
+                        .tokenId(tokenEntityId.getId())
+                        .balance(12L))
+                .persist();
+    }
+
+    private EntityId fungibleTokenPersist(final EntityId treasuryId) {
+        final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
+        final var tokenEvmAddress = toEvmAddress(tokenEntityId);
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(tokenEntityId.getId())
+                        .num(tokenEntityId.getNum())
+                        .evmAddress(tokenEvmAddress)
+                        .type(TOKEN)
+                        .expirationTimestamp(9999999999999L))
+                .persist();
+
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntityId.getId())
+                        .treasuryAccountId(EntityId.of(0, 0, treasuryId.getId()))
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .name("Hbars")
+                        .totalSupply(12345L)
+                        .decimals(12)
+                        .symbol("HBAR"))
+                .persist();
+
+        return tokenEntityId;
+    }
+
+    private EntityId nftPersist(
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId,
+            final EntityId treasuryId) {
+        final var nftEntityId = fromEvmAddress(NFT_ADDRESS.toArrayUnsafe());
+        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nftEntityId.getId())
+                        .num(nftEntityId.getNum())
+                        .type(TOKEN))
+                .persist();
+
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(nftEntityId.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(spenderEntityId)
+                        .serialNumber(1)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId()))
+                .persist();
+        return nftEntityId;
+    }
+
+    @Override
+    protected EntityId senderEntityPersistHistorical() {
+        final var senderEntityId = fromEvmAddress(SENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(senderEntityId.getId())
+                        .num(senderEntityId.getNum())
+                        .evmAddress(SENDER_ALIAS_HISTORICAL.toArray())
+                        .deleted(false)
+                        .alias(SENDER_PUBLIC_KEY_HISTORICAL.toByteArray())
+                        .balance(10000 * 100_000_000L)
+                        .createdTimestamp(recordFileAfterEvm34.getConsensusStart())
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+
+        return senderEntityId;
+    }
+
+    @Override
+    protected EntityId spenderEntityPersistHistorical() {
+        final var spenderEntityId = fromEvmAddress(SPENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(spenderEntityId.getId())
+                        .num(spenderEntityId.getNum())
+                        .evmAddress(SPENDER_ALIAS_HISTORICAL.toArray())
+                        .alias(SPENDER_PUBLIC_KEY_HISTORICAL.toByteArray())
+                        .deleted(false)
+                        .createdTimestamp(recordFileAfterEvm34.getConsensusStart())
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+        return spenderEntityId;
+    }
+
+    @Override
+    protected EntityId autoRenewAccountPersistHistorical() {
+        final var autoRenewEntity = domainBuilder
+                .entity()
+                .customize(e -> e.evmAddress(null)
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+
+        return autoRenewEntity.toEntityId();
+    }
+
+    @Override
+    protected EntityId balancePersistHistorical(final Address tokenAddress, final Range<Long> historicalBlock) {
+        final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
+        final var accountId = EntityIdUtils.entityIdFromId(
+                Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS_HISTORICAL)));
+        final var tokenId =
+                EntityIdUtils.entityIdFromId(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(tokenAddress)));
+        // hardcoded entity id 2 is mandatory
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(historicalBlock.lowerEndpoint() + 1, EntityId.of(2)))
+                        .balance(12L))
+                .persist();
+        domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(historicalBlock.lowerEndpoint() + 1, accountId, tokenId))
+                        .balance(12L))
+                .persist();
+
+        return tokenEntityId;
+    }
+
+    private void fungibleTokenPersistHistorical() {
+        final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS_HISTORICAL.toArrayUnsafe());
+        final var tokenEvmAddress = toEvmAddress(tokenEntityId);
+        final Range<Long> historicalBlock = Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(tokenEntityId.getId())
+                        .num(tokenEntityId.getNum())
+                        .evmAddress(tokenEvmAddress)
+                        .type(TOKEN)
+                        .timestampRange(historicalBlock))
+                .persist();
+
+        domainBuilder
+                .tokenHistory()
+                .customize(t -> t.tokenId(tokenEntityId.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .name("Hbars")
+                        .totalSupply(12345L)
+                        .decimals(12)
+                        .symbol("HBAR")
+                        .timestampRange(
+                                Range.openClosed(historicalBlock.lowerEndpoint(), historicalBlock.upperEndpoint() + 1)))
+                .persist();
+    }
+
+    private void nftPersistHistorical(
+            final Address nftAddress,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId) {
+        final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
+        final var nftEvmAddress = toEvmAddress(nftEntityId);
+        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+        final Range<Long> historicalBlock = Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd());
+
+        domainBuilder
+                .entity()
+                .customize(e -> e.id(nftEntityId.getId())
+                        .num(nftEntityId.getNum())
+                        .evmAddress(nftEvmAddress)
+                        .type(TOKEN)
+                        .timestampRange(historicalBlock))
+                .persist();
+
+        domainBuilder
+                .tokenHistory()
+                .customize(t -> t.tokenId(nftEntityId.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .timestampRange(historicalBlock))
+                .persist();
+
+        domainBuilder
+                .nftHistory()
+                .customize(n -> n.serialNumber(1L)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .timestampRange(
+                                Range.openClosed(historicalBlock.lowerEndpoint(), historicalBlock.upperEndpoint() + 1)))
+                .persist();
+
+        domainBuilder
+                .nftHistory()
+                .customize(n -> n.serialNumber(3L)
+                        .spender(spenderEntityId)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .timestampRange(Range.openClosed(
+                                historicalBlock.lowerEndpoint() - 1, historicalBlock.upperEndpoint() + 1)))
+                .persist();
+
+        // nft table
+        domainBuilder
+                .nft()
+                .customize(n -> n.serialNumber(1L)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .timestampRange(Range.atLeast(historicalBlock.upperEndpoint() + 1)))
+                .persist();
+
+        domainBuilder
+                .nft()
+                .customize(n -> n.serialNumber(3L)
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(ownerEntity)
+                        .tokenId(nftEntityId.getId())
+                        .timestampRange(Range.atLeast(historicalBlock.upperEndpoint() + 1)))
+                .persist();
+
+    }
+
+    private void tokenAccountPersistHistorical(
+            final EntityId senderEntityId, final EntityId tokenEntityId) {
+        domainBuilder
+                .tokenAccountHistory()
+                .customize(e -> e.accountId(senderEntityId.getId())
+                        .tokenId(tokenEntityId.getId())
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+    }
+
+    protected void tokenAllowancePersistHistorical(
+            final EntityId tokenEntityId,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId) {
+        domainBuilder
+                .tokenAllowanceHistory()
+                .customize(a -> a.tokenId(tokenEntityId.getId())
+                        .owner(ownerEntityId.getNum())
+                        .spender(spenderEntityId.getNum())
+                        .amount(13L)
+                        .amountGranted(13L)
+                        .timestampRange(Range.closed(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
+    }
+
+    protected void nftAllowancePersistHistorical(
+            final EntityId tokenEntityId,
+            final EntityId ownerEntityId,
+            final EntityId spenderEntityId) {
+        domainBuilder
+                .nftAllowanceHistory()
+                .customize(a -> a.tokenId(tokenEntityId.getId())
+                        .owner(ownerEntityId.getNum())
+                        .spender(spenderEntityId.getNum())
+                        .approvedForAll(true)
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .persist();
     }
 
     @Override
@@ -432,45 +754,92 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         return ownerEntityId;
     }
 
-    @Override
     protected void historicalDataPersist() {
         final var ownerEntityId = ownerEntityPersistHistorical();
         final var senderEntityId = senderEntityPersistHistorical();
         final var spenderEntityId = spenderEntityPersistHistorical();
-        final var autoRenewEntityIdHistorical = autoRenewAccountPersistHistorical();
+        autoRenewAccountPersistHistorical();
 
-        balancePersistHistorical(
-                FUNGIBLE_TOKEN_ADDRESS_HISTORICAL,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
-        fungibleTokenPersistHistorical(
-                ownerEntityId,
-                KEY_PROTO,
-                FUNGIBLE_TOKEN_ADDRESS_HISTORICAL,
-                toAddress(autoRenewEntityIdHistorical),
-                9999999999999L,
-                TokenPauseStatusEnum.PAUSED,
-                true,
-                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+        fungibleTokenPersistHistorical();
         nftPersistHistorical(
                 NFT_ADDRESS_HISTORICAL,
-                toAddress(autoRenewEntityIdHistorical),
                 ownerEntityId,
-                spenderEntityId,
-                ownerEntityId,
-                KEY_PROTO,
-                TokenPauseStatusEnum.PAUSED,
-                true,
+                spenderEntityId);
+        balancePersistHistorical(
+                FUNGIBLE_TOKEN_ADDRESS_HISTORICAL,
                 Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
 
         final var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS_HISTORICAL.toArrayUnsafe());
         final var nftEntityId = fromEvmAddress(NFT_ADDRESS_HISTORICAL.toArrayUnsafe());
         // Token relationships
-        tokenAccountPersistHistorical(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
-        tokenAccountPersistHistorical(senderEntityId, nftEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersistHistorical(senderEntityId, tokenEntityId);
+        tokenAccountPersistHistorical(senderEntityId, nftEntityId);
 
         // Token allowances
-        tokenAllowancePersistHistorical(tokenEntityId, senderEntityId, senderEntityId, spenderEntityId, 13L);
-        nftAllowancePersistHistorical(nftEntityId, senderEntityId, senderEntityId, spenderEntityId);
+        tokenAllowancePersistHistorical(tokenEntityId, senderEntityId, spenderEntityId);
+        nftAllowancePersistHistorical(nftEntityId, senderEntityId, spenderEntityId);
+    }
+
+    protected Address ercContractPersist2() {
+        final var ercContractBytes = functionEncodeDecoder.getContractBytes(ERC_CONTRACT_BYTES_PATH);
+
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e
+                        .type(CONTRACT)
+                        .balance(1500L)
+                        .timestampRange(Range.closedOpen(
+                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                .get();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(entity.toEntityId().getId()).runtimeBytecode(ercContractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(entity.toEntityId().getId())
+                        /*.slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())
+                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
+                                .toArrayUnsafe())*/)
+                .persist();
+
+        domainBuilder.recordFile().customize(f -> f.bytes(ercContractBytes)).persist();
+        return toAddress(entity.toEntityId());
+    }
+
+    @Override
+    protected void feeSchedulesPersist() {
+        final long expiry = 1_234_567_890L;
+        final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
+                .setNextFeeSchedule(FeeSchedule.newBuilder()
+                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
+                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                                .setHederaFunctionality(EthereumTransaction)
+                                .addFees(FeeData.newBuilder()
+                                        .setServicedata(FeeComponents.newBuilder()
+                                                .setGas(852000)
+                                                .build()))))
+                .build();
+
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(feeSchedules.toByteArray())
+                        .entityId(FEE_SCHEDULE_ENTITY_ID)
+                        .consensusTimestamp(expiry + 1))
+                .persist();
+    }
+
+    @Override
+    protected void exchangeRatesPersist() {
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
+                        .entityId(EXCHANGE_RATE_ENTITY_ID)
+                        .consensusTimestamp(expiry))
+                .persist();
     }
 
     @RequiredArgsConstructor
