@@ -283,6 +283,10 @@ const checkEntityId = (elements, option) => {
 };
 
 const checkMandatoryParams = (elements, option) => {
+  if (elements.length == 0) {
+    return {passed: true};
+  }
+
   const element = Array.isArray(elements) ? elements[0] : elements;
   const {params, message} = option;
   for (let index = 0; index < params.length; index += 1) {
