@@ -248,15 +248,11 @@ rest:
     password: ""  # Randomly generated if left blank
     username: mirror_rest
   enabled: true
-  env:
-    HEDERA_MIRROR_REST_REDIS_URI:
-      valueFrom:
-        secretKeyRef:
-          name: "{{ .Release.Name }}-redis"
-          key: REDIS_URI
   envFrom:
     - secretRef:
         name: mirror-passwords
+    - secretRef:
+        name: "{{ .Release.Name }}-redis-rest"
 
 restjava:
   db:
