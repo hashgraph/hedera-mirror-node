@@ -34,7 +34,7 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.web3.config.CommonWeb3TestConfiguration;
+import com.hedera.mirror.web3.config.Web3TestConfiguration;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -65,7 +65,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
-@Import(CommonWeb3TestConfiguration.class)
+@Import(Web3TestConfiguration.class)
 @SuppressWarnings("unchecked")
 @RequiredArgsConstructor
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -210,6 +210,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         // Function Call signature
         var result = contract.isTokenFrozen(tokenAddress, senderAddress);
+        result.send();
         var functionSignature = Bytes.fromHexString(result.encodeFunctionCall());
 
         final var serviceParameters = serviceParametersForExecutionSingle(
