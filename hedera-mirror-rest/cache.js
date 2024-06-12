@@ -47,15 +47,14 @@ export class Cache {
     const uriSanitized = uri.replaceAll(RegExp('(?<=//).*:.+@', 'g'), '***:***@');
     this.ready = false;
 
-    this.redis = new Redis(uri, options);
-
-    this.redis.on('connect', () => logger.info(`Connected to ${uriSanitized}`));
-    this.redis.on('error', (err) => logger.error(`Error connecting to ${uriSanitized}: ${err.message}`));
-    this.redis.on('ready', () => {
-      this.#setConfig('maxmemory', config?.redis?.maxMemory);
-      this.#setConfig('maxmemory-policy', config?.redis?.maxMemoryPolicy);
-      this.ready = true;
-    });
+    this.redis = new Redis(uri, options)
+      .on('connect', () => logger.info(`Connected to ${uriSanitized}`))
+      .on('error', (err) => logger.error(`Error connecting to ${uriSanitized}: ${err.message}`))
+      .on('ready', () => {
+        this.#setConfig('maxmemory', config?.redis?.maxMemory);
+        this.#setConfig('maxmemory-policy', config?.redis?.maxMemoryPolicy);
+        this.ready = true;
+      });
   }
 
   #setConfig(key, value) {

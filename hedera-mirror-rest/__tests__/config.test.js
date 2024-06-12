@@ -500,8 +500,8 @@ describe('Validate redis config', () => {
           sentinel: {
             name: 'test',
             sentinels: [
-              {host: 'localhost', port: 26379},
-              {host: 'localhost', port: 26379},
+              {host: 'host1', port: 26379},
+              {host: 'host2', port: 26379},
             ],
           },
         },
@@ -537,7 +537,7 @@ describe('Validate redis config', () => {
       },
       {
         name: 'Sentinel address missing port',
-        sentinels: [{host: ''}, {host: 'localhost', port: 26379}],
+        sentinels: [{host: 'host1'}, {host: 'host2', port: 26379}],
       },
     ];
 
@@ -569,8 +569,8 @@ describe('Validate redis config', () => {
 
     test.each(['{"host": "localhost", "port": 26379}', '{"host"}', 'host'])(
       'Invalid sentinels JSON string - "%s"',
-      async (json) => {
-        process.env['HEDERA_MIRROR_REST_REDIS_SENTINEL_SENTINELS'] = json;
+      async (invalidJson) => {
+        process.env['HEDERA_MIRROR_REST_REDIS_SENTINEL_SENTINELS'] = invalidJson;
         await expect(loadCustomConfig(customConfig({sentinel: {name: 'test'}}))).rejects.toThrow();
       }
     );
