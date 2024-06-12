@@ -24,6 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.ContractTransaction;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -91,12 +92,32 @@ class ContractResultServiceImplTest {
                         .record(x -> x.setContractCallResult(builder.contractFunctionResult()))
                         .build();
 
+        var contractId = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFromUtf8("1234"))
+                .build();
+        Function<RecordItemBuilder, RecordItem> withInactiveEvm =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .receipt(x -> x.setContractID(contractId))
+                        .record(x -> x.setContractCallResult(builder.contractFunctionResult()))
+                        .build();
+
+        var contractIdNoEvm = ContractID.newBuilder().setContractNum(5).build();
+        Function<RecordItemBuilder, RecordItem> withActiveEvm =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .receipt(x -> x.setContractID(contractIdNoEvm))
+                        .record(x -> x.setContractCallResult(builder.contractFunctionResult(contractIdNoEvm)))
+                        .build();
+
         Function<RecordItemBuilder, RecordItem> contractCreate =
                 (RecordItemBuilder builder) -> builder.contractCreate().build();
 
         return Stream.of(
                 Arguments.of(withoutDefaultContractId, null, true),
                 Arguments.of(withoutDefaultContractId, EntityId.EMPTY, true),
+                Arguments.of(withInactiveEvm, null, false),
+                Arguments.of(withInactiveEvm, EntityId.EMPTY, false),
+                Arguments.of(withActiveEvm, null, true),
+                Arguments.of(withActiveEvm, EntityId.EMPTY, true),
                 Arguments.of(withDefaultContractId, null, false),
                 Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, EntityId.EMPTY, false),

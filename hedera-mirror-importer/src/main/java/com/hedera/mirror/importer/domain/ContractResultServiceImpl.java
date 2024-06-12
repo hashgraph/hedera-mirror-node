@@ -44,6 +44,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,13 +89,14 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // contractResult
         var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
-
+        var throwRecoverableError = shouldThrowRecoverableError(transactionRecord);
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = (contractCallOrCreate
                         ? Optional.ofNullable(transaction.getEntityId())
-                        : entityIdService.lookup(functionResult.getContractID()))
+                        : entityIdService.lookup(functionResult.getContractID(), throwRecoverableError))
                 .orElse(EntityId.EMPTY);
-        var isRecoverableError = EntityId.isEmpty(contractId)
+        var isRecoverableError = throwRecoverableError
+                && EntityId.isEmpty(contractId)
                 && !contractCallOrCreate
                 && !ContractID.getDefaultInstance().equals(functionResult.getContractID());
         if (isRecoverableError) {
@@ -147,6 +149,13 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private boolean isContractCreateOrCall(TransactionBody transactionBody) {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
+    }
+
+    private boolean shouldThrowRecoverableError(TransactionRecord transactionRecord) {
+        var receipt = transactionRecord.getReceipt();
+        return !(receipt.getStatus().equals(ResponseCodeEnum.SUCCESS)
+                        && receipt.getContractID().hasEvmAddress())
+                && !transactionRecord.getContractCallResult().getContractID().hasEvmAddress();
     }
 
     private void processContractAction(ContractAction action, int index, RecordItem recordItem) {
