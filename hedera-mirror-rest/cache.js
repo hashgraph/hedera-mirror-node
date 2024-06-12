@@ -17,7 +17,7 @@
 import Redis from 'ioredis';
 import config from './config';
 import _ from 'lodash';
-import {JSONParse, JSONStringify} from './utils.js';
+import {JSONParse, JSONStringify} from './utils';
 
 export class Cache {
   constructor() {
@@ -57,8 +57,8 @@ export class Cache {
       .on('connect', () => logger.info(`Connected to ${uriSanitized}`))
       .on('error', (err) => logger.error(`Error connecting to ${uriSanitized}: ${err.message}`))
       .on('ready', () => {
-        this.#setConfig('maxmemory', config?.redis?.maxMemory);
-        this.#setConfig('maxmemory-policy', config?.redis?.maxMemoryPolicy);
+        this.#setConfig('maxmemory', redisConfig.maxMemory);
+        this.#setConfig('maxmemory-policy', redisConfig.maxMemoryPolicy);
         this.ready = true;
       });
   }
