@@ -22,10 +22,12 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.web3.service.ContractCallService;
 import java.lang.reflect.InvocationTargetException;
 import lombok.CustomLog;
-import org.apache.tuweni.bytes.Bytes;
+import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.encoders.Hex;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -36,6 +38,7 @@ import org.web3j.tx.gas.ContractGasProvider;
 
 @Component
 @CustomLog
+@RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ContractDeployer {
     protected static final long EVM_V_34_BLOCK = 50L;
@@ -44,15 +47,20 @@ public class ContractDeployer {
     private final ContractGasProvider contractGasProvider;
     private final DomainBuilder domainBuilder;
 
+    @Autowired
+    private final ContractCallService contractCallService;
+
     public ContractDeployer(
             DomainBuilder domainBuilder,
             Web3j web3j,
             Credentials credentials,
-            ContractGasProvider contractGasProvider) {
+            ContractGasProvider contractGasProvider,
+            ContractCallService contractCallService) {
         this.domainBuilder = domainBuilder;
         this.web3j = web3j;
         this.credentials = credentials;
         this.contractGasProvider = contractGasProvider;
+        this.contractCallService = contractCallService;
     }
 
     public <T extends Contract> T deploy(Class<T> contractClass, String binary) throws Exception {
@@ -95,14 +103,8 @@ public class ContractDeployer {
 
         domainBuilder
                 .contractState()
-                .customize(c -> c.contractId(entity.getId())
-                        .slot(Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe())
-                        .value(Bytes.fromHexString("0x4746573740000000000000000000000000000000000000000000000000000000")
-                                .toArrayUnsafe()))
+                .customize(c -> c.contractId(entity.getId()))
                 .persist();
-
-        domainBuilder.recordFile().customize(f -> f.bytes(contractBytes)).persist();
 
         return entity.getNum();
     }

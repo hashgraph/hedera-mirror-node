@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.BatchRequest;
 import org.web3j.protocol.core.BatchResponse;
@@ -29,18 +29,10 @@ import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthSyncing;
-import org.web3j.protocol.http.HttpService;
 import org.web3j.protocol.websocket.events.Notification;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-@RequiredArgsConstructor
 public class TestWeb3jService implements Web3jService {
-
-    private final Web3jService delegateService;
-
-    public TestWeb3jService() {
-        this.delegateService = new HttpService(); // or any other implementation of Web3jService
-    }
 
     @Override
     public <T extends Response> T send(Request request, Class<T> responseType) throws IOException {
@@ -106,24 +98,26 @@ public class TestWeb3jService implements Web3jService {
     }
 
     @Override
+    @SneakyThrows
     public <T extends Response> CompletableFuture<T> sendAsync(Request request, Class<T> responseType) {
-        return delegateService.sendAsync(request, responseType);
+        return CompletableFuture.completedFuture(send(request, responseType));
     }
 
     @Override
-    public BatchResponse sendBatch(BatchRequest batchRequest) throws IOException {
-        return delegateService.sendBatch(batchRequest);
+    public BatchResponse sendBatch(BatchRequest batchRequest) throws UnsupportedOperationException {
+        throw new UnsupportedOperationException("sendBatch");
     }
 
     @Override
-    public CompletableFuture<BatchResponse> sendBatchAsync(BatchRequest batchRequest) {
-        return delegateService.sendBatchAsync(batchRequest);
+    public CompletableFuture<BatchResponse> sendBatchAsync(BatchRequest batchRequest)
+            throws UnsupportedOperationException {
+        throw new UnsupportedOperationException("sendBatchAsync");
     }
 
     @Override
     public <T extends Notification<?>> Flowable<T> subscribe(
-            Request request, String unsubscribeMethod, Class<T> responseType) {
-        return delegateService.subscribe(request, unsubscribeMethod, responseType);
+            Request request, String unsubscribeMethod, Class<T> responseType) throws UnsupportedOperationException {
+        throw new UnsupportedOperationException("subscribe");
     }
 
     @Override
