@@ -41,6 +41,11 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-staging-na
+          resources:
+            limits:
+              memory: 2750Mi
+            requests:
+              memory: 1Gi
           replicaExternalLabelName: __replica__
     testkube:
       enabled: true
