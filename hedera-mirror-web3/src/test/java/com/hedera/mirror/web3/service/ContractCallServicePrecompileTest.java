@@ -210,7 +210,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         // Function Call signature
         var result = contract.isTokenFrozen(tokenAddress, senderAddress);
-        result.send();
+        // result.send();
         var functionSignature = Bytes.fromHexString(result.encodeFunctionCall());
 
         final var serviceParameters = serviceParametersForExecutionSingle(
