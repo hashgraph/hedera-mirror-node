@@ -77,8 +77,9 @@ hedera:
         maxMemoryPolicy: allkeys-lfu
         maxRetriesPerRequest: 1
         sentinel:
+          enabled: false
           host: 127.0.0.1
-          name: ""
+          name: "mirror"
           password: ""
           port: 26379
         uri: redis://127.0.0.1:6379

@@ -23,7 +23,7 @@ export class Cache {
   constructor() {
     const {redis: redisConfig} = config;
     const {enabled, sentinel, uri} = redisConfig;
-    const sentinelOptions = sentinel.name
+    const sentinelOptions = sentinel.enabled
       ? {
           name: sentinel.name,
           sentinelPassword: sentinel.password,
