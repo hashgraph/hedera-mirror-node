@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.service.resources;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractCallService;
@@ -84,17 +83,8 @@ public class ContractDeployer {
 
     private static long precompileContractPersist(String binary, DomainBuilder domainBuilder) {
         final var contractBytes = Hex.decode(binary);
-        final var recordFileBeforeEvm34 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_34_BLOCK - 1))
-                .persist();
-        final var entity = domainBuilder
-                .entity()
-                .customize(e -> e.type(CONTRACT)
-                        .balance(1500L)
-                        .timestampRange(Range.closedOpen(
-                                recordFileBeforeEvm34.getConsensusStart(), recordFileBeforeEvm34.getConsensusEnd())))
-                .persist();
+        final var entity =
+                domainBuilder.entity().customize(e -> e.type(CONTRACT)).persist();
 
         domainBuilder
                 .contract()
