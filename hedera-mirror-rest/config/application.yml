@@ -77,9 +77,10 @@ hedera:
         maxMemoryPolicy: allkeys-lfu
         maxRetriesPerRequest: 1
         sentinel:
+          host: 127.0.0.1
           name: ""
-          sentinelPassword: ""
-          sentinels: []
+          password: ""
+          port: 26379
         uri: redis://127.0.0.1:6379
       response:
         compression: true

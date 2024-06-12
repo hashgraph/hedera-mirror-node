@@ -29,7 +29,6 @@ configureLogger();
 
 const defaultConfigName = 'application';
 const config = {};
-const jsonEnvProperties = ['hedera.mirror.rest.redis.sentinel.sentinels'];
 let loaded = false;
 
 function load(configPath, configName) {
@@ -72,7 +71,6 @@ function loadEnvironment() {
 function setConfigValue(propertyPath, value) {
   let current = config;
   const properties = propertyPath.toLowerCase().split('_');
-  const normalizedProperty = properties.join('.');
 
   // Ignore properties that don't start with HEDERA_MIRROR_REST
   if (properties.length < 4 || properties[0] !== 'hedera' || properties[1] !== 'mirror' || properties[2] !== 'rest') {
@@ -90,7 +88,7 @@ function setConfigValue(propertyPath, value) {
           found = true;
           break;
         } else {
-          current[k] = convertType(normalizedProperty, value);
+          current[k] = convertType(value);
           const cleanedValue = property.includes('password') || property.includes('key') ? '******' : value;
           logger.info(`Override config with environment variable ${propertyPath}=${cleanedValue}`);
           return;
@@ -104,11 +102,7 @@ function setConfigValue(propertyPath, value) {
   }
 }
 
-function convertType(property, value) {
-  if (jsonEnvProperties.includes(property)) {
-    return JSON.parse(value);
-  }
-
+function convertType(value) {
   if (value !== null && value !== '' && !isNaN(value)) {
     return +value;
   } else if (value === 'true' || value === 'false') {
@@ -198,24 +192,6 @@ const parseNetworkConfig = () => {
   }
 };
 
-const validateRedisConfig = (redisConfig) => {
-  const {enabled, sentinel: sentinelConfig} = redisConfig;
-  if (!enabled || !sentinelConfig.name) {
-    return;
-  }
-
-  if (sentinelConfig.sentinels.length === 0) {
-    throw new InvalidConfigError('redis.sentinel.sentinels must be set');
-  }
-
-  const missingProperty = sentinelConfig.sentinels.some(
-    (address) => !address.hasOwnProperty('host') || !address.hasOwnProperty('port')
-  );
-  if (missingProperty) {
-    throw new InvalidConfigError('Each of redis.sentinel.sentinels must have both host and port');
-  }
-};
-
 if (!loaded) {
   const configName = process.env.CONFIG_NAME || defaultConfigName;
   // always load the default configuration
@@ -228,7 +204,6 @@ if (!loaded) {
   parseNetworkConfig();
   parseQueryConfig();
   parseStateProofStreamsConfig();
-  validateRedisConfig(getConfig().redis);
   loaded = true;
   configureLogger(getConfig().log.level);
 }

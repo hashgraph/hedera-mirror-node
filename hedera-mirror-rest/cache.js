@@ -22,8 +22,14 @@ import {JSONParse, JSONStringify} from './utils.js';
 export class Cache {
   constructor() {
     const {redis: redisConfig} = config;
-    const {enabled, uri} = redisConfig;
-    const sentinelOptions = redisConfig.sentinel.name ? redisConfig.sentinel : {};
+    const {enabled, sentinel, uri} = redisConfig;
+    const sentinelOptions = sentinel.name
+      ? {
+          name: sentinel.name,
+          sentinelPassword: sentinel.password,
+          sentinels: [{host: sentinel.host, port: sentinel.port}],
+        }
+      : {};
     const options = {
       commandTimeout: redisConfig.commandTimeout,
       connectTimeout: redisConfig.connectTimeout,
