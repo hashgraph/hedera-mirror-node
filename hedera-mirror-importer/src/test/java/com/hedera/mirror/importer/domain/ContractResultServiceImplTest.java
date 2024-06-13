@@ -114,15 +114,15 @@ class ContractResultServiceImplTest {
         return Stream.of(
                 Arguments.of(withoutDefaultContractId, null, true),
                 Arguments.of(withoutDefaultContractId, EntityId.EMPTY, true),
-                Arguments.of(withInactiveEvm, null, false),
-                Arguments.of(withInactiveEvm, EntityId.EMPTY, false),
-                Arguments.of(withActiveEvm, null, true),
-                Arguments.of(withActiveEvm, EntityId.EMPTY, true),
                 Arguments.of(withDefaultContractId, null, false),
                 Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, null, false),
-                Arguments.of(contractCreate, EntityId.of(0, 0, 5), false));
+                Arguments.of(contractCreate, EntityId.of(0, 0, 5), false),
+                Arguments.of(withInactiveEvm, null, false),
+                Arguments.of(withInactiveEvm, EntityId.EMPTY, false),
+                Arguments.of(withActiveEvm, null, true),
+                Arguments.of(withActiveEvm, EntityId.EMPTY, true));
     }
 
     @BeforeEach

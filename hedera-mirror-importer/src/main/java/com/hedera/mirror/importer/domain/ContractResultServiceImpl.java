@@ -89,7 +89,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // contractResult
         var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
-        var throwRecoverableError = shouldThrowRecoverableError(transactionRecord);
+        var throwRecoverableError = shouldThrowRecoverableError(functionResult, recordItem, transactionRecord);
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = (contractCallOrCreate
                         ? Optional.ofNullable(transaction.getEntityId())
@@ -98,7 +98,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         var isRecoverableError = throwRecoverableError
                 && EntityId.isEmpty(contractId)
                 && !contractCallOrCreate
-                && !ContractID.getDefaultInstance().equals(functionResult.getContractID());
+                && (!ContractID.getDefaultInstance().equals(functionResult.getContractID()));
         if (isRecoverableError) {
             Utility.handleRecoverableError(
                     "Invalid contract id for contract result at {}", recordItem.getConsensusTimestamp());
@@ -151,11 +151,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
     }
 
-    private boolean shouldThrowRecoverableError(TransactionRecord transactionRecord) {
-        var receipt = transactionRecord.getReceipt();
-        return !(receipt.getStatus().equals(ResponseCodeEnum.SUCCESS)
-                        && receipt.getContractID().hasEvmAddress())
-                && !transactionRecord.getContractCallResult().getContractID().hasEvmAddress();
+    private boolean shouldThrowRecoverableError(
+            ContractFunctionResult functionResult, RecordItem recordItem, TransactionRecord transactionRecord) {
+        return !(recordItem.isSuccessful()
+                        && transactionRecord.getReceipt().getContractID().hasEvmAddress())
+                && !functionResult.getContractID().hasEvmAddress();
     }
 
     private void processContractAction(ContractAction action, int index, RecordItem recordItem) {
