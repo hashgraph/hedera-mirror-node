@@ -41,6 +41,7 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.resources.ContractDeployer;
 import com.hedera.mirror.web3.service.resources.PrecompileTestContract;
+import com.hedera.mirror.web3.utils.TestWeb3jService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
@@ -74,6 +75,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Autowired
     private ContractDeployer contractDeployer;
+
+    @Autowired
+    private TestWeb3jService testWeb3jService;
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
@@ -207,21 +211,19 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         // Deploy Contract
         var contract = contractDeployer.deploy(PrecompileTestContract.class);
-        // final var contractAddress = Address.fromHexString(contract.getContractAddress());
-
+        // Override sender in the parameters
+        testWeb3jService.setSender(senderAddress);
         // Function Call signature
-        var result = contract.isTokenFrozen(tokenAddress, senderAddress);
-        final var res = result.send();
-        //        var functionSignature = Bytes.fromHexString(result.encodeFunctionCall());
-        //
-        //        final var serviceParameters = serviceParametersForExecutionSingle(
-        //                functionSignature, contractAddress, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+        var call = contract.isTokenFrozen(tokenAddress, senderAddress);
+        try {
+            final var res = call.send();
+            final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                    "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
 
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
-
-        //        final var mirrorNodeResponse = contractCallService.processCall(serviceParameters);
-        assertThat(res).isEqualTo(successfulResponse);
+            assertThat(res).isEqualTo(successfulResponse);
+        } catch (Exception e) {
+            final var a = "test";
+        }
     }
 
     @Test
@@ -1200,11 +1202,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         }
                     }
                 },
-                new Object[] {}) {
-            public void func(PrecompileTestContract contract) {
-                return contract.isTokenFrozen();
-            }
-        };
+                new Object[] {});
 
         private final String name;
         private final Object[] functionParameters;

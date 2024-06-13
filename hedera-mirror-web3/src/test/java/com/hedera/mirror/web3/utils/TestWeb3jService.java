@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -39,13 +40,24 @@ import org.web3j.protocol.core.BatchResponse;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.methods.response.EthBlock;
+import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.core.methods.response.EthSyncing;
 import org.web3j.protocol.websocket.events.Notification;
 
+@RequiredArgsConstructor
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class TestWeb3jService implements Web3jService {
     private static final Long GAS_LIMIT = 15_000_000L;
+    private Address sender = Address.fromHexString("");
     public ContractCallService contractCallService;
+
+    public void setSender(Address sender) {
+        this.sender = sender;
+    }
+
+    public void setSender(String sender) {
+        this.sender = Address.fromHexString(sender);
+    }
 
     public TestWeb3jService(ContractCallService contractCallService) {
         this.contractCallService = contractCallService;
@@ -59,7 +71,7 @@ public class TestWeb3jService implements Web3jService {
             case "eth_getBlockByNumber" -> getEthBlockRes(responseType);
             case "net_version" -> getNetVersionRes(responseType);
             case "eth_getTransactionCount" -> getTransactionCountRes(responseType);
-            case "eth_sendRawTransaction", "eth_call" -> call(request.getParams(), responseType, request);
+            case "eth_sendRawTransaction", "eth_call" -> (T) call(request.getParams(), request);
             default -> throw new UnsupportedOperationException(request.getMethod());
         };
     }
@@ -75,8 +87,8 @@ public class TestWeb3jService implements Web3jService {
         }
     }
 
-    private <T extends Response> T call(List reqParams, Class<T> responseType, Request request) {
-        T res = getResObj(responseType);
+    private EthSendTransaction call(List reqParams, Request request) {
+        final var res = new EthSendTransaction();
         ITransaction rawTrxDecoded =
                 TransactionDecoder.decode(reqParams.get(0).toString()).getTransaction();
         final var serviceParameters = serviceParametersForExecutionSingle(
@@ -86,10 +98,13 @@ public class TestWeb3jService implements Web3jService {
                 rawTrxDecoded.getValue().longValue(),
                 BlockType.LATEST,
                 GAS_LIMIT,
-                Address.fromHexString(""));
-        contractCallService.processCall(serviceParameters);
-        res.setResult("Good");
-
+                sender);
+        final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
+        res.setRawResponse(mirrorNodeResult);
+        res.setResult(mirrorNodeResult);
+        res.setId(request.getId());
+        res.setJsonrpc(request.getJsonrpc());
+        final var a = res.getTransactionHash();
         return res;
     }
 
