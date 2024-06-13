@@ -207,7 +207,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         // Deploy Contract
         var contract = contractDeployer.deploy(PrecompileTestContract.class);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        // final var contractAddress = Address.fromHexString(contract.getContractAddress());
 
         // Function Call signature
         var result = contract.isTokenFrozen(tokenAddress, senderAddress);
