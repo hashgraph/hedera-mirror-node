@@ -34,7 +34,7 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.web3.config.Web3TestConfiguration;
+import com.hedera.mirror.web3.config.Web3jTestConfiguration;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -65,7 +65,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
-@Import(Web3TestConfiguration.class)
+@Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
 @RequiredArgsConstructor
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -205,7 +205,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
 
         // Deploy Contract
-        var contract = contractDeployer.deploy(PrecompileTestContract.class, PrecompileTestContract.BINARY);
+        var contract = contractDeployer.deploy(PrecompileTestContract.class);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
 
         // Function Call signature
@@ -238,7 +238,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
 
         // Deploy Contract
-        var contract = contractDeployer.deploy(PrecompileTestContract.class, PrecompileTestContract.BINARY);
+        var contract = contractDeployer.deploy(PrecompileTestContract.class);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
 
         // Function Call signature

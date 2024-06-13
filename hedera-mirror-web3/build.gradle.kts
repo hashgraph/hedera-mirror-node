@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2022-2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,16 +18,16 @@ description = "Hedera Mirror Node Web3"
 
 plugins {
     id("openapi-conventions")
-    id("spring-conventions")
     id("org.web3j") version "4.12.0"
+    id("spring-conventions")
 }
 
 web3j { generatedPackageName = "com.hedera.mirror.web3.service.resources" }
 
+// ToDO: REMOVE
 sourceSets { test { solidity { setVersion("0.8.24") } } }
 
 dependencies {
-    implementation("org.web3j:core:4.12.0")
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("com.bucket4j:bucket4j-core")
@@ -46,6 +46,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
+    implementation("org.web3j:core")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("org.flywaydb:flyway-database-postgresql")
