@@ -40,6 +40,7 @@ extra.apply {
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.8")
     set("tuweniVersion", "2.3.1")
+    set("org.web3j", "4.12.0")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
@@ -54,7 +55,6 @@ dependencies {
         val tuweniVersion: String by rootProject.extra
         val vertxVersion: String by rootProject.extra
 
-        api("org.web3j:core:4.12.0")
         api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.5")

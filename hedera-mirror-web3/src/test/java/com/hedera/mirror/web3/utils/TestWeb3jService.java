@@ -22,6 +22,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.SneakyThrows;
+import org.web3j.crypto.RawTransaction;
+import org.web3j.crypto.TransactionDecoder;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.BatchRequest;
 import org.web3j.protocol.core.BatchResponse;
@@ -38,7 +40,7 @@ public class TestWeb3jService implements Web3jService {
     public <T extends Response> T send(Request request, Class<T> responseType) throws IOException {
         final var method = request.getMethod();
         return switch (method) {
-            case "eth_syncing" -> getEthSyncingRes(responseType);
+            case "eth_syncing" -> (T) getEthSyncingRes();
             case "eth_getBlockByNumber" -> getEthBlockRes(responseType);
             case "net_version" -> getNetVersionRes(responseType);
             case "eth_getTransactionCount" -> getTransactionCountRes(responseType);
@@ -60,18 +62,21 @@ public class TestWeb3jService implements Web3jService {
 
     private <T extends Response> T call(List serviceParameters, Class<T> responseType, Request request) {
         T res = getResObj(responseType);
+        RawTransaction transaction =
+                TransactionDecoder.decode(serviceParameters.get(0).toString());
         res.setResult("Good");
 
         return res;
     }
 
-    private <T extends Response> T getEthSyncingRes(Class<T> responseType) {
-        T res = getResObj(responseType);
-        final var syncRes = new EthSyncing.Result();
-        syncRes.setSyncing(false);
-        res.setResult(syncRes);
+    private EthSyncing getEthSyncingRes() {
+        var result = new EthSyncing.Result();
+        result.setSyncing(false);
 
-        return res;
+        var response = new EthSyncing();
+        response.setResult(result);
+
+        return response;
     }
 
     private <T extends Response> T getEthBlockRes(Class<T> responseType) {

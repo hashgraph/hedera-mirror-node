@@ -22,55 +22,47 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.utils.TestWeb3jService;
 import java.lang.reflect.InvocationTargetException;
-import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.encoders.Hex;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
 import org.web3j.tx.Contract;
 import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.gas.DefaultGasProvider;
+import org.web3j.utils.Numeric;
 
-@Component
-@CustomLog
 @RequiredArgsConstructor
-@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ContractDeployer {
-    protected static final long EVM_V_34_BLOCK = 50L;
+    private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
+
     private final Web3j web3j;
     private final Credentials credentials;
     private final ContractGasProvider contractGasProvider;
     private final DomainBuilder domainBuilder;
-
-    @Autowired
     private final ContractCallService contractCallService;
 
-    public ContractDeployer(
-            DomainBuilder domainBuilder,
-            Web3j web3j,
-            Credentials credentials,
-            ContractGasProvider contractGasProvider,
-            ContractCallService contractCallService) {
+    public ContractDeployer(DomainBuilder domainBuilder, ContractCallService contractCallService) {
+        final var mockEcKeyPair = ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY));
         this.domainBuilder = domainBuilder;
-        this.web3j = web3j;
-        this.credentials = credentials;
-        this.contractGasProvider = contractGasProvider;
+        this.web3j = Web3j.build(new TestWeb3jService());
+        this.credentials = Credentials.create(mockEcKeyPair);
+        ;
+        this.contractGasProvider = new DefaultGasProvider();
         this.contractCallService = contractCallService;
     }
 
-    public <T extends Contract> T deploy(Class<T> contractClass, String binary) throws Exception {
+    public <T extends Contract> T deploy(Class<T> contractClass) throws Exception {
         T contract;
         try {
             final var ctor = contractClass.getDeclaredConstructor(
                     String.class, Web3j.class, Credentials.class, ContractGasProvider.class);
-            final var contractEntityNum = ContractDeployer.precompileContractPersist(binary, domainBuilder);
-            final var contractAddress =
-                    toAddress(EntityId.of(0, 0, contractEntityNum)).toHexString();
+            final var id = domainBuilder.id();
+            final var contractAddress = toAddress(EntityId.of(id)).toHexString();
             contract = ctor.newInstance(contractAddress, web3j, credentials, contractGasProvider);
+            precompileContractPersist(contract.getContractBinary(), id);
         } catch (InstantiationException
                 | IllegalAccessException
                 | InvocationTargetException
@@ -81,10 +73,12 @@ public class ContractDeployer {
         return contract;
     }
 
-    private static long precompileContractPersist(String binary, DomainBuilder domainBuilder) {
+    private void precompileContractPersist(String binary, long entityId) {
         final var contractBytes = Hex.decode(binary);
-        final var entity =
-                domainBuilder.entity().customize(e -> e.type(CONTRACT)).persist();
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
+                .persist();
 
         domainBuilder
                 .contract()
@@ -95,7 +89,5 @@ public class ContractDeployer {
                 .contractState()
                 .customize(c -> c.contractId(entity.getId()))
                 .persist();
-
-        return entity.getNum();
     }
 }
