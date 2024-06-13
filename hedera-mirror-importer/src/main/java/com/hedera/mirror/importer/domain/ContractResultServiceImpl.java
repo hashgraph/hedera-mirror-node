@@ -95,10 +95,11 @@ public class ContractResultServiceImpl implements ContractResultService {
                         ? Optional.ofNullable(transaction.getEntityId())
                         : entityIdService.lookup(functionResult.getContractID(), throwRecoverableError))
                 .orElse(EntityId.EMPTY);
-        var isRecoverableError = throwRecoverableError
-                && EntityId.isEmpty(contractId)
-                && !contractCallOrCreate
-                && (!ContractID.getDefaultInstance().equals(functionResult.getContractID()));
+        var isRecoverableError =
+                !(recordItem.isSuccessful() && functionResult.getContractID().hasEvmAddress())
+                        && EntityId.isEmpty(contractId)
+                        && !contractCallOrCreate
+                        && (!ContractID.getDefaultInstance().equals(functionResult.getContractID()));
         if (isRecoverableError) {
             Utility.handleRecoverableError(
                     "Invalid contract id for contract result at {}", recordItem.getConsensusTimestamp());
@@ -154,8 +155,8 @@ public class ContractResultServiceImpl implements ContractResultService {
     private boolean shouldThrowRecoverableError(
             ContractFunctionResult functionResult, RecordItem recordItem, TransactionRecord transactionRecord) {
         return !(recordItem.isSuccessful()
-                        && transactionRecord.getReceipt().getContractID().hasEvmAddress())
-                && !functionResult.getContractID().hasEvmAddress();
+                && (transactionRecord.getReceipt().getContractID().hasEvmAddress()
+                        || functionResult.getContractID().hasEvmAddress()));
     }
 
     private void processContractAction(ContractAction action, int index, RecordItem recordItem) {

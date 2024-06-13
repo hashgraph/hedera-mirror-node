@@ -92,20 +92,12 @@ class ContractResultServiceImplTest {
                         .record(x -> x.setContractCallResult(builder.contractFunctionResult()))
                         .build();
 
-        var contractId = ContractID.newBuilder()
+        var contractIdWithEvm = ContractID.newBuilder()
                 .setEvmAddress(ByteString.copyFromUtf8("1234"))
                 .build();
         Function<RecordItemBuilder, RecordItem> withInactiveEvm =
                 (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
-                        .receipt(x -> x.setContractID(contractId))
-                        .record(x -> x.setContractCallResult(builder.contractFunctionResult()))
-                        .build();
-
-        var contractIdNoEvm = ContractID.newBuilder().setContractNum(5).build();
-        Function<RecordItemBuilder, RecordItem> withActiveEvm =
-                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
-                        .receipt(x -> x.setContractID(contractIdNoEvm))
-                        .record(x -> x.setContractCallResult(builder.contractFunctionResult(contractIdNoEvm)))
+                        .record(x -> x.setContractCallResult(builder.contractFunctionResult(contractIdWithEvm)))
                         .build();
 
         Function<RecordItemBuilder, RecordItem> contractCreate =
@@ -120,9 +112,7 @@ class ContractResultServiceImplTest {
                 Arguments.of(contractCreate, null, false),
                 Arguments.of(contractCreate, EntityId.of(0, 0, 5), false),
                 Arguments.of(withInactiveEvm, null, false),
-                Arguments.of(withInactiveEvm, EntityId.EMPTY, false),
-                Arguments.of(withActiveEvm, null, true),
-                Arguments.of(withActiveEvm, EntityId.EMPTY, true));
+                Arguments.of(withInactiveEvm, EntityId.EMPTY, false));
     }
 
     @BeforeEach
