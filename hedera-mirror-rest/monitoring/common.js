@@ -85,10 +85,8 @@ const filterTestDetails = (result, resultType = TEST_RESULT_TYPES.FAILED) => {
  */
 const getStatus = (resultType) => {
   const results = Object.values(currentResults).map((result) => filterTestDetails(result, resultType));
-  const httpErrorCodes = results
-    .map((result) => result.httpCode)
-    .filter((httpCode) => httpCode < 200 || httpCode > 299);
-  const httpCode = httpErrorCodes.length === 0 ? 200 : 409;
+  const successfulTests = results.map((result) => result.results.success).filter((success) => success === true);
+  const httpCode = successfulTests.length === results.length ? 200 : 409;
 
   return {
     results,
