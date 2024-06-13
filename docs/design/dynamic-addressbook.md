@@ -2,7 +2,7 @@
 
 ## Purpose
 
-[HIP-869](https://hips.hedera.com/hip/hip-869) changes the currently manually administered address book for Hedera into an HAPI managed configuration, updatable via signed Hedera transactions on a daily basis.
+[HIP-869](https://hips.hedera.com/hip/hip-869) implements the HAPI endpoints for Address Book management within current Address Book implementation . In this phase HAPI endpoints are used to facilitate changes to the Address Book, however those changes are applied through existing, monthly upgrade process.
 
 ## Goals
 
@@ -23,10 +23,10 @@
 alter table address_book_service_endpoint
     add column if not exists domain_name varchar(253) default null;
 
-drop index if exists address_book_service_endpoint_pkey;
+alter table address_book_service_endpoint drop constraint address_book_service_endpoint_pkey;
 
-create index idx__address_book_service_endpoint__timestamp_then_node_id
-    on address_book_service_endpoint (consensus_timestamp asc,node_id asc);
+create index if not exists address_book_service_endpoint__timestamp_node_id
+  on address_book_service_endpoint (consensus_timestamp , node_id);
 
 ```
 
@@ -36,7 +36,9 @@ create index idx__address_book_service_endpoint__timestamp_then_node_id
 
 When parsing node transactions,
 
-- Persist `transaction_bytes` and `transaction_record_bytes` with the binary proto value to the `transaction` table for `NodeUpdate`,`NodeCreate` and `NodeDelete`.
+- Persist `transaction_bytes` and `transaction_record_bytes` to the `transaction` table for `NodeUpdate`,`NodeCreate` and `NodeDelete`.
+
+Update the `AddressBookServiceImpl` to persist the `domain_name` in `address_book_service_endpoint`
 
 #### Domain
 
@@ -50,9 +52,13 @@ Write `transaction_bytes` and `transaction_record_bytes` in the following handle
 - Add `NodeUpdateTransactionHandler`
 - Add `NodeDeleteTransactionHandler`
 
+### GRPC API
+
+- Update the `NetworkController` to add `domain_name` to the service endpoint.
+
 ### REST API
 
-Update the `api/v1/network/nodes` endpoint to return `domain_name`
+Update the `/api/v1/network/nodes` endpoint to return `domain_name`
 
 Response:
 
