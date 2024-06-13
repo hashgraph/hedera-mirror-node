@@ -47,7 +47,7 @@ public class ContractDeployer {
     public ContractDeployer(DomainBuilder domainBuilder, ContractCallService contractCallService) {
         final var mockEcKeyPair = ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY));
         this.domainBuilder = domainBuilder;
-        this.web3j = Web3j.build(new TestWeb3jService());
+        this.web3j = Web3j.build(new TestWeb3jService(contractCallService));
         this.credentials = Credentials.create(mockEcKeyPair);
         ;
         this.contractGasProvider = new DefaultGasProvider();
