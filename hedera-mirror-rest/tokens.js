@@ -596,7 +596,7 @@ const extractSqlFromTokenBalancesRequest = async (tokenId, filters) => {
         distinct on (ti.account_id)
         ti.account_id,
         ti.balance,
-        $${params.length}::bigint as consensus_timestamp
+        $${params.length}::bigint as sentinel_timestamp
       from token_balance as ti
       ${joinEntityClause}
       where ${conditions.join(' and ')}
@@ -672,7 +672,8 @@ const getTokenBalances = async (req, res) => {
     const cachedTokens = await TokenService.getCachedTokens(new Set([tokenId]));
     const decimals = cachedTokens.get(tokenId)?.decimals ?? null;
     response.balances = rows.map((row) => formatTokenBalanceRow(row, decimals));
-    response.timestamp = utils.nsToSecNs(rows[0].consensus_timestamp);
+    const timestamp = rows[0].consensus_timestamp ?? rows[0].sentinel_timestamp;
+    response.timestamp = utils.nsToSecNs(timestamp);
 
     const anchorAccountId = response.balances[response.balances.length - 1].account;
     response.links.next = utils.getPaginationLink(
