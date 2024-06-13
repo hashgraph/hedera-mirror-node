@@ -19,13 +19,20 @@ package com.hedera.mirror.web3.config;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.resources.ContractDeployer;
+import com.hedera.mirror.web3.utils.TestWeb3jService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
 @TestConfiguration(proxyBeanMethods = false)
 public class Web3jTestConfiguration {
     @Bean
-    ContractDeployer contractDeployer(ContractCallService contractCallService, DomainBuilder domainBuilder) {
-        return new ContractDeployer(domainBuilder, contractCallService);
+    ContractDeployer contractDeployer(
+            ContractCallService contractCallService, DomainBuilder domainBuilder, TestWeb3jService testWeb3jService) {
+        return new ContractDeployer(domainBuilder, contractCallService, testWeb3jService);
+    }
+
+    @Bean
+    TestWeb3jService testWeb3jService(ContractCallService contractCallService) {
+        return new TestWeb3jService(contractCallService);
     }
 }
