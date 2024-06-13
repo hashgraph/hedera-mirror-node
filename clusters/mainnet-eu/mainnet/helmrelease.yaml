@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.105.0'
+      version: '0.106.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -61,6 +61,17 @@ spec:
       env:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
         HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
+      monitor:
+        config: |-
+          {
+            "servers": [
+              {
+                "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
+                "name": "kubernetes"
+              }
+            ],
+            "stateproof": { "enabled": false }
+          }
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
