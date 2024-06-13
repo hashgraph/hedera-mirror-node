@@ -12,7 +12,7 @@ spec:
         name: testkube
       version: 1.15.26
   driftDetection:
-    mode: warn
+    mode: enabled
     ignore:
       - paths: [""]
         target:
