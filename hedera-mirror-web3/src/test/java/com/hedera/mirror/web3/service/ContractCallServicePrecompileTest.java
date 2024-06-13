@@ -64,6 +64,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
@@ -210,17 +211,17 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         // Function Call signature
         var result = contract.isTokenFrozen(tokenAddress, senderAddress);
-        // result.send();
-        var functionSignature = Bytes.fromHexString(result.encodeFunctionCall());
-
-        final var serviceParameters = serviceParametersForExecutionSingle(
-                functionSignature, contractAddress, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
+        final var res = result.send();
+        //        var functionSignature = Bytes.fromHexString(result.encodeFunctionCall());
+        //
+        //        final var serviceParameters = serviceParametersForExecutionSingle(
+        //                functionSignature, contractAddress, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
 
-        final var mirrorNodeResponse = contractCallService.processCall(serviceParameters);
-        assertThat(mirrorNodeResponse).isEqualTo(successfulResponse);
+        //        final var mirrorNodeResponse = contractCallService.processCall(serviceParameters);
+        assertThat(res).isEqualTo(successfulResponse);
     }
 
     @Test
@@ -1199,11 +1200,17 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         }
                     }
                 },
-                new Object[] {});
+                new Object[] {}) {
+            public void func(PrecompileTestContract contract) {
+                return contract.isTokenFrozen();
+            }
+        };
 
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResult;
+
+        public void func(Contract contract) {}
     }
 
     @RequiredArgsConstructor

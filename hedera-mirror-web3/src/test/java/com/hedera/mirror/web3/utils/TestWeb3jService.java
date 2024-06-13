@@ -16,14 +16,23 @@
 
 package com.hedera.mirror.web3.utils;
 
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+
+import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import lombok.SneakyThrows;
-import org.web3j.crypto.RawTransaction;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.web3j.crypto.TransactionDecoder;
+import org.web3j.crypto.transaction.type.ITransaction;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.BatchRequest;
 import org.web3j.protocol.core.BatchResponse;
@@ -35,6 +44,12 @@ import org.web3j.protocol.websocket.events.Notification;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class TestWeb3jService implements Web3jService {
+    private static final Long GAS_LIMIT = 15_000_000L;
+    public ContractCallService contractCallService;
+
+    public TestWeb3jService(ContractCallService contractCallService) {
+        this.contractCallService = contractCallService;
+    }
 
     @Override
     public <T extends Response> T send(Request request, Class<T> responseType) throws IOException {
@@ -60,10 +75,19 @@ public class TestWeb3jService implements Web3jService {
         }
     }
 
-    private <T extends Response> T call(List serviceParameters, Class<T> responseType, Request request) {
+    private <T extends Response> T call(List reqParams, Class<T> responseType, Request request) {
         T res = getResObj(responseType);
-        RawTransaction transaction =
-                TransactionDecoder.decode(serviceParameters.get(0).toString());
+        ITransaction rawTrxDecoded =
+                TransactionDecoder.decode(reqParams.get(0).toString()).getTransaction();
+        final var serviceParameters = serviceParametersForExecutionSingle(
+                Bytes.fromHexString(rawTrxDecoded.getData()),
+                Address.fromHexString(rawTrxDecoded.getTo()),
+                ETH_CALL,
+                rawTrxDecoded.getValue().longValue(),
+                BlockType.LATEST,
+                GAS_LIMIT,
+                Address.fromHexString(""));
+        contractCallService.processCall(serviceParameters);
         res.setResult("Good");
 
         return res;
@@ -128,5 +152,27 @@ public class TestWeb3jService implements Web3jService {
     @Override
     public void close() throws IOException {
         throw new UnsupportedOperationException("Close");
+    }
+
+    protected CallServiceParameters serviceParametersForExecutionSingle(
+            final Bytes callData,
+            final Address contractAddress,
+            final CallServiceParameters.CallType callType,
+            final long value,
+            final BlockType block,
+            final long gasLimit,
+            final Address sender) {
+        final var senderAccount = new HederaEvmAccount(sender);
+        return CallServiceParameters.builder()
+                .sender(senderAccount)
+                .value(value)
+                .receiver(contractAddress)
+                .callData(callData)
+                .gas(gasLimit)
+                .isStatic(false)
+                .callType(callType)
+                .isEstimate(ETH_ESTIMATE_GAS == callType)
+                .block(block)
+                .build();
     }
 }
