@@ -286,8 +286,7 @@ To run a testkube test / testsuite with test case filters, do
 $ testkube run testsuite test-suite-rest -v REST_TEST_FILTER='{"exclude": "^transaction.*$"}'
 ```
 
-For multiple test case filters, either pass the key value pairs as a comma-separated string or simply pass multiple
-`-v` flags.
+For multiple test case filters, simply pass multiple `-v` flags, one for each test filter key value pair.
 
 ### Single Test
 
