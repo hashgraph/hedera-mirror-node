@@ -25,9 +25,12 @@ import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.rest.model.Error;
 import com.hedera.mirror.rest.model.ErrorStatus;
 import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
+import com.hedera.mirror.restjava.RestJavaProperties;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.bind.BindException;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -41,17 +44,29 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @ControllerAdvice
 @CustomLog
 @Order(Ordered.HIGHEST_PRECEDENCE)
+@RequiredArgsConstructor
 class GenericControllerAdvice extends ResponseEntityExceptionHandler {
+
+    private final RestJavaProperties properties;
 
     @ModelAttribute
     @SuppressWarnings("java:S5122")
     private void corsHeader(HttpServletResponse response) {
         response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+    }
+
+    @ModelAttribute
+    private void responseHeaders(HttpServletRequest request, HttpServletResponse response) {
+        var responseHeadersConfig = properties.getResponse().getHeaders();
+        var requestMapping = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
+        var responseHeaders = responseHeadersConfig.getHeadersForPath(requestMapping);
+        responseHeaders.forEach(header -> response.setHeader(header.getName(), header.getValue()));
     }
 
     @ExceptionHandler

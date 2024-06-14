@@ -9,6 +9,20 @@ hedera:
         sslMode: DISABLE
         statementTimeout: 10000
         username: mirror_rest_java
+      response:
+        headers:
+          defaults:
+            - name: "cache-control"
+              value: "public, max-age=1"
+          paths:
+            # Override default for individual controller request mappings. "[]" around the path preserves special characters.
+            # Multiple header name/value pairs may be defined per path.
+            "[/api/v1/topics/{id}]":
+              - name: "cache-control"
+                value: "public, max-age=10"
+            "[/api/v1/accounts/{id}/allowances/nfts]":
+              - name: "cache-control"
+                value: "public, max-age=20"
 logging:
   level:
     root: warn
