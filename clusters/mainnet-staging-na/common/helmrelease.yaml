@@ -101,6 +101,11 @@ spec:
     stackgres:
       enabled: true
     traefik:
+      resources:
+        limits:
+          cpu: 600m
+        requests:
+          cpu: 300m
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mainnet-staging-na"} } }'
