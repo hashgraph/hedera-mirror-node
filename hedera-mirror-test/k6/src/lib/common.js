@@ -114,7 +114,7 @@ function filterTests(tests, suite) {
   const include = (Array.isArray(filter.include) ? filter.include : [filter.include]).map((v) => new RegExp(v));
   const filtered = Object.keys(tests).filter((name) => {
     const normalized = name.toLowerCase();
-    if (!exclude.every((r) => !r.test(normalized))) {
+    if (exclude.some((r) => r.test(normalized))) {
       return false;
     }
 
