@@ -2,7 +2,10 @@
 
 ## Purpose
 
-[HIP-869](https://hips.hedera.com/hip/hip-869) implements the HAPI endpoints for Address Book management within current Address Book implementation . In this phase HAPI endpoints are used to facilitate changes to the Address Book, however those changes are applied through existing, monthly upgrade process.
+[HIP-869](https://hips.hedera.com/hip/hip-869) implements the HAPI endpoints for Address Book management within the
+current Address Book implementation.
+In this phase, the mirror node processes the new transactions and service_endpoint information,
+then returns that information through its existing APIs.
 
 ## Goals
 
