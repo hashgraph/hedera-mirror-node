@@ -30,7 +30,9 @@ const tests = {
   rampUp,
 };
 
-const {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} =
-  getSequentialTestScenarios(tests);
+const {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(
+  tests,
+  'RESTJAVA'
+);
 
 export {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios};

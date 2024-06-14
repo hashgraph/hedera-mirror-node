@@ -265,6 +265,21 @@ With the test suite mode, a simplified markdown format report `report.md` will a
 | /network/options         | 500 | 100.00 | 5763.35/s | 51.97ms           | No       |         |
 | /network/status          | 500 | 100.00 | 3018.25/s | 160.10ms          | No       |         |
 
+#### Filter Test Case
+
+You can use the `{SuiteName}_TEST_FILTER` environment variable, for example, `REST_TEST_FILTER` for the JS REST test
+suite, to filter the test cases to run. The value should be a json string with an `exclude` filter or filter array
+and / or an `include` filter or filter array. The individual filters should be regex strings and use only lower case
+letters. The `exclude` filter(s) has priority over the `include` filter(s).
+
+Some examples:
+
+- `REST_TEST_FILTER='{"exclude": "^transaction.*$"}'` will exclude all test cases that start with `transaction`
+- `REST_TEST_FILTER='{"exclude": ["^transaction.*$", "^topic.*$]}'` will exclude all test cases that start with either
+  `transaction` or `topic`
+- `REST_TEST_FILTER='{"include": ["^account.*$", "^token.*$"]}'` will include only test cases that start with either
+  `account` or `token`
+
 ### Single Test
 
 To run a single test, such as the rosetta accountBalance test, just do
