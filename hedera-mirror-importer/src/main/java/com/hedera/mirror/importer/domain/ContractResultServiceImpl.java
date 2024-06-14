@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.List;
@@ -89,7 +88,8 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // contractResult
         var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
-        var throwRecoverableError = shouldThrowRecoverableError(functionResult, recordItem, transactionRecord);
+        var throwRecoverableError = !(recordItem.isSuccessful()
+                && (transactionRecord.getReceipt().getContractID().hasEvmAddress()));
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = (contractCallOrCreate
                         ? Optional.ofNullable(transaction.getEntityId())
@@ -150,13 +150,6 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private boolean isContractCreateOrCall(TransactionBody transactionBody) {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
-    }
-
-    private boolean shouldThrowRecoverableError(
-            ContractFunctionResult functionResult, RecordItem recordItem, TransactionRecord transactionRecord) {
-        return !(recordItem.isSuccessful()
-                && (transactionRecord.getReceipt().getContractID().hasEvmAddress()
-                        || functionResult.getContractID().hasEvmAddress()));
     }
 
     private void processContractAction(ContractAction action, int index, RecordItem recordItem) {
