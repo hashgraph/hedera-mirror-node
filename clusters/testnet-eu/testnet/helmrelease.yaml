@@ -61,6 +61,17 @@ spec:
       enabled: false
     rest:
       enabled: true
+      monitor:
+        config: |-
+          {
+            "servers": [
+              {
+                "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
+                "name": "kubernetes"
+              }
+            ],
+            "stateproof": { "enabled": false }
+          }
     restjava:
       enabled: true
     rosetta:
