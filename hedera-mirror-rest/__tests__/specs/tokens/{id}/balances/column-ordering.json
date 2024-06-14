@@ -1,5 +1,5 @@
 {
-  "description": "v2 ordering is incorrect if column names collide, if the query used 'consensus_timestamp' instead of 'sentinel_timestamp'",
+  "description": "v2 ordering is incorrect if column names collide, if the query used 'consensus_timestamp' instead of 'snapshot_timestamp'",
   "setup": {
     "tokens": [
       {
