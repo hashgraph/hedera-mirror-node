@@ -80,7 +80,7 @@ spec:
             test:
               acceptance:
                 network: OTHER
-      enabled: false
+      enabled: true
       git:
         branch: main
 
