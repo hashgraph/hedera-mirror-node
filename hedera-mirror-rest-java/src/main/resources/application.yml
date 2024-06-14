@@ -11,10 +11,10 @@ hedera:
         username: mirror_rest_java
       response:
         headers:
-          defaults:
+          default:
             - name: "cache-control"
               value: "public, max-age=1"
-          paths:
+          path:
             # Override default for individual controller request mappings. "[]" around the path preserves special characters.
             # Multiple header name/value pairs may be defined per path.
             "[/api/v1/topics/{id}]":

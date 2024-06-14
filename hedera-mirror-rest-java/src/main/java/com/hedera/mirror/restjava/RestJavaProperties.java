@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -49,12 +50,13 @@ public class RestJavaProperties {
     @Validated
     public static class ResponseHeadersConfig {
         @NotNull
+        @JsonProperty("default")
         private List<ResponseHeader> defaults = List.of(ResponseHeader.DEFAULT_RESPONSE_HEADER);
 
-        private Map<@NotNull String, @NotNull List<ResponseHeader>> paths = new HashMap<>();
+        private Map<@NotNull String, @NotNull List<ResponseHeader>> path = new HashMap<>();
 
         public List<ResponseHeader> getHeadersForPath(String path) {
-            return path == null ? defaults : paths.getOrDefault(path, defaults);
+            return path == null ? defaults : this.path.getOrDefault(path, defaults);
         }
     }
 
