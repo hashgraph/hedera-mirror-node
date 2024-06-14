@@ -36,6 +36,9 @@ spec:
         structuredConfig:
           ruler:
             external_url: https://mirrornode.grafana.net
+      resources:
+        limits:
+          memory: 1Gi
     prometheus:
       prometheus:
         prometheusSpec:
@@ -43,7 +46,7 @@ spec:
             cluster: mainnet-staging-na
           resources:
             limits:
-              memory: 2750Mi
+              memory: 3500Mi
             requests:
               memory: 1Gi
           replicaExternalLabelName: __replica__
