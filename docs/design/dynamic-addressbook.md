@@ -15,7 +15,8 @@ then returns that information through its existing APIs.
   - `NodeDelete`
   - `NodeUpdate`
 
-- Expose `domain_name` in the `/network/nodes` endpoint
+- Expose `domain_name` in the `/network/nodes` REST endpoint
+- Expose `domain_name` in the grpc network service
 
 ## Architecture
 
@@ -81,9 +82,9 @@ Response:
       "reward_rate_start": 1000000,
       "service_endpoints": [
         {
+          "domain_name": "examplenode.com",
           "ip_address_v4": "128.0.0.6",
-          "port": 50216,
-          "domain_name": "examplenode.com"
+          "port": 50216
         }
       ],
       "stake": 20000,
