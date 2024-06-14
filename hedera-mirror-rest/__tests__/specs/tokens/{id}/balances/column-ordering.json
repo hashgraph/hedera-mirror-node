@@ -1,5 +1,9 @@
 {
-  "description": "v2 ordering is incorrect if column names collide, if the query used 'consensus_timestamp' instead of 'snapshot_timestamp'",
+  "description": "Tests the fix for v2 ordering is incorrect if column names collide",
+  "extendedDescription": [
+    "This demonstrates the fix for issue 8359. If `snapshot_timestamp` is reverted to `consensus_timestamp` the bug ",
+    "from 8359 will be recreated when testing against v2"
+  ],
   "setup": {
     "tokens": [
       {
