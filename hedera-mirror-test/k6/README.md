@@ -280,6 +280,15 @@ Some examples:
 - `REST_TEST_FILTER='{"include": ["^account.*$", "^token.*$"]}'` will include only test cases that start with either
   `account` or `token`
 
+To run a testkube test / testsuite with test case filters, do
+
+```shell
+$ testkube run testsuite test-suite-rest -v REST_TEST_FILTER='{"exclude": "^transaction.*$"}'
+```
+
+For multiple test case filters, either pass the key value pairs as a comma-separated string or simply pass multiple
+`-v` flags.
+
 ### Single Test
 
 To run a single test, such as the rosetta accountBalance test, just do
