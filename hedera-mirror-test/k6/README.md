@@ -267,26 +267,33 @@ With the test suite mode, a simplified markdown format report `report.md` will a
 
 #### Filter Test Case
 
-You can use the `{SuiteName}_TEST_FILTER` environment variable, for example, `REST_TEST_FILTER` for the JS REST test
-suite, to filter the test cases to run. The value should be a json string with an `exclude` filter or filter array
-and / or an `include` filter or filter array. The individual filters should be regex strings and use only lower case
-letters. The `exclude` filter(s) has priority over the `include` filter(s).
+You can use the following test suite specific environment variables to filter the test cases in a suite to run,
+
+- `REST_TEST_EXCLUDE` to exclude test cases in the JS REST test suite
+- `REST_TEST_INCLUDE` to include test cases in the JS REST test suite
+
+The value should be a regex string to match lower case test case names. The `exclue` filter has priority over the
+`include` filter. Substitute the `REST` prefix with the appropriate suite name for other test suites.
+
+- `REST` for JS REST test suite
+- `RESTJAVA` for Java REST test suite
+- `ROSETTA` for Rosetta test suite
+- `WEB3` for Web3 test suite
 
 Some examples:
 
-- `REST_TEST_FILTER='{"exclude": "^transaction.*$"}'` will exclude all test cases that start with `transaction`
-- `REST_TEST_FILTER='{"exclude": ["^transaction.*$", "^topic.*$]}'` will exclude all test cases that start with either
-  `transaction` or `topic`
-- `REST_TEST_FILTER='{"include": ["^account.*$", "^token.*$"]}'` will include only test cases that start with either
-  `account` or `token`
+- `REST_TEST_EXCLUDE='^transaction.*$'` will exclude all test cases that start with `transaction`
+- `REST_TEST_EXCLUDE='^(transaction|topic).*$'` will exclude all test cases that start with either `transaction`
+  or `topic`
+- `REST_TEST_INCLUDE='^(account:token).*$'` will include only test cases that start with either `account` or `token`
 
 To run a testkube test / testsuite with test case filters, do
 
 ```shell
-$ testkube run testsuite test-suite-rest -v REST_TEST_FILTER='{"exclude": "^transaction.*$"}'
+testkube run testsuite test-suite-rest -v REST_TEST_EXCLUDE='^transaction.*$' -v WEB3_TEST_INCLUDE='^.*receive.*$'
 ```
 
-For multiple test case filters, simply pass multiple `-v` flags, one for each test filter key value pair.
+Note you can pass multiple `-v` flags, one for each filter.
 
 ### Single Test
 

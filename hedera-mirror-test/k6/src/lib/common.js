@@ -98,27 +98,27 @@ function getScenarioTimes(scenario) {
   }
 }
 
+const defaultFilters = {
+  true: {test: () => false}, // default exclude filter, exclude nothing
+  false: {test: () => true}, // default include filter, include everything
+};
+
+function getFilter(suite, exclude) {
+  const key = `${suite.toUpperCase()}_TEST_${exclude ? 'EXCLUDE' : 'INCLUDE'}`;
+  const value = __ENV[key];
+  return value ? new RegExp(value) : defaultFilters[exclude];
+}
+
 function filterTests(tests, suite) {
   if (suite === null) {
     return tests;
   }
 
-  const key = `${suite.toUpperCase()}_TEST_FILTER`;
-  const value = __ENV[key];
-  if (!value) {
-    return tests;
-  }
-
-  const filter = Object.assign({exclude: [], include: []}, JSON.parse(value));
-  const exclude = (Array.isArray(filter.exclude) ? filter.exclude : [filter.exclude]).map((v) => new RegExp(v));
-  const include = (Array.isArray(filter.include) ? filter.include : [filter.include]).map((v) => new RegExp(v));
+  const exclude = getFilter(suite, true);
+  const include = getFilter(suite, false);
   const filtered = Object.keys(tests).filter((name) => {
     const normalized = name.toLowerCase();
-    if (exclude.some((r) => r.test(normalized))) {
-      return false;
-    }
-
-    return include.length === 0 || include.some((r) => r.test(normalized));
+    return !exclude.test(normalized) && include.test(normalized);
   });
   return Object.fromEntries(filtered.map((name) => [name, tests[name]]));
 }
