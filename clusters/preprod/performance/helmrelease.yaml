@@ -59,7 +59,7 @@ spec:
       monitor:
         enabled: false
     test:
-      enabled: true
+      enabled: false
       config:
         hedera:
           mirror:
