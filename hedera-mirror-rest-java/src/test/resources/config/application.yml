@@ -9,18 +9,3 @@ spring:
   test:
     database:
       replace: NONE
-
-hedera:
-  mirror:
-    restJava:
-      response:
-        headers:
-          defaults:
-            "default-header-1": "default-header-1 value"
-            "default-header-2": "default-header-2 value"
-          path:
-            # Override default for individual controller request mappings. "[]" around the path preserves special characters.
-            # Multiple header name/value pairs may be defined per path.
-            "[/api/v1/topics/{id}]":
-              "topics-header-1": "topics-header-1 value"
-              "topics-header-2": "topics-header-2 value"

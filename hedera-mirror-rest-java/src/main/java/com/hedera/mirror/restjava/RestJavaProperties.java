@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.restjava;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.util.HashMap;
@@ -33,13 +32,14 @@ public class RestJavaProperties {
     @Min(0)
     private long shard = 0L;
 
-    @Valid
-    private ResponseConfig response;
+    @NotNull
+    private ResponseConfig response = new ResponseConfig();
 
     @Data
     @Validated
     public static class ResponseConfig {
-        private ResponseHeadersConfig headers;
+        @NotNull
+        private ResponseHeadersConfig headers = new ResponseHeadersConfig();
     }
 
     @Data
