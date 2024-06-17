@@ -388,9 +388,7 @@ testkube:
     extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
-    targets:
-      - namespace: ""
-        release: mirror
+    targets: []
   trigger:
     enabled: false
 

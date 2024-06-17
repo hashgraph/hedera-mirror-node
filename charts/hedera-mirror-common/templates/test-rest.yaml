@@ -25,7 +25,7 @@ spec:
       - mapToVariables: true
         mount: false
         reference:
-          name: {{ include "hedera-mirror-common.fullname" $ }}-test-rest  # Todo verify sharing the config is ok
+          name: {{ include "hedera-mirror-common.fullname" $ }}-test-rest
     variables:
       BASE_URL:
         name: BASE_URL

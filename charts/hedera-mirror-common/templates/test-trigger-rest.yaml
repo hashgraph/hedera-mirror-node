@@ -19,7 +19,8 @@ spec:
     namespace: {{ $.Values.testkube.namespace }}
     labelSelector:
       matchLabels:
-        test-name: {{ $previous := sub $idx 1 | index $.Values.testkube.test.targets }}test-web3-{{ $previous.namespace }}
+        {{ $previous := sub $idx 1 | index $.Values.testkube.test.targets }}
+        test-name: test-web3-{{ $previous.namespace }}
 {{- end }}
   event: deleted
   action: run
