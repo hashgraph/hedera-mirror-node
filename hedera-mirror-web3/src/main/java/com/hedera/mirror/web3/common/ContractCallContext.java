@@ -20,7 +20,6 @@ import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -39,6 +38,17 @@ public class ContractCallContext {
     public static final String CONTEXT_NAME = "ContractCallContext";
     private static final ScopedValue<ContractCallContext> SCOPED_VALUE = ScopedValue.newInstance();
 
+    @Setter
+    private List<ContractAction> contractActions = List.of();
+
+    @Getter
+    private int contractActionsCounter = 0;
+
+    @Setter
+    private OpcodeTracerOptions opcodeTracerOptions;
+
+    @Setter
+    private List<Opcode> opcodes = new ArrayList<Opcode>();
     /**
      * Record file which stores the block timestamp and other historical block details used for filtering of historical
      * data.
@@ -58,24 +68,6 @@ public class ContractCallContext {
      */
     @Setter
     private Transaction previousTransaction;
-
-    /**
-     * Options used to configure the {@link OpcodeTracer} when debugging a transaction.
-     */
-    @Setter
-    private OpcodeTracerOptions opcodeTracerOptions;
-
-    /**
-     * List of opcodes that are executed during the contract call.
-     */
-    @Setter
-    private List<Opcode> opcodes = new ArrayList<Opcode>();
-
-    /**
-     * List of contract actions for the transaction that is being debugged.
-     */
-    @Setter
-    private List<ContractAction> contractActions = List.of();
 
     private ContractCallContext() {}
 
@@ -134,5 +126,13 @@ public class ContractCallContext {
 
     public boolean useHistorical() {
         return recordFile != null;
+    }
+
+    public void incrementContractActionsCounter() {
+        this.contractActionsCounter++;
+    }
+
+    public void decrementContractActionsCounter() {
+        this.contractActionsCounter--;
     }
 }

@@ -37,7 +37,6 @@ import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.springframework.util.CollectionUtils;
-import javax.swing.plaf.synth.SynthTextAreaUI;
 
 @Named
 @CustomLog
@@ -67,7 +66,7 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     @Override
     public void tracePrecompileCall(final MessageFrame frame, final long gasRequirement, final Bytes output) {
         ContractCallContext context = getContext();
-        Optional<Bytes> revertReason = isCallToHederaTokenService(frame) ? getRevertReasonFromContractActions(frame, context.getContractActions()) : frame.getRevertReason();
+        Optional<Bytes> revertReason = isCallToHederaTokenService(frame) ? getRevertReasonFromContractActions(context.getContractActions()) : frame.getRevertReason();
         Opcode opcode = Opcode.builder()
                 .pc(frame.getPC())
                 .op(frame.getCurrentOperation() != null
@@ -134,16 +133,14 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         }
     }
 
-    private static Optional<Bytes> getRevertReasonFromContractActions(MessageFrame frame, List<ContractAction> contractActions) {
+    private Optional<Bytes> getRevertReasonFromContractActions(List<ContractAction> contractActions) {
         if (CollectionUtils.isEmpty(contractActions)) {
             return Optional.empty();
         }
-        List<MessageFrame> messageFrameList = new ArrayList<>(frame.getMessageFrameStack());
-        int index = messageFrameList.indexOf(frame);
+        int currentActionIndex = getContext().getContractActionsCounter();
 
-        //Need to rework further, index does not match with contractActions
         return contractActions.stream()
-                .filter(action -> action.hasRevertReason() && action.getIndex() == index)
+                .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex)
                 .map(action -> Bytes.of(action.getResultData()))
                 .findFirst();
     }
@@ -160,5 +157,17 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     private boolean isCallToHederaTokenService(MessageFrame frame) {
         Address recipientAddress = frame.getRecipientAddress();
         return recipientAddress.equals(Address.fromHexString(SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS));
+    }
+
+    public void traceContextEnter(final MessageFrame frame) {
+        getContext().incrementContractActionsCounter();
+    }
+
+    public void traceContextReEnter(final MessageFrame frame) {
+        getContext().decrementContractActionsCounter();
+    }
+
+    public void traceContextExit(final MessageFrame frame) {
+        getContext().incrementContractActionsCounter();
     }
 }
