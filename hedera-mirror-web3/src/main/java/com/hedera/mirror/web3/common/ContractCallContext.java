@@ -55,8 +55,7 @@ public class ContractCallContext {
      * The consensus timestamp of the transaction that is being debugged.
      * This is used to fetch the state right before the transaction from the stackedStateFrames.
      */
-    @Setter
-    private Long consensusTimestamp;
+    private Long transactionValidStart;
 
     /**
      * Options used to configure the {@link OpcodeTracer} when debugging a transaction.
@@ -89,6 +88,12 @@ public class ContractCallContext {
     public void reset() {
         recordFile = null;
         stack = stackBase;
+    }
+
+    public void setTransactionValidStart(long transactionValidStart) {
+        if (transactionValidStart > 0) {
+            this.transactionValidStart = transactionValidStart;
+        }
     }
 
     public int getStackHeight() {
@@ -124,9 +129,8 @@ public class ContractCallContext {
      */
     public void initializeStackFrames(final StackedStateFrames stackedStateFrames) {
         if (stackedStateFrames != null) {
-            final var timestamp = consensusTimestamp != null
-                    ? Optional.of(consensusTimestamp)
-                    : Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
+            final var timestamp = Optional.ofNullable(transactionValidStart)
+                    .or(() -> Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd));
             stackBase = stack = stackedStateFrames.getInitializedStackBase(timestamp);
         }
     }

@@ -39,5 +39,6 @@ public class ContractDebugParameters implements CallServiceParameters {
     Address receiver;
     HederaEvmAccount sender;
     TracerType tracerType = TracerType.OPCODE;
+    long transactionValidStart;
     long value;
 }
