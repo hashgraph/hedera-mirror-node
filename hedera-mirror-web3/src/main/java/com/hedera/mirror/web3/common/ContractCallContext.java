@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.common;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -50,12 +51,28 @@ public class ContractCallContext {
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     private CachingStateFrame<Object> stackBase;
 
+    /**
+     * The consensus timestamp of the transaction that is being debugged.
+     * This is used to fetch the state right before the transaction from the stackedStateFrames.
+     */
+    @Setter
+    private Long consensusTimestamp;
+
+    /**
+     * Options used to configure the {@link OpcodeTracer} when debugging a transaction.
+     */
     @Setter
     private OpcodeTracerOptions opcodeTracerOptions;
 
+    /**
+     * List of opcodes that are executed during the contract call.
+     */
     @Setter
     private List<Opcode> opcodes = new ArrayList<Opcode>();
 
+    /**
+     * List of contract actions for the transaction that is being debugged.
+     */
     @Setter
     private List<ContractAction> contractActions = List.of();
 
@@ -107,7 +124,9 @@ public class ContractCallContext {
      */
     public void initializeStackFrames(final StackedStateFrames stackedStateFrames) {
         if (stackedStateFrames != null) {
-            final var timestamp = Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
+            final var timestamp = consensusTimestamp != null
+                    ? Optional.of(consensusTimestamp)
+                    : Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
             stackBase = stack = stackedStateFrames.getInitializedStackBase(timestamp);
         }
     }

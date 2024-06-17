@@ -19,7 +19,6 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 
-import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
@@ -33,7 +32,6 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
-import java.util.List;
 import lombok.CustomLog;
 
 @CustomLog
@@ -56,10 +54,10 @@ public class ContractDebugService extends ContractCallService {
     public OpcodesProcessingResult processOpcodeCall(
             final ContractDebugParameters params, final OpcodeTracerOptions opcodeTracerOptions) {
         return ContractCallContext.run(ctx -> {
+            final var consensusTimestamp = params.getConsensusTimestamp();
+            ctx.setConsensusTimestamp(consensusTimestamp);
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
-            List<ContractAction> contractActions =
-                    contractActionRepository.findAllByConsensusTimestamp(params.getConsensusTimestamp());
-            ctx.setContractActions(contractActions);
+            ctx.setContractActions(contractActionRepository.findAllByConsensusTimestamp(consensusTimestamp));
             final var ethCallTxnResult = callContract(params, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
             return new OpcodesProcessingResult(ethCallTxnResult, ctx.getOpcodes());
