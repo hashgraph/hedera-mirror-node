@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import com.hedera.mirror.rest.model.Error;
 import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
+import com.hedera.mirror.restjava.RestJavaProperties;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ThrowableAssert;
@@ -29,8 +30,11 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -39,8 +43,15 @@ import org.springframework.web.client.RestClient.RequestHeadersUriSpec;
 
 @RequiredArgsConstructor
 @RunWith(SpringRunner.class)
+@EnableConfigurationProperties(value = RestJavaProperties.class)
+@TestPropertySource("classpath:config/application.yml")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 abstract class ControllerTest extends RestJavaIntegrationTest {
+
+    private static final String BASE_PATH = "/api/v1/";
+
+    @Autowired
+    private RestJavaProperties properties;
 
     protected RestClient.Builder restClientBuilder;
 
@@ -51,7 +62,7 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
 
     @BeforeEach
     final void setup() {
-        baseUrl = "http://localhost:%d/api/v1/".formatted(port);
+        baseUrl = "http://localhost:%d%s".formatted(port, BASE_PATH);
         restClientBuilder = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("Accept", "application/json")
@@ -105,6 +116,25 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
 
             // Then
             assertThat(headers.getAccessControlAllowOrigin()).isEqualTo("*");
+        }
+
+        @Test
+        void headers() {
+            // When
+            var headers = defaultRequest(restClient.get())
+                    .retrieve()
+                    .toBodilessEntity()
+                    .getHeaders();
+
+            // Then
+            var headersPathKey = "%s%s".formatted(BASE_PATH, getUrl());
+            var headersConfig = properties.getResponse().getHeaders();
+            var headersExpected = headersConfig.getPath().getOrDefault(headersPathKey, headersConfig.getDefaults());
+            headersExpected.forEach((expectedName, expectedValue) -> {
+                var headerValues = headers.get(expectedName);
+                assertThat(headerValues).isNotNull();
+                assertThat(headerValues.contains(expectedValue)).isTrue();
+            });
         }
 
         @Test

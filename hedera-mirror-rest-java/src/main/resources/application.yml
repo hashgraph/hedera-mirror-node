@@ -11,18 +11,16 @@ hedera:
         username: mirror_rest_java
       response:
         headers:
-          default:
-            - name: "cache-control"
-              value: "public, max-age=1"
+          defaults:
+            "cache-control": "public, max-age=1"
+            "some-header": "some header value"
           path:
             # Override default for individual controller request mappings. "[]" around the path preserves special characters.
-            # Multiple header name/value pairs may be defined per path.
+            # Multiple header name key/value pairs may be defined per path.
             "[/api/v1/topics/{id}]":
-              - name: "cache-control"
-                value: "public, max-age=10"
+              "cache-control": "public, max-age=10"
             "[/api/v1/accounts/{id}/allowances/nfts]":
-              - name: "cache-control"
-                value: "public, max-age=20"
+              "cache-control": "public, max-age=20"
 logging:
   level:
     root: warn

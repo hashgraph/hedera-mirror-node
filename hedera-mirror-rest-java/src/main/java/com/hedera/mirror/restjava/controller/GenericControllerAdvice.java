@@ -66,7 +66,7 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
         var responseHeadersConfig = properties.getResponse().getHeaders();
         var requestMapping = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
         var responseHeaders = responseHeadersConfig.getHeadersForPath(requestMapping);
-        responseHeaders.forEach(header -> response.setHeader(header.getName(), header.getValue()));
+        responseHeaders.forEach(response::setHeader);
     }
 
     @ExceptionHandler

@@ -16,15 +16,11 @@
 
 package com.hedera.mirror.restjava;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -50,27 +46,13 @@ public class RestJavaProperties {
     @Validated
     public static class ResponseHeadersConfig {
         @NotNull
-        @JsonProperty("default")
-        private List<ResponseHeader> defaults = List.of(ResponseHeader.DEFAULT_RESPONSE_HEADER);
-
-        private Map<@NotNull String, @NotNull List<ResponseHeader>> path = new HashMap<>();
-
-        public List<ResponseHeader> getHeadersForPath(String path) {
-            return path == null ? defaults : this.path.getOrDefault(path, defaults);
-        }
-    }
-
-    @Data
-    @Validated
-    @AllArgsConstructor
-    public static class ResponseHeader {
-        public static final ResponseHeader DEFAULT_RESPONSE_HEADER =
-                new ResponseHeader("cache-control", "public, max-age=1");
-
-        @NotBlank
-        private String name;
+        private Map<String, String> defaults = new HashMap<>();
 
         @NotNull
-        private String value;
+        private Map<String, Map<String, String>> path = new HashMap<>();
+
+        public Map<String, String> getHeadersForPath(String path) {
+            return path == null ? defaults : this.path.getOrDefault(path, defaults);
+        }
     }
 }
