@@ -63,9 +63,8 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
 
     @ModelAttribute
     private void responseHeaders(HttpServletRequest request, HttpServletResponse response) {
-        var responseHeadersConfig = properties.getResponse().getHeaders();
         var requestMapping = (String) request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE);
-        var responseHeaders = responseHeadersConfig.getHeadersForPath(requestMapping);
+        var responseHeaders = properties.getResponse().getHeaders().getHeadersForPath(requestMapping);
         responseHeaders.forEach(response::setHeader);
     }
 
