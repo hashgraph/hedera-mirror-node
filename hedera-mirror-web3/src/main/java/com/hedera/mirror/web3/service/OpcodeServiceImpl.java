@@ -168,7 +168,18 @@ public class OpcodeServiceImpl implements OpcodeService {
         final Integer transactionType =
                 transaction.map(Transaction::getType).orElse(TransactionType.UNKNOWN.getProtoId());
 
+        final Transaction previousTransaction = transaction
+                .map(Transaction::getIndex)
+                .or(() -> Optional.ofNullable(contractResult.getTransactionIndex()))
+                .flatMap(transactionRepository::findByIndex)
+                .orElseGet(() -> {
+                    log.error("Previous transaction not found! " +
+                            "Will be using the consensus end of the transaction's block to get the world state.");
+                    return null;
+                });
+
         return ContractDebugParameters.builder()
+                .previousTransaction(previousTransaction)
                 .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
                 .receiver(getReceiverAddress(ethTransaction, contractResult, transactionType))
                 .gas(getGasLimit(ethTransaction, contractResult))

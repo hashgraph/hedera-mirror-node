@@ -54,7 +54,7 @@ public class ContractDebugService extends ContractCallService {
     public OpcodesProcessingResult processOpcodeCall(
             final ContractDebugParameters params, final OpcodeTracerOptions opcodeTracerOptions) {
         return ContractCallContext.run(ctx -> {
-            ctx.setTransactionValidStart(params.getTransactionValidStart());
+            ctx.setPreviousTransaction(params.getPreviousTransaction());
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
             ctx.setContractActions(
                     contractActionRepository.findAllByConsensusTimestamp(params.getConsensusTimestamp()));

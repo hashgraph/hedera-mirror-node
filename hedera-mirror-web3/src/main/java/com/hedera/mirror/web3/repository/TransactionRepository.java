@@ -26,4 +26,6 @@ import org.springframework.stereotype.Repository;
 public interface TransactionRepository extends CrudRepository<Transaction, Long> {
 
     Optional<Transaction> findByPayerAccountIdAndValidStartNs(EntityId payerAccountId, long validStartNs);
+
+    Optional<Transaction> findByIndex(int transactionIndex);
 }

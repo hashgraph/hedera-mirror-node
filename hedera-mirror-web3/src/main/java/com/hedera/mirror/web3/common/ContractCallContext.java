@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.common;
 
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
@@ -55,7 +56,8 @@ public class ContractCallContext {
      * The consensus timestamp of the transaction that is being debugged.
      * This is used to fetch the state right before the transaction from the stackedStateFrames.
      */
-    private Long transactionValidStart;
+    @Setter
+    private Transaction previousTransaction;
 
     /**
      * Options used to configure the {@link OpcodeTracer} when debugging a transaction.
@@ -88,12 +90,6 @@ public class ContractCallContext {
     public void reset() {
         recordFile = null;
         stack = stackBase;
-    }
-
-    public void setTransactionValidStart(long transactionValidStart) {
-        if (transactionValidStart > 0) {
-            this.transactionValidStart = transactionValidStart;
-        }
     }
 
     public int getStackHeight() {
@@ -129,7 +125,8 @@ public class ContractCallContext {
      */
     public void initializeStackFrames(final StackedStateFrames stackedStateFrames) {
         if (stackedStateFrames != null) {
-            final var timestamp = Optional.ofNullable(transactionValidStart)
+            final var timestamp = Optional.ofNullable(previousTransaction)
+                    .map(Transaction::getConsensusTimestamp)
                     .or(() -> Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd));
             stackBase = stack = stackedStateFrames.getInitializedStackBase(timestamp);
         }
