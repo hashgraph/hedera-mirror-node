@@ -29,6 +29,15 @@ flux check --pre
 flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch=deploy --team=hedera-mirror-node --context="${CONTEXT}" --path="clusters/${CONTEXT}" --private=false --interval=1m
 ```
 
+### GitHub
+
+#### GitHub Dispatch
+
+For alerts of type [GitHub Dispatch](https://fluxcd.io/flux/components/notification/providers/#github-dispatch), a new GitHub
+[Personal Access Token (PAT)](https://github.com/settings/personal-access-tokens/new) will need to be created with repository
+permissions for `Contents` scope with `Read and Write` access. This PAT is created under the
+[hedera-github-bot](https://github.com/hedera-github-bot) user.
+
 ## Configure
 
 If you're adding a new secret, skip to the next step. If you're updating an existing sealed secret, first retrieve the unecrypted secret from the cluster:
