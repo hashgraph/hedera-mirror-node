@@ -57,7 +57,7 @@ spec:
         config:
           rest:
             DEFAULT_ACCOUNT_BALANCE: "123456"
-            DEFAULT_ACCOUNT_ID: "1833905"
+            DEFAULT_ACCOUNT_ID: "1459478"
             DEFAULT_ACCOUNT_ID_NFTS: "1484550"
             DEFAULT_ACCOUNT_ID_TIMESTAMP: "1698181150.152"
             DEFAULT_ACCOUNT_ID_TOKEN: "1007535"
