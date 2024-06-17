@@ -13,7 +13,6 @@ hedera:
         headers:
           defaults:
             "cache-control": "public, max-age=1"
-            "some-header": "some header value"
           path:
             # Override default for individual controller request mappings. "[]" around the path preserves special characters.
             # Multiple header name key/value pairs may be defined per path.

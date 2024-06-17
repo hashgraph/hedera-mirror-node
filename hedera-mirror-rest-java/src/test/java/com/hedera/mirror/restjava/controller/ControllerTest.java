@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.restjava.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.rest.model.Error;
 import com.hedera.mirror.rest.model.ErrorStatusMessagesInner;
@@ -127,13 +127,14 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
                     .getHeaders();
 
             // Then
-            var headersPathKey = "%s%s".formatted(BASE_PATH, getUrl());
             var headersConfig = properties.getResponse().getHeaders();
+            var headersPathKey = "%s%s".formatted(BASE_PATH, getUrl());
             var headersExpected = headersConfig.getPath().getOrDefault(headersPathKey, headersConfig.getDefaults());
+
             headersExpected.forEach((expectedName, expectedValue) -> {
                 var headerValues = headers.get(expectedName);
                 assertThat(headerValues).isNotNull();
-                assertThat(headerValues.contains(expectedValue)).isTrue();
+                assertThat(headerValues).contains(expectedValue);
             });
         }
 
