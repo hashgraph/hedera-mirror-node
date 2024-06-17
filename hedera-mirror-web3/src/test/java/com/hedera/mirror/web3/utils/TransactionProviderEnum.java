@@ -51,7 +51,6 @@ import org.jetbrains.annotations.Nullable;
 @Getter
 @RequiredArgsConstructor
 public enum TransactionProviderEnum {
-
     CONTRACT_CREATE(Instant.ofEpochSecond(1, 2000), CONTRACTCREATEINSTANCE, EthTransactionType.LEGACY.getTypeByte()),
     CONTRACT_CALL(Instant.ofEpochSecond(2, 3000), CONTRACTCALL, EthTransactionType.LEGACY.getTypeByte()),
     EIP1559(Instant.ofEpochSecond(3, 4000), ETHEREUMTRANSACTION, EthTransactionType.EIP_1559.getTypeByte()),
@@ -118,20 +117,16 @@ public enum TransactionProviderEnum {
     }
 
     public DomainWrapper<Transaction, Transaction.TransactionBuilder> getTransaction() {
-        return domainBuilder.transaction()
-                .customize(tx -> {
-                    tx.type(transactionType.getProtoId());
-                    tx.memo("%s_%d".formatted(transactionType.name(), typeByte).getBytes());
-                    tx.transactionHash(hash);
-                    tx.payerAccountId(payerAccountId);
-                    tx.entityId(contractId);
-                    tx.validStartNs(convertToNanosMax(
-                            consensusTimestamp.getEpochSecond(),
-                            consensusTimestamp.getNano() - 1000));
-                    tx.consensusTimestamp(convertToNanosMax(
-                            consensusTimestamp.getEpochSecond(),
-                            consensusTimestamp.getNano()));
-                });
+        return domainBuilder.transaction().customize(tx -> {
+            tx.type(transactionType.getProtoId());
+            tx.memo("%s_%d".formatted(transactionType.name(), typeByte).getBytes());
+            tx.transactionHash(hash);
+            tx.payerAccountId(payerAccountId);
+            tx.entityId(contractId);
+            tx.validStartNs(
+                    convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano() - 1000));
+            tx.consensusTimestamp(convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano()));
+        });
     }
 
     public boolean hasEthTransaction() {
@@ -142,68 +137,71 @@ public enum TransactionProviderEnum {
         if (!hasEthTransaction()) {
             return domainBuilder.wrap(EthereumTransaction.builder(), () -> null);
         }
-        return domainBuilder.ethereumTransaction(true)
-                .customize(tx -> {
-                    tx.type(typeByte);
-                    tx.hash(hash);
-                    tx.value(ByteBuffer.allocate(Long.BYTES).putLong(amount).array());
-                    tx.payerAccountId(payerAccountId);
-                    tx.toAddress(contractEvmAddress);
-                    tx.callData(callData);
-                    tx.consensusTimestamp(convertToNanosMax(
-                            consensusTimestamp.getEpochSecond(),
-                            consensusTimestamp.getNano()));
-                    if (typeByte == EthTransactionType.EIP_1559.getTypeByte()) {
-                        tx.maxGasAllowance(Long.MAX_VALUE);
-                        tx.maxFeePerGas(nextBytes(32));
-                        tx.maxPriorityFeePerGas(nextBytes(32));
-                    }
-                    if (typeByte == EthTransactionType.EIP_2930.getTypeByte()) {
-                        tx.accessList(nextBytes(100));
-                    }
-                });
+
+        final byte[] evmAddress;
+        if (contractEvmAddress != null && contractEvmAddress.length == EVM_ADDRESS_LENGTH) {
+            evmAddress = contractEvmAddress;
+        } else if (contractAlias != null && contractAlias.length == EVM_ADDRESS_LENGTH) {
+            evmAddress = contractAlias;
+        } else if (!EntityId.isEmpty(contractId)) {
+            evmAddress = toAddress(contractId).toArray();
+        } else {
+            evmAddress = new byte[0];
+        }
+
+        return domainBuilder.ethereumTransaction(true).customize(tx -> {
+            tx.type(typeByte);
+            tx.hash(hash);
+            tx.value(ByteBuffer.allocate(Long.BYTES).putLong(amount).array());
+            tx.payerAccountId(payerAccountId);
+            tx.toAddress(evmAddress);
+            tx.callData(callData);
+            tx.consensusTimestamp(convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano()));
+            if (typeByte == EthTransactionType.EIP_1559.getTypeByte()) {
+                tx.maxGasAllowance(Long.MAX_VALUE);
+                tx.maxFeePerGas(nextBytes(32));
+                tx.maxPriorityFeePerGas(nextBytes(32));
+            }
+            if (typeByte == EthTransactionType.EIP_2930.getTypeByte()) {
+                tx.accessList(nextBytes(100));
+            }
+        });
     }
 
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> getRecordFile() {
-        return domainBuilder.recordFile()
-                .customize(recordFile -> {
-                    recordFile.consensusStart(convertToNanosMax(
-                            consensusTimestamp.getEpochSecond(),
-                            consensusTimestamp.getNano() - 1000));
-                    recordFile.consensusEnd(convertToNanosMax(
-                            consensusTimestamp.getEpochSecond(),
-                            consensusTimestamp.getNano() + 1000));
-                });
+        return domainBuilder.recordFile().customize(recordFile -> {
+            recordFile.consensusStart(
+                    convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano() - 1000));
+            recordFile.consensusEnd(
+                    convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano() + 1000));
+        });
     }
 
-    public DomainWrapper<ContractTransactionHash, ContractTransactionHash.ContractTransactionHashBuilder> getContractTransactionHash() {
-        return domainBuilder.contractTransactionHash()
-                .customize(contractTransactionHash -> {
-                    contractTransactionHash.consensusTimestamp(convertToNanosMax(
-                            consensusTimestamp.getEpochSecond(),
-                            consensusTimestamp.getNano()));
-                    contractTransactionHash.entityId(getContractIdRaw());
-                    contractTransactionHash.hash(hash);
-                    contractTransactionHash.payerAccountId(getPayerAccountIdRaw());
-                    contractTransactionHash.transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
-                });
+    public DomainWrapper<ContractTransactionHash, ContractTransactionHash.ContractTransactionHashBuilder>
+            getContractTransactionHash() {
+        return domainBuilder.contractTransactionHash().customize(contractTransactionHash -> {
+            contractTransactionHash.consensusTimestamp(
+                    convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano()));
+            contractTransactionHash.entityId(getContractIdRaw());
+            contractTransactionHash.hash(hash);
+            contractTransactionHash.payerAccountId(getPayerAccountIdRaw());
+            contractTransactionHash.transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
+        });
     }
 
     public DomainWrapper<ContractResult, ContractResult.ContractResultBuilder<?, ?>> getContractResult() {
-        return domainBuilder.contractResult()
-                .customize(result -> {
-                    result.amount(amount);
-                    result.consensusTimestamp(convertToNanosMax(
-                            consensusTimestamp.getEpochSecond(),
-                            consensusTimestamp.getNano()));
-                    result.contractId(transactionType == CONTRACTCREATEINSTANCE ? 0L : getContractIdRaw());
-                    result.createdContractIds(transactionType == CONTRACTCREATEINSTANCE ?
-                            List.of(getContractIdRaw()) : Collections.emptyList());
-                    result.functionParameters(callData);
-                    result.payerAccountId(payerAccountId);
-                    result.senderId(payerAccountId);
-                    result.transactionHash(hash);
-                });
+        return domainBuilder.contractResult().customize(result -> {
+            result.amount(amount);
+            result.consensusTimestamp(
+                    convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano()));
+            result.contractId(transactionType == CONTRACTCREATEINSTANCE ? 0L : getContractIdRaw());
+            result.createdContractIds(
+                    transactionType == CONTRACTCREATEINSTANCE ? List.of(getContractIdRaw()) : Collections.emptyList());
+            result.functionParameters(callData);
+            result.payerAccountId(payerAccountId);
+            result.senderId(payerAccountId);
+            result.transactionHash(hash);
+        });
     }
 
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> getContractEntity() {
@@ -211,15 +209,15 @@ public enum TransactionProviderEnum {
             return domainBuilder.wrap(Entity.builder(), () -> null);
         }
         final long createdAt = convertToNanosMax(consensusTimestamp.getEpochSecond(), consensusTimestamp.getNano());
-        return domainBuilder.entity(getContractIdRaw(), createdAt)
-                .customize(entity -> {
-                    entity.alias(contractAlias);
-                    entity.evmAddress(contractEvmAddress);
-                });
+        return domainBuilder.entity(getContractIdRaw(), createdAt).customize(entity -> {
+            entity.alias(contractAlias);
+            entity.evmAddress(contractEvmAddress);
+        });
     }
 
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> getSenderEntity() {
-        return domainBuilder.entity(getPayerAccountIdRaw(), domainBuilder.timestamp())
+        return domainBuilder
+                .entity(getPayerAccountIdRaw(), domainBuilder.timestamp())
                 .customize(entity -> {
                     entity.alias(payerAlias);
                     entity.evmAddress(payerEvmAddress);

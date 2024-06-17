@@ -23,7 +23,6 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowance;
-import com.hedera.mirror.rest.model.Transaction;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -88,15 +87,18 @@ class LinkFactoryTest {
     @DisplayName("Get pagination links for all query parameters")
     @ParameterizedTest
     @CsvSource({
-        "1, ASC,  eq:0.0.1000, eq:0.0.1000, false, /api?limit=1&order=ASC&account.id=eq:0.0.1000&account.id=gte:0.0.1000&token.id=eq:0.0.1000&token.id=gt:0.0.6458&owner=false",
-        "1, asc,  lt:0.0.2000, 0.0.1000,    false, /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458&owner=false",
-        "1, DESC, 0.0.1000,    0.0.1000,    false, /api?limit=1&order=DESC&account.id=0.0.1000&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458&owner=false",
+        "1, ASC,  eq:0.0.1000, eq:0.0.1000, false, /api?limit=1&order=ASC&account.id=eq:0.0.1000&token.id=eq:0.0.1000&owner=false",
+        "1, asc,  lt:0.0.2000, 0.0.1000,    false, /api?limit=1&order=asc&account.id=lt:0.0.2000&account.id=gt:0.0.1000&token.id=0.0.1000&owner=false",
+        "1, DESC, 0.0.1000,    0.0.1000,    false, /api?limit=1&order=DESC&account.id=0.0.1000&token.id=0.0.1000&owner=false",
         "1, desc, gt:0.0.900,  gt:0.0.900,  false, /api?limit=1&order=desc&account.id=gt:0.0.900&account.id=lte:0.0.1000&token.id=gt:0.0.900&token.id=lt:0.0.6458&owner=false",
-        "1, desc, gt:0.0.900, gte:0.0.900, false,  /api?limit=1&order=desc&account.id=gt:0.0.900&account.id=lte:0.0.1000&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=false",
+        "1, desc, gt:0.0.900, gte:0.0.900,  false,  /api?limit=1&order=desc&account.id=gt:0.0.900&account.id=lte:0.0.1000&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=false",
         "1, desc, lt:0.0.9000, gte:0.0.900, false, /api?limit=1&order=desc&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=false&account.id=lte:0.0.1000",
         "1, desc, lt:0.0.9000, gte:0.0.900, true,  /api?limit=1&order=desc&token.id=gte:0.0.900&token.id=lt:0.0.6458&owner=true&account.id=lte:0.0.2000",
         "2, ASC,  0.0.1000,    0.0.1000, false,",
         "2, desc, 0.0.1000,    0.0.1000, false,",
+        "1, asc,  gte:0.0.2000, 0.0.1000,   false, /api?limit=1&order=asc&token.id=0.0.1000&owner=false&account.id=gt:0.0.1000",
+        "1, desc, gte:0.0.2000, 0.0.1000,   false, /api?limit=1&order=desc&account.id=gte:0.0.2000&account.id=lt:0.0.1000&token.id=0.0.1000&owner=false",
+        "1, desc, 0.0.2000, gte:0.0.1000,   false, /api?limit=1&order=desc&account.id=0.0.2000&token.id=gte:0.0.1000&token.id=lt:0.0.6458&owner=false",
     })
     void testAllQueryParameters(
             String limit,
@@ -128,7 +130,7 @@ class LinkFactoryTest {
     @DisplayName("Get pagination links with no primary sort")
     @ParameterizedTest
     @CsvSource({
-        "0.0.1000,    0.0.1000,    /api?limit=1&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458",
+        "0.0.1000,    0.0.1000,    /api?limit=1&account.id=0.0.1000&token.id=0.0.1000",
         "lt:0.0.9000, gte:0.0.900, /api?limit=1&account.id=lt:0.0.9000&account.id=gte:0.0.1000&token.id=gt:0.0.6458",
     })
     void testNoPrimarySort(String accountParameter, String tokenParameter, String expectedLink) {
@@ -144,19 +146,6 @@ class LinkFactoryTest {
                 .returns(expectedLink, Links::getNext);
     }
 
-    @Test
-    void testSortOmitted() {
-        // given
-        var transaction = new Transaction().consensusTimestamp("123456789.000000123");
-
-        // when then
-        assertThat(linkFactory.create(
-                        List.of(transaction),
-                        PageRequest.ofSize(1),
-                        t -> Map.of("timestamp", t.getConsensusTimestamp())))
-                .returns("/api?timestamp=gt:123456789.000000123", Links::getNext);
-    }
-
     @DisplayName("Get pagination links unknown parameter")
     @Test
     void testUnknownParameter() {
@@ -170,7 +159,7 @@ class LinkFactoryTest {
 
         assertThat(linkFactory.create(List.of(nftAllowance), pageable, extractor))
                 .returns(
-                        "/api?limit=1&account.id=0.0.1000&account.id=gte:0.0.1000&unknown=value&unknown=value2&token.id=gt:0.0.6458",
+                        "/api?limit=1&account.id=0.0.1000&unknown=value&unknown=value2&token.id=gt:0.0.6458",
                         Links::getNext);
     }
 
@@ -183,10 +172,8 @@ class LinkFactoryTest {
         "desc,   gt:0.0.100,  gte:0.0.100, lte:0.0.7000, gt:0.0.6000,  /api?order=desc&account.id=gt:0.0.100&account.id=gte:0.0.100&account.id=lte:0.0.1000&token.id=gt:0.0.6000&token.id=lt:0.0.6458",
         "asc,   lt:0.0.2000,   gt:0.0.100,  gt:0.0.6000, lt:0.0.7000,  /api?order=asc&account.id=lt:0.0.2000&account.id=gte:0.0.1000&token.id=lt:0.0.7000&token.id=gt:0.0.6458",
         "desc,  lt:0.0.2000,   gt:0.0.100,  gt:0.0.6000, lt:0.0.7000,  /api?order=desc&account.id=gt:0.0.100&account.id=lte:0.0.1000&token.id=gt:0.0.6000&token.id=lt:0.0.6458",
-        "asc,      0.0.1000,     0.0.1000,     0.0.1000,    0.0.1000,  /api?order=asc&account.id=0.0.1000&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=0.0.1000&token.id=0.0.1000&token.id=gt:0.0.6458",
-        "desc,     0.0.1000,     0.0.1000,     0.0.1000,    0.0.1000,  /api?order=desc&account.id=0.0.1000&account.id=0.0.1000&account.id=lte:0.0.1000&token.id=0.0.1000&token.id=0.0.1000&token.id=lt:0.0.6458",
-        "asc,      0.0.1000,  gt:0.0.1000, lte:0.0.7000, gt:0.0.6000,  /api?order=asc&account.id=0.0.1000&account.id=gte:0.0.1000&token.id=lte:0.0.7000&token.id=gt:0.0.6458",
-        "desc,     0.0.1000,  gt:0.0.1000, lte:0.0.7000, gt:0.0.6000,  /api?order=desc&account.id=0.0.1000&account.id=gt:0.0.1000&account.id=lte:0.0.1000&token.id=gt:0.0.6000&token.id=lt:0.0.6458",
+        "asc,      0.0.1000,  gt:0.0.1000, lte:0.0.7000, gt:0.0.6000,  /api?order=asc&account.id=0.0.1000&token.id=lte:0.0.7000&token.id=gt:0.0.6458",
+        "desc,     0.0.1000,  gt:0.0.1000, lte:0.0.7000, gt:0.0.6000,  /api?order=desc&account.id=0.0.1000&account.id=gt:0.0.1000&token.id=gt:0.0.6000&token.id=lt:0.0.6458",
     })
     void testMultipleParameters(
             String order,
