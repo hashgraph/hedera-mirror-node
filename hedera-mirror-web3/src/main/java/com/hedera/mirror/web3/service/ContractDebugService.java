@@ -33,9 +33,11 @@ import io.github.bucket4j.Bucket;
 import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.inject.Named;
 import lombok.CustomLog;
+import org.springframework.validation.annotation.Validated;
 
 @CustomLog
 @Named
+@Validated
 public class ContractDebugService extends ContractCallService {
     private final ContractActionRepository contractActionRepository;
 
@@ -52,7 +54,7 @@ public class ContractDebugService extends ContractCallService {
     }
 
     public OpcodesProcessingResult processOpcodeCall(
-            final ContractDebugParameters params, final OpcodeTracerOptions opcodeTracerOptions) {
+            final @Validated ContractDebugParameters params, final OpcodeTracerOptions opcodeTracerOptions) {
         return ContractCallContext.run(ctx -> {
             ctx.setPreviousTransaction(params.getPreviousTransaction());
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
