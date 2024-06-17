@@ -51,8 +51,8 @@ public class RestJavaProperties {
         @NotNull
         private Map<String, Map<String, String>> path = new HashMap<>();
 
-        public Map<String, String> getHeadersForPath(String path) {
-            return path == null ? defaults : this.path.getOrDefault(path, defaults);
+        public Map<String, String> getHeadersForPath(String apiPath) {
+            return apiPath == null ? defaults : path.getOrDefault(apiPath, defaults);
         }
     }
 }

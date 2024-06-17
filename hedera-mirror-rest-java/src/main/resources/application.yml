@@ -17,9 +17,7 @@ hedera:
             # Override default for individual controller request mappings. "[]" around the path preserves special characters.
             # Multiple header name key/value pairs may be defined per path.
             "[/api/v1/topics/{id}]":
-              "cache-control": "public, max-age=10"
-            "[/api/v1/accounts/{id}/allowances/nfts]":
-              "cache-control": "public, max-age=20"
+              "cache-control": "public, max-age=5"
 logging:
   level:
     root: warn
