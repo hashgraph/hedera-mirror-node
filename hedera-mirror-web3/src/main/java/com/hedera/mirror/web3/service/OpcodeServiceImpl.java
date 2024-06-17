@@ -168,10 +168,8 @@ public class OpcodeServiceImpl implements OpcodeService {
         final Integer transactionType =
                 transaction.map(Transaction::getType).orElse(TransactionType.UNKNOWN.getProtoId());
 
-        final Transaction previousTransaction = transaction
-                .map(Transaction::getIndex)
-                .or(() -> Optional.ofNullable(contractResult.getTransactionIndex()))
-                .flatMap(transactionRepository::findByIndex)
+        final Transaction previousTransaction = transactionRepository
+                .findFirstByConsensusTimestampBefore(consensusTimestamp)
                 .orElseGet(() -> {
                     log.error("Previous transaction not found! " +
                             "Will be using the consensus end of the transaction's block to get the world state.");
