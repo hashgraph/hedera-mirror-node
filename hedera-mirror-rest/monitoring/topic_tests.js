@@ -354,7 +354,7 @@ const runTests = async (server, testResult) => {
 
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
-    runTest(getTopicById),
+    runTest(getTopicById, 'REST_JAVA'),
     runTest(getTopicMessages),
     runTest(getTopicMessagesBySequenceNumberFilter),
     runTest(getTopicMessagesByTopicIDAndSequenceNumberPath),
