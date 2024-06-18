@@ -104,5 +104,5 @@ Acceptance Test Labels
 */}}
 {{- define "hedera-mirror-acceptance.labels" -}}
 {{ include "hedera-mirror.labels" . }}
-test-trigger: rest-trigger
+test-trigger: rest-trigger-{{ .Release.Namespace }}
 {{- end -}}
