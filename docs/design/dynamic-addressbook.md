@@ -109,3 +109,8 @@ Response:
 ## Non-Functional Requirements
 
 - Ingest new transaction types at the same rate as consensus nodes
+
+## Open Questions
+
+1. Will the `admin_key` be included in `NodeInfo`, `Node` and `NodeCreateTransactionBody`? It's also important to
+   determine where the mirror_node will get this value from and how it will store the data.
