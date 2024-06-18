@@ -5,7 +5,7 @@ import "./HederaTokenService.sol";
 import "./HederaResponseCodes.sol";
 
 contract PrecompileTestContract is HederaTokenService {
-
+    string public isTokenFrozenView = "NO";
 
     function isTokenAddress(address token)external returns(bool){
         (int response,bool tokenFlag) = HederaTokenService.isToken(token);
@@ -14,6 +14,10 @@ contract PrecompileTestContract is HederaTokenService {
             revert ("Token isTokenAddress failed!");
         }
         return tokenFlag;
+    }
+
+    function isTokenAddressView()external view returns(string memory){
+        return isTokenFrozenView;
     }
 
     function isTokenFrozen(address token, address account)external returns(bool){

@@ -22,17 +22,37 @@ import com.hedera.mirror.web3.service.resources.ContractDeployer;
 import com.hedera.mirror.web3.utils.TestWeb3jService;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.protocol.Web3j;
+import org.web3j.utils.Numeric;
 
 @TestConfiguration(proxyBeanMethods = false)
 public class Web3jTestConfiguration {
+    private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
+
     @Bean
     ContractDeployer contractDeployer(
-            ContractCallService contractCallService, DomainBuilder domainBuilder, TestWeb3jService testWeb3jService) {
-        return new ContractDeployer(domainBuilder, contractCallService, testWeb3jService);
+            ContractCallService contractCallService,
+            DomainBuilder domainBuilder,
+            Web3j web3j,
+            Credentials credentials) {
+        return new ContractDeployer(domainBuilder, contractCallService, web3j, credentials);
     }
 
     @Bean
     TestWeb3jService testWeb3jService(ContractCallService contractCallService) {
         return new TestWeb3jService(contractCallService);
+    }
+
+    @Bean
+    Web3j web3j(TestWeb3jService testWeb3jService) {
+        return Web3j.build(testWeb3jService);
+    }
+
+    @Bean
+    Credentials credentials() {
+        final var mockEcKeyPair = ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY));
+        return Credentials.create(mockEcKeyPair);
     }
 }
