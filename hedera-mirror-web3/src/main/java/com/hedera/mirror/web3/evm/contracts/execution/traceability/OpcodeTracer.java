@@ -149,7 +149,7 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         return ContractCallContext.get();
     }
 
-    private OpcodeTracerOptions getOptions() {
+    public OpcodeTracerOptions getOptions() {
         ContractCallContext context = getContext();
         return context.getOpcodeTracerOptions();
     }

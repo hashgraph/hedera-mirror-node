@@ -374,9 +374,9 @@ class OpcodeTracerTest {
         tracer.tracePostExecution(frame, operationResult);
         tracer.finalizeOperation(frame);
 
-        verify(contractCallContext, times(1)).setOpcodes(tracer.getOpcodes());
-        assertThat(tracer.getOpcodes()).hasSize(1);
-        return tracer.getOpcodes().getFirst();
+        verify(contractCallContext, times(1)).setOpcodes(contractCallContext.getOpcodes());
+        assertThat(contractCallContext.getOpcodes()).hasSize(1);
+        return contractCallContext.getOpcodes().getFirst();
     }
 
     private Opcode executePrecompileOperation(final MessageFrame frame, final Bytes output) {
@@ -386,11 +386,11 @@ class OpcodeTracerTest {
         tracer.tracePrecompileCall(frame, GAS_REQUIREMENT, output);
         tracer.finalizeOperation(frame);
 
-        verify(contractCallContext, times(1)).setOpcodes(tracer.getOpcodes());
+        verify(contractCallContext, times(1)).setOpcodes(contractCallContext.getOpcodes());
         assertThat(tracer.getOptions()).isEqualTo(tracerOptions);
-        assertThat(tracer.getOpcodes()).hasSize(1);
-        assertThat(tracer.getContractActions()).isNotNull();
-        return tracer.getOpcodes().getFirst();
+        assertThat(contractCallContext.getOpcodes()).hasSize(1);
+        assertThat(contractCallContext.getContractActions()).isNotNull();
+        return contractCallContext.getOpcodes().getFirst();
     }
 
     private MessageFrame setupMessageFrame(final OpcodeTracerOptions options) {
