@@ -37,7 +37,8 @@ spec:
     global:
       hostname: "*.mirrornode.hedera.com"
     grpc:
-      enabled: false
+      ingress:
+        enabled: false
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
@@ -57,9 +58,11 @@ spec:
         MonitorSubscribeLatency:
           enabled: false
     rest:
-      enabled: false
+      ingress:
+        enabled: false
     restjava:
-      enabled: false
+      ingress:
+        enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
@@ -69,6 +72,6 @@ spec:
           size: 900Gi
     test:
       cucumberTags: "@acceptance and not @equivalence and not @historical and not @estimateprecompile"
-      enabled: false
     web3:
-      enabled: false
+      ingress:
+        enabled: false
