@@ -40,6 +40,7 @@ public class ContractCallContext {
     @Setter
     private List<ContractAction> contractActions = List.of();
 
+    @Setter
     private int contractActionsCounter = 0;
 
     @Setter

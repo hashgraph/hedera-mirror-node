@@ -57,6 +57,7 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     public void traceContextExit(final MessageFrame frame) {
         getContext().incrementContractActionsCounter();
     }
+
     @Override
     public void tracePostExecution(final MessageFrame frame, final Operation.OperationResult operationResult) {
         final List<Bytes> memory = captureMemory(frame);
