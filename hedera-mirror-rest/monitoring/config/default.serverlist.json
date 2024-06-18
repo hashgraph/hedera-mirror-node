@@ -3,9 +3,9 @@
   "servers": [
     {
       "baseUrl": "http://127.0.0.1:5551",
-      "restJavaUrl": "http://127.0.0.1:8084",
-      "web3Url": "http://127.0.0.1:8545",
-      "name": "local"
+      "name": "local",
+      "restJavaUrl": "",
+      "web3Url": ""
     }
   ],
   "freshness": true,

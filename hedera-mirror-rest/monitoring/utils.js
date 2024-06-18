@@ -199,15 +199,10 @@ const testRunner = (server, testClassResult, resource) => {
     const start = Date.now();
     // Default url here is the REST url
     let url = server.baseUrl;
-    switch (type) {
-      case 'REST_JAVA':
-        url = server.restJavaUrl;
-        break;
-      case 'WEB3':
-        url = server.web3Url;
-        break;
-      default:
-        break;
+    if (type === 'REST_JAVA' && server.restJavaUrl) {
+      url = server.restJavaUrl;
+    } else if (type === 'WEB3' && server.web3Url) {
+      url = server.web3Url;
     }
 
     const result = await testFunc(url);

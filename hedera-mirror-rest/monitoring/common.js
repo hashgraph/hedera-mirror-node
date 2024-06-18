@@ -85,9 +85,8 @@ const filterTestDetails = (result, resultType = TEST_RESULT_TYPES.FAILED) => {
  */
 const getStatus = (resultType) => {
   const results = Object.values(currentResults).map((result) => filterTestDetails(result, resultType));
-  const successfulTests = results.map((result) => result.results.success).filter((success) => success === true);
-  const httpCode = successfulTests.length === results.length ? 200 : 409;
-
+  const failed = Object.values(currentResults).find((r) => !r.results.success);
+  const httpCode = failed ? 409 : 200;
   return {
     results,
     httpCode,
