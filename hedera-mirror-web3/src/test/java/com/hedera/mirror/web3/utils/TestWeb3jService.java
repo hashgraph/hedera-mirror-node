@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.utils;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -26,22 +27,28 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.web3j.crypto.Credentials;
 import org.web3j.crypto.TransactionDecoder;
-import org.web3j.crypto.transaction.type.ITransaction;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.BatchRequest;
 import org.web3j.protocol.core.BatchResponse;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.Response;
+import org.web3j.protocol.core.methods.request.Transaction;
 import org.web3j.protocol.core.methods.response.EthBlock;
+import org.web3j.protocol.core.methods.response.EthCall;
 import org.web3j.protocol.core.methods.response.EthSendTransaction;
 import org.web3j.protocol.core.methods.response.EthSyncing;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.protocol.websocket.events.Notification;
 
 @RequiredArgsConstructor
@@ -50,6 +57,10 @@ public class TestWeb3jService implements Web3jService {
     private static final Long GAS_LIMIT = 15_000_000L;
     private Address sender = Address.fromHexString("");
     public ContractCallService contractCallService;
+    private Map<String, String> trxResMap = new HashMap<>();
+
+    @Autowired
+    private Credentials credentials;
 
     public void setSender(Address sender) {
         this.sender = sender;
@@ -71,7 +82,9 @@ public class TestWeb3jService implements Web3jService {
             case "eth_getBlockByNumber" -> getEthBlockRes(responseType);
             case "net_version" -> getNetVersionRes(responseType);
             case "eth_getTransactionCount" -> getTransactionCountRes(responseType);
-            case "eth_sendRawTransaction", "eth_call" -> (T) call(request.getParams(), request);
+            case "eth_getTransactionReceipt" -> getTransactionReceipt(request, responseType);
+            case "eth_sendRawTransaction" -> (T) call(request.getParams(), request);
+            case "eth_call" -> (T) ethCall(request.getParams(), request);
             default -> throw new UnsupportedOperationException(request.getMethod());
         };
     }
@@ -89,8 +102,9 @@ public class TestWeb3jService implements Web3jService {
 
     private EthSendTransaction call(List reqParams, Request request) {
         final var res = new EthSendTransaction();
-        ITransaction rawTrxDecoded =
-                TransactionDecoder.decode(reqParams.get(0).toString()).getTransaction();
+        var rawTrxDecoded = TransactionDecoder.decode(reqParams.get(0).toString());
+        var trxHex = generateTransactionHashHexEncoded(rawTrxDecoded, credentials);
+
         final var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(rawTrxDecoded.getData()),
                 Address.fromHexString(rawTrxDecoded.getTo()),
@@ -100,11 +114,33 @@ public class TestWeb3jService implements Web3jService {
                 GAS_LIMIT,
                 sender);
         final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
+        res.setResult(trxHex);
         res.setRawResponse(mirrorNodeResult);
+        res.setId(request.getId());
+        res.setJsonrpc(request.getJsonrpc());
+
+        trxResMap.put(trxHex, mirrorNodeResult);
+
+        return res;
+    }
+
+    private EthCall ethCall(List reqParams, Request request) {
+        final var res = new EthCall();
+        var transaction = (Transaction) reqParams.get(0);
+
+        final var serviceParameters = serviceParametersForExecutionSingle(
+                Bytes.fromHexString(transaction.getData()),
+                Address.fromHexString(transaction.getTo()),
+                ETH_CALL,
+                transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L,
+                BlockType.LATEST,
+                GAS_LIMIT,
+                sender);
+        final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
         res.setResult(mirrorNodeResult);
         res.setId(request.getId());
         res.setJsonrpc(request.getJsonrpc());
-        final var a = res.getTransactionHash();
+
         return res;
     }
 
@@ -137,6 +173,17 @@ public class TestWeb3jService implements Web3jService {
     private <T extends Response> T getTransactionCountRes(Class<T> responseType) {
         T res = getResObj(responseType);
         res.setResult("1");
+
+        return res;
+    }
+
+    private <T extends Response> T getTransactionReceipt(Request request, Class<T> responseType) {
+        final var trxHash = request.getParams().get(0).toString();
+        T res = getResObj(responseType);
+        var mockReceipt = new TransactionReceipt();
+        mockReceipt.setTransactionHash(trxHash);
+        mockReceipt.setRoot(trxResMap.get(trxHash));
+        res.setResult(mockReceipt);
 
         return res;
     }
