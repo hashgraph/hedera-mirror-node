@@ -27,7 +27,4 @@ import org.springframework.stereotype.Repository;
 public interface TransactionRepository extends CrudRepository<Transaction, Long> {
 
     Optional<Transaction> findByPayerAccountIdAndValidStartNs(EntityId payerAccountId, long validStartNs);
-
-    @Query("select t from Transaction t where t.consensusTimestamp < ?1 order by t.consensusTimestamp desc limit 1")
-    Optional<Transaction> findFirstByConsensusTimestampBefore(long consensusTimestamp);
 }

@@ -18,7 +18,6 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.common.util.CommonUtils.instant;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hedera.mirror.web3.utils.TransactionProviderEnum.entityAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -222,6 +221,7 @@ class OpcodesControllerTest {
         final var contractAddress = entityAddress(contractEntity);
 
         expectedCallServiceParameters.set(ContractDebugParameters.builder()
+                .consensusTimestamp(consensusTimestamp)
                 .sender(new HederaEvmAccount(senderAddress))
                 .receiver(contractAddress)
                 .gas(provider.hasEthTransaction() ? ethTransaction.getGasLimit() : contractResult.getGasLimit())
