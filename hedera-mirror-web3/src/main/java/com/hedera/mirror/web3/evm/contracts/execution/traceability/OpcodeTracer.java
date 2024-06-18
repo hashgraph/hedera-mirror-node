@@ -42,6 +42,21 @@ import org.springframework.util.CollectionUtils;
 @CustomLog
 @Getter
 public class OpcodeTracer implements HederaEvmOperationTracer {
+
+    @Override
+    public void traceContextEnter(final MessageFrame frame) {
+        getContext().incrementContractActionsCounter();
+    }
+
+    @Override
+    public void traceContextReEnter(final MessageFrame frame) {
+        getContext().decrementContractActionsCounter();
+    }
+
+    @Override
+    public void traceContextExit(final MessageFrame frame) {
+        getContext().incrementContractActionsCounter();
+    }
     @Override
     public void tracePostExecution(final MessageFrame frame, final Operation.OperationResult operationResult) {
         final List<Bytes> memory = captureMemory(frame);
@@ -157,17 +172,5 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     private boolean isCallToHederaTokenService(MessageFrame frame) {
         Address recipientAddress = frame.getRecipientAddress();
         return recipientAddress.equals(Address.fromHexString(SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS));
-    }
-
-    public void traceContextEnter(final MessageFrame frame) {
-        getContext().incrementContractActionsCounter();
-    }
-
-    public void traceContextReEnter(final MessageFrame frame) {
-        getContext().decrementContractActionsCounter();
-    }
-
-    public void traceContextExit(final MessageFrame frame) {
-        getContext().incrementContractActionsCounter();
     }
 }
