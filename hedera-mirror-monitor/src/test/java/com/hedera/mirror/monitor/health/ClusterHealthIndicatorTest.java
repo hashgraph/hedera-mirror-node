@@ -88,7 +88,7 @@ class ClusterHealthIndicatorTest {
 
     @SneakyThrows
     @Test
-    void restNetworkStackConnectException() {
+    void restNetworkStakeConnectException() {
         var exception = new WebClientRequestException(
                 new ConnectException("Connection refused"),
                 HttpMethod.GET,
