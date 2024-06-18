@@ -34,11 +34,11 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties("hedera.mirror.rest-java")
 public class RestJavaProperties {
 
-    @Min(0)
-    private long shard = 0L;
-
     @NotNull
     private ResponseConfig response = new ResponseConfig();
+
+    @Min(0)
+    private long shard = 0L;
 
     /*
      * Post process the configured response headers. All header names are treated case insensitively, and, for each path,
@@ -55,7 +55,7 @@ public class RestJavaProperties {
                             (v1, v2) -> v2,
                             () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));
 
-            response.headers.path.put(pathHeaders.getKey(), mergedHeaders);
+            pathHeaders.setValue(mergedHeaders);
         }
     }
 
