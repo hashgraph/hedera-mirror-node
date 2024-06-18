@@ -72,6 +72,7 @@ spec:
           size: 900Gi
     test:
       cucumberTags: "@acceptance and not @equivalence and not @historical and not @estimateprecompile"
+      enabled: true
     web3:
       ingress:
         enabled: false
