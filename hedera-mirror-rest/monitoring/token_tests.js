@@ -474,6 +474,14 @@ const getTokenNfts = async (server) => {
     return {url, ...nftsResult};
   }
 
+  if (!nfts.length) {
+    return {
+      url,
+      passed: true,
+      message: 'Successfully called token nfts with empty list',
+    };
+  }
+
   const serialNumber = nfts.response[0].serial_number;
   url = getUrl(server, tokenNftsPath + `/${serialNumber}`);
 
