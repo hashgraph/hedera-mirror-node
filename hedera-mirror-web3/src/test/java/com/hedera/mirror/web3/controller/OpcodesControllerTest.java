@@ -234,6 +234,7 @@ class OpcodesControllerTest {
                                 ? Bytes.of(ethTransaction.getCallData())
                                 : Bytes.of(contractResult.getFunctionParameters()))
                 .block(BlockType.of(recordFile.getIndex().toString()))
+                .consensusTimestamp(consensusTimestamp)
                 .build());
 
         when(contractTransactionHashRepository.findByHash(hash)).thenReturn(Optional.of(contractTransactionHash));
