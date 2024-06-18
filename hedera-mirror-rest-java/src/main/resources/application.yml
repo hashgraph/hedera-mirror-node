@@ -12,12 +12,14 @@ hedera:
       response:
         headers:
           defaults:
-            "cache-control": "public, max-age=1"
+            # Headers set by default unless overridden in specific request mapping paths defined below.
+            "Access-Control-Allow-Origin": "*"
+            "Cache-Control": "public, max-age=1"
           path:
-            # Override default for individual controller request mappings. "[]" around the path preserves special characters.
-            # Multiple header name key/value pairs may be defined per path.
+            # Override inherited defaults and define additional headers for individual controller request mappings.
+            # "[]" around the path preserves special characters. Multiple header name/value pairs may be defined per path.
             "[/api/v1/topics/{id}]":
-              "cache-control": "public, max-age=5"
+              "Cache-Control": "public, max-age=5"
 logging:
   level:
     root: warn

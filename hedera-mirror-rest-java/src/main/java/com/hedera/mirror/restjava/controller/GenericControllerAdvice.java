@@ -56,12 +56,6 @@ class GenericControllerAdvice extends ResponseEntityExceptionHandler {
     private final RestJavaProperties properties;
 
     @ModelAttribute
-    @SuppressWarnings("java:S5122")
-    private void corsHeader(HttpServletResponse response) {
-        response.setHeader(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
-    }
-
-    @ModelAttribute
     private void responseHeaders(HttpServletRequest request, HttpServletResponse response) {
         var requestMapping = String.valueOf(request.getAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE));
         var responseHeaders = properties.getResponse().getHeaders().getHeadersForPath(requestMapping);

@@ -105,18 +105,6 @@ abstract class ControllerTest extends RestJavaIntegrationTest {
         protected abstract RequestHeadersSpec<?> defaultRequest(RequestHeadersUriSpec<?> uriSpec);
 
         @Test
-        void cors() {
-            // When
-            var headers = defaultRequest(restClient.get())
-                    .retrieve()
-                    .toBodilessEntity()
-                    .getHeaders();
-
-            // Then
-            assertThat(headers.getAccessControlAllowOrigin()).isEqualTo("*");
-        }
-
-        @Test
         void headers() {
             // When
             var headers = defaultRequest(restClient.get())
