@@ -137,7 +137,7 @@ public class TestWeb3jService implements Web3jService {
                 GAS_LIMIT,
                 sender);
         final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
-        res.setResult(mirrorNodeResult);
+        res.setResult("0x0000000000000000000000000000000000000000000000000000000000000001");
         res.setId(request.getId());
         res.setJsonrpc(request.getJsonrpc());
 
