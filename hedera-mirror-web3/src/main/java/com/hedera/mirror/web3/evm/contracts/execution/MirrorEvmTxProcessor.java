@@ -22,7 +22,6 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 
 public interface MirrorEvmTxProcessor {
 
-    HederaEvmTransactionProcessingResult execute(final CallServiceParameters params,
-                                                 final long estimatedGas,
-                                                 final ContractCallContext context);
+    HederaEvmTransactionProcessingResult execute(
+            final CallServiceParameters params, final long estimatedGas, final ContractCallContext context);
 }

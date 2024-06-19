@@ -22,13 +22,13 @@ import lombok.Builder;
 import org.apache.tuweni.bytes.Bytes;
 
 @Builder
-public record Opcode(int pc,
-                     String op,
-                     long gas,
-                     long gasCost,
-                     int depth,
-                     List<Bytes> stack,
-                     List<Bytes> memory,
-                     Map<Bytes, Bytes> storage,
-                     String reason) {
-}
+public record Opcode(
+        int pc,
+        String op,
+        long gas,
+        long gasCost,
+        int depth,
+        List<Bytes> stack,
+        List<Bytes> memory,
+        Map<Bytes, Bytes> storage,
+        String reason) {}

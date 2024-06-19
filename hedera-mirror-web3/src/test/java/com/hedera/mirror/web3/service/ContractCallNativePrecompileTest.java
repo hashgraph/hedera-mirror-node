@@ -311,8 +311,7 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
                 .persist();
     }
 
-    private void assertGasUsedIsPositive(
-            final double gasUsedBeforeExecution, final CallType callType) {
+    private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {
         final var afterExecution = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst()
