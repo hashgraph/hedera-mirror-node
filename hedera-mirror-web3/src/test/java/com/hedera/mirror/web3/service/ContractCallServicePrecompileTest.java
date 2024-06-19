@@ -65,6 +65,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.web3j.crypto.Credentials;
+import org.web3j.protocol.Web3j;
 import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
@@ -78,6 +80,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Autowired
     private TestWeb3jService testWeb3jService;
+
+    @Autowired
+    private Web3j web3j;
+
+    @Autowired
+    private Credentials credentials;
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
@@ -213,17 +221,18 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         var contract = contractDeployer.deploy(PrecompileTestContract.class);
         // Override sender in the parameters
         testWeb3jService.setSender(senderAddress);
-        // Function Call signature
-        var call = contract.isTokenFrozen(tokenAddress, senderAddress);
-        try {
-            final var res = call.send();
-            final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                    "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
 
-            assertThat(res).isEqualTo(successfulResponse);
-        } catch (Exception e) {
-            final var a = "test";
-        }
+        // Function Call with Transaction
+        var call = contract.isTokenFrozen(tokenAddress, senderAddress);
+        final var res = call.send();
+
+        var callView = contract.isTokenAddressView();
+        final var resView = callView.send();
+
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
+
+        assertThat(res.getRoot()).isEqualTo(successfulResponse);
     }
 
     @Test

@@ -22,22 +22,17 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractCallService;
-import com.hedera.mirror.web3.utils.TestWeb3jService;
 import java.lang.reflect.InvocationTargetException;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.util.encoders.Hex;
 import org.web3j.crypto.Credentials;
-import org.web3j.crypto.ECKeyPair;
 import org.web3j.protocol.Web3j;
 import org.web3j.tx.Contract;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
-import org.web3j.utils.Numeric;
 
 @RequiredArgsConstructor
 public class ContractDeployer {
-    private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
-
     private final Web3j web3j;
     private final Credentials credentials;
     private final ContractGasProvider contractGasProvider;
@@ -45,12 +40,13 @@ public class ContractDeployer {
     private final ContractCallService contractCallService;
 
     public ContractDeployer(
-            DomainBuilder domainBuilder, ContractCallService contractCallService, TestWeb3jService testWeb3jService) {
-        final var mockEcKeyPair = ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY));
+            DomainBuilder domainBuilder,
+            ContractCallService contractCallService,
+            Web3j web3j,
+            Credentials credentials) {
         this.domainBuilder = domainBuilder;
-        this.web3j = Web3j.build(testWeb3jService);
-        this.credentials = Credentials.create(mockEcKeyPair);
-        ;
+        this.web3j = web3j;
+        this.credentials = credentials;
         this.contractGasProvider = new DefaultGasProvider();
         this.contractCallService = contractCallService;
     }
