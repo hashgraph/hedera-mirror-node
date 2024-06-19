@@ -169,13 +169,13 @@ public class OpcodeServiceImpl implements OpcodeService {
                 transaction.map(Transaction::getType).orElse(TransactionType.UNKNOWN.getProtoId());
 
         return ContractDebugParameters.builder()
-                .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
-                .receiver(getReceiverAddress(ethTransaction, contractResult, transactionType))
-                .gas(getGasLimit(ethTransaction, contractResult))
-                .value(getValue(ethTransaction, contractResult).longValue())
+                .block(blockType)
                 .callData(getCallData(ethTransaction, contractResult))
                 .consensusTimestamp(consensusTimestamp)
-                .block(blockType)
+                .gas(getGasLimit(ethTransaction, contractResult))
+                .receiver(getReceiverAddress(ethTransaction, contractResult, transactionType))
+                .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
+                .value(getValue(ethTransaction, contractResult).longValue())
                 .build();
     }
 

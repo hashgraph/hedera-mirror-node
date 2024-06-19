@@ -168,11 +168,11 @@ class OpcodeTracerTest {
     @DisplayName("should increment contract action index on traceContextEnter")
     void shouldIncrementContractActionIndexOnTraceContextEnter() {
         frame = setupInitialFrame(tracerOptions);
-        contractCallContext.setContractActionsCounter(0);
+        contractCallContext.setContractActionIndexOfCurrentFrame(0);
 
         tracer.traceContextEnter(frame);
 
-        assertThat(contractCallContext.getContractActionsCounter()).isEqualTo(1);
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(1);
         verify(contractCallContext, times(1)).incrementContractActionsCounter();
         verify(contractCallContext, never()).decrementContractActionsCounter();
     }
@@ -181,11 +181,11 @@ class OpcodeTracerTest {
     @DisplayName("should decrement contract action index on traceContextReEnter")
     void shouldDecrementContractActionIndexOnTraceContextReEnter() {
         frame = setupInitialFrame(tracerOptions);
-        contractCallContext.setContractActionsCounter(1);
+        contractCallContext.setContractActionIndexOfCurrentFrame(1);
 
         tracer.traceContextReEnter(frame);
 
-        assertThat(contractCallContext.getContractActionsCounter()).isZero();
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
         verify(contractCallContext, times(1)).decrementContractActionsCounter();
         verify(contractCallContext, never()).incrementContractActionsCounter();
     }
@@ -194,11 +194,11 @@ class OpcodeTracerTest {
     @DisplayName("should increment contract action index on traceContextExit")
     void shouldIncrementContractActionIndexOnTraceContextExit() {
         frame = setupInitialFrame(tracerOptions);
-        contractCallContext.setContractActionsCounter(0);
+        contractCallContext.setContractActionIndexOfCurrentFrame(0);
 
         tracer.traceContextExit(frame);
 
-        assertThat(contractCallContext.getContractActionsCounter()).isEqualTo(1);
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(1);
         verify(contractCallContext, times(1)).incrementContractActionsCounter();
         verify(contractCallContext, never()).decrementContractActionsCounter();
     }
@@ -452,7 +452,7 @@ class OpcodeTracerTest {
         Opcode expectedOpcode = contractCallContext.getOpcodes().get(EXECUTED_FRAMES.get() - 1);
 
         verify(contractCallContext, times(1)).addOpcodes(expectedOpcode);
-        assertThat(tracer.getOptions()).isEqualTo(tracerOptions);
+        assertThat(tracer.getContext().getOpcodeTracerOptions()).isEqualTo(tracerOptions);
         assertThat(contractCallContext.getOpcodes()).hasSize(1);
         assertThat(contractCallContext.getContractActions()).isNotNull();
         return expectedOpcode;
@@ -476,7 +476,7 @@ class OpcodeTracerTest {
         Opcode expectedOpcode = contractCallContext.getOpcodes().get(EXECUTED_FRAMES.get() - 1);
 
         verify(contractCallContext, times(1)).addOpcodes(expectedOpcode);
-        assertThat(tracer.getOptions()).isEqualTo(tracerOptions);
+        assertThat(tracer.getContext().getOpcodeTracerOptions()).isEqualTo(tracerOptions);
         assertThat(contractCallContext.getOpcodes()).hasSize(EXECUTED_FRAMES.get());
         assertThat(contractCallContext.getContractActions()).isNotNull();
         return expectedOpcode;
@@ -491,7 +491,7 @@ class OpcodeTracerTest {
                                            final ContractAction... contractActions) {
         contractCallContext.setOpcodeTracerOptions(options);
         contractCallContext.setContractActions(Lists.newArrayList(contractActions));
-        contractCallContext.setContractActionsCounter(0);
+        contractCallContext.setContractActionIndexOfCurrentFrame(0);
         EXECUTED_FRAMES.set(0);
 
         final MessageFrame messageFrame = buildMessageFrame(recipientAddress);

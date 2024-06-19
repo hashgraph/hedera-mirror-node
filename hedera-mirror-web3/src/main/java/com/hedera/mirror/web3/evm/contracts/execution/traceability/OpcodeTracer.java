@@ -60,10 +60,11 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
     @Override
     public void tracePostExecution(final MessageFrame frame, final Operation.OperationResult operationResult) {
-        final List<Bytes> memory = captureMemory(frame);
-        final List<Bytes> stack = captureStack(frame);
-        final Map<Bytes, Bytes> storage = captureStorage(frame);
         ContractCallContext context = getContext();
+        OpcodeTracerOptions options = context.getOpcodeTracerOptions();
+        final List<Bytes> memory = captureMemory(frame, options);
+        final List<Bytes> stack = captureStack(frame, options);
+        final Map<Bytes, Bytes> storage = captureStorage(frame, options);
         Opcode opcode = Opcode.builder()
                 .pc(frame.getPC())
                 .op(frame.getCurrentOperation().getName())
@@ -82,7 +83,7 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     @Override
     public void tracePrecompileCall(final MessageFrame frame, final long gasRequirement, final Bytes output) {
         ContractCallContext context = getContext();
-        Optional<Bytes> revertReason = isCallToHederaTokenService(frame) ? getRevertReasonFromContractActions(context.getContractActions()) : frame.getRevertReason();
+        Optional<Bytes> revertReason = isCallToHederaTokenService(frame) ? getRevertReasonFromContractActions(context) : frame.getRevertReason();
         Opcode opcode = Opcode.builder()
                 .pc(frame.getPC())
                 .op(frame.getCurrentOperation() != null
@@ -100,8 +101,8 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         context.addOpcodes(opcode);
     }
 
-    private List<Bytes> captureMemory(final MessageFrame frame) {
-        if (!getOptions().isMemory()) {
+    private List<Bytes> captureMemory(final MessageFrame frame, OpcodeTracerOptions options) {
+        if (!options.isMemory()) {
             return Collections.emptyList();
         }
 
@@ -114,8 +115,8 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         return memory;
     }
 
-    private List<Bytes> captureStack(final MessageFrame frame) {
-        if (!getOptions().isStack()) {
+    private List<Bytes> captureStack(final MessageFrame frame, OpcodeTracerOptions options) {
+        if (!options.isStack()) {
             return Collections.emptyList();
         }
 
@@ -128,8 +129,8 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         return stack;
     }
 
-    private Map<Bytes, Bytes> captureStorage(final MessageFrame frame) {
-        if (!getOptions().isStorage()) {
+    private Map<Bytes, Bytes> captureStorage(final MessageFrame frame, OpcodeTracerOptions options) {
+        if (!options.isStorage()) {
             return Collections.emptyMap();
         }
 
@@ -149,25 +150,22 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         }
     }
 
-    private Optional<Bytes> getRevertReasonFromContractActions(List<ContractAction> contractActions) {
+    private Optional<Bytes> getRevertReasonFromContractActions(ContractCallContext context) {
+        List<ContractAction> contractActions = context.getContractActions();
+        int currentActionIndex = context.getContractActionIndexOfCurrentFrame();
+
         if (CollectionUtils.isEmpty(contractActions)) {
             return Optional.empty();
         }
-        int currentActionIndex = getContext().getContractActionsCounter();
 
         return contractActions.stream()
-                .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex)
+                .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex - 1)
                 .map(action -> Bytes.of(action.getResultData()))
                 .findFirst();
     }
 
-    private ContractCallContext getContext() {
+    public ContractCallContext getContext() {
         return ContractCallContext.get();
-    }
-
-    public OpcodeTracerOptions getOptions() {
-        ContractCallContext context = getContext();
-        return context.getOpcodeTracerOptions();
     }
 
     private boolean isCallToHederaTokenService(MessageFrame frame) {
