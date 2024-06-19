@@ -433,8 +433,12 @@ class OpcodeTracerTest {
     }
 
     private Opcode executeOperation(final MessageFrame frame, final ExceptionalHaltReason haltReason) {
-        final var tracer = new OpcodeTracer();
         tracer.init(frame);
+        if (frame.getState() == NOT_STARTED) {
+            tracer.traceContextEnter(frame);
+        } else {
+            tracer.traceContextReEnter(frame);
+        }
 
         final OperationResult operationResult;
         if (haltReason != null) {
@@ -446,6 +450,9 @@ class OpcodeTracerTest {
         }
 
         tracer.tracePostExecution(frame, operationResult);
+        if (frame.getState() == COMPLETED_SUCCESS || frame.getState() == COMPLETED_FAILED) {
+            tracer.traceContextExit(frame);
+        }
         tracer.finalizeOperation(frame);
 
         EXECUTED_FRAMES.set(EXECUTED_FRAMES.get() + 1);

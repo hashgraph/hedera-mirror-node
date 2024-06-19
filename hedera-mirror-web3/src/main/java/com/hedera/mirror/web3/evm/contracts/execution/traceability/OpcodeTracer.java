@@ -153,7 +153,7 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         if (CollectionUtils.isEmpty(contractActions)) {
             return Optional.empty();
         }
-        int currentActionIndex = getContext().getContractActionsCounter();
+        int currentActionIndex = getContext().getContractActionsCounter() - 1;
 
         return contractActions.stream()
                 .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex)
