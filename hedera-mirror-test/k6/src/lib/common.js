@@ -98,7 +98,34 @@ function getScenarioTimes(scenario) {
   }
 }
 
-function getSequentialTestScenarios(tests) {
+const defaultFilters = {
+  true: {test: () => false}, // default exclude filter, exclude nothing
+  false: {test: () => true}, // default include filter, include everything
+};
+
+function getFilter(suite, exclude) {
+  const key = `${suite.toUpperCase()}_TEST_${exclude ? 'EXCLUDE' : 'INCLUDE'}`;
+  const value = __ENV[key];
+  return value ? new RegExp(value) : defaultFilters[exclude];
+}
+
+function filterTests(tests, suite) {
+  if (suite === null) {
+    return tests;
+  }
+
+  const exclude = getFilter(suite, true);
+  const include = getFilter(suite, false);
+  const filtered = Object.keys(tests).filter((name) => {
+    const normalized = name.toLowerCase();
+    return !exclude.test(normalized) && include.test(normalized);
+  });
+  return Object.fromEntries(filtered.map((name) => [name, tests[name]]));
+}
+
+function getSequentialTestScenarios(tests, suite = null) {
+  const filteredTests = filterTests(tests, suite);
+
   let startTime = '0s';
   let duration = '0s';
   let gracefulStop = '0s';
@@ -112,7 +139,7 @@ function getSequentialTestScenarios(tests) {
   const constantVusTests = [];
   const rampingVusTests = [];
 
-  for (const [name, test] of Object.entries(tests)) {
+  for (const [name, test] of Object.entries(filteredTests)) {
     const executor = Object.values(test.options.scenarios)[0].executor;
     if (executor === 'constant-vus') {
       constantVusTests.push(name);
@@ -128,7 +155,7 @@ function getSequentialTestScenarios(tests) {
   rampingVusTests.sort();
 
   for (const testName of rampingVusTests.concat(constantVusTests)) {
-    const testModule = tests[testName];
+    const testModule = filteredTests[testName];
     const testScenarios = testModule.options.scenarios;
     const testThresholds = testModule.options.thresholds;
     for (const [scenarioName, testScenario] of Object.entries(testScenarios)) {

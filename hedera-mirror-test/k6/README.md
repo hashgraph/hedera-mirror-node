@@ -265,6 +265,36 @@ With the test suite mode, a simplified markdown format report `report.md` will a
 | /network/options         | 500 | 100.00 | 5763.35/s | 51.97ms           | No       |         |
 | /network/status          | 500 | 100.00 | 3018.25/s | 160.10ms          | No       |         |
 
+#### Filter Test Case
+
+You can use the following test suite specific environment variables to filter the test cases in a suite to run,
+
+- `REST_TEST_EXCLUDE` to exclude test cases in the JS REST test suite
+- `REST_TEST_INCLUDE` to include test cases in the JS REST test suite
+
+The value should be a regex string to match lower case test case names. The `exclude` filter has priority over the
+`include` filter. Substitute the `REST` prefix with the appropriate suite name for other test suites.
+
+- `REST` for JS REST test suite
+- `RESTJAVA` for Java REST test suite
+- `ROSETTA` for Rosetta test suite
+- `WEB3` for Web3 test suite
+
+Some examples:
+
+- `REST_TEST_EXCLUDE='^transaction.*$'` will exclude all test cases that start with `transaction`
+- `REST_TEST_EXCLUDE='^(transaction|topic).*$'` will exclude all test cases that start with either `transaction`
+  or `topic`
+- `REST_TEST_INCLUDE='^(account|token).*$'` will include only test cases that start with either `account` or `token`
+
+To run a testkube test / testsuite with test case filters, do
+
+```shell
+testkube run testsuite test-suite-rest -v REST_TEST_EXCLUDE='^transaction.*$' -v WEB3_TEST_INCLUDE='^.*receive.*$'
+```
+
+Note you can pass multiple `-v` flags, one for each filter.
+
 ### Single Test
 
 To run a single test, such as the rosetta accountBalance test, just do

@@ -103,15 +103,13 @@ function setConfigValue(propertyPath, value) {
 }
 
 function convertType(value) {
-  let parsedValue = value;
-
   if (value !== null && value !== '' && !isNaN(value)) {
-    parsedValue = +value;
+    return +value;
   } else if (value === 'true' || value === 'false') {
-    parsedValue = value === 'true';
+    return value === 'true';
   }
 
-  return parsedValue;
+  return value;
 }
 
 function getConfig() {

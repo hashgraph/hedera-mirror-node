@@ -21,14 +21,17 @@ import com.hedera.mirror.rest.model.Links;
 import jakarta.annotation.Nonnull;
 import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -62,39 +65,71 @@ class LinkFactoryImpl implements LinkFactory {
         var sortOrders = pageable.getSort();
         var primarySort = Iterables.getFirst(sortOrders, null);
         var order = primarySort == null ? Direction.ASC : primarySort.getDirection();
-        var lastSort = Iterables.getLast(sortOrders, null);
-        // Only the last sort param's value is exclusive
-        var exclusiveParam = lastSort != null ? lastSort.getProperty() : null;
         var builder = UriComponentsBuilder.fromPath(request.getRequestURI());
         var paramsMap = request.getParameterMap();
         var paginationParamsMap = extractor.apply(lastItem);
+        var queryParams = new LinkedMultiValueMap<String, String>();
 
-        for (var entry : paramsMap.entrySet()) {
-            var key = entry.getKey();
-            if (!paginationParamsMap.containsKey(key)) {
-                builder.queryParam(key, (Object[]) entry.getValue());
-            } else {
-                addQueryParamToLink(entry, builder, order);
-            }
-        }
-
-        for (var entry : paginationParamsMap.entrySet()) {
-            var key = entry.getKey();
-            var exclusive = exclusiveParam == null || key.equals(exclusiveParam);
-            builder.queryParam(key, getOperator(order, exclusive) + ":" + entry.getValue());
-        }
-
+        addParamMapToQueryParams(paramsMap, paginationParamsMap, order, queryParams);
+        addExtractedParamsToQueryParams(sortOrders, paginationParamsMap, order, queryParams);
+        builder.queryParams(queryParams);
         return builder.toUriString();
     }
 
-    private void addQueryParamToLink(Entry<String, String[]> entry, UriComponentsBuilder builder, Direction order) {
+    private void addParamMapToQueryParams(
+            Map<String, String[]> paramsMap,
+            Map<String, String> paginationParamsMap,
+            Direction order,
+            LinkedMultiValueMap<String, String> queryParams) {
+        for (var entry : paramsMap.entrySet()) {
+            var key = entry.getKey();
+            if (!paginationParamsMap.containsKey(key)) {
+                for (var value : entry.getValue()) {
+                    queryParams.add(entry.getKey(), value);
+                }
+            } else {
+                addQueryParamToLink(entry, order, queryParams);
+            }
+        }
+    }
+
+    private void addQueryParamToLink(
+            Entry<String, String[]> entry, Direction order, LinkedMultiValueMap<String, String> queryParams) {
         for (var value : entry.getValue()) {
             // Skip if it's in the same direction as the order, the new bound should come from the extracted value
             if (isSameDirection(order, value)) {
                 continue;
             }
 
-            builder.queryParam(entry.getKey(), value);
+            queryParams.add(entry.getKey(), value);
+        }
+    }
+
+    @SuppressWarnings("java:S1125")
+    private void addExtractedParamsToQueryParams(
+            Sort sort,
+            Map<String, String> paginationParamsMap,
+            Direction order,
+            LinkedMultiValueMap<String, String> queryParams) {
+        var sortEqMap = new HashMap<String, Boolean>();
+        var sortList = sort.map(s -> {
+                    var property = s.getProperty();
+                    sortEqMap.put(property, containsEq(queryParams.get(property)));
+                    return property;
+                })
+                .toList();
+
+        for (int i = 0; i < sortList.size(); i++) {
+            var key = sortList.get(i);
+            if (queryParams.containsKey(key) && Boolean.TRUE.equals(sortEqMap.get(key))) {
+                // This query parameter has already been added with an eq
+                continue;
+            }
+
+            int nextParamIndex = i + 1;
+            boolean exclusive = sortList.size() > nextParamIndex ? sortEqMap.get(sortList.get(nextParamIndex)) : true;
+            var value = paginationParamsMap.get(key);
+            queryParams.add(key, getOperator(order, exclusive) + ":" + value);
         }
     }
 
@@ -111,5 +146,28 @@ class LinkFactoryImpl implements LinkFactory {
             case ASC -> normalized.startsWith("gt:") || normalized.startsWith("gte:");
             case DESC -> normalized.startsWith("lt:") || normalized.startsWith("lte:");
         };
+    }
+
+    private static boolean containsEq(List<String> values) {
+        if (values == null) {
+            return false;
+        }
+
+        for (var value : values) {
+            if (hasEq(value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean hasEq(String value) {
+        var normalized = value.toLowerCase();
+        return normalized.startsWith("eq:")
+                || (!normalized.startsWith("gt:")
+                        && !normalized.startsWith("gte:")
+                        && !normalized.startsWith("lt:")
+                        && !normalized.startsWith("lte:"));
     }
 }

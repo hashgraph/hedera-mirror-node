@@ -19,10 +19,10 @@
     "intervalMultiplier": 1,
     "limit": 10,
     "stakingRewardAccountId": null,
-    "cryptoAllowanceOwnerId": "",
-    "nftAllowanceOwnerId": "",
-    "nftAccountId": "",
-    "tokenAllowanceOwnerId": "",
+    "cryptoAllowanceOwnerId": null,
+    "nftAllowanceOwnerId": null,
+    "nftAccountId": null,
+    "tokenAllowanceOwnerId": null,
     "tokenRelationshipEnabled": true
   },
   "balance": {
@@ -39,7 +39,8 @@
   },
   "contract": {
     "contractId": "",
-    "enabled": true,
+    "enabled": false,
+    "contractCallEnabled": false,
     "intervalMultiplier": 1,
     "limit": 2
   },
@@ -74,8 +75,8 @@
     "enabled": false,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
-    "tokenBalancesLimit": 10,
     "tokenId": "",
-    "limit": 10
+    "nftTokenId": "",
+    "limit": 2
   }
 }

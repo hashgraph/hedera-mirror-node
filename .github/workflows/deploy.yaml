@@ -1,0 +1,71 @@
+name: Deploy
+
+on:
+  repository_dispatch:
+    types:
+      - HelmRelease/mirror.*
+
+permissions:
+  contents: write
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  LC_ALL: C.UTF-8
+
+jobs:
+  promote:
+    name: Deploy
+    runs-on: [self-hosted, linux, large, ephemeral]
+    if: github.event.client_payload.severity == 'info'
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout Repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          ref: deploy
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
+
+      - name: Get chart version
+        id: release
+        run: |
+          VERSION=$(echo ${{ github.event.client_payload.metadata.revision }} | cut -d '+' -f1)
+          echo VERSION=${VERSION} >> $GITHUB_OUTPUT
+
+      - name: Set chart version in HelmRelease
+        env:
+          CHART_PATH: ${{ github.event.client_payload.metadata.path }}
+          CHART_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          echo "Setting HelmRelease ${CHART_PATH} to ${CHART_VERSION}"
+          yq eval '.spec.chart.spec.version=env(CHART_VERSION)' -i ./clusters/${CHART_PATH}/helmrelease.yaml
+
+      - name: Import GPG Key
+        id: gpg_importer
+        uses: crazy-max/ghaction-import-gpg@01dd5d3ca463c7f10f7f4f7b4f177225ac661ee4 # v6.1.0
+        with:
+          git_commit_gpgsign: true
+          git_tag_gpgsign: true
+          git_user_signingkey: true
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Open deployment PR
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
+        with:
+          author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
+          body: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
+          branch: deploy-${{ github.event.client_payload.metadata.path }}-${{ steps.release.outputs.version }}
+          commit-message: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
+          committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
+          delete-branch: true
+          signoff: true
+          title: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}

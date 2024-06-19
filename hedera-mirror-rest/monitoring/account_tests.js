@@ -34,8 +34,12 @@ import {
 const accountsPath = '/accounts';
 const resource = 'account';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
-const tokenRelationshipEnabled = config[resource].tokenRelationshipEnabled || false;
+const cryptoAllowanceOwnerId = config[resource].cryptoAllowanceOwnerId;
+const nftAccountId = config[resource].nftAccountId;
+const nftAllowanceOwnerId = config[resource].nftAllowanceOwnerId;
 const stakingRewardAccountId = config[resource].stakingRewardAccountId;
+const tokenAllowanceOwnerId = config[resource].tokenAllowanceOwnerId;
+const tokenRelationshipEnabled = config[resource].tokenRelationshipEnabled || false;
 const jsonRespKey = 'accounts';
 const allowancesJsonRespKey = 'allowances';
 const mandatoryParams = [
@@ -250,8 +254,7 @@ const getAccountStakingRewards = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getCryptoAllowances = async (server) => {
-  const accountId = config[resource].cryptoAllowanceOwnerId;
-  const cryptoAllowancesPath = `${accountsPath}/${accountId}/allowances/crypto`;
+  const cryptoAllowancesPath = `${accountsPath}/${cryptoAllowanceOwnerId}/allowances/crypto`;
   let url = getUrl(server, cryptoAllowancesPath, {limit: resourceLimit});
   const allowances = await fetchAPIResponse(url, allowancesJsonRespKey);
   const allowancesMandatoryParams = ['amount', 'amount_granted', 'owner', 'spender', 'timestamp'];
@@ -271,7 +274,7 @@ const getCryptoAllowances = async (server) => {
   return {
     url,
     passed: true,
-    message: `Successfully called crypto allowances for account ${accountId}.`,
+    message: `Successfully called crypto allowances for account ${cryptoAllowanceOwnerId}.`,
   };
 };
 
@@ -280,8 +283,7 @@ const getCryptoAllowances = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getTokenAllowances = async (server) => {
-  const accountId = config[resource].tokenAllowanceOwnerId;
-  const tokenAllowancesPath = `${accountsPath}/${accountId}/allowances/tokens`;
+  const tokenAllowancesPath = `${accountsPath}/${tokenAllowanceOwnerId}/allowances/tokens`;
   let url = getUrl(server, tokenAllowancesPath, {limit: resourceLimit});
   const allowances = await fetchAPIResponse(url, allowancesJsonRespKey);
   const tokenAllowancesMandatoryParams = ['amount', 'amount_granted', 'owner', 'spender', 'timestamp', 'token_id'];
@@ -301,7 +303,7 @@ const getTokenAllowances = async (server) => {
   return {
     url,
     passed: true,
-    message: `Successfully called token allowances for account ${accountId}.`,
+    message: `Successfully called token allowances for account ${tokenAllowanceOwnerId}.`,
   };
 };
 
@@ -310,8 +312,7 @@ const getTokenAllowances = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getNftAllowances = async (server) => {
-  const accountId = config[resource].nftAllowanceOwnerId;
-  const nftAllowancesPath = `${accountsPath}/${accountId}/allowances/nfts`;
+  const nftAllowancesPath = `${accountsPath}/${nftAllowanceOwnerId}/allowances/nfts`;
   let url = getUrl(server, nftAllowancesPath, {limit: resourceLimit});
   const allowances = await fetchAPIResponse(url, allowancesJsonRespKey);
   const nftAllowancesMandatoryParams = ['approved_for_all', 'owner', 'spender', 'timestamp', 'token_id'];
@@ -331,7 +332,7 @@ const getNftAllowances = async (server) => {
   return {
     url,
     passed: true,
-    message: `Successfully called nft allowances for account ${accountId}.`,
+    message: `Successfully called nft allowances for account ${nftAllowanceOwnerId}.`,
   };
 };
 
@@ -340,8 +341,7 @@ const getNftAllowances = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getNfts = async (server) => {
-  const accountId = config[resource].nftAccountId;
-  const nftsPath = `${accountsPath}/${accountId}/nfts`;
+  const nftsPath = `${accountsPath}/${nftAccountId}/nfts`;
   let url = getUrl(server, nftsPath, {limit: resourceLimit});
   const nftJsonResponseKey = 'nfts';
   const allowances = await fetchAPIResponse(url, nftJsonResponseKey);
@@ -372,7 +372,7 @@ const getNfts = async (server) => {
   return {
     url,
     passed: true,
-    message: `Successfully called nfts for account ${accountId}.`,
+    message: `Successfully called nfts for account ${nftAccountId}.`,
   };
 };
 
@@ -388,10 +388,10 @@ const runTests = async (server, testResult) => {
     runTest(getSingleAccount),
     tokenRelationshipEnabled ? runTest(getSingleAccountTokenRelationships) : '',
     stakingRewardAccountId !== null ? runTest(getAccountStakingRewards) : '',
-    runTest(getCryptoAllowances),
-    runTest(getTokenAllowances),
-    runTest(getNftAllowances),
-    runTest(getNfts),
+    cryptoAllowanceOwnerId !== null ? runTest(getCryptoAllowances) : '',
+    tokenAllowanceOwnerId !== null ? runTest(getTokenAllowances) : '',
+    nftAllowanceOwnerId !== null ? runTest(getNftAllowances) : '',
+    nftAccountId !== null ? runTest(getNfts) : '',
   ]);
 };
 

@@ -1,10 +1,12 @@
 {{- if .Values.testkube.enabled -}}
+{{- range $idx, $target := $.Values.testkube.test.targets }}
+---
 apiVersion: tests.testkube.io/v3
 kind: TestSuite
 metadata:
-  labels: {{ include "hedera-mirror-common.labels" . | nindent 4 }}
-  name: test-suite-rest
-  namespace: {{ .Values.testkube.namespace }}
+  labels: {{ include "hedera-mirror-common.labels" $ | nindent 4 }}
+  name: test-suite-rest-{{ $target.namespace }}
+  namespace: {{ $.Values.testkube.namespace }}
 spec:
   description: Mirrornode REST API performance test suite
   executionRequest:
@@ -13,29 +15,30 @@ spec:
         name: TEST_REPORTS_DIR
         type: basic
         value: /share
-      {{- if .Values.testkube.test.extraExecutionRequestVariables }}
-      {{- toYaml .Values.testkube.test.extraExecutionRequestVariables | nindent 6 }}
+      {{- if $.Values.testkube.test.extraExecutionRequestVariables }}
+      {{- toYaml $.Values.testkube.test.extraExecutionRequestVariables | nindent 6 }}
       {{- end }}
-  {{- if .Values.testkube.test.schedule }}
-  schedule: {{ quote .Values.testkube.test.schedule }}
+  {{- if $.Values.testkube.test.schedule }}
+  schedule: {{ quote $.Values.testkube.test.schedule }}
   {{- end }}
   steps:
     - execute:
-      - delay: 10s
+        - delay: 10s
       stopOnFailure: false
     - execute:
-      - test: test-rest
+        - test: test-rest-{{ $target.namespace }}
       stopOnFailure: false
     - execute:
-      - delay: 60s
+        - delay: 60s
       stopOnFailure: false
     - execute:
-      - test: test-rest-java
+        - test: test-rest-java-{{ $target.namespace }}
       stopOnFailure: false
     - execute:
-      - delay: 60s
+        - delay: 60s
       stopOnFailure: false
     - execute:
-      - test: test-web3
+        - test: test-web3-{{ $target.namespace }}
       stopOnFailure: false
+{{- end}}
 {{- end }}
