@@ -39,7 +39,7 @@ extra.apply {
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.8")
-    set("tuweniBytesAndUnitsVersion", "2.3.1")
+    set("tuweniVersion", "2.3.1")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
@@ -51,8 +51,8 @@ dependencies {
         val protobufVersion: String by rootProject.extra
         val reactorGrpcVersion: String by rootProject.extra
         val testcontainersSpringBootVersion: String by rootProject.extra
+        val tuweniVersion: String by rootProject.extra
         val vertxVersion: String by rootProject.extra
-        val tuweniBytesAndUnitsVersion: String by rootProject.extra
 
         api("com.esaulpaugh:headlong:10.0.2")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
@@ -88,8 +88,8 @@ dependencies {
         api("org.apache.commons:commons-collections4:4.4")
         api("org.apache.commons:commons-compress:1.26.1")
         api("org.apache.commons:commons-math3:3.6.1")
-        api("org.apache.tuweni:tuweni-bytes:$tuweniBytesAndUnitsVersion")
-        api("org.apache.tuweni:tuweni-units:$tuweniBytesAndUnitsVersion")
+        api("org.apache.tuweni:tuweni-bytes:$tuweniVersion")
+        api("org.apache.tuweni:tuweni-units:$tuweniVersion")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api:5.0.2")
         api("org.gaul:s3proxy:2.2.0")

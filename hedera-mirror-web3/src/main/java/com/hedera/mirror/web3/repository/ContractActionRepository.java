@@ -23,6 +23,9 @@ import org.springframework.data.repository.CrudRepository;
 
 public interface ContractActionRepository extends CrudRepository<ContractAction, Long> {
 
-    @Query(value = "select * from contract_action where consensus_timestamp = ? order by index asc", nativeQuery = true)
-    List<ContractAction> findAllByConsensusTimestamp(long consensusTimestamp);
+    @Query(
+            value =
+                    "select * from contract_action where consensus_timestamp = ?1 and result_data_type = 13 and call_type = 4 order by index asc",
+            nativeQuery = true)
+    List<ContractAction> findFailedPrecompileContractActions(long consensusTimestamp);
 }

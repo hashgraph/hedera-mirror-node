@@ -41,7 +41,7 @@ public class ContractCallContext {
     private List<ContractAction> contractActions = List.of();
 
     @Setter
-    private int contractActionsCounter = 0;
+    private int contractActionIndexOfCurrentFrame = 0;
 
     @Setter
     private OpcodeTracerOptions opcodeTracerOptions;
@@ -127,10 +127,10 @@ public class ContractCallContext {
     }
 
     public void incrementContractActionsCounter() {
-        this.contractActionsCounter++;
+        this.contractActionIndexOfCurrentFrame++;
     }
 
     public void decrementContractActionsCounter() {
-        this.contractActionsCounter--;
+        this.contractActionIndexOfCurrentFrame--;
     }
 }
