@@ -162,7 +162,7 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         }
 
         return contractActions.stream()
-                .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex - 1)
+                .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex)
                 .map(action -> Bytes.of(action.getResultData()))
                 .findFirst();
     }

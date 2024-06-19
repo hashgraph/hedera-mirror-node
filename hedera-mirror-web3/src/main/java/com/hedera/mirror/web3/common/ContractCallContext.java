@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.common;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -40,8 +41,13 @@ public class ContractCallContext {
     @Setter
     private List<ContractAction> contractActions = List.of();
 
+    /**
+     * This is used to determine the contract action index of the current frame.
+     * It starts from {@code -1} because when the tracer receives the initial frame,
+     * it will increment this immediately inside {@link OpcodeTracer#traceContextEnter}.
+     */
     @Setter
-    private int contractActionIndexOfCurrentFrame = 0;
+    private int contractActionIndexOfCurrentFrame = -1;
 
     @Setter
     private OpcodeTracerOptions opcodeTracerOptions;
