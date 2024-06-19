@@ -22,6 +22,7 @@ import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncode
 
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.resources.TransactionReceiptCustom;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
@@ -44,11 +45,7 @@ import org.web3j.protocol.core.BatchResponse;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.methods.request.Transaction;
-import org.web3j.protocol.core.methods.response.EthBlock;
-import org.web3j.protocol.core.methods.response.EthCall;
-import org.web3j.protocol.core.methods.response.EthSendTransaction;
-import org.web3j.protocol.core.methods.response.EthSyncing;
-import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.protocol.core.methods.response.*;
 import org.web3j.protocol.websocket.events.Notification;
 
 @RequiredArgsConstructor
@@ -82,7 +79,7 @@ public class TestWeb3jService implements Web3jService {
             case "eth_getBlockByNumber" -> getEthBlockRes(responseType);
             case "net_version" -> getNetVersionRes(responseType);
             case "eth_getTransactionCount" -> getTransactionCountRes(responseType);
-            case "eth_getTransactionReceipt" -> getTransactionReceipt(request, responseType);
+            case "eth_getTransactionReceipt" -> (T) getTransactionReceipt(request);
             case "eth_sendRawTransaction" -> (T) call(request.getParams(), request);
             case "eth_call" -> (T) ethCall(request.getParams(), request);
             default -> throw new UnsupportedOperationException(request.getMethod());
@@ -177,12 +174,12 @@ public class TestWeb3jService implements Web3jService {
         return res;
     }
 
-    private <T extends Response> T getTransactionReceipt(Request request, Class<T> responseType) {
+    private EthGetTransactionReceipt getTransactionReceipt(Request request) {
         final var trxHash = request.getParams().get(0).toString();
-        T res = getResObj(responseType);
-        var mockReceipt = new TransactionReceipt();
+        final var res = new EthGetTransactionReceipt();
+        var mockReceipt = new TransactionReceiptCustom();
         mockReceipt.setTransactionHash(trxHash);
-        mockReceipt.setRoot(trxResMap.get(trxHash));
+        mockReceipt.setData(trxResMap.get(trxHash));
         res.setResult(mockReceipt);
 
         return res;
