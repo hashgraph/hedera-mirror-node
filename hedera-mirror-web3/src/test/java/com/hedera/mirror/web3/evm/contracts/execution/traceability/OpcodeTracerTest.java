@@ -17,9 +17,14 @@
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_FAILED;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.NOT_STARTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -30,23 +35,19 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
 import java.security.SecureRandom;
-import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
 import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -82,6 +83,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class OpcodeTracerTest {
 
+    private static final Address CONTRACT_ADDRESS = Address.fromHexString("0x123");
+    private static final Address ETH_PRECOMPILE_ADDRESS = Address.fromHexString("0x01");
+    private static final Address HTS_PRECOMPILE_ADDRESS = Address.fromHexString(HTS_PRECOMPILED_CONTRACT_ADDRESS);
     private static final long INITIAL_GAS = 1000L;
     private static final long GAS_COST = 2L;
     private static final long GAS_PRICE = 200L;
@@ -161,6 +165,45 @@ class OpcodeTracerTest {
     }
 
     @Test
+    @DisplayName("should increment contract action index on traceContextEnter")
+    void shouldIncrementContractActionIndexOnTraceContextEnter() {
+        frame = setupInitialFrame(tracerOptions);
+        contractCallContext.setContractActionsCounter(0);
+
+        tracer.traceContextEnter(frame);
+
+        assertThat(contractCallContext.getContractActionsCounter()).isEqualTo(1);
+        verify(contractCallContext, times(1)).incrementContractActionsCounter();
+        verify(contractCallContext, never()).decrementContractActionsCounter();
+    }
+
+    @Test
+    @DisplayName("should decrement contract action index on traceContextReEnter")
+    void shouldDecrementContractActionIndexOnTraceContextReEnter() {
+        frame = setupInitialFrame(tracerOptions);
+        contractCallContext.setContractActionsCounter(1);
+
+        tracer.traceContextReEnter(frame);
+
+        assertThat(contractCallContext.getContractActionsCounter()).isZero();
+        verify(contractCallContext, times(1)).decrementContractActionsCounter();
+        verify(contractCallContext, never()).incrementContractActionsCounter();
+    }
+
+    @Test
+    @DisplayName("should increment contract action index on traceContextExit")
+    void shouldIncrementContractActionIndexOnTraceContextExit() {
+        frame = setupInitialFrame(tracerOptions);
+        contractCallContext.setContractActionsCounter(0);
+
+        tracer.traceContextExit(frame);
+
+        assertThat(contractCallContext.getContractActionsCounter()).isEqualTo(1);
+        verify(contractCallContext, times(1)).incrementContractActionsCounter();
+        verify(contractCallContext, never()).decrementContractActionsCounter();
+    }
+
+    @Test
     @DisplayName("should record program counter")
     void shouldRecordProgramCounter() {
         frame = setupInitialFrame(tracerOptions);
@@ -187,7 +230,7 @@ class OpcodeTracerTest {
         // simulate 4 calls
         final int expectedDepth = 4;
         for (int i = 0; i < expectedDepth; i++) {
-            frame.getMessageFrameStack().add(buildMessageFrame(Address.fromHexString("0x%d".formatted(i))));
+            frame.getMessageFrameStack().add(buildMessageFrame(Address.fromHexString("0x10%d".formatted(i))));
         }
 
         final Opcode opcode = executeOperation(frame);
@@ -355,7 +398,7 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("should record revert reason of precompile call when frame has revert reason")
     void shouldRecordRevertReasonWhenEthPrecompileCallHasRevertReason() {
-        frame = setupInitialFrame(tracerOptions, Address.fromHexString("0x09"));
+        frame = setupInitialFrame(tracerOptions, ETH_PRECOMPILE_ADDRESS);
         frame.setRevertReason(Bytes.of("revert reason".getBytes()));
 
         final Opcode opcode = executePrecompileOperation(frame, Bytes.EMPTY);
@@ -366,69 +409,23 @@ class OpcodeTracerTest {
 
     @Test
     @DisplayName("should record revert reason of precompile call with revert reason")
-    void shouldRecordRevertReasonWhenPrecompileCallHasContractActions() throws JsonProcessingException {
-        final var contractAddress = Address.fromHexString("0x123");
-        final var htsAddress = Address.fromHexString(SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS);
+    void shouldRecordRevertReasonWhenPrecompileCallHasContractActions() {
+        final var contractActionNoRevert =
+                contractAction(0, 0, CallOperationType.OP_CREATE, OUTPUT.getNumber(), CONTRACT_ADDRESS);
+        final var contractActionWithRevert =
+                contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), HTS_PRECOMPILE_ADDRESS);
 
-        final var contractActions = new ContractAction[] {
-                contractAction(0, 0, CallOperationType.OP_CALL, OUTPUT.getNumber(), contractAddress),
-                contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), htsAddress),
-                contractAction(2, 1, CallOperationType.OP_CALL, OUTPUT.getNumber(), contractAddress),
-                contractAction(3, 2, CallOperationType.OP_CALL, OUTPUT.getNumber(), contractAddress),
-                contractAction(4, 3, CallOperationType.OP_CREATE, REVERT_REASON.getNumber(), htsAddress),
-        };
+        frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
+        final Opcode opcode = executeOperation(frame);
+        assertThat(opcode.reason()).isNull();
 
-        List<Pair<Integer, MessageFrame>> frames = Lists.newArrayList(
-                Pair.of(0, setupInitialFrame(tracerOptions, contractAddress, contractActions)),
-                Pair.of(0, buildMessageFrameFromAction(contractActions[0], MessageFrame.State.CODE_SUSPENDED)),
-                Pair.of(1, buildMessageFrameFromAction(contractActions[1], MessageFrame.State.NOT_STARTED)),
-                Pair.of(1, buildMessageFrameFromAction(contractActions[1], MessageFrame.State.REVERT)),
-                Pair.of(0, buildMessageFrameFromAction(contractActions[0], MessageFrame.State.CODE_EXECUTING)),
-                Pair.of(0, buildMessageFrameFromAction(contractActions[0], MessageFrame.State.CODE_SUSPENDED)),
-                Pair.of(2, buildMessageFrameFromAction(contractActions[2], MessageFrame.State.NOT_STARTED)),
-                Pair.of(2, buildMessageFrameFromAction(contractActions[2], MessageFrame.State.CODE_SUSPENDED)),
-                Pair.of(3, buildMessageFrameFromAction(contractActions[3], MessageFrame.State.NOT_STARTED)),
-                Pair.of(3, buildMessageFrameFromAction(contractActions[3], MessageFrame.State.CODE_SUSPENDED)),
-                Pair.of(4, buildMessageFrameFromAction(contractActions[4], MessageFrame.State.NOT_STARTED)),
-                Pair.of(4, buildMessageFrameFromAction(contractActions[4], MessageFrame.State.REVERT)),
-                Pair.of(3, buildMessageFrameFromAction(contractActions[3], MessageFrame.State.CODE_EXECUTING)),
-                Pair.of(3, buildMessageFrameFromAction(contractActions[3], MessageFrame.State.CODE_SUCCESS)),
-                Pair.of(2, buildMessageFrameFromAction(contractActions[2], MessageFrame.State.CODE_EXECUTING)),
-                Pair.of(2, buildMessageFrameFromAction(contractActions[2], MessageFrame.State.CODE_SUCCESS)),
-                Pair.of(1, buildMessageFrameFromAction(contractActions[1], MessageFrame.State.CODE_EXECUTING)),
-                Pair.of(1, buildMessageFrameFromAction(contractActions[1], MessageFrame.State.CODE_SUCCESS)),
-                Pair.of(0, buildMessageFrameFromAction(contractActions[0], MessageFrame.State.CODE_EXECUTING)),
-                Pair.of(0, buildMessageFrameFromAction(contractActions[0], MessageFrame.State.CODE_SUCCESS))
-        );
+        final var frameOfPrecompileCall = buildMessageFrameFromAction(contractActionWithRevert);
+        frame = setupFrame(frameOfPrecompileCall);
 
-        for (Pair<Integer, MessageFrame> pair : frames) {
-            final Integer actionIndex = pair.getLeft();
-            final MessageFrame frame = pair.getRight();
-            stackItems = setupStackForCapture(frame);
-            wordsInMemory = setupMemoryForCapture(frame);
-            updatedStorage = setupStorageForCapture(frame);
-
-            final Opcode opcode = executePrecompileOperation(frame, Bytes.EMPTY);
-
-            if (contractCallContext.getContractActionsCounter() != actionIndex + 1) {
-                log.info("frame: {}," +
-                        "Expected action index: {}, " +
-                        "actual action index: {}," +
-                        "action: {}", frame.getState(), actionIndex + 1, contractCallContext.getContractActionsCounter(), contractActions[actionIndex]);
-            }
-            assertThat(contractCallContext.getContractActionsCounter()).isEqualTo(actionIndex + 1);
-
-            if (contractActions[actionIndex].getResultDataType() == REVERT_REASON.getNumber()) {
-                log.info("frame: {}," +
-                        "actual action index: {}," +
-                        "action: {}", frame.getState(), contractCallContext.getContractActionsCounter(), contractActions[actionIndex]);
-                assertThat(opcode.reason())
-                        .isNotEmpty()
-                        .isEqualTo(Bytes.of(contractActions[actionIndex].getResultData()).toString());
-            } else {
-                assertThat(opcode.reason()).isNull();
-            }
-        }
+        final Opcode opcodeForPrecompileCall = executePrecompileOperation(frame, Bytes.EMPTY);
+        assertThat(opcodeForPrecompileCall.reason())
+                .isNotEmpty()
+                .isEqualTo(Bytes.of(contractActionWithRevert.getResultData()).toString());
     }
 
     private Opcode executeOperation(final MessageFrame frame) {
@@ -441,7 +438,7 @@ class OpcodeTracerTest {
 
         final OperationResult operationResult;
         if (haltReason != null) {
-            frame.setState(MessageFrame.State.EXCEPTIONAL_HALT);
+            frame.setState(EXCEPTIONAL_HALT);
             frame.setRevertReason(Bytes.of(haltReason.getDescription().getBytes()));
             operationResult = new OperationResult(GAS_COST, haltReason);
         } else {
@@ -450,25 +447,27 @@ class OpcodeTracerTest {
 
         tracer.tracePostExecution(frame, operationResult);
         tracer.finalizeOperation(frame);
-        Opcode expectedOpcode = contractCallContext.getOpcodes().getFirst();
+
+        EXECUTED_FRAMES.set(EXECUTED_FRAMES.get() + 1);
+        Opcode expectedOpcode = contractCallContext.getOpcodes().get(EXECUTED_FRAMES.get() - 1);
 
         verify(contractCallContext, times(1)).addOpcodes(expectedOpcode);
+        assertThat(tracer.getOptions()).isEqualTo(tracerOptions);
         assertThat(contractCallContext.getOpcodes()).hasSize(1);
-        return contractCallContext.getOpcodes().getFirst();
+        assertThat(contractCallContext.getContractActions()).isNotNull();
+        return expectedOpcode;
     }
 
     private Opcode executePrecompileOperation(final MessageFrame frame,
                                               final Bytes output) {
-        reset(contractCallContext);
-
         tracer.init(frame);
-        if (frame.getState() == MessageFrame.State.NOT_STARTED) {
+        if (frame.getState() == NOT_STARTED) {
             tracer.traceContextEnter(frame);
         } else {
             tracer.traceContextReEnter(frame);
         }
         tracer.tracePrecompileCall(frame, GAS_REQUIREMENT, output);
-        if (frame.getState() == MessageFrame.State.CODE_SUCCESS || frame.getState() == MessageFrame.State.REVERT) {
+        if (frame.getState() == COMPLETED_SUCCESS || frame.getState() == COMPLETED_FAILED) {
             tracer.traceContextExit(frame);
         }
         tracer.finalizeOperation(frame);
@@ -480,11 +479,11 @@ class OpcodeTracerTest {
         assertThat(tracer.getOptions()).isEqualTo(tracerOptions);
         assertThat(contractCallContext.getOpcodes()).hasSize(EXECUTED_FRAMES.get());
         assertThat(contractCallContext.getContractActions()).isNotNull();
-        return contractCallContext.getOpcodes().get(EXECUTED_FRAMES.get() - 1);
+        return expectedOpcode;
     }
 
     private MessageFrame setupInitialFrame(final OpcodeTracerOptions options) {
-        return setupInitialFrame(options, Address.fromHexString("0x123"));
+        return setupInitialFrame(options, CONTRACT_ADDRESS);
     }
 
     private MessageFrame setupInitialFrame(final OpcodeTracerOptions options,
@@ -496,12 +495,15 @@ class OpcodeTracerTest {
         EXECUTED_FRAMES.set(0);
 
         final MessageFrame messageFrame = buildMessageFrame(recipientAddress);
-        messageFrame.setState(MessageFrame.State.NOT_STARTED);
+        messageFrame.setState(NOT_STARTED);
+        return setupFrame(messageFrame);
+    }
 
+    private MessageFrame setupFrame(final MessageFrame messageFrame) {
+        reset(contractCallContext);
         stackItems = setupStackForCapture(messageFrame);
         wordsInMemory = setupMemoryForCapture(messageFrame);
         updatedStorage = setupStorageForCapture(messageFrame);
-
         return messageFrame;
     }
 
@@ -540,7 +542,7 @@ class OpcodeTracerTest {
         return words;
     }
 
-    private MessageFrame buildMessageFrameFromAction(ContractAction action, MessageFrame.State state) {
+    private MessageFrame buildMessageFrameFromAction(ContractAction action) {
         final var recipientAddress = Address.wrap(Bytes.of(action.getRecipientAddress()));
         final var senderAddress = toAddress(action.getCaller());
         final var value = Wei.of(action.getValue());
@@ -554,7 +556,7 @@ class OpcodeTracerTest {
                 .value(value)
                 .apparentValue(value)
                 .build();
-        messageFrame.setState(state);
+        messageFrame.setState(NOT_STARTED);
         return messageFrame;
     }
 
