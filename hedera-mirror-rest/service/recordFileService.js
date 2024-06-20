@@ -17,6 +17,7 @@
 import _ from 'lodash';
 import BaseService from './baseService';
 import {RecordFile} from '../model';
+import {orderFilterValues} from '../constants.js';
 
 const buildWhereSqlStatement = (whereQuery) => {
   let where = '';
@@ -37,25 +38,19 @@ class RecordFileService extends BaseService {
     super();
   }
 
-  // Citus requires all columns in the json_build_object in group by even though consensus_end is the primary key
   static recordFileBlockDetailsFromTimestampArrayQuery = `select
-      case when ${RecordFile.CONSENSUS_END} is not null then
-        json_build_object(
-            'consensus_end', ${RecordFile.CONSENSUS_END},
-            'gas_used', ${RecordFile.GAS_USED},
-            'hash', ${RecordFile.HASH},
-            'index', ${RecordFile.INDEX})
-      end as ${RecordFile.tableName},
-      array_agg(timestamp) as timestamps
+      ${RecordFile.CONSENSUS_END},
+      ${RecordFile.CONSENSUS_START},
+      ${RecordFile.INDEX},
+      ${RecordFile.HASH},
+      ${RecordFile.GAS_USED}
+    from ${RecordFile.tableName}
+    where ${RecordFile.CONSENSUS_END} in (
+      select
+       (select ${RecordFile.CONSENSUS_END} from ${RecordFile.tableName} where ${RecordFile.CONSENSUS_END} >= timestamp order by ${RecordFile.CONSENSUS_END} limit 1) as consensus_end
     from (select unnest($1::bigint[]) as timestamp) as tmp
-      left join ${RecordFile.tableName} on ${RecordFile.CONSENSUS_END} = (
-        select ${RecordFile.CONSENSUS_END}
-        from ${RecordFile.tableName}
-        where ${RecordFile.CONSENSUS_END} >= timestamp
-        order by ${RecordFile.CONSENSUS_END}
-        limit 1
-      )
-    group by ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED}, ${RecordFile.HASH}, ${RecordFile.INDEX}`;
+      group by consensus_end
+    )`;
 
   static recordFileBlockDetailsFromTimestampQuery = `select
     ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED}, ${RecordFile.HASH}, ${RecordFile.INDEX}
@@ -100,20 +95,41 @@ class RecordFileService extends BaseService {
    * Retrieves the recordFiles containing the transactions of the given timestamps
    *
    * @param {(string|Number|BigInt)[]} timestamps consensus timestamp array
+   * @param {string} timestampOrder order of the timestamps, asc or desc
    * @return {Promise<Map>} A map from the consensus timestamp to its record file
    */
-  async getRecordFileBlockDetailsFromTimestampArray(timestamps) {
+  async getRecordFileBlockDetailsFromTimestampArray(timestamps, timestampOrder) {
     const recordFileMap = new Map();
-    const rows = await super.getRows(
-      RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery,
-      [timestamps],
-      'getRecordFileBlockDetailsFromTimestampArray'
-    );
+    if (!timestampOrder) {
+      timestampOrder = orderFilterValues.ASC;
+    }
 
-    rows.forEach((row) => {
-      const recordFile = row.record_file ? new RecordFile(row.record_file) : null;
-      row.timestamps.forEach((timestamp) => recordFileMap.set(timestamp, recordFile));
-    });
+    let query = RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery;
+    query += ` order by consensus_end ${timestampOrder}`;
+
+    const rows = await super.getRows(query, [timestamps], 'getRecordFileBlockDetailsFromTimestampArray');
+
+    rows
+      .map((r) => new RecordFile(r))
+      .forEach((recordFile) => {
+        for (let i = 0; i < timestamps.length; ) {
+          const timestamp = timestamps[i];
+          if (recordFile.consensusEnd >= timestamp && recordFile.consensusStart <= timestamp) {
+            recordFileMap.set(timestamp, recordFile);
+            // Remove the timestamp so as not to continue iterating over it for other record files
+            timestamps.shift();
+          } else if (
+            (timestampOrder == orderFilterValues.ASC && timestamp > recordFile.consensusEnd) ||
+            (timestampOrder == orderFilterValues.DESC && timestamp < recordFile.consensusStart)
+          ) {
+            break;
+          } else {
+            // Only occurs if timestamps are not sequentially ordered
+            i++;
+          }
+        }
+      });
+
     return recordFileMap;
   }
 

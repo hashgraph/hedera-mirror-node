@@ -421,14 +421,14 @@ class ContractService extends BaseService {
    * @param query
    * @returns {Promise<ContractLog[]>} the result of the getContractLogs query
    */
-  async getContractLogs(query) {
+  async getContractLogs(query, order) {
     const [sqlQuery, params] = this.getContractLogsQuery(query);
     const rows = await super.getRows(sqlQuery, params);
     const timestamps = [];
     rows.forEach((row) => {
       timestamps.push(row.consensus_timestamp);
     });
-    const recordFileMap = await RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps);
+    const recordFileMap = await RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps, order);
 
     return rows.map((cr) => new ContractLog(cr, recordFileMap.get(cr.consensus_timestamp)));
   }
