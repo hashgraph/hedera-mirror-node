@@ -106,7 +106,9 @@ public class TestWeb3jService implements Web3jService {
                 Bytes.fromHexString(rawTrxDecoded.getData()),
                 Address.fromHexString(rawTrxDecoded.getTo()),
                 ETH_CALL,
-                rawTrxDecoded.getValue().longValue(),
+                rawTrxDecoded.getValue().longValue() >= 0
+                        ? rawTrxDecoded.getValue().longValue()
+                        : 10L,
                 BlockType.LATEST,
                 GAS_LIMIT,
                 sender);

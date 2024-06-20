@@ -20,24 +20,64 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
+import com.hedera.mirror.web3.config.Web3jTestConfiguration;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.service.resources.ContractDeployer;
+import com.hedera.mirror.web3.service.resources.PrecompileTestContract;
+import com.hedera.mirror.web3.service.resources.TransactionReceiptCustom;
 import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.services.utils.EntityIdUtils;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
+import org.web3j.protocol.core.RemoteFunctionCall;
 
+@Import(Web3jTestConfiguration.class)
+@SuppressWarnings("unchecked")
+@RequiredArgsConstructor
+@TestInstance(PER_CLASS)
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
+
+    @Autowired
+    private ContractDeployer contractDeployer;
+
+    private Stream<Arguments> pocWeb3jMethod() throws Exception {
+        exchangeRatesPersist();
+        feeSchedulesPersist();
+        fileDataPersist();
+
+        final var precompileTestContract = contractDeployer.deploy(PrecompileTestContract.class);
+        final var token = domainBuilder.token().persist();
+
+        return Stream.of(Arguments.of(
+                precompileTestContract.getType(
+                        EntityIdUtils.asTypedEvmAddress(token.getTokenId()).toHexString()),
+                BigInteger.ONE));
+    }
+
+    @ParameterizedTest
+    @MethodSource("pocWeb3jMethod")
+    void pocWeb3jMethodsTest(
+            final RemoteFunctionCall<TransactionReceiptCustom> functionToTest, final BigInteger expectedResult)
+            throws Exception {
+        assertThat(functionToTest.send().getData()).isEqualTo(expectedResult);
+    }
 
     private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
         return Arrays.stream(ErcContractReadOnlyFunctions.values())
