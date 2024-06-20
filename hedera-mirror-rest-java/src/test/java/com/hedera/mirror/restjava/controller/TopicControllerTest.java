@@ -66,10 +66,13 @@ class TopicControllerTest extends ControllerTest {
                     .persist();
 
             // When
-            var result = restClient.get().uri("", id).retrieve().body(Topic.class);
+            var response = restClient.get().uri("", id).retrieve().toEntity(Topic.class);
 
             // Then
-            assertThat(result).isNotNull().isEqualTo(topicMapper.map(topic));
+            assertThat(response.getBody()).isNotNull().isEqualTo(topicMapper.map(topic));
+            // Based on application.yml response headers configuration
+            assertThat(response.getHeaders().getAccessControlAllowOrigin()).isEqualTo("*");
+            assertThat(response.getHeaders().getCacheControl()).isEqualTo("public, max-age=5");
         }
 
         @ValueSource(
