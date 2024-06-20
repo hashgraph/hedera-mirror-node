@@ -57,7 +57,28 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @Autowired
     private ContractDeployer contractDeployer;
 
+    private void historicalBlocksPersist() {
+        recordFileBeforeEvm34 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_34_BLOCK - 1))
+                .persist();
+        recordFileAfterEvm34 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_34_BLOCK))
+                .persist();
+        recordFileEvm38 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_38_BLOCK))
+                .persist();
+        recordFileEvm46 = domainBuilder
+                .recordFile()
+                .customize(f -> f.index(EVM_V_46_BLOCK))
+                .persist();
+        recordFileEvm46Latest = domainBuilder.recordFile().persist();
+    }
+
     private Stream<Arguments> pocWeb3jMethod() throws Exception {
+        historicalBlocksPersist();
         exchangeRatesPersist();
         feeSchedulesPersist();
         fileDataPersist();
