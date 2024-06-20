@@ -1678,7 +1678,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void fileDataPersist() {
+    protected void fileDataPersist() {
         final long nanos = 1_234_567_890L;
         final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
                 .setCurrentRate(ExchangeRate.newBuilder()
