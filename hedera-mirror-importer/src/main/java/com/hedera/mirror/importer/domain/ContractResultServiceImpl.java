@@ -103,7 +103,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                         && transactionRecord.getReceipt().getContractID().hasEvmAddress())
                 && EntityId.isEmpty(contractId)
                 && !contractCallOrCreate
-                && (!ContractID.getDefaultInstance().equals(functionResult.getContractID()));
+                && !ContractID.getDefaultInstance().equals(functionResult.getContractID());
         if (isRecoverableError) {
             Utility.handleRecoverableError(
                     "Invalid contract id for contract result at {}", recordItem.getConsensusTimestamp());

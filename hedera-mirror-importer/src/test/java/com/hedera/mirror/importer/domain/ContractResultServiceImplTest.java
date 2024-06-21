@@ -38,7 +38,9 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
@@ -95,9 +97,22 @@ class ContractResultServiceImplTest {
         var contractIdWithEvm = ContractID.newBuilder()
                 .setEvmAddress(ByteString.copyFromUtf8("1234"))
                 .build();
-        Function<RecordItemBuilder, RecordItem> withInactiveEvm =
+
+        // The transaction receipt does not have an evm address, so a recoverable error is expected.
+        Function<RecordItemBuilder, RecordItem> withInactiveEvmFunctionOnly =
                 (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
-                        .record(x -> x.setContractCallResult(builder.contractFunctionResult(contractIdWithEvm)))
+                        .record(x -> x.setReceipt(
+                                        TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS))
+                                .setContractCallResult(builder.contractFunctionResult(contractIdWithEvm)))
+                        .build();
+
+        // The transaction receipt has an evm address, so no recoverable error is expected.
+        Function<RecordItemBuilder, RecordItem> withInactiveEvmReceipt =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .record(x -> x.setReceipt(TransactionReceipt.newBuilder()
+                                        .setStatus(ResponseCodeEnum.SUCCESS)
+                                        .setContractID(contractIdWithEvm))
+                                .setContractCallResult(builder.contractFunctionResult(contractIdWithEvm)))
                         .build();
 
         Function<RecordItemBuilder, RecordItem> contractCreate =
@@ -111,8 +126,10 @@ class ContractResultServiceImplTest {
                 Arguments.of(contractCreate, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, null, false),
                 Arguments.of(contractCreate, EntityId.of(0, 0, 5), false),
-                Arguments.of(withInactiveEvm, null, false),
-                Arguments.of(withInactiveEvm, EntityId.EMPTY, false));
+                Arguments.of(withInactiveEvmFunctionOnly, null, true),
+                Arguments.of(withInactiveEvmFunctionOnly, EntityId.EMPTY, true),
+                Arguments.of(withInactiveEvmReceipt, null, false),
+                Arguments.of(withInactiveEvmReceipt, EntityId.EMPTY, false));
     }
 
     @BeforeEach
