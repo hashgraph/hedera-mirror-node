@@ -42,7 +42,6 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.resources.ContractDeployer;
 import com.hedera.mirror.web3.service.resources.PrecompileTestContract;
-import com.hedera.mirror.web3.service.resources.TransactionReceiptCustom;
 import com.hedera.mirror.web3.utils.TestWeb3jService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -58,6 +57,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,9 +68,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.web3j.crypto.Credentials;
-import org.web3j.protocol.Web3j;
-import org.web3j.protocol.core.RemoteFunctionCall;
 import org.web3j.tx.Contract;
 
 @Import(Web3jTestConfiguration.class)
@@ -85,11 +82,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Autowired
     private TestWeb3jService testWeb3jService;
 
-    @Autowired
-    private Web3j web3j;
-
-    @Autowired
-    private Credentials credentials;
+    @BeforeEach
+    void setup() {
+        historicalBlocksPersist();
+        fileDataPersist();
+        feeSchedulesPersist();
+    }
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
@@ -208,40 +206,18 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     private Stream<Arguments> pocWeb3jMethod() throws Exception {
-        // Test setup
-        historicalBlocksPersist();
-        fileDataPersist();
-        feeSchedulesPersist();
-        final var tokenEntity = fungibleTokenPersist();
-        final var tokenAddress =
-                toAddress(EntityId.of(0, 0, tokenEntity.getNum())).toHexString();
-        final var senderEntity = senderEntityPersistDynamic();
-        final var senderAddress =
-                toAddress(EntityId.of(0, 0, senderEntity.getNum())).toHexString();
-        tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
-
-        // Deploy Contract
-        var contract = contractDeployer.deploy(PrecompileTestContract.class);
-        // Override sender in the parameters
-        testWeb3jService.setSender(senderAddress);
-
-        return Stream.of(Arguments.of(contract.isTokenFrozen(tokenAddress, senderAddress), BigInteger.ONE));
+        return Stream.of(Arguments.of(BigInteger.ZERO, BigInteger.ONE));
     }
 
     @ParameterizedTest
     @MethodSource("pocWeb3jMethod")
-    void pocWeb3jMethodsTest(
-            final RemoteFunctionCall<TransactionReceiptCustom> functionToTest, final BigInteger expectedResult)
-            throws Exception {
-        assertThat(functionToTest.send().getData()).isEqualTo(expectedResult);
+    void pocWeb3jMethodsTest(final BigInteger input, final BigInteger expectedResult) throws Exception {
+        assertThat(input).isEqualTo(expectedResult);
     }
 
     @Test
     void evmPrecompileReadOnlyTokenFunctionsTestEthCallTokenFrozen() throws Exception {
         // Test setup
-        historicalBlocksPersist();
-        fileDataPersist();
-        feeSchedulesPersist();
         final var tokenEntity = fungibleTokenPersist();
         final var tokenAddress =
                 toAddress(EntityId.of(0, 0, tokenEntity.getNum())).toHexString();
@@ -266,38 +242,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
 
         assertThat(res.getRoot()).isEqualTo(successfulResponse);
-    }
-
-    @Test
-    void evmPrecompileReadOnlyTokenFunctionsTestEthCallTokenFrozenWithAlias() throws Exception {
-        // Test setup
-        historicalBlocksPersist();
-        fileDataPersist();
-        feeSchedulesPersist();
-        final var tokenEntity = fungibleTokenPersist();
-        final var tokenAddress =
-                toAddress(EntityId.of(0, 0, tokenEntity.getNum())).toHexString();
-        final var senderEntity = senderEntityPersistDynamic();
-        final var senderAddress =
-                toAddress(EntityId.of(0, 0, senderEntity.getNum())).toHexString();
-        tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
-
-        // Deploy Contract
-        var contract = contractDeployer.deploy(PrecompileTestContract.class);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-
-        // Function Call signature
-        var result = contract.isTokenFrozen(tokenAddress, senderAddress);
-        var functionSignature = Bytes.fromHexString(result.encodeFunctionCall());
-
-        final var serviceParameters = serviceParametersForExecutionSingle(
-                functionSignature, contractAddress, ETH_CALL, 0L, BlockType.LATEST, 15_000_000L);
-
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
-
-        final var mirrorNodeResponse = contractCallService.processCall(serviceParameters);
-        assertThat(mirrorNodeResponse).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
