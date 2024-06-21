@@ -72,8 +72,7 @@ class LoggingFilterTest {
         request.addHeader(X_FORWARDED_FOR, clientIp);
         response.setStatus(HttpStatus.OK.value());
 
-        new ForwardedHeaderFilter()
-                .doFilter(request, response, (request1, response) -> loggingFilter.doFilter(request1, response, chain));
+        new ForwardedHeaderFilter().doFilter(request, response, (req, res) -> loggingFilter.doFilter(req, res, chain));
 
         assertLog(output, "INFO", clientIp + " GET / in \\d+ ms: 200");
     }
@@ -86,7 +85,7 @@ class LoggingFilterTest {
 
         response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
 
-        loggingFilter.doFilter(request, response, (request1, response) -> {
+        loggingFilter.doFilter(request, response, (req, res) -> {
             throw exception;
         });
 
@@ -101,7 +100,7 @@ class LoggingFilterTest {
         request.setContent(content.getBytes(StandardCharsets.UTF_8));
         response.setStatus(HttpStatus.OK.value());
 
-        loggingFilter.doFilter(request, response, (request1, response) -> IOUtils.toString(request1.getReader()));
+        loggingFilter.doFilter(request, response, (req, res) -> IOUtils.toString(req.getReader()));
 
         assertLog(output, "INFO", "\\w+ POST / in \\d+ ms: 200 - .+");
         assertThat(output.getOut()).contains(content);
@@ -115,7 +114,7 @@ class LoggingFilterTest {
         request.setContent(content.getBytes(StandardCharsets.UTF_8));
         response.setStatus(HttpStatus.OK.value());
 
-        loggingFilter.doFilter(request, response, (request1, response) -> IOUtils.toString(request1.getReader()));
+        loggingFilter.doFilter(request, response, (req, res) -> IOUtils.toString(req.getReader()));
 
         assertThat(output.getOut()).contains("foo bar");
     }
@@ -128,7 +127,7 @@ class LoggingFilterTest {
         request.setContent(content.getBytes(StandardCharsets.UTF_8));
         response.setStatus(HttpStatus.OK.value());
 
-        loggingFilter.doFilter(request, response, (request1, response) -> IOUtils.toString(request1.getReader()));
+        loggingFilter.doFilter(request, response, (req, res) -> IOUtils.toString(req.getReader()));
 
         assertThat(output.getOut())
                 .contains(content.substring(0, MAX_PAYLOAD_SIZE))

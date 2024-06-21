@@ -28,9 +28,8 @@ import org.springframework.web.util.WebUtils;
 
 @CustomLog
 @Named
-public class LoggingFilter extends OncePerRequestFilter {
+class LoggingFilter extends OncePerRequestFilter {
 
-    public static final String REQUEST_BODY = "request_body";
     static final int MAX_PAYLOAD_SIZE = 256;
 
     @SuppressWarnings("java:S1075")
