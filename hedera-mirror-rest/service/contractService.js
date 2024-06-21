@@ -200,25 +200,28 @@ class ContractService extends BaseService {
   };
 
   static ethereumTransactionByPayerAndTimestampArrayQuery = `select
-        t.consensus_timestamp,
-        case when ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} is not null then
-          json_build_object('access_list', encode(${EthereumTransaction.ACCESS_LIST}, 'hex'),
-                'chain_id', encode(${EthereumTransaction.CHAIN_ID}, 'hex'),
-                'gas_price', encode(${EthereumTransaction.GAS_PRICE}, 'hex'),
-                'max_fee_per_gas', encode(${EthereumTransaction.MAX_FEE_PER_GAS}, 'hex'),
-                'max_priority_fee_per_gas', encode(${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS}, 'hex'),
-                'nonce', ${EthereumTransaction.NONCE},
-                'signature_r', encode(${EthereumTransaction.SIGNATURE_R}, 'hex'),
-                'signature_s', encode(${EthereumTransaction.SIGNATURE_S}, 'hex'),
-                'type', ${EthereumTransaction.TYPE},
-                'recovery_id', ${EthereumTransaction.RECOVERY_ID},
-                'to_address', encode(${EthereumTransaction.TO_ADDRESS}, 'hex'),
-                'value', encode(${EthereumTransaction.VALUE}, 'hex'))
-        end as ${EthereumTransaction.tableName}
+        encode(${EthereumTransaction.ACCESS_LIST}, 'hex') ${EthereumTransaction.ACCESS_LIST},
+        encode(${EthereumTransaction.CHAIN_ID}, 'hex') ${EthereumTransaction.CHAIN_ID},
+        ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} ${
+    EthereumTransaction.CONSENSUS_TIMESTAMP
+  },
+        encode(${EthereumTransaction.GAS_PRICE}, 'hex') ${EthereumTransaction.GAS_PRICE},
+        encode(${EthereumTransaction.MAX_FEE_PER_GAS}, 'hex') ${EthereumTransaction.MAX_FEE_PER_GAS},
+        encode(${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS}, 'hex') ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS},
+        ${EthereumTransaction.NONCE},
+        encode(${EthereumTransaction.SIGNATURE_R}, 'hex') ${EthereumTransaction.SIGNATURE_R},
+        encode(${EthereumTransaction.SIGNATURE_S}, 'hex') ${EthereumTransaction.SIGNATURE_S},
+        ${EthereumTransaction.TYPE},
+        ${EthereumTransaction.RECOVERY_ID},
+        encode(${EthereumTransaction.TO_ADDRESS}, 'hex') ${EthereumTransaction.TO_ADDRESS},
+        encode(${EthereumTransaction.VALUE}, 'hex') ${EthereumTransaction.VALUE}
       from (select * from unnest($1::bigint[], $2::bigint[]) as tmp (payer_account_id, consensus_timestamp)) as t
-      left join ${EthereumTransaction.tableName} as ${EthereumTransaction.tableAlias}
+      join ${EthereumTransaction.tableName} as ${EthereumTransaction.tableAlias}
         on t.payer_account_id = ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} and
-          t.consensus_timestamp = ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)}`;
+          t.consensus_timestamp = ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)}
+      where ${EthereumTransaction.getFullName(
+        EthereumTransaction.CONSENSUS_TIMESTAMP
+      )} >= $3 and ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} <= $4`;
 
   static transactionHashDetailsQuery = `select ${ContractTransactionHash.HASH}, 
                                               ${ContractTransactionHash.PAYER_ACCOUNT_ID}, 
@@ -585,14 +588,12 @@ class ContractService extends BaseService {
 
     const rows = await super.getRows(
       ContractService.ethereumTransactionByPayerAndTimestampArrayQuery,
-      [payers, timestamps],
+      [payers, timestamps, _.min(timestamps), _.max(timestamps)],
       'getEthereumTransactionsByPayerAndTimestampArray'
     );
 
-    rows.forEach((row) => {
-      const ethereumTransaction = row.ethereum_transaction ? new EthereumTransaction(row.ethereum_transaction) : null;
-      transactionMap.set(row.consensus_timestamp, ethereumTransaction);
-    });
+    rows.forEach((row) => transactionMap.set(row.consensus_timestamp, new EthereumTransaction(row)));
+
     return transactionMap;
   }
 }
