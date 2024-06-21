@@ -78,10 +78,13 @@ export class Cache {
       return loader(keys);
     }
 
-    const buffers =
+    const mappedKeys = _.map(keys, keyMapper);
+    const buffers = mappedKeys.length === 0 ? [] :
       (await this.redis
-        .mgetBuffer(_.map(keys, keyMapper))
-        .catch((err) => logger.warn(`Redis error during mget: ${err.message}`))) || new Array(keys.length);
+        .mgetBuffer(mappedKeys)
+        .catch((err) => {
+          logger.warn(`Redis error during mget: ${err.message}`)
+        })) || new Array(keys.length);
     const values = buffers.map((t) => JSONParse(t));
 
     let i = 0;

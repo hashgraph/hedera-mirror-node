@@ -68,6 +68,11 @@ describe('get', () => {
     expect(newValues).toEqual(['v1', 'v2', 'v3']);
   });
 
+    test('No keys provided', async () => {
+      const values = await cache.get([], loader, keyMapper);
+      expect(values).toEqual([]);
+    });
+
   test('Disabled', async () => {
     config.redis.enabled = false;
     const values = await cache.get(['1', '2', '3'], loader, keyMapper);
