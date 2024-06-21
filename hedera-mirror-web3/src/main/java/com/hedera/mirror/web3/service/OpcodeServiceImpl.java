@@ -71,14 +71,15 @@ public class OpcodeServiceImpl implements OpcodeService {
     private final EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Override
-    public OpcodesResponse processOpcodeCall(@NonNull TransactionIdOrHashParameter transactionIdOrHashParameter,
-                                             @NonNull OpcodeTracerOptions options) {
+    public OpcodesResponse processOpcodeCall(
+            @NonNull TransactionIdOrHashParameter transactionIdOrHashParameter, @NonNull OpcodeTracerOptions options) {
         final CallServiceParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
         final OpcodesProcessingResult result = contractCallService.processOpcodeCall(params, options);
         return buildOpcodesResponse(result);
     }
 
-    private CallServiceParameters buildCallServiceParameters(@NonNull TransactionIdOrHashParameter transactionIdOrHash) {
+    private CallServiceParameters buildCallServiceParameters(
+            @NonNull TransactionIdOrHashParameter transactionIdOrHash) {
         final Long consensusTimestamp;
         final Optional<Transaction> transaction;
         final Optional<EthereumTransaction> ethereumTransaction;
@@ -87,7 +88,8 @@ public class OpcodeServiceImpl implements OpcodeService {
             case TransactionHashParameter transactionHash -> {
                 ContractTransactionHash contractTransactionHash = contractTransactionHashRepository
                         .findByHash(transactionHash.hash().toArray())
-                        .orElseThrow(() -> new EntityNotFoundException("Contract transaction hash not found"));
+                        .orElseThrow(() ->
+                                new EntityNotFoundException("Contract transaction hash not found: " + transactionHash));
 
                 transaction = Optional.empty();
                 consensusTimestamp = contractTransactionHash.getConsensusTimestamp();
@@ -100,7 +102,7 @@ public class OpcodeServiceImpl implements OpcodeService {
 
                 transaction = transactionRepository.findByPayerAccountIdAndValidStartNs(payerAccountId, validStartNs);
                 if (transaction.isEmpty()) {
-                    throw new EntityNotFoundException("Transaction not found");
+                    throw new EntityNotFoundException("Transaction not found: " + transactionId);
                 }
                 consensusTimestamp = transaction.get().getConsensusTimestamp();
                 ethereumTransaction = ethereumTransactionRepository.findByConsensusTimestampAndPayerAccountId(
@@ -143,30 +145,30 @@ public class OpcodeServiceImpl implements OpcodeService {
                                 .memory(opcode.memory().stream()
                                         .map(Bytes::toHexString)
                                         .toList())
-                                .storage(opcode.storage()
-                                        .entrySet().stream()
+                                .storage(opcode.storage().entrySet().stream()
                                         .collect(Collectors.toMap(
                                                 entry -> entry.getKey().toHexString(),
                                                 entry -> entry.getValue().toHexString()))))
                         .toList())
-                .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
-                        .map(Bytes::toHexString)
-                        .orElse(Bytes.EMPTY.toHexString()));
+                .returnValue(
+                        Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                                .map(Bytes::toHexString)
+                                .orElse(Bytes.EMPTY.toHexString()));
     }
 
-    private CallServiceParameters buildCallServiceParameters(Long consensusTimestamp,
-                                                             Optional<Transaction> transaction,
-                                                             Optional<EthereumTransaction> ethTransaction) {
-        final ContractResult contractResult = contractResultRepository.findById(consensusTimestamp)
-                .orElseThrow(() -> new EntityNotFoundException("Contract result not found"));
+    private CallServiceParameters buildCallServiceParameters(
+            Long consensusTimestamp, Optional<Transaction> transaction, Optional<EthereumTransaction> ethTransaction) {
+        final ContractResult contractResult = contractResultRepository
+                .findById(consensusTimestamp)
+                .orElseThrow(() -> new EntityNotFoundException("Contract result not found: " + consensusTimestamp));
 
-        final BlockType blockType = recordFileService.findByTimestamp(consensusTimestamp)
+        final BlockType blockType = recordFileService
+                .findByTimestamp(consensusTimestamp)
                 .map(recordFile -> BlockType.of(recordFile.getIndex().toString()))
                 .orElse(BlockType.LATEST);
 
-        final Integer transactionType = transaction
-                .map(Transaction::getType)
-                .orElse(TransactionType.UNKNOWN.getProtoId());
+        final Integer transactionType =
+                transaction.map(Transaction::getType).orElse(TransactionType.UNKNOWN.getProtoId());
 
         return CallServiceParameters.builder()
                 .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
@@ -185,9 +187,8 @@ public class OpcodeServiceImpl implements OpcodeService {
         return entityDatabaseAccessor.evmAddressFromId(contractResult.getSenderId(), Optional.empty());
     }
 
-    private Address getReceiverAddress(Optional<EthereumTransaction> ethereumTransaction,
-                                       ContractResult contractResult,
-                                       Integer transactionType) {
+    private Address getReceiverAddress(
+            Optional<EthereumTransaction> ethereumTransaction, ContractResult contractResult, Integer transactionType) {
         return ethereumTransaction
                 .flatMap(transaction -> {
                     if (ArrayUtils.isEmpty(transaction.getToAddress())) {
@@ -195,7 +196,9 @@ public class OpcodeServiceImpl implements OpcodeService {
                     }
                     Address address = Address.wrap(Bytes.wrap(transaction.getToAddress()));
                     if (isMirror(address.toArrayUnsafe())) {
-                        return entityDatabaseAccessor.get(address, Optional.empty()).map(this::getEntityAddress);
+                        return entityDatabaseAccessor
+                                .get(address, Optional.empty())
+                                .map(this::getEntityAddress);
                     }
                     return Optional.of(address);
                 })
@@ -209,9 +212,7 @@ public class OpcodeServiceImpl implements OpcodeService {
     }
 
     private Long getGasLimit(Optional<EthereumTransaction> ethereumTransaction, ContractResult contractResult) {
-        return ethereumTransaction
-                .map(EthereumTransaction::getGasLimit)
-                .orElse(contractResult.getGasLimit());
+        return ethereumTransaction.map(EthereumTransaction::getGasLimit).orElse(contractResult.getGasLimit());
     }
 
     private BigInteger getValue(Optional<EthereumTransaction> ethereumTransaction, ContractResult contractResult) {
@@ -226,9 +227,7 @@ public class OpcodeServiceImpl implements OpcodeService {
                 .map(EthereumTransaction::getCallData)
                 .orElse(contractResult.getFunctionParameters());
 
-        return Optional.ofNullable(callData)
-                .map(Bytes::of)
-                .orElse(Bytes.EMPTY);
+        return Optional.ofNullable(callData).map(Bytes::of).orElse(Bytes.EMPTY);
     }
 
     private Address getEntityAddress(Entity entity) {
