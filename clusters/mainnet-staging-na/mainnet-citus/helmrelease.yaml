@@ -64,6 +64,29 @@ spec:
       env:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
         HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
+      hpa:
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 40
+      resources:
+        requests:
+          cpu: 1100m  # same as limits
+    restjava:
+      hpa:
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 40
+      resources:
+        requests:
+          cpu: 2  # same as limits
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
@@ -91,4 +114,14 @@ spec:
       env:
         HEDERA_MIRROR_WEB3_EVM_NETWORK: MAINNET
         HEDERA_MIRROR_WEB3_THROTTLE_REQUESTSPERSECOND: "1500"
-
+      hpa:
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 40
+      resources:
+        requests:
+          cpu: 2  # same as limits
