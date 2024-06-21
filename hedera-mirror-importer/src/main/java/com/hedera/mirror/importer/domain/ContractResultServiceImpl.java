@@ -88,18 +88,22 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // contractResult
         var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
-        var throwRecoverableError = !(recordItem.isSuccessful()
-                && (transactionRecord.getReceipt().getContractID().hasEvmAddress()));
+
+        // Whether a recoverable error should be thrown on entity id lookup
+        // Inactive evm addresses which cannot be looked up should not throw recoverable errors
+        boolean lookupRecoverable =
+                !(recordItem.isSuccessful() && (functionResult.getContractID().hasEvmAddress()));
+
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = (contractCallOrCreate
                         ? Optional.ofNullable(transaction.getEntityId())
-                        : entityIdService.lookup(functionResult.getContractID(), throwRecoverableError))
+                        : entityIdService.lookup(functionResult.getContractID(), lookupRecoverable))
                 .orElse(EntityId.EMPTY);
-        var isRecoverableError =
-                !(recordItem.isSuccessful() && functionResult.getContractID().hasEvmAddress())
-                        && EntityId.isEmpty(contractId)
-                        && !contractCallOrCreate
-                        && (!ContractID.getDefaultInstance().equals(functionResult.getContractID()));
+        var isRecoverableError = !(recordItem.isSuccessful()
+                        && transactionRecord.getReceipt().getContractID().hasEvmAddress())
+                && EntityId.isEmpty(contractId)
+                && !contractCallOrCreate
+                && (!ContractID.getDefaultInstance().equals(functionResult.getContractID()));
         if (isRecoverableError) {
             Utility.handleRecoverableError(
                     "Invalid contract id for contract result at {}", recordItem.getConsensusTimestamp());
