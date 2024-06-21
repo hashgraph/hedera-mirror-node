@@ -94,6 +94,8 @@ class RecordFileService extends BaseService {
   /**
    * Retrieves the recordFiles containing the transactions of the given timestamps
    *
+   * The timestamps must be ordered, either ACS or DESC.
+   *
    * @param {(string|Number|BigInt)[]} timestamps consensus timestamp array
    * @return {Promise<Map>} A map from the consensus timestamp to its record file
    */
