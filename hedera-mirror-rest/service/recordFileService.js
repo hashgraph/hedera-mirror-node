@@ -183,14 +183,13 @@ class RecordFileService extends BaseService {
   }
 
   getTimestampOrder(timestamps) {
-    for (let i = 0; i < timestamps.length - 1; i++) {
-      if (timestamps[i] == timestamps[i + 1]) {
-        continue;
-      }
-      return timestamps[i] < timestamps[i + 1] ? orderFilterValues.ASC : orderFilterValues.DESC;
+    if (timestamps.length === 0) {
+      return orderFilterValues.ASC;
     }
 
-    return orderFilterValues.ASC;
+    const first = timestamps[0];
+    const last = timestamps[timestamps.length - 1];
+    return first > last ? orderFilterValues.DESC : orderFilterValues.ASC;
   }
 }
 
