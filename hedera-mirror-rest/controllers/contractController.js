@@ -763,7 +763,7 @@ class ContractController extends BaseController {
 
     const query = this.extractContractLogsMultiUnionQuery(filters, contractId);
 
-    const rows = await ContractService.getContractLogs(query, query.timestampOrder);
+    const rows = await ContractService.getContractLogs(query);
 
     const logs = rows.map((row) => new ContractLogViewModel(row));
 
@@ -788,7 +788,7 @@ class ContractController extends BaseController {
     checkTimestampsForTopics(filters);
 
     const query = this.extractContractLogsMultiUnionQuery(filters);
-    const rows = await ContractService.getContractLogs(query, query.timestampOrder);
+    const rows = await ContractService.getContractLogs(query);
     const logs = rows.map((row) => new ContractLogViewModel(row));
 
     // Workaround: set the request path in handler so later in the router level generic middleware it won't be

@@ -421,7 +421,7 @@ class ContractService extends BaseService {
    * @param query
    * @returns {Promise<ContractLog[]>} the result of the getContractLogs query
    */
-  async getContractLogs(query, order) {
+  async getContractLogs(query) {
     const [sqlQuery, params] = this.getContractLogsQuery(query);
     const rows = await super.getRows(sqlQuery, params);
     const timestamps = [];
