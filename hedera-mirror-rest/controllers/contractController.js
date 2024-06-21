@@ -1019,7 +1019,7 @@ class ContractController extends BaseController {
     });
     const [ethereumTransactionMap, recordFileMap] = await Promise.all([
       ContractService.getEthereumTransactionsByPayerAndTimestampArray(payers, timestamps),
-      RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps, order),
+      RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps),
     ]);
 
     response.results = rows.map(

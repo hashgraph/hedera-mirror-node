@@ -428,7 +428,7 @@ class ContractService extends BaseService {
     rows.forEach((row) => {
       timestamps.push(row.consensus_timestamp);
     });
-    const recordFileMap = await RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps, order);
+    const recordFileMap = await RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps);
 
     return rows.map((cr) => new ContractLog(cr, recordFileMap.get(cr.consensus_timestamp)));
   }

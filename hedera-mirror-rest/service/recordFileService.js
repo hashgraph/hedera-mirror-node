@@ -95,40 +95,32 @@ class RecordFileService extends BaseService {
    * Retrieves the recordFiles containing the transactions of the given timestamps
    *
    * @param {(string|Number|BigInt)[]} timestamps consensus timestamp array
-   * @param {string} timestampOrder order of the timestamps, asc or desc
    * @return {Promise<Map>} A map from the consensus timestamp to its record file
    */
-  async getRecordFileBlockDetailsFromTimestampArray(timestamps, timestampOrder) {
+  async getRecordFileBlockDetailsFromTimestampArray(timestamps) {
     const recordFileMap = new Map();
-    if (!timestampOrder) {
-      timestampOrder = orderFilterValues.ASC;
-    }
-
+    const timestampOrder = this.getTimestampOrder(timestamps);
     let query = RecordFileService.recordFileBlockDetailsFromTimestampArrayQuery;
     query += ` order by consensus_end ${timestampOrder}`;
 
     const rows = await super.getRows(query, [timestamps], 'getRecordFileBlockDetailsFromTimestampArray');
 
-    rows
-      .map((r) => new RecordFile(r))
-      .forEach((recordFile) => {
-        for (let i = 0; i < timestamps.length; ) {
-          const timestamp = timestamps[i];
-          if (recordFile.consensusEnd >= timestamp && recordFile.consensusStart <= timestamp) {
-            recordFileMap.set(timestamp, recordFile);
-            // Remove the timestamp so as not to continue iterating over it for other record files
-            timestamps.shift();
-          } else if (
-            (timestampOrder == orderFilterValues.ASC && timestamp > recordFile.consensusEnd) ||
-            (timestampOrder == orderFilterValues.DESC && timestamp < recordFile.consensusStart)
-          ) {
-            break;
-          } else {
-            // Only occurs if timestamps are not sequentially ordered
-            i++;
-          }
+    let index = 0;
+    for (const row of rows) {
+      const recordFile = new RecordFile(row);
+      const {consensusEnd, consensusStart} = recordFile;
+      for (; index < timestamps.length; index++) {
+        const timestamp = timestamps[index];
+        if (consensusEnd >= timestamp && consensusStart <= timestamp) {
+          recordFileMap.set(timestamp, recordFile);
+        } else if (
+          (timestampOrder == orderFilterValues.ASC && timestamp > consensusEnd) ||
+          (timestampOrder == orderFilterValues.DESC && timestamp < consensusStart)
+        ) {
+          break;
         }
-      });
+      }
+    }
 
     return recordFileMap;
   }
@@ -186,6 +178,17 @@ class RecordFileService extends BaseService {
     const query = `${RecordFileService.blocksQuery} where ${whereStatement}`;
     const row = await super.getSingleRow(query, params);
     return row ? new RecordFile(row) : null;
+  }
+
+  getTimestampOrder(timestamps) {
+    for (let i = 0; i < timestamps.length - 1; i++) {
+      if (timestamps[i] == timestamps[i + 1]) {
+        continue;
+      }
+      return timestamps[i] < timestamps[i + 1] ? orderFilterValues.ASC : orderFilterValues.DESC;
+    }
+
+    return orderFilterValues.ASC;
   }
 }
 
