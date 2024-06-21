@@ -23,20 +23,29 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+import org.springframework.web.util.WebUtils;
 
 @CustomLog
 @Named
-class LoggingFilter extends OncePerRequestFilter {
+public class LoggingFilter extends OncePerRequestFilter {
+
+    public static final String REQUEST_BODY = "request_body";
+    static final int MAX_PAYLOAD_SIZE = 256;
 
     @SuppressWarnings("java:S1075")
     private static final String ACTUATOR_PATH = "/actuator/";
 
-    private static final String LOG_FORMAT = "{} {} {} in {} ms: {}";
+    private static final String LOG_FORMAT = "{} {} {} in {} ms: {} - {}";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
         long start = System.currentTimeMillis();
         Exception cause = null;
+
+        if (!(request instanceof ContentCachingRequestWrapper)) {
+            request = new ContentCachingRequestWrapper(request, MAX_PAYLOAD_SIZE);
+        }
 
         try {
             filterChain.doFilter(request, response);
@@ -48,17 +57,34 @@ class LoggingFilter extends OncePerRequestFilter {
     }
 
     private void logRequest(HttpServletRequest request, HttpServletResponse response, long startTime, Exception cause) {
-        long elapsed = System.currentTimeMillis() - startTime;
-        String uri = request.getRequestURI();
-        var message = cause != null ? cause.getMessage() : response.getStatus();
-        var params = new Object[] {request.getRemoteAddr(), request.getMethod(), uri, elapsed, message};
+        var uri = request.getRequestURI();
+        boolean actuator = StringUtils.startsWith(uri, ACTUATOR_PATH);
 
-        if (StringUtils.startsWith(uri, ACTUATOR_PATH)) {
+        if (!log.isDebugEnabled() && actuator) {
+            return;
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        var content = getContent(request);
+        var message = cause != null ? cause.getMessage() : response.getStatus();
+        var params = new Object[] {request.getRemoteAddr(), request.getMethod(), uri, elapsed, message, content};
+
+        if (actuator) {
             log.debug(LOG_FORMAT, params);
         } else if (cause != null) {
             log.warn(LOG_FORMAT, params);
         } else {
             log.info(LOG_FORMAT, params);
         }
+    }
+
+    protected String getContent(HttpServletRequest request) {
+        var wrapper = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper.class);
+
+        if (wrapper != null) {
+            return wrapper.getContentAsString().replace('\n', ' ');
+        }
+
+        return "";
     }
 }

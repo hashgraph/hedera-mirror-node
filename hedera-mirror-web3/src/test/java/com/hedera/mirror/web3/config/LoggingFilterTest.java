@@ -17,9 +17,13 @@
 package com.hedera.mirror.web3.config;
 
 import static com.google.common.net.HttpHeaders.X_FORWARDED_FOR;
+import static com.hedera.mirror.web3.config.LoggingFilter.MAX_PAYLOAD_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
 import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -87,6 +91,48 @@ class LoggingFilterTest {
         });
 
         assertLog(output, "WARN", "\\w+ GET / in \\d+ ms: " + exception.getMessage());
+    }
+
+    @Test
+    @SneakyThrows
+    void post(CapturedOutput output) {
+        var content = "{\"to\": \"0x00\"}";
+        var request = new MockHttpServletRequest("POST", "/");
+        request.setContent(content.getBytes(StandardCharsets.UTF_8));
+        response.setStatus(HttpStatus.OK.value());
+
+        loggingFilter.doFilter(request, response, (request1, response) -> IOUtils.toString(request1.getReader()));
+
+        assertLog(output, "INFO", "\\w+ POST / in \\d+ ms: 200 - .+");
+        assertThat(output.getOut()).contains(content);
+    }
+
+    @Test
+    @SneakyThrows
+    void postMultiLine(CapturedOutput output) {
+        var content = "foo\nbar";
+        var request = new MockHttpServletRequest("POST", "/");
+        request.setContent(content.getBytes(StandardCharsets.UTF_8));
+        response.setStatus(HttpStatus.OK.value());
+
+        loggingFilter.doFilter(request, response, (request1, response) -> IOUtils.toString(request1.getReader()));
+
+        assertThat(output.getOut()).contains("foo bar");
+    }
+
+    @Test
+    @SneakyThrows
+    void postLargeContent(CapturedOutput output) {
+        var content = RandomStringUtils.random(MAX_PAYLOAD_SIZE + 1, "abcdef0123456789");
+        var request = new MockHttpServletRequest("POST", "/");
+        request.setContent(content.getBytes(StandardCharsets.UTF_8));
+        response.setStatus(HttpStatus.OK.value());
+
+        loggingFilter.doFilter(request, response, (request1, response) -> IOUtils.toString(request1.getReader()));
+
+        assertThat(output.getOut())
+                .contains(content.substring(0, MAX_PAYLOAD_SIZE))
+                .doesNotContain(content);
     }
 
     private void assertLog(CapturedOutput logOutput, String level, String pattern) {
