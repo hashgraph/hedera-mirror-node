@@ -102,11 +102,7 @@ const getAccountsWithAccountCheck = async (server) => {
   };
 };
 
-/**
- * Verify single account can be retrieved
- * @param {Object} server API host endpoint
- */
-const getSingleAccount = async (server) => {
+async function getAccounts(server) {
   let url = getUrl(server, accountsPath, {limit: resourceLimit});
   const accounts = await fetchAPIResponse(url, jsonRespKey);
 
@@ -122,6 +118,15 @@ const getSingleAccount = async (server) => {
       message: 'account object is missing some mandatory fields',
     })
     .run(accounts);
+  return {url, accounts, result};
+}
+
+/**
+ * Verify single account can be retrieved
+ * @param {Object} server API host endpoint
+ */
+const getSingleAccount = async (server) => {
+  let {url, accounts, result} = await getAccounts(server);
   if (!result.passed) {
     return {url, ...result};
   }
@@ -224,7 +229,17 @@ const getSingleAccountTokenRelationships = async (server) => {
 };
 
 const getAccountStakingRewards = async (server) => {
-  const stakingRewardsPath = `${accountsPath}/${stakingRewardAccountId}/rewards`;
+  let accountId = stakingRewardAccountId;
+  if (!stakingRewardAccountId) {
+    let {url, accounts, result} = await getAccounts(server);
+    if (!result.passed) {
+      return {url, ...result};
+    }
+
+    accountId = _.max(_.map(accounts, (acct) => acct.account));
+  }
+
+  const stakingRewardsPath = `${accountsPath}/${accountId}/rewards`;
   const rewardsJsonRespKey = 'rewards';
   let url = getUrl(server, stakingRewardsPath, {limit: resourceLimit});
   const rewardMandatoryParams = ['account_id', 'amount', 'timestamp'];
@@ -254,7 +269,17 @@ const getAccountStakingRewards = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getCryptoAllowances = async (server) => {
-  const cryptoAllowancesPath = `${accountsPath}/${cryptoAllowanceOwnerId}/allowances/crypto`;
+  let accountId = cryptoAllowanceOwnerId;
+  if (!cryptoAllowanceOwnerId) {
+    let {url, accounts, result} = await getAccounts(server);
+    if (!result.passed) {
+      return {url, ...result};
+    }
+
+    accountId = _.max(_.map(accounts, (acct) => acct.account));
+  }
+
+  const cryptoAllowancesPath = `${accountsPath}/${accountId}/allowances/crypto`;
   let url = getUrl(server, cryptoAllowancesPath, {limit: resourceLimit});
   const allowances = await fetchAPIResponse(url, allowancesJsonRespKey);
   const allowancesMandatoryParams = ['amount', 'amount_granted', 'owner', 'spender', 'timestamp'];
@@ -283,7 +308,17 @@ const getCryptoAllowances = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getTokenAllowances = async (server) => {
-  const tokenAllowancesPath = `${accountsPath}/${tokenAllowanceOwnerId}/allowances/tokens`;
+  let accountId = tokenAllowanceOwnerId;
+  if (!tokenAllowanceOwnerId) {
+    let {url, accounts, result} = await getAccounts(server);
+    if (!result.passed) {
+      return {url, ...result};
+    }
+
+    accountId = _.max(_.map(accounts, (acct) => acct.account));
+  }
+
+  const tokenAllowancesPath = `${accountsPath}/${accountId}/allowances/tokens`;
   let url = getUrl(server, tokenAllowancesPath, {limit: resourceLimit});
   const allowances = await fetchAPIResponse(url, allowancesJsonRespKey);
   const tokenAllowancesMandatoryParams = ['amount', 'amount_granted', 'owner', 'spender', 'timestamp', 'token_id'];
@@ -341,7 +376,17 @@ const getNftAllowances = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getNfts = async (server) => {
-  const nftsPath = `${accountsPath}/${nftAccountId}/nfts`;
+  let accountId = nftAccountId;
+  if (!nftAccountId) {
+    let {url, accounts, result} = await getAccounts(server);
+    if (!result.passed) {
+      return {url, ...result};
+    }
+
+    accountId = _.max(_.map(accounts, (acct) => acct.account));
+  }
+
+  const nftsPath = `${accountsPath}/${accountId}/nfts`;
   let url = getUrl(server, nftsPath, {limit: resourceLimit});
   const nftJsonResponseKey = 'nfts';
   const allowances = await fetchAPIResponse(url, nftJsonResponseKey);
@@ -387,11 +432,11 @@ const runTests = async (server, testResult) => {
     runTest(getAccountsWithAccountCheck),
     runTest(getSingleAccount),
     tokenRelationshipEnabled ? runTest(getSingleAccountTokenRelationships) : '',
-    stakingRewardAccountId !== null ? runTest(getAccountStakingRewards) : '',
-    cryptoAllowanceOwnerId !== null ? runTest(getCryptoAllowances) : '',
-    tokenAllowanceOwnerId !== null ? runTest(getTokenAllowances) : '',
-    nftAllowanceOwnerId !== null ? runTest(getNftAllowances) : '',
-    nftAccountId !== null ? runTest(getNfts) : '',
+    runTest(getAccountStakingRewards),
+    runTest(getCryptoAllowances),
+    runTest(getTokenAllowances),
+    nftAllowanceOwnerId !== null ? runTest(getNftAllowances, 'REST_JAVA') : '',
+    runTest(getNfts),
   ]);
 };
 
