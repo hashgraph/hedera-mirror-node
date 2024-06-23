@@ -17,7 +17,7 @@ env:
   LC_ALL: C.UTF-8
 
 jobs:
-  promote:
+  deploy:
     name: Deploy
     runs-on: [self-hosted, linux, large, ephemeral]
     if: github.event.client_payload.severity == 'info'
@@ -43,9 +43,9 @@ jobs:
         env:
           CHART_PATH: ${{ github.event.client_payload.metadata.path }}
           CHART_VERSION: ${{ steps.release.outputs.version }}
-        run: |
-          echo "Setting HelmRelease ${CHART_PATH} to ${CHART_VERSION}"
-          yq eval '.spec.chart.spec.version=env(CHART_VERSION)' -i ./clusters/${CHART_PATH}/helmrelease.yaml
+        uses: mikefarah/yq@f15500b20a1c991c8729870ba60a4dc3524b6a94 # v4.44.2
+        with:
+          cmd: yq eval '.spec.chart.spec.version=env(CHART_VERSION)' -i "./clusters/${CHART_PATH}/helmrelease.yaml"
 
       - name: Import GPG Key
         id: gpg_importer

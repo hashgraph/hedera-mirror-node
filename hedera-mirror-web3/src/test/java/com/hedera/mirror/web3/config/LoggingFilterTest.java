@@ -17,9 +17,9 @@
 package com.hedera.mirror.web3.config;
 
 import static com.google.common.net.HttpHeaders.X_FORWARDED_FOR;
-import static com.hedera.mirror.web3.config.LoggingFilter.MAX_PAYLOAD_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.hedera.mirror.web3.Web3Properties;
 import java.nio.charset.StandardCharsets;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
@@ -36,7 +36,9 @@ import org.springframework.web.filter.ForwardedHeaderFilter;
 
 @ExtendWith(OutputCaptureExtension.class)
 class LoggingFilterTest {
-    private final LoggingFilter loggingFilter = new LoggingFilter();
+
+    private final Web3Properties web3Properties = new Web3Properties();
+    private final LoggingFilter loggingFilter = new LoggingFilter(web3Properties);
     private final MockHttpServletResponse response = new MockHttpServletResponse();
     private final MockFilterChain chain = new MockFilterChain();
 
@@ -95,7 +97,7 @@ class LoggingFilterTest {
     @Test
     @SneakyThrows
     void post(CapturedOutput output) {
-        var content = "{\"to\": \"0x00\"}";
+        var content = "{\"to\":\"0x00\"}";
         var request = new MockHttpServletRequest("POST", "/");
         request.setContent(content.getBytes(StandardCharsets.UTF_8));
         response.setStatus(HttpStatus.OK.value());
@@ -109,29 +111,28 @@ class LoggingFilterTest {
     @Test
     @SneakyThrows
     void postMultiLine(CapturedOutput output) {
-        var content = "foo\nbar";
+        var content = " foo: bar\n";
         var request = new MockHttpServletRequest("POST", "/");
         request.setContent(content.getBytes(StandardCharsets.UTF_8));
         response.setStatus(HttpStatus.OK.value());
 
         loggingFilter.doFilter(request, response, (req, res) -> IOUtils.toString(req.getReader()));
 
-        assertThat(output.getOut()).contains("foo bar");
+        assertThat(output.getOut()).contains("foo:bar");
     }
 
     @Test
     @SneakyThrows
     void postLargeContent(CapturedOutput output) {
-        var content = RandomStringUtils.random(MAX_PAYLOAD_SIZE + 1, "abcdef0123456789");
+        int maxSize = web3Properties.getMaxPayloadLogSize();
+        var content = RandomStringUtils.random(maxSize + 1, "abcdef0123456789");
         var request = new MockHttpServletRequest("POST", "/");
         request.setContent(content.getBytes(StandardCharsets.UTF_8));
         response.setStatus(HttpStatus.OK.value());
 
         loggingFilter.doFilter(request, response, (req, res) -> IOUtils.toString(req.getReader()));
 
-        assertThat(output.getOut())
-                .contains(content.substring(0, MAX_PAYLOAD_SIZE))
-                .doesNotContain(content);
+        assertThat(output.getOut()).contains(content.substring(0, maxSize)).doesNotContain(content);
     }
 
     private void assertLog(CapturedOutput logOutput, String level, String pattern) {

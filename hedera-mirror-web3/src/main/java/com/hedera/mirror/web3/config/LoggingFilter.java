@@ -16,11 +16,13 @@
 
 package com.hedera.mirror.web3.config;
 
+import com.hedera.mirror.web3.Web3Properties;
 import jakarta.inject.Named;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
@@ -28,14 +30,15 @@ import org.springframework.web.util.WebUtils;
 
 @CustomLog
 @Named
+@RequiredArgsConstructor
 class LoggingFilter extends OncePerRequestFilter {
-
-    static final int MAX_PAYLOAD_SIZE = 256;
 
     @SuppressWarnings("java:S1075")
     private static final String ACTUATOR_PATH = "/actuator/";
 
     private static final String LOG_FORMAT = "{} {} {} in {} ms: {} - {}";
+
+    private final Web3Properties web3Properties;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) {
@@ -43,7 +46,7 @@ class LoggingFilter extends OncePerRequestFilter {
         Exception cause = null;
 
         if (!(request instanceof ContentCachingRequestWrapper)) {
-            request = new ContentCachingRequestWrapper(request, MAX_PAYLOAD_SIZE);
+            request = new ContentCachingRequestWrapper(request, web3Properties.getMaxPayloadLogSize());
         }
 
         try {
@@ -81,7 +84,7 @@ class LoggingFilter extends OncePerRequestFilter {
         var wrapper = WebUtils.getNativeRequest(request, ContentCachingRequestWrapper.class);
 
         if (wrapper != null) {
-            return wrapper.getContentAsString().replace('\n', ' ');
+            return StringUtils.deleteWhitespace(wrapper.getContentAsString());
         }
 
         return "";

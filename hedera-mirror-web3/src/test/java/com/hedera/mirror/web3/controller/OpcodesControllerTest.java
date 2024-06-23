@@ -39,6 +39,7 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.OpcodesResponse;
+import com.hedera.mirror.web3.Web3Properties;
 import com.hedera.mirror.web3.common.TransactionHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdParameter;
@@ -147,6 +148,9 @@ class OpcodesControllerTest {
 
     @MockBean
     private EntityDatabaseAccessor entityDatabaseAccessor;
+
+    @MockBean
+    private Web3Properties web3Properties;
 
     @Captor
     private ArgumentCaptor<CallServiceParameters> callServiceParametersCaptor;
