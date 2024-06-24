@@ -40,8 +40,8 @@ import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.service.resources.ContractDeployer;
 import com.hedera.mirror.web3.service.resources.PrecompileTestContract;
+import com.hedera.mirror.web3.service.resources.TransactionReceiptCustom;
 import com.hedera.mirror.web3.utils.TestWeb3jService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -68,7 +68,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.web3j.crypto.Credentials;
+import org.web3j.protocol.Web3j;
 import org.web3j.tx.Contract;
+import org.web3j.tx.gas.ContractGasProvider;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
@@ -77,10 +80,16 @@ import org.web3j.tx.Contract;
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Autowired
-    private ContractDeployer contractDeployer;
+    private Credentials credentials;
 
     @Autowired
     private TestWeb3jService testWeb3jService;
+
+    @Autowired
+    private Web3j web3j;
+
+    @Autowired
+    private ContractGasProvider contractGasProvider;
 
     @BeforeEach
     void setup() {
@@ -226,22 +235,20 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 toAddress(EntityId.of(0, 0, senderEntity.getNum())).toHexString();
         tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
 
-        // Deploy Contract
-        var contract = contractDeployer.deploy(PrecompileTestContract.class);
         // Override sender in the parameters
         testWeb3jService.setSender(senderAddress);
+        // Deploy Contract
+        var contract = PrecompileTestContract.deploy(web3j, credentials, contractGasProvider)
+                .send();
 
         // Function Call with Transaction
         var call = contract.isTokenFrozen(tokenAddress, senderAddress);
-        final var res = call.send();
-
-        var callView = contract.isTokenAddressView();
-        final var resView = callView.send();
+        final var res = (TransactionReceiptCustom) call.send();
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
 
-        assertThat(res.getRoot()).isEqualTo(successfulResponse);
+        assertThat(res.getData()).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
