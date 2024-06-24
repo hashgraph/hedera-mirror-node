@@ -29,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.mirror.web3.Web3Properties;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
@@ -471,13 +472,18 @@ class ContractControllerTest {
     @TestConfiguration
     public static class TestConfig {
         @Bean
-        public MirrorNodeEvmProperties evmProperties() {
+        MirrorNodeEvmProperties evmProperties() {
             return new MirrorNodeEvmProperties();
         }
 
         @Bean
         MeterRegistry meterRegistry() {
             return new SimpleMeterRegistry();
+        }
+
+        @Bean
+        Web3Properties web3Properties() {
+            return new Web3Properties();
         }
     }
 }
