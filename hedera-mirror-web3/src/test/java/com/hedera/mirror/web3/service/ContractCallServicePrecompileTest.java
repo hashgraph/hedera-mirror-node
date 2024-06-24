@@ -234,21 +234,20 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var senderAddress =
                 toAddress(EntityId.of(0, 0, senderEntity.getNum())).toHexString();
         tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
-
         // Override sender in the parameters
         testWeb3jService.setSender(senderAddress);
+
         // Deploy Contract
         var contract = PrecompileTestContract.deploy(web3j, credentials, contractGasProvider)
                 .send();
-
         // Function Call with Transaction
-        var call = contract.isTokenFrozen(tokenAddress, senderAddress);
-        final var res = (TransactionReceiptCustom) call.send();
+        var result = (TransactionReceiptCustom)
+                contract.isTokenFrozen(tokenAddress, senderAddress).send();
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
 
-        assertThat(res.getData()).isEqualTo(successfulResponse);
+        assertThat(result.getData()).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
