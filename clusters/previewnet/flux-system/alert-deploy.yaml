@@ -1,0 +1,21 @@
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: github-dispatch-previewnet
+  namespace: flux-system
+spec:
+  eventMetadata:
+    env: previewnet
+    cluster: previewnet
+    path: previewnet/previewnet-citus
+  eventSeverity: info
+  eventSources:
+    - kind: HelmRelease
+      name: mirror
+      namespace: previewnet
+  inclusionList:
+    - ".*.test.*succeeded.*"
+  providerRef:
+    name: github-dispatch
+  summary: "Trigger previewnet-citus deployment"
+
