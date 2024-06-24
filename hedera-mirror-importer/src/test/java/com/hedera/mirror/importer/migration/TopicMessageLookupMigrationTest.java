@@ -23,7 +23,7 @@ import static org.awaitility.Awaitility.await;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessageLookup;
-import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.EnabledIfV2;
 import com.hedera.mirror.importer.parser.record.entity.topic.AbstractTopicMessageLookupIntegrationTest;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -41,13 +41,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
+@EnabledIfV2
 @RequiredArgsConstructor
 @Tag("migration")
 @ExtendWith({OutputCaptureExtension.class})
 class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrationTest {
 
+    private static final String PARTITION_SKIPPED_TEMPLATE = "Partition %s doesn't need migration";
     private static final String RESET_CHECKSUM_SQL = "update flyway_schema_history set checksum = -1 where script = ?";
-
     private static final String SELECT_LAST_CHECKSUM_SQL =
             """
             select (
@@ -120,14 +121,12 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
         migrate(true);
         assertThat(output).contains(activeMessage);
         for (var partition : expectedPartitions) {
-            var expectedMessage = "Partition " + partition.getName() + " already migrated";
-            assertThat(output).doesNotContain(expectedMessage);
+            assertThat(output).doesNotContain(String.format(PARTITION_SKIPPED_TEMPLATE, partition.getName()));
         }
 
         migrate(false);
         for (var partition : expectedPartitions) {
-            var expectedMessage = "Partition " + partition.getName() + " already migrated";
-            assertThat(output).contains(expectedMessage);
+            assertThat(output).contains(String.format(PARTITION_SKIPPED_TEMPLATE, partition.getName()));
         }
     }
 
@@ -146,8 +145,8 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
 
         migrate(false);
         assertThat(output)
-                .contains("Partition " + openPartition.getName() + " already migrated")
-                .doesNotContain("Partition " + closedPartiton.getName() + " already migrated");
+                .contains(String.format(PARTITION_SKIPPED_TEMPLATE, openPartition.getName()))
+                .doesNotContain(String.format(PARTITION_SKIPPED_TEMPLATE, closedPartiton.getName()));
     }
 
     @Test
@@ -200,6 +199,11 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
                     .customize(r -> r.consensusStart(consensusStart).consensusEnd(consensusEnd))
                     .persist();
 
+            List.of(topicId1, topicId2, topicId3).forEach(topicId -> domainBuilder
+                    .topic()
+                    .customize(t -> t.id(topicId.getId()).num(topicId.getNum()))
+                    .persist());
+
             // partition 1
             domainBuilder
                     .topicMessage()
@@ -251,7 +255,7 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
         runMigration();
 
         // then
-        var expected = new ArrayList<TopicMessageLookup>(List.of(
+        var expected = new ArrayList<>(List.of(
                 TopicMessageLookup.builder()
                         .partition(partition1.getName())
                         .sequenceNumberRange(Range.closedOpen(1L, 2L))
@@ -289,14 +293,6 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
 
         assertThat(topicMessageLookupRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
         assertThat(migration.getChecksum()).isOne();
-    }
-
-    @EnabledIfV1
-    @Test
-    void notPartitioned() {
-        revertPartitions();
-        runMigration();
-        assertThat(topicMessageLookupRepository.count()).isZero();
     }
 
     @SneakyThrows
