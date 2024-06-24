@@ -17,8 +17,6 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -48,7 +46,7 @@ class NodeCreateTransactionHandler extends AbstractTransactionHandler {
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
 
         var transactionBody = recordItem.getTransactionBody().getNodeCreate();
-        var tokenId = EntityId.of(transactionBody.getToken());
+        /*        var tokenId = EntityId.of(transactionBody.getToken());
 
         var tokenAccount = new TokenAccount();
         tokenAccount.setAccountId(transaction.getEntityId().getId());
@@ -57,6 +55,6 @@ class NodeCreateTransactionHandler extends AbstractTransactionHandler {
         tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());
         tokenAccount.setTokenId(tokenId.getId());
         entityListener.onTokenAccount(tokenAccount);
-        recordItem.addEntityId(tokenId);
+        recordItem.addEntityId(tokenId);*/
     }
 }
