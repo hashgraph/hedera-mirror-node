@@ -1,0 +1,19 @@
+apiVersion: notification.toolkit.fluxcd.io/v1beta3
+kind: Alert
+metadata:
+  name: github-dispatch-citus
+  namespace: flux-system
+spec:
+  eventMetadata:
+    path: testnet-eu/testnet
+  eventSeverity: info
+  eventSources:
+    - kind: HelmRelease
+      name: mirror
+      namespace: testnet
+  inclusionList:
+    - ".*.test.*succeeded.*"
+  providerRef:
+    name: github-dispatch
+  summary: "Trigger testnet-eu deployment"
+
