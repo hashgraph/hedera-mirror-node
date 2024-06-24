@@ -41,8 +41,8 @@
   },
   "contract": {
     "contractId": "",
-    "enabled": false,
-    "contractCallEnabled": false,
+    "enabled": true,
+    "contractCallEnabled": true,
     "intervalMultiplier": 1,
     "limit": 2
   },
@@ -74,7 +74,7 @@
     "topicId": ""
   },
   "token": {
-    "enabled": false,
+    "enabled": true,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
     "tokenId": "",
