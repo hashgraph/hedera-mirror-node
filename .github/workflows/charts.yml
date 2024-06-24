@@ -17,7 +17,7 @@ defaults:
 
 jobs:
   lint:
-    runs-on: [self-hosted, linux, large, ephemeral]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -42,7 +42,7 @@ jobs:
         run: ct lint --config .github/ct.yaml --all
 
   install:
-    runs-on: [self-hosted, linux, large, ephemeral]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
