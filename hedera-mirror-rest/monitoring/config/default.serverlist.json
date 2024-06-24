@@ -41,8 +41,8 @@
   },
   "contract": {
     "contractId": "",
-    "enabled": false,
-    "contractCallEnabled": false,
+    "enabled": true,
+    "contractCallEnabled": true,
     "intervalMultiplier": 1,
     "limit": 2
   },
@@ -74,8 +74,8 @@
     "topicId": ""
   },
   "token": {
-    "enabled": false,
-    "freshnessThreshold": 1000,
+    "enabled": true,
+    "freshnessThreshold": 0,
     "intervalMultiplier": 1,
     "tokenId": "",
     "nftTokenId": "",
