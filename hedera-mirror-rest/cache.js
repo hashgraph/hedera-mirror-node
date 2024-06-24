@@ -74,17 +74,17 @@ export class Cache {
   }
 
   async get(keys, loader, keyMapper = (k) => (k ? k.toString() : k)) {
+    if (_.isEmpty(keys)) {
+        return [];
+    }
     if (!this.ready) {
       return loader(keys);
     }
 
-    const mappedKeys = _.map(keys, keyMapper);
-    const buffers = mappedKeys.length === 0 ? [] :
+    const buffers =
       (await this.redis
-        .mgetBuffer(mappedKeys)
-        .catch((err) => {
-          logger.warn(`Redis error during mget: ${err.message}`)
-        })) || new Array(keys.length);
+        .mgetBuffer(_.map(keys, keyMapper))
+        .catch((err) => logger.warn(`Redis error during mget: ${err.message}`))) || new Array(keys.length);
     const values = buffers.map((t) => JSONParse(t));
 
     let i = 0;
