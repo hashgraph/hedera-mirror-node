@@ -75,7 +75,7 @@
   },
   "token": {
     "enabled": true,
-    "freshnessThreshold": 1000,
+    "freshnessThreshold": 0,
     "intervalMultiplier": 1,
     "tokenId": "",
     "nftTokenId": "",
