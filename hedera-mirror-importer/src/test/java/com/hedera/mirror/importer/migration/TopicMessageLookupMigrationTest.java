@@ -124,6 +124,8 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
             assertThat(output).doesNotContain(String.format(PARTITION_SKIPPED_TEMPLATE, partition.getName()));
         }
 
+        jdbcOperations.update(RESET_CHECKSUM_SQL, migration.getClass().getName());
+
         migrate(false);
         for (var partition : expectedPartitions) {
             assertThat(output).contains(String.format(PARTITION_SKIPPED_TEMPLATE, partition.getName()));
@@ -138,15 +140,16 @@ class TopicMessageLookupMigrationTest extends AbstractTopicMessageLookupIntegrat
     @Test
     void onlyUnprocessedPartitionsAreProcessed(CapturedOutput output) {
         migrate(true);
-        var closedPartiton = partitions.get(0);
+        var closedPartition = partitions.get(0);
         var openPartition = partitions.get(1);
         var deleteSql = "delete from topic_message_lookup where partition = ?";
-        jdbcTemplate.update(deleteSql, closedPartiton.getName());
+        jdbcTemplate.update(deleteSql, closedPartition.getName());
+        jdbcOperations.update(RESET_CHECKSUM_SQL, migration.getClass().getName());
 
         migrate(false);
         assertThat(output)
                 .contains(String.format(PARTITION_SKIPPED_TEMPLATE, openPartition.getName()))
-                .doesNotContain(String.format(PARTITION_SKIPPED_TEMPLATE, closedPartiton.getName()));
+                .doesNotContain(String.format(PARTITION_SKIPPED_TEMPLATE, closedPartition.getName()));
     }
 
     @Test
