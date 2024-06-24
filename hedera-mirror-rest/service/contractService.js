@@ -211,6 +211,7 @@ class ContractService extends BaseService {
         ${EthereumTransaction.NONCE},
         encode(${EthereumTransaction.SIGNATURE_R}, 'hex') ${EthereumTransaction.SIGNATURE_R},
         encode(${EthereumTransaction.SIGNATURE_S}, 'hex') ${EthereumTransaction.SIGNATURE_S},
+        ${EthereumTransaction.SIGNATURE_V},
         ${EthereumTransaction.TYPE},
         ${EthereumTransaction.RECOVERY_ID},
         encode(${EthereumTransaction.TO_ADDRESS}, 'hex') ${EthereumTransaction.TO_ADDRESS},
