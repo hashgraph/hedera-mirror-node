@@ -141,8 +141,8 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
     private static final String PARTITION_NEEDS_MIGRATION_SQL =
             """
                     select
-                      not exists(select 1 from topic_message_lookup where partition = ?) and
-                      exists(select 1 from %s)
+                      not exists(select 1 from topic_message_lookup where partition = ? limit 1) and
+                      exists(select 1 from %s limit 1)
                     """;
     private static final RowMapper<ShardCount> SHARD_COUNT_ROW_MAPPER = new DataClassRowMapper<>(ShardCount.class);
     private static final String TOPIC_MESSAGE_TABLE_NAME = "topic_message";
