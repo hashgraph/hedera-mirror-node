@@ -53,7 +53,7 @@ public class ContractCallContext {
     private OpcodeTracerOptions opcodeTracerOptions;
 
     @Setter
-    private List<Opcode> opcodes = new ArrayList<Opcode>();
+    private List<Opcode> opcodes = new ArrayList<>();
     /**
      * Record file which stores the block timestamp and other historical block details used for filtering of historical
      * data.

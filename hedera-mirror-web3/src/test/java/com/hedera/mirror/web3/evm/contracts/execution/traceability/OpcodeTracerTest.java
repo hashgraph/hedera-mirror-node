@@ -172,7 +172,7 @@ class OpcodeTracerTest {
 
         tracer.traceContextEnter(frame);
 
-        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(0);
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
         verify(contractCallContext, times(1)).incrementContractActionsCounter();
         verify(contractCallContext, never()).decrementContractActionsCounter();
     }
@@ -198,7 +198,7 @@ class OpcodeTracerTest {
 
         tracer.traceContextExit(frame);
 
-        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(0);
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
         verify(contractCallContext, times(1)).incrementContractActionsCounter();
         verify(contractCallContext, never()).decrementContractActionsCounter();
     }
