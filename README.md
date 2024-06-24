@@ -36,7 +36,8 @@ flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch
 For alerts of type [GitHub Dispatch](https://fluxcd.io/flux/components/notification/providers/#github-dispatch), a new GitHub
 [Personal Access Token (PAT)](https://github.com/settings/personal-access-tokens/new) will need to be created with repository
 permissions for `Contents` scope with `Read and Write` access. This PAT is created under the
-[hedera-github-bot](https://github.com/hedera-github-bot) user.
+[hedera-github-bot](https://github.com/hedera-github-bot) user. The resource owner should be the hashgraph organization and
+have repository access only for `hashgraph/hedera-mirror-node`.
 
 ## Configure
 
