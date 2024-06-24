@@ -26,12 +26,7 @@ import com.hedera.mirror.web3.config.Web3jTestConfiguration;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.resources.ContractDeployer;
-import com.hedera.mirror.web3.service.resources.PrecompileTestContract;
-import com.hedera.mirror.web3.service.resources.TransactionReceiptCustom;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.services.utils.EntityIdUtils;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -44,18 +39,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.web3j.protocol.core.RemoteFunctionCall;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
 @RequiredArgsConstructor
 @TestInstance(PER_CLASS)
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
-
-    @Autowired
-    private ContractDeployer contractDeployer;
 
     private void historicalBlocksPersist() {
         recordFileBeforeEvm34 = domainBuilder
@@ -75,29 +65,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                 .customize(f -> f.index(EVM_V_46_BLOCK))
                 .persist();
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
-    }
-
-    private Stream<Arguments> pocWeb3jMethod() throws Exception {
-        historicalBlocksPersist();
-        exchangeRatesPersist();
-        feeSchedulesPersist();
-        fileDataPersist();
-
-        final var precompileTestContract = contractDeployer.deploy(PrecompileTestContract.class);
-        final var token = domainBuilder.token().persist();
-
-        return Stream.of(Arguments.of(
-                precompileTestContract.getType(
-                        EntityIdUtils.asTypedEvmAddress(token.getTokenId()).toHexString()),
-                BigInteger.ONE));
-    }
-
-    @ParameterizedTest
-    @MethodSource("pocWeb3jMethod")
-    void pocWeb3jMethodsTest(
-            final RemoteFunctionCall<TransactionReceiptCustom> functionToTest, final BigInteger expectedResult)
-            throws Exception {
-        assertThat(functionToTest.send().getData()).isEqualTo(expectedResult);
     }
 
     private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
