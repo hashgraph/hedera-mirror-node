@@ -163,6 +163,7 @@ public class TopicMessageLookupMigration extends AsyncJavaMigration<String> {
     private Collection<Set<Long>> topicByShard;
 
     @Lazy
+    @SuppressWarnings("java:S107")
     protected TopicMessageLookupMigration(
             EntityProperties entityProperties,
             JdbcTemplate jdbcTemplate,
