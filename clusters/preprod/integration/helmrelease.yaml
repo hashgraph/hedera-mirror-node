@@ -59,12 +59,6 @@ spec:
           enabled: false
     postgresql:
       enabled: false
-    rest:
-      monitor:
-        config: |-
-          {
-            "stateproof": { "enabled": false }
-          }
     rosetta:
       enabled: true
     test:
