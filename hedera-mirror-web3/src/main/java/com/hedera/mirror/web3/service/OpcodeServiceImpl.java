@@ -87,7 +87,8 @@ public class OpcodeServiceImpl implements OpcodeService {
             case TransactionHashParameter transactionHash -> {
                 ContractTransactionHash contractTransactionHash = contractTransactionHashRepository
                         .findByHash(transactionHash.hash().toArray())
-                        .orElseThrow(() -> new EntityNotFoundException("Contract transaction hash not found"));
+                        .orElseThrow(() ->
+                                new EntityNotFoundException("Contract transaction hash not found: " + transactionHash));
 
                 transaction = Optional.empty();
                 consensusTimestamp = contractTransactionHash.getConsensusTimestamp();
@@ -100,7 +101,7 @@ public class OpcodeServiceImpl implements OpcodeService {
 
                 transaction = transactionRepository.findByPayerAccountIdAndValidStartNs(payerAccountId, validStartNs);
                 if (transaction.isEmpty()) {
-                    throw new EntityNotFoundException("Transaction not found");
+                    throw new EntityNotFoundException("Transaction not found: " + transactionId);
                 }
                 consensusTimestamp = transaction.get().getConsensusTimestamp();
                 ethereumTransaction = ethereumTransactionRepository.findByConsensusTimestampAndPayerAccountId(

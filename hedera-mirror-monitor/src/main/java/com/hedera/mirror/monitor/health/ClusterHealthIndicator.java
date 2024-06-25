@@ -21,10 +21,12 @@ import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.Scenario;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import jakarta.inject.Named;
+import java.net.ConnectException;
 import java.time.Duration;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.ReactiveHealthIndicator;
 import org.springframework.boot.actuate.health.Status;
@@ -95,10 +97,17 @@ public class ClusterHealthIndicator implements ReactiveHealthIndicator {
                 })
                 .timeout(Duration.ofSeconds(5))
                 .onErrorResume(e -> {
+                    var status = Status.UNKNOWN;
+                    // Connection issue can be caused by database being down, since the rest API service will become
+                    // unavailable eventually
+                    if (ExceptionUtils.getRootCause(e) instanceof ConnectException) {
+                        status = Status.DOWN;
+                    }
+
                     var statusMessage =
-                            String.format("Network stake status is %s with error: %s", Status.UNKNOWN, e.getMessage());
+                            String.format("Network stake status is %s with error: %s", status, e.getMessage());
                     log.error(statusMessage);
-                    return health(Status.UNKNOWN, statusMessage);
+                    return health(status, statusMessage);
                 });
     }
 }

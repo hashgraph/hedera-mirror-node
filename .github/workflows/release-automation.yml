@@ -21,7 +21,7 @@ env:
 jobs:
   release:
     name: Release
-    runs-on: [self-hosted, linux, large, ephemeral]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     env:
       RELEASE_NOTES_FILENAME: release_notes
     outputs:
@@ -84,7 +84,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@d9336dac04dea2507a617466bc058a3def92b18b # v3.4.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
 
       - name: Create and Switch to Release Branch
         run: |
@@ -143,7 +143,7 @@ jobs:
 
   create_pr:
     name: Create PR
-    runs-on: [self-hosted, linux, large, ephemeral]
+    runs-on: [self-hosted, Linux, large, ephemeral]
     needs: release
     if: ${{ needs.release.outputs.create_pr == 'true' }}
     env:
@@ -178,7 +178,7 @@ jobs:
           java-version: 21
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@d9336dac04dea2507a617466bc058a3def92b18b # v3.4.0
+        uses: gradle/actions/setup-gradle@dbbdc275be76ac10734476cc723d82dfe7ec6eda # v3.4.2
 
       - name: Reset main to release branch
         run: |
@@ -189,13 +189,13 @@ jobs:
         run: ./gradlew release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # v6.0.5
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
         with:
-          body: ""
+          author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
+          body: Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
           branch: create-pull-request/${{ env.RELEASE_BRANCH }}
           commit-message: Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
           committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           delete-branch: true
           signoff: true
           title: ${{ needs.release.outputs.pr_title }}

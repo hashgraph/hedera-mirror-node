@@ -385,12 +385,13 @@ testkube:
       rest: {}
       restjava: {}
       web3: {}
+    delay: 330s  # Delay duration between test suite steps
     extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
-    target:
-      namespace: ""
-      release: mirror
+    targets: []
+    #  - namespace: ""
+    #    release: mirror
   trigger:
     enabled: false
 

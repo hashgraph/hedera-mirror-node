@@ -27,6 +27,7 @@ import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -78,11 +79,15 @@ class AllowancesControllerTest extends ControllerTest {
                     .persist();
 
             // When
-            var result =
-                    restClient.get().uri("", allowance1.getOwner()).retrieve().body(NftAllowancesResponse.class);
+            var response =
+                    restClient.get().uri("", allowance1.getOwner()).retrieve().toEntity(NftAllowancesResponse.class);
 
             // Then
-            assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), null));
+            assertThat(response.getBody()).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), null));
+            // Check once. Based on application.yml response headers configuration
+            Assertions.assertThat(response.getHeaders().getAccessControlAllowOrigin())
+                    .isEqualTo("*");
+            Assertions.assertThat(response.getHeaders().getCacheControl()).isEqualTo("public, max-age=1");
         }
 
         @Test
