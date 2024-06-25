@@ -1286,7 +1286,7 @@ describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () =
   });
 
   test('No match', async () => {
-    const expected = new Map([[20, null]]);
+    const expected = new Map([]);
     await expect(ContractService.getEthereumTransactionsByPayerAndTimestampArray([10], [20])).resolves.toEqual(
       expected
     );
@@ -1321,6 +1321,7 @@ describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () =
         {
           accessList: null,
           chainId: '012a',
+          consensusTimestamp: 1690086061111222333n,
           gasPrice: '4a817c80',
           maxFeePerGas: '56',
           maxPriorityFeePerGas: null,
@@ -1328,6 +1329,7 @@ describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () =
           recoveryId: 1,
           signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
           signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          signatureV: Buffer.from('1b', 'hex'),
           toAddress: '0000000000000000000000000000000000001389',
           type: 2,
           value: 'a0',
@@ -1338,6 +1340,7 @@ describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () =
         {
           accessList: null,
           chainId: '012a',
+          consensusTimestamp: 1690086061111222555n,
           gasPrice: '4a817c80',
           maxFeePerGas: '70',
           maxPriorityFeePerGas: null,
@@ -1345,6 +1348,7 @@ describe('ContractService.getEthereumTransactionsByPayerAndTimestampArray', () =
           recoveryId: 1,
           signatureR: 'd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
           signatureS: '24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+          signatureV: Buffer.from('1b', 'hex'),
           toAddress: '0000000000000000000000000000000000001389',
           type: 2,
           value: 'a6',

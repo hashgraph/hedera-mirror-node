@@ -54,6 +54,15 @@ public interface EntityIdService {
     Optional<EntityId> lookup(ContractID contractId);
 
     /**
+     * Converts a protobuf ContractID to an EntityID, resolving any EVM addresses that may be present.
+     *
+     * @param contractId The protobuf contract ID
+     * @param throwRecoverableError If true, will throw a recoverable error if an EVM address cannot be found.
+     * @return An optional of the converted EntityId if it can be resolved, or EntityId.EMPTY if none can be resolved.
+     */
+    Optional<EntityId> lookup(ContractID contractId, boolean throwRecoverableError);
+
+    /**
      * Specialized form of lookup(ContractID) that returns the first contract ID parameter that resolves to a non-empty
      * EntityId.
      *

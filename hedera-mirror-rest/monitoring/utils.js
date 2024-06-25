@@ -195,9 +195,17 @@ const hasEmptyList = (jsonRespKey) => (res) => !res.hasOwnProperty(jsonRespKey) 
  * @return {function(...[*]=)}
  */
 const testRunner = (server, testClassResult, resource) => {
-  return async (testFunc) => {
+  return async (testFunc, type = undefined) => {
     const start = Date.now();
-    const result = await testFunc(server.baseUrl);
+    // Default url here is the REST url
+    let url = server.baseUrl;
+    if (type === 'REST_JAVA' && server.restJavaUrl) {
+      url = server.restJavaUrl;
+    } else if (type === 'WEB3' && server.web3Url) {
+      url = server.web3Url;
+    }
+
+    const result = await testFunc(url);
     if (result.skipped) {
       return;
     }
@@ -283,6 +291,10 @@ const checkEntityId = (elements, option) => {
 };
 
 const checkMandatoryParams = (elements, option) => {
+  if (elements.length === 0) {
+    return {passed: true};
+  }
+
   const element = Array.isArray(elements) ? elements[0] : elements;
   const {params, message} = option;
   for (let index = 0; index < params.length; index += 1) {

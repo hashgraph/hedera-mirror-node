@@ -23,8 +23,6 @@ setEnvDefault('BASE_URL', 'http://localhost');
 setEnvDefault('DEFAULT_DURATION', '120s');
 setEnvDefault('DEFAULT_GRACEFUL_STOP', '5s');
 setEnvDefault('DEFAULT_LIMIT', 100);
-setEnvDefault('DEFAULT_MAX_DURATION', 500);
-setEnvDefault('DEFAULT_PASS_RATE', 0.95);
 setEnvDefault('DEFAULT_SETUP_TIMEOUT', '5m');
 setEnvDefault('DEFAULT_VUS', 10);
 __ENV['BASE_URL_PREFIX'] = __ENV['BASE_URL'] + urlPrefix;

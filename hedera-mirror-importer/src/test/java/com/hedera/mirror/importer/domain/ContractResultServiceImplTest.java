@@ -24,6 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.ContractTransaction;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -37,7 +38,9 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
@@ -91,6 +94,27 @@ class ContractResultServiceImplTest {
                         .record(x -> x.setContractCallResult(builder.contractFunctionResult()))
                         .build();
 
+        var contractIdWithEvm = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFromUtf8("1234"))
+                .build();
+
+        // The transaction receipt does not have an evm address, so a recoverable error is expected.
+        Function<RecordItemBuilder, RecordItem> withInactiveEvmFunctionOnly =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .record(x -> x.setReceipt(
+                                        TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS))
+                                .setContractCallResult(builder.contractFunctionResult(contractIdWithEvm)))
+                        .build();
+
+        // The transaction receipt has an evm address, so no recoverable error is expected.
+        Function<RecordItemBuilder, RecordItem> withInactiveEvmReceipt =
+                (RecordItemBuilder builder) -> builder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                        .record(x -> x.setReceipt(TransactionReceipt.newBuilder()
+                                        .setStatus(ResponseCodeEnum.SUCCESS)
+                                        .setContractID(contractIdWithEvm))
+                                .setContractCallResult(builder.contractFunctionResult(contractIdWithEvm)))
+                        .build();
+
         Function<RecordItemBuilder, RecordItem> contractCreate =
                 (RecordItemBuilder builder) -> builder.contractCreate().build();
 
@@ -101,7 +125,11 @@ class ContractResultServiceImplTest {
                 Arguments.of(withDefaultContractId, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, EntityId.EMPTY, false),
                 Arguments.of(contractCreate, null, false),
-                Arguments.of(contractCreate, EntityId.of(0, 0, 5), false));
+                Arguments.of(contractCreate, EntityId.of(0, 0, 5), false),
+                Arguments.of(withInactiveEvmFunctionOnly, null, true),
+                Arguments.of(withInactiveEvmFunctionOnly, EntityId.EMPTY, true),
+                Arguments.of(withInactiveEvmReceipt, null, false),
+                Arguments.of(withInactiveEvmReceipt, EntityId.EMPTY, false));
     }
 
     @BeforeEach

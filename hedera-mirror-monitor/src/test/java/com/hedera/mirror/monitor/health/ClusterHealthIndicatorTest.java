@@ -26,7 +26,10 @@ import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.Scenario;
 import com.hedera.mirror.monitor.subscribe.TestScenario;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
+import java.net.ConnectException;
+import java.net.URI;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,7 +41,10 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -78,6 +84,20 @@ class ClusterHealthIndicatorTest {
         assertThat(clusterHealthIndicator.health().block())
                 .extracting(Health::getStatus)
                 .isEqualTo(status);
+    }
+
+    @SneakyThrows
+    @Test
+    void restNetworkStakeConnectException() {
+        var exception = new WebClientRequestException(
+                new ConnectException("Connection refused"),
+                HttpMethod.GET,
+                new URI("http://localhost/api/v1/network/stake"),
+                HttpHeaders.EMPTY);
+        when(restApiClient.getNetworkStakeStatusCode()).thenReturn(Mono.error(exception));
+        assertThat(clusterHealthIndicator.health().block())
+                .extracting(Health::getStatus)
+                .isEqualTo(Status.DOWN);
     }
 
     @Test

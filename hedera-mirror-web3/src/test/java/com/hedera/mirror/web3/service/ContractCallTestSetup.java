@@ -104,7 +104,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final long expiry = 1_234_567_890L;
 
     // The block numbers lower than EVM v0.34 are considered part of EVM v0.30 which includes all precompiles
-    protected static final long EVM_V_34_BLOCK = 50L;
+    public static final long EVM_V_34_BLOCK = 50L;
     protected static final long EVM_V_38_BLOCK = 100L;
     protected static final long EVM_V_46_BLOCK = 150L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
@@ -141,7 +141,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1266));
     protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1269));
     protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1270));
-    protected static final Address SELF_DESTRUCT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1278));
     protected static final Address MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1279));
 
     // Account addresses
@@ -1095,7 +1094,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nestedContractId = dynamicEthCallContractPresist();
         nestedEthCallsContractPersist();
         final var redirectContract = redirectContractPersist();
-        selfDestructContractPersist();
         fileDataPersist();
 
         receiverPersist();
@@ -2863,30 +2861,5 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(internalCallerContractBytes))
                 .persist();
         return internalCallerContractEntityId;
-    }
-
-    private void selfDestructContractPersist() {
-        final var evmCodesContractBytes = functionEncodeDecoder.getContractBytes(SELF_DESTRUCT_CONTRACT_BYTES_PATH);
-        final var evmCodesContractEntityId = fromEvmAddress(SELF_DESTRUCT_CONTRACT_ADDRESS.toArrayUnsafe());
-        final var evmCodesContractEvmAddress = toEvmAddress(evmCodesContractEntityId);
-
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(evmCodesContractEntityId.getId())
-                        .num(evmCodesContractEntityId.getNum())
-                        .evmAddress(evmCodesContractEvmAddress)
-                        .type(CONTRACT)
-                        .balance(1500L))
-                .persist();
-
-        domainBuilder
-                .contract()
-                .customize(c -> c.id(evmCodesContractEntityId.getId()).runtimeBytecode(evmCodesContractBytes))
-                .persist();
-
-        domainBuilder
-                .recordFile()
-                .customize(f -> f.bytes(evmCodesContractBytes))
-                .persist();
     }
 }
