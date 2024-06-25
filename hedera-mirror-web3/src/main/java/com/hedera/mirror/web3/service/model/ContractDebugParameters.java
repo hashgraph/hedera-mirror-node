@@ -19,34 +19,50 @@ package com.hedera.mirror.web3.service.model;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+import jakarta.validation.constraints.AssertFalse;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
+import lombok.Builder;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-public interface CallServiceParameters {
-    BlockType getBlock();
+@Value
+@Builder(toBuilder = true)
+@RequiredArgsConstructor
+public class ContractDebugParameters implements CallServiceParameters {
+    @NotNull
+    BlockType block;
 
-    Bytes getCallData();
+    @NotNull
+    Bytes callData;
 
-    CallType getCallType();
+    @NotNull
+    CallType callType = CallType.ETH_DEBUG_TRACE_TRANSACTION;
 
-    long getGas();
+    @Positive
+    long consensusTimestamp;
 
-    Address getReceiver();
+    @PositiveOrZero
+    long gas;
 
-    HederaEvmAccount getSender();
+    @AssertFalse
+    boolean isEstimate = false;
 
-    TracerType getTracerType();
+    @AssertFalse
+    boolean isStatic = false;
 
-    long getValue();
+    @NotNull
+    Address receiver;
 
-    boolean isEstimate();
+    @NotNull
+    HederaEvmAccount sender;
 
-    boolean isStatic();
+    @NotNull
+    TracerType tracerType = TracerType.OPCODE;
 
-    public enum CallType {
-        ETH_CALL,
-        ETH_DEBUG_TRACE_TRANSACTION,
-        ETH_ESTIMATE_GAS,
-        ERROR
-    }
+    @PositiveOrZero
+    long value;
 }

@@ -14,12 +14,18 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.contracts.execution;
+package com.hedera.mirror.web3.repository;
 
-import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import jakarta.validation.constraints.NotNull;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 
-public record OpcodesProcessingResult(
-        @NotNull HederaEvmTransactionProcessingResult transactionProcessingResult, @NotNull List<Opcode> opcodes) {}
+public interface ContractActionRepository extends CrudRepository<ContractAction, Long> {
+
+    @Query(
+            value =
+                    "select * from contract_action where consensus_timestamp = ?1 and result_data_type = 12 and call_type = 4 order by index asc",
+            nativeQuery = true)
+    List<ContractAction> findFailedSystemActionsByConsensusTimestamp(long consensusTimestamp);
+}

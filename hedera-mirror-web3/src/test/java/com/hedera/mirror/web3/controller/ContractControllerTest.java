@@ -36,7 +36,7 @@ import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -82,7 +82,7 @@ class ContractControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private ContractCallService service;
+    private ContractExecutionService service;
 
     @MockBean(name = "rateLimitBucket")
     private Bucket rateLimitBucket;

@@ -27,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.ContractCallTestSetup;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.ContractExecutionService;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -45,7 +45,7 @@ import org.springframework.beans.factory.annotation.Value;
 @RequiredArgsConstructor
 class SelfDestructOperationTest extends ContractCallTestSetup {
 
-    private final ContractCallService contractCallService;
+    private final ContractExecutionService contractCallService;
 
     private final FunctionEncodeDecoder functionEncodeDecoder;
 
@@ -118,8 +118,8 @@ class SelfDestructOperationTest extends ContractCallTestSetup {
         return selfDestructContractEntity.toEntityId();
     }
 
-    private CallServiceParameters.CallServiceParametersBuilder serviceParametersForExecution() {
-        return CallServiceParameters.builder()
+    private ContractExecutionParameters.ContractExecutionParametersBuilder serviceParametersForExecution() {
+        return ContractExecutionParameters.builder()
                 .value(0L)
                 .gas(15_000_000L)
                 .isStatic(false)
