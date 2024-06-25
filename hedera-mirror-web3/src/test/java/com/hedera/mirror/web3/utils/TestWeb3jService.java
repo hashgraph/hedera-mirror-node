@@ -59,6 +59,8 @@ import org.web3j.tx.gas.ContractGasProvider;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class TestWeb3jService implements Web3jService {
     private static final Long GAS_LIMIT = 15_000_000L;
+    private static final String MOCK_RESULT = "1";
+    private static final String HEX_PREFIX = "0x";
     private Address sender = Address.fromHexString("");
     public ContractCallService contractCallService;
     private Map<String, String> trxResMap = new HashMap<>();
@@ -115,7 +117,7 @@ public class TestWeb3jService implements Web3jService {
         var trxHex = generateTransactionHashHexEncoded(rawTrxDecoded, credentials);
         final var to = rawTrxDecoded.getTo();
 
-        if (to.equals("0x")) {
+        if (to.equals(HEX_PREFIX)) {
             return sendTopLevelContractCreate(rawTrxDecoded, trxHex, request);
         }
 
@@ -206,14 +208,14 @@ public class TestWeb3jService implements Web3jService {
 
     private <T extends Response> T getNetVersionRes(Class<T> responseType) {
         T res = getResObj(responseType);
-        res.setResult("1");
+        res.setResult(MOCK_RESULT);
 
         return res;
     }
 
     private <T extends Response> T getTransactionCountRes(Class<T> responseType) {
         T res = getResObj(responseType);
-        res.setResult("1");
+        res.setResult(MOCK_RESULT);
 
         return res;
     }
@@ -289,7 +291,7 @@ public class TestWeb3jService implements Web3jService {
                 .sender(senderAccount)
                 .callData(callData)
                 .receiver(Address.ZERO)
-                .gas(15_000_000L)
+                .gas(GAS_LIMIT)
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
@@ -306,7 +308,7 @@ public class TestWeb3jService implements Web3jService {
     }
 
     private void precompileContractPersist(String binary, long entityId) {
-        final var contractBytes = Hex.decode(binary.replace("0x", ""));
+        final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
                 .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
