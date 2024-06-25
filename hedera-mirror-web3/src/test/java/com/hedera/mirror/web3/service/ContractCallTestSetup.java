@@ -505,6 +505,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Autowired
     protected RecordFileRepository recordFileRepository;
 
+    @Value("classpath:solidity/")
+    protected Path COMPILED_WEB3J_RESOURCES_FOLDER;
+
     // The contract source `PrecompileTestContract.sol` is in test resources
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
     protected Path CONTRACT_BYTES_PATH;

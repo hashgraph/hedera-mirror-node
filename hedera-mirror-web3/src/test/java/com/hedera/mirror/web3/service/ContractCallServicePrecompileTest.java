@@ -225,6 +225,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void evmPrecompileReadOnlyTokenFunctionsTestEthCallTokenFrozen() throws Exception {
+        //
+        // Given
+        //
         // Test setup
         final var tokenEntity = fungibleTokenPersist();
         final var tokenAddress =
@@ -235,7 +238,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(senderEntity.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
         // Override sender in the parameters
         testWeb3jService.setSender(senderAddress);
-
+        //
+        // When
+        //
         // Deploy Contract
         var contract = PrecompileTestContract.deploy(web3j, credentials, contractGasProvider)
                 .send();
@@ -243,8 +248,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         var result = (TransactionReceiptCustom)
                 contract.isTokenFrozen(tokenAddress, senderAddress).send();
 
-        final var successfulResponse =
-                functionEncodeDecoder.encodedResultFor("isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, true);
+        final var abiPath = COMPILED_WEB3J_RESOURCES_FOLDER.resolve(
+                PrecompileTestContract.class.getSimpleName().concat(".abi"));
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor("isTokenFrozen", abiPath, true);
 
         assertThat(result.getData()).isEqualTo(successfulResponse);
     }
