@@ -59,18 +59,6 @@ spec:
           enabled: false
     postgresql:
       enabled: false
-    rest:
-      monitor:
-        config: |-
-          {
-            "servers": [
-              {
-                "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
-                "name": "kubernetes"
-              }
-            ],
-            "stateproof": { "enabled": false }
-          }
     rosetta:
       enabled: true
     test:
