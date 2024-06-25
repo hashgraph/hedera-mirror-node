@@ -115,10 +115,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     private static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051));
     private static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049));
 
-    private static final byte[] KEY_PROTO = new byte[] {
-            58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
-            77, -103, 47, -118, 107, -58, -85, -63, 55, -57
-    };
     private static final long EVM_V_34_BLOCK = 50L;
 
     private static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
@@ -133,8 +129,6 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
                     .build())
             .build();
-    //private static RecordFile recordFileAfterEvm34;
-    //private static RecordFile recordFileEvm46Latest;
 
     private static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
@@ -171,16 +165,21 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @MethodSource("ercContractFunctionArgumentsProvider")
     void ercReadOnlyPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
+        // Given
+
         final Address ercContractAddress = persistForErcSupportedErcReadOnlyPrecompileOperationsTest();
+
+        // When
         final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(functionName, ercAbiPath, ercFunction.functionParameters);
         final var serviceParameters =
                 serviceParametersForExecution2(functionHash, ercContractAddress, ETH_CALL, BlockType.LATEST);
 
+        // Then
+
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 ercFunction.name, ercAbiPath, ercFunction.expectedResultFields);
-
         assertThat(contractCallService.processCall(serviceParameters.build())).isEqualTo(successfulResponse);
     }
 
@@ -209,13 +208,19 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
             final ErcContractReadOnlyFunctionsHistorical ercFunction,
             final boolean isStatic,
             final BlockType blockNumber) {
+        // Given
 
         final Address ercContractAddress = persistForErcReadOnlyPrecompileHistoricalOperationsTest();
+
+        // When
+
         final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
                 functionEncodeDecoder.functionHashFor(functionName, ercAbiPath, ercFunction.functionParameters);
         final var serviceParameters =
                 serviceParametersForExecution2(functionHash, ercContractAddress, ETH_CALL, blockNumber);
+
+        // Then
 
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 ercFunction.name, ercAbiPath, ercFunction.expectedResultFields);
@@ -246,6 +251,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @ValueSource(longs = {51, Long.MAX_VALUE - 1})
     void ercReadOnlyPrecompileHistoricalNotExistingBlockTest(final long blockNumber) {
+        // When
+
         final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "isApprovedForAll",
@@ -258,6 +265,8 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution2(
                 functionHash, ercContractAddress, ETH_CALL, BlockType.of(String.valueOf(blockNumber)));
         final var latestBlockNumber = recordFileRepository.findLatestIndex().orElse(Long.MAX_VALUE);
+
+        // Then
 
         // Block number (Long.MAX_VALUE - 1) does not exist in the DB and is after the
         // latest block available in the DB => returning error
@@ -276,9 +285,13 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @MethodSource("ercContractFunctionArgumentsProvider")
     void supportedErcReadOnlyPrecompileOperationsTest(
             final ErcContractReadOnlyFunctions ercFunction, final boolean isStatic) {
+        // Given
+
         // persist needed entity
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
-        
+
+        // When
+
         final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
         final var functionName = ercFunction.getName(isStatic);
         final var functionHash =
@@ -286,8 +299,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution2(
                 functionHash, ercContractAddress, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
+        // Then
 
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters.build())), expectedGasUsed))
                 .isTrue();
@@ -296,8 +310,12 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @EnumSource(ErcContractModificationFunctions.class)
     void supportedErcModificationPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
+        // Given
+
         // persist needed entity
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
+
+        // When
 
         final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
         final var functionHash =
@@ -305,8 +323,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution2(
                 functionHash, ercContractAddress, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
+        // Then
 
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters.build())), expectedGasUsed))
                 .isTrue();
@@ -315,8 +334,12 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @EnumSource(ErcContractReadOnlyFunctions.class)
     void supportedErcReadOnlyRedirectPrecompileOperationsTest(final ErcContractReadOnlyFunctions ercFunction) {
+        // Given
+
         // persist needed entity
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
+
+        // When
 
         final var functionName = ercFunction.name + REDIRECT_SUFFIX;
         final var functionHash = functionEncodeDecoder.functionHashFor(
@@ -324,8 +347,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution2(
                 functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
+        // Then
 
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters.build())), expectedGasUsed))
                 .isTrue();
@@ -335,13 +359,20 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @EnumSource(ErcContractReadOnlyFunctionsNegative.class)
     void supportedErcReadOnlyRedirectPrecompileNegativeOperationsTest(
             final ErcContractReadOnlyFunctionsNegative ercFunction) {
+        // Given
+
+        // persist needed entity
         persistForSupportedErcReadOnlyRedirectPrecompileNegativeOperationsTest();
+
+        // When
 
         final var functionName = ercFunction.name + REDIRECT_SUFFIX;
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 functionName, redirectContractAbiPath, ercFunction.functionParameters);
         final var serviceParameters = serviceParametersForExecution2(
                 functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, BlockType.LATEST);
+
+        // Then
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters.build()))
                 .isInstanceOf(MirrorEvmTransactionException.class);
@@ -357,8 +388,12 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
     @ParameterizedTest
     @EnumSource(ErcContractModificationFunctions.class)
     void supportedErcModificationsRedirectPrecompileOperationsTest(final ErcContractModificationFunctions ercFunction) {
+        // Given
+
         // persist needed entity
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
+
+        // When
 
         final var functionName = ercFunction.name + "Redirect";
         final var functionHash = functionEncodeDecoder.functionHashFor(
@@ -366,8 +401,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         final var serviceParameters = serviceParametersForExecution2(
                 functionHash, REDIRECT_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, BlockType.LATEST);
 
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
+        // Then
 
+        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters.build());
         assertThat(isWithinExpectedGasRange(
                         longValueOf.applyAsLong(contractCallService.processCall(serviceParameters.build())), expectedGasUsed))
                 .isTrue();
@@ -375,14 +411,21 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
     @Test
     void delegateTransferDoesNotExecuteAndReturnEmpty() {
+        // Given
+
         // persist needed entity
         recordFileEvm46Latest = domainBuilder.recordFile().persist();
+
+        // When
 
         final Address ercContractAddress = toAddress(EntityId.of(0, 0, 1258));
         final var functionHash = functionEncodeDecoder.functionHashFor(
                 "delegateTransfer", ercAbiPath, FUNGIBLE_TOKEN_ADDRESS, SPENDER_ADDRESS, 2L);
         final var serviceParameters =
                 serviceParametersForExecution2(functionHash, ercContractAddress, ETH_CALL, BlockType.LATEST);
+
+        // Then
+
         assertThat(contractCallService.processCall(serviceParameters.build())).isEqualTo("0x");
     }
 
