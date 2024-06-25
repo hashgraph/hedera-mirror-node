@@ -109,7 +109,7 @@ public abstract class ContractCallService {
             ContractCallContext ctx)
             throws MirrorEvmTransactionException {
         try {
-            var result = mirrorEvmTxProcessor.execute(params, estimatedGas, ctx);
+            var result = mirrorEvmTxProcessor.execute(params, estimatedGas);
             if (!restoreGasToThrottleBucket) {
                 return result;
             }
