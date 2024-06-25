@@ -58,8 +58,6 @@ spec:
           enabled: false
         MonitorSubscribeLatency:
           enabled: false
-    postgresql:
-      enabled: false
     rest:
       ingress:
         enabled: false
