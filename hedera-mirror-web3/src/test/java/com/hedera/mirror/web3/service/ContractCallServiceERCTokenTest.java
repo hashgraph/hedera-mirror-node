@@ -47,26 +47,6 @@ import org.springframework.context.annotation.Import;
 @TestInstance(PER_CLASS)
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
-    private void historicalBlocksPersist() {
-        recordFileBeforeEvm34 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_34_BLOCK - 1))
-                .persist();
-        recordFileAfterEvm34 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_34_BLOCK))
-                .persist();
-        recordFileEvm38 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_38_BLOCK))
-                .persist();
-        recordFileEvm46 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_46_BLOCK))
-                .persist();
-        recordFileEvm46Latest = domainBuilder.recordFile().persist();
-    }
-
     private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
         return Arrays.stream(ErcContractReadOnlyFunctions.values())
                 .flatMap(ercFunction -> Stream.of(Arguments.of(ercFunction, true), Arguments.of(ercFunction, false)));

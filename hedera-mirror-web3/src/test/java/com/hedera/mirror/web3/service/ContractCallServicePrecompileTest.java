@@ -70,7 +70,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
-import org.web3j.tx.Contract;
 import org.web3j.tx.gas.ContractGasProvider;
 
 @Import(Web3jTestConfiguration.class)
@@ -214,7 +213,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .build();
     }
 
-    private Stream<Arguments> pocWeb3jMethod() throws Exception {
+    private Stream<Arguments> pocWeb3jMethod() {
         return Stream.of(Arguments.of(BigInteger.ZERO, BigInteger.ONE));
     }
 
@@ -244,8 +243,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         var result = (TransactionReceiptCustom)
                 contract.isTokenFrozen(tokenAddress, senderAddress).send();
 
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
+        final var successfulResponse =
+                functionEncodeDecoder.encodedResultFor("isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, true);
 
         assertThat(result.getData()).isEqualTo(successfulResponse);
     }
@@ -1199,8 +1198,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResult;
-
-        public void func(Contract contract) {}
     }
 
     @RequiredArgsConstructor
