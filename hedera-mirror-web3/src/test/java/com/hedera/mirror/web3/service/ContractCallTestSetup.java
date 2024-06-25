@@ -1064,7 +1064,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ContractCallContext.run(ctx -> {
             ctx.initializeStackFrames(store.getStackedStateFrames());
             long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas(), ctx)
+                    .execute(serviceParameters, serviceParameters.getGas())
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);

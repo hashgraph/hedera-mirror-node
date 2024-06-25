@@ -207,7 +207,7 @@ class MirrorEvmTxProcessorTest {
                 .isStatic(true)
                 .isEstimate(isEstimate)
                 .build();
-        final var result = ContractCallContext.run(ctx -> mirrorEvmTxProcessor.execute(params, params.getGas(), ctx));
+        final var result = ContractCallContext.run(ignored -> mirrorEvmTxProcessor.execute(params, params.getGas()));
 
         assertThat(result)
                 .isNotNull()

@@ -159,7 +159,7 @@ public class OpcodeServiceImpl implements OpcodeService {
             Long consensusTimestamp, Optional<Transaction> transaction, Optional<EthereumTransaction> ethTransaction) {
         final ContractResult contractResult = contractResultRepository
                 .findById(consensusTimestamp)
-                .orElseThrow(() -> new EntityNotFoundException("Contract result not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Contract result not found: " + consensusTimestamp));
 
         final BlockType blockType = recordFileService
                 .findByTimestamp(consensusTimestamp)

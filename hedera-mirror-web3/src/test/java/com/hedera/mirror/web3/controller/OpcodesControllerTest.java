@@ -331,22 +331,6 @@ class OpcodesControllerTest {
 
     @ParameterizedTest
     @EnumSource(TransactionProviderEnum.class)
-    void shouldThrowUnsupportedOperationFromContractCallService(final TransactionProviderEnum providerEnum)
-            throws Exception {
-        final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
-
-        reset(contractDebugService);
-        when(contractDebugService.processOpcodeCall(
-                        callServiceParametersCaptor.capture(), tracerOptionsCaptor.capture()))
-                .thenCallRealMethod();
-
-        mockMvc.perform(opcodesRequest(transactionIdOrHash))
-                .andExpect(status().isNotImplemented())
-                .andExpect(responseBody(new GenericErrorResponse("Not implemented")));
-    }
-
-    @ParameterizedTest
-    @EnumSource(TransactionProviderEnum.class)
     void callThrowsExceptionAndExpectDetailMessage(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
 
@@ -426,14 +410,14 @@ class OpcodesControllerTest {
                         when(contractTransactionHashRepository.findByHash(
                                         parameter.hash().toArray()))
                                 .thenReturn(Optional.empty());
-                        yield new GenericErrorResponse("Contract transaction hash not found");
+                        yield new GenericErrorResponse("Contract transaction hash not found: " + parameter);
                     }
                     case TransactionIdParameter parameter -> {
                         reset(transactionRepository);
                         when(transactionRepository.findByPayerAccountIdAndValidStartNs(
                                         parameter.payerAccountId(), convertToNanosMax(parameter.validStart())))
                                 .thenReturn(Optional.empty());
-                        yield new GenericErrorResponse("Transaction not found");
+                        yield new GenericErrorResponse("Transaction not found: " + parameter);
                     }
                 };
 
