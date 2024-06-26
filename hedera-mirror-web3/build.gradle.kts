@@ -24,7 +24,6 @@ plugins {
 
 web3j { generatedPackageName = "com.hedera.mirror.web3.service.resources" }
 
-// ToDO: REMOVE
 sourceSets { test { solidity { setVersion("0.8.24") } } }
 
 dependencies {

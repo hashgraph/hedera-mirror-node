@@ -49,7 +49,6 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -211,16 +210,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
                 .block(block)
                 .build();
-    }
-
-    private Stream<Arguments> pocWeb3jMethod() {
-        return Stream.of(Arguments.of(BigInteger.ZERO, BigInteger.ONE));
-    }
-
-    @ParameterizedTest
-    @MethodSource("pocWeb3jMethod")
-    void pocWeb3jMethodsTest(final BigInteger input, final BigInteger expectedResult) throws Exception {
-        assertThat(input).isEqualTo(expectedResult);
     }
 
     @Test

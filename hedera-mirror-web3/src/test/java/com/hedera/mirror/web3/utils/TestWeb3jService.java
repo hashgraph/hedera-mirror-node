@@ -60,10 +60,10 @@ import org.web3j.tx.gas.ContractGasProvider;
 public class TestWeb3jService implements Web3jService {
     private static final Long GAS_LIMIT = 15_000_000L;
     private static final String MOCK_RESULT = "1";
-    private static final String HEX_PREFIX = "0x";
+    private static final String EMPTY_BYTES = "0x";
     private Address sender = Address.fromHexString("");
-    public ContractCallService contractCallService;
-    private Map<String, String> trxResMap = new HashMap<>();
+    private ContractCallService contractCallService;
+    private Map<String, String> transactionHexResultMap = new HashMap<>();
 
     @Autowired
     private Credentials credentials;
@@ -117,34 +117,35 @@ public class TestWeb3jService implements Web3jService {
         var trxHex = generateTransactionHashHexEncoded(rawTrxDecoded, credentials);
         final var to = rawTrxDecoded.getTo();
 
-        if (to.equals(HEX_PREFIX)) {
+        if (to.equals(EMPTY_BYTES)) {
             return sendTopLevelContractCreate(rawTrxDecoded, trxHex, request);
         }
 
-        return sendEthCall(rawTrxDecoded, trxHex, request);
+        return ethSendTransaction(rawTrxDecoded, trxHex, request);
     }
 
     private EthSendTransaction sendTopLevelContractCreate(
             RawTransaction rawTrxDecoded, String trxHex, Request request) {
-        final var res = new EthSendTransaction();
         var serviceParameters = serviceParametersForTopLevelContractCreate(rawTrxDecoded.getData(), ETH_CALL, sender);
-        final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
+        final var result = contractCallService.processCall(serviceParameters);
         try {
-            final var contractInstance = this.deploy(mirrorNodeResult);
-            res.setResult(trxHex);
-            res.setRawResponse(contractInstance.toHexString());
-            res.setId(request.getId());
-            res.setJsonrpc(request.getJsonrpc());
-            trxResMap.put(trxHex, contractInstance.toHexString());
+            final var contractInstance = this.deploy(result);
+            final var response = new EthSendTransaction();
+            response.setResult(trxHex);
+            response.setRawResponse(contractInstance.toHexString());
+            response.setId(request.getId());
+            response.setJsonrpc(request.getJsonrpc());
+            transactionHexResultMap.put(trxHex, contractInstance.toHexString());
+
+            return response;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
-        return res;
     }
 
-    private EthSendTransaction sendEthCall(RawTransaction rawTrxDecoded, String trxHex, Request request) {
-        final var res = new EthSendTransaction();
+    private EthSendTransaction ethSendTransaction(
+            RawTransaction rawTrxDecoded, String transactionHex, Request request) {
+        final var response = new EthSendTransaction();
         var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(rawTrxDecoded.getData()),
                 Address.fromHexString(rawTrxDecoded.getTo()),
@@ -156,21 +157,19 @@ public class TestWeb3jService implements Web3jService {
                 GAS_LIMIT,
                 sender);
 
-        final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
-        res.setResult(trxHex);
-        res.setRawResponse(mirrorNodeResult);
-        res.setId(request.getId());
-        res.setJsonrpc(request.getJsonrpc());
+        final var result = contractCallService.processCall(serviceParameters);
+        response.setResult(transactionHex);
+        response.setRawResponse(result);
+        response.setId(request.getId());
+        response.setJsonrpc(request.getJsonrpc());
 
-        trxResMap.put(trxHex, mirrorNodeResult);
+        transactionHexResultMap.put(transactionHex, result);
 
-        return res;
+        return response;
     }
 
     private EthCall ethCall(List reqParams, Request request) {
-        final var res = new EthCall();
         var transaction = (Transaction) reqParams.get(0);
-
         final var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(transaction.getData()),
                 Address.fromHexString(transaction.getTo()),
@@ -179,12 +178,13 @@ public class TestWeb3jService implements Web3jService {
                 BlockType.LATEST,
                 GAS_LIMIT,
                 sender);
-        final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
-        res.setResult(mirrorNodeResult);
-        res.setId(request.getId());
-        res.setJsonrpc(request.getJsonrpc());
+        final var result = contractCallService.processCall(serviceParameters);
+        final var response = new EthCall();
+        response.setResult(result);
+        response.setId(request.getId());
+        response.setJsonrpc(request.getJsonrpc());
 
-        return res;
+        return response;
     }
 
     private EthSyncing getEthSyncingRes() {
@@ -198,38 +198,38 @@ public class TestWeb3jService implements Web3jService {
     }
 
     private <T extends Response> T getEthBlockRes(Class<T> responseType) {
-        T res = getResObj(responseType);
+        T response = getResObj(responseType);
         final var block = new EthBlock.Block();
         block.setTimestamp(String.valueOf(System.currentTimeMillis()));
-        res.setResult(block);
+        response.setResult(block);
 
-        return res;
+        return response;
     }
 
     private <T extends Response> T getNetVersionRes(Class<T> responseType) {
-        T res = getResObj(responseType);
-        res.setResult(MOCK_RESULT);
+        T response = getResObj(responseType);
+        response.setResult(MOCK_RESULT);
 
-        return res;
+        return response;
     }
 
     private <T extends Response> T getTransactionCountRes(Class<T> responseType) {
-        T res = getResObj(responseType);
-        res.setResult(MOCK_RESULT);
+        T response = getResObj(responseType);
+        response.setResult(MOCK_RESULT);
 
-        return res;
+        return response;
     }
 
     private EthGetTransactionReceipt getTransactionReceipt(Request request) {
-        final var trxHash = request.getParams().get(0).toString();
-        final var res = new EthGetTransactionReceipt();
+        final var transactionHex = request.getParams().get(0).toString();
         var mockReceipt = new TransactionReceiptCustom();
-        mockReceipt.setTransactionHash(trxHash);
-        mockReceipt.setData(trxResMap.get(trxHash));
-        mockReceipt.setContractAddress(trxResMap.get(trxHash));
-        res.setResult(mockReceipt);
+        mockReceipt.setTransactionHash(transactionHex);
+        mockReceipt.setData(transactionHexResultMap.get(transactionHex));
+        mockReceipt.setContractAddress(transactionHexResultMap.get(transactionHex));
+        final var response = new EthGetTransactionReceipt();
+        response.setResult(mockReceipt);
 
-        return res;
+        return response;
     }
 
     @Override
@@ -302,13 +302,13 @@ public class TestWeb3jService implements Web3jService {
     public Address deploy(String binary) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
-        precompileContractPersist(binary, id);
+        contractPersist(binary, id);
 
         return contractAddress;
     }
 
-    private void precompileContractPersist(String binary, long entityId) {
-        final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
+    private void contractPersist(String binary, long entityId) {
+        final var contractBytes = Hex.decode(binary.replace(EMPTY_BYTES, ""));
         final var entity = domainBuilder
                 .entity()
                 .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))

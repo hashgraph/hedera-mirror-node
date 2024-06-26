@@ -16,16 +16,10 @@
 
 package com.hedera.mirror.web3.service.resources;
 
+import lombok.Data;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
+@Data
 public class TransactionReceiptCustom extends TransactionReceipt {
-    public String getData() {
-        return data;
-    }
-
-    public void setData(String data) {
-        this.data = data;
-    }
-
     private String data;
 }
