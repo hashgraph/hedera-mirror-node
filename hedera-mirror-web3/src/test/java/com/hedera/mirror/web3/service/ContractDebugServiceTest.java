@@ -104,10 +104,7 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
     void setUpArgumentCaptors() {
         doAnswer(resultCaptor)
                 .when(processor)
-                .execute(
-                        paramsCaptor.capture(),
-                        gasCaptor.capture(),
-                        ctxCaptor.capture());
+                .execute(paramsCaptor.capture(), gasCaptor.capture(), ctxCaptor.capture());
     }
 
     @ParameterizedTest
@@ -149,8 +146,8 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
         verifyOpcodeTracerCall(params, function);
     }
 
-    private void verifyOpcodeTracerCall(final ContractDebugParameters params,
-                                        final ContractFunctionProviderEnum function) {
+    private void verifyOpcodeTracerCall(
+            final ContractDebugParameters params, final ContractFunctionProviderEnum function) {
         if (function.getExpectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(params, function);
         } else {
@@ -161,8 +158,8 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
     }
 
     @SneakyThrows
-    private void verifyThrowingOpcodeTracerCall(final ContractDebugParameters params,
-                                                final ContractFunctionProviderEnum function) {
+    private void verifyThrowingOpcodeTracerCall(
+            final ContractDebugParameters params, final ContractFunctionProviderEnum function) {
         final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
         assertThat(actual.transactionProcessingResult().isSuccessful()).isFalse();
         assertThat(actual.transactionProcessingResult().getOutput()).isEqualTo(Bytes.EMPTY);
@@ -175,15 +172,14 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
                         result -> assertThat(result.getHaltReason())
                                 .isPresent()
                                 .map(ExceptionalHaltReason::getDescription)
-                                .hasValue(function.getExpectedErrorMessage())
-                );
+                                .hasValue(function.getExpectedErrorMessage()));
         assertThat(actual.opcodes().size()).isNotZero();
         assertThat(toHumanReadableMessage(actual.opcodes().getLast().reason()))
                 .isEqualTo(function.getExpectedErrorMessage());
     }
 
-    private void verifySuccessfulOpcodeTracerCall(final ContractDebugParameters params,
-                                                  final ContractFunctionProviderEnum function) {
+    private void verifySuccessfulOpcodeTracerCall(
+            final ContractDebugParameters params, final ContractFunctionProviderEnum function) {
         final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
         final var expected = expectedOpcodeProcessingResult();
 

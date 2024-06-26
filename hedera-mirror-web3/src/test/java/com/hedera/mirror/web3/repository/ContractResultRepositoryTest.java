@@ -22,7 +22,6 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
-
 @RequiredArgsConstructor
 class ContractResultRepositoryTest extends Web3IntegrationTest {
 
@@ -31,6 +30,7 @@ class ContractResultRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByConsensusTimestampSuccessful() {
         var contractResult = domainBuilder.contractResult().persist();
-        assertThat(contractResultRepository.findById(contractResult.getConsensusTimestamp())).contains(contractResult);
+        assertThat(contractResultRepository.findById(contractResult.getConsensusTimestamp()))
+                .contains(contractResult);
     }
 }

@@ -36,8 +36,7 @@ class EthereumTransactionRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByConsensusTimestampAndPayerAccountIdSuccessful() {
         var ethereumTransaction = domainBuilder.ethereumTransaction(false).persist();
-        assertThat(ethereumTransactionRepository
-                .findByConsensusTimestampAndPayerAccountId(
+        assertThat(ethereumTransactionRepository.findByConsensusTimestampAndPayerAccountId(
                         ethereumTransaction.getConsensusTimestamp(), ethereumTransaction.getPayerAccountId()))
                 .contains(ethereumTransaction);
     }
