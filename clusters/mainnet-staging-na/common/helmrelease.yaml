@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.107.0-rc1'
+      version: '0.108.0-beta1'
   dependsOn:
     - name: testkube
       namespace: testkube
@@ -98,8 +98,11 @@ spec:
             SERIAL_NUMBER: "0000000000000000000000000000000000000000000000000000000000000001"
             SPENDER_ADDRESS: "0000000000000000000000000000000000000000000000000000000000429f77"
             TOKEN_ADDRESS: "0000000000000000000000000000000000000000000000000000000000429f74"
-        target:
-          namespace: mainnet
+        targets:
+          - namespace: mainnet
+            release: mirror
+          - namespace: mainnet-citus
+            release: mirror
       trigger:
         enabled: true
     stackgres:
