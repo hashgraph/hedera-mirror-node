@@ -502,9 +502,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Autowired
     protected ContractExecutionService contractCallService;
 
-    @SpyBean
-    protected ContractDebugService contractDebugService;
-
     @Autowired
     protected MirrorNodeEvmProperties mirrorNodeEvmProperties;
 

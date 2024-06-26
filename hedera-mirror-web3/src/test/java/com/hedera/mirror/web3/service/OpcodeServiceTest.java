@@ -32,19 +32,21 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.rest.model.OpcodesResponse;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.common.TransactionHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdParameter;
-import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
-import com.hedera.mirror.web3.utils.ResultCaptor;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.math.BigInteger;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,13 +85,16 @@ class OpcodeServiceTest extends ContractCallTestSetup {
         private ArgumentCaptor<ContractDebugParameters> serviceParametersCaptor;
 
         @Captor
-        private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
+        private ArgumentCaptor<Long> gasCaptor;
 
-        private final ResultCaptor<OpcodesProcessingResult> opcodesResultCaptor = new ResultCaptor<>(OpcodesProcessingResult.class);
+        private HederaEvmTransactionProcessingResult resultCaptor;
+
+        private ContractCallContext contextCaptor;
 
         private ContractDebugParameters expectedServiceParameters;
         private EntityId senderEntityId;
         private EntityId contractEntityId;
+        private long consensusTimestamp;
 
         @BeforeEach
         void setUp() {
@@ -124,41 +129,48 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
         @BeforeEach
         void setUpArgumentCaptors() {
-            doAnswer(opcodesResultCaptor)
-                    .when(contractDebugService)
-                    .processOpcodeCall(serviceParametersCaptor.capture(), tracerOptionsCaptor.capture());
+            doAnswer(invocation -> {
+                        final var transactionProcessingResult =
+                                (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                        resultCaptor = transactionProcessingResult;
+                        contextCaptor = ContractCallContext.get();
+                        return transactionProcessingResult;
+                    })
+                    .when(processor)
+                    .execute(serviceParametersCaptor.capture(), gasCaptor.capture());
         }
 
         @SneakyThrows
-        TransactionIdOrHashParameter setUp(final ContractFunctionProviderEnum provider,
-                                           final TransactionType transactionType,
-                                           final Address contractAddress,
-                                           final Path contractAbiPath,
-                                           final boolean persistTransaction,
-                                           final boolean persistContractResult) {
+        TransactionIdOrHashParameter setUp(
+                final ContractFunctionProviderEnum provider,
+                final TransactionType transactionType,
+                final Address contractAddress,
+                final Path contractAbiPath,
+                final boolean persistTransaction,
+                final boolean persistContractResult) {
             assertThat(contractEntityId).isNotNull();
             assertThat(senderEntityId).isNotNull();
 
-            final var ethHash = domainBuilder.bytes(32);
-            final var consensusTimestamp = domainBuilder.timestamp();
+            consensusTimestamp = domainBuilder.timestamp();
             final var validStartNs = consensusTimestamp - 1;
+            final var ethHash = domainBuilder.bytes(32);
             final var callData = functionEncodeDecoder
                     .functionHashFor(provider.getName(), contractAbiPath, provider.getFunctionParameters())
                     .toArray();
 
-            final var transactionBuilder = domainBuilder.transaction()
-                    .customize(tx -> tx
-                            .consensusTimestamp(consensusTimestamp)
-                            .entityId(contractEntityId)
-                            .payerAccountId(senderEntityId)
-                            .type(transactionType.getProtoId())
-                            .validStartNs(validStartNs));
+            final var transactionBuilder = domainBuilder.transaction().customize(transaction -> transaction
+                    .consensusTimestamp(consensusTimestamp)
+                    .entityId(contractEntityId)
+                    .payerAccountId(senderEntityId)
+                    .type(transactionType.getProtoId())
+                    .validStartNs(validStartNs));
             final var transaction = persistTransaction ? transactionBuilder.persist() : transactionBuilder.get();
 
             final EthereumTransaction ethTransaction;
             if (transactionType == TransactionType.ETHEREUMTRANSACTION) {
-                final var ethTransactionBuilder = domainBuilder.ethereumTransaction(false)
-                        .customize(t -> t
+                final var ethTransactionBuilder = domainBuilder
+                        .ethereumTransaction(false)
+                        .customize(ethereumTransaction -> ethereumTransaction
                                 .callData(callData)
                                 .consensusTimestamp(consensusTimestamp)
                                 .gasLimit(GAS)
@@ -171,16 +183,16 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                 ethTransaction = null;
             }
 
-            final var contractResultBuilder = domainBuilder.contractResult()
-                    .customize(r -> r
-                            .amount(AMOUNT)
-                            .consensusTimestamp(consensusTimestamp)
-                            .contractId(contractEntityId.getId())
-                            .functionParameters(callData)
-                            .gasLimit(GAS)
-                            .senderId(senderEntityId)
-                            .transactionHash(transaction.getTransactionHash()));
-            final var contractResult = persistContractResult ? contractResultBuilder.persist() : contractResultBuilder.get();
+            final var contractResultBuilder = domainBuilder.contractResult().customize(contractResult -> contractResult
+                    .amount(AMOUNT)
+                    .consensusTimestamp(consensusTimestamp)
+                    .contractId(contractEntityId.getId())
+                    .functionParameters(callData)
+                    .gasLimit(GAS)
+                    .senderId(senderEntityId)
+                    .transactionHash(transaction.getTransactionHash()));
+            final var contractResult =
+                    persistContractResult ? contractResultBuilder.persist() : contractResultBuilder.get();
 
             final var expectedResult = provider.getExpectedResultFields() != null
                     ? Bytes.fromHexString(functionEncodeDecoder.encodedResultFor(
@@ -193,7 +205,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
             domainBuilder
                     .contractAction()
-                    .customize(a -> a
+                    .customize(contractAction -> contractAction
                             .caller(senderEntityId)
                             .callerType(EntityType.ACCOUNT)
                             .consensusTimestamp(consensusTimestamp)
@@ -209,7 +221,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             if (persistTransaction) {
                 domainBuilder
                         .contractTransactionHash()
-                        .customize(h -> h
+                        .customize(contractTransactionHash -> contractTransactionHash
                                 .consensusTimestamp(consensusTimestamp)
                                 .entityId(contractEntityId.getId())
                                 .hash(ethHash)
@@ -219,16 +231,16 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             }
 
             expectedServiceParameters = ContractDebugParameters.builder()
-                    .sender(new HederaEvmAccount(SENDER_ALIAS))
+                    .block(provider.getBlock())
+                    .callData(Bytes.of(callData))
+                    .consensusTimestamp(consensusTimestamp)
+                    .gas(GAS)
                     .receiver(entityDatabaseAccessor
                             .get(contractAddress, Optional.empty())
                             .map(this::entityAddress)
                             .orElse(Address.ZERO))
-                    .consensusTimestamp(consensusTimestamp)
-                    .gas(GAS)
+                    .sender(new HederaEvmAccount(SENDER_ALIAS))
                     .value(AMOUNT)
-                    .callData(Bytes.of(callData))
-                    .block(provider.getBlock())
                     .build();
 
             if (ethTransaction != null) {
@@ -305,7 +317,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
             assertThatExceptionOfType(EntityNotFoundException.class)
                     .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
-                    .withMessage("Contract result not found");
+                    .withMessage("Contract result not found: " + consensusTimestamp);
         }
 
         @Test
@@ -323,7 +335,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
             assertThatExceptionOfType(EntityNotFoundException.class)
                     .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
-                    .withMessage("Transaction not found");
+                    .withMessage("Transaction not found: " + transactionIdOrHash);
         }
 
         @Test
@@ -341,7 +353,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
 
             assertThatExceptionOfType(EntityNotFoundException.class)
                     .isThrownBy(() -> opcodeService.processOpcodeCall(transactionIdOrHash, options))
-                    .withMessage("Contract transaction hash not found");
+                    .withMessage("Contract transaction hash not found: " + transactionIdOrHash);
         }
 
         private void verifyOpcodesResponse(
@@ -349,9 +361,10 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                 final Path contractAbiPath,
                 final OpcodesResponse opcodesResponse,
                 final OpcodeTracerOptions options) {
-            assertThat(opcodesResponse).isEqualTo(expectedOpcodesResponse(opcodesResultCaptor.getValue()));
+            assertThat(opcodesResponse).isEqualTo(expectedOpcodesResponse(resultCaptor, contextCaptor.getOpcodes()));
             assertThat(serviceParametersCaptor.getValue()).isEqualTo(expectedServiceParameters);
-            assertThat(tracerOptionsCaptor.getValue()).isEqualTo(options);
+            assertThat(gasCaptor.getValue()).isEqualTo(expectedServiceParameters.getGas());
+            assertThat(contextCaptor.getOpcodeTracerOptions()).isEqualTo(options);
 
             if (providerEnum.getExpectedErrorMessage() != null) {
                 assertThat(opcodesResponse.getOpcodes().getLast().getReason())
@@ -369,23 +382,22 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             }
         }
 
-        private OpcodesResponse expectedOpcodesResponse(final OpcodesProcessingResult result) {
+        private OpcodesResponse expectedOpcodesResponse(
+                final HederaEvmTransactionProcessingResult result, final List<Opcode> opcodes) {
             return new OpcodesResponse()
-                    .address(result.transactionProcessingResult()
-                            .getRecipient()
+                    .address(result.getRecipient()
                             .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
                             .map(this::entityAddress)
                             .map(Address::toHexString)
                             .orElse(Address.ZERO.toHexString()))
-                    .contractId(result.transactionProcessingResult()
-                            .getRecipient()
+                    .contractId(result.getRecipient()
                             .flatMap(address -> entityDatabaseAccessor.get(address, Optional.empty()))
                             .map(Entity::toEntityId)
                             .map(EntityId::toString)
                             .orElse(null))
-                    .failed(!result.transactionProcessingResult().isSuccessful())
-                    .gas(result.transactionProcessingResult().getGasUsed())
-                    .opcodes(result.opcodes().stream()
+                    .failed(!result.isSuccessful())
+                    .gas(result.getGasUsed())
+                    .opcodes(opcodes.stream()
                             .map(opcode -> new com.hedera.mirror.rest.model.Opcode()
                                     .depth(opcode.depth())
                                     .gas(opcode.gas())
@@ -404,7 +416,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                                                     entry -> entry.getKey().toHexString(),
                                                     entry -> entry.getValue().toHexString()))))
                             .toList())
-                    .returnValue(Optional.ofNullable(result.transactionProcessingResult().getOutput())
+                    .returnValue(Optional.ofNullable(result.getOutput())
                             .map(Bytes::toHexString)
                             .orElse(Bytes.EMPTY.toHexString()));
         }
