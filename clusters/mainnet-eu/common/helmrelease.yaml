@@ -41,6 +41,11 @@ spec:
         prometheusSpec:
           externalLabels:
             cluster: mainnet-eu
+          resources:
+            limits:
+              memory: 2750Mi
+            requests:
+              memory: 1Gi
           remoteWrite:
             - basicAuth:
                 password:

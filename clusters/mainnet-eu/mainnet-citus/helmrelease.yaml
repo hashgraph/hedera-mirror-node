@@ -73,6 +73,17 @@ spec:
       enabled: false
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
+    stackgres:
+      worker:
+        overrides:
+          - index: 0
+            pods:
+              persistentVolume:
+                size: 12000Gi
+          - index: 1
+            pods:
+              persistentVolume:
+                size: 12000Gi
     test:
       config:
         hedera:
