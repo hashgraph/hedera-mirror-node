@@ -23,7 +23,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   testRunner,
 } from './utils';
@@ -39,7 +39,7 @@ const jsonRespKey = 'schedules';
  */
 const getScheduleById = async (server) => {
   let url = getUrl(server, schedulesPath, {limit: resourceLimit});
-  const schedules = await getAPIResponse(url, jsonRespKey);
+  const schedules = await fetchAPIResponse(url, jsonRespKey);
 
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -55,7 +55,7 @@ const getScheduleById = async (server) => {
 
   const scheduleId = _.max(_.map(schedules, (schedule) => schedule.schedule_id));
   url = getUrl(server, `${schedulesPath}/${scheduleId}`);
-  const schedule = await getAPIResponse(url);
+  const schedule = await fetchAPIResponse(url);
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)

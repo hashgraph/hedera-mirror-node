@@ -83,7 +83,8 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
     @Test
     void findRecordFileByTimestamp() {
         var timestamp = domainBuilder.timestamp();
-        var recordFile = domainBuilder.recordFile()
+        var recordFile = domainBuilder
+                .recordFile()
                 .customize(r -> {
                     r.consensusStart(timestamp);
                     r.consensusEnd(timestamp + 1);

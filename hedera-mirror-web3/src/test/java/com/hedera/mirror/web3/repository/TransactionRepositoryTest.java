@@ -30,14 +30,15 @@ class TransactionRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByConsensusTimestampSuccessful() {
         Transaction transaction = domainBuilder.transaction().persist();
-        assertThat(transactionRepository.findById(transaction.getConsensusTimestamp())).contains(transaction);
+        assertThat(transactionRepository.findById(transaction.getConsensusTimestamp()))
+                .contains(transaction);
     }
 
     @Test
     void findByPayerAccountIdAndValidStartNsSuccessful() {
         var transaction = domainBuilder.transaction().persist();
-        assertThat(transactionRepository
-                .findByPayerAccountIdAndValidStartNs(transaction.getPayerAccountId(), transaction.getValidStartNs()))
+        assertThat(transactionRepository.findByPayerAccountIdAndValidStartNs(
+                        transaction.getPayerAccountId(), transaction.getValidStartNs()))
                 .contains(transaction);
     }
 }

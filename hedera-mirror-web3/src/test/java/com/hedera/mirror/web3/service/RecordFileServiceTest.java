@@ -33,7 +33,8 @@ class RecordFileServiceTest extends Web3IntegrationTest {
     @Test
     void testFindByTimestamp() {
         var timestamp = domainBuilder.timestamp();
-        var recordFile = domainBuilder.recordFile()
+        var recordFile = domainBuilder
+                .recordFile()
                 .customize(e -> e.consensusEnd(timestamp))
                 .persist();
         assertThat(recordFileService.findByTimestamp(timestamp)).contains(recordFile);
@@ -41,7 +42,8 @@ class RecordFileServiceTest extends Web3IntegrationTest {
 
     @Test
     void testFindByBlockTypeEarliest() {
-        var recordFileEarliest = domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        var recordFileEarliest =
+                domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(1L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(2L)).persist();
         assertThat(recordFileService.findByBlockType(BlockType.EARLIEST)).contains(recordFileEarliest);
@@ -52,7 +54,8 @@ class RecordFileServiceTest extends Web3IntegrationTest {
         domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(1L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(2L)).persist();
-        var recordFileLatest = domainBuilder.recordFile().customize(f -> f.index(3L)).persist();
+        var recordFileLatest =
+                domainBuilder.recordFile().customize(f -> f.index(3L)).persist();
         assertThat(recordFileService.findByBlockType(BlockType.LATEST)).contains(recordFileLatest);
     }
 
@@ -71,7 +74,8 @@ class RecordFileServiceTest extends Web3IntegrationTest {
         domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(1L)).persist();
         domainBuilder.recordFile().customize(f -> f.index(2L)).persist();
-        var recordFileLatest = domainBuilder.recordFile().customize(f -> f.index(3L)).persist();
+        var recordFileLatest =
+                domainBuilder.recordFile().customize(f -> f.index(3L)).persist();
         var blockType = BlockType.of(String.valueOf(recordFileLatest.getIndex() + 1L));
         assertThatThrownBy(() -> recordFileService.findByBlockType(blockType))
                 .isInstanceOf(BlockNumberOutOfRangeException.class)

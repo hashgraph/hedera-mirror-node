@@ -308,10 +308,10 @@ prometheus:
       resources:
         limits:
           cpu: 750m
-          memory: 2Gi
+          memory: 2750Mi
         requests:
           cpu: 250m
-          memory: 250Mi
+          memory: 1Gi
       retention: 60d
       ruleSelectorNilUsesHelmValues: false
       scrapeInterval: 30s
@@ -385,12 +385,13 @@ testkube:
       rest: {}
       restjava: {}
       web3: {}
+    delay: 330s  # Delay duration between test suite steps
     extraExecutionRequestVariables: {}
     gitBranch: ""  # Default to .Chart.AppVersion
     schedule: ""  # Cron schedule of the test suite, default to no schedule
-    target:
-      namespace: ""
-      release: mirror
+    targets: []
+    #  - namespace: ""
+    #    release: mirror
   trigger:
     enabled: false
 

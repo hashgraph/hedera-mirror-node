@@ -19,9 +19,11 @@ package com.hedera.mirror.web3.common;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracer;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.CachingStateFrame;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
+import java.util.ArrayList;
 import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +38,22 @@ public class ContractCallContext {
     public static final String CONTEXT_NAME = "ContractCallContext";
     private static final ScopedValue<ContractCallContext> SCOPED_VALUE = ScopedValue.newInstance();
 
+    @Setter
+    private List<ContractAction> contractActions = List.of();
+
+    /**
+     * This is used to determine the contract action index of the current frame.
+     * It starts from {@code -1} because when the tracer receives the initial frame,
+     * it will increment this immediately inside {@link OpcodeTracer#traceContextEnter}.
+     */
+    @Setter
+    private int contractActionIndexOfCurrentFrame = -1;
+
+    @Setter
+    private OpcodeTracerOptions opcodeTracerOptions;
+
+    @Setter
+    private List<Opcode> opcodes = new ArrayList<>();
     /**
      * Record file which stores the block timestamp and other historical block details used for filtering of historical
      * data.
@@ -49,14 +67,11 @@ public class ContractCallContext {
     /** Fixed "base" of stack: a R/O cache frame on top of the DB-backed cache frame */
     private CachingStateFrame<Object> stackBase;
 
+    /**
+     * The timestamp used to fetch the state from the stackedStateFrames.
+     */
     @Setter
-    private OpcodeTracerOptions opcodeTracerOptions;
-
-    @Setter
-    private List<Opcode> opcodes = List.of();
-
-    @Setter
-    private List<ContractAction> contractActions = List.of();
+    private long timestamp = 0;
 
     private ContractCallContext() {}
 
@@ -91,6 +106,10 @@ public class ContractCallContext {
         setStack(stack.getUpstream().orElseThrow(EmptyStackException::new));
     }
 
+    public void addOpcodes(Opcode opcode) {
+        opcodes.add(opcode);
+    }
+
     /**
      * Chop the stack back to its base. This keeps the most-upstream-layer which connects to the database, and the
      * `ROCachingStateFrame` on top of it.  Therefore, everything already read from the database is still present,
@@ -102,12 +121,22 @@ public class ContractCallContext {
      */
     public void initializeStackFrames(final StackedStateFrames stackedStateFrames) {
         if (stackedStateFrames != null) {
-            final var timestamp = Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
-            stackBase = stack = stackedStateFrames.getInitializedStackBase(timestamp);
+            final var stateTimestamp = this.timestamp > 0
+                    ? Optional.of(this.timestamp)
+                    : Optional.ofNullable(recordFile).map(RecordFile::getConsensusEnd);
+            stackBase = stack = stackedStateFrames.getInitializedStackBase(stateTimestamp);
         }
     }
 
     public boolean useHistorical() {
         return recordFile != null;
+    }
+
+    public void incrementContractActionsCounter() {
+        this.contractActionIndexOfCurrentFrame++;
+    }
+
+    public void decrementContractActionsCounter() {
+        this.contractActionIndexOfCurrentFrame--;
     }
 }

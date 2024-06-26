@@ -33,7 +33,6 @@ import org.hyperledger.besu.datatypes.Address;
 @Builder(toBuilder = true)
 @RequiredArgsConstructor
 public class ContractDebugParameters implements CallServiceParameters {
-
     @NotNull
     BlockType block;
 

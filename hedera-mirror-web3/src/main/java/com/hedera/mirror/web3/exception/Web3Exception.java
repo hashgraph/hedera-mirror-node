@@ -27,4 +27,8 @@ public abstract class Web3Exception extends MirrorNodeException {
     protected Web3Exception(String message) {
         super(message);
     }
+
+    protected Web3Exception(Throwable throwable) {
+        super(throwable);
+    }
 }

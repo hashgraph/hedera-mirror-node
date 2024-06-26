@@ -62,7 +62,7 @@ public class ContractExecutionService extends ContractCallService {
                 if (params.isEstimate()) {
                     // eth_estimateGas initialization - historical timestamp is Optional.empty()
                     ctx.initializeStackFrames(store.getStackedStateFrames());
-                    result = estimateGas(params, ctx);
+                    result = estimateGas(params);
                 } else {
                     final var ethCallTxnResult = callContract(params, ctx);
 
@@ -91,8 +91,8 @@ public class ContractExecutionService extends ContractCallService {
      * 2. Finally, if the first step is successful, a binary search is initiated. The lower bound of the search is the
      * gas used in the first step, while the upper bound is the inputted gas parameter.
      */
-    private Bytes estimateGas(final ContractExecutionParameters params, final ContractCallContext ctx) {
-        final var processingResult = doProcessCall(params, params.getGas(), true, ctx);
+    private Bytes estimateGas(final ContractExecutionParameters params) {
+        final var processingResult = doProcessCall(params, params.getGas(), true);
         validateResult(processingResult, CallType.ETH_ESTIMATE_GAS);
 
         final var gasUsedByInitialCall = processingResult.getGasUsed();
@@ -104,7 +104,7 @@ public class ContractExecutionService extends ContractCallService {
 
         final var estimatedGas = binaryGasEstimator.search(
                 (totalGas, iterations) -> updateGasUsedMetric(CallType.ETH_ESTIMATE_GAS, totalGas, iterations),
-                gas -> doProcessCall(params, gas, false, ctx),
+                gas -> doProcessCall(params, gas, false),
                 gasUsedByInitialCall,
                 params.getGas());
 

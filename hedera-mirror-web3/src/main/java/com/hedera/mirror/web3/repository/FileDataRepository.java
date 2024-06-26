@@ -17,7 +17,7 @@
 package com.hedera.mirror.web3.repository;
 
 import com.hedera.mirror.common.domain.file.FileData;
-import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
@@ -27,7 +27,12 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
     @Query(
             value =
                     """
-            select * from file_data
+            select
+              min(consensus_timestamp) as consensus_timestamp,
+              ?1 as entity_id,
+              string_agg(file_data, '' order by consensus_timestamp) as file_data,
+              null as transaction_type
+            from file_data
             where entity_id = ?1
               and consensus_timestamp >= (
                 select consensus_timestamp
@@ -40,8 +45,7 @@ public interface FileDataRepository extends CrudRepository<FileData, Long> {
                              length(file_data) <> 0))
               order by consensus_timestamp desc
               limit 1
-            ) and consensus_timestamp <= ?2
-            order by consensus_timestamp""",
+            ) and consensus_timestamp <= ?2""",
             nativeQuery = true)
-    List<FileData> getFileAtTimestamp(long fileId, long timestamp);
+    Optional<FileData> getFileAtTimestamp(long fileId, long timestamp);
 }

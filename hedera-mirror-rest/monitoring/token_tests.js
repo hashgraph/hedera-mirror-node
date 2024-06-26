@@ -28,7 +28,7 @@ import {
   checkRespObjDefined,
   CheckRunner,
   DEFAULT_LIMIT,
-  getAPIResponse,
+  fetchAPIResponse,
   getUrl,
   hasEmptyList,
   testRunner,
@@ -38,6 +38,7 @@ const tokensPath = '/tokens';
 const resource = 'token';
 const tokensLimit = config[resource].limit || DEFAULT_LIMIT;
 const tokenIdFromConfig = config[resource].tokenId;
+const nftIdFromConfig = config[resource].nftTokenId;
 const tokensJsonRespKey = 'tokens';
 const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
 
@@ -49,7 +50,7 @@ const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
  */
 const getTokensCheck = async (server) => {
   const url = getUrl(server, tokensPath, {limit: tokensLimit});
-  const tokens = await getAPIResponse(url, tokensJsonRespKey);
+  const tokens = await fetchAPIResponse(url, tokensJsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -76,7 +77,7 @@ const getTokensCheck = async (server) => {
 
 const getFirstTokenIdWithCheckResult = async (server) => {
   const url = getUrl(server, tokensPath, {limit: 1});
-  const tokens = await getAPIResponse(url, tokensJsonRespKey);
+  const tokens = await fetchAPIResponse(url, tokensJsonRespKey);
 
   const result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -85,6 +86,27 @@ const getFirstTokenIdWithCheckResult = async (server) => {
       limit: 1,
       message: (elements) => `tokens.length of ${elements.length} was expected to be 1`,
     })
+    .withCheckSpec(checkMandatoryParams, {
+      params: tokenMandatoryParams,
+      message: 'token object is missing some mandatory fields',
+    })
+    .run(tokens);
+  return {
+    tokenId: result.passed ? tokens[0].token_id : null,
+    result: {
+      url,
+      ...result,
+    },
+  };
+};
+
+const getFirstTokenIdForNft = async (server) => {
+  const url = getUrl(server, tokensPath, {type: 'NON_FUNGIBLE_UNIQUE', limit: 1});
+  const tokens = await fetchAPIResponse(url, tokensJsonRespKey);
+
+  const result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined'})
     .withCheckSpec(checkMandatoryParams, {
       params: tokenMandatoryParams,
       message: 'token object is missing some mandatory fields',
@@ -125,7 +147,7 @@ const getTokensWithLimitParam = async (server) => {
  */
 const getTokensWithOrderParam = async (server) => {
   let url = getUrl(server, tokensPath, {order: 'asc'});
-  let tokens = await getAPIResponse(url, tokensJsonRespKey);
+  let tokens = await fetchAPIResponse(url, tokensJsonRespKey);
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -141,7 +163,7 @@ const getTokensWithOrderParam = async (server) => {
   }
 
   url = getUrl(server, tokensPath, {order: 'desc'});
-  tokens = await getAPIResponse(url, tokensJsonRespKey);
+  tokens = await fetchAPIResponse(url, tokensJsonRespKey);
 
   result = checkRunner
     .resetCheckSpec(checkElementsOrder, {asc: false, compare: accountIdCompare, key: 'token_id', name: 'token ID'})
@@ -197,7 +219,7 @@ const getTokenInfoCheck = async (server) => {
   }
 
   const url = getUrl(server, tokenInfoPath(tokenId));
-  const tokenInfo = await getAPIResponse(url);
+  const tokenInfo = await fetchAPIResponse(url);
 
   const tokenInfoResult = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -218,7 +240,6 @@ const getTokenInfoCheck = async (server) => {
   };
 };
 
-const {tokenBalancesLimit} = config[resource];
 const tokenBalancesJsonRespKey = 'balances';
 const tokenBalanceMandatoryParams = ['account', 'balance'];
 const tokenBalancesPath = (tokenId) => `${tokensPath}/${tokenId}/balances`;
@@ -240,14 +261,14 @@ const getTokenBalancesCheck = async (server) => {
     tokenId = tokenIdFromAPI;
   }
 
-  const url = getUrl(server, tokenBalancesPath(tokenId), {limit: tokenBalancesLimit});
-  const balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
+  const url = getUrl(server, tokenBalancesPath(tokenId), {limit: tokensLimit});
+  const balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey);
 
   const balancesResult = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'token balances is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: tokenBalancesLimit,
+      limit: tokensLimit,
       message: (elements, limit) => `token balances.length of ${elements.length} is less than limit ${limit}`,
     })
     .withCheckSpec(checkMandatoryParams, {
@@ -284,7 +305,7 @@ const getTokenBalancesWithLimitParam = async (server) => {
   }
 
   const url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
-  const balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
+  const balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey);
 
   const balancesResult = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -327,9 +348,8 @@ const getTokenBalancesWithTimestampParam = async (server) => {
   }
 
   let url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
-  const resp = await getAPIResponse(url);
+  const resp = await fetchAPIResponse(url);
   let balances = resp instanceof Error ? resp : resp[tokenBalancesJsonRespKey];
-
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
@@ -343,15 +363,16 @@ const getTokenBalancesWithTimestampParam = async (server) => {
   }
 
   const {timestamp} = resp;
-  const plusOne = math.add(math.bignumber(timestamp), math.bignumber(1));
+
   const minusOne = math.subtract(math.bignumber(timestamp), math.bignumber(1));
   url = getUrl(server, tokenBalancesPath(tokenId), {
-    timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
+    timestamp: [`gt:${minusOne.toString()}`],
     limit: 1,
   });
-  balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
 
+  balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey);
   balancesResult = checkRunner.run(balances);
+
   if (!balancesResult.passed) {
     return {url, ...balancesResult};
   }
@@ -381,7 +402,7 @@ const getTokenBalancesForAccount = async (server) => {
   }
 
   let url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
-  let balances = await getAPIResponse(url, tokenBalancesJsonRespKey, hasEmptyList(tokenBalancesJsonRespKey));
+  let balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey, hasEmptyList(tokenBalancesJsonRespKey));
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -397,7 +418,7 @@ const getTokenBalancesForAccount = async (server) => {
 
   const accountId = balances[0].account;
   url = getUrl(server, tokenBalancesPath(tokenId), {'account.id': accountId});
-  balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
+  balances = await fetchAPIResponse(url, tokenBalancesJsonRespKey);
 
   balancesResult = checkRunner
     .withCheckSpec(checkEntityId, {accountId, message: 'account was not found'})
@@ -410,6 +431,78 @@ const getTokenBalancesForAccount = async (server) => {
     url,
     passed: true,
     message: 'Successfully called token balances and performed account check',
+  };
+};
+
+async function getNfts(url, tokenNftsJsonRespKey) {
+  let nfts = await fetchAPIResponse(url, tokenNftsJsonRespKey);
+  let nftsResult = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'nfts is undefined'})
+    .run(nfts);
+
+  return {
+    response: nfts,
+    result: nftsResult,
+  };
+}
+
+/**
+ * Verifies token /nfts and /nfts/{serialNumber} and /nfts/{serialNumber}/transactions calls for a token.
+ *
+ * @param server
+ * @return {Promise<{message: String, passed: boolean, url: String}>}
+ */
+const getTokenNfts = async (server) => {
+  let tokenId = nftIdFromConfig;
+  const tokenNftsJsonRespKey = 'nfts';
+  if (!tokenId) {
+    const {tokenId: tokenIdFromAPI, result} = await getFirstTokenIdForNft(server);
+    if (!result.passed) {
+      return result;
+    }
+
+    tokenId = tokenIdFromAPI;
+  }
+
+  const tokenNftsPath = `${tokensPath}/${tokenId}/nfts`;
+
+  let url = getUrl(server, tokenNftsPath, {limit: 1});
+  let nfts = await getNfts(url, tokenNftsJsonRespKey);
+  let nftsResult = nfts.result;
+  if (!nftsResult.passed) {
+    return {url, ...nftsResult};
+  }
+
+  if (!nfts.length) {
+    return {
+      url,
+      passed: true,
+      message: 'Successfully called token nfts with empty list',
+    };
+  }
+
+  const serialNumber = nfts.response[0].serial_number;
+  url = getUrl(server, tokenNftsPath + `/${serialNumber}`);
+
+  nfts = await getNfts(url, '');
+  nftsResult = nfts.result;
+  if (!nftsResult.passed) {
+    return {url, ...nftsResult};
+  }
+
+  url = getUrl(server, tokenNftsPath + `/${serialNumber}/transactions`);
+  nfts = await getNfts(url, 'transactions');
+  nftsResult = nfts.result;
+
+  if (!nftsResult.passed) {
+    return {url, ...nftsResult};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called token nfts',
   };
 };
 
@@ -440,6 +533,10 @@ const checkTokenBalanceFreshness = async (server) => {
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {
+  if (!tokenIdFromConfig) {
+    return Promise.resolve();
+  }
+
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
     runTest(getTokensCheck),
@@ -451,6 +548,7 @@ const runTests = async (server, testResult) => {
     runTest(getTokenBalancesWithTimestampParam),
     runTest(getTokenBalancesForAccount),
     runTest(checkTokenBalanceFreshness),
+    runTest(getTokenNfts),
   ]);
 };
 

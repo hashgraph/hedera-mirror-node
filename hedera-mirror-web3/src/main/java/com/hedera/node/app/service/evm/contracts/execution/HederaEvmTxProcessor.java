@@ -109,8 +109,7 @@ public class HederaEvmTxProcessor {
             final boolean isStatic,
             final Address mirrorReceiver,
             final boolean contractCreation,
-            final TracerType tracerType,
-            final ContractCallContext contractCallContext) {
+            final TracerType tracerType) {
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var intrinsicGas = gasCalculator.transactionIntrinsicGasCost(payload, contractCreation);
         final var gasAvailable = gasLimit - intrinsicGas;
@@ -142,11 +141,12 @@ public class HederaEvmTxProcessor {
                         PRECOMPILE_CONTEXT,
                         precompileContext,
                         ContractCallContext.CONTEXT_NAME,
-                        contractCallContext));
+                        ContractCallContext.get()));
 
         final var initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         final var messageFrameStack = initialFrame.getMessageFrameStack();
         HederaEvmOperationTracer tracer = this.getTracer(tracerType);
+
         tracer.init(initialFrame);
 
         final var evmVersion = ((MirrorNodeEvmProperties) dynamicProperties).getSemanticEvmVersion();

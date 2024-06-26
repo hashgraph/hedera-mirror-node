@@ -17,24 +17,28 @@
 import Redis from 'ioredis';
 import config from './config';
 import _ from 'lodash';
-import {JSONParse, JSONStringify} from './utils.js';
+import {JSONParse, JSONStringify} from './utils';
 
 export class Cache {
   constructor() {
-    const enabled = config?.redis?.enabled;
-    const uri = config?.redis?.uri;
-    const uriSanitized = uri.replaceAll(RegExp('(?<=//).*:.+@', 'g'), '***:***@');
-    this.ready = false;
-
-    this.redis = new Redis(uri, {
-      commandTimeout: config?.redis?.commandTimeout,
-      connectTimeout: config?.redis?.connectTimeout,
+    const {redis: redisConfig} = config;
+    const {enabled, sentinel, uri} = redisConfig;
+    const sentinelOptions = sentinel.enabled
+      ? {
+          name: sentinel.name,
+          sentinelPassword: sentinel.password,
+          sentinels: [{host: sentinel.host, port: sentinel.port}],
+        }
+      : {};
+    const options = {
+      commandTimeout: redisConfig.commandTimeout,
+      connectTimeout: redisConfig.connectTimeout,
       enableAutoPipelining: true,
       enableOfflineQueue: true,
       enableReadyCheck: true,
       keepAlive: 30000,
       lazyConnect: !enabled,
-      maxRetriesPerRequest: config?.redis?.maxRetriesPerRequest,
+      maxRetriesPerRequest: redisConfig.maxRetriesPerRequest,
       retryStrategy: (attempt) => {
         this.ready = false;
 
@@ -42,17 +46,21 @@ export class Cache {
           return null;
         }
 
-        return Math.min(attempt * 2000, config?.redis?.maxBackoff);
+        return Math.min(attempt * 2000, redisConfig.maxBackoff);
       },
-    });
+      ...sentinelOptions,
+    };
+    const uriSanitized = uri.replaceAll(RegExp('(?<=//).*:.+@', 'g'), '***:***@');
+    this.ready = false;
 
-    this.redis.on('connect', () => logger.info(`Connected to ${uriSanitized}`));
-    this.redis.on('error', (err) => logger.error(`Error connecting to ${uriSanitized}: ${err.message}`));
-    this.redis.on('ready', () => {
-      this.#setConfig('maxmemory', config?.redis?.maxMemory);
-      this.#setConfig('maxmemory-policy', config?.redis?.maxMemoryPolicy);
-      this.ready = true;
-    });
+    this.redis = new Redis(uri, options)
+      .on('connect', () => logger.info(`Connected to ${uriSanitized}`))
+      .on('error', (err) => logger.error(`Error connecting to ${uriSanitized}: ${err.message}`))
+      .on('ready', () => {
+        this.#setConfig('maxmemory', redisConfig.maxMemory);
+        this.#setConfig('maxmemory-policy', redisConfig.maxMemoryPolicy);
+        this.ready = true;
+      });
   }
 
   #setConfig(key, value) {
@@ -66,6 +74,9 @@ export class Cache {
   }
 
   async get(keys, loader, keyMapper = (k) => (k ? k.toString() : k)) {
+    if (_.isEmpty(keys)) {
+      return [];
+    }
     if (!this.ready) {
       return loader(keys);
     }

@@ -15,59 +15,72 @@ This checklist verifies a release is rolled out successfully.
 - [ ] Automated Kubernetes deployment to integration successful
 - [ ] Tag release
 
-## Performance
+## Release Candidates
+
+### Previewnet
+
+v1 is deployed by tag creation automation. Deploy v2 soon after v1 is successful.
+
+- [ ] Deployed v1
+- [ ] Deployed v2
+
+### Performance
 
 - [ ] Deployed v1
 - [ ] Deployed v2
 - [ ] gRPC API performance tests
 - [ ] Importer performance tests
 
-## Mainnet Staging
+### Mainnet Staging
 
 - [ ] Deployed v1
 - [ ] Deployed v2
 - [ ] REST API performance tests
 - [ ] Web3 API performance tests
 
-## Previewnet
-
-- [ ] Deployed v1
-- [ ] Deployed v2
-
 ## Generally Available
 
 - [ ] Publish release
 - [ ] Publish marketplace release
 
-## Integration Docker
+### Previewnet
 
-This preprod environment is automatically deployed for any GA release.
-
-- [ ] Deployed
-
-## Dev
-
-This preprod environment is automatically deployed for any GA release.
-
-- [ ] Deployed
-
-## Testnet
+v1 is deployed by tag creation automation. Deploy v2 soon after v1 is successful.
 
 - [ ] Deployed v1
 - [ ] Deployed v2
 
-## Staging Large
+### Testnet
+
+The GA tag automation deploys v1 to testnet-na. Upon success, deploy v1 and v2 to testnet-eu.
+
+- [ ] Deployed v1
+- [ ] Deployed v2
+
+### Integration Docker
+
+This preprod environment is automatically deployed for any GA release.
+
+- [ ] Deployed
+
+### Dev
+
+This preprod environment is automatically deployed for any GA release.
+
+- [ ] Deployed
+
+### Staging Small
 
 This environment does migration testing against testnet state. We should deploy GA versions to it after testnet is
 successfully updated.
 
 - [ ] Deployed
 
-## Mainnet
+### Mainnet
 
 - [ ] Deployed
 
-## Staging Small
+### Staging Large
 
 This environment does migration testing against mainnet state. We should deploy GA versions to it after mainnet is
 successfully updated.

@@ -32,10 +32,15 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 @RequiredArgsConstructor
+@ExtendWith(OutputCaptureExtension.class)
 class EntityIdServiceImplTest extends ImporterIntegrationTest {
 
     // in the form 'shard.realm.num'
@@ -44,6 +49,8 @@ class EntityIdServiceImplTest extends ImporterIntegrationTest {
         0, 0, 0, 0, 0, 0, 0, 0, // realm
         0, 0, 0, 0, 0, 0, 0, 100, // num
     };
+
+    private static final String RECOVERABLE_ERROR_LOG_PREFIX = "Recoverable error. ";
 
     private final EntityRepository entityRepository;
     private final EntityIdService entityIdService;
@@ -213,13 +220,31 @@ class EntityIdServiceImplTest extends ImporterIntegrationTest {
     }
 
     @Test
-    void lookupContractEvmAddressNoMatch() {
+    void lookupContractEvmAddressNoMatch(CapturedOutput output) {
         Entity contract = domainBuilder
                 .entity()
                 .customize(e -> e.alias(null).type(CONTRACT))
                 .get();
         var contractId = getProtoContractId(contract);
         assertThat(entityIdService.lookup(contractId)).isEmpty();
+        assertThat(output.getAll()).containsIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void lookupContractEvmAddressRecoverableError(boolean throwRecoverableError, CapturedOutput output) {
+        Entity contract = domainBuilder
+                .entity()
+                .customize(e -> e.alias(null).type(CONTRACT))
+                .get();
+        var contractId = getProtoContractId(contract);
+
+        assertThat(entityIdService.lookup(contractId, throwRecoverableError)).isEmpty();
+        if (throwRecoverableError) {
+            assertThat(output.getAll()).containsIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
+        } else {
+            assertThat(output.getAll()).doesNotContainIgnoringCase(RECOVERABLE_ERROR_LOG_PREFIX);
+        }
     }
 
     @Test

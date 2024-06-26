@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.doAnswer;
 
@@ -29,7 +28,6 @@ import com.hedera.mirror.web3.evm.contracts.execution.OpcodesProcessingResult;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
-import com.hedera.mirror.web3.utils.ResultCaptor;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.util.Comparator;
 import java.util.List;
@@ -69,11 +67,9 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
     @Captor
     private ArgumentCaptor<Long> gasCaptor;
 
-    @Captor
-    private ArgumentCaptor<ContractCallContext> ctxCaptor;
+    private HederaEvmTransactionProcessingResult resultCaptor;
 
-    private final ResultCaptor<HederaEvmTransactionProcessingResult> resultCaptor =
-            new ResultCaptor<>(HederaEvmTransactionProcessingResult.class);
+    private ContractCallContext contextCaptor;
 
     private EntityId ownerEntityId;
     private EntityId senderEntityId;
@@ -81,7 +77,7 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
     private EntityId spenderEntityId;
 
     @BeforeEach
-    void setUp() {
+    void setUpEntities() {
         // Obligatory data
         genesisBlockPersist();
         historicalBlocksPersist();
@@ -102,12 +98,15 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
 
     @BeforeEach
     void setUpArgumentCaptors() {
-        doAnswer(resultCaptor)
+        doAnswer(invocation -> {
+                    final var transactionProcessingResult =
+                            (HederaEvmTransactionProcessingResult) invocation.callRealMethod();
+                    resultCaptor = transactionProcessingResult;
+                    contextCaptor = ContractCallContext.get();
+                    return transactionProcessingResult;
+                })
                 .when(processor)
-                .execute(
-                        paramsCaptor.capture(),
-                        gasCaptor.capture(),
-                        ctxCaptor.capture());
+                .execute(paramsCaptor.capture(), gasCaptor.capture());
     }
 
     @ParameterizedTest
@@ -118,8 +117,8 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
                 function,
                 MODIFICATION_CONTRACT_ABI_PATH,
                 MODIFICATION_CONTRACT_ADDRESS,
-                ETH_DEBUG_TRACE_TRANSACTION,
-                DEFAULT_CALL_VALUE);
+                DEFAULT_CALL_VALUE,
+                domainBuilder.timestamp());
         verifyOpcodeTracerCall(params, function);
     }
 
@@ -131,8 +130,8 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
                 function,
                 NESTED_CALLS_ABI_PATH,
                 NESTED_ETH_CALLS_CONTRACT_ADDRESS,
-                ETH_DEBUG_TRACE_TRANSACTION,
-                DEFAULT_CALL_VALUE);
+                DEFAULT_CALL_VALUE,
+                domainBuilder.timestamp());
         verifyOpcodeTracerCall(params, function);
     }
 
@@ -144,13 +143,13 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
                 function,
                 DYNAMIC_ETH_CALLS_ABI_PATH,
                 DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
-                ETH_DEBUG_TRACE_TRANSACTION,
-                DEFAULT_CALL_VALUE);
+                DEFAULT_CALL_VALUE,
+                domainBuilder.timestamp());
         verifyOpcodeTracerCall(params, function);
     }
 
-    private void verifyOpcodeTracerCall(final ContractDebugParameters params,
-                                        final ContractFunctionProviderEnum function) {
+    private void verifyOpcodeTracerCall(
+            final ContractDebugParameters params, final ContractFunctionProviderEnum function) {
         if (function.getExpectedErrorMessage() != null) {
             verifyThrowingOpcodeTracerCall(params, function);
         } else {
@@ -161,8 +160,8 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
     }
 
     @SneakyThrows
-    private void verifyThrowingOpcodeTracerCall(final ContractDebugParameters params,
-                                                final ContractFunctionProviderEnum function) {
+    private void verifyThrowingOpcodeTracerCall(
+            final ContractDebugParameters params, final ContractFunctionProviderEnum function) {
         final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
         assertThat(actual.transactionProcessingResult().isSuccessful()).isFalse();
         assertThat(actual.transactionProcessingResult().getOutput()).isEqualTo(Bytes.EMPTY);
@@ -175,17 +174,16 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
                         result -> assertThat(result.getHaltReason())
                                 .isPresent()
                                 .map(ExceptionalHaltReason::getDescription)
-                                .hasValue(function.getExpectedErrorMessage())
-                );
+                                .hasValue(function.getExpectedErrorMessage()));
         assertThat(actual.opcodes().size()).isNotZero();
         assertThat(toHumanReadableMessage(actual.opcodes().getLast().reason()))
                 .isEqualTo(function.getExpectedErrorMessage());
     }
 
-    private void verifySuccessfulOpcodeTracerCall(final ContractDebugParameters params,
-                                                  final ContractFunctionProviderEnum function) {
+    private void verifySuccessfulOpcodeTracerCall(
+            final ContractDebugParameters params, final ContractFunctionProviderEnum function) {
         final var actual = contractDebugService.processOpcodeCall(params, OPTIONS);
-        final var expected = expectedOpcodeProcessingResult();
+        final var expected = new OpcodesProcessingResult(resultCaptor, contextCaptor.getOpcodes());
 
         if (function.getExpectedResultFields() != null) {
             assertThat(actual.transactionProcessingResult().getOutput().toHexString())
@@ -203,12 +201,6 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
                 .usingRecursiveComparison()
                 .withComparatorForFields(gasComparator(), "gas")
                 .isEqualTo(expected.opcodes());
-    }
-
-    private OpcodesProcessingResult expectedOpcodeProcessingResult() {
-        final var result = resultCaptor.getValue();
-        final var ctx = ctxCaptor.getValue();
-        return new OpcodesProcessingResult(result, ctx.getOpcodes());
     }
 
     private void setUpModificationContractEntities() {

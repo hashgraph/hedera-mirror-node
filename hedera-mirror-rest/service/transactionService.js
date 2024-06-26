@@ -57,6 +57,7 @@ class TransactionService extends BaseService {
     ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)},
     ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)},
     ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_V)},
     ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)},
     ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
     ${EthereumTransaction.getFullName(EthereumTransaction.TO_ADDRESS)},
