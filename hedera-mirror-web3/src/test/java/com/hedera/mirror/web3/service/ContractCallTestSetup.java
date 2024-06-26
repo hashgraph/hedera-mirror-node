@@ -1007,8 +1007,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final ContractFunctionProviderEnum function,
             final Path contractAbiPath,
             final Address contractAddress,
-            final CallType callType,
-            final Long value) {
+            final Long value,
+            final Long consensusTimestamp) {
         Bytes callData = functionEncodeDecoder.functionHashFor(
                 function.getName(), contractAbiPath, function.getFunctionParameters());
 
@@ -1020,12 +1020,13 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         }
 
         return ContractDebugParameters.builder()
+                .block(function.getBlock())
+                .callData(callData)
+                .consensusTimestamp(consensusTimestamp)
+                .gas(15_000_000L)
+                .receiver(contractAddress)
                 .sender(sender)
                 .value(value)
-                .receiver(contractAddress)
-                .callData(callData)
-                .gas(15_000_000L)
-                .block(function.getBlock())
                 .build();
     }
 
@@ -1093,7 +1094,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         return ContractCallContext.run(ctx -> {
             ctx.initializeStackFrames(store.getStackedStateFrames());
             long result = processor
-                    .execute(serviceParameters, serviceParameters.getGas(), ctx)
+                    .execute(serviceParameters, serviceParameters.getGas())
                     .getGasUsed();
 
             assertThat(store.getStackedStateFrames().height()).isEqualTo(1);
