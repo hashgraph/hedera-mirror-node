@@ -20,16 +20,13 @@ import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_S
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_EXCHANGE_RATE;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_NAME_FEE_SCHEDULE;
 
-import com.google.common.primitives.Bytes;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.web3.exception.InvalidFileException;
 import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import jakarta.inject.Named;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -45,11 +42,15 @@ import org.springframework.retry.support.RetryTemplate;
 @RequiredArgsConstructor
 @CustomLog
 public class RatesAndFeesLoader {
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
+    public static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
+    public static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
+
+    private static final CurrentAndNextFeeSchedule EMPTY_FEE_SCHEDULE = CurrentAndNextFeeSchedule.getDefaultInstance();
+    private static final ExchangeRateSet EMPTY_EXCHANGE_RATE_SET = ExchangeRateSet.getDefaultInstance();
+
     private final RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(10)
-            .retryOn(InvalidProtocolBufferException.class)
+            .retryOn(InvalidFileException.class)
             .build();
 
     private final FileDataRepository fileDataRepository;
@@ -64,8 +65,11 @@ public class RatesAndFeesLoader {
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
         try {
             return getFileData(
-                    EXCHANGE_RATE_ENTITY_ID.getId(), new AtomicLong(nanoSeconds), ExchangeRateSet::parseFrom);
-        } catch (InvalidProtocolBufferException e) {
+                    EXCHANGE_RATE_ENTITY_ID.getId(),
+                    new AtomicLong(nanoSeconds),
+                    ExchangeRateSet::parseFrom,
+                    EMPTY_EXCHANGE_RATE_SET);
+        } catch (InvalidFileException e) {
             log.warn("Corrupt rate file at {}, may require remediation!", EXCHANGE_RATE_ENTITY_ID);
             throw new IllegalStateException(String.format("Rates %s are corrupt!", EXCHANGE_RATE_ENTITY_ID));
         }
@@ -81,44 +85,34 @@ public class RatesAndFeesLoader {
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         try {
             return getFileData(
-                    FEE_SCHEDULE_ENTITY_ID.getId(), new AtomicLong(nanoSeconds), CurrentAndNextFeeSchedule::parseFrom);
-        } catch (InvalidProtocolBufferException e) {
-            log.warn("Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID, e);
+                    FEE_SCHEDULE_ENTITY_ID.getId(),
+                    new AtomicLong(nanoSeconds),
+                    CurrentAndNextFeeSchedule::parseFrom,
+                    EMPTY_FEE_SCHEDULE);
+        } catch (InvalidFileException e) {
+            log.warn("Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID);
             throw new IllegalStateException(String.format("Fee schedule %s is corrupt!", FEE_SCHEDULE_ENTITY_ID));
         }
     }
 
-    @SuppressWarnings("java:S1130")
-    private <T> T getFileData(long fileId, final AtomicLong nanoSeconds, FileDataParser<T> parser)
-            throws InvalidProtocolBufferException {
-        return retryTemplate.execute(context -> {
-            long nanos = nanoSeconds.get();
-            var fileDataList = fileDataRepository.getFileAtTimestamp(fileId, nanos);
-            var fileDataBytes = getBytesFromFileData(fileDataList);
-            try {
-                return parser.parse(fileDataBytes);
-            } catch (InvalidProtocolBufferException e) {
-                log.warn(
-                        "Failed to load file data for fileId {} at {}, failing back to previous file. Retry attempt {}. Exception: ",
-                        fileId,
-                        nanos,
-                        context.getRetryCount() + 1,
-                        e);
-
-                // Decrement to a prior file's timestamp. The retryTemplate will use this as the next nanoSeconds
-                // parameter value
-                nanoSeconds.set(fileDataList.getFirst().getConsensusTimestamp() - 1);
-                throw e;
-            }
-        });
-    }
-
-    private byte[] getBytesFromFileData(List<FileData> files) {
-        List<byte[]> fileDataBytesList = new ArrayList<>();
-        for (int i = 0; i < files.size(); i++) {
-            fileDataBytesList.add(files.get(i).getFileData());
-        }
-        return Bytes.concat(fileDataBytesList.toArray(new byte[0][]));
+    private <T> T getFileData(long fileId, final AtomicLong nanoSeconds, FileDataParser<T> parser, T defaultValue) {
+        return retryTemplate.execute(context -> fileDataRepository
+                .getFileAtTimestamp(fileId, nanoSeconds.get())
+                .map(fileData -> {
+                    try {
+                        return parser.parse(fileData.getFileData());
+                    } catch (InvalidProtocolBufferException e) {
+                        log.warn(
+                                "Failed to load file data for fileId {} at {}, failing back to previous file. Retry attempt {}. Exception: ",
+                                fileId,
+                                nanoSeconds.get(),
+                                context.getRetryCount() + 1,
+                                e);
+                        nanoSeconds.set(fileData.getConsensusTimestamp() - 1);
+                        throw new InvalidFileException(e);
+                    }
+                })
+                .orElse(defaultValue));
     }
 
     private interface FileDataParser<T> {

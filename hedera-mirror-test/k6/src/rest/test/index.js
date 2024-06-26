@@ -138,7 +138,9 @@ const tests = {
   transactionsTransactionTypeAscending,
 };
 
-const {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} =
-  getSequentialTestScenarios(tests);
+const {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(
+  tests,
+  'REST'
+);
 
 export {funcs, getUrlFuncs, options, requiredParameters, scenarioDurationGauge, scenarios};

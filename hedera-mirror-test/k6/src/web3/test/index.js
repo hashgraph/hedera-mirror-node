@@ -119,6 +119,6 @@ if (__ENV.RUN_ESTIMATE_TESTS) {
   });
 }
 
-const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
+const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests, 'WEB3');
 
 export {funcs, options, scenarioDurationGauge, scenarios};

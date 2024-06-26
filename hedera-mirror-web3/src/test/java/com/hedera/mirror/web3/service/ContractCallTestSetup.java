@@ -20,6 +20,8 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.EXCHANGE_RATE_ENTITY_ID;
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.FEE_SCHEDULE_ENTITY_ID;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -102,7 +104,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final long expiry = 1_234_567_890L;
 
     // The block numbers lower than EVM v0.34 are considered part of EVM v0.30 which includes all precompiles
-    protected static final long EVM_V_34_BLOCK = 50L;
+    public static final long EVM_V_34_BLOCK = 50L;
     protected static final long EVM_V_38_BLOCK = 100L;
     protected static final long EVM_V_46_BLOCK = 150L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
@@ -120,10 +122,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(4_102_444_800L))
                     .build())
             .build();
-
-    // System addresses
-    protected static final EntityId FEE_SCHEDULE_ENTITY_ID = EntityId.of(0L, 0L, 111L);
-    protected static final EntityId EXCHANGE_RATE_ENTITY_ID = EntityId.of(0L, 0L, 112L);
 
     // Contract addresses
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
@@ -143,7 +141,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1266));
     protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1269));
     protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1270));
-    protected static final Address SELF_DESTRUCT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1278));
     protected static final Address MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1279));
 
     // Account addresses
@@ -1012,7 +1009,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final Address contractAddress,
             final CallType callType,
             final Long value) {
-        Bytes callData = functionEncodeDecoder.functionHashFor(function.getName(), contractAbiPath, function.getFunctionParameters());
+        Bytes callData = functionEncodeDecoder.functionHashFor(
+                function.getName(), contractAbiPath, function.getFunctionParameters());
 
         HederaEvmAccount sender;
         if (function.getBlock() != BlockType.LATEST) {
@@ -1053,6 +1051,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         } else {
             sender = new HederaEvmAccount(SENDER_ADDRESS);
         }
+        // in the end, this persist will be removed because every test
+        // will be responsible to persist its own needed data
         persistEntities();
 
         return ContractExecutionParameters.builder()
@@ -1071,6 +1071,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
             final Path contractInitCodePath, final CallType callType, final Address senderAddress) {
         final var sender = new HederaEvmAccount(senderAddress);
+        // in the end, this persist will be removed because every test
+        // will be responsible to persist its own needed data
         persistEntities();
 
         final var callData = Bytes.wrap(functionEncodeDecoder.getContractBytes(contractInitCodePath));
@@ -1118,7 +1120,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nestedContractId = dynamicEthCallContractPresist();
         nestedEthCallsContractPersist();
         final var redirectContract = redirectContractPersist();
-        selfDestructContractPersist();
         fileDataPersist();
 
         receiverPersist();
@@ -2886,30 +2887,5 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .customize(f -> f.bytes(internalCallerContractBytes))
                 .persist();
         return internalCallerContractEntityId;
-    }
-
-    private void selfDestructContractPersist() {
-        final var evmCodesContractBytes = functionEncodeDecoder.getContractBytes(SELF_DESTRUCT_CONTRACT_BYTES_PATH);
-        final var evmCodesContractEntityId = fromEvmAddress(SELF_DESTRUCT_CONTRACT_ADDRESS.toArrayUnsafe());
-        final var evmCodesContractEvmAddress = toEvmAddress(evmCodesContractEntityId);
-
-        domainBuilder
-                .entity()
-                .customize(e -> e.id(evmCodesContractEntityId.getId())
-                        .num(evmCodesContractEntityId.getNum())
-                        .evmAddress(evmCodesContractEvmAddress)
-                        .type(CONTRACT)
-                        .balance(1500L))
-                .persist();
-
-        domainBuilder
-                .contract()
-                .customize(c -> c.id(evmCodesContractEntityId.getId()).runtimeBytecode(evmCodesContractBytes))
-                .persist();
-
-        domainBuilder
-                .recordFile()
-                .customize(f -> f.bytes(evmCodesContractBytes))
-                .persist();
     }
 }

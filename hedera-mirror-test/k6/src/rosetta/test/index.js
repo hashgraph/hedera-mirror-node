@@ -44,6 +44,6 @@ const tests = {
   networkStatus,
 };
 
-const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
+const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests, 'ROSETTA');
 
 export {funcs, options, scenarioDurationGauge, scenarios};

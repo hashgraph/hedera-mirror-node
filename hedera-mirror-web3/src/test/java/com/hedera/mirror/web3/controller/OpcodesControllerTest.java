@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.rest.model.OpcodesResponse;
+import com.hedera.mirror.web3.Web3Properties;
 import com.hedera.mirror.web3.common.TransactionHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdOrHashParameter;
 import com.hedera.mirror.web3.common.TransactionIdParameter;
@@ -80,14 +81,14 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.tuweni.bytes.Bytes;
 import org.hamcrest.core.StringContains;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -110,11 +111,12 @@ import org.springframework.util.StringUtils;
 
 @ExtendWith(SpringExtension.class)
 @WebMvcTest(controllers = OpcodesController.class)
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OpcodesControllerTest {
 
     private static final String OPCODES_URI = "/api/v1/contracts/results/{transactionIdOrHash}/opcodes";
     private static final DomainBuilder DOMAIN_BUILDER = new DomainBuilder();
+    private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
+    private final AtomicReference<ContractDebugParameters> expectedCallServiceParameters = new AtomicReference<>();
 
     @Resource
     private MockMvc mockMvc;
@@ -146,15 +148,81 @@ class OpcodesControllerTest {
     @MockBean
     private EntityDatabaseAccessor entityDatabaseAccessor;
 
+    @MockBean
+    private Web3Properties web3Properties;
+
     @Captor
     private ArgumentCaptor<ContractDebugParameters> callServiceParametersCaptor;
 
     @Captor
     private ArgumentCaptor<OpcodeTracerOptions> tracerOptionsCaptor;
 
-    private final AtomicReference<OpcodesProcessingResult> opcodesResultCaptor = new AtomicReference<>();
+    static Stream<Arguments> transactionsWithDifferentTracerOptions() {
+        final List<OpcodeTracerOptions> tracerOptions = List.of(
+                new OpcodeTracerOptions(true, true, true),
+                new OpcodeTracerOptions(false, true, true),
+                new OpcodeTracerOptions(true, false, true),
+                new OpcodeTracerOptions(true, true, false),
+                new OpcodeTracerOptions(false, false, true),
+                new OpcodeTracerOptions(false, true, false),
+                new OpcodeTracerOptions(true, false, false),
+                new OpcodeTracerOptions(false, false, false));
+        return Arrays.stream(TransactionProviderEnum.values())
+                .flatMap(providerEnum -> tracerOptions.stream().map(options -> Arguments.of(providerEnum, options)));
+    }
 
-    private final AtomicReference<ContractDebugParameters> expectedCallServiceParameters = new AtomicReference<>();
+    static Stream<Arguments> transactionsWithDifferentSenderAddresses() {
+        return Arrays.stream(TransactionProviderEnum.values()).flatMap(providerEnum -> entityAddressCombinations(
+                        providerEnum.getPayerAccountId())
+                .map(pair -> Arguments.of(Named.of(
+                        "%s(payerAccountId=%s, evmAddress=%s, alias=%s)"
+                                .formatted(
+                                        providerEnum.name(),
+                                        pair.getLeft() != null ? pair.getLeft().toString() : null,
+                                        pair.getMiddle() != null ? Bytes.of(pair.getMiddle()) : null,
+                                        pair.getRight() != null ? Bytes.of(pair.getRight()) : null),
+                        providerEnum.customize(p -> {
+                            p.setPayerAccountId(pair.getLeft());
+                            p.setPayerEvmAddress(pair.getMiddle());
+                            p.setPayerAlias(pair.getRight());
+                        })))));
+    }
+
+    static Stream<Arguments> transactionsWithDifferentReceiverAddresses() {
+        return Arrays.stream(TransactionProviderEnum.values()).flatMap(providerEnum -> entityAddressCombinations(
+                        providerEnum.getContractId())
+                .map(pair -> Arguments.of(Named.of(
+                        "%s(contractId=%s, evmAddress=%s, alias=%s)"
+                                .formatted(
+                                        providerEnum.name(),
+                                        pair.getLeft() != null ? pair.getLeft().toString() : null,
+                                        pair.getMiddle() != null ? Bytes.of(pair.getMiddle()) : null,
+                                        pair.getRight() != null ? Bytes.of(pair.getRight()) : null),
+                        providerEnum.customize(p -> {
+                            p.setContractId(pair.getLeft());
+                            p.setContractEvmAddress(pair.getMiddle());
+                            p.setContractAlias(pair.getRight());
+                        })))));
+    }
+
+    static Stream<Triple<EntityId, byte[], byte[]>> entityAddressCombinations(@Nullable EntityId entityId) {
+        long entityIdNum = entityId == null ? 0L : entityId.getNum();
+        // spotless:off
+        Supplier<byte[]> validAlias = () -> new byte[]{
+                0, 0, 0, 0, // shard
+                0, 0, 0, 0, 0, 0, 0, 0, // realm
+                0, 0, 0, 0, 0, 0, 0, (byte) entityIdNum, // num
+        };
+        // spotless:on
+        Supplier<byte[]> invalidAlias = () -> DOMAIN_BUILDER.key(Key.KeyCase.ED25519);
+        return Stream.of(
+                Triple.of(DOMAIN_BUILDER.entityId(), DOMAIN_BUILDER.evmAddress(), validAlias.get()),
+                Triple.of(DOMAIN_BUILDER.entityId(), null, validAlias.get()),
+                Triple.of(DOMAIN_BUILDER.entityId(), null, invalidAlias.get()),
+                Triple.of(DOMAIN_BUILDER.entityId(), null, null),
+                Triple.of(EntityId.EMPTY, new byte[0], new byte[0]),
+                Triple.of(null, null, null));
+    }
 
     private MockHttpServletRequestBuilder opcodesRequest(final TransactionIdOrHashParameter parameter) {
         return opcodesRequest(parameter, new OpcodeTracerOptions());
@@ -218,10 +286,11 @@ class OpcodesControllerTest {
         final var validStartNs = transaction.getValidStartNs();
         final var senderId = contractResult.getSenderId();
         final var senderAddress = entityAddress(senderEntity);
-        final var contractId = transaction.getEntityId();
+        final var contractId = EntityId.of(contractResult.getContractId());
         final var contractAddress = entityAddress(contractEntity);
 
         expectedCallServiceParameters.set(ContractDebugParameters.builder()
+                .consensusTimestamp(consensusTimestamp)
                 .sender(new HederaEvmAccount(senderAddress))
                 .receiver(contractAddress)
                 .gas(provider.hasEthTransaction() ? ethTransaction.getGasLimit() : contractResult.getGasLimit())
@@ -240,7 +309,8 @@ class OpcodesControllerTest {
         when(transactionRepository.findByPayerAccountIdAndValidStartNs(payerAccountId, validStartNs))
                 .thenReturn(Optional.of(transaction));
         when(ethereumTransactionRepository.findByConsensusTimestampAndPayerAccountId(
-                        contractTransactionHash.getConsensusTimestamp(), payerAccountId))
+                        contractTransactionHash.getConsensusTimestamp(),
+                        EntityId.of(contractTransactionHash.getPayerAccountId())))
                 .thenReturn(Optional.ofNullable(ethTransaction));
         when(contractResultRepository.findById(consensusTimestamp)).thenReturn(Optional.of(contractResult));
         when(recordFileRepository.findByTimestamp(consensusTimestamp)).thenReturn(Optional.of(recordFile));
@@ -248,13 +318,14 @@ class OpcodesControllerTest {
                 .thenReturn(contractAddress);
         when(entityDatabaseAccessor.evmAddressFromId(senderId, Optional.empty()))
                 .thenReturn(senderAddress);
-        when(entityDatabaseAccessor.get(contractAddress, Optional.empty())).thenReturn(Optional.of(contractEntity));
+        when(entityDatabaseAccessor.get(contractAddress, Optional.empty()))
+                .thenReturn(Optional.ofNullable(contractEntity));
         when(entityDatabaseAccessor.get(senderAddress, Optional.empty())).thenReturn(Optional.of(senderEntity));
 
         if (ethTransaction != null) {
-            return new TransactionHashParameter(Bytes.of(ethTransaction.getHash()));
+            return new TransactionHashParameter(Bytes.of(hash));
         } else {
-            return new TransactionIdParameter(transaction.getPayerAccountId(), instant(transaction.getValidStartNs()));
+            return new TransactionIdParameter(payerAccountId, instant(validStartNs));
         }
     }
 
@@ -318,12 +389,13 @@ class OpcodesControllerTest {
     @EnumSource(TransactionProviderEnum.class)
     void callWithContractResultNotFoundExceptionTest(final TransactionProviderEnum providerEnum) throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+        final var id = providerEnum.getContractResult().get().getConsensusTimestamp();
 
         when(contractResultRepository.findById(anyLong())).thenReturn(Optional.empty());
 
         mockMvc.perform(opcodesRequest(transactionIdOrHash))
                 .andExpect(status().isNotFound())
-                .andExpect(responseBody(new GenericErrorResponse("Contract result not found")));
+                .andExpect(responseBody(new GenericErrorResponse("Contract result not found: " + id)));
     }
 
     @ParameterizedTest
@@ -338,14 +410,14 @@ class OpcodesControllerTest {
                         when(contractTransactionHashRepository.findByHash(
                                         parameter.hash().toArray()))
                                 .thenReturn(Optional.empty());
-                        yield new GenericErrorResponse("Contract transaction hash not found");
+                        yield new GenericErrorResponse("Contract transaction hash not found: " + parameter);
                     }
                     case TransactionIdParameter parameter -> {
                         reset(transactionRepository);
                         when(transactionRepository.findByPayerAccountIdAndValidStartNs(
                                         parameter.payerAccountId(), convertToNanosMax(parameter.validStart())))
                                 .thenReturn(Optional.empty());
-                        yield new GenericErrorResponse("Transaction not found");
+                        yield new GenericErrorResponse("Transaction not found: " + parameter);
                     }
                 };
 
@@ -359,6 +431,16 @@ class OpcodesControllerTest {
     void callWithDifferentSenderAddressShouldUseEvmAddressWhenPossible(final TransactionProviderEnum providerEnum)
             throws Exception {
         final TransactionIdOrHashParameter transactionIdOrHash = setUp(providerEnum);
+
+        if (transactionIdOrHash instanceof TransactionIdParameter id && id.payerAccountId() == null) {
+            mockMvc.perform(opcodesRequest(transactionIdOrHash))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(responseBody(new GenericErrorResponse("Unsupported ID format: 'null-%d-%d'"
+                            .formatted(
+                                    id.validStart().getEpochSecond(),
+                                    id.validStart().getNano()))));
+            return;
+        }
 
         expectedCallServiceParameters.set(expectedCallServiceParameters.get().toBuilder()
                 .sender(new HederaEvmAccount(
@@ -462,81 +544,6 @@ class OpcodesControllerTest {
                 .andExpect(header().string("Access-Control-Allow-Methods", "GET,HEAD,POST"));
     }
 
-    static Stream<Arguments> transactionsWithDifferentTracerOptions() {
-        final List<OpcodeTracerOptions> tracerOptions = List.of(
-                new OpcodeTracerOptions(true, true, true),
-                new OpcodeTracerOptions(false, true, true),
-                new OpcodeTracerOptions(true, false, true),
-                new OpcodeTracerOptions(true, true, false),
-                new OpcodeTracerOptions(false, false, true),
-                new OpcodeTracerOptions(false, true, false),
-                new OpcodeTracerOptions(true, false, false),
-                new OpcodeTracerOptions(false, false, false));
-        return Arrays.stream(TransactionProviderEnum.values())
-                .flatMap(providerEnum -> tracerOptions.stream().map(options -> Arguments.of(providerEnum, options)));
-    }
-
-    static Stream<Arguments> transactionsWithDifferentSenderAddresses() {
-        return Arrays.stream(TransactionProviderEnum.values()).flatMap(providerEnum -> entityAddressCombinations(
-                        providerEnum.getPayerAccountId())
-                .map(addressPair -> Arguments.of(Named.of(
-                        "%s(evmAddress=%s, alias=%s)"
-                                .formatted(
-                                        providerEnum.name(),
-                                        addressPair.getLeft() != null ? Bytes.of(addressPair.getLeft()) : null,
-                                        addressPair.getRight() != null ? Bytes.of(addressPair.getRight()) : null),
-                        providerEnum.customize(p -> {
-                            p.setPayerEvmAddress(addressPair.getLeft());
-                            p.setPayerAlias(addressPair.getRight());
-                        })))));
-    }
-
-    static Stream<Arguments> transactionsWithDifferentReceiverAddresses() {
-        return Arrays.stream(TransactionProviderEnum.values()).flatMap(providerEnum -> entityAddressCombinations(
-                        providerEnum.getContractId())
-                .map(addressPair -> Arguments.of(Named.of(
-                        "%s(evmAddress=%s, alias=%s)"
-                                .formatted(
-                                        providerEnum.name(),
-                                        addressPair.getLeft() != null ? Bytes.of(addressPair.getLeft()) : null,
-                                        addressPair.getRight() != null ? Bytes.of(addressPair.getRight()) : null),
-                        providerEnum.customize(p -> {
-                            p.setContractEvmAddress(addressPair.getLeft());
-                            p.setContractAlias(addressPair.getRight());
-                        })))));
-    }
-
-    static Stream<Pair<byte[], byte[]>> entityAddressCombinations(EntityId entityId) {
-        Supplier<byte[]> validAlias = () -> new byte[] {
-            0,
-            0,
-            0,
-            0, // shard
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0, // realm
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            Long.valueOf(entityId.getNum()).byteValue(), // num
-        };
-        Supplier<byte[]> invalidAlias = () -> DOMAIN_BUILDER.key(Key.KeyCase.ED25519);
-        return Stream.of(
-                Pair.of(DOMAIN_BUILDER.evmAddress(), validAlias.get()),
-                Pair.of(null, validAlias.get()),
-                Pair.of(null, invalidAlias.get()),
-                Pair.of(null, null));
-    }
-
     /**
      * Utility class with helper methods for building different objects in the tests
      */
@@ -544,7 +551,7 @@ class OpcodesControllerTest {
     private static class Builder {
 
         private static String transactionIdString(final EntityId payerAccountId, final Instant validStart) {
-            return "%s-%d-%d".formatted(payerAccountId.toString(), validStart.getEpochSecond(), validStart.getNano());
+            return "%s-%d-%d".formatted(payerAccountId, validStart.getEpochSecond(), validStart.getNano());
         }
 
         private static OpcodesResponse opcodesResponse(

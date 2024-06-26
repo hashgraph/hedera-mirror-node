@@ -27,6 +27,7 @@ import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -78,11 +79,15 @@ class AllowancesControllerTest extends ControllerTest {
                     .persist();
 
             // When
-            var result =
-                    restClient.get().uri("", allowance1.getOwner()).retrieve().body(NftAllowancesResponse.class);
+            var response =
+                    restClient.get().uri("", allowance1.getOwner()).retrieve().toEntity(NftAllowancesResponse.class);
 
             // Then
-            assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), null));
+            assertThat(response.getBody()).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), null));
+            // Check once. Based on application.yml response headers configuration
+            Assertions.assertThat(response.getHeaders().getAccessControlAllowOrigin())
+                    .isEqualTo("*");
+            Assertions.assertThat(response.getHeaders().getCacheControl()).isEqualTo("public, max-age=1");
         }
 
         @Test
@@ -110,6 +115,8 @@ class AllowancesControllerTest extends ControllerTest {
                     .formatted(EntityId.of(allowance1.getSpender()), EntityId.of(allowance1.getTokenId()));
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1), baseLink + nextParams));
+
+            System.out.println("Next params: " + nextParams);
 
             // When follow link
             result = restClient
@@ -269,13 +276,11 @@ class AllowancesControllerTest extends ControllerTest {
                     .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
                     .persist();
             var uriParams = "?account.id={account.id}&limit=1&order=asc";
-            var nextLink =
-                    "/api/v1/accounts/%s/allowances/nfts?account.id=%s&account.id=gte:%s&limit=1&order=asc&token.id=gt:%s"
-                            .formatted(
-                                    allowance2.getOwner(),
-                                    EntityId.of(allowance2.getSpender()),
-                                    EntityId.of(allowance2.getSpender()),
-                                    EntityId.of(allowance2.getTokenId()));
+            var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=%s&limit=1&order=asc&token.id=gt:%s"
+                    .formatted(
+                            allowance2.getOwner(),
+                            EntityId.of(allowance2.getSpender()),
+                            EntityId.of(allowance2.getTokenId()));
 
             // When
             var result = restClient
@@ -489,6 +494,54 @@ class AllowancesControllerTest extends ControllerTest {
 
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance2, allowance1), next));
+        }
+
+        @Test
+        void succeedingExclusiveLink() {
+            // Given
+            var entityBuilder = domainBuilder.entity();
+            var entity = entityBuilder.persist();
+            var allowance1 = domainBuilder
+                    .nftAllowance()
+                    .customize(nfta -> nfta.owner(entity.getId())
+                            .spender(99700)
+                            .tokenId(99800)
+                            .approvedForAll(true))
+                    .persist();
+            var allowance2 = domainBuilder
+                    .nftAllowance()
+                    .customize(nfta -> nfta.owner(allowance1.getOwner())
+                            .spender(99701)
+                            .tokenId(99800)
+                            .approvedForAll(true))
+                    .persist();
+            var allowance3 = domainBuilder
+                    .nftAllowance()
+                    .customize(nfta -> nfta.owner(allowance1.getOwner())
+                            .spender(99702)
+                            .tokenId(99800)
+                            .approvedForAll(true))
+                    .persist();
+
+            var uri = "?limit=2&account.id=gte:0.0.99700&token.id=0.0.99800";
+            var result =
+                    restClient.get().uri(uri, allowance1.getOwner()).retrieve().body(NftAllowancesResponse.class);
+            var nextLinkQueryParameters = "?limit=2&token.id=0.0.99800&account.id=gt:0.0.99701";
+            var expectedLink =
+                    "/api/v1/accounts/%s/allowances/nfts".formatted(allowance1.getOwner()) + nextLinkQueryParameters;
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), expectedLink));
+
+            // When follow link
+            result = restClient
+                    .get()
+                    .uri(nextLinkQueryParameters, allowance1.getOwner())
+                    .retrieve()
+                    .body(NftAllowancesResponse.class);
+
+            // Then
+            assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance3), null));
         }
 
         private NftAllowancesResponse getExpectedResponse(List<NftAllowance> nftAllowances, String next) {

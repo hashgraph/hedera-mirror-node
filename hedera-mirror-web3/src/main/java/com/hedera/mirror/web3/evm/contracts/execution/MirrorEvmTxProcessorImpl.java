@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
-import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -92,9 +91,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.tokenAccessor = tokenAccessor;
     }
 
-    public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params,
-                                                        final long estimatedGas,
-                                                        final ContractCallContext ctx) {
+    public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params, final long estimatedGas) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();
@@ -117,8 +114,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
                 params.isStatic(),
                 aliasManager.resolveForEvm(params.getReceiver()),
                 params.getReceiver().equals(Address.ZERO),
-                params.getTracerType(),
-                ctx);
+                params.getTracerType());
     }
 
     @Override

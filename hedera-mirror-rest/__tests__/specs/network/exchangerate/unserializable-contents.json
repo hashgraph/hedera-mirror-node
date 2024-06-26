@@ -29,12 +29,12 @@
     ]
   },
   "url": "/api/v1/network/exchangerate?timestamp=lt:1234567890.900800199",
-  "responseStatus": 500,
+  "responseStatus": 404,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Internal error"
+          "message": "Not found"
         }
       ]
     }

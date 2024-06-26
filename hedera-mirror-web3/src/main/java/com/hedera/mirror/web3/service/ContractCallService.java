@@ -99,17 +99,14 @@ public abstract class ContractCallService {
         }
         // initializes the stack frame with the current state or historical state (if the call is historical)
         ctx.initializeStackFrames(store.getStackedStateFrames());
-        return doProcessCall(params, params.getGas(), true, ctx);
+        return doProcessCall(params, params.getGas(), true);
     }
 
     protected HederaEvmTransactionProcessingResult doProcessCall(
-            CallServiceParameters params,
-            long estimatedGas,
-            boolean restoreGasToThrottleBucket,
-            ContractCallContext ctx)
+            CallServiceParameters params, long estimatedGas, boolean restoreGasToThrottleBucket)
             throws MirrorEvmTransactionException {
         try {
-            var result = mirrorEvmTxProcessor.execute(params, estimatedGas, ctx);
+            var result = mirrorEvmTxProcessor.execute(params, estimatedGas);
             if (!restoreGasToThrottleBucket) {
                 return result;
             }

@@ -32,7 +32,7 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -73,20 +73,20 @@ class RatesAndFeesLoaderTest {
                             .addFees(FeeData.newBuilder().build())))
             .build();
 
-    private static final List<FileData> exchangeRatesFileData = List.of(FileData.builder()
+    private static final FileData exchangeRatesFileData = FileData.builder()
             .consensusTimestamp(200L)
             .fileData(exchangeRatesSet.toByteArray())
-            .build());
+            .build();
 
-    private static final List<FileData> feeScheduleFileData = List.of(FileData.builder()
+    private static final FileData feeScheduleFileData = FileData.builder()
             .consensusTimestamp(200L)
             .fileData(feeSchedules.toByteArray())
-            .build());
+            .build();
 
-    private static final List<FileData> fileDataCorrupt = List.of(FileData.builder()
+    private static final FileData fileDataCorrupt = FileData.builder()
             .consensusTimestamp(300L)
             .fileData("corrupt".getBytes())
-            .build());
+            .build();
 
     private static final String CORRUPT_RATES_MESSAGE = "Rates 0.0.112 are corrupt!";
     private static final long EXCHANGE_RATES_ID = 112L;
@@ -98,7 +98,7 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadExchangeRates() {
         when(fileDataRepository.getFileAtTimestamp(eq(EXCHANGE_RATES_ID), anyLong()))
-                .thenReturn(exchangeRatesFileData);
+                .thenReturn(Optional.of(exchangeRatesFileData));
 
         final var actual = subject.loadExchangeRates(250L);
 
@@ -108,7 +108,7 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadEmptyExchangeRates() {
         when(fileDataRepository.getFileAtTimestamp(eq(EXCHANGE_RATES_ID), anyLong()))
-                .thenReturn(List.of());
+                .thenReturn(Optional.empty());
 
         final var actual = subject.loadExchangeRates(100L);
         assertThat(actual).isEqualTo(ExchangeRateSet.newBuilder().build());
@@ -117,7 +117,7 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadWrongDataExchangeRates() {
         when(fileDataRepository.getFileAtTimestamp(eq(EXCHANGE_RATES_ID), anyLong()))
-                .thenReturn(fileDataCorrupt);
+                .thenReturn(Optional.of(fileDataCorrupt));
 
         final var exception = assertThrows(IllegalStateException.class, () -> subject.loadExchangeRates(350L));
 
@@ -128,8 +128,9 @@ class RatesAndFeesLoaderTest {
     void getFileForExchangeRatesFallback() {
         long currentNanos = 350L;
         when(fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ID, currentNanos))
-                .thenReturn(fileDataCorrupt);
-        when(fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ID, 299L)).thenReturn(exchangeRatesFileData);
+                .thenReturn(Optional.of(fileDataCorrupt));
+        when(fileDataRepository.getFileAtTimestamp(EXCHANGE_RATE_ID, 299L))
+                .thenReturn(Optional.of(exchangeRatesFileData));
 
         var actual = subject.loadExchangeRates(currentNanos);
         assertThat(actual).isEqualTo(exchangeRatesSet);
@@ -138,7 +139,7 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadFeeSchedules() {
         when(fileDataRepository.getFileAtTimestamp(eq(FEE_SCHEDULES_ID), anyLong()))
-                .thenReturn(feeScheduleFileData);
+                .thenReturn(Optional.of(feeScheduleFileData));
 
         final var actual = subject.loadFeeSchedules(350L);
 
@@ -148,7 +149,7 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadEmptyFeeSchedules() {
         when(fileDataRepository.getFileAtTimestamp(eq(FEE_SCHEDULES_ID), anyLong()))
-                .thenReturn(List.of());
+                .thenReturn(Optional.empty());
 
         final var actual = subject.loadFeeSchedules(100L);
         assertThat(actual).isEqualTo(CurrentAndNextFeeSchedule.newBuilder().build());
@@ -157,7 +158,7 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadWrongDataFeeSchedules() {
         when(fileDataRepository.getFileAtTimestamp(eq(FEE_SCHEDULES_ID), anyLong()))
-                .thenReturn(fileDataCorrupt);
+                .thenReturn(Optional.of(fileDataCorrupt));
 
         final var exception = assertThrows(IllegalStateException.class, () -> subject.loadFeeSchedules(350L));
 
@@ -168,8 +169,9 @@ class RatesAndFeesLoaderTest {
     void getFileForFeeScheduleFallback() {
         long currentNanos = 350L;
         when(fileDataRepository.getFileAtTimestamp(FEE_SCHEDULES_ID, currentNanos))
-                .thenReturn(fileDataCorrupt);
-        when(fileDataRepository.getFileAtTimestamp(FEE_SCHEDULES_ID, 299L)).thenReturn(feeScheduleFileData);
+                .thenReturn(Optional.of(fileDataCorrupt));
+        when(fileDataRepository.getFileAtTimestamp(FEE_SCHEDULES_ID, 299L))
+                .thenReturn(Optional.of(feeScheduleFileData));
 
         var actual = subject.loadFeeSchedules(currentNanos);
         assertThat(actual).isEqualTo(feeSchedules);
