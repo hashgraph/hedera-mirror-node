@@ -36,14 +36,14 @@ spec:
     global:
       hostname: "*.mirrornode.hedera.com"
     grpc:
-      enabled: true
+      enabled: false
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "TESTNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
-      enabled: true
+      enabled: false
       env:
         HEDERA_MIRROR_MONITOR_HEALTH_RELEASE_ENABLED: "true"
         HEDERA_MIRROR_MONITOR_NETWORK: "TESTNET"
@@ -60,25 +60,19 @@ spec:
     redis:
       enabled: false
     rest:
-      enabled: true
+      enabled: false
       monitor:
         config: |-
           {
-            "servers": [
-              {
-                "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
-                "name": "kubernetes"
-              }
-            ],
             "stateproof": { "enabled": false }
           }
     restjava:
-      enabled: true
+      enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     test:
       cucumberTags: "@acceptance and not @equivalence and not @estimateprecompile"
-      enabled: true
+      enabled: false
     web3:
-      enabled: true
+      enabled: false
