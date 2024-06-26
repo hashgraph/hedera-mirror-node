@@ -616,6 +616,14 @@ class ContractController extends BaseController {
 
     for (const filter of filters) {
       switch (filter.key) {
+        case filterKeys.TRANSACTION_HASH:
+          if (utils.isValidEthHash(filter.value)) {
+            const transactionHash = filter.value.replace('0x', '');
+            conditions.push(
+              `${ContractLog.getFullName(ContractLog.TRANSACTION_HASH)} = (decode('${transactionHash}','hex'))`
+            );
+          }
+          break;
         case filterKeys.INDEX:
           bounds.secondary.parse(filter);
           break;
@@ -1263,6 +1271,7 @@ class ContractController extends BaseController {
 const contractCtrlInstance = new ContractController();
 
 const acceptedContractLogParameters = new Set([
+  filterKeys.TRANSACTION_HASH,
   filterKeys.INDEX,
   filterKeys.LIMIT,
   filterKeys.ORDER,
