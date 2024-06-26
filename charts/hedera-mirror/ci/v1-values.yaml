@@ -19,18 +19,12 @@ postgresql:
   fullnameOverride: db
 rest:
   monitor:
-    config: |-
-      {
-        "freshness": false,
-        "network": { "enabled": false },
-        "servers": [
-          {
-            "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
-            "name": "kubernetes"
-          }
-        ],
-        "stateproof": { "enabled": false }
-      }
+    config:
+      freshness: false
+      network:
+        enabled: false
+      stateproof:
+        enabled: false
   resources:
     requests:
       cpu: 200m
