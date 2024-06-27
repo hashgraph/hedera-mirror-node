@@ -31,46 +31,63 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.web3j.crypto.Credentials;
+import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.RawTransaction;
 import org.web3j.crypto.TransactionDecoder;
+import org.web3j.protocol.Web3j;
 import org.web3j.protocol.Web3jService;
 import org.web3j.protocol.core.BatchRequest;
 import org.web3j.protocol.core.BatchResponse;
+import org.web3j.protocol.core.RemoteCall;
 import org.web3j.protocol.core.Request;
 import org.web3j.protocol.core.Response;
 import org.web3j.protocol.core.methods.request.Transaction;
-import org.web3j.protocol.core.methods.response.*;
+import org.web3j.protocol.core.methods.response.EthBlock;
+import org.web3j.protocol.core.methods.response.EthBlock.Block;
+import org.web3j.protocol.core.methods.response.EthCall;
+import org.web3j.protocol.core.methods.response.EthGetTransactionCount;
+import org.web3j.protocol.core.methods.response.EthGetTransactionReceipt;
+import org.web3j.protocol.core.methods.response.EthSendTransaction;
+import org.web3j.protocol.core.methods.response.EthSyncing;
+import org.web3j.protocol.core.methods.response.EthSyncing.Result;
+import org.web3j.protocol.core.methods.response.NetVersion;
 import org.web3j.protocol.websocket.events.Notification;
+import org.web3j.tx.Contract;
 import org.web3j.tx.gas.ContractGasProvider;
+import org.web3j.tx.gas.DefaultGasProvider;
+import org.web3j.utils.Numeric;
 
-@RequiredArgsConstructor
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class TestWeb3jService implements Web3jService {
+
     private static final Long GAS_LIMIT = 15_000_000L;
+    private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
+
+    private final ContractCallService contractCallService;
+    private final ContractGasProvider contractGasProvider;
+    private final Credentials credentials;
+    private final DomainBuilder domainBuilder;
+    private final Map<String, String> trxResMap = new HashMap<>();
+    private final Web3j web3j;
+
     private Address sender = Address.fromHexString("");
-    public ContractCallService contractCallService;
-    private Map<String, String> trxResMap = new HashMap<>();
 
-    @Autowired
-    private Credentials credentials;
-
-    @Autowired
-    private DomainBuilder domainBuilder;
-
-    @Autowired
-    private ContractGasProvider contractGasProvider;
+    public TestWeb3jService(ContractCallService contractCallService, DomainBuilder domainBuilder) {
+        this.contractCallService = contractCallService;
+        this.contractGasProvider = new DefaultGasProvider();
+        this.credentials = Credentials.create(ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY)));
+        this.domainBuilder = domainBuilder;
+        this.web3j = Web3j.build(this);
+    }
 
     public void setSender(Address sender) {
         this.sender = sender;
@@ -80,46 +97,36 @@ public class TestWeb3jService implements Web3jService {
         this.sender = Address.fromHexString(sender);
     }
 
-    public TestWeb3jService(ContractCallService contractCallService) {
-        this.contractCallService = contractCallService;
+    @SneakyThrows(Exception.class)
+    public <T extends Contract> T deploy(Deployer<T> deployer) {
+        return deployer.deploy(web3j, credentials, contractGasProvider).send();
     }
 
     @Override
     public <T extends Response> T send(Request request, Class<T> responseType) throws IOException {
         final var method = request.getMethod();
         return switch (method) {
-            case "eth_syncing" -> (T) getEthSyncingRes();
-            case "eth_getBlockByNumber" -> getEthBlockRes(responseType);
-            case "net_version" -> getNetVersionRes(responseType);
-            case "eth_getTransactionCount" -> getTransactionCountRes(responseType);
+            case "eth_call" -> (T) ethCall(request.getParams(), request);
+            case "eth_getBlockByNumber" -> (T) ethGetBlockByNumber();
+            case "eth_getTransactionCount" -> (T) ethGetTransactionCount();
             case "eth_getTransactionReceipt" -> (T) getTransactionReceipt(request);
             case "eth_sendRawTransaction" -> (T) call(request.getParams(), request);
-            case "eth_call" -> (T) ethCall(request.getParams(), request);
+            case "eth_syncing" -> (T) ethSyncing();
+            case "net_version" -> (T) netVersion();
             default -> throw new UnsupportedOperationException(request.getMethod());
         };
     }
 
-    private <T extends Response> T getResObj(Class<T> responseType) {
-        try {
-            return responseType.getDeclaredConstructor().newInstance();
-        } catch (InstantiationException
-                | IllegalAccessException
-                | NoSuchMethodException
-                | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private EthSendTransaction call(List reqParams, Request request) {
-        var rawTrxDecoded = TransactionDecoder.decode(reqParams.get(0).toString());
-        var trxHex = generateTransactionHashHexEncoded(rawTrxDecoded, credentials);
-        final var to = rawTrxDecoded.getTo();
+    private EthSendTransaction call(List<?> params, Request request) {
+        var rawTransaction = TransactionDecoder.decode(params.get(0).toString());
+        var trxHex = generateTransactionHashHexEncoded(rawTransaction, credentials);
+        final var to = rawTransaction.getTo();
 
         if (to.equals("0x")) {
-            return sendTopLevelContractCreate(rawTrxDecoded, trxHex, request);
+            return sendTopLevelContractCreate(rawTransaction, trxHex, request);
         }
 
-        return sendEthCall(rawTrxDecoded, trxHex, request);
+        return sendEthCall(rawTransaction, trxHex, request);
     }
 
     private EthSendTransaction sendTopLevelContractCreate(
@@ -127,6 +134,7 @@ public class TestWeb3jService implements Web3jService {
         final var res = new EthSendTransaction();
         var serviceParameters = serviceParametersForTopLevelContractCreate(rawTrxDecoded.getData(), ETH_CALL, sender);
         final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
+
         try {
             final var contractInstance = this.deploy(mirrorNodeResult);
             res.setResult(trxHex);
@@ -165,9 +173,8 @@ public class TestWeb3jService implements Web3jService {
         return res;
     }
 
-    private EthCall ethCall(List reqParams, Request request) {
-        final var res = new EthCall();
-        var transaction = (Transaction) reqParams.get(0);
+    private EthCall ethCall(List<Transaction> reqParams, Request request) {
+        var transaction = reqParams.get(0);
 
         final var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(transaction.getData()),
@@ -177,45 +184,43 @@ public class TestWeb3jService implements Web3jService {
                 BlockType.LATEST,
                 GAS_LIMIT,
                 sender);
-        final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
-        res.setResult(mirrorNodeResult);
-        res.setId(request.getId());
-        res.setJsonrpc(request.getJsonrpc());
+        final var result = contractCallService.processCall(serviceParameters);
 
-        return res;
+        final var ethCall = new EthCall();
+        ethCall.setId(request.getId());
+        ethCall.setJsonrpc(request.getJsonrpc());
+        ethCall.setResult(result);
+        return ethCall;
     }
 
-    private EthSyncing getEthSyncingRes() {
-        var result = new EthSyncing.Result();
+    private EthSyncing ethSyncing() {
+        var result = new Result();
         result.setSyncing(false);
 
-        var response = new EthSyncing();
-        response.setResult(result);
-
-        return response;
+        var ethSyncing = new EthSyncing();
+        ethSyncing.setResult(result);
+        return ethSyncing;
     }
 
-    private <T extends Response> T getEthBlockRes(Class<T> responseType) {
-        T res = getResObj(responseType);
-        final var block = new EthBlock.Block();
+    private EthBlock ethGetBlockByNumber() {
+        var block = new Block();
         block.setTimestamp(String.valueOf(System.currentTimeMillis()));
-        res.setResult(block);
 
-        return res;
+        var ethBlock = new EthBlock();
+        ethBlock.setResult(block);
+        return ethBlock;
     }
 
-    private <T extends Response> T getNetVersionRes(Class<T> responseType) {
-        T res = getResObj(responseType);
-        res.setResult("1");
-
-        return res;
+    private NetVersion netVersion() {
+        var netVersion = new NetVersion();
+        netVersion.setResult("1");
+        return netVersion;
     }
 
-    private <T extends Response> T getTransactionCountRes(Class<T> responseType) {
-        T res = getResObj(responseType);
-        res.setResult("1");
-
-        return res;
+    private EthGetTransactionCount ethGetTransactionCount() {
+        var ethGetTransactionCount = new EthGetTransactionCount();
+        ethGetTransactionCount.setResult("1");
+        return ethGetTransactionCount;
     }
 
     private EthGetTransactionReceipt getTransactionReceipt(Request request) {
@@ -321,5 +326,9 @@ public class TestWeb3jService implements Web3jService {
                 .contractState()
                 .customize(c -> c.contractId(entity.getId()))
                 .persist();
+    }
+
+    public interface Deployer<T extends Contract> {
+        RemoteCall<T> deploy(Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider);
     }
 }

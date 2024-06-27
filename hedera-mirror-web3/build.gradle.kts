@@ -18,13 +18,10 @@ description = "Hedera Mirror Node Web3"
 
 plugins {
     id("openapi-conventions")
-    id("org.web3j") version "4.12.0"
+    id("org.web3j")
     id("spring-conventions")
 }
 
-web3j { generatedPackageName = "com.hedera.mirror.web3.service.resources" }
-
-// ToDO: REMOVE
 sourceSets { test { solidity { setVersion("0.8.24") } } }
 
 dependencies {
@@ -54,6 +51,8 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:postgresql")
 }
+
+web3j { generatedPackageName = "com.hedera.mirror.web3.test.contract" }
 
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 

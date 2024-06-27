@@ -98,10 +98,9 @@ import org.springframework.beans.factory.annotation.Value;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
-    protected static final long expiry = 1_234_567_890L;
-
     // The block numbers lower than EVM v0.34 are considered part of EVM v0.30 which includes all precompiles
     public static final long EVM_V_34_BLOCK = 50L;
+    protected static final long expiry = 1_234_567_890L;
     protected static final long EVM_V_38_BLOCK = 100L;
     protected static final long EVM_V_46_BLOCK = 150L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
@@ -1651,18 +1650,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected void exchangeRatesPersist() {
         domainBuilder
                 .fileData()
-                .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
-                        .entityId(EXCHANGE_RATE_ENTITY_ID)
-                        .consensusTimestamp(expiry))
+                .customize(f -> f.fileData(exchangeRatesSet.toByteArray()).entityId(EXCHANGE_RATE_ENTITY_ID))
                 .persist();
     }
 
     protected void feeSchedulesPersist() {
         domainBuilder
                 .fileData()
-                .customize(f -> f.fileData(feeSchedules.toByteArray())
-                        .entityId(FEE_SCHEDULE_ENTITY_ID)
-                        .consensusTimestamp(expiry + 1))
+                .customize(f -> f.fileData(feeSchedules.toByteArray()).entityId(FEE_SCHEDULE_ENTITY_ID))
                 .persist();
     }
 
