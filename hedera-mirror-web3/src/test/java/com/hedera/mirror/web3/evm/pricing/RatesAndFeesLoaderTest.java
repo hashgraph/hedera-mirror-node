@@ -24,6 +24,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties.HederaNetwork;
 import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
@@ -33,6 +35,7 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,12 +44,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class RatesAndFeesLoaderTest {
-    @Mock
-    private FileDataRepository fileDataRepository;
-
-    @InjectMocks
-    private RatesAndFeesLoader subject;
-
     private static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()
                     .setCentEquiv(1)
@@ -59,7 +56,6 @@ class RatesAndFeesLoaderTest {
                     .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
                     .build())
             .build();
-
     private static final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
             .setCurrentFeeSchedule(FeeSchedule.newBuilder()
                     .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(200L))
@@ -72,28 +68,37 @@ class RatesAndFeesLoaderTest {
                             .setHederaFunctionality(ContractCall)
                             .addFees(FeeData.newBuilder().build())))
             .build();
-
     private static final FileData exchangeRatesFileData = FileData.builder()
             .consensusTimestamp(200L)
             .fileData(exchangeRatesSet.toByteArray())
             .build();
-
     private static final FileData feeScheduleFileData = FileData.builder()
             .consensusTimestamp(200L)
             .fileData(feeSchedules.toByteArray())
             .build();
-
     private static final FileData fileDataCorrupt = FileData.builder()
             .consensusTimestamp(300L)
             .fileData("corrupt".getBytes())
             .build();
-
     private static final String CORRUPT_RATES_MESSAGE = "Rates 0.0.112 are corrupt!";
     private static final long EXCHANGE_RATES_ID = 112L;
-
     private static final String CORRUPT_SCHEDULES_MESSAGE = "Fee schedule 0.0.111 is corrupt!";
     private static final long FEE_SCHEDULES_ID = 111L;
     private static final long EXCHANGE_RATE_ID = 112L;
+
+    @Mock
+    private FileDataRepository fileDataRepository;
+
+    @Mock
+    private MirrorNodeEvmProperties evmProperties;
+
+    @InjectMocks
+    private RatesAndFeesLoader subject;
+
+    @BeforeEach
+    void setup() {
+        when(evmProperties.getNetwork()).thenReturn(HederaNetwork.TESTNET);
+    }
 
     @Test
     void loadExchangeRates() {
@@ -103,6 +108,16 @@ class RatesAndFeesLoaderTest {
         final var actual = subject.loadExchangeRates(250L);
 
         assertThat(actual).isEqualTo(exchangeRatesSet);
+    }
+
+    @Test
+    void loadDefaultExchangeRates() {
+        when(evmProperties.getNetwork()).thenReturn(HederaNetwork.OTHER);
+        when(fileDataRepository.getFileAtTimestamp(eq(EXCHANGE_RATES_ID), anyLong()))
+                .thenReturn(Optional.empty());
+
+        final var actual = subject.loadExchangeRates(100L);
+        assertThat(actual).isEqualTo(RatesAndFeesLoader.DEFAULT_EXCHANGE_RATE_SET);
     }
 
     @Test
@@ -144,6 +159,16 @@ class RatesAndFeesLoaderTest {
         final var actual = subject.loadFeeSchedules(350L);
 
         assertThat(actual).isEqualTo(feeSchedules);
+    }
+
+    @Test
+    void loadDefaultFeeSchedules() {
+        when(evmProperties.getNetwork()).thenReturn(HederaNetwork.OTHER);
+        when(fileDataRepository.getFileAtTimestamp(eq(FEE_SCHEDULES_ID), anyLong()))
+                .thenReturn(Optional.empty());
+
+        final var actual = subject.loadFeeSchedules(100L);
+        assertThat(actual).isEqualTo(RatesAndFeesLoader.DEFAULT_FEE_SCHEDULE);
     }
 
     @Test

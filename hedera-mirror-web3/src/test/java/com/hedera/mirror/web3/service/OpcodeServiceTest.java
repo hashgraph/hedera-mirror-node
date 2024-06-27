@@ -96,6 +96,19 @@ class OpcodeServiceTest extends ContractCallTestSetup {
         private EntityId contractEntityId;
         private long consensusTimestamp;
 
+        static Stream<Arguments> tracerOptions() {
+            return Stream.of(
+                            new OpcodeTracerOptions(true, true, true),
+                            new OpcodeTracerOptions(false, true, true),
+                            new OpcodeTracerOptions(true, false, true),
+                            new OpcodeTracerOptions(true, true, false),
+                            new OpcodeTracerOptions(false, false, true),
+                            new OpcodeTracerOptions(false, true, false),
+                            new OpcodeTracerOptions(true, false, false),
+                            new OpcodeTracerOptions(false, false, false))
+                    .map(Arguments::of);
+        }
+
         @BeforeEach
         void setUp() {
             genesisBlockPersist();
@@ -122,8 +135,6 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                     KEY_PROTO,
                     TokenPauseStatusEnum.UNPAUSED,
                     false);
-            exchangeRatesPersist();
-            feeSchedulesPersist();
         }
 
         @BeforeEach
@@ -248,19 +259,6 @@ class OpcodeServiceTest extends ContractCallTestSetup {
                 return new TransactionIdParameter(
                         transaction.getPayerAccountId(), instant(transaction.getValidStartNs()));
             }
-        }
-
-        static Stream<Arguments> tracerOptions() {
-            return Stream.of(
-                            new OpcodeTracerOptions(true, true, true),
-                            new OpcodeTracerOptions(false, true, true),
-                            new OpcodeTracerOptions(true, false, true),
-                            new OpcodeTracerOptions(true, true, false),
-                            new OpcodeTracerOptions(false, false, true),
-                            new OpcodeTracerOptions(false, true, false),
-                            new OpcodeTracerOptions(true, false, false),
-                            new OpcodeTracerOptions(false, false, false))
-                    .map(Arguments::of);
         }
 
         @ParameterizedTest

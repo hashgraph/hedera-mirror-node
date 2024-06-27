@@ -16,24 +16,16 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.FEE_SCHEDULE_ENTITY_ID;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FeeSchedule;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,8 +37,6 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
     void setup() {
         // Persist needed entities
         domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
-        exchangeRatesPersist();
-        feeSchedulesPersist();
     }
 
     @Test
@@ -286,28 +276,6 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
                 .block(block)
                 .build();
-    }
-
-    @Override
-    protected void feeSchedulesPersist() {
-        final long expiry = 1_234_567_890L;
-        final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
-                .setNextFeeSchedule(FeeSchedule.newBuilder()
-                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
-                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                                .setHederaFunctionality(EthereumTransaction)
-                                .addFees(FeeData.newBuilder()
-                                        .setServicedata(FeeComponents.newBuilder()
-                                                .setGas(852000)
-                                                .build()))))
-                .build();
-
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(feeSchedules.toByteArray())
-                        .entityId(FEE_SCHEDULE_ENTITY_ID)
-                        .consensusTimestamp(expiry + 1))
-                .persist();
     }
 
     private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {
