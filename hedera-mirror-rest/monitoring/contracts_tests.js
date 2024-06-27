@@ -402,7 +402,7 @@ const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
     runTest(getContractById),
-    contractCallEnabled ? runTest(postContractCall) : '',
+    contractCallEnabled ? runTest(postContractCall, 'WEB3') : '',
     runTest(getContractResults),
     runTest(getContractResultsLogs),
     runTest(getContractState),

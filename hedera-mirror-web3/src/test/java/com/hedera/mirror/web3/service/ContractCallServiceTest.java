@@ -38,8 +38,8 @@ import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.service.utils.BinaryGasEstimator;
 import com.hedera.mirror.web3.throttle.ThrottleProperties;
 import com.hedera.mirror.web3.viewmodel.BlockType;
@@ -662,7 +662,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 serviceParametersForExecution(functionHash, Address.ZERO, callType, 100L, BlockType.LATEST);
         final var expectedUsedGasByThrottle =
                 (long) (serviceParameters.getGas() * throttleProperties.getGasLimitRefundPercent() / 100f);
-        final var contractCallServiceWithMockedGasLimitBucket = new ContractCallService(
+        final var contractCallServiceWithMockedGasLimitBucket = new ContractExecutionService(
                 meterRegistry,
                 binaryGasEstimator,
                 store,
@@ -690,7 +690,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var gasLimitToRestoreBaseline =
                 (long) (serviceParameters.getGas() * throttleProperties.getGasLimitRefundPercent() / 100f);
         final var expectedUsedGasByThrottle = Math.min(gasLimit - expectedGasUsed, gasLimitToRestoreBaseline);
-        final var contractCallServiceWithMockedGasLimitBucket = new ContractCallService(
+        final var contractCallServiceWithMockedGasLimitBucket = new ContractExecutionService(
                 meterRegistry,
                 binaryGasEstimator,
                 store,
@@ -718,7 +718,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         final var gasLimitToRestoreBaseline =
                 (long) (serviceParameters.getGas() * throttleProperties.getGasLimitRefundPercent() / 100f);
         final var expectedUsedGasByThrottle = Math.min(gasLimit - expectedGasUsed, gasLimitToRestoreBaseline);
-        final var contractCallServiceWithMockedGasLimitBucket = new ContractCallService(
+        final var contractCallServiceWithMockedGasLimitBucket = new ContractExecutionService(
                 meterRegistry,
                 binaryGasEstimator,
                 store,
@@ -775,7 +775,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         assertThat(gasConsumed).isPositive();
     }
 
-    private void assertGasLimit(CallServiceParameters parameters) {
+    private void assertGasLimit(ContractExecutionParameters parameters) {
         final var counter = meterRegistry.find(GAS_LIMIT_METRIC).counters().stream()
                 .filter(c -> parameters.getCallType().name().equals(c.getId().getTag("type")))
                 .findFirst()

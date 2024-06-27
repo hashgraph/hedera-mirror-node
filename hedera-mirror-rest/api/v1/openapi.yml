@@ -617,7 +617,7 @@ paths:
         Re-executes a transaction and returns a result containing detailed information for the execution,
         including all values from the {@code stack}, {@code memory} and {@code storage}
         and the entire trace of opcodes that were executed during the replay.
-        
+
         Note that to provide the output, the transaction needs to be re-executed on the EVM,
         which may take a significant amount of time to complete if stack and memory information is requested.
       operationId: getContractOpcodes
@@ -1365,7 +1365,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.108.0-SNAPSHOT
+  version: 0.109.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"

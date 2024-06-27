@@ -136,7 +136,7 @@ public class TestWeb3jService implements Web3jService {
         final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
 
         try {
-            final var contractInstance = this.deploy(mirrorNodeResult);
+            final var contractInstance = this.deployInternal(mirrorNodeResult);
             res.setResult(trxHex);
             res.setRawResponse(contractInstance.toHexString());
             res.setId(request.getId());
@@ -302,7 +302,7 @@ public class TestWeb3jService implements Web3jService {
                 .build();
     }
 
-    public Address deploy(String binary) {
+    public Address deployInternal(String binary) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
         precompileContractPersist(binary, id);

@@ -22,8 +22,6 @@ plugins {
     id("spring-conventions")
 }
 
-sourceSets { test { solidity { setVersion("0.8.24") } } }
-
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
@@ -52,8 +50,6 @@ dependencies {
     testImplementation("org.testcontainers:postgresql")
 }
 
-web3j { generatedPackageName = "com.hedera.mirror.web3.test.contract" }
-
 tasks.bootRun { jvmArgs = listOf("--enable-preview") }
 
 tasks.compileJava { options.compilerArgs.add("--enable-preview") }
@@ -61,6 +57,11 @@ tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 tasks.compileTestJava { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
+
+// Web3j
+sourceSets { test { solidity { setVersion("0.8.24") } } }
+
+web3j { generatedPackageName = "com.hedera.mirror.web3.test.contract" }
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 

@@ -23,19 +23,19 @@ spec:
   {{- end }}
   steps:
     - execute:
-        - delay: 10s
+        - delay: {{ eq $idx 0 | ternary "10s" $.Values.testkube.test.delay }}
       stopOnFailure: false
     - execute:
         - test: test-rest-{{ $target.namespace }}
       stopOnFailure: false
     - execute:
-        - delay: 60s
+        - delay: {{ $.Values.testkube.test.delay }}
       stopOnFailure: false
     - execute:
         - test: test-rest-java-{{ $target.namespace }}
       stopOnFailure: false
     - execute:
-        - delay: 60s
+        - delay: {{ $.Values.testkube.test.delay }}
       stopOnFailure: false
     - execute:
         - test: test-web3-{{ $target.namespace }}
