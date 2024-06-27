@@ -75,7 +75,7 @@ export class Cache {
 
   async get(keys, loader, keyMapper = (k) => (k ? k.toString() : k)) {
     if (_.isEmpty(keys)) {
-        return [];
+      return [];
     }
     if (!this.ready) {
       return loader(keys);

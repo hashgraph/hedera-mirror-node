@@ -59,8 +59,8 @@ public class ContractDebugService extends ContractCallService {
         return ContractCallContext.run(ctx -> {
             ctx.setTimestamp(params.getConsensusTimestamp() - 1);
             ctx.setOpcodeTracerOptions(opcodeTracerOptions);
-            ctx.setContractActions(
-                    contractActionRepository.findFailedSystemActionsByConsensusTimestamp(params.getConsensusTimestamp()));
+            ctx.setContractActions(contractActionRepository.findFailedSystemActionsByConsensusTimestamp(
+                    params.getConsensusTimestamp()));
             final var ethCallTxnResult = callContract(params, ctx);
             validateResult(ethCallTxnResult, params.getCallType());
             return new OpcodesProcessingResult(ethCallTxnResult, ctx.getOpcodes());
