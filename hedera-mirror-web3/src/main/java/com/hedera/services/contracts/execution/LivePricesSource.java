@@ -26,13 +26,14 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import java.util.function.ToLongFunction;
+import lombok.CustomLog;
 
 /**
  * This class is a modified copy of LivePricesSource from hedera-services repo.
- *
- * Differences with the original:
- *  1. Hardcoded multiplier
+ * <p>
+ * Differences with the original: 1. Hardcoded multiplier
  */
+@CustomLog
 public class LivePricesSource implements PricesAndFeesProvider {
 
     private final HbarCentExchange exchange;
@@ -80,6 +81,7 @@ public class LivePricesSource implements PricesAndFeesProvider {
         final var timestamp =
                 Timestamp.newBuilder().setSeconds(now.getEpochSecond()).build();
         final var prices = usagePrices.defaultPricesGiven(function, timestamp);
+        log.info("currentFeeInTinycents now={}, function={}, prices={}", now, function, prices.getServicedata());
 
         /* Fee schedule prices are set in thousandths of a tinycent */
         return resourcePriceFn.applyAsLong(prices.getServicedata()) / 1000;

@@ -12,10 +12,12 @@ spec:
       image: "{{ .Values.monitor.test.image.repository }}:{{ .Values.monitor.test.image.tag }}"
       imagePullPolicy: {{ .Values.monitor.test.image.pullPolicy }}
       args:
-        - wget
-        - --no-check-certificate
-        - -O-
         - http://{{ include "hedera-mirror-rest.fullname" . }}-monitor:3000/api/v1/status
+        - --retry
+        - "10"
+        - --retry-all-errors
+        - --retry-delay
+        - "2"
   terminationGracePeriodSeconds: 1
   restartPolicy: Never
 {{- end -}}

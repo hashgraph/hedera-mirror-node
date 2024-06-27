@@ -43,6 +43,7 @@
     "contractId": "",
     "enabled": true,
     "contractCallEnabled": true,
+    "contractLogsEnabled": true,
     "intervalMultiplier": 1,
     "limit": 2
   },

@@ -20,8 +20,11 @@ postgresql:
 rest:
   monitor:
     config:
+      contractLogsEnabled: false
       freshness: false
       network:
+        enabled: false
+      schedule:
         enabled: false
       stateproof:
         enabled: false
@@ -37,6 +40,8 @@ restjava:
 rosetta:
   enabled: true
 web3:
+  env:
+    HEDERA_MIRROR_WEB3_EVM_NETWORK: OTHER
   resources:
     requests:
       cpu: 100m
