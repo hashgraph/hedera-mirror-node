@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.utils;
+package com.hedera.mirror.web3.web3j;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
@@ -24,9 +24,9 @@ import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncode
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.mirror.web3.service.resources.TransactionReceiptCustom;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
@@ -72,7 +72,7 @@ public class TestWeb3jService implements Web3jService {
     private static final Long GAS_LIMIT = 15_000_000L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
 
-    private final ContractCallService contractCallService;
+    private final ContractExecutionService contractExecutionService;
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
     private final DomainBuilder domainBuilder;
@@ -81,8 +81,8 @@ public class TestWeb3jService implements Web3jService {
 
     private Address sender = Address.fromHexString("");
 
-    public TestWeb3jService(ContractCallService contractCallService, DomainBuilder domainBuilder) {
-        this.contractCallService = contractCallService;
+    public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
+        this.contractExecutionService = contractExecutionService;
         this.contractGasProvider = new DefaultGasProvider();
         this.credentials = Credentials.create(ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY)));
         this.domainBuilder = domainBuilder;
@@ -133,7 +133,7 @@ public class TestWeb3jService implements Web3jService {
             RawTransaction rawTrxDecoded, String trxHex, Request request) {
         final var res = new EthSendTransaction();
         var serviceParameters = serviceParametersForTopLevelContractCreate(rawTrxDecoded.getData(), ETH_CALL, sender);
-        final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
+        final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
 
         try {
             final var contractInstance = this.deployInternal(mirrorNodeResult);
@@ -162,7 +162,7 @@ public class TestWeb3jService implements Web3jService {
                 GAS_LIMIT,
                 sender);
 
-        final var mirrorNodeResult = contractCallService.processCall(serviceParameters);
+        final var mirrorNodeResult = contractExecutionService.processCall(serviceParameters);
         res.setResult(trxHex);
         res.setRawResponse(mirrorNodeResult);
         res.setId(request.getId());
@@ -184,7 +184,7 @@ public class TestWeb3jService implements Web3jService {
                 BlockType.LATEST,
                 GAS_LIMIT,
                 sender);
-        final var result = contractCallService.processCall(serviceParameters);
+        final var result = contractExecutionService.processCall(serviceParameters);
 
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
@@ -263,7 +263,7 @@ public class TestWeb3jService implements Web3jService {
         throw new UnsupportedOperationException("Close");
     }
 
-    protected CallServiceParameters serviceParametersForExecutionSingle(
+    protected ContractExecutionParameters serviceParametersForExecutionSingle(
             final Bytes callData,
             final Address contractAddress,
             final CallServiceParameters.CallType callType,
@@ -272,7 +272,7 @@ public class TestWeb3jService implements Web3jService {
             final long gasLimit,
             final Address sender) {
         final var senderAccount = new HederaEvmAccount(sender);
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(senderAccount)
                 .value(value)
                 .receiver(contractAddress)
@@ -285,12 +285,12 @@ public class TestWeb3jService implements Web3jService {
                 .build();
     }
 
-    protected CallServiceParameters serviceParametersForTopLevelContractCreate(
+    protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
             final String contractInitCode, final CallServiceParameters.CallType callType, final Address senderAddress) {
         final var sender = new HederaEvmAccount(senderAddress);
 
         final var callData = Bytes.wrap(Hex.decode(contractInitCode));
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(sender)
                 .callData(callData)
                 .receiver(Address.ZERO)

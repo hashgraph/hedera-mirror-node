@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.service.resources;
+package com.hedera.mirror.web3.web3j;
 
 import lombok.Data;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
