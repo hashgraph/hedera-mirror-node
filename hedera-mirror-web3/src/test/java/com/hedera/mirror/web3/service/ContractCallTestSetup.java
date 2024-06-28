@@ -71,7 +71,6 @@ import com.hedera.services.store.contracts.precompile.TokenCreateWrapper.Royalty
 import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
-import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
@@ -125,29 +124,30 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     // Contract addresses
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
-    protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255));
+    protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(1255));
     protected static final Address DYNAMIC_ETH_CALLS_CONTRACT_ALIAS =
             Address.fromHexString("0x742d35Cc6634C0532925a3b844Bc454e4438f44e");
-    protected static final Address PRECOMPILE_TEST_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256));
-    protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1257));
-    protected static final Address ERC_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1258));
-    protected static final Address REVERTER_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1259));
-    protected static final Address ETH_CALL_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1260));
-    protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1261));
-    protected static final Address NESTED_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1262));
-    protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1263));
-    protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1264));
-    protected static final Address REDIRECT_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1265));
-    protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1266));
-    protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1269));
-    protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1270));
-    protected static final Address MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1279));
+    protected static final Address PRECOMPILE_TEST_CONTRACT_ADDRESS = toAddress(EntityId.of(1256));
+    protected static final Address MODIFICATION_CONTRACT_ADDRESS = toAddress(EntityId.of(1257));
+    protected static final Address ERC_CONTRACT_ADDRESS = toAddress(EntityId.of(1258));
+    protected static final Address REVERTER_CONTRACT_ADDRESS = toAddress(EntityId.of(1259));
+    protected static final Address ETH_CALL_CONTRACT_ADDRESS = toAddress(EntityId.of(1260));
+    protected static final Address STATE_CONTRACT_ADDRESS = toAddress(EntityId.of(1261));
+    protected static final Address NESTED_ETH_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(1262));
+    protected static final Address EVM_CODES_CONTRACT_ADDRESS = toAddress(EntityId.of(1263));
+    protected static final Address EXCHANGE_RATE_PRECOMPILE_CONTRACT_ADDRESS = toAddress(EntityId.of(1264));
+    protected static final Address REDIRECT_CONTRACT_ADDRESS = toAddress(EntityId.of(1265));
+    protected static final Address PRNG_CONTRACT_ADDRESS = toAddress(EntityId.of(1266));
+    protected static final Address ADDRESS_THIS_CONTRACT_ADDRESS = toAddress(EntityId.of(1269));
+    protected static final Address INTERNAL_CALLS_CONTRACT_ADDRESS = toAddress(EntityId.of(1270));
+    protected static final Address MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS = toAddress(EntityId.of(1279));
 
     // Account addresses
-    protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 740));
-    protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1078));
-    protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1041));
-    protected static final Address SPENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1016));
+    protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS = toAddress(EntityId.of(740));
+    protected static final Address AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL = toAddress(EntityId.of(1078));
+    protected static final EntityId NETWORK_TREASURY_ACCOUNT_ID = EntityId.of(2);
+    protected static final Address SPENDER_ADDRESS = toAddress(EntityId.of(1041));
+    protected static final Address SPENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(1016));
     protected static final ByteString SPENDER_PUBLIC_KEY =
             ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
     protected static final ByteString SPENDER_PUBLIC_KEY_HISTORICAL =
@@ -156,8 +156,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             Bytes.wrap(recoverAddressFromPubKey(SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
     protected static final Address SPENDER_ALIAS_HISTORICAL = Address.wrap(Bytes.wrap(
             recoverAddressFromPubKey(SPENDER_PUBLIC_KEY_HISTORICAL.substring(2).toByteArray())));
-    protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1043));
-    protected static final Address SENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1014));
+    protected static final Address SENDER_ADDRESS = toAddress(EntityId.of(1043));
+    protected static final Address SENDER_ADDRESS_HISTORICAL = toAddress(EntityId.of(1014));
     protected static final ByteString SENDER_PUBLIC_KEY =
             ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
     protected static final ByteString SENDER_PUBLIC_KEY_HISTORICAL =
@@ -170,60 +170,57 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             ByteString.fromHex("3a2103a159d37177894bb0491e493d1f4db8ed359ebee15a76ebd8406759a9050410a7")
                     .substring(2)
                     .toByteArray())));
-    protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(0, 0, 743));
-    protected static final Address NOT_ASSOCIATED_SPENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1066));
+    protected static final Address TREASURY_ADDRESS = toAddress(EntityId.of(743));
+    protected static final Address NOT_ASSOCIATED_SPENDER_ADDRESS = toAddress(EntityId.of(1066));
     protected static final ByteString NOT_ASSOCIATED_SPENDER_PUBLIC_KEY =
             ByteString.fromHex("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     protected static final Address NOT_ASSOCIATED_SPENDER_ALIAS = Address.wrap(Bytes.wrap(recoverAddressFromPubKey(
             NOT_ASSOCIATED_SPENDER_PUBLIC_KEY.substring(2).toByteArray())));
-    protected static final Address OWNER_ADDRESS = toAddress(EntityId.of(0, 0, 1044));
-    protected static final Address OWNER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1065));
-    protected static final Address SYSTEM_ACCOUNT_ADDRESS = toAddress(EntityId.of(0, 0, 700));
+    protected static final Address OWNER_ADDRESS = toAddress(EntityId.of(1044));
+    protected static final Address OWNER_ADDRESS_HISTORICAL = toAddress(EntityId.of(1065));
+    protected static final Address SYSTEM_ACCOUNT_ADDRESS = toAddress(EntityId.of(700));
 
     // Token addresses
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY = toAddress(EntityId.of(0, 0, 1042));
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY_HISTORICAL = toAddress(EntityId.of(0, 0, 1077));
-    protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 1045));
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1046));
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1062));
-    protected static final Address NFT_ADDRESS = toAddress(EntityId.of(0, 0, 1047));
-    protected static final Address NFT_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1063));
-    protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1048));
-    protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1049));
-    protected static final Address TREASURY_TOKEN_ADDRESS_WITH_ALL_KEYS = toAddress(EntityId.of(0, 0, 1110));
-    protected static final Address TRANSFRER_FROM_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1111));
-    protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1050));
-    protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(0, 0, 1051));
-    protected static final Address NFT_TRANSFER_ADDRESS_HISTORICAL = toAddress(EntityId.of(0, 0, 1064));
-    protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1052));
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1053));
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL =
-            toAddress(EntityId.of(0, 0, 1073));
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(0, 0, 1054));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY = toAddress(EntityId.of(1042));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY_HISTORICAL = toAddress(EntityId.of(1077));
+    protected static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(1045));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(1046));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_HISTORICAL = toAddress(EntityId.of(1062));
+    protected static final Address NFT_ADDRESS = toAddress(EntityId.of(1047));
+    protected static final Address NFT_ADDRESS_HISTORICAL = toAddress(EntityId.of(1063));
+    protected static final Address NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(1048));
+    protected static final Address TREASURY_TOKEN_ADDRESS = toAddress(EntityId.of(1049));
+    protected static final Address TREASURY_TOKEN_ADDRESS_WITH_ALL_KEYS = toAddress(EntityId.of(1110));
+    protected static final Address TRANSFRER_FROM_TOKEN_ADDRESS = toAddress(EntityId.of(1111));
+    protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(1050));
+    protected static final Address NFT_TRANSFER_ADDRESS = toAddress(EntityId.of(1051));
+    protected static final Address NFT_TRANSFER_ADDRESS_HISTORICAL = toAddress(EntityId.of(1064));
+    protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(1052));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(EntityId.of(1053));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL = toAddress(EntityId.of(1073));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(1054));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL =
-            toAddress(EntityId.of(0, 0, 1069));
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(0, 0, 1055));
+            toAddress(EntityId.of(1069));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(1055));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL =
-            toAddress(EntityId.of(0, 0, 1070));
+            toAddress(EntityId.of(1070));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID =
-            toAddress(EntityId.of(0, 0, 1056));
+            toAddress(EntityId.of(1056));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID_HISTORICAL =
-            toAddress(EntityId.of(0, 0, 1072));
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(0, 0, 1057));
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL = toAddress(EntityId.of(0, 0, 1074));
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(0, 0, 1058));
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL = toAddress(EntityId.of(0, 0, 1075));
-    protected static final Address NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID =
-            toAddress(EntityId.of(0, 0, 1059));
+            toAddress(EntityId.of(1072));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY = toAddress(EntityId.of(1057));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY_HISTORICAL = toAddress(EntityId.of(1074));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY = toAddress(EntityId.of(1058));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY_HISTORICAL = toAddress(EntityId.of(1075));
+    protected static final Address NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID = toAddress(EntityId.of(1059));
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID_HISTORICAL =
-            toAddress(EntityId.of(0, 0, 1076));
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS =
-            toAddress(EntityId.of(0, 0, 1060));
+            toAddress(EntityId.of(1076));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(EntityId.of(1060));
     protected static final Address FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL =
-            toAddress(EntityId.of(0, 0, 1068));
-    protected static final Address FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED = toAddress(EntityId.of(0, 0, 1061));
-    protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(EntityId.of(0, 0, 1067));
-    protected static final Address NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY = toAddress(EntityId.of(0, 0, 1071));
+            toAddress(EntityId.of(1068));
+    protected static final Address FUNGIBLE_TOKEN_ADDRESS_NOT_ASSOCIATED = toAddress(EntityId.of(1061));
+    protected static final Address NFT_ADDRESS_WITH_DIFFERENT_OWNER_AND_TREASURY = toAddress(EntityId.of(1067));
+    protected static final Address NFT_TRANSFER_ADDRESS_WITHOUT_KYC_KEY = toAddress(EntityId.of(1071));
 
     protected static final byte[] KEY_PROTO = new byte[] {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
@@ -1986,9 +1983,9 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final long tokenExpiration,
             final TokenPauseStatusEnum pauseStatus,
             final boolean freezeDefault) {
-        final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
+        final var tokenEvmAddress = tokenAddress.toArrayUnsafe();
+        final var tokenEntityId = fromEvmAddress(tokenEvmAddress);
         final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
-        final var tokenEvmAddress = toEvmAddress(tokenEntityId);
 
         domainBuilder
                 .entity()
@@ -2006,7 +2003,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntityId.getId())
-                        .treasuryAccountId(EntityId.of(0, 0, treasuryId.getId()))
+                        .treasuryAccountId(treasuryId)
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .kycKey(key)
                         .freezeDefault(freezeDefault)
@@ -2030,26 +2027,30 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     private EntityId balancePersistHistorical(final Address tokenAddress, final Range<Long> historicalBlock) {
         final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
-        final var accountId = EntityIdUtils.entityIdFromId(
-                Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(SENDER_ADDRESS_HISTORICAL)));
-        final var tokenId =
-                EntityIdUtils.entityIdFromId(Id.fromGrpcAccount(EntityIdUtils.accountIdFromEvmAddress(tokenAddress)));
+        final var accountId = fromEvmAddress(SENDER_ADDRESS_HISTORICAL.toArrayUnsafe());
+        final var tokenId = fromEvmAddress(tokenAddress.toArrayUnsafe());
         // hardcoded entity id 2 is mandatory
+        final long lowerTimestamp = historicalBlock.lowerEndpoint();
         domainBuilder
                 .accountBalance()
-                .customize(ab -> ab.id(new AccountBalance.Id(historicalBlock.lowerEndpoint() + 1, EntityId.of(2)))
+                .customize(ab -> ab.id(new AccountBalance.Id(lowerTimestamp, NETWORK_TREASURY_ACCOUNT_ID)))
+                .persist();
+        domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(lowerTimestamp, accountId, tokenId))
                         .balance(12L))
                 .persist();
         domainBuilder
                 .tokenBalance()
-                .customize(tb -> tb.id(new TokenBalance.Id(historicalBlock.lowerEndpoint() + 1, accountId, tokenId))
-                        .balance(12L))
+                // Expected total supply is 12345
+                .customize(tb -> tb.balance(12345L - 12L)
+                        .id(new TokenBalance.Id(lowerTimestamp, domainBuilder.entityId(), tokenEntityId)))
                 .persist();
 
         return tokenEntityId;
     }
 
-    private EntityId fungibleTokenPersistHistorical(
+    private void fungibleTokenPersistHistorical(
             final EntityId treasuryId,
             final byte[] key,
             final Address tokenAddress,
@@ -2058,9 +2059,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             final TokenPauseStatusEnum pauseStatus,
             final boolean freezeDefault,
             final Range<Long> historicalBlock) {
+        final var tokenEvmAddress = tokenAddress.toArrayUnsafe();
         final var tokenEntityId = fromEvmAddress(tokenAddress.toArrayUnsafe());
         final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
-        final var tokenEvmAddress = toEvmAddress(tokenEntityId);
+        final long lowerTimestamp = historicalBlock.lowerEndpoint();
 
         domainBuilder
                 .entity()
@@ -2073,14 +2075,14 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .key(key)
                         .expirationTimestamp(tokenExpiration)
                         .memo("TestMemo")
-                        .timestampRange(historicalBlock)
+                        .timestampRange(Range.atLeast(lowerTimestamp))
                         .deleted(false))
                 .persist();
 
         domainBuilder
                 .tokenHistory()
                 .customize(t -> t.tokenId(tokenEntityId.getId())
-                        .treasuryAccountId(EntityId.of(0, 0, treasuryId.getId()))
+                        .treasuryAccountId(treasuryId)
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .kycKey(key)
                         .freezeDefault(freezeDefault)
@@ -2097,11 +2099,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .pauseKey(key)
                         .supplyKey(key)
                         .symbol("HBAR")
-                        .timestampRange(
-                                Range.openClosed(historicalBlock.lowerEndpoint(), historicalBlock.upperEndpoint() + 1)))
+                        .timestampRange(Range.openClosed(lowerTimestamp, historicalBlock.upperEndpoint() + 1)))
                 .persist();
 
-        return tokenEntityId;
+        // There is already an account balance for the treasury account set up in balancePersistHistorical()
     }
 
     protected EntityId nftPersist(
@@ -2116,7 +2117,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
         final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
         final var nftEvmAddress = toEvmAddress(nftEntityId);
-        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+        final var ownerEntity = EntityId.of(ownerEntityId.getId());
 
         domainBuilder
                 .entity()
@@ -2180,7 +2181,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
         final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
         final var nftEvmAddress = toEvmAddress(nftEntityId);
-        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+        final var ownerEntity = EntityId.of(ownerEntityId.getId());
 
         domainBuilder
                 .entity()
@@ -2288,7 +2289,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         final var nftEntityId = fromEvmAddress(nftAddress.toArrayUnsafe());
         final var autoRenewEntityId = fromEvmAddress(autoRenewAddress.toArrayUnsafe());
         final var nftEvmAddress = toEvmAddress(nftEntityId);
-        final var ownerEntity = EntityId.of(0, 0, ownerEntityId.getId());
+        final var ownerEntity = EntityId.of(ownerEntityId.getId());
 
         domainBuilder
                 .entity()

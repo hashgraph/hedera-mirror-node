@@ -137,7 +137,7 @@ class EvmTokenUtilsTest {
     @Test
     void entityIdFromAddress() {
         final var contractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
-        EntityId entityId = EntityId.of(0, 0, 1221);
+        EntityId entityId = EntityId.of(1221);
 
         assertThat(EvmTokenUtils.entityIdFromEvmAddress(contractAddress)).isEqualTo(entityId);
     }
@@ -156,7 +156,6 @@ class EvmTokenUtilsTest {
 
     @Test
     void entityIdFromEmptyAddress() {
-        EntityId entityId = EntityId.of(0, 0, 0);
-        assertThat(EvmTokenUtils.entityIdFromEvmAddress(EMPTY_ADDRESS)).isEqualTo(entityId);
+        assertThat(EvmTokenUtils.entityIdFromEvmAddress(EMPTY_ADDRESS)).isEqualTo(EntityId.EMPTY);
     }
 }

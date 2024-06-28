@@ -845,10 +845,10 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @RequiredArgsConstructor
     private enum EVM46ValidationCalls {
         CALL_TO_NON_EXISTING_CONTRACT(
-                "callToNonExistingContract", toAddress(EntityId.of(0, 0, 123456789)), "", new Object[] {0}, "0x"),
+                "callToNonExistingContract", toAddress(EntityId.of(123456789)), "", new Object[] {0}, "0x"),
         TRANSFER_TO_NON_EXISTING_CONTRACT(
                 "transferToNonExistingContractName",
-                toAddress(EntityId.of(0, 0, 123456789)),
+                toAddress(EntityId.of(123456789)),
                 "transfer",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 1L},
                 "0x");
@@ -865,7 +865,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
         CALL_TO_INTERNAL_NON_EXISTING_CONTRACT(
                 "callToInternalNonExistingContract",
                 "callNonExisting",
-                new Object[] {toAddress(EntityId.of(0, 0, 123456789))},
+                new Object[] {toAddress(EntityId.of(123456789))},
                 "0x"),
         CALL_TO_INTERNAL_NON_EXISTING_FUNCTION(
                 "callToInternalNonExistingContract", "callNonExisting", new Object[] {ERC_CONTRACT_ADDRESS}, "0x"),
@@ -875,14 +875,11 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 new Object[] {ERC_CONTRACT_ADDRESS},
                 "0x"),
         SEND_TO_INTERNAL_NON_EXISTING_ACCOUNT(
-                "sendToInternalNonExistingContract",
-                "sendTo",
-                new Object[] {toAddress(EntityId.of(0, 0, 123456789))},
-                "0x"),
+                "sendToInternalNonExistingContract", "sendTo", new Object[] {toAddress(EntityId.of(123456789))}, "0x"),
         TRANSFER_TO_INTERNAL_NON_EXISTING_ACCOUNT(
                 "transferToInternalNonExistingContract",
                 "transferTo",
-                new Object[] {toAddress(EntityId.of(0, 0, 123456789))},
+                new Object[] {toAddress(EntityId.of(123456789))},
                 "0x");
 
         private final String name;

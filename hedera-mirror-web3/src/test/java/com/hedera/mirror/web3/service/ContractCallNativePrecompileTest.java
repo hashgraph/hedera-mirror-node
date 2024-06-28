@@ -267,8 +267,8 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
             final BlockType block,
             final long gasLimit) {
         HederaEvmAccount sender;
-        final Address senderAddress = toAddress(EntityId.of(0, 0, 1043));
-        final Address senderAddressHistorical = toAddress(EntityId.of(0, 0, 1014));
+        final Address senderAddress = toAddress(EntityId.of(1043));
+        final Address senderAddressHistorical = toAddress(EntityId.of(1014));
 
         if (block != BlockType.LATEST) {
             sender = new HederaEvmAccount(senderAddressHistorical);

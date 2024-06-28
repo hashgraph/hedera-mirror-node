@@ -182,7 +182,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         ASSOCIATE_TRANSFER_NFT_EXCEPTION(
                 "associateTokenTransfer",
                 new Object[] {
-                    toAddress(EntityId.of(0, 0, 1)), // Not persisted address
+                    toAddress(EntityId.of(1)), // Not persisted address
                     DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
                     NOT_ASSOCIATED_SPENDER_ALIAS,
                     BigInteger.ZERO,
