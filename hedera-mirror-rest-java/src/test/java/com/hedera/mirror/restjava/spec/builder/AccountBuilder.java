@@ -25,19 +25,24 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityManager;
 import java.util.Map;
+import java.util.function.Function;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Named
 class AccountBuilder extends AbstractEntityBuilder {
 
+    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
+            "id", ENTITY_ID_CONVERTER
+    );
+
     AccountBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
-        super(entityManager, transactionOperations);
+        super(entityManager, transactionOperations, METHOD_PARAMETER_CONVERTERS);
     }
 
     @Override
     void customizeAndPersistEntity(Map<String, Object> account) {
         var builder = Entity.builder();
-        // set defaults
+        // Set defaults
         builder
                 .alias(null)
                 .autoRenewAccountId(null)
@@ -70,11 +75,16 @@ class AccountBuilder extends AbstractEntityBuilder {
                 .timestampRange(Range.atLeast(0L))
                 .type(EntityType.ACCOUNT);
 
+        // Customize with spec setup definitions
         var wrapper = new DomainWrapperImpl<Entity, EntityBuilder<?, ?>>(builder, builder::build, entityManager, transactionOperations);
         customizeWithSpec(wrapper, account);
 
-        var accountEntity = wrapper.get();
-        builder.id(EntityId.of(accountEntity.getShard(), accountEntity.getRealm(), accountEntity.getNum()).getId());
+        // Check and finalize
+        var entity = wrapper.get();
+        if (entity.getId() == null) {
+            builder.id(EntityId.of(entity.getShard(), entity.getRealm(), entity.getNum()).getId());
+        }
+
         wrapper.persist();
     }
 }

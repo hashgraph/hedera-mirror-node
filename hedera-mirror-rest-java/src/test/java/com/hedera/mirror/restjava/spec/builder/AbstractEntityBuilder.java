@@ -18,6 +18,7 @@ package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.base.CaseFormat;
 import com.hedera.mirror.common.domain.DomainWrapper;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import jakarta.persistence.EntityManager;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -26,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.CustomLog;
 import org.springframework.transaction.support.TransactionOperations;
 
@@ -45,23 +45,25 @@ abstract class AbstractEntityBuilder {
 
     private static final Map<Class<?>, Map<String, Method>> methodCache = new ConcurrentHashMap<>();
 
-    protected final Map<Class<?>, Function<Object, Object>> parameterConverters;
+    protected static Function<Object, Object> ENTITY_ID_CONVERTER = source -> source instanceof String
+            ? EntityId.of((String)source).getId() : EntityId.of((Long)source);
+
+    protected final Map<String, Function<Object, Object>> methodParameterConverters;
+
     protected final EntityManager entityManager;
     protected final TransactionOperations transactionOperations;
 
     protected AbstractEntityBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
         this.entityManager = entityManager;
         this.transactionOperations = transactionOperations;
-        this.parameterConverters = DEFAULT_PARAMETER_CONVERTERS;
+        this.methodParameterConverters = Map.of();
     }
 
     protected AbstractEntityBuilder(EntityManager entityManager, TransactionOperations transactionOperations,
-            Map<Class<?>, Function<Object, Object>> parameterConverters) {
+            Map<String, Function<Object, Object>> methodParameterConverters) {
         this.entityManager = entityManager;
         this.transactionOperations = transactionOperations;
-        this.parameterConverters =
-                Stream.concat(DEFAULT_PARAMETER_CONVERTERS.entrySet().stream(), parameterConverters.entrySet().stream())
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v2));
+        this.methodParameterConverters = methodParameterConverters;
     }
 
     abstract void customizeAndPersistEntity(Map<String, Object> entityAttributes);
@@ -70,7 +72,7 @@ abstract class AbstractEntityBuilder {
         wrapper.customize(builder -> {
             var builderClass = builder.getClass();
             var builderMethods = methodCache.computeIfAbsent(builderClass, clazz -> Arrays.stream(
-                    clazz.getMethods()).collect(Collectors.toMap(Method::getName, Function.identity(), (m1, m2) -> m2)));
+                    clazz.getMethods()).collect(Collectors.toMap(Method::getName, Function.identity(), (v1, v2) -> v2)));
 
             for (var customization : customizations.entrySet()) {
                 var methodName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, customization.getKey());
@@ -78,7 +80,7 @@ abstract class AbstractEntityBuilder {
                 if (method != null) {
                     try {
                         var expectedParameterType = method.getParameterTypes()[0];
-                        var mappedBuilderParameter = mapBuilderParameter(expectedParameterType, customization.getValue());
+                        var mappedBuilderParameter = mapBuilderParameter(methodName, expectedParameterType, customization.getValue());
                         method.invoke(builder, mappedBuilderParameter);
                     } catch (IllegalAccessException | InvocationTargetException e) {
                         log.warn("Failed to invoke method '{}' for attribute override '{}' for {}",
@@ -92,8 +94,11 @@ abstract class AbstractEntityBuilder {
         });
     }
 
-    protected Object mapBuilderParameter(Class<?> expectedType, Object specParameterValue) {
-        var typeMapper = DEFAULT_PARAMETER_CONVERTERS.getOrDefault(expectedType, Function.identity());
-        return  typeMapper.apply(specParameterValue);
+    protected Object mapBuilderParameter(String methodName, Class<?> expectedType, Object specParameterValue) {
+        var typeMapper = methodParameterConverters.get(methodName);
+        if (typeMapper == null) {
+            typeMapper = DEFAULT_PARAMETER_CONVERTERS.getOrDefault(expectedType, Function.identity());
+        }
+        return typeMapper.apply(specParameterValue);
     }
 }

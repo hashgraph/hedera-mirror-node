@@ -16,31 +16,54 @@
 
 package com.hedera.mirror.restjava.spec.builder;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainWrapperImpl;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityManager;
 import java.util.Map;
+import java.util.function.Function;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Named
 class TokenAccountBuilder extends AbstractEntityBuilder {
 
+    private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
+            "accountId", ENTITY_ID_CONVERTER,
+            "tokenId", ENTITY_ID_CONVERTER
+    );
+
     TokenAccountBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
-        super(entityManager, transactionOperations);
+        super(entityManager, transactionOperations, METHOD_PARAMETER_CONVERTERS);
     }
 
     @Override
     void customizeAndPersistEntity(Map<String, Object> account) {
         var builder = TokenAccount.builder();
-        // set defaults
+        // Set defaults
         builder
+                .accountId(0L)
                 .associated(true)
                 .automaticAssociation(false)
-                .balance(0L);
+                .balance(0L)
+                .balanceTimestamp(0L)
+                .createdTimestamp(0L)
+                .freezeStatus(null)
+                .kycStatus(null)
+                .timestampRange(null)
+                .tokenId(0L);
 
+        // Customize with spec setup definitions
         var wrapper = new DomainWrapperImpl<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>>(builder, builder::build, entityManager, transactionOperations);
         customizeWithSpec(wrapper, account);
+
+        // Check and finalize
+        var entity = wrapper.get();
+        if (entity.getTimestampRange() == null) {
+            builder.timestampRange(Range.atLeast(entity.getCreatedTimestamp()));
+        }
+
         wrapper.persist();
     }
 }
