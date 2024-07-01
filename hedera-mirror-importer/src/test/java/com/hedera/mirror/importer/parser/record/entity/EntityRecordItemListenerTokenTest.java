@@ -64,6 +64,7 @@ import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
@@ -71,6 +72,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenReference;
 import com.hederahashgraph.api.proto.java.TokenSupplyType;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -3390,6 +3392,125 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, wipeTimestamp, transferAmount);
     }
 
+    @Test
+    void tokenRejectFungible() {
+        createAndAssociateToken(
+                TOKEN_ID,
+                FUNGIBLE_COMMON,
+                SYMBOL,
+                CREATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
+                PAYER,
+                false,
+                false,
+                false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
+                INITIAL_SUPPLY);
+
+        long amount = 1000;
+        long mintTimestamp = 10L;
+        var tokenTransfer = TokenTransferList.newBuilder()
+                .setToken(TOKEN_ID)
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(PAYER)
+                        .setAmount(-amount)
+                        .build())
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(RECEIVER)
+                        .setAmount(amount)
+                        .build())
+                .build();
+        var transaction = tokenSupplyTransaction(TOKEN_ID, FUNGIBLE_COMMON, true, amount, null);
+        insertAndParseTransaction(mintTimestamp, transaction, builder -> {
+            builder.addTokenTransferLists(tokenTransfer);
+        });
+
+        // when
+        long rejectTimestamp = 20L;
+        var tokenRejectTransfer = TokenTransferList.newBuilder()
+                .setToken(TOKEN_ID)
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(PAYER)
+                        .setAmount(amount)
+                        .build())
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(RECEIVER)
+                        .setAmount(-amount)
+                        .build())
+                .build();
+        var tokenRejectTransaction = tokenRejectTransaction(RECEIVER, null, TOKEN_ID);
+        insertAndParseTransaction(rejectTimestamp, tokenRejectTransaction, builder -> {
+            builder.addTokenTransferLists(tokenRejectTransfer);
+        });
+
+        // then
+        assertThat(tokenTransferRepository.count()).isEqualTo(5L);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, mintTimestamp, -amount);
+        assertTokenTransferInRepository(TOKEN_ID, RECEIVER, mintTimestamp, amount);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, rejectTimestamp, amount);
+        assertTokenTransferInRepository(TOKEN_ID, RECEIVER, rejectTimestamp, -amount);
+    }
+
+    @Test
+    void tokenRejectNft() {
+        createAndAssociateToken(
+                TOKEN_ID,
+                NON_FUNGIBLE_UNIQUE,
+                SYMBOL,
+                CREATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP,
+                PAYER,
+                false,
+                false,
+                false,
+                TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE,
+                TokenPauseStatusEnum.NOT_APPLICABLE,
+                0);
+
+        long mintTimestamp = 10L;
+        var mintTransfer = nftTransfer(TOKEN_ID, RECEIVER, DEFAULT_ACCOUNT_ID, List.of(SERIAL_NUMBER_1));
+        var mintTransaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0, List.of(SERIAL_NUMBER_1));
+        insertAndParseTransaction(mintTimestamp, mintTransaction, builder -> {
+            builder.getReceiptBuilder().setNewTotalSupply(1L).addSerialNumbers(SERIAL_NUMBER_1);
+            builder.addTokenTransferLists(mintTransfer);
+        });
+
+        var expectedNft = Nft.builder()
+                .accountId(EntityId.of(RECEIVER))
+                .createdTimestamp(mintTimestamp)
+                .deleted(false)
+                .metadata(METADATA)
+                .serialNumber(SERIAL_NUMBER_1)
+                .timestampRange(Range.atLeast(mintTimestamp))
+                .tokenId(DOMAIN_TOKEN_ID.getId())
+                .build();
+        assertThat(nftRepository.findById(expectedNft.getId())).hasValue(expectedNft);
+        assertNftTransferInRepository(
+                mintTimestamp, domainNftTransfer(RECEIVER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_1, TOKEN_ID));
+
+        // when
+        long rejectTimestamp = 20L;
+        var tokenRejectTransfer = nftTransfer(TOKEN_ID, PAYER, RECEIVER, List.of(SERIAL_NUMBER_1));
+        var nftId = NftID.newBuilder()
+                .setTokenID(TOKEN_ID)
+                .setSerialNumber(SERIAL_NUMBER_1)
+                .build();
+        var tokenRejectTransaction = tokenRejectTransaction(RECEIVER, nftId, null);
+        insertAndParseTransaction(rejectTimestamp, tokenRejectTransaction, builder -> {
+            builder.addTokenTransferLists(tokenRejectTransfer);
+        });
+
+        // then
+        expectedNft.setAccountId(PAYER_ACCOUNT_ID);
+        expectedNft.setTimestampLower(rejectTimestamp);
+        assertThat(nftRepository.findById(expectedNft.getId())).hasValue(expectedNft);
+        assertNftTransferInRepository(rejectTimestamp, domainNftTransfer(PAYER, RECEIVER, SERIAL_NUMBER_1, TOKEN_ID));
+    }
+
     void tokenCreate(
             List<CustomFee> customFees,
             boolean freezeDefault,
@@ -3755,6 +3876,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         }
 
         return transaction;
+    }
+
+    private Transaction tokenRejectTransaction(AccountID accountId, NftID nftId, TokenID tokenId) {
+        var tokenReference = nftId != null
+                ? TokenReference.newBuilder().setNft(nftId).build()
+                : TokenReference.newBuilder().setFungibleToken(tokenId).build();
+        return buildTransaction(
+                builder -> builder.getTokenRejectBuilder().setOwner(accountId).addRejections(tokenReference));
     }
 
     private Transaction tokenSupplyTransaction(
