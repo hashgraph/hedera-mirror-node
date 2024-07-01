@@ -87,6 +87,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
@@ -119,6 +120,8 @@ import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenReference;
+import com.hederahashgraph.api.proto.java.TokenRejectTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
@@ -740,6 +743,22 @@ public class RecordItemBuilder {
     public Builder<TokenPauseTransactionBody.Builder> tokenPause() {
         var transactionBody = TokenPauseTransactionBody.newBuilder().setToken(tokenId());
         return new Builder<>(TransactionType.TOKENPAUSE, transactionBody);
+    }
+
+    public TokenReference.Builder tokenReference() {
+        var nftId =
+                NftID.newBuilder().setTokenID(tokenId()).setSerialNumber(id()).build();
+        var nftReference = TokenReference.newBuilder().setNft(nftId);
+        return nftReference;
+    }
+
+    public Builder<TokenRejectTransactionBody.Builder> tokenReject() {
+        var fungibleTokenReference = tokenReference().clearNft().setFungibleToken(tokenId());
+        var transactionBody = TokenRejectTransactionBody.newBuilder()
+                .setOwner(accountId())
+                .addRejections(fungibleTokenReference)
+                .addRejections(tokenReference());
+        return new Builder<>(TransactionType.TOKENREJECT, transactionBody);
     }
 
     public Builder<TokenRevokeKycTransactionBody.Builder> tokenRevokeKyc() {
