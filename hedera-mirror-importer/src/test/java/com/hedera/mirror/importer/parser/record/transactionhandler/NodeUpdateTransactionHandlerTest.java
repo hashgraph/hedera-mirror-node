@@ -21,9 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.junit.jupiter.api.Test;
 
 class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -41,14 +39,6 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                                 .setAccountNum(DEFAULT_ENTITY_NUM)
                                 .build())
                         .build());
-    }
-
-    @Override
-    protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
-        return TransactionReceipt.newBuilder()
-                .setStatus(responseCodeEnum)
-                .setAccountID(
-                        AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build());
     }
 
     @Override

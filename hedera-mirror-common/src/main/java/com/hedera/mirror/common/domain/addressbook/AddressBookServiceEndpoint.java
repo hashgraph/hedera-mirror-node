@@ -18,7 +18,6 @@ package com.hedera.mirror.common.domain.addressbook;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
 import java.io.Serial;
@@ -32,15 +31,11 @@ import org.springframework.data.domain.Persistable;
 
 @Builder(toBuilder = true)
 @Data
-@Embeddable
 @Entity
 @IdClass(AddressBookServiceEndpoint.Id.class)
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
 public class AddressBookServiceEndpoint implements Persistable<AddressBookServiceEndpoint.Id> {
-
-    @jakarta.persistence.Id
-    private long uuid;
 
     @jakarta.persistence.Id
     private long consensusTimestamp;

@@ -123,7 +123,6 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                     serviceEndpoints.add(ServiceEndpoint.newBuilder()
                             .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
                             .setPort(443 + j)
-                            .setDomainName("this" + i)
                             .build());
                 }
             }

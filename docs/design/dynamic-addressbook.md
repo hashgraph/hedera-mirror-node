@@ -25,6 +25,8 @@ then returns that information through its existing APIs.
 ```sql
 
 alter table address_book_service_endpoint
+    alter column ip_address_v4 drop not null,
+    alter column port drop not null,
     add column if not exists domain_name varchar(253) default null;
 
 alter table address_book_service_endpoint drop constraint address_book_service_endpoint_pkey;

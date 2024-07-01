@@ -19,11 +19,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import org.junit.jupiter.api.Test;
 
 class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -37,14 +34,6 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setNodeDelete(NodeDeleteTransactionBody.newBuilder().setNodeId(DEFAULT_ENTITY_NUM));
-    }
-
-    @Override
-    protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
-        return TransactionReceipt.newBuilder()
-                .setStatus(responseCodeEnum)
-                .setAccountID(
-                        AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build());
     }
 
     @Override
