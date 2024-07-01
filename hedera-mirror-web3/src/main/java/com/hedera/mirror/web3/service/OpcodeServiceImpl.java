@@ -20,7 +20,6 @@ import static com.hedera.mirror.common.domain.transaction.TransactionType.CONTRA
 import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
 import static com.hedera.mirror.common.util.DomainUtils.convertToNanosMax;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_DEBUG_TRACE_TRANSACTION;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -43,7 +42,7 @@ import com.hedera.mirror.web3.repository.ContractResultRepository;
 import com.hedera.mirror.web3.repository.ContractTransactionHashRepository;
 import com.hedera.mirror.web3.repository.EthereumTransactionRepository;
 import com.hedera.mirror.web3.repository.TransactionRepository;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import java.math.BigInteger;
@@ -63,7 +62,7 @@ import org.springframework.stereotype.Service;
 public class OpcodeServiceImpl implements OpcodeService {
 
     private final RecordFileService recordFileService;
-    private final ContractCallService contractCallService;
+    private final ContractDebugService contractDebugService;
     private final ContractTransactionHashRepository contractTransactionHashRepository;
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final TransactionRepository transactionRepository;
@@ -73,12 +72,12 @@ public class OpcodeServiceImpl implements OpcodeService {
     @Override
     public OpcodesResponse processOpcodeCall(
             @NonNull TransactionIdOrHashParameter transactionIdOrHashParameter, @NonNull OpcodeTracerOptions options) {
-        final CallServiceParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
-        final OpcodesProcessingResult result = contractCallService.processOpcodeCall(params, options);
+        final ContractDebugParameters params = buildCallServiceParameters(transactionIdOrHashParameter);
+        final OpcodesProcessingResult result = contractDebugService.processOpcodeCall(params, options);
         return buildOpcodesResponse(result);
     }
 
-    private CallServiceParameters buildCallServiceParameters(
+    private ContractDebugParameters buildCallServiceParameters(
             @NonNull TransactionIdOrHashParameter transactionIdOrHash) {
         final Long consensusTimestamp;
         final Optional<Transaction> transaction;
@@ -156,7 +155,7 @@ public class OpcodeServiceImpl implements OpcodeService {
                                 .orElse(Bytes.EMPTY.toHexString()));
     }
 
-    private CallServiceParameters buildCallServiceParameters(
+    private ContractDebugParameters buildCallServiceParameters(
             Long consensusTimestamp, Optional<Transaction> transaction, Optional<EthereumTransaction> ethTransaction) {
         final ContractResult contractResult = contractResultRepository
                 .findById(consensusTimestamp)
@@ -170,16 +169,14 @@ public class OpcodeServiceImpl implements OpcodeService {
         final Integer transactionType =
                 transaction.map(Transaction::getType).orElse(TransactionType.UNKNOWN.getProtoId());
 
-        return CallServiceParameters.builder()
-                .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
-                .receiver(getReceiverAddress(ethTransaction, contractResult, transactionType))
-                .gas(getGasLimit(ethTransaction, contractResult))
-                .value(getValue(ethTransaction, contractResult).longValue())
-                .callData(getCallData(ethTransaction, contractResult))
-                .isStatic(false)
-                .callType(ETH_DEBUG_TRACE_TRANSACTION)
-                .isEstimate(false)
+        return ContractDebugParameters.builder()
                 .block(blockType)
+                .callData(getCallData(ethTransaction, contractResult))
+                .consensusTimestamp(consensusTimestamp)
+                .gas(getGasLimit(ethTransaction, contractResult))
+                .receiver(getReceiverAddress(ethTransaction, contractResult, transactionType))
+                .sender(new HederaEvmAccount(getSenderAddress(contractResult)))
+                .value(getValue(ethTransaction, contractResult).longValue())
                 .build();
     }
 

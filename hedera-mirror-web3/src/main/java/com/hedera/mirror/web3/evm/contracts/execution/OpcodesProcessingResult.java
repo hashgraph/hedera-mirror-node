@@ -22,6 +22,4 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 public record OpcodesProcessingResult(
-        @NotNull HederaEvmTransactionProcessingResult transactionProcessingResult,
-        @NotNull List<Opcode> opcodes) {
-}
+        @NotNull HederaEvmTransactionProcessingResult transactionProcessingResult, @NotNull List<Opcode> opcodes) {}

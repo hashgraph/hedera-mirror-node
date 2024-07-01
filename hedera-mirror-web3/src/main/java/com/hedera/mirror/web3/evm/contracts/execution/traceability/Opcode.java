@@ -18,15 +18,17 @@ package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import java.util.List;
 import java.util.Map;
+import lombok.Builder;
 import org.apache.tuweni.bytes.Bytes;
 
-public record Opcode(int pc,
-                     String op,
-                     long gas,
-                     long gasCost,
-                     int depth,
-                     List<Bytes> stack,
-                     List<Bytes> memory,
-                     Map<Bytes, Bytes> storage,
-                     String reason) {
-}
+@Builder
+public record Opcode(
+        int pc,
+        String op,
+        long gas,
+        long gasCost,
+        int depth,
+        List<Bytes> stack,
+        List<Bytes> memory,
+        Map<Bytes, Bytes> storage,
+        String reason) {}

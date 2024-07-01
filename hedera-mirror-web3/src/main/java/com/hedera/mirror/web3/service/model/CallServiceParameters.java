@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,32 @@
 
 package com.hedera.mirror.web3.service.model;
 
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.TracerType;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import lombok.Builder;
-import lombok.Value;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-@Value
-@Builder(toBuilder = true)
-public class CallServiceParameters {
-    HederaEvmAccount sender;
-    Address receiver;
-    long gas;
-    long value;
-    Bytes callData;
-    boolean isStatic;
-    CallType callType;
-    boolean isEstimate;
-    BlockType block;
+public interface CallServiceParameters {
+    BlockType getBlock();
+
+    Bytes getCallData();
+
+    CallType getCallType();
+
+    long getGas();
+
+    Address getReceiver();
+
+    HederaEvmAccount getSender();
+
+    TracerType getTracerType();
+
+    long getValue();
+
+    boolean isEstimate();
+
+    boolean isStatic();
 
     public enum CallType {
         ETH_CALL,

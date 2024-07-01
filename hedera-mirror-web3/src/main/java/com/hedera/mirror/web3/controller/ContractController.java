@@ -22,8 +22,8 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.RateLimitException;
-import com.hedera.mirror.web3.service.ContractCallService;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.ContractExecutionService;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -44,7 +44,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RestController
 class ContractController {
-    private final ContractCallService contractCallService;
+    private final ContractExecutionService contractExecutionService;
     private final Bucket rateLimitBucket;
     private final Bucket gasLimitBucket;
     private final MirrorNodeEvmProperties evmProperties;
@@ -61,7 +61,7 @@ class ContractController {
             validateContractMaxGasLimit(request);
 
             final var params = constructServiceParameters(request);
-            final var result = contractCallService.processCall(params);
+            final var result = contractExecutionService.processCall(params);
             return new ContractCallResponse(result);
         } catch (QueryTimeoutException e) {
             log.error("Query timed out: {} request: {}", e.getMessage(), request);
@@ -73,7 +73,7 @@ class ContractController {
         }
     }
 
-    private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
+    private ContractExecutionParameters constructServiceParameters(ContractCallRequest request) {
         final var fromAddress = request.getFrom() != null ? Address.fromHexString(request.getFrom()) : Address.ZERO;
         final var sender = new HederaEvmAccount(fromAddress);
 
@@ -97,16 +97,16 @@ class ContractController {
         final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
         final var block = request.getBlock();
 
-        return CallServiceParameters.builder()
-                .sender(sender)
-                .receiver(receiver)
-                .callData(data)
-                .gas(request.getGas())
-                .value(request.getValue())
-                .isStatic(isStaticCall)
-                .callType(callType)
-                .isEstimate(request.isEstimate())
+        return ContractExecutionParameters.builder()
                 .block(block)
+                .callData(data)
+                .callType(callType)
+                .gas(request.getGas())
+                .isEstimate(request.isEstimate())
+                .isStatic(isStaticCall)
+                .receiver(receiver)
+                .sender(sender)
+                .value(request.getValue())
                 .build();
     }
 
