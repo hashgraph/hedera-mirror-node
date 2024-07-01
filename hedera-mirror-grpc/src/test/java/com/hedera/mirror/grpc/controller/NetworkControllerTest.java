@@ -24,6 +24,7 @@ import com.hedera.mirror.api.proto.ReactorNetworkServiceGrpc;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.util.ProtoUtil;
@@ -35,6 +36,7 @@ import io.grpc.StatusRuntimeException;
 import jakarta.annotation.Resource;
 import java.net.InetAddress;
 import java.time.Duration;
+import java.util.HashSet;
 import lombok.CustomLog;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.Test;
@@ -119,6 +121,24 @@ class NetworkControllerTest extends GrpcIntegrationTest {
     }
 
     @Test
+    void noLimitServiceEndpointWithDomainName() {
+        AddressBook addressBook = addressBook();
+        AddressBookEntry addressBookEntry1 = addressBookEntryWithDomainName();
+
+        AddressBookQuery query = AddressBookQuery.newBuilder()
+                .setFileId(FileID.newBuilder()
+                        .setFileNum(addressBook.getFileId().getNum())
+                        .build())
+                .build();
+
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
+                .consumeNextWith(n -> assertEntry(addressBookEntry1, n))
+                .expectComplete()
+                .verify(WAIT);
+    }
+
+    @Test
     void limitReached() {
         AddressBook addressBook = addressBook();
         AddressBookEntry addressBookEntry1 = addressBookEntry();
@@ -185,6 +205,20 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .persist();
     }
 
+    private AddressBookEntry addressBookEntryWithDomainName() {
+        var serviceEndpoints = new HashSet<AddressBookServiceEndpoint>();
+        var endpoint = domainBuilder
+                .addressBookServiceEndpoint()
+                .customize(a ->
+                        a.domainName("www.example-node.com").ipAddressV4(null).port(-1))
+                .get();
+        serviceEndpoints.add(endpoint);
+        return domainBuilder
+                .addressBookEntry(1)
+                .customize(a -> a.serviceEndpoints(serviceEndpoints).consensusTimestamp(CONSENSUS_TIMESTAMP))
+                .persist();
+    }
+
     @SuppressWarnings("deprecation")
     private void assertEntry(AddressBookEntry addressBookEntry, NodeAddress nodeAddress) {
         assertThat(nodeAddress)
@@ -205,12 +239,13 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         } catch (Exception e) {
             // Ignore
         }
-
+        var assertDomain = serviceEndpoint.getDomainName() != null ? serviceEndpoint.getDomainName() : "";
         assertThat(nodeAddress.getServiceEndpointList())
                 .hasSize(1)
                 .first()
                 .returns(ipAddress, ServiceEndpoint::getIpAddressV4)
-                .returns(serviceEndpoint.getPort(), ServiceEndpoint::getPort);
+                .returns(serviceEndpoint.getPort(), ServiceEndpoint::getPort)
+                .returns(assertDomain, ServiceEndpoint::getDomainName);
     }
 
     private void assertException(Throwable t, Status.Code status, String message) {
