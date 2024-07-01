@@ -90,14 +90,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.function.ToLongFunction;
-import lombok.CustomLog;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-@CustomLog
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
     protected static final long expiry = 1_234_567_890L;
@@ -1666,7 +1664,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected void exchangeRatesPersist() {
-        log.info("persisting exchange rates");
         domainBuilder
                 .fileData()
                 .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
@@ -1676,7 +1673,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected void feeSchedulesPersist() {
-        log.info("persisting fee schedules");
         domainBuilder
                 .fileData()
                 .customize(f -> f.fileData(feeSchedules.toByteArray())
