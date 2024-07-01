@@ -87,9 +87,10 @@
       },
       {
         "consensus_timestamp": 187654000123457,
-        "ip_address_v4": "128.0.0.5",
-        "node_id": 0,
-        "port": 50215
+        "domain_name": "https://www.node5.com",
+        "ip_address_v4": null,
+        "port": -1,
+        "node_id": 0
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -170,8 +171,9 @@
         "reward_rate_start": 9,
         "service_endpoints": [
           {
-            "ip_address_v4": "128.0.0.5",
-            "port": 50215
+            "domain_name": "https://www.node5.com",
+            "ip_address_v4": null,
+            "port": -1
           }
         ],
         "stake": 13,

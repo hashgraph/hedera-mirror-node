@@ -489,6 +489,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         var ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
         AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
         addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
+        addressBookServiceEndpoint.setDomainName(serviceEndpoint.getDomainName());
         addressBookServiceEndpoint.setIpAddressV4(ip);
         addressBookServiceEndpoint.setPort(serviceEndpoint.getPort());
         addressBookServiceEndpoint.setNodeId(nodeId);

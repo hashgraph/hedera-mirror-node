@@ -88,8 +88,11 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
@@ -98,6 +101,7 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -591,6 +595,32 @@ public class RecordItemBuilder {
                 .setStartTime(timestamp())
                 .setUpdateFile(fileId());
         return new Builder<>(TransactionType.FREEZE, builder);
+    }
+
+    @SuppressWarnings("deprecation")
+    public Builder<NodeCreateTransactionBody.Builder> nodeCreate() {
+        var builder = NodeCreateTransactionBody.newBuilder()
+                .addServiceEndpoint(ServiceEndpoint.newBuilder()
+                        .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 1}))
+                        .setPort(443)
+                        .build());
+        return new Builder<>(TransactionType.NODECREATE, builder);
+    }
+
+    @SuppressWarnings("deprecation")
+    public Builder<NodeUpdateTransactionBody.Builder> nodeUpdate() {
+        var builder = NodeUpdateTransactionBody.newBuilder()
+                .addServiceEndpoint(ServiceEndpoint.newBuilder()
+                        .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 2}))
+                        .setPort(80)
+                        .build());
+        return new Builder<>(TransactionType.NODEUPDATE, builder);
+    }
+
+    @SuppressWarnings("deprecation")
+    public Builder<NodeDeleteTransactionBody.Builder> nodeDelete() {
+        var builder = NodeDeleteTransactionBody.newBuilder().clearNodeId();
+        return new Builder<>(TransactionType.NODEDELETE, builder);
     }
 
     @SuppressWarnings("deprecation")

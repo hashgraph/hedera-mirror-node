@@ -123,6 +123,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                     serviceEndpoints.add(ServiceEndpoint.newBuilder()
                             .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
                             .setPort(443 + j)
+                            .setDomainName("this" + i)
                             .build());
                 }
             }
@@ -1128,8 +1129,8 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                             .getHostAddress());
                 });
 
-                assertThat(abe.getId().getPort()).isEqualTo(serviceEndpoint.getPort());
-                assertThat(abe.getId().getIpAddressV4()).isEqualTo(ip.get());
+                assertThat(abe.getPort()).isEqualTo(serviceEndpoint.getPort());
+                assertThat(abe.getIpAddressV4()).isEqualTo(ip.get());
             });
         }
     }

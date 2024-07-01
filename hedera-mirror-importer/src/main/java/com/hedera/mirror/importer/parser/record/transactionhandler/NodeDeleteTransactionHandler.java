@@ -26,18 +26,18 @@ import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
-class NodeCreateTransactionHandler extends AbstractTransactionHandler {
+class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
 
     private final EntityListener entityListener;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getNodeCreate().getAccountId());
+        return EntityId.of(recordItem.getTransactionBody().getNodeDelete().getNodeId());
     }
 
     @Override
     public TransactionType getType() {
-        return TransactionType.NODECREATE;
+        return TransactionType.NODEDELETE;
     }
 
     @Override
@@ -45,7 +45,7 @@ class NodeCreateTransactionHandler extends AbstractTransactionHandler {
         if (!recordItem.isSuccessful()) {
             return;
         }
-        var transactionBody = recordItem.getTransactionBody().getNodeCreate();
+        var transactionBody = recordItem.getTransactionBody().getNodeDelete();
         transaction.setTransactionBytes(transactionBody.toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
         entityListener.onTransaction(transaction);

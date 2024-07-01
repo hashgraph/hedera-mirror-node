@@ -18,8 +18,10 @@ package com.hedera.mirror.common.domain.addressbook;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
+import java.io.Serial;
 import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -30,6 +32,7 @@ import org.springframework.data.domain.Persistable;
 
 @Builder(toBuilder = true)
 @Data
+@Embeddable
 @Entity
 @IdClass(AddressBookServiceEndpoint.Id.class)
 @NoArgsConstructor
@@ -37,26 +40,27 @@ import org.springframework.data.domain.Persistable;
 public class AddressBookServiceEndpoint implements Persistable<AddressBookServiceEndpoint.Id> {
 
     @jakarta.persistence.Id
-    private long consensusTimestamp;
+    private long uuid;
 
     @jakarta.persistence.Id
+    private long consensusTimestamp;
+
     @Column(name = "ip_address_v4")
     private String ipAddressV4;
 
     @jakarta.persistence.Id
     private long nodeId;
 
-    @jakarta.persistence.Id
     private int port;
+
+    private String domainName;
 
     @JsonIgnore
     @Override
     public Id getId() {
         Id id = new Id();
         id.setConsensusTimestamp(consensusTimestamp);
-        id.setIpAddressV4(ipAddressV4);
         id.setNodeId(nodeId);
-        id.setPort(port);
         return id;
     }
 
@@ -69,15 +73,11 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     @Data
     public static class Id implements Serializable {
 
+        @Serial
         private static final long serialVersionUID = -7779136597707252814L;
 
         private long consensusTimestamp;
 
-        @Column(name = "ip_address_v4")
-        private String ipAddressV4;
-
         private long nodeId;
-
-        private int port;
     }
 }

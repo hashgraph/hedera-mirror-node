@@ -24,12 +24,14 @@ class AddressBookServiceEndpoint {
     this.ipAddressV4 = serviceEndpoint.ip_address_v4;
     this.nodeId = serviceEndpoint.node_id;
     this.port = serviceEndpoint.port;
+    this.domainName = serviceEndpoint.domain_name;
   }
 
   static tableAlias = 'abse';
   static tableName = 'address_book_service_endpoint';
 
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+  static DOMAIN_NAME = 'domain_name';
   static IP_ADDRESS_V4 = 'ip_address_v4';
   static NODE_ID = 'node_id';
   static PORT = 'port';

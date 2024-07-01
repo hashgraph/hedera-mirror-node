@@ -81,7 +81,7 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
     @JoinColumn(name = "nodeId", referencedColumnName = "nodeId")
     @JsonIgnore
     @OneToMany(
-            cascade = {CascadeType.ALL},
+            cascade = {CascadeType.PERSIST, CascadeType.DETACH, CascadeType.REFRESH, CascadeType.REMOVE},
             orphanRemoval = true,
             fetch = FetchType.EAGER)
     private Set<AddressBookServiceEndpoint> serviceEndpoints = new HashSet<>();
