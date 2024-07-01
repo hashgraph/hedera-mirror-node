@@ -31,6 +31,7 @@ import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import java.util.Comparator;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,8 +41,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor
 class ContractDebugServiceTest extends ContractCallTestSetup {
 
     private static final Long DEFAULT_CALL_VALUE = 0L;
@@ -58,8 +59,7 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
         };
     }
 
-    @Autowired
-    private ContractDebugService contractDebugService;
+    private final ContractDebugService contractDebugService;
 
     @Captor
     private ArgumentCaptor<ContractDebugParameters> paramsCaptor;
@@ -83,8 +83,6 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
         historicalBlocksPersist();
         historicalDataPersist();
         precompileContractPersist();
-        // File data
-        fileDataPersist();
         exchangeRatesPersist();
         feeSchedulesPersist();
         // Account entities

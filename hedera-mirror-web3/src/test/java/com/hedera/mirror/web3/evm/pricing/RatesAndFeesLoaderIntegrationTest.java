@@ -32,7 +32,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
-import jakarta.annotation.Resource;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -42,8 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @RequiredArgsConstructor
 class RatesAndFeesLoaderIntegrationTest extends Web3IntegrationTest {
 
-    @Resource
-    private RatesAndFeesLoader subject;
+    private final RatesAndFeesLoader subject;
 
     private static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
             .setCurrentRate(ExchangeRate.newBuilder()

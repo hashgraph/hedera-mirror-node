@@ -33,29 +33,28 @@ class EvmTokenUtilsTest {
 
     @Test
     void toAddress() {
-        long shard = 1;
-        long realm = 2;
-        long num = 120;
-        long accountNum = 220;
-        ContractID contractId = ContractID.newBuilder()
-                .setShardNum(shard)
-                .setRealmNum(realm)
-                .setContractNum(num)
+        var contractId = ContractID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setContractNum(120)
                 .build();
         byte[] contractAddress = new byte[20];
-        contractAddress[3] = (byte) shard;
-        contractAddress[11] = (byte) realm;
-        contractAddress[19] = (byte) num;
+        contractAddress[3] = (byte) contractId.getShardNum();
+        contractAddress[11] = (byte) contractId.getRealmNum();
+        contractAddress[19] = (byte) contractId.getContractNum();
 
         assertThat(EvmTokenUtils.toAddress(contractId).toArrayUnsafe()).isEqualTo(contractAddress);
+        assertThat(EvmTokenUtils.toAddress(EntityId.of(contractId).getId()).toArrayUnsafe())
+                .isEqualTo(contractAddress);
 
-        EntityId accountId = EntityId.of(shard, realm, accountNum);
+        var accountId = EntityId.of(1, 2, 220);
         byte[] accountAddress = new byte[20];
-        accountAddress[3] = (byte) shard;
-        accountAddress[11] = (byte) realm;
-        accountAddress[19] = (byte) accountNum;
+        accountAddress[3] = (byte) accountId.getShard();
+        accountAddress[11] = (byte) accountId.getRealm();
+        accountAddress[19] = (byte) accountId.getNum();
 
         assertThat(EvmTokenUtils.toAddress(accountId).toArrayUnsafe()).isEqualTo(accountAddress);
+        assertThat(EvmTokenUtils.toAddress(accountId.getId()).toArrayUnsafe()).isEqualTo(accountAddress);
     }
 
     @Test

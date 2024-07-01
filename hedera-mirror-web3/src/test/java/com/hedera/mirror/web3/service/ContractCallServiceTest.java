@@ -33,7 +33,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
@@ -844,11 +843,10 @@ class ContractCallServiceTest extends ContractCallTestSetup {
 
     @RequiredArgsConstructor
     private enum EVM46ValidationCalls {
-        CALL_TO_NON_EXISTING_CONTRACT(
-                "callToNonExistingContract", toAddress(EntityId.of(123456789)), "", new Object[] {0}, "0x"),
+        CALL_TO_NON_EXISTING_CONTRACT("callToNonExistingContract", toAddress(123456789), "", new Object[] {0}, "0x"),
         TRANSFER_TO_NON_EXISTING_CONTRACT(
                 "transferToNonExistingContractName",
-                toAddress(EntityId.of(123456789)),
+                toAddress(123456789),
                 "transfer",
                 new Object[] {TREASURY_TOKEN_ADDRESS, SPENDER_ALIAS, 1L},
                 "0x");
@@ -863,10 +861,7 @@ class ContractCallServiceTest extends ContractCallTestSetup {
     @RequiredArgsConstructor
     private enum EVM46ValidationInternalCalls {
         CALL_TO_INTERNAL_NON_EXISTING_CONTRACT(
-                "callToInternalNonExistingContract",
-                "callNonExisting",
-                new Object[] {toAddress(EntityId.of(123456789))},
-                "0x"),
+                "callToInternalNonExistingContract", "callNonExisting", new Object[] {toAddress(123456789)}, "0x"),
         CALL_TO_INTERNAL_NON_EXISTING_FUNCTION(
                 "callToInternalNonExistingContract", "callNonExisting", new Object[] {ERC_CONTRACT_ADDRESS}, "0x"),
         CALL_TO_INTERNAL_WITH_VALUE_TO_NON_EXISTING_FUNCTION(
@@ -875,12 +870,9 @@ class ContractCallServiceTest extends ContractCallTestSetup {
                 new Object[] {ERC_CONTRACT_ADDRESS},
                 "0x"),
         SEND_TO_INTERNAL_NON_EXISTING_ACCOUNT(
-                "sendToInternalNonExistingContract", "sendTo", new Object[] {toAddress(EntityId.of(123456789))}, "0x"),
+                "sendToInternalNonExistingContract", "sendTo", new Object[] {toAddress(123456789)}, "0x"),
         TRANSFER_TO_INTERNAL_NON_EXISTING_ACCOUNT(
-                "transferToInternalNonExistingContract",
-                "transferTo",
-                new Object[] {toAddress(EntityId.of(123456789))},
-                "0x");
+                "transferToInternalNonExistingContract", "transferTo", new Object[] {toAddress(123456789)}, "0x");
 
         private final String name;
         private final String function;

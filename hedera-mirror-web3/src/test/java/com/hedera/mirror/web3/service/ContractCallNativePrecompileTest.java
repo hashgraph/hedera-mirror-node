@@ -25,7 +25,6 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -40,7 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
+class ContractCallNativePrecompileTest extends ContractCallTestSetup {
 
     @BeforeEach
     void setup() {
@@ -267,8 +266,8 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
             final BlockType block,
             final long gasLimit) {
         HederaEvmAccount sender;
-        final Address senderAddress = toAddress(EntityId.of(1043));
-        final Address senderAddressHistorical = toAddress(EntityId.of(1014));
+        final Address senderAddress = toAddress(1043);
+        final Address senderAddressHistorical = toAddress(1014);
 
         if (block != BlockType.LATEST) {
             sender = new HederaEvmAccount(senderAddressHistorical);
