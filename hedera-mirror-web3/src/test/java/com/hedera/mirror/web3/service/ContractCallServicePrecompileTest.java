@@ -40,6 +40,7 @@ import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TransactionReceiptCustom;
@@ -52,6 +53,7 @@ import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -83,16 +85,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         return Arrays.stream(ContractReadFunctionsHistorical.values()).flatMap(htsFunction -> blockNumbers.stream()
                 .map(blockNumber -> Arguments.of(htsFunction, blockNumber)));
-    }
-
-    private static long getValue(SupportedContractModificationFunctions contractFunc) {
-        return switch (contractFunc) {
-            case CREATE_FUNGIBLE_TOKEN,
-                    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
-                    CREATE_NON_FUNGIBLE_TOKEN,
-                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
-            default -> 0L;
-        };
     }
 
     @BeforeEach
@@ -495,8 +487,19 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
+    private static long getValue(SupportedContractModificationFunctions contractFunc) {
+        return switch (contractFunc) {
+            case CREATE_FUNGIBLE_TOKEN,
+                    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
+                    CREATE_NON_FUNGIBLE_TOKEN,
+                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
+            default -> 0L;
+        };
+    }
+
+    @Getter
     @RequiredArgsConstructor
-    enum ContractReadFunctions {
+    enum ContractReadFunctions implements ContractFunctionProviderEnum {
         IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_FROZEN_WITH_ALIAS(
                 "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
@@ -702,8 +705,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         private final Object[] expectedResultFields;
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum ContractReadFunctionsHistorical {
+    enum ContractReadFunctionsHistorical implements ContractFunctionProviderEnum {
         IS_FROZEN(
                 "isTokenFrozen",
                 new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ADDRESS_HISTORICAL},
@@ -946,8 +950,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         NFT_INVALID_AUTORENEW_ACCOUNT
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum SupportedContractModificationFunctions {
+    enum SupportedContractModificationFunctions implements ContractFunctionProviderEnum {
         TRANSFER_FROM(
                 "transferFromExternal",
                 new Object[] {TRANSFRER_FROM_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
@@ -1151,12 +1156,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         private final String name;
         private final Object[] functionParameters;
         private final Object[] expectedResult;
-
-        public void func(Contract contract) {}
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum NestedContractModificationFunctions {
+    enum NestedContractModificationFunctions implements ContractFunctionProviderEnum {
         CREATE_CONTRACT_VIA_CREATE2_AND_TRANSFER_FROM_IT(
                 "createContractViaCreate2AndTransferFromIt",
                 new Object[] {TREASURY_TOKEN_ADDRESS_WITH_ALL_KEYS, SENDER_ALIAS, RECEIVER_ADDRESS, 1L});

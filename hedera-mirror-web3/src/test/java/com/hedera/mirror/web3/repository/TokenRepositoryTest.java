@@ -19,10 +19,13 @@ package com.hedera.mirror.web3.repository;
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
@@ -134,98 +137,139 @@ class TokenRepositoryTest extends Web3IntegrationTest {
     }
 
     @Test
-    void findFungibleTotalSupplyByTokenIdAndTimestampBurn() {
-        final var totalSupply = 9L;
-        final var change = -1L;
-        final var totalSupplyHistorical = totalSupply - change;
-        final var tokenHistory = domainBuilder
-                .tokenHistory()
-                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true).totalSupply(totalSupply))
+    void findFungibleTotalSupplyByTokenIdAndTimestamp() {
+        // given
+        var tokenId = domainBuilder.entityId();
+        long blockTimestamp = domainBuilder.timestamp();
+        long snapshotTimestamp = blockTimestamp - Duration.ofMinutes(12).toNanos();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(snapshotTimestamp, EntityId.of(2))))
                 .persist();
-
-        final var tokenBurn = domainBuilder
+        var tokenBalance1 = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(snapshotTimestamp, domainBuilder.entityId(), tokenId)))
+                .persist();
+        var tokenBalance2 = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(snapshotTimestamp - 1, domainBuilder.entityId(), tokenId)))
+                .persist();
+        // a token balance after the block timestamp
+        domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(blockTimestamp + 1, domainBuilder.entityId(), tokenId)))
+                .persist();
+        domainBuilder
                 .tokenTransfer()
-                .customize(tr -> tr.id(new TokenTransfer.Id(
-                                tokenHistory.getTimestampLower() + 2,
-                                EntityId.of(tokenHistory.getTokenId()),
-                                tokenHistory.getTreasuryAccountId()))
-                        .amount(change))
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 1, tokenId, domainBuilder.entityId()))
+                        .amount(1L))
+                .persist();
+        domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 1, tokenId, domainBuilder.entityId()))
+                        .amount(-1L))
+                .persist();
+        var tokenMintTransfer1 = domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 2, tokenId, domainBuilder.entityId())))
+                .persist();
+        var tokenBurnTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 3, tokenId, domainBuilder.entityId()))
+                        .amount(-2L))
+                .persist();
+        // A mint transfer at the block timestamp
+        var tokenMintTransfer2 = domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(blockTimestamp, tokenId, domainBuilder.entityId())))
                 .persist();
 
-        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        tokenHistory.getTokenId(), tokenBurn.getId().getConsensusTimestamp() - 1))
-                .isEqualTo(totalSupplyHistorical);
+        // when, then
+        long expectedTotalSupply = tokenBalance1.getBalance()
+                + tokenBalance2.getBalance()
+                + tokenMintTransfer1.getAmount()
+                + tokenBurnTransfer.getAmount()
+                + tokenMintTransfer2.getAmount();
+        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId.getId(), blockTimestamp))
+                .isEqualTo(expectedTotalSupply);
     }
 
     @Test
-    void findFungibleTotalSupplyByTokenIdAndTimestampMint() {
-        final var totalSupply = 9L;
-        final var change = 1L;
-        final var totalSupplyHistorical = totalSupply - change;
-        final var tokenHistory = domainBuilder
-                .tokenHistory()
-                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true).totalSupply(totalSupply))
-                .persist();
-
-        final var tokenMint = domainBuilder
-                .tokenTransfer()
-                .customize(tr -> tr.id(new TokenTransfer.Id(
-                                tokenHistory.getTimestampLower() + 2,
-                                EntityId.of(tokenHistory.getTokenId()),
-                                tokenHistory.getTreasuryAccountId()))
-                        .amount(change))
-                .persist();
-
+    void findFungibleTotalSupplyByTokenIdAndTimestampEmpty() {
         assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        tokenHistory.getTokenId(), tokenMint.getId().getConsensusTimestamp() - 1))
-                .isEqualTo(totalSupplyHistorical);
+                        domainBuilder.id(), domainBuilder.timestamp()))
+                .isZero();
     }
 
     @Test
-    void findFungibleTotalSupplyByTokenIdAndTimestampDoNotIncludeTransfer() {
-        final var totalSupply = 9L;
-        final var change = -1L;
-        final var totalSupplyHistorical = totalSupply;
-        final var tokenHistory = domainBuilder
-                .tokenHistory()
-                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true).totalSupply(totalSupply))
+    void findFungibleTotalSupplyByTokenIdAndTimestampNoSnapshot() {
+        // given
+        var tokenId = domainBuilder.entityId();
+        long blockTimestamp = domainBuilder.timestamp();
+        long snapshotTimestamp = blockTimestamp - Duration.ofMinutes(12).toNanos();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(snapshotTimestamp, EntityId.of(2))))
                 .persist();
-
-        final var tokenBurn = domainBuilder
+        domainBuilder
                 .tokenTransfer()
-                .customize(tr -> tr.id(new TokenTransfer.Id(
-                                tokenHistory.getTimestampLower(),
-                                EntityId.of(tokenHistory.getTokenId()),
-                                tokenHistory.getTreasuryAccountId()))
-                        .amount(change))
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 1, tokenId, domainBuilder.entityId()))
+                        .amount(1L))
+                .persist();
+        domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 1, tokenId, domainBuilder.entityId()))
+                        .amount(-1L))
+                .persist();
+        var tokenMintTransfer1 = domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 2, tokenId, domainBuilder.entityId())))
+                .persist();
+        var tokenBurnTransfer = domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(snapshotTimestamp + 3, tokenId, domainBuilder.entityId()))
+                        .amount(-2L))
+                .persist();
+        // A mint transfer at the block timestamp
+        var tokenMintTransfer2 = domainBuilder
+                .tokenTransfer()
+                .customize(tt -> tt.id(new TokenTransfer.Id(blockTimestamp, tokenId, domainBuilder.entityId())))
                 .persist();
 
-        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower() + 1))
-                .isEqualTo(totalSupplyHistorical);
+        // when, then
+        long expectedTotalSupply =
+                tokenMintTransfer1.getAmount() + tokenBurnTransfer.getAmount() + tokenMintTransfer2.getAmount();
+        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId.getId(), blockTimestamp))
+                .isEqualTo(expectedTotalSupply);
     }
 
     @Test
-    void findFungibleTotalSupplyByTokenIdAndTimestampDoNotMatchTokenHistory() {
-        final var totalSupply = 9L;
-        final var change = -1L;
-        final var totalSupplyHistorical = 0L;
-        final var tokenHistory = domainBuilder
-                .tokenHistory()
-                .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true).totalSupply(totalSupply))
+    void findFungibleTotalSupplyByTokenIdAndTimestampNoTransfer() {
+        // given
+        var tokenId = domainBuilder.entityId();
+        long blockTimestamp = domainBuilder.timestamp();
+        long snapshotTimestamp = blockTimestamp - Duration.ofMinutes(12).toNanos();
+        domainBuilder
+                .accountBalance()
+                .customize(ab -> ab.id(new AccountBalance.Id(snapshotTimestamp, EntityId.of(2))))
+                .persist();
+        var tokenBalance1 = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(snapshotTimestamp, domainBuilder.entityId(), tokenId)))
+                .persist();
+        var tokenBalance2 = domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(snapshotTimestamp - 1, domainBuilder.entityId(), tokenId)))
+                .persist();
+        // a token balance after the block timestamp
+        domainBuilder
+                .tokenBalance()
+                .customize(tb -> tb.id(new TokenBalance.Id(blockTimestamp + 1, domainBuilder.entityId(), tokenId)))
                 .persist();
 
-        final var tokenBurn = domainBuilder
-                .tokenTransfer()
-                .customize(tr -> tr.id(new TokenTransfer.Id(
-                                tokenHistory.getTimestampLower() - 2,
-                                EntityId.of(tokenHistory.getTokenId()),
-                                tokenHistory.getTreasuryAccountId()))
-                        .amount(change))
-                .persist();
-
-        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(
-                        tokenHistory.getTokenId(), tokenHistory.getTimestampLower() - 1))
-                .isEqualTo(totalSupplyHistorical);
+        // when, then
+        long expectedTotalSupply = tokenBalance1.getBalance() + tokenBalance2.getBalance();
+        assertThat(tokenRepository.findFungibleTotalSupplyByTokenIdAndTimestamp(tokenId.getId(), blockTimestamp))
+                .isEqualTo(expectedTotalSupply);
     }
 }

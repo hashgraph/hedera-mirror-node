@@ -103,9 +103,7 @@ public abstract class ContractCallService {
     }
 
     protected HederaEvmTransactionProcessingResult doProcessCall(
-            CallServiceParameters params,
-            long estimatedGas,
-            boolean restoreGasToThrottleBucket)
+            CallServiceParameters params, long estimatedGas, boolean restoreGasToThrottleBucket)
             throws MirrorEvmTransactionException {
         try {
             var result = mirrorEvmTxProcessor.execute(params, estimatedGas);

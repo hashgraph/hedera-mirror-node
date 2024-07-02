@@ -60,7 +60,7 @@ class SelfDestructOperationTest extends ContractCallTestSetup {
 
     @Test
     void testSuccessfulExecute() {
-        final var senderAddress = toAddress(EntityId.of(0, 0, 1043));
+        final var senderAddress = toAddress(1043);
         final var senderPublicKey = ByteString.copyFrom(
                 Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
         final var senderAlias = Address.wrap(
@@ -82,8 +82,8 @@ class SelfDestructOperationTest extends ContractCallTestSetup {
     @Test
     void testExecuteWithInvalidOwner() {
         final var contractAddress = toAddress(selfDestructContractPersist());
-        final var senderAddress = toAddress(EntityId.of(0, 0, 1043));
-        final var systemAccountAddress = toAddress(EntityId.of(0, 0, 700));
+        final var senderAddress = toAddress(1043);
+        final var systemAccountAddress = toAddress(700);
         final var destroyContractInput =
                 "0x9a0313ab000000000000000000000000" + systemAccountAddress.toUnprefixedHexString();
         final var serviceParameters = serviceParametersForExecution()

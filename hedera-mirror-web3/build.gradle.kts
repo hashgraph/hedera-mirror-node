@@ -44,6 +44,7 @@ dependencies {
     implementation("org.web3j:core")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
+    testImplementation("io.vertx:vertx-core")
     testImplementation("org.flywaydb:flyway-database-postgresql")
     testImplementation("org.mockito:mockito-inline")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
