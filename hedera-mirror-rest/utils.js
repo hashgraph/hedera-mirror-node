@@ -372,6 +372,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.TRANSACTIONS:
       ret = isValidBooleanOpAndValue(op, val);
       break;
+    case constants.filterKeys.TRANSACTION_HASH:
+      ret = isValidEthHash(val);
+      break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
       ret = false;
