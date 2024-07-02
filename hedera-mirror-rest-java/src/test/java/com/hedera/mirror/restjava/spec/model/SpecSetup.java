@@ -22,9 +22,11 @@ import java.util.Map;
 public record SpecSetup(
         Map<String, String> features,
         List<Map<String, Object>> accounts,
-        List<Map<String, Object>> cryptoAllowances,
+        List<Map<String, Object>> cryptoallowances,
+        List<Map<String, Object>> cryptotransfers,
         List<Map<String, Object>> entities,
         List<Map<String, Object>> nfts,
+        List<Map<String, Object>> stakingRewardTransfers,
         List<Map<String, Object>> tokens,
         List<Map<String, Object>> topicmessages,
         List<Map<String, Object>> transactions) {

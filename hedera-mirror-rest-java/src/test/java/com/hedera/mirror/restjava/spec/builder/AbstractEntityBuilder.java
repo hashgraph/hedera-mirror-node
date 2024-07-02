@@ -53,38 +53,32 @@ abstract class AbstractEntityBuilder {
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("/^(0x)?[0-9A-Fa-f]+$/");
 
     /*
-     * Common handy converter functions to be used by subclasses.
+     * Common handy attribute value converter functions to be used by subclasses.
      */
-    protected static final Function<Object, Object> BASE32_CONVERTER = source -> BASE32.decode(source.toString());
+    protected static final Function<Object, Object> BASE32_CONVERTER = value -> BASE32.decode(value.toString());
 
-    protected static final Function<Object, Object> ENTITY_ID_CONVERTER = source -> source instanceof String sourceStr
-            ? EntityId.of(sourceStr).getId() : EntityId.of((Long)source);
+    protected static final Function<Object, Object> ENTITY_ID_CONVERTER = value -> value instanceof String valueStr
+            ? EntityId.of(valueStr)
+            : EntityId.of((Long)value);
 
-    protected static final Function<Object, Object> EVM_ADDRESS_CONVERTER = source -> {
-        if (source instanceof String sourceStr) {
-            return HEX_STRING_PATTERN.matcher(sourceStr).matches()
-                    ? Bytes.fromHexString(((String)source).startsWith("0x") ? (String)source : "0x" + source).toArray()
-                    : Base64.getDecoder().decode(sourceStr);
+    protected static final Function<Object, Object> EVM_ADDRESS_CONVERTER = value -> {
+        if (value instanceof String valueStr) {
+            return HEX_STRING_PATTERN.matcher(valueStr).matches()
+                    ? Bytes.fromHexString(valueStr.startsWith("0x") ? valueStr : "0x" + valueStr).toArray()
+                    : Base64.getDecoder().decode(valueStr);
         }
-        return source;
+        return value;
     };
-
 
     protected final EntityManager entityManager;
     protected final TransactionOperations transactionOperations;
     protected final Map<String, Function<Object, Object>> methodParameterConverters;
 
-    protected AbstractEntityBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
-        this.entityManager = entityManager;
-        this.transactionOperations = transactionOperations;
-        this.methodParameterConverters = Map.of();
-    }
-
     protected AbstractEntityBuilder(EntityManager entityManager, TransactionOperations transactionOperations,
             Map<String, Function<Object, Object>> methodParameterConverters) {
         this.entityManager = entityManager;
         this.transactionOperations = transactionOperations;
-        this.methodParameterConverters = methodParameterConverters;
+        this.methodParameterConverters = methodParameterConverters == null ? Map.of() : methodParameterConverters;
     }
 
     abstract void customizeAndPersistEntity(Map<String, Object> entityAttributes);
@@ -96,7 +90,7 @@ abstract class AbstractEntityBuilder {
                     clazz.getMethods()).collect(Collectors.toMap(Method::getName, Function.identity(), (v1, v2) -> v2)));
 
             for (var customization : customizations.entrySet()) {
-                var methodName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, customization.getKey());
+                var methodName = toLowerCamelCase(customization.getKey());
                 var method = builderMethods.get(methodName);
                 if (method != null) {
                     try {
@@ -121,5 +115,17 @@ abstract class AbstractEntityBuilder {
             typeMapper = DEFAULT_PARAMETER_CONVERTERS.getOrDefault(expectedType, Function.identity());
         }
         return typeMapper.apply(specParameterValue);
+    }
+
+    /*
+     * The setup entity attribute names defined in the spec JSON files are named using either lower snake case
+     * ("num", "entity_id", "charged_tx_fee") or in lower camel case ("num", "nodeAccountId", "treasuryAccountId"). In
+     * the latter case, Guava's CaseFormat will convert lower camel case to lower camel case as all lowercase. Thus, it
+     * returns "nodeaccountid" and "treasuryaccountid", which does not match builder method names.
+     *
+     *
+     */
+    private String toLowerCamelCase(String original) {
+        return original.indexOf('_') >= 0 ? CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, original) : original;
     }
 }

@@ -109,11 +109,11 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     @Test
     void getStartedWithFile() throws Exception {
 //        OBJECT_MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-//        var file = new File("../hedera-mirror-rest/__tests__/specs/topics/{id}/messages/specific-sequence.json");
-//        var file = new File("../hedera-mirror-rest/__tests__/specs/accounts/{id}/allowances/crypto/spender-id-range.json");
-        var file = new File("../hedera-mirror-rest/__tests__/specs/tokens/{id}/nfts/{id}/transactions/all-args.json");
+        var file = new File("../hedera-mirror-rest/__tests__/specs/transactions/account-id.json");
         RestSpec restSpec = OBJECT_MAPPER.readValue(file, RestSpec.class);
         var normalizedRestSpec = RestSpecNormalized.from(restSpec);
+        specDomainBuilder.addAccounts(normalizedRestSpec.setup().accounts());
+        specDomainBuilder.addTransactions(normalizedRestSpec.setup().transactions());
         System.out.println(restSpec);
         System.out.println(normalizedRestSpec);
     }

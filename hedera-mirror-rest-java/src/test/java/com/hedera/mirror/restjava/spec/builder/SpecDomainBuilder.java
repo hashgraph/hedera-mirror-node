@@ -38,6 +38,7 @@ public class SpecDomainBuilder {
 
     private final AccountBuilder accountBuilder;
     private final TokenAccountBuilder tokenAccountBuilder;
+    private final TransactionBuilder transactionBuilder;
 
     public void addAccounts(List<Map<String, Object>> accounts) {
         accounts.forEach(accountBuilder::customizeAndPersistEntity);
@@ -45,5 +46,9 @@ public class SpecDomainBuilder {
 
     public void addTokenAccounts(List<Map<String, Object>> tokenAccounts) {
         tokenAccounts.forEach(tokenAccountBuilder::customizeAndPersistEntity);
+    }
+
+    public void addTransactions(List<Map<String, Object>> transactions) {
+        transactions.forEach(transactionBuilder::customizeAndPersistEntity);
     }
 }
