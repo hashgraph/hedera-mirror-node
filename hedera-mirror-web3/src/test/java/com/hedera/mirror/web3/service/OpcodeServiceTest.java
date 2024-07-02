@@ -102,7 +102,6 @@ class OpcodeServiceTest extends ContractCallTestSetup {
             historicalBlocksPersist();
             historicalDataPersist();
             precompileContractPersist();
-            fileDataPersist();
             senderEntityId = senderEntityPersist();
             final var ownerEntityId = ownerEntityPersist();
             final var spenderEntityId = spenderEntityPersist();
