@@ -142,7 +142,8 @@ public class HederaEvmStackedWorldStateUpdater
                 nonce,
                 false,
                 null,
-                0L);
+                0L,
+                0);
         store.updateAccount(accountModel);
     }
 
@@ -218,8 +219,9 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     private MutableAccount createGhostAccount(Address address) {
-        var ghostAcc = com.hedera.services.store.models.Account.getDummySenderAccount(address);
-        ghostAcc = ghostAcc.setAutoAssociationMetadata(1);
+        final var ghostAcc = com.hedera.services.store.models.Account.getDummySenderAccount(address).toBuilder()
+                .maxAutoAssociations(1)
+                .build();
         store.updateAccount(ghostAcc);
         return createAccount(address, 0, Wei.ZERO);
     }

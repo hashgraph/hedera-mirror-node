@@ -20,8 +20,22 @@ import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
 import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 import static com.hedera.services.utils.TxnUtils.assertFailsWith;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CANNOT_WIPE_TOKEN_TREASURY_ACCOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.FAIL_INVALID;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_BURN_METADATA;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_MINT_AMOUNT;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SERIAL_NUMBER_LIMIT_REACHED;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_PAUSE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TOKEN_HAS_NO_WIPE_KEY;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.TREASURY_MUST_OWN_BURNED_NFT;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -30,7 +44,14 @@ import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.state.submerkle.RichInstant;
-import com.hederahashgraph.api.proto.java.*;
+import com.hederahashgraph.api.proto.java.CustomFee;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -73,7 +94,8 @@ class TokenTest {
             0L,
             false,
             null,
-            0L);
+            0L,
+            0);
     private Account nonTreasuryAccount = new Account(
             ByteString.EMPTY,
             0L,
@@ -94,7 +116,8 @@ class TokenTest {
             0L,
             false,
             null,
-            0L);
+            0L,
+            0);
 
     private Token subject;
     private TokenRelationship treasuryRel;
@@ -659,14 +682,21 @@ class TokenTest {
     @Test
     void toStringWorks() {
         final var desired =
-                "Token{id=1.2.3, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, "
-                        + "expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=0.0.0, accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances={}, "
-                        + "fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=2, numPositiveBalances=1, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, "
-                        + "autoRenewAccount=Account{entityId=0, id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=null, "
-                        + "accountAddress=0x0000000000000000000000000000000000000000, autoAssociationMetadata=0, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=0, "
-                        + "numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}, kycKey=null, freezeKey=null, frozenByDefault=false, supplyKey=null, "
-                        + "currentSerialNumber=0, pauseKey=null, paused=false}";
-
+                "Token{id=1.2.3, type=FUNGIBLE_COMMON, deleted=false, autoRemoved=false, treasury=Account{entityId=0, "
+                        + "id=0.0.0, alias=, address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, "
+                        + "deleted=false, ownedNfts=0, autoRenewSecs=0, proxy=0.0.0, "
+                        + "accountAddress=0x0000000000000000000000000000000000000000, maxAutoAssociations=0, "
+                        + "cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=2, "
+                        + "numPositiveBalances=1, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, "
+                        + "key=null, createdTimestamp=0, usedAutoAssociations=0}, "
+                        + "autoRenewAccount=Account{entityId=0, id=0.0.0, alias=, "
+                        + "address=0x0000000000000000000000000000000000000000, expiry=0, balance=0, deleted=false, "
+                        + "ownedNfts=0, autoRenewSecs=0, proxy=null, "
+                        + "accountAddress=0x0000000000000000000000000000000000000000, maxAutoAssociations=0, "
+                        + "cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=0, "
+                        + "numPositiveBalances=0, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, "
+                        + "key=null, createdTimestamp=0, usedAutoAssociations=0}, kycKey=null, freezeKey=null, "
+                        + "frozenByDefault=false, supplyKey=null, currentSerialNumber=0, pauseKey=null, paused=false}";
         assertEquals(desired, subject.toString());
     }
 

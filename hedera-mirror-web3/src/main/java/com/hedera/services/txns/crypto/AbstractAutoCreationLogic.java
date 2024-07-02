@@ -146,7 +146,8 @@ public abstract class AbstractAutoCreationLogic {
                 0L,
                 false,
                 null,
-                0L);
+                0L,
+                0);
         store.updateAccount(account);
 
         replaceAliasAndSetBalanceOnChange(change, newId);
