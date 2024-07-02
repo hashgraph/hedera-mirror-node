@@ -32,6 +32,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
 import com.google.protobuf.StringValue;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -745,19 +746,26 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.TOKENPAUSE, transactionBody);
     }
 
-    public TokenReference.Builder tokenReference() {
-        var nftId =
-                NftID.newBuilder().setTokenID(tokenId()).setSerialNumber(id()).build();
-        var nftReference = TokenReference.newBuilder().setNft(nftId);
-        return nftReference;
+    public TokenReference.Builder tokenReference(TokenTypeEnum tokenType) {
+        var builder = TokenReference.newBuilder();
+        if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
+            builder.setFungibleToken(tokenId());
+        } else {
+            var nftId = NftID.newBuilder()
+                    .setTokenID(tokenId())
+                    .setSerialNumber(id())
+                    .build();
+            builder.setNft(nftId);
+        }
+
+        return builder;
     }
 
     public Builder<TokenRejectTransactionBody.Builder> tokenReject() {
-        var fungibleTokenReference = tokenReference().clearNft().setFungibleToken(tokenId());
         var transactionBody = TokenRejectTransactionBody.newBuilder()
                 .setOwner(accountId())
-                .addRejections(fungibleTokenReference)
-                .addRejections(tokenReference());
+                .addRejections(tokenReference(TokenTypeEnum.FUNGIBLE_COMMON))
+                .addRejections(tokenReference(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
         return new Builder<>(TransactionType.TOKENREJECT, transactionBody);
     }
 

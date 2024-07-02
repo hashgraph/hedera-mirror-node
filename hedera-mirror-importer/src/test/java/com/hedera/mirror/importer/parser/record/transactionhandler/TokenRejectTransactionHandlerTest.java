@@ -17,27 +17,47 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenRejectTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class TokenRejectTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenRejectTransactionHandler();
+        return new TokenRejectTransactionHandler(entityIdService);
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
-        return TransactionBody.newBuilder().setTokenReject(TokenRejectTransactionBody.newBuilder());
+        var ownerId = AccountID.newBuilder().setAccountNum(DEFAULT_ENTITY_NUM).build();
+        return TransactionBody.newBuilder()
+                .setTokenReject(TokenRejectTransactionBody.newBuilder()
+                        .setOwner(ownerId)
+                        .build());
     }
 
     @Override
     protected EntityType getExpectedEntityIdType() {
-        return null;
+        return EntityType.ACCOUNT;
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        var ownerId = EntityId.of(DEFAULT_ENTITY_NUM);
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(Optional.of(ownerId));
     }
 
     @Test
@@ -47,7 +67,7 @@ class TokenRejectTransactionHandlerTest extends AbstractTransactionHandlerTest {
         long timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder
                 .transaction()
-                .customize(t -> t.consensusTimestamp(timestamp).entityId(null))
+                .customize(t -> t.consensusTimestamp(timestamp))
                 .get();
         var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
 
@@ -57,5 +77,18 @@ class TokenRejectTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // then
         verifyNoInteractions(entityListener);
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideOwners")
+    void updateTransactionNoOwner(Optional<EntityId> ownerId) {
+        var recordItem = recordItemBuilder.tokenReject().build();
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(ownerId);
+        testGetEntityIdHelper(
+                recordItem.getTransactionBody(), recordItem.getTransactionRecord(), recordItem.getPayerAccountId());
+    }
+
+    private static Stream<Arguments> provideOwners() {
+        return Stream.of(Arguments.of(Optional.of(EntityId.EMPTY)), Arguments.of(Optional.empty()));
     }
 }
