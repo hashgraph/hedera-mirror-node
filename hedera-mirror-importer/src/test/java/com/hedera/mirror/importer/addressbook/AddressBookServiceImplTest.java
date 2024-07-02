@@ -1128,8 +1128,8 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                             .getHostAddress());
                 });
 
-                assertThat(abe.getId().getPort()).isEqualTo(serviceEndpoint.getPort());
-                assertThat(abe.getId().getIpAddressV4()).isEqualTo(ip.get());
+                assertThat(abe.getPort()).isEqualTo(serviceEndpoint.getPort());
+                assertThat(abe.getIpAddressV4()).isEqualTo(ip.get());
             });
         }
     }

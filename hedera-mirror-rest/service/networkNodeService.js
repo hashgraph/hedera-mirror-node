@@ -64,7 +64,8 @@ class NetworkNodeService extends BaseService {
       coalesce((
         select jsonb_agg(jsonb_build_object(
         '${AddressBookServiceEndpoint.IP_ADDRESS_V4}', ${AddressBookServiceEndpoint.IP_ADDRESS_V4},
-        '${AddressBookServiceEndpoint.PORT}', ${AddressBookServiceEndpoint.PORT}
+        '${AddressBookServiceEndpoint.PORT}', ${AddressBookServiceEndpoint.PORT},
+        '${AddressBookServiceEndpoint.DOMAIN_NAME}', ${AddressBookServiceEndpoint.DOMAIN_NAME}
         ) order by ${AddressBookServiceEndpoint.IP_ADDRESS_V4} asc, ${AddressBookServiceEndpoint.PORT} asc)
         from ${AddressBookServiceEndpoint.tableName} ${AddressBookServiceEndpoint.tableAlias}
         where ${AddressBookServiceEndpoint.getFullName(AddressBookServiceEndpoint.CONSENSUS_TIMESTAMP)} =
