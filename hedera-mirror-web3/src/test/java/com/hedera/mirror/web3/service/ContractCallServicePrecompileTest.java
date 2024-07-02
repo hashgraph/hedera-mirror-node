@@ -104,7 +104,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         testWeb3jService.setSender(senderAddress);
     }
 
-    private void historicalBlocksPersist() {
+    protected void historicalBlocksPersist() {
         recordFileBeforeEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK - 1))

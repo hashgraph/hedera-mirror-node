@@ -49,7 +49,7 @@ import org.springframework.context.annotation.Import;
 @TestInstance(PER_CLASS)
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
 
-    private void historicalBlocksPersist() {
+    protected void historicalBlocksPersist() {
         recordFileBeforeEvm34 = domainBuilder
                 .recordFile()
                 .customize(f -> f.index(EVM_V_34_BLOCK - 1))
