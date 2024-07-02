@@ -76,9 +76,8 @@ class TokenRejectTransactionHandlerTest extends AbstractTransactionHandlerTest {
                             : rejection.getNft().getTokenID();
                     return EntityId.of(tokenId);
                 })
-                .toList();
-        var expectedEntityTransactions =
-                getExpectedEntityTransactions(recordItem, transaction, rejections.toArray(EntityId[]::new));
+                .toArray(EntityId[]::new);
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, rejections);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
