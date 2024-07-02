@@ -18,6 +18,7 @@ description = "Hedera Mirror Node Web3"
 
 plugins {
     id("openapi-conventions")
+    id("org.web3j")
     id("spring-conventions")
 }
 
@@ -40,6 +41,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
+    implementation("org.web3j:core")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("io.vertx:vertx-core")
@@ -56,3 +58,12 @@ tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 tasks.compileTestJava { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
+
+// Web3j
+sourceSets { test { solidity { setVersion("0.8.24") } } }
+
+web3j { generatedPackageName = "com.hedera.mirror.web3.web3j.generated" }
+
+tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
+
+tasks.processTestResources { dependsOn(tasks.named("generateTestContractWrappers")) }

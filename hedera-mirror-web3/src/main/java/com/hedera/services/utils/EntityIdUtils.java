@@ -101,6 +101,10 @@ public final class EntityIdUtils {
         return Address.wrap(Bytes.wrap(asEvmAddress(id)));
     }
 
+    public static Address asTypedEvmAddress(final Long id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
     public static ContractID contractIdFromEvmAddress(final Address address) {
         return contractIdFromEvmAddress(address.toArrayUnsafe());
     }
