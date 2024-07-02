@@ -75,7 +75,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
     }
 
     private AddressBookServiceEndpoint addressBookServiceEndpoint(
-            long consensusTimestamp, String ip, int port, long nodeId, String domainName) {
+            long consensusTimestamp, String ip, Integer port, long nodeId, String domainName) {
         AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
         addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
         addressBookServiceEndpoint.setDomainName(domainName);
@@ -106,7 +106,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
                         InetAddress.getByName("127.0.0." + i).getHostAddress(),
                         portNums.get(i),
                         nodeId,
-                        null));
+                        ""));
             }
 
             builder.serviceEndpoints(serviceEndpoints);
