@@ -21,14 +21,17 @@ import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExcept
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
+import static org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult.halt;
+import static org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult.success;
 
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.services.stream.proto.ContractActionType;
 import com.swirlds.base.utility.Pair;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
@@ -47,16 +50,18 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
     @Override
     protected void executeHederaPrecompile(
             PrecompiledContract contract, MessageFrame frame, OperationTracer operationTracer) {
-        Pair<Long, Bytes> costAndResult = calculatePrecompileGasAndOutput(contract, frame);
+        Pair<Long, PrecompiledContract.PrecompileContractResult> costAndResult =
+                calculatePrecompileGasAndOutput(contract, frame);
 
         Long gasRequirement = costAndResult.left();
-        Bytes output = costAndResult.right();
+        PrecompiledContract.PrecompileContractResult result = costAndResult.right();
 
-        traceAndHandleExecutionResult(frame, operationTracer, gasRequirement, output);
+        traceAndHandleExecutionResult(frame, operationTracer, gasRequirement, result);
     }
 
-    private Pair<Long, Bytes> calculatePrecompileGasAndOutput(PrecompiledContract contract, MessageFrame frame) {
-        Bytes output = EMPTY;
+    private Pair<Long, PrecompiledContract.PrecompileContractResult> calculatePrecompileGasAndOutput(
+            PrecompiledContract contract, MessageFrame frame) {
+        PrecompiledContract.PrecompileContractResult result = success(EMPTY);
         Long gasRequirement = 0L;
 
         if (contract instanceof EvmHTSPrecompiledContract htsPrecompile) {
@@ -66,20 +71,24 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
                     frame,
                     (now, minimumTinybarCost) -> minimumTinybarCost,
                     updater.tokenAccessor());
-            output = costedResult.getValue();
+            final var output = costedResult.getValue();
             gasRequirement = costedResult.getKey();
+            result = output == null ? halt(null, frame.getExceptionalHaltReason()) : success(output);
         }
 
         if (!"HTS".equals(contract.getName()) && !"EvmHTS".equals(contract.getName())) {
-            output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
+            result = contract.computePrecompile(frame.getInputData(), frame);
             gasRequirement = contract.gasRequirement(frame.getInputData());
         }
 
-        return Pair.of(gasRequirement, output);
+        return Pair.of(gasRequirement, result);
     }
 
     private void traceAndHandleExecutionResult(
-            MessageFrame frame, OperationTracer operationTracer, Long gasRequirement, Bytes output) {
+            MessageFrame frame,
+            OperationTracer operationTracer,
+            Long gasRequirement,
+            PrecompiledContract.PrecompileContractResult result) {
         operationTracer.tracePrecompileCall(frame, gasRequirement, output);
         if (frame.getState() == REVERT) {
             return;
@@ -94,7 +103,15 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
             frame.setOutputData(output);
             frame.setState(COMPLETED_SUCCESS);
         } else {
+            if (!frame.getExceptionalHaltReason().equals(result.getHaltReason())) {
+                // TODO: Used for debugging purposes
+                frame.setExceptionalHaltReason(result.getHaltReason());
+            }
             frame.setState(EXCEPTIONAL_HALT);
+        }
+
+        if (operationTracer instanceof HederaOperationTracer hederaOperationTracer) {
+            hederaOperationTracer.tracePrecompileResult(frame, ContractActionType.SYSTEM);
         }
     }
 }

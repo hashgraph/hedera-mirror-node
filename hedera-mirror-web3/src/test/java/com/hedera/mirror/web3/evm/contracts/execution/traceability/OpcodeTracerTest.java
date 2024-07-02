@@ -17,10 +17,12 @@
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_FAILED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
@@ -44,6 +46,7 @@ import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
 import java.security.SecureRandom;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.CustomLog;
@@ -73,6 +76,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Spy;
@@ -165,42 +170,107 @@ class OpcodeTracerTest {
     }
 
     @Test
-    @DisplayName("should increment contract action index on traceContextEnter")
-    void shouldIncrementContractActionIndexOnTraceContextEnter() {
+    @DisplayName("should increment contract action index on init()")
+    void shouldIncrementContractActionIndexOnInit() {
         frame = setupInitialFrame(tracerOptions);
         contractCallContext.setContractActionIndexOfCurrentFrame(-1);
 
-        tracer.traceContextEnter(frame);
+        tracer.init(frame);
 
         assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
         verify(contractCallContext, times(1)).incrementContractActionsCounter();
-        verify(contractCallContext, never()).decrementContractActionsCounter();
     }
 
-    @Test
-    @DisplayName("should decrement contract action index on traceContextReEnter")
-    void shouldDecrementContractActionIndexOnTraceContextReEnter() {
+    @ParameterizedTest
+    @EnumSource(MessageFrame.State.class)
+    @DisplayName("should increment contract action index on tracePostExecution() for SUSPENDED frame")
+    void shouldIncrementContractActionIndexOnTraceContextReEnter(MessageFrame.State state) {
         frame = setupInitialFrame(tracerOptions);
-        contractCallContext.setContractActionIndexOfCurrentFrame(0);
+        frame.setState(state);
+        contractCallContext.setContractActionIndexOfCurrentFrame(-1);
 
-        tracer.traceContextReEnter(frame);
+        tracer.tracePostExecution(frame, OPERATION.execute(frame, null));
+
+        if (state == CODE_SUSPENDED) {
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
+            verify(contractCallContext, times(1)).incrementContractActionsCounter();
+        } else {
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
+            verify(contractCallContext, never()).incrementContractActionsCounter();
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(MessageFrame.State.class)
+    @DisplayName("should increment contract action index for synthetic actions on traceAccountCreationResult()")
+    void shouldIncrementContractActionIndexForSyntheticActionsOnAccountCreationResult(MessageFrame.State state) {
+        frame = setupInitialFrame(tracerOptions);
+        frame.setState(state);
+        contractCallContext.setContractActionIndexOfCurrentFrame(-1);
+
+        if (state == EXCEPTIONAL_HALT || state == COMPLETED_FAILED) {
+            frame.setExceptionalHaltReason(Optional.of(INVALID_SOLIDITY_ADDRESS));
+
+            tracer.traceAccountCreationResult(frame, frame.getExceptionalHaltReason());
+
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
+            verify(contractCallContext, times(1)).incrementContractActionsCounter();
+        } else {
+            tracer.traceAccountCreationResult(frame, frame.getExceptionalHaltReason());
+
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
+            verify(contractCallContext, never()).incrementContractActionsCounter();
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(MessageFrame.State.class)
+    @DisplayName("should not increment contract action index when halt reason is empty on traceAccountCreationResult()")
+    void shouldNotIncrementContractActionIndexForEmptyHaltReasonOnTraceAccountCreationResult(MessageFrame.State state) {
+        frame = setupInitialFrame(tracerOptions);
+        frame.setState(state);
+        contractCallContext.setContractActionIndexOfCurrentFrame(-1);
+
+        tracer.traceAccountCreationResult(frame, Optional.empty());
 
         assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
-        verify(contractCallContext, times(1)).decrementContractActionsCounter();
         verify(contractCallContext, never()).incrementContractActionsCounter();
     }
 
-    @Test
-    @DisplayName("should increment contract action index on traceContextExit")
-    void shouldIncrementContractActionIndexOnTraceContextExit() {
+    @ParameterizedTest
+    @EnumSource(MessageFrame.State.class)
+    @DisplayName("should increment contract action index for synthetic actions on tracePrecompileResult()")
+    void shouldIncrementContractActionIndexForSyntheticActionsOnTracePrecompileResult(MessageFrame.State state) {
         frame = setupInitialFrame(tracerOptions);
+        frame.setState(state);
         contractCallContext.setContractActionIndexOfCurrentFrame(-1);
 
-        tracer.traceContextExit(frame);
+        if (state == EXCEPTIONAL_HALT || state == COMPLETED_FAILED) {
+            frame.setExceptionalHaltReason(Optional.of(INVALID_SOLIDITY_ADDRESS));
 
-        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
-        verify(contractCallContext, times(1)).incrementContractActionsCounter();
-        verify(contractCallContext, never()).decrementContractActionsCounter();
+            tracer.tracePrecompileResult(frame, ContractActionType.SYSTEM);
+
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
+            verify(contractCallContext, times(1)).incrementContractActionsCounter();
+        } else {
+            tracer.tracePrecompileResult(frame, ContractActionType.SYSTEM);
+
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
+            verify(contractCallContext, never()).incrementContractActionsCounter();
+        }
+    }
+
+    @Test
+    @DisplayName("should not increment contract action index for halted precompile frames on tracePrecompileCall()")
+    void shouldNotIncrementContractActionIndexForHaltedPrecompileFrameOnTracePrecompileResult() {
+        frame = setupInitialFrame(tracerOptions, ETH_PRECOMPILE_ADDRESS);
+        frame.setState(EXCEPTIONAL_HALT);
+        contractCallContext.setContractActionIndexOfCurrentFrame(-1);
+
+        tracer.tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
+
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
+        verify(contractCallContext, never()).incrementContractActionsCounter();
     }
 
     @Test

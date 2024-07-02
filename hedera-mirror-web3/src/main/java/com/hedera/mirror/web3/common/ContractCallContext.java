@@ -135,8 +135,4 @@ public class ContractCallContext {
     public void incrementContractActionsCounter() {
         this.contractActionIndexOfCurrentFrame++;
     }
-
-    public void decrementContractActionsCounter() {
-        this.contractActionIndexOfCurrentFrame--;
-    }
 }
