@@ -16,19 +16,19 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeUpdateTransactionHandler(entityListener);
+        return new NodeUpdateTransactionHandler();
     }
 
     @Override
@@ -56,9 +56,9 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
-        assertThat(recordItem.getTransactionBody().getNodeUpdate().toByteArray())
-                .containsExactly(transaction.getTransactionBytes());
-        assertThat(recordItem.getTransactionRecord().toByteArray())
-                .containsExactly(transaction.getTransactionRecordBytes());
+        assertThat(transaction.getTransactionBytes())
+                .containsExactly(recordItem.getTransactionBody().getNodeUpdate().toByteArray());
+        assertThat(transaction.getTransactionRecordBytes())
+                .containsExactly(recordItem.getTransactionRecord().toByteArray());
     }
 }

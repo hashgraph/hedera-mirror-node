@@ -2960,7 +2960,8 @@ components:
         public_key: "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f"
         reward_rate_start: 1000000
         service_endpoints:
-          - ip_address_v4: 128.0.0.6
+          - domain_name: null
+            ip_address_v4: 128.0.0.6
             port: 50216
         stake: 20000
         stake_not_rewarded: 19900
@@ -3323,15 +3324,19 @@ components:
     ServiceEndpoint:
       type: object
       required:
+        - domain_name
         - ip_address_v4
         - port
       properties:
+        domain_name:
+          type: string
         ip_address_v4:
           type: string
         port:
           format: int32
           type: integer
       example:
+        domain_name: "www.example.com"
         ip_address_v4: 127.0.0.1
         port: 50211
     ServiceEndpoints:

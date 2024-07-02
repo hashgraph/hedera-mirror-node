@@ -28,7 +28,7 @@ class NodeCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeCreateTransactionHandler(entityListener);
+        return new NodeCreateTransactionHandler();
     }
 
     @Override
@@ -56,9 +56,9 @@ class NodeCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
-        assertThat(recordItem.getTransactionBody().getNodeCreate().toByteArray())
-                .containsExactly(transaction.getTransactionBytes());
-        assertThat(recordItem.getTransactionRecord().toByteArray())
-                .containsExactly(transaction.getTransactionRecordBytes());
+        assertThat(transaction.getTransactionBytes())
+                .containsExactly(recordItem.getTransactionBody().getNodeCreate().toByteArray());
+        assertThat(transaction.getTransactionRecordBytes())
+                .containsExactly(recordItem.getTransactionRecord().toByteArray());
     }
 }

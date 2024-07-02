@@ -20,15 +20,12 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
 class NodeCreateTransactionHandler extends AbstractTransactionHandler {
-
-    private final EntityListener entityListener;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -48,6 +45,5 @@ class NodeCreateTransactionHandler extends AbstractTransactionHandler {
         var transactionBody = recordItem.getTransactionBody().getNodeCreate();
         transaction.setTransactionBytes(transactionBody.toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
-        entityListener.onTransaction(transaction);
     }
 }

@@ -27,7 +27,7 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeDeleteTransactionHandler(entityListener);
+        return new NodeDeleteTransactionHandler();
     }
 
     @Override
@@ -51,9 +51,9 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
-        assertThat(recordItem.getTransactionBody().getNodeDelete().toByteArray())
-                .containsExactly(transaction.getTransactionBytes());
-        assertThat(recordItem.getTransactionRecord().toByteArray())
-                .containsExactly(transaction.getTransactionRecordBytes());
+        assertThat(transaction.getTransactionBytes())
+                .containsExactly(recordItem.getTransactionBody().getNodeDelete().toByteArray());
+        assertThat(transaction.getTransactionRecordBytes())
+                .containsExactly(recordItem.getTransactionRecord().toByteArray());
     }
 }
