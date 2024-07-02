@@ -23,11 +23,15 @@ import jakarta.persistence.EntityManager;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.CustomLog;
+import org.apache.commons.codec.binary.Base32;
+import org.apache.tuweni.bytes.Bytes;
 import org.springframework.transaction.support.TransactionOperations;
 
 @CustomLog
@@ -39,19 +43,36 @@ abstract class AbstractEntityBuilder {
     private static final Map<Class<?>, Function<Object, Object>> DEFAULT_PARAMETER_CONVERTERS = Map.of(
             java.lang.Boolean.class, source -> Boolean.parseBoolean(String.valueOf(source)),
             java.lang.Integer.class, source -> Integer.parseInt(String.valueOf(source)),
-            java.lang.Long.class, source -> Long.parseLong(String.valueOf(source)),
-            byte[].class, source -> source
+            java.lang.Long.class, source -> Long.parseLong(String.valueOf(source))
     );
+
+    private static final Base32 BASE32 = new Base32();
 
     private static final Map<Class<?>, Map<String, Method>> methodCache = new ConcurrentHashMap<>();
 
-    protected static Function<Object, Object> ENTITY_ID_CONVERTER = source -> source instanceof String
-            ? EntityId.of((String)source).getId() : EntityId.of((Long)source);
+    private static final Pattern HEX_STRING_PATTERN = Pattern.compile("/^(0x)?[0-9A-Fa-f]+$/");
 
-    protected final Map<String, Function<Object, Object>> methodParameterConverters;
+    /*
+     * Common handy converter functions to be used by subclasses.
+     */
+    protected static final Function<Object, Object> BASE32_CONVERTER = source -> BASE32.decode(source.toString());
+
+    protected static final Function<Object, Object> ENTITY_ID_CONVERTER = source -> source instanceof String sourceStr
+            ? EntityId.of(sourceStr).getId() : EntityId.of((Long)source);
+
+    protected static final Function<Object, Object> EVM_ADDRESS_CONVERTER = source -> {
+        if (source instanceof String sourceStr) {
+            return HEX_STRING_PATTERN.matcher(sourceStr).matches()
+                    ? Bytes.fromHexString(((String)source).startsWith("0x") ? (String)source : "0x" + source).toArray()
+                    : Base64.getDecoder().decode(sourceStr);
+        }
+        return source;
+    };
+
 
     protected final EntityManager entityManager;
     protected final TransactionOperations transactionOperations;
+    protected final Map<String, Function<Object, Object>> methodParameterConverters;
 
     protected AbstractEntityBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
         this.entityManager = entityManager;

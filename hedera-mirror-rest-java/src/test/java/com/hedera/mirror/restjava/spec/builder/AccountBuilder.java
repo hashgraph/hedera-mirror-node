@@ -32,6 +32,8 @@ import org.springframework.transaction.support.TransactionOperations;
 class AccountBuilder extends AbstractEntityBuilder {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
+            "alias", BASE32_CONVERTER,
+            "evmAddress", EVM_ADDRESS_CONVERTER,
             "id", ENTITY_ID_CONVERTER
     );
 
