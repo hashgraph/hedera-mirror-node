@@ -26,10 +26,12 @@ import com.hedera.mirror.web3.config.Web3jTestConfiguration;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
@@ -46,26 +48,6 @@ import org.springframework.context.annotation.Import;
 @RequiredArgsConstructor
 @TestInstance(PER_CLASS)
 class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
-
-    private void historicalBlocksPersist() {
-        recordFileBeforeEvm34 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_34_BLOCK - 1))
-                .persist();
-        recordFileAfterEvm34 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_34_BLOCK))
-                .persist();
-        recordFileEvm38 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_38_BLOCK))
-                .persist();
-        recordFileEvm46 = domainBuilder
-                .recordFile()
-                .customize(f -> f.index(EVM_V_46_BLOCK))
-                .persist();
-        recordFileEvm46Latest = domainBuilder.recordFile().persist();
-    }
 
     private static Stream<Arguments> ercContractFunctionArgumentsProvider() {
         return Arrays.stream(ErcContractReadOnlyFunctions.values())
@@ -237,8 +219,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo("0x");
     }
 
+    @Getter
     @RequiredArgsConstructor
-    public enum ErcContractReadOnlyFunctions {
+    public enum ErcContractReadOnlyFunctions implements ContractFunctionProviderEnum {
         GET_APPROVED_EMPTY_SPENDER("getApproved", new Object[] {NFT_ADDRESS, 2L}, new Address[] {Address.ZERO}),
         IS_APPROVE_FOR_ALL(
                 "isApprovedForAll", new Address[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Boolean[] {true}),
@@ -268,8 +251,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         }
     }
 
+    @Getter
     @RequiredArgsConstructor
-    public enum ErcContractReadOnlyFunctionsNegative {
+    public enum ErcContractReadOnlyFunctionsNegative implements ContractFunctionProviderEnum {
         // Negative scenarios - expected to throw an exception
         ERC_DECIMALS_NEGATIVE("decimals", new Address[] {NFT_ADDRESS}),
         OWNER_OF_NEGATIVE("getOwnerOf", new Object[] {FUNGIBLE_TOKEN_ADDRESS, 1L}),
@@ -279,8 +263,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         private final Object[] functionParameters;
     }
 
+    @Getter
     @RequiredArgsConstructor
-    public enum ErcContractReadOnlyFunctionsHistorical {
+    public enum ErcContractReadOnlyFunctionsHistorical implements ContractFunctionProviderEnum {
         GET_APPROVED_EMPTY_SPENDER(
                 "getApproved", new Object[] {NFT_ADDRESS_HISTORICAL, 2L}, new Address[] {Address.ZERO}),
         IS_APPROVE_FOR_ALL(
@@ -326,8 +311,9 @@ class ContractCallServiceERCTokenTest extends ContractCallTestSetup {
         }
     }
 
+    @Getter
     @RequiredArgsConstructor
-    public enum ErcContractModificationFunctions {
+    public enum ErcContractModificationFunctions implements ContractFunctionProviderEnum {
         APPROVE("approve", new Object[] {FUNGIBLE_TOKEN_ADDRESS, SPENDER_ALIAS, 2L}),
         DELETE_ALLOWANCE_NFT("approve", new Object[] {NFT_ADDRESS, Address.ZERO, 1L}),
         APPROVE_NFT("approve", new Object[] {NFT_ADDRESS, SPENDER_ADDRESS, 1L}),

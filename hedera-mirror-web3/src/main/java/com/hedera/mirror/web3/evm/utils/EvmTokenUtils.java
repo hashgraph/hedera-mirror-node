@@ -32,17 +32,8 @@ import org.hyperledger.besu.datatypes.Address;
 
 @UtilityClass
 public class EvmTokenUtils {
+
     public static final Address EMPTY_EVM_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
-
-    public static Address toAddress(final EntityId entityId) {
-        final var bytes = Bytes.wrap(toEvmAddress(entityId));
-        return Address.wrap(bytes);
-    }
-
-    public static Address toAddress(final ContractID contractID) {
-        final var bytes = Bytes.wrap(toEvmAddress(contractID));
-        return Address.wrap(bytes);
-    }
 
     public static EvmKey evmKey(final byte[] keyBytes) throws InvalidProtocolBufferException {
         if (keyBytes == null) {
@@ -66,5 +57,19 @@ public class EvmTokenUtils {
 
     public static EntityId entityIdFromEvmAddress(final Address address) {
         return fromEvmAddress(address.toArrayUnsafe());
+    }
+
+    public static Address toAddress(final long encodedId) {
+        return toAddress(EntityId.of(encodedId));
+    }
+
+    public static Address toAddress(final EntityId entityId) {
+        final var bytes = Bytes.wrap(toEvmAddress(entityId));
+        return Address.wrap(bytes);
+    }
+
+    public static Address toAddress(final ContractID contractID) {
+        final var bytes = Bytes.wrap(toEvmAddress(contractID));
+        return Address.wrap(bytes);
     }
 }

@@ -24,10 +24,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.math.BigInteger;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
@@ -102,8 +103,9 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum DynamicCallsContractFunctions {
+    enum DynamicCallsContractFunctions implements ContractFunctionProviderEnum {
         MINT_FUNGIBLE_TOKEN(
                 "mintTokenGetTotalSupplyAndBalanceOfTreasury",
                 new Object[] {NOT_FROZEN_FUNGIBLE_TOKEN_ADDRESS, 100L, new byte[0][0], TREASURY_ADDRESS},
@@ -179,7 +181,7 @@ class ContractCallDynamicCallsTest extends ContractCallTestSetup {
         ASSOCIATE_TRANSFER_NFT_EXCEPTION(
                 "associateTokenTransfer",
                 new Object[] {
-                    toAddress(EntityId.of(0, 0, 1)), // Not persisted address
+                    toAddress(1), // Not persisted address
                     DYNAMIC_ETH_CALLS_CONTRACT_ALIAS,
                     NOT_ASSOCIATED_SPENDER_ALIAS,
                     BigInteger.ZERO,

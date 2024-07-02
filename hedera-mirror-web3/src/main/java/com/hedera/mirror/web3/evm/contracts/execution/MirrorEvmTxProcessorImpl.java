@@ -91,8 +91,7 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.tokenAccessor = tokenAccessor;
     }
 
-    public HederaEvmTransactionProcessingResult execute(
-            final CallServiceParameters params, final long estimatedGas) {
+    public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params, final long estimatedGas) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();
