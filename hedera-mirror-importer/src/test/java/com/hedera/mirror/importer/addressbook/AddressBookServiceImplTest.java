@@ -123,6 +123,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                     serviceEndpoints.add(ServiceEndpoint.newBuilder()
                             .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
                             .setPort(443 + j)
+                            .setDomainName("")
                             .build());
                 }
             }
@@ -1050,10 +1051,11 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));
     }
 
-    private ServiceEndpoint getServiceEndpoint(String ip, int port) throws UnknownHostException {
+    private ServiceEndpoint getServiceEndpoint(String ip, Integer port) throws UnknownHostException {
         return ServiceEndpoint.newBuilder()
                 .setIpAddressV4(ByteString.copyFrom(InetAddress.getByName(ip).getAddress()))
                 .setPort(port)
+                .setDomainName("")
                 .build();
     }
 

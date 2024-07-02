@@ -476,6 +476,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         addressBookServiceEndpoint.setIpAddressV4(ip);
         addressBookServiceEndpoint.setPort(nodeAddressProto.getPortno());
         addressBookServiceEndpoint.setNodeId(nodeId);
+        addressBookServiceEndpoint.setDomainName("");
         return addressBookServiceEndpoint;
     }
 

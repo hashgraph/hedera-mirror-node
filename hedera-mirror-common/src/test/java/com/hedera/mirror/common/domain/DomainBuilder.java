@@ -227,6 +227,7 @@ public class DomainBuilder {
                 .consensusTimestamp(timestamp())
                 .ipAddressV4(ipAddress)
                 .nodeId(number())
+                .domainName("")
                 .port(50211);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
