@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
+import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
@@ -28,6 +29,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.ContractActionType;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -184,6 +186,7 @@ public class OpcodeTracer implements HederaOperationTracer {
         return contractActions.stream()
                 .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex)
                 .map(action -> Bytes.of(action.getResultData()))
+                .map(this::maybeDecodeRevertReason)
                 .findFirst();
     }
 
@@ -207,5 +210,26 @@ public class OpcodeTracer implements HederaOperationTracer {
                 && frame.getType().equals(MESSAGE_CALL)
                 && frame.getExceptionalHaltReason().isPresent()
                 && frame.getExceptionalHaltReason().get().equals(INVALID_SOLIDITY_ADDRESS);
+    }
+
+    private Bytes maybeDecodeRevertReason(final Bytes revertReason) {
+        boolean isNullOrEmpty = revertReason == null || revertReason.isEmpty();
+
+        if (isNullOrEmpty) {
+            return Bytes.EMPTY;
+        }
+
+        final var trimmedReason = revertReason.trimLeadingZeros();
+        ResponseCodeEnum responseCode;
+        if (trimmedReason.size() <= 4 && (responseCode = ResponseCodeEnum.forNumber(trimmedReason.toInt())) != null) {
+            return Bytes.of(responseCode.name().getBytes());
+        }
+
+        String decodedReason = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
+        if (StringUtils.isNotEmpty(decodedReason)) {
+            return Bytes.of(decodedReason.getBytes());
+        }
+
+        return revertReason;
     }
 }
