@@ -58,13 +58,13 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
         // potential precompile execution will be done after super.start(),
         // so trace results here
         final var contractAddress = frame.getContractAddress();
-        if (isNativePrecompileCheck.test(contractAddress) || hederaPrecompiles.containsKey(contractAddress)) {
-            ((HederaOperationTracer) operationTracer)
-                    .tracePrecompileResult(
-                            frame,
-                            hederaPrecompiles.containsKey(contractAddress)
-                                    ? ContractActionType.SYSTEM
-                                    : ContractActionType.PRECOMPILE);
+        if ((isNativePrecompileCheck.test(contractAddress) || hederaPrecompiles.containsKey(contractAddress))
+                && operationTracer instanceof HederaOperationTracer hederaOperationTracer) {
+            hederaOperationTracer.tracePrecompileResult(
+                    frame,
+                    hederaPrecompiles.containsKey(contractAddress)
+                            ? ContractActionType.SYSTEM
+                            : ContractActionType.PRECOMPILE);
         }
     }
 
