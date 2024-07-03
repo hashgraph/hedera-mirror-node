@@ -26,7 +26,6 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.Store.OnMissing;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
-import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.store.models.Account;
 import com.hedera.services.store.models.FcTokenAllowanceId;
@@ -78,7 +77,6 @@ public class TransferLogic {
                             "Cannot auto-create account from " + change + " with null autoCreationLogic");
                 }
                 final var result = autoCreationLogic.create(
-                        BlockType.LATEST,
                         change,
                         Timestamp.newBuilder()
                                 .setSeconds(Instant.now().getEpochSecond())

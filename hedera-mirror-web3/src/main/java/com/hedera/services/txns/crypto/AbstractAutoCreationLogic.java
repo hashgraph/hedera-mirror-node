@@ -26,11 +26,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
-import com.hedera.mirror.web3.service.RecordFileService;
-import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.ledger.BalanceChange;
@@ -67,7 +66,6 @@ public abstract class AbstractAutoCreationLogic {
 
     private final FeeCalculator feeCalculator;
     private final EvmProperties evmProperties;
-    private final RecordFileService recordFileService;
     private final SyntheticTxnFactory syntheticTxnFactory;
 
     private static final Supplier<Long> zeroLongSupplier = () -> 0L;
@@ -76,11 +74,9 @@ public abstract class AbstractAutoCreationLogic {
     protected AbstractAutoCreationLogic(
             final FeeCalculator feeCalculator,
             final EvmProperties evmProperties,
-            final RecordFileService recordFileService,
             final SyntheticTxnFactory syntheticTxnFactory) {
         this.feeCalculator = feeCalculator;
         this.evmProperties = evmProperties;
-        this.recordFileService = recordFileService;
         this.syntheticTxnFactory = syntheticTxnFactory;
     }
 
@@ -98,7 +94,6 @@ public abstract class AbstractAutoCreationLogic {
      * @return the fee charged for the auto-creation if ok, a failure reason otherwise
      */
     public Pair<ResponseCodeEnum, Long> create(
-            final BlockType blockType,
             final BalanceChange change,
             final Timestamp timestamp,
             final Store store,
@@ -115,7 +110,7 @@ public abstract class AbstractAutoCreationLogic {
         TransactionBody.Builder syntheticCreation;
 
         final var isAliasEVMAddress = alias.size() == EVM_ADDRESS_SIZE;
-        final int maxAutoAssociations = getMaxAutoAssociations(alias, blockType, changes);
+        final int maxAutoAssociations = getMaxAutoAssociations(alias, changes);
         if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L, maxAutoAssociations);
         } else {
@@ -160,15 +155,13 @@ public abstract class AbstractAutoCreationLogic {
 
     protected abstract void trackAlias(final ByteString alias, final Address address);
 
-    private int getMaxAutoAssociations(
-            final ByteString alias, final BlockType blockType, final List<BalanceChange> changes) {
-        return recordFileService
-                .findByBlockType(blockType)
-                .map(RecordFile::getHapiVersion)
-                .filter(v -> v.isGreaterThanOrEqualTo(RecordFile.HAPI_VERSION_0_51_0))
-                .map(v -> Account.UNLIMITED_AUTO_ASSOCIATIONS)
-                // If prior to HAPI 0.51 or no such record file found, return the number of auto associations as the max
-                .orElseGet(() -> getAutoAssociationCount(alias, changes));
+    private int getMaxAutoAssociations(final ByteString alias, final List<BalanceChange> changes) {
+        var recordFile = ContractCallContext.get().getRecordFile();
+        if (recordFile != null && recordFile.getHapiVersion().isGreaterThanOrEqualTo(RecordFile.HAPI_VERSION_0_52_0)) {
+            return Account.UNLIMITED_AUTO_ASSOCIATIONS;
+        }
+
+        return getAutoAssociationCount(alias, changes);
     }
 
     private void replaceAliasAndSetBalanceOnChange(final BalanceChange change, final AccountID newAccountId) {

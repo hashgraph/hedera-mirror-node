@@ -37,6 +37,7 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.ContextExtension;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
 import com.hedera.mirror.web3.evm.store.Store;
@@ -45,8 +46,6 @@ import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
-import com.hedera.mirror.web3.service.RecordFileService;
-import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.fees.FeeCalculator;
@@ -65,7 +64,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
-import java.util.Optional;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -123,9 +121,6 @@ class AutoCreationLogicTest {
     private AutoCreationLogic subject;
 
     @Mock
-    private RecordFileService recordFileService;
-
-    @Mock
     private SyntheticTxnFactory syntheticTxnFactory;
 
     @Mock
@@ -137,8 +132,7 @@ class AutoCreationLogicTest {
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
         store = spy(new StoreImpl(stackedStateFrames, validator));
-        subject = new AutoCreationLogic(
-                feeCalculator, evmProperties, recordFileService, syntheticTxnFactory, aliasManager);
+        subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory, aliasManager);
     }
 
     @Test
@@ -152,7 +146,7 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownTokenChange(edKeyAlias);
 
-        final var result = subject.create(BlockType.LATEST, input, at, store, ids, List.of(input));
+        final var result = subject.create(input, at, store, ids, List.of(input));
         assertEquals(NOT_SUPPORTED, result.getLeft());
     }
 
@@ -165,7 +159,7 @@ class AutoCreationLogicTest {
                         .build(),
                 payer);
         final var changes = List.of(input);
-        assertThatThrownBy(() -> subject.create(BlockType.LATEST, input, at, store, ids, changes))
+        assertThatThrownBy(() -> subject.create(input, at, store, ids, changes))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Cannot auto-create an account from unaliased change");
     }
@@ -173,9 +167,9 @@ class AutoCreationLogicTest {
     @SneakyThrows
     @ParameterizedTest
     @CsvSource(textBlock = """
+            53, -1
             52, -1
-            51, -1
-            50, 0
+            51, 0
             """)
     void hollowAccountWithHbarChangeWorks(int hapiMinorVersion, int expectedMaxAutoAssociations) {
         final var jKey = mapKey(Key.parseFrom(ECDSA_PUBLIC_KEY));
@@ -184,10 +178,9 @@ class AutoCreationLogicTest {
         TransactionBody.Builder syntheticHollowCreation =
                 TransactionBody.newBuilder().setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder());
 
+        ContractCallContext.get().setRecordFile(recordFileWithVersion(hapiMinorVersion));
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
         given(ids.getNewAccountId()).willReturn(created);
-        given(recordFileService.findByBlockType(BlockType.LATEST))
-                .willReturn(Optional.of(recordFileWithVersion(hapiMinorVersion)));
         given(syntheticTxnFactory.createHollowAccount(eq(evmAddressAlias), eq(0L), anyInt()))
                 .willReturn(syntheticHollowCreation);
 
@@ -195,7 +188,7 @@ class AutoCreationLogicTest {
 
         store.wrap();
 
-        final var result = subject.create(BlockType.LATEST, input, at, store, ids, List.of(input));
+        final var result = subject.create(input, at, store, ids, List.of(input));
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         assertEquals(initialTransfer, input.getNewBalance());
@@ -216,9 +209,9 @@ class AutoCreationLogicTest {
     @SneakyThrows
     @ParameterizedTest
     @CsvSource(textBlock = """
+            53, -1
             52, -1
-            51, -1
-            50, 1
+            51, 1
             """)
     void happyPathWithFungibleTokenChangeWorks(int hapiMinorVersion, int expectedMaxAutoAssociations) {
         Key aPrimitiveKey = Key.newBuilder()
@@ -231,16 +224,15 @@ class AutoCreationLogicTest {
         final var input = wellKnownTokenChange(edKeyAlias);
         final var changes = List.of(input);
 
+        ContractCallContext.get().setRecordFile(recordFileWithVersion(hapiMinorVersion));
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
-        given(recordFileService.findByBlockType(BlockType.LATEST))
-                .willReturn(Optional.of(recordFileWithVersion(hapiMinorVersion)));
         given(syntheticTxnFactory.createAccount(eq(edKeyAlias), eq(aPrimitiveKey), eq(0L), anyInt()))
                 .willReturn(syntheticEDAliasCreation);
 
         store.wrap();
-        final var result = subject.create(BlockType.LATEST, input, at, store, ids, changes);
+        final var result = subject.create(input, at, store, ids, changes);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         verify(aliasManager)
@@ -266,7 +258,6 @@ class AutoCreationLogicTest {
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
-        given(recordFileService.findByBlockType(BlockType.LATEST)).willReturn(Optional.empty());
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 2))
                 .willReturn(syntheticEDAliasCreation);
 
@@ -274,7 +265,7 @@ class AutoCreationLogicTest {
         final var input2 = anotherTokenChange();
 
         store.wrap();
-        final var result = subject.create(BlockType.LATEST, input1, at, store, ids, List.of(input1, input2));
+        final var result = subject.create(input1, at, store, ids, List.of(input1, input2));
         assertEquals(Pair.of(OK, totalFee), result);
 
         assertEquals(16L, input1.getAggregatedUnits());

@@ -57,7 +57,6 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
-import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.ledger.TransferLogic;
@@ -493,7 +492,6 @@ public class TransferPrecompile extends AbstractWritePrecompile {
             change.replaceNonEmptyAliasWith(completedLazyCreates.get(receiverAlias));
         } else {
             final var lazyCreateResult = autoCreationLogic.create(
-                    BlockType.LATEST,
                     change,
                     Timestamp.newBuilder()
                             .setSeconds(Instant.now().getEpochSecond())

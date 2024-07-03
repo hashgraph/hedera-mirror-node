@@ -20,8 +20,6 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class BitPackUtils {
-    private static final int MAX_AUTOMATIC_ASSOCIATIONS_MASK = (1 << 16) - 1;
-    private static final int ALREADY_USED_AUTOMATIC_ASSOCIATIONS_MASK = MAX_AUTOMATIC_ASSOCIATIONS_MASK << 16;
 
     public static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
     private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
