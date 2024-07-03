@@ -16,10 +16,8 @@
 
 package com.hedera.mirror.restjava.spec.builder;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainWrapperImpl;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.NftTransfer;
 import jakarta.inject.Named;
 import jakarta.persistence.EntityManager;
 import java.util.Map;
@@ -27,43 +25,28 @@ import java.util.function.Function;
 import org.springframework.transaction.support.TransactionOperations;
 
 @Named
-class TokenAccountBuilder extends AbstractEntityBuilder {
+class NftTransferBuilder extends AbstractEntityBuilder {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
-            "accountId", ENTITY_ID_CONVERTER,
+            "receiverAccountId", ENTITY_ID_CONVERTER,
+            "senderAccountId", ENTITY_ID_CONVERTER,
             "tokenId", ENTITY_ID_CONVERTER
     );
 
-    TokenAccountBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
+    NftTransferBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
         super(entityManager, transactionOperations, METHOD_PARAMETER_CONVERTERS);
     }
 
     @Override
-    protected void customizeAndPersistEntity(Map<String, Object> account) {
-        var builder = TokenAccount.builder();
+    protected void customizeAndPersistEntity(Map<String, Object> nftTransfer) {
+        var builder = NftTransfer.builder();
         // Set defaults
         builder
-                .accountId(0L)
-                .associated(true)
-                .automaticAssociation(false)
-                .balance(0L)
-                .balanceTimestamp(0L)
-                .createdTimestamp(0L)
-                .freezeStatus(null)
-                .kycStatus(null)
-                .timestampRange(null)
-                .tokenId(0L);
+                .isApproval(Boolean.FALSE)
+                .serialNumber(1L);
 
         // Customize with spec setup definitions
-        var wrapper = new DomainWrapperImpl<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>>(builder, builder::build, entityManager, transactionOperations);
-        customizeWithSpec(wrapper, account);
-
-        // Check and finalize
-        var entity = wrapper.get();
-        if (entity.getTimestampRange() == null) {
-            builder.timestampRange(Range.atLeast(entity.getCreatedTimestamp()));
-        }
-
-        wrapper.persist();
+        var wrapper = new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        customizeWithSpec(wrapper, nftTransfer);
     }
 }

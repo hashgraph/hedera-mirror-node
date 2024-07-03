@@ -41,14 +41,20 @@ public class SpecDomainBuilder {
     private final TransactionBuilder transactionBuilder;
 
     public void addAccounts(List<Map<String, Object>> accounts) {
-        accounts.forEach(accountBuilder::customizeAndPersistEntity);
+        if (accounts != null) {
+            accounts.forEach(accountBuilder::customizeAndPersistEntity);
+        }
     }
 
     public void addTokenAccounts(List<Map<String, Object>> tokenAccounts) {
-        tokenAccounts.forEach(tokenAccountBuilder::customizeAndPersistEntity);
+        if (tokenAccounts != null) {
+            tokenAccounts.forEach(tokenAccountBuilder::customizeAndPersistEntity);
+        }
     }
 
     public void addTransactions(List<Map<String, Object>> transactions) {
-        transactions.forEach(transactionBuilder::customizeAndPersistEntity);
+        if (transactions != null) {
+            transactions.forEach(transactionBuilder::customizeAndPersistEntity);
+        }
     }
 }

@@ -47,21 +47,21 @@ abstract class AbstractEntityBuilder {
     );
 
     private static final Base32 BASE32 = new Base32();
-
+    private static final Pattern HEX_STRING_PATTERN = Pattern.compile("/^(0x)?[0-9A-Fa-f]+$/");
+    private static final Object IGNORE_ATTRIBUTE_SIGNAL = new Object();
     private static final Map<Class<?>, Map<String, Method>> methodCache = new ConcurrentHashMap<>();
 
-    private static final Pattern HEX_STRING_PATTERN = Pattern.compile("/^(0x)?[0-9A-Fa-f]+$/");
-
     /*
-     * Common handy attribute value converter functions to be used by subclasses.
+     * Common handy spec attribute value converter functions to be used by subclasses.
      */
-    protected static final Function<Object, Object> BASE32_CONVERTER = value -> BASE32.decode(value.toString());
+    protected static final Function<Object, Object> IGNORE_CONVERTER = value -> IGNORE_ATTRIBUTE_SIGNAL;
 
-    protected static final Function<Object, Object> ENTITY_ID_CONVERTER = value -> value instanceof String valueStr
-            ? EntityId.of(valueStr)
-            : EntityId.of((Long)value);
+    protected static final Function<Object, Object> BASE32_CONVERTER = value -> value == null ? null : BASE32.decode(value.toString());
 
-    protected static final Function<Object, Object> EVM_ADDRESS_CONVERTER = value -> {
+    protected static final Function<Object, Object> ENTITY_ID_CONVERTER = value -> value == null ? null
+            : value instanceof String valueStr ? EntityId.of(valueStr) : EntityId.of((Long)value);
+
+    protected static final Function<Object, Object> HEX_OR_BASE64_CONVERTER = value -> {
         if (value instanceof String valueStr) {
             return HEX_STRING_PATTERN.matcher(valueStr).matches()
                     ? Bytes.fromHexString(valueStr.startsWith("0x") ? valueStr : "0x" + valueStr).toArray()
@@ -72,16 +72,31 @@ abstract class AbstractEntityBuilder {
 
     protected final EntityManager entityManager;
     protected final TransactionOperations transactionOperations;
+
+    // Map a synthetic spec attribute name to another attribute name convertable to a builder method name
+    protected final Map<String, String> attributeNameMap;
+    // Map a builder method by name to a specific attribute value converter function
     protected final Map<String, Function<Object, Object>> methodParameterConverters;
 
-    protected AbstractEntityBuilder(EntityManager entityManager, TransactionOperations transactionOperations,
+    protected AbstractEntityBuilder(
+            EntityManager entityManager,
+            TransactionOperations transactionOperations,
             Map<String, Function<Object, Object>> methodParameterConverters) {
-        this.entityManager = entityManager;
-        this.transactionOperations = transactionOperations;
-        this.methodParameterConverters = methodParameterConverters == null ? Map.of() : methodParameterConverters;
+        this(entityManager, transactionOperations, methodParameterConverters, Map.of());
     }
 
-    abstract void customizeAndPersistEntity(Map<String, Object> entityAttributes);
+    protected AbstractEntityBuilder(
+            EntityManager entityManager,
+            TransactionOperations transactionOperations,
+            Map<String, Function<Object, Object>> methodParameterConverters,
+            Map<String, String> attributeNameMap) {
+        this.entityManager = entityManager;
+        this.transactionOperations = transactionOperations;
+        this.methodParameterConverters = methodParameterConverters;
+        this.attributeNameMap = attributeNameMap;
+    }
+
+    protected abstract void customizeAndPersistEntity(Map<String, Object> entityAttributes);
 
     protected void customizeWithSpec(DomainWrapper<?, ?> wrapper, Map<String, Object> customizations) {
         wrapper.customize(builder -> {
@@ -90,13 +105,15 @@ abstract class AbstractEntityBuilder {
                     clazz.getMethods()).collect(Collectors.toMap(Method::getName, Function.identity(), (v1, v2) -> v2)));
 
             for (var customization : customizations.entrySet()) {
-                var methodName = toLowerCamelCase(customization.getKey());
+                var methodName = methodName(customization.getKey());
                 var method = builderMethods.get(methodName);
                 if (method != null) {
                     try {
                         var expectedParameterType = method.getParameterTypes()[0];
                         var mappedBuilderParameter = mapBuilderParameter(methodName, expectedParameterType, customization.getValue());
-                        method.invoke(builder, mappedBuilderParameter);
+                        if (mappedBuilderParameter != IGNORE_ATTRIBUTE_SIGNAL) {
+                            method.invoke(builder, mappedBuilderParameter);
+                        }
                     } catch (IllegalAccessException | InvocationTargetException e) {
                         log.warn("Failed to invoke method '{}' for attribute override '{}' for {}",
                                 methodName, customization.getKey(), builderClass.getName(), e);
@@ -109,7 +126,7 @@ abstract class AbstractEntityBuilder {
         });
     }
 
-    protected Object mapBuilderParameter(String methodName, Class<?> expectedType, Object specParameterValue) {
+    private Object mapBuilderParameter(String methodName, Class<?> expectedType, Object specParameterValue) {
         var typeMapper = methodParameterConverters.get(methodName);
         if (typeMapper == null) {
             typeMapper = DEFAULT_PARAMETER_CONVERTERS.getOrDefault(expectedType, Function.identity());
@@ -118,14 +135,18 @@ abstract class AbstractEntityBuilder {
     }
 
     /*
-     * The setup entity attribute names defined in the spec JSON files are named using either lower snake case
-     * ("num", "entity_id", "charged_tx_fee") or in lower camel case ("num", "nodeAccountId", "treasuryAccountId"). In
-     * the latter case, Guava's CaseFormat will convert lower camel case to lower camel case as all lowercase. Thus, it
-     * returns "nodeaccountid" and "treasuryaccountid", which does not match builder method names.
+     * The setup entity attribute names defined in the spec JSON files are named using either snake case
+     * ("entity_id", "charged_tx_fee") or in lower camel case ("num", "nodeAccountId", "treasuryAccountId"). In
+     * the latter case, Guava's CaseFormat will convert lower camel case to lower camel case into all lowercase.
+     * Thus, it returns "nodeaccountid" and "treasuryaccountid", which do not match builder method names.
      *
-     *
+     * Only invoke the guava converter if at least one underscore is present, else assume the name is already in
+     * lower camel case.
      */
-    private String toLowerCamelCase(String original) {
-        return original.indexOf('_') >= 0 ? CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, original) : original;
+    private String methodName(String attributeName) {
+        var mappedAttributeName = attributeNameMap.getOrDefault(attributeName, attributeName);
+        return mappedAttributeName.indexOf('_') >= 0
+                ? CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, mappedAttributeName)
+                : mappedAttributeName;
     }
 }

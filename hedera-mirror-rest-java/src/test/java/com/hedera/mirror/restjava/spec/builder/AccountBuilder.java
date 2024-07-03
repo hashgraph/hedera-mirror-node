@@ -33,7 +33,7 @@ class AccountBuilder extends AbstractEntityBuilder {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "alias", BASE32_CONVERTER,
-            "evmAddress", EVM_ADDRESS_CONVERTER,
+            "evmAddress", HEX_OR_BASE64_CONVERTER,
             "id", ENTITY_ID_CONVERTER
     );
 
@@ -42,7 +42,7 @@ class AccountBuilder extends AbstractEntityBuilder {
     }
 
     @Override
-    void customizeAndPersistEntity(Map<String, Object> account) {
+    protected void customizeAndPersistEntity(Map<String, Object> account) {
         var builder = Entity.builder();
         // Set defaults
         builder
