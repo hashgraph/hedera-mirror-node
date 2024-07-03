@@ -27,12 +27,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenRejectTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class TokenRejectTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
@@ -87,16 +83,13 @@ class TokenRejectTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
     }
 
-    @ParameterizedTest
-    @MethodSource("provideOwners")
-    void updateTransactionNoOwner(Optional<EntityId> ownerId) {
-        var recordItem = recordItemBuilder.tokenReject().build();
-        when(entityIdService.lookup(any(AccountID.class))).thenReturn(ownerId);
+    @Test
+    void updateTransactionNoOwner() {
+        var recordItem = recordItemBuilder
+                .tokenReject()
+                .transactionBody(b -> b.clearOwner())
+                .build();
         testGetEntityIdHelper(
                 recordItem.getTransactionBody(), recordItem.getTransactionRecord(), recordItem.getPayerAccountId());
-    }
-
-    private static Stream<Arguments> provideOwners() {
-        return Stream.of(Arguments.of(Optional.of(EntityId.EMPTY)), Arguments.of(Optional.empty()));
     }
 }

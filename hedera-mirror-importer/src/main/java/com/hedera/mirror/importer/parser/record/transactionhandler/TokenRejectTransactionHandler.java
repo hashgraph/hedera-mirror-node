@@ -44,9 +44,10 @@ class TokenRejectTransactionHandler extends AbstractTransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        var owner = recordItem.getTransactionBody().getTokenReject().getOwner();
-        var ownerId = entityIdService.lookup(owner).orElse(EntityId.EMPTY);
-        return !EntityId.isEmpty(ownerId) ? ownerId : recordItem.getPayerAccountId();
+        var tokenReject = recordItem.getTransactionBody().getTokenReject();
+        return tokenReject.hasOwner()
+                ? entityIdService.lookup(tokenReject.getOwner()).orElse(EntityId.EMPTY)
+                : recordItem.getPayerAccountId();
     }
 
     @Override
