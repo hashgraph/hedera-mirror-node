@@ -24,6 +24,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.HederaEvmStackedWorldStateUpdater;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.txns.crypto.AbstractAutoCreationLogic;
@@ -69,10 +70,11 @@ public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcess
     protected void executeLazyCreate(final MessageFrame frame, final OperationTracer operationTracer) {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var syntheticBalanceChange = constructSyntheticLazyCreateBalanceChangeFrom(frame);
-        final var timestamp = Timestamp.newBuilder()
-                .setSeconds(frame.getBlockValues().getTimestamp())
-                .build();
+        final var blockValues = frame.getBlockValues();
+        final var timestamp =
+                Timestamp.newBuilder().setSeconds(blockValues.getTimestamp()).build();
         final var lazyCreateResult = autoCreationLogic.create(
+                BlockType.of(blockValues.getNumber()),
                 syntheticBalanceChange,
                 timestamp,
                 updater.getStore(),

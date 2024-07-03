@@ -25,6 +25,7 @@ import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
@@ -354,9 +355,11 @@ public class ServicesConfiguration {
     AutoCreationLogic autocreationLogic(
             final FeeCalculator feeCalculator,
             final EvmProperties evmProperties,
+            final RecordFileService recordFileService,
             final SyntheticTxnFactory syntheticTxnFactory,
             final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        return new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory, mirrorEvmContractAliases);
+        return new AutoCreationLogic(
+                feeCalculator, evmProperties, recordFileService, syntheticTxnFactory, mirrorEvmContractAliases);
     }
 
     @Bean

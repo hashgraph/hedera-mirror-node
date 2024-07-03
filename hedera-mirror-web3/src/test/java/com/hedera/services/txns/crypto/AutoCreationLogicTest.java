@@ -23,16 +23,19 @@ import static com.hedera.services.utils.IdUtils.asAccount;
 import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.StackedStateFrames;
@@ -42,6 +45,8 @@ import com.hedera.mirror.web3.evm.store.accessor.AccountDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.DatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
+import com.hedera.mirror.web3.service.RecordFileService;
+import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.node.app.service.evm.utils.EthSigsUtils;
 import com.hedera.services.fees.FeeCalculator;
@@ -49,6 +54,7 @@ import com.hedera.services.hapi.utils.fees.FeeObject;
 import com.hedera.services.jproto.JKey;
 import com.hedera.services.ledger.BalanceChange;
 import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.services.store.models.Account;
 import com.hedera.services.txns.validation.OptionValidator;
 import com.hedera.services.utils.IdUtils;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -58,8 +64,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.security.InvalidKeyException;
 import java.util.List;
+import java.util.Optional;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
@@ -67,6 +74,10 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -84,38 +95,50 @@ class AutoCreationLogicTest {
             Hex.decode("3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     private final Timestamp at = Timestamp.newBuilder().setSeconds(1_234_567L).build();
 
-    @Mock
-    private EntityDatabaseAccessor entityDatabaseAccessor;
+    private final DomainBuilder domainBuilder = new DomainBuilder();
 
-    private Store store;
-
-    @Mock
-    private EntityAddressSequencer ids;
+    @Captor
+    private ArgumentCaptor<Account> accountCaptor;
 
     @Mock
     private MirrorEvmContractAliases aliasManager;
 
     @Mock
-    private FeeCalculator feeCalculator;
-
-    @Mock
-    private SyntheticTxnFactory syntheticTxnFactory;
+    private EntityDatabaseAccessor entityDatabaseAccessor;
 
     @Mock
     private EvmProperties evmProperties;
 
     @Mock
-    private OptionValidator validator;
+    private FeeCalculator feeCalculator;
+
+    @Mock
+    private EntityAddressSequencer ids;
+
+    @Captor
+    private ArgumentCaptor<Integer> maxAutoAssociationsCaptor;
+
+    private Store store;
 
     private AutoCreationLogic subject;
+
+    @Mock
+    private RecordFileService recordFileService;
+
+    @Mock
+    private SyntheticTxnFactory syntheticTxnFactory;
+
+    @Mock
+    private OptionValidator validator;
 
     @BeforeEach
     void setUp() {
         final List<DatabaseAccessor<Object, ?>> accessors =
                 List.of(new AccountDatabaseAccessor(entityDatabaseAccessor, null, null, null, null, null, null));
         final var stackedStateFrames = new StackedStateFrames(accessors);
-        store = new StoreImpl(stackedStateFrames, validator);
-        subject = new AutoCreationLogic(feeCalculator, evmProperties, syntheticTxnFactory, aliasManager);
+        store = spy(new StoreImpl(stackedStateFrames, validator));
+        subject = new AutoCreationLogic(
+                feeCalculator, evmProperties, recordFileService, syntheticTxnFactory, aliasManager);
     }
 
     @Test
@@ -129,7 +152,7 @@ class AutoCreationLogicTest {
 
         final var input = wellKnownTokenChange(edKeyAlias);
 
-        final var result = subject.create(input, at, store, ids, List.of(input));
+        final var result = subject.create(BlockType.LATEST, input, at, store, ids, List.of(input));
         assertEquals(NOT_SUPPORTED, result.getLeft());
     }
 
@@ -141,28 +164,38 @@ class AutoCreationLogicTest {
                         .setAccountID(payer)
                         .build(),
                 payer);
-        final var result =
-                assertThrows(IllegalStateException.class, () -> subject.create(input, at, store, ids, List.of(input)));
-        assertTrue(result.getMessage().contains("Cannot auto-create an account from unaliased change"));
+        final var changes = List.of(input);
+        assertThatThrownBy(() -> subject.create(BlockType.LATEST, input, at, store, ids, changes))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Cannot auto-create an account from unaliased change");
     }
 
-    @Test
-    void hollowAccountWithHbarChangeWorks() throws InvalidProtocolBufferException, InvalidKeyException {
+    @SneakyThrows
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+            52, -1
+            51, -1
+            50, 0
+            """)
+    void hollowAccountWithHbarChangeWorks(int hapiMinorVersion, int expectedMaxAutoAssociations) {
         final var jKey = mapKey(Key.parseFrom(ECDSA_PUBLIC_KEY));
         final var evmAddressAlias =
                 ByteString.copyFrom(EthSigsUtils.recoverAddressFromPubKey(jKey.getECDSASecp256k1Key()));
         TransactionBody.Builder syntheticHollowCreation =
                 TransactionBody.newBuilder().setCryptoCreateAccount(CryptoCreateTransactionBody.newBuilder());
 
-        given(syntheticTxnFactory.createHollowAccount(evmAddressAlias, 0L, 0)).willReturn(syntheticHollowCreation);
-        given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
+        given(ids.getNewAccountId()).willReturn(created);
+        given(recordFileService.findByBlockType(BlockType.LATEST))
+                .willReturn(Optional.of(recordFileWithVersion(hapiMinorVersion)));
+        given(syntheticTxnFactory.createHollowAccount(eq(evmAddressAlias), eq(0L), anyInt()))
+                .willReturn(syntheticHollowCreation);
 
         final var input = wellKnownChange(evmAddressAlias);
 
         store.wrap();
 
-        final var result = subject.create(input, at, store, ids, List.of(input));
+        final var result = subject.create(BlockType.LATEST, input, at, store, ids, List.of(input));
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         assertEquals(initialTransfer, input.getNewBalance());
@@ -171,10 +204,23 @@ class AutoCreationLogicTest {
                 .link(
                         Address.wrap(Bytes.wrap(evmAddressAlias.toByteArray())),
                         Address.wrap(Bytes.wrap(asEvmAddress(created))));
+        verify(syntheticTxnFactory)
+                .createHollowAccount(eq(evmAddressAlias), eq(0L), maxAutoAssociationsCaptor.capture());
+        assertThat(maxAutoAssociationsCaptor.getValue()).isEqualTo(expectedMaxAutoAssociations);
+        verify(store).updateAccount(accountCaptor.capture());
+        assertThat(accountCaptor.getValue())
+                .returns(expectedMaxAutoAssociations, Account::getMaxAutoAssociations)
+                .returns(0, Account::getUsedAutoAssociations);
     }
 
-    @Test
-    void happyPathWithFungibleTokenChangeWorks() throws InvalidKeyException {
+    @SneakyThrows
+    @ParameterizedTest
+    @CsvSource(textBlock = """
+            52, -1
+            51, -1
+            50, 1
+            """)
+    void happyPathWithFungibleTokenChangeWorks(int hapiMinorVersion, int expectedMaxAutoAssociations) {
         Key aPrimitiveKey = Key.newBuilder()
                 .setEd25519(ByteString.copyFromUtf8("01234567890123456789012345678901"))
                 .build();
@@ -188,16 +234,25 @@ class AutoCreationLogicTest {
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
-        given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, changes.size()))
+        given(recordFileService.findByBlockType(BlockType.LATEST))
+                .willReturn(Optional.of(recordFileWithVersion(hapiMinorVersion)));
+        given(syntheticTxnFactory.createAccount(eq(edKeyAlias), eq(aPrimitiveKey), eq(0L), anyInt()))
                 .willReturn(syntheticEDAliasCreation);
 
         store.wrap();
-        final var result = subject.create(input, at, store, ids, changes);
+        final var result = subject.create(BlockType.LATEST, input, at, store, ids, changes);
 
         assertEquals(initialTransfer, input.getAggregatedUnits());
         verify(aliasManager)
                 .maybeLinkEvmAddress(JKey.mapKey(aPrimitiveKey), Address.wrap(Bytes.wrap(asEvmAddress(created))));
         assertEquals(Pair.of(OK, totalFee), result);
+        verify(syntheticTxnFactory)
+                .createAccount(eq(edKeyAlias), eq(aPrimitiveKey), eq(0L), maxAutoAssociationsCaptor.capture());
+        assertThat(maxAutoAssociationsCaptor.getValue()).isEqualTo(expectedMaxAutoAssociations);
+        verify(store).updateAccount(accountCaptor.capture());
+        assertThat(accountCaptor.getValue())
+                .returns(expectedMaxAutoAssociations, Account::getMaxAutoAssociations)
+                .returns(0, Account::getUsedAutoAssociations);
     }
 
     @Test
@@ -211,6 +266,7 @@ class AutoCreationLogicTest {
         given(ids.getNewAccountId()).willReturn(created);
         given(feeCalculator.computeFee(any(), any(), eq(at))).willReturn(fees);
         given(evmProperties.isLazyCreationEnabled()).willReturn(true);
+        given(recordFileService.findByBlockType(BlockType.LATEST)).willReturn(Optional.empty());
         given(syntheticTxnFactory.createAccount(edKeyAlias, aPrimitiveKey, 0L, 2))
                 .willReturn(syntheticEDAliasCreation);
 
@@ -218,7 +274,7 @@ class AutoCreationLogicTest {
         final var input2 = anotherTokenChange();
 
         store.wrap();
-        final var result = subject.create(input1, at, store, ids, List.of(input1, input2));
+        final var result = subject.create(BlockType.LATEST, input1, at, store, ids, List.of(input1, input2));
         assertEquals(Pair.of(OK, totalFee), result);
 
         assertEquals(16L, input1.getAggregatedUnits());
@@ -259,5 +315,12 @@ class AutoCreationLogicTest {
                                 .build())
                         .build(),
                 payer);
+    }
+
+    private RecordFile recordFileWithVersion(int hapiMinorVersion) {
+        return domainBuilder
+                .recordFile()
+                .customize(rf -> rf.hapiVersionMinor(hapiMinorVersion))
+                .get();
     }
 }

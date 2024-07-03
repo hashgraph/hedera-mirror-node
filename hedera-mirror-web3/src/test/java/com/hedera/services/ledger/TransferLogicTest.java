@@ -22,7 +22,8 @@ import static com.hedera.services.utils.EntityNum.fromEvmAddress;
 import static com.hedera.services.utils.TxnUtils.assertFailsWith;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -49,6 +50,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
@@ -77,34 +79,20 @@ class TransferLogicTest {
 
     private final FcTokenAllowanceId fungibleAllowanceId =
             FcTokenAllowanceId.from(EntityNum.fromTokenId(fungibleTokenID), payerNum);
-    private final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>() {
-        {
-            put(payerNum, initialAllowance);
-        }
-    };
-    private final TreeMap<EntityNum, Long> resultCryptoAllowances = new TreeMap<>() {
-        {
-            put(payerNum, 50L);
-        }
-    };
-    private final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances = new TreeMap<>() {
-        {
-            put(fungibleAllowanceId, initialAllowance);
-        }
-    };
-    private final TreeMap<FcTokenAllowanceId, Long> resultFungibleAllowances = new TreeMap<>() {
-        {
-            put(fungibleAllowanceId, 50L);
-        }
-    };
+    private final TreeMap<EntityNum, Long> cryptoAllowances = new TreeMap<>(Map.of(payerNum, initialAllowance));
+    private final TreeMap<EntityNum, Long> resultCryptoAllowances = new TreeMap<>(Map.of(payerNum, 50L));
+    private final TreeMap<FcTokenAllowanceId, Long> fungibleAllowances =
+            new TreeMap<>(Map.of(fungibleAllowanceId, initialAllowance));
+    private final TreeMap<FcTokenAllowanceId, Long> resultFungibleAllowances =
+            new TreeMap<>(Map.of(fungibleAllowanceId, 50L));
 
     @Mock
-    EntityAddressSequencer ids;
+    private EntityAddressSequencer ids;
 
-    HederaTokenStore hederaTokenStore;
-    AutoCreationLogic autoCreationLogic;
-    MirrorEvmContractAliases mirrorEvmContractAliases;
-    StoreImpl store;
+    private HederaTokenStore hederaTokenStore;
+    private AutoCreationLogic autoCreationLogic;
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
+    private StoreImpl store;
     private TransferLogic subject;
 
     @BeforeEach
@@ -135,7 +123,7 @@ class TransferLogicTest {
         final var failingTrigger = BalanceChange.changingHbar(aliasedAa(firstAlias, firstAmount), payer);
         final var changes = List.of(failingTrigger);
 
-        given(autoCreationLogic.create(eq(failingTrigger), any(), eq(store), eq(ids), eq(changes)))
+        given(autoCreationLogic.create(any(), eq(failingTrigger), any(), eq(store), eq(ids), eq(changes)))
                 .willReturn(Pair.of(INSUFFICIENT_ACCOUNT_BALANCE, 0L));
 
         assertFailsWith(() -> subject.doZeroSum(changes, store, ids, hederaTokenStore), INSUFFICIENT_ACCOUNT_BALANCE);
@@ -159,13 +147,13 @@ class TransferLogicTest {
                 .willReturn(account);
         var nft = getEmptyUniqueToken();
         given(store.getUniqueToken(any(), eq(OnMissing.THROW))).willReturn(nft);
-        given(autoCreationLogic.create(eq(nftTransfer), any(), eq(store), eq(ids), eq(changes)))
+        given(autoCreationLogic.create(any(), eq(nftTransfer), any(), eq(store), eq(ids), eq(changes)))
                 .willReturn(Pair.of(OK, 100L));
         given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
         subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-        verify(autoCreationLogic).create(eq(nftTransfer), any(), eq(store), eq(ids), eq(changes));
+        verify(autoCreationLogic).create(any(), eq(nftTransfer), any(), eq(store), eq(ids), eq(changes));
     }
 
     @Test
@@ -179,16 +167,16 @@ class TransferLogicTest {
         final var changes = List.of(fungibleTransfer, anotherFungibleTransfer);
 
         given(store.getAccount(asTypedEvmAddress(payer), OnMissing.THROW)).willReturn(account);
-        given(autoCreationLogic.create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes)))
+        given(autoCreationLogic.create(any(), eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes)))
                 .willReturn(Pair.of(OK, 100L));
-        given(autoCreationLogic.create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(changes)))
+        given(autoCreationLogic.create(any(), eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(changes)))
                 .willReturn(Pair.of(OK, 100L));
         given(hederaTokenStore.tryTokenChange(any())).willReturn(OK);
 
         subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-        verify(autoCreationLogic).create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes));
-        verify(autoCreationLogic).create(eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(changes));
+        verify(autoCreationLogic).create(any(), eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes));
+        verify(autoCreationLogic).create(any(), eq(anotherFungibleTransfer), any(), eq(store), eq(ids), eq(changes));
     }
 
     @Test
@@ -218,8 +206,9 @@ class TransferLogicTest {
 
             subject.doZeroSum(changes, store, ids, hederaTokenStore);
 
-            verify(autoCreationLogic, never()).create(eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes));
-            verify(autoCreationLogic, never()).create(eq(nftTransfer), any(), eq(store), eq(ids), eq(changes));
+            verify(autoCreationLogic, never())
+                    .create(any(), eq(fungibleTransfer), any(), eq(store), eq(ids), eq(changes));
+            verify(autoCreationLogic, never()).create(any(), eq(nftTransfer), any(), eq(store), eq(ids), eq(changes));
         }
     }
 

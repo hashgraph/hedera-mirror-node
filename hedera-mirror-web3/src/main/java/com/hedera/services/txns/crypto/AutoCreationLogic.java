@@ -23,6 +23,7 @@ import static com.hedera.services.utils.MiscUtils.asPrimitiveKeyUnchecked;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
+import com.hedera.mirror.web3.service.RecordFileService;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import com.hedera.services.fees.FeeCalculator;
 import com.hedera.services.jproto.JKey;
@@ -45,9 +46,10 @@ public class AutoCreationLogic extends AbstractAutoCreationLogic {
     public AutoCreationLogic(
             final FeeCalculator feeCalculator,
             final EvmProperties evmProperties,
+            final RecordFileService recordFileService,
             final SyntheticTxnFactory syntheticTxnFactory,
             final MirrorEvmContractAliases mirrorEvmContractAliases) {
-        super(feeCalculator, evmProperties, syntheticTxnFactory);
+        super(feeCalculator, evmProperties, recordFileService, syntheticTxnFactory);
         this.mirrorEvmContractAliases = mirrorEvmContractAliases;
     }
 

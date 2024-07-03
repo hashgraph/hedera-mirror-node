@@ -50,8 +50,9 @@ import org.hyperledger.besu.datatypes.Address;
 @Getter
 public class Account extends HederaEvmAccount {
 
+    public static final int UNLIMITED_AUTO_ASSOCIATIONS = -1;
+
     private static final Account EMPTY_ACCOUNT = new Account(0L, Id.DEFAULT, 0L);
-    private static final int UNLIMITED_AUTO_ASSOCIATIONS = -1;
 
     private final Address accountAddress;
 
