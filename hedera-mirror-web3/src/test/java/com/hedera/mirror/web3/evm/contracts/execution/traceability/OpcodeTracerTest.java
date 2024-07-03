@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
+import static com.hedera.mirror.web3.convert.BytesDecoder.ERROR_SIGNATURE;
+import static com.hedera.mirror.web3.convert.BytesDecoder.STRING_DECODER;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS;
@@ -37,6 +39,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -529,6 +532,54 @@ class OpcodeTracerTest {
                 .isNotEmpty()
                 .isEqualTo(Bytes.of(ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes())
                         .toHexString());
+    }
+
+    @Test
+    @DisplayName("should decode revert reason of precompile call with for encoded revert reason with error signature")
+    void shouldDecodeRevertReasonWhenPrecompileCallHasContractActionWithEncodedRevertReason() {
+        final var contractActionNoRevert =
+                contractAction(0, 0, CallOperationType.OP_CREATE, OUTPUT.getNumber(), CONTRACT_ADDRESS);
+        final var contractActionWithRevert =
+                contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), HTS_PRECOMPILE_ADDRESS);
+        contractActionWithRevert.setResultData(Bytes.concatenate(
+                        Bytes.fromHexString(ERROR_SIGNATURE),
+                        Bytes.wrapByteBuffer(
+                                STRING_DECODER.encode(Tuple.of(ExceptionalHaltReason.INVALID_OPERATION.name()))))
+                .toArray());
+
+        frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
+        final Opcode opcode = executeOperation(frame);
+        assertThat(opcode.reason()).isNull();
+
+        final var frameOfPrecompileCall = buildMessageFrameFromAction(contractActionWithRevert);
+        frame = setupFrame(frameOfPrecompileCall);
+
+        final Opcode opcodeForPrecompileCall = executePrecompileOperation(frame, Bytes.EMPTY);
+        assertThat(opcodeForPrecompileCall.reason())
+                .isNotEmpty()
+                .isEqualTo(
+                        Bytes.of(ExceptionalHaltReason.INVALID_OPERATION.name().getBytes())
+                                .toHexString());
+    }
+
+    @Test
+    @DisplayName("should return empty revert reason of precompile call with empty revert reason")
+    void shouldReturnEmptyReasonWhenPrecompileCallHasContractActionWithEmptyRevertReason() {
+        final var contractActionNoRevert =
+                contractAction(0, 0, CallOperationType.OP_CREATE, OUTPUT.getNumber(), CONTRACT_ADDRESS);
+        final var contractActionWithRevert =
+                contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), HTS_PRECOMPILE_ADDRESS);
+        contractActionWithRevert.setResultData(Bytes.EMPTY.toArray());
+
+        frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
+        final Opcode opcode = executeOperation(frame);
+        assertThat(opcode.reason()).isNull();
+
+        final var frameOfPrecompileCall = buildMessageFrameFromAction(contractActionWithRevert);
+        frame = setupFrame(frameOfPrecompileCall);
+
+        final Opcode opcodeForPrecompileCall = executePrecompileOperation(frame, Bytes.EMPTY);
+        assertThat(opcodeForPrecompileCall.reason()).isNotNull().isEqualTo(Bytes.EMPTY.toHexString());
     }
 
     private Opcode executeOperation(final MessageFrame frame) {

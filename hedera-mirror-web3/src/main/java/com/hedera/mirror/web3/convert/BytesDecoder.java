@@ -27,8 +27,8 @@ import org.apache.tuweni.bytes.Bytes;
 public class BytesDecoder {
 
     // Error(string)
-    private static final String ERROR_SIGNATURE = "0x08c379a0";
-    private static final ABIType<Tuple> STRING_DECODER = TypeFactory.create("(string)");
+    public static final String ERROR_SIGNATURE = "0x08c379a0";
+    public static final ABIType<Tuple> STRING_DECODER = TypeFactory.create("(string)");
     private static final int SIGNATURE_BYTES_LENGTH = 4;
 
     public static String maybeDecodeSolidityErrorStringToReadableMessage(final Bytes revertReason) {
