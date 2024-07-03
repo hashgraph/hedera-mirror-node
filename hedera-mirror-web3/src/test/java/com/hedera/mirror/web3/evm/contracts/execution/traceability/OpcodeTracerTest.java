@@ -44,6 +44,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Optional;
@@ -177,8 +179,8 @@ class OpcodeTracerTest {
 
         tracer.init(frame);
 
-        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
         verify(contractCallContext, times(1)).incrementContractActionsCounter();
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
     }
 
     @ParameterizedTest
@@ -192,11 +194,13 @@ class OpcodeTracerTest {
         tracer.tracePostExecution(frame, OPERATION.execute(frame, null));
 
         if (state == CODE_SUSPENDED) {
-            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
             verify(contractCallContext, times(1)).incrementContractActionsCounter();
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame())
+                    .isZero();
         } else {
-            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
             verify(contractCallContext, never()).incrementContractActionsCounter();
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame())
+                    .isEqualTo(-1);
         }
     }
 
@@ -213,13 +217,15 @@ class OpcodeTracerTest {
 
             tracer.traceAccountCreationResult(frame, frame.getExceptionalHaltReason());
 
-            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
             verify(contractCallContext, times(1)).incrementContractActionsCounter();
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame())
+                    .isZero();
         } else {
             tracer.traceAccountCreationResult(frame, frame.getExceptionalHaltReason());
 
-            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
             verify(contractCallContext, never()).incrementContractActionsCounter();
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame())
+                    .isEqualTo(-1);
         }
     }
 
@@ -233,8 +239,8 @@ class OpcodeTracerTest {
 
         tracer.traceAccountCreationResult(frame, Optional.empty());
 
-        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
         verify(contractCallContext, never()).incrementContractActionsCounter();
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
     }
 
     @ParameterizedTest
@@ -250,13 +256,15 @@ class OpcodeTracerTest {
 
             tracer.tracePrecompileResult(frame, ContractActionType.SYSTEM);
 
-            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isZero();
             verify(contractCallContext, times(1)).incrementContractActionsCounter();
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame())
+                    .isZero();
         } else {
             tracer.tracePrecompileResult(frame, ContractActionType.SYSTEM);
 
-            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
             verify(contractCallContext, never()).incrementContractActionsCounter();
+            assertThat(contractCallContext.getContractActionIndexOfCurrentFrame())
+                    .isEqualTo(-1);
         }
     }
 
@@ -269,8 +277,8 @@ class OpcodeTracerTest {
 
         tracer.tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
 
-        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
         verify(contractCallContext, never()).incrementContractActionsCounter();
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
     }
 
     @Test
@@ -496,6 +504,31 @@ class OpcodeTracerTest {
         assertThat(opcodeForPrecompileCall.reason())
                 .isNotEmpty()
                 .isEqualTo(Bytes.of(contractActionWithRevert.getResultData()).toString());
+    }
+
+    @Test
+    @DisplayName("should decode revert reason of precompile call with response code number for revert reason")
+    void shouldDecodeRevertReasonWhenPrecompileCallHasContractActionWithResponseCodeNumberForRevertReason() {
+        final var contractActionNoRevert =
+                contractAction(0, 0, CallOperationType.OP_CREATE, OUTPUT.getNumber(), CONTRACT_ADDRESS);
+        final var contractActionWithRevert =
+                contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), HTS_PRECOMPILE_ADDRESS);
+        contractActionWithRevert.setResultData(ByteBuffer.allocate(32)
+                .putInt(28, ResponseCodeEnum.INVALID_ACCOUNT_ID.getNumber())
+                .array());
+
+        frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
+        final Opcode opcode = executeOperation(frame);
+        assertThat(opcode.reason()).isNull();
+
+        final var frameOfPrecompileCall = buildMessageFrameFromAction(contractActionWithRevert);
+        frame = setupFrame(frameOfPrecompileCall);
+
+        final Opcode opcodeForPrecompileCall = executePrecompileOperation(frame, Bytes.EMPTY);
+        assertThat(opcodeForPrecompileCall.reason())
+                .isNotEmpty()
+                .isEqualTo(Bytes.of(ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes())
+                        .toHexString());
     }
 
     private Opcode executeOperation(final MessageFrame frame) {
