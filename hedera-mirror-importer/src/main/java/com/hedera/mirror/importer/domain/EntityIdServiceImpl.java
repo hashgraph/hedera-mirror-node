@@ -86,6 +86,11 @@ public class EntityIdServiceImpl implements EntityIdService {
 
     @Override
     public Optional<EntityId> lookup(ContractID contractId) {
+        return lookup(contractId, true);
+    }
+
+    @Override
+    public Optional<EntityId> lookup(ContractID contractId, boolean throwRecoverableError) {
         if (contractId == null || contractId.equals(ContractID.getDefaultInstance())) {
             return EMPTY;
         }
@@ -95,7 +100,10 @@ public class EntityIdServiceImpl implements EntityIdService {
             case EVM_ADDRESS -> cacheLookup(
                     contractId.getEvmAddress(),
                     () -> findByEvmAddress(
-                            toBytes(contractId.getEvmAddress()), contractId.getShardNum(), contractId.getRealmNum()));
+                            toBytes(contractId.getEvmAddress()),
+                            contractId.getShardNum(),
+                            contractId.getRealmNum(),
+                            throwRecoverableError));
             default -> {
                 Utility.handleRecoverableError("Invalid ContractID: {}", contractId);
                 yield Optional.empty();
@@ -158,12 +166,17 @@ public class EntityIdServiceImpl implements EntityIdService {
     }
 
     private Optional<EntityId> findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum) {
+        return findByEvmAddress(evmAddress, shardNum, realmNum, true);
+    }
+
+    private Optional<EntityId> findByEvmAddress(
+            byte[] evmAddress, long shardNum, long realmNum, boolean throwRecoverableError) {
         var id = Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
                 // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
                 .filter(e -> e.getShard() == shardNum && e.getRealm() == realmNum)
                 .or(() -> entityRepository.findByEvmAddress(evmAddress).map(EntityId::of));
 
-        if (id.isEmpty()) {
+        if (id.isEmpty() && throwRecoverableError) {
             Utility.handleRecoverableError("Entity not found for EVM address {}", Hex.encodeHexString(evmAddress));
         }
 

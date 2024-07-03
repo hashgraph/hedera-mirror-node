@@ -37,7 +37,7 @@ dependencies {
     implementation("com.github.node-gradle:gradle-node-plugin:7.0.2")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.4")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.2")
-    implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.6")
+    implementation("com.graphql-java-generator:graphql-gradle-plugin3:2.7")
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.6.1")
     implementation("gradle.plugin.org.flywaydb:gradle-plugin-publishing:$flywayVersion")
     implementation("io.freefair.gradle:lombok-plugin:8.6")
@@ -48,9 +48,9 @@ dependencies {
     implementation("org.jooq:jooq-codegen-gradle:$jooqVersion")
     implementation("org.jooq:jooq-meta:$jooqVersion")
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.6.0")
-    implementation("org.owasp:dependency-check-gradle:9.2.0")
+    implementation("org.owasp:dependency-check-gradle:10.0.1")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.0.0.4638")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.0")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.1")
     implementation("org.testcontainers:postgresql:1.19.8")
 }
 

@@ -761,6 +761,16 @@ class ContractController extends BaseController {
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
+    if (!contractId) {
+      res.locals[responseDataLabel] = {
+        logs: [],
+        links: {
+          next: null,
+        },
+      };
+      return;
+    }
+
     const query = this.extractContractLogsMultiUnionQuery(filters, contractId);
 
     const rows = await ContractService.getContractLogs(query);

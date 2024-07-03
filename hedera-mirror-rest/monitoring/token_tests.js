@@ -533,6 +533,10 @@ const checkTokenBalanceFreshness = async (server) => {
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
  */
 const runTests = async (server, testResult) => {
+  if (!tokenIdFromConfig) {
+    return Promise.resolve();
+  }
+
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
     runTest(getTokensCheck),

@@ -29,13 +29,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hedera.mirror.web3.Web3Properties;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.ContractExecutionService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -81,7 +82,7 @@ class ContractControllerTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private ContractCallService service;
+    private ContractExecutionService service;
 
     @MockBean(name = "rateLimitBucket")
     private Bucket rateLimitBucket;
@@ -471,13 +472,18 @@ class ContractControllerTest {
     @TestConfiguration
     public static class TestConfig {
         @Bean
-        public MirrorNodeEvmProperties evmProperties() {
+        MirrorNodeEvmProperties evmProperties() {
             return new MirrorNodeEvmProperties();
         }
 
         @Bean
         MeterRegistry meterRegistry() {
             return new SimpleMeterRegistry();
+        }
+
+        @Bean
+        Web3Properties web3Properties() {
+            return new Web3Properties();
         }
     }
 }

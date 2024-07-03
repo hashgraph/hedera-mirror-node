@@ -623,7 +623,7 @@ class NftRepositoryTest extends Web3IntegrationTest {
                 .nft()
                 .customize(n -> n.accountId(nft.getAccountId()))
                 .persist();
-        domainBuilder.nft().customize(n -> n.accountId(EntityId.of(0, 0, 123))).persist();
+        domainBuilder.nft().customize(n -> n.accountId(EntityId.of(123))).persist();
         domainBuilder.entity().customize(e -> e.id(nft.getTokenId())).persist();
         domainBuilder.entity().customize(e -> e.id(nft2.getTokenId())).persist();
 
