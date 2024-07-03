@@ -248,6 +248,7 @@ class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
     }
 
+    @Override
     protected ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
