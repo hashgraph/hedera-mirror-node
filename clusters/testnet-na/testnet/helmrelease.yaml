@@ -56,18 +56,6 @@ spec:
       enabled: false
     redis:
       enabled: false
-    rest:
-      monitor:
-        config: |-
-          {
-            "servers": [
-              {
-                "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
-                "name": "kubernetes"
-              }
-            ],
-            "stateproof": { "enabled": false }
-          }
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
