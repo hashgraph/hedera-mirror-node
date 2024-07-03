@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.107.2'
+      version: '0.108.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -61,11 +61,6 @@ spec:
       enabled: false
     rest:
       enabled: false
-      monitor:
-        config: |-
-          {
-            "stateproof": { "enabled": false }
-          }
     restjava:
       enabled: false
     rosetta:

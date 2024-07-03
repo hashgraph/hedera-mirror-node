@@ -59,10 +59,8 @@ spec:
     rest:
       enabled: true
       monitor:
-        config: |-
-          {
-            "stateproof": { "enabled": false }
-          }
+        test:
+          enabled: false
     restjava:
       enabled: true
     rosetta:
