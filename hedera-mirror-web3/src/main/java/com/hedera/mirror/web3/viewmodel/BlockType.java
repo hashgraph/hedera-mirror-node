@@ -26,10 +26,6 @@ public record BlockType(String name, long number) {
     public static final BlockType EARLIEST = new BlockType("earliest", 0L);
     public static final BlockType LATEST = new BlockType("latest", Long.MAX_VALUE);
 
-    public static BlockType of(final long number) {
-        return new BlockType(String.valueOf(number), number);
-    }
-
     public static BlockType of(final String value) {
         if (StringUtils.isEmpty(value)) {
             return LATEST;

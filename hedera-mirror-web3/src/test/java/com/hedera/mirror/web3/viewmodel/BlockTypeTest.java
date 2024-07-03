@@ -21,18 +21,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class BlockTypeTest {
-
-    @Test
-    void ofNumber() {
-        assertThat(BlockType.of(101)).isEqualTo(new BlockType("101", 101));
-    }
-
     @CsvSource({
         "," + MAX_VALUE,
         "''," + MAX_VALUE,

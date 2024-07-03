@@ -69,9 +69,9 @@ public class MirrorEvmMessageCallProcessor extends AbstractEvmMessageCallProcess
     protected void executeLazyCreate(final MessageFrame frame, final OperationTracer operationTracer) {
         final var updater = (HederaEvmStackedWorldStateUpdater) frame.getWorldUpdater();
         final var syntheticBalanceChange = constructSyntheticLazyCreateBalanceChangeFrom(frame);
-        final var blockValues = frame.getBlockValues();
-        final var timestamp =
-                Timestamp.newBuilder().setSeconds(blockValues.getTimestamp()).build();
+        final var timestamp = Timestamp.newBuilder()
+                .setSeconds(frame.getBlockValues().getTimestamp())
+                .build();
         final var lazyCreateResult = autoCreationLogic.create(
                 syntheticBalanceChange,
                 timestamp,
