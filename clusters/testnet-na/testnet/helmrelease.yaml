@@ -56,6 +56,10 @@ spec:
       enabled: false
     redis:
       enabled: false
+    rest:
+      monitor:
+        test:
+          enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
