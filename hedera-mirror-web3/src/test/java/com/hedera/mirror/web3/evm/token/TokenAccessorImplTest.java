@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.evm.token;
 
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -38,7 +39,6 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.ContextExtension;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -83,9 +83,7 @@ class TokenAccessorImplTest {
     private static final String HEX_TOKEN = "0x00000000000000000000000000000000000004e4";
     private static final String HEX_ACCOUNT = "0x00000000000000000000000000000000000004e5";
     private static final Address TOKEN = Address.fromHexString(HEX_TOKEN);
-    private static final EntityId ENTITY = DomainUtils.fromEvmAddress(TOKEN.toArrayUnsafe());
-    private static final Long ENTITY_ID =
-            EntityId.of(ENTITY.getShard(), ENTITY.getRealm(), ENTITY.getNum()).getId();
+    private static final Long ENTITY_ID = entityIdFromEvmAddress(TOKEN).getId();
     private static final Address ACCOUNT = Address.fromHexString(HEX_ACCOUNT);
     private final long serialNo = 0L;
     private final DomainBuilder domainBuilder = new DomainBuilder();
