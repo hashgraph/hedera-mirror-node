@@ -238,10 +238,9 @@ class HederaTokenStoreTest {
     @Test
     void associatingFailsWhenAutoAssociationLimitReached() {
         var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
-                .setNumAssociations(associatedTokensCount).toBuilder()
-                        .maxAutoAssociations(maxAutoAssociations)
-                        .usedAutoAssociations(maxAutoAssociations)
-                        .build();
+                .setNumAssociations(associatedTokensCount)
+                .setMaxAutoAssociations(maxAutoAssociations)
+                .setUsedAutoAssociations(maxAutoAssociations);
         var token = new Token(Id.fromGrpcToken(misc));
 
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))

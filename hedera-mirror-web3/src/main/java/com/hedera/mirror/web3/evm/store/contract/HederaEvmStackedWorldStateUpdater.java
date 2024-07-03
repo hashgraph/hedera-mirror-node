@@ -219,9 +219,8 @@ public class HederaEvmStackedWorldStateUpdater
     }
 
     private MutableAccount createGhostAccount(Address address) {
-        final var ghostAcc = com.hedera.services.store.models.Account.getDummySenderAccount(address).toBuilder()
-                .maxAutoAssociations(1)
-                .build();
+        final var ghostAcc = com.hedera.services.store.models.Account.getDummySenderAccount(address)
+                .setMaxAutoAssociations(1);
         store.updateAccount(ghostAcc);
         return createAccount(address, 0, Wei.ZERO);
     }
