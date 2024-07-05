@@ -25,12 +25,15 @@ import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_FAILED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.NOT_STARTED;
+import static org.hyperledger.besu.evm.frame.MessageFrame.Type.CONTRACT_CREATION;
+import static org.hyperledger.besu.evm.frame.MessageFrame.Type.MESSAGE_CALL;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -56,6 +59,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import lombok.CustomLog;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
@@ -85,7 +89,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Spy;
@@ -135,6 +140,11 @@ class OpcodeTracerTest {
     private UInt256[] stackItems;
     private Bytes[] wordsInMemory;
     private Map<UInt256, UInt256> updatedStorage;
+
+    static Stream<Arguments> allMessageFrameTypesAndStates() {
+        return Stream.of(MessageFrame.Type.values())
+                .flatMap(type -> Stream.of(MessageFrame.State.values()).map(state -> Arguments.of(type, state)));
+    }
 
     @BeforeAll
     static void initStaticMocks() {
@@ -202,10 +212,11 @@ class OpcodeTracerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(MessageFrame.State.class)
+    @MethodSource("allMessageFrameTypesAndStates")
     @DisplayName("should increment contract action index on tracePostExecution() for SUSPENDED frame")
-    void shouldIncrementContractActionIndexOnTraceContextReEnter(MessageFrame.State state) {
-        frame = setupInitialFrame(tracerOptions);
+    void shouldIncrementContractActionIndexOnTraceContextReEnter(
+            final MessageFrame.Type type, final MessageFrame.State state) {
+        frame = setupInitialFrame(tracerOptions, type);
         frame.setState(state);
         contractCallContext.setContractActionIndexOfCurrentFrame(-1);
 
@@ -223,14 +234,15 @@ class OpcodeTracerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(MessageFrame.State.class)
+    @MethodSource("allMessageFrameTypesAndStates")
     @DisplayName("should increment contract action index for synthetic actions on traceAccountCreationResult()")
-    void shouldIncrementContractActionIndexForSyntheticActionsOnAccountCreationResult(MessageFrame.State state) {
-        frame = setupInitialFrame(tracerOptions);
+    void shouldIncrementContractActionIndexForSyntheticActionsOnAccountCreationResult(
+            final MessageFrame.Type type, final MessageFrame.State state) {
+        frame = setupInitialFrame(tracerOptions, type);
         frame.setState(state);
         contractCallContext.setContractActionIndexOfCurrentFrame(-1);
 
-        if (state == EXCEPTIONAL_HALT || state == COMPLETED_FAILED) {
+        if (type == MESSAGE_CALL && (state == EXCEPTIONAL_HALT || state == COMPLETED_FAILED)) {
             frame.setExceptionalHaltReason(Optional.of(INVALID_SOLIDITY_ADDRESS));
 
             tracer.traceAccountCreationResult(frame, frame.getExceptionalHaltReason());
@@ -248,10 +260,11 @@ class OpcodeTracerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(MessageFrame.State.class)
+    @MethodSource("allMessageFrameTypesAndStates")
     @DisplayName("should not increment contract action index when halt reason is empty on traceAccountCreationResult()")
-    void shouldNotIncrementContractActionIndexForEmptyHaltReasonOnTraceAccountCreationResult(MessageFrame.State state) {
-        frame = setupInitialFrame(tracerOptions);
+    void shouldNotIncrementContractActionIndexForEmptyHaltReasonOnTraceAccountCreationResult(
+            final MessageFrame.Type type, final MessageFrame.State state) {
+        frame = setupInitialFrame(tracerOptions, type);
         frame.setState(state);
         contractCallContext.setContractActionIndexOfCurrentFrame(-1);
 
@@ -262,14 +275,32 @@ class OpcodeTracerTest {
     }
 
     @ParameterizedTest
-    @EnumSource(MessageFrame.State.class)
+    @MethodSource("allMessageFrameTypesAndStates")
+    @DisplayName("should not increment contract action index when halt reason is not INVALID_SOLIDITY_ADDRESS "
+            + "on traceAccountCreationResult()")
+    void shouldNotIncrementContractActionIndexForHaltReasonNotOfSyntheticActionOnTraceAccountCreationResult(
+            final MessageFrame.Type type, final MessageFrame.State state) {
+        frame = setupInitialFrame(tracerOptions, type);
+        frame.setState(state);
+        frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
+        contractCallContext.setContractActionIndexOfCurrentFrame(-1);
+
+        tracer.traceAccountCreationResult(frame, Optional.of(INSUFFICIENT_GAS));
+
+        verify(contractCallContext, never()).incrementContractActionsCounter();
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
+    }
+
+    @ParameterizedTest
+    @MethodSource("allMessageFrameTypesAndStates")
     @DisplayName("should increment contract action index for synthetic actions on tracePrecompileResult()")
-    void shouldIncrementContractActionIndexForSyntheticActionsOnTracePrecompileResult(MessageFrame.State state) {
-        frame = setupInitialFrame(tracerOptions);
+    void shouldIncrementContractActionIndexForSyntheticActionsOnTracePrecompileResult(
+            final MessageFrame.Type type, final MessageFrame.State state) {
+        frame = setupInitialFrame(tracerOptions, type);
         frame.setState(state);
         contractCallContext.setContractActionIndexOfCurrentFrame(-1);
 
-        if (state == EXCEPTIONAL_HALT || state == COMPLETED_FAILED) {
+        if (type == MESSAGE_CALL && (state == EXCEPTIONAL_HALT || state == COMPLETED_FAILED)) {
             frame.setExceptionalHaltReason(Optional.of(INVALID_SOLIDITY_ADDRESS));
 
             tracer.tracePrecompileResult(frame, ContractActionType.SYSTEM);
@@ -289,11 +320,40 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("should not increment contract action index for halted precompile frames on tracePrecompileCall()")
     void shouldNotIncrementContractActionIndexForHaltedPrecompileFrameOnTracePrecompileResult() {
-        frame = setupInitialFrame(tracerOptions, ETH_PRECOMPILE_ADDRESS);
+        frame = setupInitialFrame(tracerOptions, ETH_PRECOMPILE_ADDRESS, MESSAGE_CALL);
         frame.setState(EXCEPTIONAL_HALT);
         contractCallContext.setContractActionIndexOfCurrentFrame(-1);
 
         tracer.tracePrecompileResult(frame, ContractActionType.PRECOMPILE);
+
+        verify(contractCallContext, never()).incrementContractActionsCounter();
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
+    }
+
+    @Test
+    @DisplayName("should not increment contract action index when halt reason is empty on tracePrecompileCall()")
+    void shouldNotIncrementContractActionIndexForEmptyHaltReasonOnTracePrecompileResult() {
+        frame = setupInitialFrame(tracerOptions, ETH_PRECOMPILE_ADDRESS, MESSAGE_CALL);
+        frame.setState(EXCEPTIONAL_HALT);
+        frame.setExceptionalHaltReason(Optional.empty());
+        contractCallContext.setContractActionIndexOfCurrentFrame(-1);
+
+        tracer.tracePrecompileResult(frame, ContractActionType.SYSTEM);
+
+        verify(contractCallContext, never()).incrementContractActionsCounter();
+        assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
+    }
+
+    @Test
+    @DisplayName("should not increment contract action index when halt reason is not INVALID_SOLIDITY_ADDRESS "
+            + "on tracePrecompileCall()")
+    void shouldNotIncrementContractActionIndexForHaltReasonNotOfSynthenticActionOnTracePrecompileResult() {
+        frame = setupInitialFrame(tracerOptions, ETH_PRECOMPILE_ADDRESS, MESSAGE_CALL);
+        frame.setState(EXCEPTIONAL_HALT);
+        frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
+        contractCallContext.setContractActionIndexOfCurrentFrame(-1);
+
+        tracer.tracePrecompileResult(frame, ContractActionType.SYSTEM);
 
         verify(contractCallContext, never()).incrementContractActionsCounter();
         assertThat(contractCallContext.getContractActionIndexOfCurrentFrame()).isEqualTo(-1);
@@ -326,7 +386,8 @@ class OpcodeTracerTest {
         // simulate 4 calls
         final int expectedDepth = 4;
         for (int i = 0; i < expectedDepth; i++) {
-            frame.getMessageFrameStack().add(buildMessageFrame(Address.fromHexString("0x10%d".formatted(i))));
+            frame.getMessageFrameStack()
+                    .add(buildMessageFrame(Address.fromHexString("0x10%d".formatted(i)), MESSAGE_CALL));
         }
 
         final Opcode opcode = executeOperation(frame);
@@ -446,10 +507,9 @@ class OpcodeTracerTest {
                 tracerOptions.toBuilder().stack(true).memory(true).storage(true).build();
         frame = setupInitialFrame(tracerOptions);
 
-        final Opcode opcode = executeOperation(frame, ExceptionalHaltReason.INSUFFICIENT_GAS);
+        final Opcode opcode = executeOperation(frame, INSUFFICIENT_GAS);
         assertThat(opcode.reason())
-                .contains(Hex.encodeHexString(
-                        ExceptionalHaltReason.INSUFFICIENT_GAS.getDescription().getBytes()));
+                .contains(Hex.encodeHexString(INSUFFICIENT_GAS.getDescription().getBytes()));
         assertThat(opcode.stack()).contains(stackItems);
         assertThat(opcode.memory()).contains(wordsInMemory);
         assertThat(opcode.storage()).containsExactlyEntriesOf(updatedStorage);
@@ -494,7 +554,7 @@ class OpcodeTracerTest {
     @Test
     @DisplayName("should record revert reason of precompile call when frame has revert reason")
     void shouldRecordRevertReasonWhenEthPrecompileCallHasRevertReason() {
-        frame = setupInitialFrame(tracerOptions, ETH_PRECOMPILE_ADDRESS);
+        frame = setupInitialFrame(tracerOptions, ETH_PRECOMPILE_ADDRESS, MESSAGE_CALL);
         frame.setRevertReason(Bytes.of("revert reason".getBytes()));
 
         final Opcode opcode = executePrecompileOperation(frame, Bytes.EMPTY);
@@ -512,7 +572,8 @@ class OpcodeTracerTest {
                 contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), HTS_PRECOMPILE_ADDRESS);
         contractActionWithRevert.setResultData("revert reason".getBytes());
 
-        frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
+        frame = setupInitialFrame(
+                tracerOptions, CONTRACT_ADDRESS, MESSAGE_CALL, contractActionNoRevert, contractActionWithRevert);
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.reason()).isNull();
 
@@ -537,7 +598,8 @@ class OpcodeTracerTest {
                 .putInt(28, ResponseCodeEnum.INVALID_ACCOUNT_ID.getNumber())
                 .array());
 
-        frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
+        frame = setupInitialFrame(
+                tracerOptions, CONTRACT_ADDRESS, MESSAGE_CALL, contractActionNoRevert, contractActionWithRevert);
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.reason()).isNull();
 
@@ -563,7 +625,8 @@ class OpcodeTracerTest {
                 getAbiEncodedRevertReason(Bytes.of(INVALID_OPERATION.name().getBytes()))
                         .toArray());
 
-        frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
+        frame = setupInitialFrame(
+                tracerOptions, CONTRACT_ADDRESS, MESSAGE_CALL, contractActionNoRevert, contractActionWithRevert);
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.reason()).isNull();
 
@@ -585,7 +648,8 @@ class OpcodeTracerTest {
                 contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), HTS_PRECOMPILE_ADDRESS);
         contractActionWithRevert.setResultData(Bytes.EMPTY.toArray());
 
-        frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
+        frame = setupInitialFrame(
+                tracerOptions, CONTRACT_ADDRESS, MESSAGE_CALL, contractActionNoRevert, contractActionWithRevert);
         final Opcode opcode = executeOperation(frame);
         assertThat(opcode.reason()).isNull();
 
@@ -657,19 +721,24 @@ class OpcodeTracerTest {
     }
 
     private MessageFrame setupInitialFrame(final OpcodeTracerOptions options) {
-        return setupInitialFrame(options, CONTRACT_ADDRESS);
+        return setupInitialFrame(options, CONTRACT_ADDRESS, MESSAGE_CALL);
+    }
+
+    private MessageFrame setupInitialFrame(final OpcodeTracerOptions options, final MessageFrame.Type type) {
+        return setupInitialFrame(options, CONTRACT_ADDRESS, type);
     }
 
     private MessageFrame setupInitialFrame(
             final OpcodeTracerOptions options,
             final Address recipientAddress,
+            final MessageFrame.Type type,
             final ContractAction... contractActions) {
         contractCallContext.setOpcodeTracerOptions(options);
         contractCallContext.setContractActions(Lists.newArrayList(contractActions));
         contractCallContext.setContractActionIndexOfCurrentFrame(-1);
         EXECUTED_FRAMES.set(0);
 
-        final MessageFrame messageFrame = buildMessageFrame(recipientAddress);
+        final MessageFrame messageFrame = buildMessageFrame(recipientAddress, type);
         messageFrame.setState(NOT_STARTED);
         return setupFrame(messageFrame);
     }
@@ -721,7 +790,8 @@ class OpcodeTracerTest {
         final var recipientAddress = Address.wrap(Bytes.of(action.getRecipientAddress()));
         final var senderAddress = toAddress(action.getCaller());
         final var value = Wei.of(action.getValue());
-        final var messageFrame = messageFrameBuilder(recipientAddress)
+        final var type = action.getCallType() == ContractActionType.CREATE_VALUE ? CONTRACT_CREATION : MESSAGE_CALL;
+        final var messageFrame = messageFrameBuilder(recipientAddress, type)
                 .sender(senderAddress)
                 .originator(senderAddress)
                 .address(recipientAddress)
@@ -735,19 +805,20 @@ class OpcodeTracerTest {
         return messageFrame;
     }
 
-    private MessageFrame buildMessageFrame(final Address recipientAddress) {
+    private MessageFrame buildMessageFrame(final Address recipientAddress, final MessageFrame.Type type) {
         REMAINING_GAS.set(REMAINING_GAS.get() - GAS_COST);
 
-        final MessageFrame messageFrame = messageFrameBuilder(recipientAddress).build();
+        final MessageFrame messageFrame =
+                messageFrameBuilder(recipientAddress, type).build();
         messageFrame.setCurrentOperation(OPERATION);
         messageFrame.setPC(0);
         messageFrame.setGasRemaining(REMAINING_GAS.get());
         return messageFrame;
     }
 
-    private MessageFrame.Builder messageFrameBuilder(final Address recipientAddress) {
+    private MessageFrame.Builder messageFrameBuilder(final Address recipientAddress, final MessageFrame.Type type) {
         return new MessageFrame.Builder()
-                .type(MessageFrame.Type.MESSAGE_CALL)
+                .type(type)
                 .code(CodeV0.EMPTY_CODE)
                 .sender(Address.ZERO)
                 .originator(Address.ZERO)
