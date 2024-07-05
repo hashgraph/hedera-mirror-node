@@ -241,6 +241,6 @@ public class OpcodeTracer implements HederaOperationTracer {
             }
         }
 
-        return BytesDecoder.getAbiEncodedRevertReason(revertReason);
+        return BytesDecoder.getAbiEncodedRevertReason(trimmedReason);
     }
 }
