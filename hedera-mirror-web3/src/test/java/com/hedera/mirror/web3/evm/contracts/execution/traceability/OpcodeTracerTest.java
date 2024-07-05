@@ -16,14 +16,16 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
-import static com.hedera.mirror.web3.convert.BytesDecoder.ERROR_SIGNATURE;
-import static com.hedera.mirror.web3.convert.BytesDecoder.STRING_DECODER;
+import static com.hedera.mirror.web3.convert.BytesDecoder.getAbiEncodedRevertReason;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.ExchangeRatePrecompiledContract.EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS;
+import static com.hedera.services.store.contracts.precompile.PrngSystemPrecompiledContract.PRNG_PRECOMPILE_ADDRESS;
 import static com.hedera.services.store.contracts.precompile.SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.OUTPUT;
 import static com.hedera.services.stream.proto.ContractAction.ResultDataCase.REVERT_REASON;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INVALID_OPERATION;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_FAILED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
@@ -39,12 +41,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.esaulpaugh.headlong.abi.Tuple;
 import com.google.common.collect.ImmutableSortedMap;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.evm.config.PrecompilesHolder;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -73,6 +75,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.Operation.OperationResult;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -120,8 +123,11 @@ class OpcodeTracerTest {
     @Mock
     private MutableAccount recipientAccount;
 
+    @Mock
+    private PrecompilesHolder precompilesHolder;
+
     // Transient test data
-    private final OpcodeTracer tracer = new OpcodeTracer();
+    private OpcodeTracer tracer;
     private OpcodeTracerOptions tracerOptions;
     private MessageFrame frame;
 
@@ -142,7 +148,16 @@ class OpcodeTracerTest {
 
     @BeforeEach
     void setUp() {
+        when(precompilesHolder.getHederaPrecompiles())
+                .thenReturn(Map.of(
+                        HTS_PRECOMPILE_ADDRESS.toString(),
+                        mock(PrecompiledContract.class),
+                        PRNG_PRECOMPILE_ADDRESS,
+                        mock(PrecompiledContract.class),
+                        EXCHANGE_RATE_SYSTEM_CONTRACT_ADDRESS,
+                        mock(PrecompiledContract.class)));
         REMAINING_GAS.set(INITIAL_GAS);
+        tracer = new OpcodeTracer(precompilesHolder);
         tracerOptions = new OpcodeTracerOptions(false, false, false);
         contextMockedStatic.when(ContractCallContext::get).thenReturn(contractCallContext);
     }
@@ -489,12 +504,13 @@ class OpcodeTracerTest {
     }
 
     @Test
-    @DisplayName("should record revert reason of precompile call with revert reason")
-    void shouldRecordRevertReasonWhenPrecompileCallHasContractActions() {
+    @DisplayName("should return ABI-encoded revert reason for precompile call with plaintext revert reason")
+    void shouldReturnAbiEncodedRevertReasonWhenPrecompileCallHasContractActionWithPlaintextRevertReason() {
         final var contractActionNoRevert =
                 contractAction(0, 0, CallOperationType.OP_CREATE, OUTPUT.getNumber(), CONTRACT_ADDRESS);
         final var contractActionWithRevert =
                 contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), HTS_PRECOMPILE_ADDRESS);
+        contractActionWithRevert.setResultData("revert reason".getBytes());
 
         frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
         final Opcode opcode = executeOperation(frame);
@@ -506,12 +522,13 @@ class OpcodeTracerTest {
         final Opcode opcodeForPrecompileCall = executePrecompileOperation(frame, Bytes.EMPTY);
         assertThat(opcodeForPrecompileCall.reason())
                 .isNotEmpty()
-                .isEqualTo(Bytes.of(contractActionWithRevert.getResultData()).toString());
+                .isEqualTo(getAbiEncodedRevertReason(Bytes.of(contractActionWithRevert.getResultData()))
+                        .toHexString());
     }
 
     @Test
-    @DisplayName("should decode revert reason of precompile call with response code number for revert reason")
-    void shouldDecodeRevertReasonWhenPrecompileCallHasContractActionWithResponseCodeNumberForRevertReason() {
+    @DisplayName("should return ABI-encoded revert reason for precompile call with response code for revert reason")
+    void shouldReturnAbiEncodedRevertReasonWhenPrecompileCallHasContractActionWithResponseCodeNumberRevertReason() {
         final var contractActionNoRevert =
                 contractAction(0, 0, CallOperationType.OP_CREATE, OUTPUT.getNumber(), CONTRACT_ADDRESS);
         final var contractActionWithRevert =
@@ -530,22 +547,21 @@ class OpcodeTracerTest {
         final Opcode opcodeForPrecompileCall = executePrecompileOperation(frame, Bytes.EMPTY);
         assertThat(opcodeForPrecompileCall.reason())
                 .isNotEmpty()
-                .isEqualTo(Bytes.of(ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes())
+                .isEqualTo(getAbiEncodedRevertReason(Bytes.of(
+                                ResponseCodeEnum.INVALID_ACCOUNT_ID.name().getBytes()))
                         .toHexString());
     }
 
     @Test
-    @DisplayName("should decode revert reason of precompile call with for encoded revert reason with error signature")
-    void shouldDecodeRevertReasonWhenPrecompileCallHasContractActionWithEncodedRevertReason() {
+    @DisplayName("should return ABI-encoded revert reason for precompile call with ABI-encoded revert reason")
+    void shouldReturnAbiEncodedRevertReasonWhenPrecompileCallHasContractActionWithAbiEncodedRevertReason() {
         final var contractActionNoRevert =
                 contractAction(0, 0, CallOperationType.OP_CREATE, OUTPUT.getNumber(), CONTRACT_ADDRESS);
         final var contractActionWithRevert =
                 contractAction(1, 1, CallOperationType.OP_CALL, REVERT_REASON.getNumber(), HTS_PRECOMPILE_ADDRESS);
-        contractActionWithRevert.setResultData(Bytes.concatenate(
-                        Bytes.fromHexString(ERROR_SIGNATURE),
-                        Bytes.wrapByteBuffer(
-                                STRING_DECODER.encode(Tuple.of(ExceptionalHaltReason.INVALID_OPERATION.name()))))
-                .toArray());
+        contractActionWithRevert.setResultData(
+                getAbiEncodedRevertReason(Bytes.of(INVALID_OPERATION.name().getBytes()))
+                        .toArray());
 
         frame = setupInitialFrame(tracerOptions, CONTRACT_ADDRESS, contractActionNoRevert, contractActionWithRevert);
         final Opcode opcode = executeOperation(frame);
@@ -557,9 +573,7 @@ class OpcodeTracerTest {
         final Opcode opcodeForPrecompileCall = executePrecompileOperation(frame, Bytes.EMPTY);
         assertThat(opcodeForPrecompileCall.reason())
                 .isNotEmpty()
-                .isEqualTo(
-                        Bytes.of(ExceptionalHaltReason.INVALID_OPERATION.name().getBytes())
-                                .toHexString());
+                .isEqualTo(Bytes.of(contractActionWithRevert.getResultData()).toHexString());
     }
 
     @Test

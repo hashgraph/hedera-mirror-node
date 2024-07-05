@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
-import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
 import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
@@ -26,8 +25,9 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.Type.MESSAGE_CALL;
 
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.web3.common.ContractCallContext;
+import com.hedera.mirror.web3.convert.BytesDecoder;
+import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
@@ -47,12 +47,19 @@ import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.springframework.util.CollectionUtils;
 
 @Named
 @CustomLog
 @Getter
 public class OpcodeTracer implements HederaOperationTracer {
+
+    private final Map<String, PrecompiledContract> hederaPrecompiledContracts;
+
+    public OpcodeTracer(final PrecompiledContractProvider precompiledContractProvider) {
+        this.hederaPrecompiledContracts = precompiledContractProvider.getHederaPrecompiles();
+    }
 
     @Override
     public void init(final MessageFrame frame) {
@@ -87,9 +94,8 @@ public class OpcodeTracer implements HederaOperationTracer {
     @Override
     public void tracePrecompileCall(final MessageFrame frame, final long gasRequirement, final Bytes output) {
         ContractCallContext context = getContext();
-        Optional<Bytes> revertReason = isCallToHederaTokenService(frame)
-                ? getRevertReasonFromContractActions(context)
-                : frame.getRevertReason();
+        Optional<Bytes> revertReason =
+                isCallToHederaPrecompile(frame) ? getRevertReasonFromContractActions(context) : frame.getRevertReason();
         Opcode opcode = Opcode.builder()
                 .pc(frame.getPC())
                 .op(
@@ -102,7 +108,7 @@ public class OpcodeTracer implements HederaOperationTracer {
                 .stack(Collections.emptyList())
                 .memory(Collections.emptyList())
                 .storage(Collections.emptyMap())
-                .reason(revertReason.map(Bytes::toString).orElse(null))
+                .reason(revertReason.map(Bytes::toHexString).orElse(null))
                 .build();
 
         context.addOpcodes(opcode);
@@ -177,16 +183,17 @@ public class OpcodeTracer implements HederaOperationTracer {
 
     private Optional<Bytes> getRevertReasonFromContractActions(ContractCallContext context) {
         List<ContractAction> contractActions = context.getContractActions();
-        int currentActionIndex = context.getContractActionIndexOfCurrentFrame();
 
         if (CollectionUtils.isEmpty(contractActions)) {
             return Optional.empty();
         }
 
+        int currentActionIndex = context.getContractActionIndexOfCurrentFrame();
+
         return contractActions.stream()
                 .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex)
                 .map(action -> Bytes.of(action.getResultData()))
-                .map(this::maybeDecodeRevertReason)
+                .map(this::formatRevertReason)
                 .findFirst();
     }
 
@@ -194,9 +201,11 @@ public class OpcodeTracer implements HederaOperationTracer {
         return ContractCallContext.get();
     }
 
-    private boolean isCallToHederaTokenService(MessageFrame frame) {
+    private boolean isCallToHederaPrecompile(MessageFrame frame) {
         Address recipientAddress = frame.getRecipientAddress();
-        return recipientAddress.equals(Address.fromHexString(SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS));
+        return hederaPrecompiledContracts.keySet().stream()
+                .map(Address::fromHexString)
+                .anyMatch(recipientAddress::equals);
     }
 
     /**
@@ -212,24 +221,26 @@ public class OpcodeTracer implements HederaOperationTracer {
                 && frame.getExceptionalHaltReason().get().equals(INVALID_SOLIDITY_ADDRESS);
     }
 
-    private Bytes maybeDecodeRevertReason(final Bytes revertReason) {
-        boolean isNullOrEmpty = revertReason == null || revertReason.isEmpty();
-
-        if (isNullOrEmpty) {
+    /**
+     * Formats the revert reason to be consistent with the revert reason format in the EVM.
+     * <a href="https://besu.hyperledger.org/23.10.2/private-networks/how-to/send-transactions/revert-reason#revert-reason-format">...</a>
+     * @param revertReason the revert reason
+     * @return the formatted revert reason
+     */
+    private Bytes formatRevertReason(final Bytes revertReason) {
+        Bytes trimmedReason;
+        if (revertReason == null || (trimmedReason = revertReason.trimLeadingZeros()).isEmpty()) {
             return Bytes.EMPTY;
         }
 
-        final var trimmedReason = revertReason.trimLeadingZeros();
+        Bytes reason;
         ResponseCodeEnum responseCode;
         if (trimmedReason.size() <= 4 && (responseCode = ResponseCodeEnum.forNumber(trimmedReason.toInt())) != null) {
-            return Bytes.of(responseCode.name().getBytes());
+            reason = Bytes.of(responseCode.name().getBytes());
+        } else {
+            reason = revertReason;
         }
 
-        String decodedReason = maybeDecodeSolidityErrorStringToReadableMessage(revertReason);
-        if (StringUtils.isNotEmpty(decodedReason)) {
-            return Bytes.of(decodedReason.getBytes());
-        }
-
-        return revertReason;
+        return BytesDecoder.getAbiEncodedRevertReason(reason);
     }
 }
