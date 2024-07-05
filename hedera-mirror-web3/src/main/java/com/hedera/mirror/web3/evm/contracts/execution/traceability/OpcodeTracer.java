@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
@@ -55,10 +56,11 @@ import org.springframework.util.CollectionUtils;
 @Getter
 public class OpcodeTracer implements HederaOperationTracer {
 
-    private final Map<String, PrecompiledContract> hederaPrecompiledContracts;
+    private final Map<Address, PrecompiledContract> hederaPrecompiles;
 
     public OpcodeTracer(final PrecompiledContractProvider precompiledContractProvider) {
-        this.hederaPrecompiledContracts = precompiledContractProvider.getHederaPrecompiles();
+        this.hederaPrecompiles = precompiledContractProvider.getHederaPrecompiles().entrySet().stream()
+                .collect(Collectors.toMap(e -> Address.fromHexString(e.getKey()), Map.Entry::getValue));
     }
 
     @Override
@@ -203,9 +205,7 @@ public class OpcodeTracer implements HederaOperationTracer {
 
     private boolean isCallToHederaPrecompile(MessageFrame frame) {
         Address recipientAddress = frame.getRecipientAddress();
-        return hederaPrecompiledContracts.keySet().stream()
-                .map(Address::fromHexString)
-                .anyMatch(recipientAddress::equals);
+        return hederaPrecompiles.containsKey(recipientAddress);
     }
 
     /**
@@ -228,19 +228,19 @@ public class OpcodeTracer implements HederaOperationTracer {
      * @return the formatted revert reason
      */
     private Bytes formatRevertReason(final Bytes revertReason) {
-        Bytes trimmedReason;
-        if (revertReason == null || (trimmedReason = revertReason.trimLeadingZeros()).isEmpty()) {
+        if (revertReason == null || revertReason.isZero()) {
             return Bytes.EMPTY;
         }
 
-        Bytes reason;
-        ResponseCodeEnum responseCode;
-        if (trimmedReason.size() <= 4 && (responseCode = ResponseCodeEnum.forNumber(trimmedReason.toInt())) != null) {
-            reason = Bytes.of(responseCode.name().getBytes());
-        } else {
-            reason = revertReason;
+        Bytes trimmedReason = revertReason.trimLeadingZeros();
+        if (trimmedReason.size() <= 4) {
+            ResponseCodeEnum responseCode = ResponseCodeEnum.forNumber(trimmedReason.toInt());
+            if (responseCode != null) {
+                return BytesDecoder.getAbiEncodedRevertReason(
+                        Bytes.of(responseCode.name().getBytes()));
+            }
         }
 
-        return BytesDecoder.getAbiEncodedRevertReason(reason);
+        return BytesDecoder.getAbiEncodedRevertReason(revertReason);
     }
 }
