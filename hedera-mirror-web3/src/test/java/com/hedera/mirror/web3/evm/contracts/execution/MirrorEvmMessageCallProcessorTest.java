@@ -43,7 +43,7 @@ import org.hyperledger.besu.evm.precompile.ECRECPrecompiledContract;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.Spy;
+import org.mockito.Mockito;
 
 class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBaseTest {
 
@@ -53,17 +53,16 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
     @Mock
     private PrecompilesHolder precompilesHolder;
 
-    @Spy
     private OpcodeTracer opcodeTracer;
-
     private MirrorEvmMessageCallProcessor subject;
 
     @BeforeEach
     void setUp() {
         when(precompilesHolder.getHederaPrecompiles()).thenReturn(hederaPrecompileList);
+        when(messageFrame.getWorldUpdater()).thenReturn(updater);
+        opcodeTracer = Mockito.spy(new OpcodeTracer(precompilesHolder));
         subject = new MirrorEvmMessageCallProcessor(
                 autoCreationLogic, entityAddressSequencer, evm, precompiles, precompilesHolder, gasCalculatorHederaV22);
-        when(messageFrame.getWorldUpdater()).thenReturn(updater);
     }
 
     @Test
