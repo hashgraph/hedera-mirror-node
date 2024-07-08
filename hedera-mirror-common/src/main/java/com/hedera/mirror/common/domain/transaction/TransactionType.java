@@ -74,6 +74,9 @@ public enum TransactionType {
     NODESTAKEUPDATE(51, EntityOperation.NONE),
     UTILPRNG(52, EntityOperation.NONE),
     TOKENUPDATENFTS(53, EntityOperation.NONE),
+    NODECREATE(54, EntityOperation.NONE),
+    NODEUPDATE(55, EntityOperation.NONE),
+    NODEDELETE(56, EntityOperation.NONE),
     TOKENREJECT(57, EntityOperation.NONE);
 
     private static final Map<Integer, TransactionType> idMap =

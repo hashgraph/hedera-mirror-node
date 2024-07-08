@@ -3660,7 +3660,10 @@ components:
         - FILEDELETE
         - FILEUPDATE
         - FREEZE
+        - NODECREATE
+        - NODEDELETE
         - NODESTAKEUPDATE
+        - NODEUPDATE
         - SCHEDULECREATE
         - SCHEDULEDELETE
         - SCHEDULESIGN

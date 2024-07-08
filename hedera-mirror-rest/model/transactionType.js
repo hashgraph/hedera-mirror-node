@@ -64,6 +64,9 @@ const protoToName = {
   51: 'NODESTAKEUPDATE',
   52: 'UTILPRNG',
   53: 'TOKENUPDATENFTS',
+  54: 'NODECREATE',
+  55: 'NODEUPDATE',
+  56: 'NODEDELETE',
   57: 'TOKENREJECT',
 };
 
