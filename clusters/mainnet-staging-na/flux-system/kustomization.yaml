@@ -1,8 +1,11 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- alert.yaml
+- alert-github-dispatch.yaml
+- alert-slack.yaml
 - gotk-components.yaml
 - gotk-sync.yaml
-- provider.yaml
+- provider-github-dispatch.yaml
+- provider-slack.yaml
+- sealed-secret-github-dispatch.yaml
 - sealed-secret-slack.yaml
