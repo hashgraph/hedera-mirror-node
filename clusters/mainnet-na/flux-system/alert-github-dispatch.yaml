@@ -1,21 +1,20 @@
 apiVersion: notification.toolkit.fluxcd.io/v1beta3
 kind: Alert
 metadata:
-  name: github-dispatch-performance
+  name: github-dispatch
   namespace: flux-system
 spec:
   eventMetadata:
-    env: performance
-    cluster: preprod
-    path: preprod/performance-citus
+    cluster: mainnet-eu
+    namespaces: common,mainnet,mainnet-citus
   eventSeverity: info
   eventSources:
     - kind: HelmRelease
       name: mirror
-      namespace: performance
+      namespace: mainnet
   inclusionList:
     - ".*.test.*succeeded.*"
   providerRef:
     name: github-dispatch
-  summary: "Trigger performance-citus deployment"
+  summary: "Trigger mainnet-eu deployment"
 
