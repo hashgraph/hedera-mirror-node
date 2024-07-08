@@ -25,6 +25,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.NOT_SUPPORTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.OK;
 
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.Store;
 import com.hedera.mirror.web3.evm.store.contract.EntityAddressSequencer;
@@ -40,12 +42,10 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
@@ -108,11 +108,9 @@ public abstract class AbstractAutoCreationLogic {
         }
 
         TransactionBody.Builder syntheticCreation;
-        // This map is used to count number of maxAutoAssociations needed on auto created account
-        final var tokenAliasMap = analyzeTokenTransferCreations(changes);
-        final var maxAutoAssociations =
-                tokenAliasMap.getOrDefault(alias, Collections.emptySet()).size();
+
         final var isAliasEVMAddress = alias.size() == EVM_ADDRESS_SIZE;
+        final int maxAutoAssociations = getMaxAutoAssociations(alias, changes);
         if (isAliasEVMAddress) {
             syntheticCreation = syntheticTxnFactory.createHollowAccount(alias, 0L, maxAutoAssociations);
         } else {
@@ -146,7 +144,8 @@ public abstract class AbstractAutoCreationLogic {
                 0L,
                 false,
                 null,
-                0L);
+                0L,
+                0);
         store.updateAccount(account);
 
         replaceAliasAndSetBalanceOnChange(change, newId);
@@ -155,6 +154,15 @@ public abstract class AbstractAutoCreationLogic {
     }
 
     protected abstract void trackAlias(final ByteString alias, final Address address);
+
+    private int getMaxAutoAssociations(final ByteString alias, final List<BalanceChange> changes) {
+        var recordFile = ContractCallContext.get().getRecordFile();
+        if (recordFile != null && recordFile.getHapiVersion().isGreaterThanOrEqualTo(RecordFile.HAPI_VERSION_0_52_0)) {
+            return Account.UNLIMITED_AUTO_ASSOCIATIONS;
+        }
+
+        return getAutoAssociationCount(alias, changes);
+    }
 
     private void replaceAliasAndSetBalanceOnChange(final BalanceChange change, final AccountID newAccountId) {
         if (change.isForHbar()) {
@@ -178,24 +186,20 @@ public abstract class AbstractAutoCreationLogic {
         return fees.getServiceFee() + fees.getNetworkFee() + fees.getNodeFee();
     }
 
-    private Map<ByteString, Set<Id>> analyzeTokenTransferCreations(final List<BalanceChange> changes) {
-        final Map<ByteString, Set<Id>> tokenAliasMap = new HashMap<>();
+    private int getAutoAssociationCount(final ByteString alias, final List<BalanceChange> changes) {
+        final Set<Id> tokens = new HashSet<>();
+
         for (final var change : changes) {
             if (change.isForHbar()) {
                 continue;
             }
-            var alias = change.getNonEmptyAliasIfPresent();
 
-            if (alias != null) {
-                if (tokenAliasMap.containsKey(alias)) {
-                    final var oldSet = tokenAliasMap.get(alias);
-                    oldSet.add(change.getToken());
-                    tokenAliasMap.put(alias, oldSet);
-                } else {
-                    tokenAliasMap.put(alias, new HashSet<>(Arrays.asList(change.getToken())));
-                }
+            var entityAlias = change.getNonEmptyAliasIfPresent();
+            if (Objects.equals(alias, entityAlias)) {
+                tokens.add(change.getToken());
             }
         }
-        return tokenAliasMap;
+
+        return tokens.size();
     }
 }

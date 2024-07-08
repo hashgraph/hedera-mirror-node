@@ -119,7 +119,8 @@ public class AccountDatabaseAccessor extends DatabaseAccessor<Object, Account> {
                 parseJkey(entity),
                 entity.getCreatedTimestamp() != null
                         ? TimeUnit.SECONDS.convert(entity.getCreatedTimestamp(), TimeUnit.NANOSECONDS)
-                        : 0L);
+                        : 0L,
+                0);
     }
 
     private Supplier<Long> getOwnedNfts(Long accountId, final Optional<Long> timestamp) {
