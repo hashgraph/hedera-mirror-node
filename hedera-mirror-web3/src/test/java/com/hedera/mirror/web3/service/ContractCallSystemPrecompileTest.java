@@ -24,10 +24,12 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -186,10 +188,11 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
         assertEquals(66, result.length(), "The string should represent a 32-byte long array");
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum ExchangeRateFunctions {
-        TINYCENTS_TO_TINYBARS("tinycentsToTinybars", new Object[] {100L}, new Long[] {1550L}),
-        TINYBARS_TO_TINYCENTS("tinybarsToTinycents", new Object[] {1550L}, new Object[] {100L});
+    enum ExchangeRateFunctions implements ContractFunctionProviderEnum {
+        TINYCENTS_TO_TINYBARS("tinycentsToTinybars", new Object[] {100L}, new Long[] {8L}),
+        TINYBARS_TO_TINYCENTS("tinybarsToTinycents", new Object[] {100L}, new Object[] {1200L});
 
         private final String name;
         private final Object[] functionParameters;

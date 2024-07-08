@@ -17,7 +17,6 @@
 package com.hedera.services.store.tokens;
 
 import static com.hedera.node.app.service.evm.store.tokens.TokenType.NON_FUNGIBLE_UNIQUE;
-import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.EntityIdUtils.readableId;
 import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
@@ -160,31 +159,21 @@ public class HederaTokenStore {
                 return TOKENS_PER_ACCOUNT_LIMIT_EXCEEDED;
             }
 
-            var validity = OK;
-            var maxAutomaticAssociations = account.getMaxAutomaticAssociations();
-            var alreadyUsedAutomaticAssociations = account.getAlreadyUsedAutomaticAssociations();
-
-            if (alreadyUsedAutomaticAssociations >= maxAutomaticAssociations) {
-                validity = NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
+            if (!account.canAutoAssociate()) {
+                return NO_REMAINING_AUTOMATIC_ASSOCIATIONS;
             }
 
-            if (validity == OK) {
-                final var token = get(tId);
+            final var token = get(tId);
+            final var newTokenRelationship = new TokenRelationship(token, account)
+                    .setFrozen(token.hasFreezeKey() && token.isFrozenByDefault())
+                    .setKycGranted(!token.hasKycKey())
+                    .setAutomaticAssociation(true);
 
-                final var newTokenRelationship = new TokenRelationship(token, account)
-                        .setFrozen(token.hasFreezeKey() && token.isFrozenByDefault())
-                        .setKycGranted(!token.hasKycKey())
-                        .setAutomaticAssociation(true);
+            final var newAccount = account.autoAssociate();
+            store.updateTokenRelationship(newTokenRelationship);
+            store.updateAccount(newAccount);
 
-                numAssociations++;
-                final var newAccount = account.setNumAssociations(numAssociations)
-                        .setAutoAssociationMetadata(setAlreadyUsedAutomaticAssociationsTo(
-                                account.getAutoAssociationMetadata(), alreadyUsedAutomaticAssociations + 1));
-
-                store.updateTokenRelationship(newTokenRelationship);
-                store.updateAccount(newAccount);
-            }
-            return validity;
+            return OK;
         });
     }
 
@@ -790,7 +779,7 @@ public class HederaTokenStore {
 
     private ResponseCodeEnum validateAndAutoAssociate(AccountID aId, TokenID tId) {
         final var account = store.getAccount(asTypedEvmAddress(aId), OnMissing.THROW);
-        if (account.getMaxAutomaticAssociations() > 0) {
+        if (account.isAutoAssociateEnabled()) {
             return autoAssociate(aId, tId);
         }
         return TOKEN_NOT_ASSOCIATED_TO_ACCOUNT;

@@ -29,11 +29,13 @@ import com.google.protobuf.ByteString;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
+import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
@@ -47,11 +49,23 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
+    private static final String LEDGER_ID = "0x03";
+
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
 
         return Arrays.stream(ContractReadFunctionsHistorical.values()).flatMap(htsFunction -> blockNumbers.stream()
                 .map(blockNumber -> Arguments.of(htsFunction, blockNumber)));
+    }
+
+    private static long getValue(SupportedContractModificationFunctions contractFunc) {
+        return switch (contractFunc) {
+            case CREATE_FUNGIBLE_TOKEN,
+                    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
+                    CREATE_NON_FUNGIBLE_TOKEN,
+                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
+            default -> 0L;
+        };
     }
 
     @ParameterizedTest
@@ -337,18 +351,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
-    private static long getValue(SupportedContractModificationFunctions contractFunc) {
-        return switch (contractFunc) {
-            case CREATE_FUNGIBLE_TOKEN,
-                    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
-                    CREATE_NON_FUNGIBLE_TOKEN,
-                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
-            default -> 0L;
-        };
-    }
-
+    @Getter
     @RequiredArgsConstructor
-    enum ContractReadFunctions {
+    enum ContractReadFunctions implements ContractFunctionProviderEnum {
         IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_FROZEN_WITH_ALIAS(
                 "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
@@ -509,7 +514,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false,
                 true,
                 new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
-                "0x01"
+                LEDGER_ID
             },
             12
         }),
@@ -521,7 +526,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false,
                 true,
                 new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
-                "0x01"
+                LEDGER_ID
             },
             1L,
             OWNER_ADDRESS,
@@ -537,7 +542,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     false,
                     true,
                     new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
-                    "0x01"
+                    LEDGER_ID
                 }),
         GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS}, new Object[] {
             NFT_HBAR_TOKEN_AND_KEYS,
@@ -546,7 +551,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             false,
             true,
             new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
-            "0x01"
+            LEDGER_ID
         });
 
         private final String name;
@@ -554,8 +559,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         private final Object[] expectedResultFields;
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum ContractReadFunctionsHistorical {
+    enum ContractReadFunctionsHistorical implements ContractFunctionProviderEnum {
         IS_FROZEN(
                 "isTokenFrozen",
                 new Address[] {FUNGIBLE_TOKEN_ADDRESS_HISTORICAL, SENDER_ADDRESS_HISTORICAL},
@@ -739,7 +745,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         false,
                         true,
                         new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS_HISTORICAL},
-                        "0x01"
+                        LEDGER_ID
                     },
                     12
                 }),
@@ -751,7 +757,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false,
                 true,
                 new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS_HISTORICAL},
-                "0x01"
+                LEDGER_ID
             },
             1L,
             OWNER_ADDRESS_HISTORICAL,
@@ -767,7 +773,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     false,
                     true,
                     new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS_HISTORICAL},
-                    "0x01"
+                    LEDGER_ID
                 }),
         GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS_HISTORICAL}, new Object[] {
             NFT_HBAR_TOKEN_AND_KEYS_HISTORICAL,
@@ -776,7 +782,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             false,
             true,
             new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS_HISTORICAL},
-            "0x01"
+            LEDGER_ID
         });
 
         private final String name;
@@ -798,8 +804,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         NFT_INVALID_AUTORENEW_ACCOUNT
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum SupportedContractModificationFunctions {
+    enum SupportedContractModificationFunctions implements ContractFunctionProviderEnum {
         TRANSFER_FROM(
                 "transferFromExternal",
                 new Object[] {TRANSFRER_FROM_TOKEN_ADDRESS, SENDER_ALIAS, SPENDER_ALIAS, 1L},
@@ -1005,8 +1012,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         private final Object[] expectedResult;
     }
 
+    @Getter
     @RequiredArgsConstructor
-    enum NestedContractModificationFunctions {
+    enum NestedContractModificationFunctions implements ContractFunctionProviderEnum {
         CREATE_CONTRACT_VIA_CREATE2_AND_TRANSFER_FROM_IT(
                 "createContractViaCreate2AndTransferFromIt",
                 new Object[] {TREASURY_TOKEN_ADDRESS_WITH_ALL_KEYS, SENDER_ALIAS, RECEIVER_ADDRESS, 1L});

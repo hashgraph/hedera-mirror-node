@@ -16,37 +16,27 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.FEE_SCHEDULE_ENTITY_ID;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.ContractCallService.GAS_USED_METRIC;
+import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FeeSchedule;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
+class ContractCallNativePrecompileTest extends ContractCallTestSetup {
 
     @BeforeEach
     void setup() {
         // Persist needed entities
         domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
-        exchangeRatesPersist();
-        feeSchedulesPersist();
     }
 
     @Test
@@ -235,7 +225,7 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_CALL);
     }
 
-    private double getGasUsedBeforeExecution(final CallServiceParameters.CallType callType) {
+    private double getGasUsedBeforeExecution(final CallType callType) {
         final var callCounter = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst();
@@ -249,25 +239,26 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
     }
 
     @Override
-    protected CallServiceParameters serviceParametersForExecution(
+    protected ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
-            final CallServiceParameters.CallType callType,
+            final CallType callType,
             final long value,
             final BlockType block) {
         return serviceParametersForExecution(callData, contractAddress, callType, value, block, 15_000_000L);
     }
 
-    protected CallServiceParameters serviceParametersForExecution(
+    @Override
+    protected ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData,
             final Address contractAddress,
-            final CallServiceParameters.CallType callType,
+            final CallType callType,
             final long value,
             final BlockType block,
             final long gasLimit) {
         HederaEvmAccount sender;
-        final Address senderAddress = toAddress(EntityId.of(0, 0, 1043));
-        final Address senderAddressHistorical = toAddress(EntityId.of(0, 0, 1014));
+        final Address senderAddress = toAddress(1043);
+        final Address senderAddressHistorical = toAddress(1014);
 
         if (block != BlockType.LATEST) {
             sender = new HederaEvmAccount(senderAddressHistorical);
@@ -275,7 +266,7 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
             sender = new HederaEvmAccount(senderAddress);
         }
 
-        return CallServiceParameters.builder()
+        return ContractExecutionParameters.builder()
                 .sender(sender)
                 .value(value)
                 .receiver(contractAddress)
@@ -288,30 +279,7 @@ public class ContractCallNativePrecompileTest extends ContractCallTestSetup {
                 .build();
     }
 
-    @Override
-    protected void feeSchedulesPersist() {
-        final long expiry = 1_234_567_890L;
-        final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
-                .setNextFeeSchedule(FeeSchedule.newBuilder()
-                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
-                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                                .setHederaFunctionality(EthereumTransaction)
-                                .addFees(FeeData.newBuilder()
-                                        .setServicedata(FeeComponents.newBuilder()
-                                                .setGas(852000)
-                                                .build()))))
-                .build();
-
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(feeSchedules.toByteArray())
-                        .entityId(FEE_SCHEDULE_ENTITY_ID)
-                        .consensusTimestamp(expiry + 1))
-                .persist();
-    }
-
-    private void assertGasUsedIsPositive(
-            final double gasUsedBeforeExecution, final CallServiceParameters.CallType callType) {
+    private void assertGasUsedIsPositive(final double gasUsedBeforeExecution, final CallType callType) {
         final var afterExecution = meterRegistry.find(GAS_USED_METRIC).counters().stream()
                 .filter(c -> callType.name().equals(c.getId().getTag("type")))
                 .findFirst()

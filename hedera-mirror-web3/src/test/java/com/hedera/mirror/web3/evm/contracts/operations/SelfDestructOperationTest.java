@@ -27,9 +27,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
-import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.ContractCallTestSetup;
-import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.ContractExecutionService;
+import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -38,29 +38,22 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
 @RequiredArgsConstructor
 class SelfDestructOperationTest extends ContractCallTestSetup {
 
-    private final ContractCallService contractCallService;
+    private final ContractExecutionService contractCallService;
 
     private final FunctionEncodeDecoder functionEncodeDecoder;
 
     @Value("classpath:contracts/SelfDestructContract/SelfDestructContract.bin")
     private Path selfDestructContractPath;
 
-    @BeforeEach
-    void setUp() {
-        exchangeRatesPersist();
-        feeSchedulesPersist();
-    }
-
     @Test
     void testSuccessfulExecute() {
-        final var senderAddress = toAddress(EntityId.of(0, 0, 1043));
+        final var senderAddress = toAddress(1043);
         final var senderPublicKey = ByteString.copyFrom(
                 Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
         final var senderAlias = Address.wrap(
@@ -82,8 +75,8 @@ class SelfDestructOperationTest extends ContractCallTestSetup {
     @Test
     void testExecuteWithInvalidOwner() {
         final var contractAddress = toAddress(selfDestructContractPersist());
-        final var senderAddress = toAddress(EntityId.of(0, 0, 1043));
-        final var systemAccountAddress = toAddress(EntityId.of(0, 0, 700));
+        final var senderAddress = toAddress(1043);
+        final var systemAccountAddress = toAddress(700);
         final var destroyContractInput =
                 "0x9a0313ab000000000000000000000000" + systemAccountAddress.toUnprefixedHexString();
         final var serviceParameters = serviceParametersForExecution()
@@ -118,8 +111,8 @@ class SelfDestructOperationTest extends ContractCallTestSetup {
         return selfDestructContractEntity.toEntityId();
     }
 
-    private CallServiceParameters.CallServiceParametersBuilder serviceParametersForExecution() {
-        return CallServiceParameters.builder()
+    private ContractExecutionParameters.ContractExecutionParametersBuilder serviceParametersForExecution() {
+        return ContractExecutionParameters.builder()
                 .value(0L)
                 .gas(15_000_000L)
                 .isStatic(false)

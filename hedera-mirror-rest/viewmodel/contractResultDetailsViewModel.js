@@ -28,6 +28,7 @@ import * as utils from '../utils';
  * Contract result details view model
  */
 class ContractResultDetailsViewModel extends ContractResultViewModel {
+  static _LEGACY_TYPE = 0;
   static _SUCCESS_PROTO_ID = Number.parseInt(TransactionResult.getSuccessProtoId());
   static _SUCCESS_RESULT = '0x1';
   static _FAIL_RESULT = '0x0';
@@ -122,7 +123,10 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
         this.to = utils.toHexStringNonQuantity(ethTransaction.toAddress);
       }
       this.type = ethTransaction.type;
-      this.v = ethTransaction.recoveryId;
+      this.v =
+        this.type === ContractResultDetailsViewModel._LEGACY_TYPE && ethTransaction.signatureV
+          ? BigInt(utils.toHexStringNonQuantity(ethTransaction.signatureV))
+          : ethTransaction.recoveryId;
 
       if (!_.isEmpty(ethTransaction.callData)) {
         this.function_parameters = utils.toHexStringNonQuantity(ethTransaction.callData);

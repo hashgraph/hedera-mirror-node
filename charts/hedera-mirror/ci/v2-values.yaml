@@ -23,18 +23,19 @@ postgresql:
   enabled: false
 rest:
   monitor:
-    config: |-
-      {
-        "freshness": false,
-        "network": { "enabled": false },
-        "servers": [
-          {
-            "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
-            "name": "kubernetes"
-          }
-        ],
-        "stateproof": { "enabled": false }
-      }
+    config:
+      contract:
+        logs: false
+      freshness: false
+      interval: 5
+      network:
+        enabled: false
+      retry:
+        maxAttempts: 1
+      schedule:
+        enabled: false
+      stateproof:
+        enabled: false
   resources:
     requests:
       cpu: 200m
@@ -52,6 +53,8 @@ stackgres:
   enabled: true
   podAntiAffinity: false
 web3:
+  env:
+    HEDERA_MIRROR_WEB3_EVM_NETWORK: OTHER
   resources:
     requests:
       cpu: 100m

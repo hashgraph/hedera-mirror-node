@@ -17,7 +17,9 @@
 package com.hedera.services.store.models;
 
 import static com.swirlds.common.utility.CommonUtils.unhex;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import com.google.protobuf.ByteString;
 import java.util.TreeMap;
@@ -62,7 +64,8 @@ class AccountTest {
                 0L,
                 false,
                 null,
-                0L);
+                0L,
+                0);
     }
 
     @Test
@@ -81,6 +84,36 @@ class AccountTest {
         assertEquals(subject.getFungibleTokenAllowances(), new TreeMap<>());
         assertEquals(subject.getApproveForAllNfts(), new TreeSet<>());
         assertEquals(numTreasuryTitles, subject.getNumTreasuryTitles());
+    }
+
+    @Test
+    void autoAssociate() {
+        var account = Account.getEmptyAccount()
+                .setMaxAutoAssociations(10)
+                .setNumAssociations(7)
+                .setUsedAutoAssociations(5);
+        assertThat(account.autoAssociate())
+                .returns(10, Account::getMaxAutoAssociations)
+                .returns(8, Account::getNumAssociations)
+                .returns(6, Account::getUsedAutoAssociations);
+    }
+
+    @Test
+    void canAutoAssociate() {
+        assertThat(Account.getEmptyAccount().setMaxAutoAssociations(0).canAutoAssociate())
+                .isFalse();
+        assertThat(Account.getEmptyAccount()
+                        .setMaxAutoAssociations(1)
+                        .setUsedAutoAssociations(1)
+                        .canAutoAssociate())
+                .isFalse();
+        assertThat(Account.getEmptyAccount().setMaxAutoAssociations(1).canAutoAssociate())
+                .isTrue();
+        assertThat(Account.getEmptyAccount()
+                        .setMaxAutoAssociations(-1)
+                        .setUsedAutoAssociations(65536)
+                        .canAutoAssociate())
+                .isTrue();
     }
 
     @Test
@@ -119,11 +152,23 @@ class AccountTest {
     }
 
     @Test
+    void isAutoAssociateEnabled() {
+        assertThat(Account.getEmptyAccount().isAutoAssociateEnabled()).isFalse();
+        assertThat(Account.getEmptyAccount().setMaxAutoAssociations(1).isAutoAssociateEnabled())
+                .isTrue();
+        assertThat(Account.getEmptyAccount().setMaxAutoAssociations(-1).isAutoAssociateEnabled())
+                .isTrue();
+    }
+
+    @Test
     void toStringAsExpected() {
         final var desired =
-                "Account{entityId=0, id=0.0.12345, alias=, address=0x0000000000000000000000000000000000003039, expiry=0, balance=0, deleted=false, ownedNfts=5, autoRenewSecs=0, proxy=0.0.0, accountAddress=0x0000000000000000000000000000000000003039, autoAssociationMetadata=123, cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=3, numPositiveBalances=2, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, key=null, createdTimestamp=0}";
-
-        // expect:
+                "Account{entityId=0, id=0.0.12345, alias=, address=0x0000000000000000000000000000000000003039, "
+                        + "expiry=0, balance=0, deleted=false, ownedNfts=5, autoRenewSecs=0, proxy=0.0.0, "
+                        + "accountAddress=0x0000000000000000000000000000000000003039, maxAutoAssociations=123, "
+                        + "cryptoAllowances={}, fungibleTokenAllowances={}, approveForAllNfts=[], numAssociations=3, "
+                        + "numPositiveBalances=2, numTreasuryTitles=0, ethereumNonce=0, isSmartContract=false, "
+                        + "key=null, createdTimestamp=0, usedAutoAssociations=0}";
         assertEquals(desired, subject.toString());
     }
 }
