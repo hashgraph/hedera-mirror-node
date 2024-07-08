@@ -48,6 +48,7 @@ jobs:
         run: |
           VERSION=$(echo ${{ github.event.client_payload.metadata.revision }} | cut -d '+' -f1)
           echo VERSION=${VERSION} >> $GITHUB_OUTPUT
+        working-directory: ${{ env.RUNNER_TEMP }}
 
       - name: Set chart version in HelmRelease
         env:
