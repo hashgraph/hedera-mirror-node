@@ -345,6 +345,9 @@ var transactionResults = map[int32]string{
 	335: "MISSING_TOKEN_METADATA",
 	336: "MISSING_SERIAL_NUMBERS",
 	337: "TOKEN_HAS_NO_ADMIN_KEY",
+	353: "TOKEN_REFERENCE_REPEATED",
+  354: "INVALID_OWNER_ID",
+  355: "TOKEN_REFERENCE_LIST_SIZE_LIMIT_EXCEEDED",
 }
 
 var TransactionTypes = map[int32]string{
