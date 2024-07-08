@@ -3660,7 +3660,10 @@ components:
         - FILEDELETE
         - FILEUPDATE
         - FREEZE
+        - NODECREATE
+        - NODEDELETE
         - NODESTAKEUPDATE
+        - NODEUPDATE
         - SCHEDULECREATE
         - SCHEDULEDELETE
         - SCHEDULESIGN
@@ -3676,6 +3679,7 @@ components:
         - TOKENGRANTKYC
         - TOKENMINT
         - TOKENPAUSE
+        - TOKENREJECT
         - TOKENREVOKEKYC
         - TOKENUNFREEZE
         - TOKENUNPAUSE

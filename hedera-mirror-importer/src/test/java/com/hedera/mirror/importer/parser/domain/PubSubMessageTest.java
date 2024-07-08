@@ -157,7 +157,8 @@ class PubSubMessageTest {
                     "topicRunningHash": "YWJjZGVm",
                     "topicRunningHashVersion": "0",
                     "newTotalSupply": "0",
-                    "serialNumbers": []
+                    "serialNumbers": [],
+                    "nodeId": "0"
                   },
                   "transactionHash": "YWJjZGVm",
                   "consensusTimestamp": {
