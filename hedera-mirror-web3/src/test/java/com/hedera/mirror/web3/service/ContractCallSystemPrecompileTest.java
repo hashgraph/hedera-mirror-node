@@ -191,8 +191,8 @@ class ContractCallSystemPrecompileTest extends ContractCallTestSetup {
     @Getter
     @RequiredArgsConstructor
     enum ExchangeRateFunctions implements ContractFunctionProviderEnum {
-        TINYCENTS_TO_TINYBARS("tinycentsToTinybars", new Object[] {100L}, new Long[] {1550L}),
-        TINYBARS_TO_TINYCENTS("tinybarsToTinycents", new Object[] {1550L}, new Object[] {100L});
+        TINYCENTS_TO_TINYBARS("tinycentsToTinybars", new Object[] {100L}, new Long[] {8L}),
+        TINYBARS_TO_TINYCENTS("tinybarsToTinycents", new Object[] {100L}, new Object[] {1200L});
 
         private final String name;
         private final Object[] functionParameters;

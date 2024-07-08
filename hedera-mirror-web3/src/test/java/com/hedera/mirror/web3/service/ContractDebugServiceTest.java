@@ -47,6 +47,20 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
 
     private static final Long DEFAULT_CALL_VALUE = 0L;
     private static final OpcodeTracerOptions OPTIONS = new OpcodeTracerOptions(false, false, false);
+    private final ContractDebugService contractDebugService;
+
+    @Captor
+    private ArgumentCaptor<ContractDebugParameters> paramsCaptor;
+
+    @Captor
+    private ArgumentCaptor<Long> gasCaptor;
+
+    private HederaEvmTransactionProcessingResult resultCaptor;
+    private ContractCallContext contextCaptor;
+    private EntityId ownerEntityId;
+    private EntityId senderEntityId;
+    private EntityId treasuryEntityId;
+    private EntityId spenderEntityId;
 
     private static String toHumanReadableMessage(final String solidityError) {
         return BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage(Bytes.fromHexString(solidityError));
@@ -59,23 +73,6 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
         };
     }
 
-    private final ContractDebugService contractDebugService;
-
-    @Captor
-    private ArgumentCaptor<ContractDebugParameters> paramsCaptor;
-
-    @Captor
-    private ArgumentCaptor<Long> gasCaptor;
-
-    private HederaEvmTransactionProcessingResult resultCaptor;
-
-    private ContractCallContext contextCaptor;
-
-    private EntityId ownerEntityId;
-    private EntityId senderEntityId;
-    private EntityId treasuryEntityId;
-    private EntityId spenderEntityId;
-
     @BeforeEach
     void setUpEntities() {
         // Obligatory data
@@ -83,8 +80,6 @@ class ContractDebugServiceTest extends ContractCallTestSetup {
         historicalBlocksPersist();
         historicalDataPersist();
         precompileContractPersist();
-        exchangeRatesPersist();
-        feeSchedulesPersist();
         // Account entities
         receiverPersist();
         notAssociatedSpenderEntityPersist();

@@ -40,11 +40,12 @@
     "limit": 10
   },
   "contract": {
+    "call": true,
     "contractId": "",
     "enabled": true,
-    "contractCallEnabled": true,
     "intervalMultiplier": 1,
-    "limit": 2
+    "limit": 2,
+    "logs": true
   },
   "network": {
     "enabled": true,

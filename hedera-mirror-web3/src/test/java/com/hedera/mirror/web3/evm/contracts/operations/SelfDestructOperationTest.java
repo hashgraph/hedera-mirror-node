@@ -38,7 +38,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -51,12 +50,6 @@ class SelfDestructOperationTest extends ContractCallTestSetup {
 
     @Value("classpath:contracts/SelfDestructContract/SelfDestructContract.bin")
     private Path selfDestructContractPath;
-
-    @BeforeEach
-    void setUp() {
-        exchangeRatesPersist();
-        feeSchedulesPersist();
-    }
 
     @Test
     void testSuccessfulExecute() {
