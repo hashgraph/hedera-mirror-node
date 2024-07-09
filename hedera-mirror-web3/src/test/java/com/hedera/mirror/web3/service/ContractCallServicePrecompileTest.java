@@ -49,11 +49,23 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
+    private static final String LEDGER_ID = "0x03";
+
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
 
         return Arrays.stream(ContractReadFunctionsHistorical.values()).flatMap(htsFunction -> blockNumbers.stream()
                 .map(blockNumber -> Arguments.of(htsFunction, blockNumber)));
+    }
+
+    private static long getValue(SupportedContractModificationFunctions contractFunc) {
+        return switch (contractFunc) {
+            case CREATE_FUNGIBLE_TOKEN,
+                    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
+                    CREATE_NON_FUNGIBLE_TOKEN,
+                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
+            default -> 0L;
+        };
     }
 
     @ParameterizedTest
@@ -339,16 +351,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .isInstanceOf(MirrorEvmTransactionException.class);
     }
 
-    private static long getValue(SupportedContractModificationFunctions contractFunc) {
-        return switch (contractFunc) {
-            case CREATE_FUNGIBLE_TOKEN,
-                    CREATE_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES,
-                    CREATE_NON_FUNGIBLE_TOKEN,
-                    CREATE_NON_FUNGIBLE_TOKEN_WITH_CUSTOM_FEES -> 10000 * 100_000_000L;
-            default -> 0L;
-        };
-    }
-
     @Getter
     @RequiredArgsConstructor
     enum ContractReadFunctions implements ContractFunctionProviderEnum {
@@ -512,7 +514,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false,
                 true,
                 new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
-                "0x01"
+                LEDGER_ID
             },
             12
         }),
@@ -524,7 +526,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false,
                 true,
                 new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
-                "0x01"
+                LEDGER_ID
             },
             1L,
             OWNER_ADDRESS,
@@ -540,7 +542,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     false,
                     true,
                     new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
-                    "0x01"
+                    LEDGER_ID
                 }),
         GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS}, new Object[] {
             NFT_HBAR_TOKEN_AND_KEYS,
@@ -549,7 +551,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             false,
             true,
             new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
-            "0x01"
+            LEDGER_ID
         });
 
         private final String name;
@@ -743,7 +745,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         false,
                         true,
                         new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS_HISTORICAL},
-                        "0x01"
+                        LEDGER_ID
                     },
                     12
                 }),
@@ -755,7 +757,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false,
                 true,
                 new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS_HISTORICAL},
-                "0x01"
+                LEDGER_ID
             },
             1L,
             OWNER_ADDRESS_HISTORICAL,
@@ -771,7 +773,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     false,
                     true,
                     new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS_HISTORICAL},
-                    "0x01"
+                    LEDGER_ID
                 }),
         GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS_HISTORICAL}, new Object[] {
             NFT_HBAR_TOKEN_AND_KEYS_HISTORICAL,
@@ -780,7 +782,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
             false,
             true,
             new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS_HISTORICAL},
-            "0x01"
+            LEDGER_ID
         });
 
         private final String name;

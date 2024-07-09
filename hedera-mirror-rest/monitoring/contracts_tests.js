@@ -18,8 +18,8 @@ import _ from 'lodash';
 import config from './config';
 
 import {
-  checkEntityId,
   checkAPIResponseError,
+  checkEntityId,
   checkMandatoryParams,
   checkRespArrayLength,
   checkRespObjDefined,
@@ -33,7 +33,8 @@ import {
 const contractsPath = '/contracts';
 const resource = 'contract';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
-const contractCallEnabled = config[resource].contractCallEnabled;
+const contractCallEnabled = config[resource].call;
+const contractLogsEnabled = config[resource].logs;
 const jsonRespKey = 'contracts';
 const jsonResultsRespKey = 'results';
 const mandatoryParams = [
@@ -344,6 +345,7 @@ const getContractResultsByTransaction = async (server) => {
     message: 'Successfully called contracts for contract actions ',
   };
 };
+
 /**
  * Retrieves contract list
  * @param {Object} server API host endpoint
@@ -404,7 +406,7 @@ const runTests = async (server, testResult) => {
     runTest(getContractById),
     contractCallEnabled ? runTest(postContractCall, 'WEB3') : '',
     runTest(getContractResults),
-    runTest(getContractResultsLogs),
+    contractLogsEnabled ? runTest(getContractResultsLogs) : '',
     runTest(getContractState),
     runTest(getContractResultsByTransaction),
   ]);

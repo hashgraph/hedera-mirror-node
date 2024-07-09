@@ -90,7 +90,7 @@ class OpUsageCtxHelperTest {
         given(merkleAccount.getFungibleTokenAllowances()).willReturn(new TreeMap<>());
         given(merkleAccount.getKey()).willReturn(asUsableFcKey(key).get());
         given(merkleAccount.getExpiry()).willReturn(now);
-        given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
+        given(merkleAccount.getMaxAutoAssociations()).willReturn(maxAutomaticAssociations);
         given(merkleAccount.getProxy()).willReturn(Id.DEFAULT);
 
         final var ctx = subject.ctxForCryptoUpdate(TransactionBody.getDefaultInstance());
@@ -105,7 +105,7 @@ class OpUsageCtxHelperTest {
         given(store.getAccount(any(), any())).willReturn(merkleAccount);
         given(merkleAccount.getKey()).willReturn(asUsableFcKey(key).get());
         given(merkleAccount.getExpiry()).willReturn(now);
-        given(merkleAccount.getMaxAutomaticAssociations()).willReturn(maxAutomaticAssociations);
+        given(merkleAccount.getMaxAutoAssociations()).willReturn(maxAutomaticAssociations);
         given(merkleAccount.getProxy()).willReturn(Id.DEFAULT);
         given(merkleAccount.getCryptoAllowances()).willReturn(cryptoAllowance);
         given(merkleAccount.getFungibleTokenAllowances()).willReturn(tokenAllowance);

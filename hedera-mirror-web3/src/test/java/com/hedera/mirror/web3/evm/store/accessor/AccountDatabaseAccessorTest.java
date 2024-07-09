@@ -156,7 +156,7 @@ class AccountDatabaseAccessorTest {
                                 entity.getProxyAccountId().getRealm(),
                                 entity.getProxyAccountId().getNum()),
                         Account::getProxy)
-                .returns(entity.getMaxAutomaticTokenAssociations(), Account::getMaxAutomaticAssociations));
+                .returns(entity.getMaxAutomaticTokenAssociations(), Account::getMaxAutoAssociations));
     }
 
     @Test
@@ -189,8 +189,9 @@ class AccountDatabaseAccessorTest {
                 .returns(0L, Account::getBalance)
                 .returns(false, Account::isDeleted)
                 .returns(AccountDatabaseAccessor.DEFAULT_AUTO_RENEW_PERIOD, Account::getAutoRenewSecs)
-                .returns(0, Account::getMaxAutomaticAssociations)
-                .returns(null, Account::getProxy));
+                .returns(0, Account::getMaxAutoAssociations)
+                .returns(null, Account::getProxy)
+                .returns(0, Account::getUsedAutoAssociations));
     }
 
     @Test

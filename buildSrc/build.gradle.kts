@@ -23,7 +23,7 @@ repositories {
 
 dependencies {
     val dockerJavaVersion = "3.3.6"
-    val flywayVersion = "10.15.0"
+    val flywayVersion = "10.15.2"
     val jooqVersion = "3.19.10"
 
     // Add docker-java dependencies before gradle-docker-plugin to avoid the docker-java jars
@@ -48,7 +48,7 @@ dependencies {
     implementation("org.jooq:jooq-codegen-gradle:$jooqVersion")
     implementation("org.jooq:jooq-meta:$jooqVersion")
     implementation("org.openapitools:openapi-generator-gradle-plugin:7.6.0")
-    implementation("org.owasp:dependency-check-gradle:10.0.1")
+    implementation("org.owasp:dependency-check-gradle:10.0.2")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.0.0.4638")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.1")
     implementation("org.testcontainers:postgresql:1.19.8")

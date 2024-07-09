@@ -16,25 +16,16 @@
 
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.BitPackUtils.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static com.hedera.services.utils.BitPackUtils.MAX_NUM_ALLOWED;
+import static com.hedera.services.utils.BitPackUtils.isValidNum;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
 class BitPackUtilsTest {
-    private final int maxAutoAssociations = 123;
-    private final int alreadyUsedAutomaticAssociations = 12;
-    private int metadata = buildAutomaticAssociationMetaData(maxAutoAssociations, alreadyUsedAutomaticAssociations);
-
-    static int buildAutomaticAssociationMetaData(int maxAutoAssociations, int alreadyUsedAutoAssociations) {
-        return (alreadyUsedAutoAssociations << 16) | maxAutoAssociations;
-    }
-
-    @Test
-    void automaticAssociationsMetaWorks() {
-        assertEquals(maxAutoAssociations, getMaxAutomaticAssociationsFrom(metadata));
-        assertEquals(alreadyUsedAutomaticAssociations, getAlreadyUsedAutomaticAssociationsFrom(metadata));
-    }
 
     @Test
     void validateLong() {
