@@ -64,7 +64,7 @@ public class BytesDecoder {
             return revertReason;
         }
 
-        String revertReasonPlain = new String(revertReason.toArray());
+        String revertReasonPlain = revertReason != null ? new String(revertReason.toArray()) : StringUtils.EMPTY;
 
         return Bytes.concatenate(
                 ERROR_FUNCTION_SELECTOR, Bytes.wrapByteBuffer(STRING_DECODER.encode(Tuple.of(revertReasonPlain))));

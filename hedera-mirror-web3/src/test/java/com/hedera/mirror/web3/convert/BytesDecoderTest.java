@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.convert;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -40,6 +41,12 @@ class BytesDecoderTest {
                 .isEqualTo(output);
     }
 
+    @Test
+    void convertBytesWithNullValue() {
+        assertThat(BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage(null))
+                .isEmpty();
+    }
+
     @CsvSource(
             textBlock =
                     """
@@ -53,5 +60,21 @@ class BytesDecoderTest {
     @ParameterizedTest
     void getAbiEncodedRevertReason(String input, String output) {
         assertThat(BytesDecoder.getAbiEncodedRevertReason(input)).isEqualTo(Bytes.fromHexString(output));
+    }
+
+    @Test
+    void getAbiEncodedRevertReasonWithNullString() {
+        assertThat(BytesDecoder.getAbiEncodedRevertReason((String) null))
+                .isEqualTo(
+                        Bytes.fromHexString(
+                                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000"));
+    }
+
+    @Test
+    void getAbiEncodedRevertReasonWithNullBytes() {
+        assertThat(BytesDecoder.getAbiEncodedRevertReason((Bytes) null))
+                .isEqualTo(
+                        Bytes.fromHexString(
+                                "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000"));
     }
 }
