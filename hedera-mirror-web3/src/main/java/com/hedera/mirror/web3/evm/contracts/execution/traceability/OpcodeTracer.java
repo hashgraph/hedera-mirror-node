@@ -233,14 +233,13 @@ public class OpcodeTracer implements HederaOperationTracer {
         }
 
         Bytes trimmedReason = revertReason.trimLeadingZeros();
-        if (trimmedReason.size() <= 4) {
+        if (trimmedReason.size() <= Integer.BYTES) {
             ResponseCodeEnum responseCode = ResponseCodeEnum.forNumber(trimmedReason.toInt());
             if (responseCode != null) {
-                return BytesDecoder.getAbiEncodedRevertReason(
-                        Bytes.of(responseCode.name().getBytes()));
+                return BytesDecoder.getAbiEncodedRevertReason(responseCode.name());
             }
         }
 
-        return BytesDecoder.getAbiEncodedRevertReason(trimmedReason);
+        return BytesDecoder.getAbiEncodedRevertReason(revertReason);
     }
 }
