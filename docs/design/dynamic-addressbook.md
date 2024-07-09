@@ -52,8 +52,8 @@ create table if not exists node_history
   timestamp_range        int8range       not null
 );
 
-create index if not exists node_history__timestamp_node_id
-  on node_history (created_timestamp , node_id);
+create index if not exists node_history__node_id_lower_timestamp
+  on node_history (node_id, lower(timestamp_range));
 
 ```
 
