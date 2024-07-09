@@ -34,32 +34,26 @@ create index if not exists address_book_service_endpoint__timestamp_node_id
 
 create table if not exists node
 (
-    admin_key              varchar(1024)   null,
-    consensus_timestamp    nanos_timestamp references address_book (start_consensus_timestamp),
+    admin_key              bytea           not null,
+    created_timestamp      bigint          not null,
     description            varchar(100)    null,
-    memo                   varchar(128)    null,
-    node_account_id        entity_id       null,
-    node_cert_hash         bytea           null,
+    node_account_id        bigint          not null,
     node_id                bigint          primary key,
-    public_key             varchar(1024)   null,
-    stake                  bigint          null
+    timestamp_range        int8range       not null
 );
 
 create table if not exists node_history
 (
-  admin_key              varchar(1024)   null,
-  consensus_timestamp    nanos_timestamp references address_book (start_consensus_timestamp),
+  admin_key              bytea           not null,
+  created_timestamp      bigint          not null,
   description            varchar(100)    null,
-  memo                   varchar(128)    null,
-  node_account_id        entity_id       null,
-  node_cert_hash         bytea           null,
+  node_account_id        bigint          not null,
   node_id                bigint          not null,
-  public_key             varchar(1024)   null,
-  stake                  bigint          null
+  timestamp_range        int8range       not null
 );
 
 create index if not exists node_history__timestamp_node_id
-  on node_history (consensus_timestamp , node_id);
+  on node_history (created_timestamp , node_id);
 
 ```
 
