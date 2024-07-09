@@ -50,10 +50,13 @@ public class BytesDecoder {
     }
 
     public static Bytes getAbiEncodedRevertReason(final String revertReason) {
-        final Bytes revertReasonBytes = revertReason.startsWith(HEX_PREFIX)
-                ? Bytes.fromHexString(revertReason)
-                : Bytes.wrap(revertReason.getBytes());
-        return getAbiEncodedRevertReason(revertReasonBytes);
+        if (revertReason == null) {
+            return getAbiEncodedRevertReason(Bytes.EMPTY);
+        }
+        if (revertReason.startsWith(HEX_PREFIX)) {
+            return getAbiEncodedRevertReason(Bytes.fromHexString(revertReason));
+        }
+        return getAbiEncodedRevertReason(Bytes.of(revertReason.getBytes()));
     }
 
     public static Bytes getAbiEncodedRevertReason(final Bytes revertReason) {
@@ -68,6 +71,7 @@ public class BytesDecoder {
     }
 
     private static boolean isAbiEncodedErrorString(Bytes revertReason) {
-        return revertReason.commonPrefixLength(ERROR_FUNCTION_SELECTOR) == ERROR_FUNCTION_SELECTOR.size();
+        return revertReason != null
+                && revertReason.commonPrefixLength(ERROR_FUNCTION_SELECTOR) == ERROR_FUNCTION_SELECTOR.size();
     }
 }
