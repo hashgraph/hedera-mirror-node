@@ -32,6 +32,35 @@ alter table address_book_service_endpoint drop constraint address_book_service_e
 create index if not exists address_book_service_endpoint__timestamp_node_id
   on address_book_service_endpoint (consensus_timestamp , node_id);
 
+create table if not exists node
+(
+    admin_key              varchar(1024)   null,
+    consensus_timestamp    nanos_timestamp references address_book (start_consensus_timestamp),
+    description            varchar(100)    null,
+    memo                   varchar(128)    null,
+    node_account_id        entity_id       null,
+    node_cert_hash         bytea           null,
+    node_id                bigint          primary key,
+    public_key             varchar(1024)   null,
+    stake                  bigint          null
+);
+
+create table if not exists node_history
+(
+  admin_key              varchar(1024)   null,
+  consensus_timestamp    nanos_timestamp references address_book (start_consensus_timestamp),
+  description            varchar(100)    null,
+  memo                   varchar(128)    null,
+  node_account_id        entity_id       null,
+  node_cert_hash         bytea           null,
+  node_id                bigint          not null,
+  public_key             varchar(1024)   null,
+  stake                  bigint          null
+);
+
+create index if not exists node_history__timestamp_node_id
+  on node_history (consensus_timestamp , node_id);
+
 ```
 
 ### Importer
@@ -56,13 +85,15 @@ Write `transaction_bytes` and `transaction_record_bytes` in the following handle
 - Add `NodeUpdateTransactionHandler`
 - Add `NodeDeleteTransactionHandler`
 
+Update `node` table with the latest `admin_key`
+
 ### GRPC API
 
-- Update the `NetworkController` to add `domain_name` to the service endpoint.
+- Update the `NetworkController` to add `domain_name` to the service endpoint and `admin_key`.
 
 ### REST API
 
-Update the `/api/v1/network/nodes` endpoint to return `domain_name`
+- Update the `/api/v1/network/nodes` endpoint to return `domain_name` and `admin_key`
 
 Response:
 
@@ -109,8 +140,3 @@ Response:
 ## Non-Functional Requirements
 
 - Ingest new transaction types at the same rate as consensus nodes
-
-## Open Questions
-
-1. Will the `admin_key` be included in `NodeInfo`, `Node` and `NodeCreateTransactionBody`? It's also important to
-   determine where the mirror_node will get this value from and how it will store the data.
