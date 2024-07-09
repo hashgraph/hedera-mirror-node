@@ -42,6 +42,7 @@ jobs:
           mkdir -p "${TARGET}"
           curl -sL https://github.com/mikefarah/yq/releases/download/${VERSION}/${BINARY}.tar.gz --output - | tar -xz
           mv ${BINARY} "${TARGET}/yq"
+        working-directory: ${{ env.RUNNER_TEMP }}
 
       - name: Get chart version
         id: release
