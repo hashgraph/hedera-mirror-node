@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.107.2'
+      version: '0.108.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -62,10 +62,8 @@ spec:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
         HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
       monitor:
-        config: |-
-          {
-            "stateproof": { "enabled": false }
-          }
+        test:
+          enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
