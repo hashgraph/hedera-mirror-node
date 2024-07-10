@@ -86,7 +86,6 @@ class ContractController {
         } else {
             receiver = Address.fromHexString(request.getTo());
         }
-
         Bytes data;
         try {
             data = request.getData() != null ? Bytes.fromHexString(request.getData()) : Bytes.EMPTY;
