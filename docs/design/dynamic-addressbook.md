@@ -36,8 +36,7 @@ create table if not exists node
 (
     admin_key              bytea           not null,
     created_timestamp      bigint          not null,
-    description            varchar(100)    null,
-    node_account_id        bigint          not null,
+    deleted                boolean         default false not null,
     node_id                bigint          primary key,
     timestamp_range        int8range       not null
 );
@@ -46,8 +45,7 @@ create table if not exists node_history
 (
   admin_key              bytea           not null,
   created_timestamp      bigint          not null,
-  description            varchar(100)    null,
-  node_account_id        bigint          not null,
+  deleted                boolean         default false not null,
   node_id                bigint          not null,
   timestamp_range        int8range       not null
 );
