@@ -68,6 +68,11 @@ Update the `AddressBookServiceImpl` to persist the `domain_name` in `address_boo
 #### Domain
 
 - Modify `AddressBookServiceEndpoint` domain object to add `domain_name`.
+- Add `AbstractNode`,`Node` and `NodeHistory` domain objects in the common module.
+
+#### EntityListener
+
+- Add `EntityListener.onNode` method and `CompositeEntityListener.onNode`
 
 #### Transaction Handlers
 
