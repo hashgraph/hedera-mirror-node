@@ -194,10 +194,9 @@ class MirrorEvmTxProcessorTest {
         when(evmProperties.getSemanticEvmVersion()).thenReturn(EVM_VERSION_0_34);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(pricesAndFeesProvider.currentGasPrice(any(), any())).willReturn(10L);
-        if (isEstimate) {
-            given(store.getAccount(sender.canonicalAddress(), OnMissing.DONT_THROW))
-                    .willReturn(Account.getDummySenderAccount(sender.canonicalAddress()));
-        }
+        given(store.getAccount(sender.canonicalAddress(), OnMissing.DONT_THROW))
+                .willReturn(Account.getDummySenderAccount(sender.canonicalAddress()));
+
         final var params = ContractExecutionParameters.builder()
                 .sender(sender)
                 .receiver(receiver.canonicalAddress())
