@@ -20,15 +20,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
+import java.io.Serial;
+import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
-
-import java.io.Serial;
-import java.io.Serializable;
 
 @Builder(toBuilder = true)
 @Data
@@ -59,6 +58,7 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     public Id getId() {
         Id id = new Id();
         id.setConsensusTimestamp(consensusTimestamp);
+        id.setDomainName(domainName);
         id.setIpAddressV4(ipAddressV4);
         id.setNodeId(nodeId);
         id.setPort(port);

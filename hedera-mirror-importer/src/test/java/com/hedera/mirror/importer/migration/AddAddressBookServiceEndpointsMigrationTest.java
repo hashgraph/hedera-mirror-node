@@ -20,21 +20,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
-import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
-import com.hedera.mirror.importer.repository.AddressBookRepository;
-import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.IterableAssert;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 
 @DisableRepeatableSqlMigration
@@ -52,16 +54,20 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.37.0")
-class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTest {
+class AddMigrationAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTest {
 
     private final String baseAccountId = "0.0.";
     private final String baseIp = "127.0.0.";
     private final int basePort = 443;
     private final int nodeAccountOffset = 3;
 
-    private final AddressBookRepository addressBookRepository;
-    private final AddressBookEntryRepository addressBookEntryRepository;
-    private final AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
+    private static final RowMapper<MigrationAddressBookServiceEndpoint> ADDRESS_BOOK_SERVICE_ENDPOINT_MAPPER =
+            rowMapper(MigrationAddressBookServiceEndpoint.class);
+    private static final RowMapper<MigrationAddressBook> ADDRESS_BOOK_MAPPER = rowMapper(MigrationAddressBook.class);
+
+    private static final RowMapper<MigrationAddressBookEntry> ADDRESS_BOOK_ENTRY_MAPPER =
+            rowMapper(MigrationAddressBookEntry.class);
+
     private final @Owner JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.37.1__add_address_book_service_endpoints.sql")
@@ -79,7 +85,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
     }
 
     @Test
-    void verifyMigrateWhenBothDeprecatedIpAndAddressBookServiceEndpointsAreSet() throws IOException {
+    void verifyMigrateWhenBothDeprecatedIpAndMigrationAddressBookServiceEndpointsAreSet() throws IOException {
         long consensusTimestamp = 1;
         int nodeIdCount = 3;
         int endPointPerNode = 3;
@@ -88,25 +94,26 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
         insertAddressBook(AddressBookServiceImpl.FILE_101, consensusTimestamp, nodeIdCount);
         getAndSaveAddressBookEntries(true, consensusTimestamp, nodeIdCount, endPointPerNode);
 
-        assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
+        assertThat(jdbcOperations.queryForObject("select count(*) from address_book_entry", Integer.class))
+                .isEqualTo(numEndPoints);
 
         runMigration();
 
-        assertThat(addressBookEntryRepository.findAll())
+        assertThat(findAllAddressBookEntries())
                 .isNotEmpty()
                 .hasSize(nodeIdCount)
-                .extracting(AddressBookEntry::getNodeId)
+                .extracting(MigrationAddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L);
 
-        assertThat(addressBookServiceEndpointRepository.findAll())
+        assertThat(findAllAddressBookServiceEndpoints())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getPort)
+                .extracting(MigrationAddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454);
     }
 
     @Test
-    void verifyMigrateWhenOnlyAddressBookServiceEndpointsAreSet() throws IOException {
+    void verifyMigrateWhenOnlyMigrationAddressBookServiceEndpointsAreSet() throws IOException {
         long consensusTimestamp = 1;
         int nodeIdCount = 3;
         int endPointPerNode = 3;
@@ -115,20 +122,21 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
         insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIdCount);
         getAndSaveAddressBookEntries(false, consensusTimestamp, nodeIdCount, endPointPerNode);
 
-        assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
+        assertThat(jdbcOperations.queryForObject("select count(*) from address_book_entry", Integer.class))
+                .isEqualTo(numEndPoints);
 
         runMigration();
 
-        assertThat(addressBookEntryRepository.findAll())
+        assertThat(findAllAddressBookEntries())
                 .isNotEmpty()
                 .hasSize(nodeIdCount)
-                .extracting(AddressBookEntry::getNodeId)
+                .extracting(MigrationAddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L);
 
-        assertThat(addressBookServiceEndpointRepository.findAll())
+        assertThat(findAllAddressBookServiceEndpoints())
                 .isNotEmpty()
                 .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getPort)
+                .extracting(MigrationAddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445, 446, 447, 448, 449, 450, 451);
     }
 
@@ -137,30 +145,30 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
         long consensusTimestamp = 1;
         int nodeIdCount = 3;
         int endPointPerNode = 0;
-        int numEndPoints = nodeIdCount;
 
         insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIdCount);
         getAndSaveAddressBookEntries(true, consensusTimestamp, nodeIdCount, endPointPerNode);
 
-        assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
+        assertThat(jdbcOperations.queryForObject("select count(*) from address_book_entry", Integer.class))
+                .isEqualTo(nodeIdCount);
 
         runMigration();
 
-        assertThat(addressBookEntryRepository.findAll())
+        assertThat(findAllAddressBookEntries())
                 .isNotEmpty()
                 .hasSize(nodeIdCount)
-                .extracting(AddressBookEntry::getNodeId)
+                .extracting(MigrationAddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L);
 
-        assertThat(addressBookServiceEndpointRepository.findAll())
+        assertThat(findAllAddressBookServiceEndpoints())
                 .isNotEmpty()
-                .hasSize(numEndPoints)
-                .extracting(AddressBookServiceEndpoint::getPort)
+                .hasSize(nodeIdCount)
+                .extracting(MigrationAddressBookServiceEndpoint::getPort)
                 .containsExactlyInAnyOrder(443, 444, 445);
     }
 
     @Test
-    void verifyMigrateWhenNeitherDeprecatedIpNorAddressBookServiceEndpointsAreSet() throws IOException {
+    void verifyMigrateWhenNeitherDeprecatedIpNorMigrationAddressBookServiceEndpointsAreSet() throws IOException {
         long consensusTimestamp = 1;
         int nodeIdCount = 3;
         int endPointPerNode = 0;
@@ -168,17 +176,18 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
         insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIdCount);
         getAndSaveAddressBookEntries(false, consensusTimestamp, nodeIdCount, endPointPerNode);
 
-        assertThat(addressBookEntryRepository.count()).isEqualTo(nodeIdCount);
+        assertThat(jdbcOperations.queryForObject("select count(*) from address_book_entry", Integer.class))
+                .isEqualTo(nodeIdCount);
 
         runMigration();
 
-        assertThat(addressBookEntryRepository.findAll())
+        assertThat(findAllAddressBookEntries())
                 .isNotEmpty()
                 .hasSize(nodeIdCount)
-                .extracting(AddressBookEntry::getNodeId)
+                .extracting(MigrationAddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L);
 
-        assertThat(addressBookServiceEndpointRepository.findAll()).isEmpty();
+        assertThat(findAllAddressBookServiceEndpoints()).isEmpty();
     }
 
     @Test
@@ -208,33 +217,34 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
             });
         });
 
-        assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
+        assertThat(jdbcOperations.queryForObject("select count(*) from address_book_entry", Integer.class))
+                .isEqualTo(numEndPoints);
 
         runMigration();
 
-        assertThat(addressBookEntryRepository.findAll())
+        assertThat(findAllAddressBookEntries())
                 .isNotEmpty()
                 .hasSize(nodeIds.size())
-                .extracting(AddressBookEntry::getNodeId)
+                .extracting(MigrationAddressBookEntry::getNodeId)
                 .containsExactlyInAnyOrderElementsOf(nodeIds);
 
-        IterableAssert<AddressBookServiceEndpoint> listAssert = assertThat(
-                        addressBookServiceEndpointRepository.findAll())
-                .isNotEmpty()
-                .hasSize(numEndPoints);
+        IterableAssert<MigrationAddressBookServiceEndpoint> listAssert =
+                assertThat(findAllAddressBookServiceEndpoints()).isNotEmpty().hasSize(numEndPoints);
 
         List<Integer> allPorts = new ArrayList<>();
         allPorts.addAll(ports);
         allPorts.addAll(ports);
         allPorts.addAll(ports);
-        listAssert.extracting(AddressBookServiceEndpoint::getPort).containsExactlyInAnyOrderElementsOf(allPorts);
+        listAssert
+                .extracting(MigrationAddressBookServiceEndpoint::getPort)
+                .containsExactlyInAnyOrderElementsOf(allPorts);
 
         // verify address_book counts are updated
-        assertThat(addressBookRepository.findById(consensusTimestamp))
+        assertThat(findById(consensusTimestamp))
                 .get()
-                .returns(AddressBookServiceImpl.FILE_102, AddressBook::getFileId)
-                .returns(nodeIds.size(), AddressBook::getNodeCount)
-                .returns(null, AddressBook::getEndConsensusTimestamp);
+                .returns(AddressBookServiceImpl.FILE_102, MigrationAddressBook::getFileId)
+                .returns(nodeIds.size(), MigrationAddressBook::getNodeCount)
+                .returns(null, MigrationAddressBook::getEndConsensusTimestamp);
     }
 
     @Test
@@ -271,19 +281,19 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
 
         runMigration();
 
-        IterableAssert<AddressBookEntry> listAssert =
-                assertThat(addressBookEntryRepository.findAll()).isNotEmpty().hasSize(nodeIds.size());
+        IterableAssert<MigrationAddressBookEntry> listAssert =
+                assertThat(findAllAddressBookEntries()).isNotEmpty().hasSize(nodeIds.size());
 
-        listAssert.extracting(AddressBookEntry::getNodeId).containsExactlyInAnyOrderElementsOf(nodeIds);
+        listAssert.extracting(MigrationAddressBookEntry::getNodeId).containsExactlyInAnyOrderElementsOf(nodeIds);
         listAssert
-                .extracting(AddressBookEntry::getNodeAccountId)
+                .extracting(MigrationAddressBookEntry::getNodeAccountId)
                 .containsExactlyInAnyOrder(
                         EntityId.of(baseAccountId + (nodeIds.get(0) + nodeAccountOffset)),
                         EntityId.of(baseAccountId + (nodeIds.get(1) + nodeAccountOffset)),
                         EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset)),
                         EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset)));
 
-        assertThat(addressBookServiceEndpointRepository.findAll()).isEmpty();
+        assertThat(findAllAddressBookServiceEndpoints()).isEmpty();
     }
 
     @Test
@@ -326,26 +336,28 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
 
         runMigration();
 
-        IterableAssert<AddressBookEntry> listAssert =
-                assertThat(addressBookEntryRepository.findAll()).isNotEmpty().hasSize(nodeIds.size());
+        IterableAssert<MigrationAddressBookEntry> listAssert =
+                assertThat(findAllAddressBookEntries()).isNotEmpty().hasSize(nodeIds.size());
 
-        listAssert.extracting(AddressBookEntry::getNodeId).containsExactlyInAnyOrderElementsOf(nodeIds);
+        listAssert.extracting(MigrationAddressBookEntry::getNodeId).containsExactlyInAnyOrderElementsOf(nodeIds);
         listAssert
-                .extracting(AddressBookEntry::getNodeAccountId)
+                .extracting(MigrationAddressBookEntry::getNodeAccountId)
                 .containsExactlyInAnyOrder(
                         EntityId.of(baseAccountId + (nodeIds.get(0) + nodeAccountOffset)),
                         EntityId.of(baseAccountId + (nodeIds.get(1) + nodeAccountOffset)),
                         EntityId.of(baseAccountId + (nodeIds.get(2) + nodeAccountOffset)),
                         EntityId.of(baseAccountId + (nodeIds.get(3) + nodeAccountOffset)));
 
-        IterableAssert<AddressBookServiceEndpoint> serviceListAssert = assertThat(
-                        addressBookServiceEndpointRepository.findAll())
-                .isNotEmpty()
-                .hasSize(nodeIds.size());
+        IterableAssert<MigrationAddressBookServiceEndpoint> serviceListAssert =
+                assertThat(findAllAddressBookServiceEndpoints()).isNotEmpty().hasSize(nodeIds.size());
 
-        serviceListAssert.extracting(AddressBookServiceEndpoint::getNodeId).containsExactlyInAnyOrder(0L, 1L, 2L, 3L);
+        serviceListAssert
+                .extracting(MigrationAddressBookServiceEndpoint::getNodeId)
+                .containsExactlyInAnyOrder(0L, 1L, 2L, 3L);
 
-        serviceListAssert.extracting(AddressBookServiceEndpoint::getPort).containsExactlyInAnyOrder(-1, 0, -1, 50211);
+        serviceListAssert
+                .extracting(MigrationAddressBookServiceEndpoint::getPort)
+                .containsExactlyInAnyOrder(-1, 0, -1, 50211);
     }
 
     private List<AddressBookEntry> getAndSaveAddressBookEntries(
@@ -447,6 +459,20 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
                 addressBookEntry.getPublicKey());
     }
 
+    private Iterable<MigrationAddressBookServiceEndpoint> findAllAddressBookServiceEndpoints() {
+        return jdbcOperations.query(
+                "select * from address_book_service_endpoint", ADDRESS_BOOK_SERVICE_ENDPOINT_MAPPER);
+    }
+
+    private Iterable<MigrationAddressBookEntry> findAllAddressBookEntries() {
+        return jdbcOperations.query("select * from address_book_entry", ADDRESS_BOOK_ENTRY_MAPPER);
+    }
+
+    private Optional<MigrationAddressBook> findById(long id) {
+        return Optional.of(jdbcOperations.queryForObject(
+                "select * from address_book where start_consensus_timestamp = ?", ADDRESS_BOOK_MAPPER, id));
+    }
+
     private void runMigration() throws IOException {
         log.info("Run migration: {}", sql.getName());
         jdbcOperations.update(FileUtils.readFileToString(sql, "UTF-8"));
@@ -472,5 +498,53 @@ class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTes
                         + "alter column node_account_id drop not null,\n"
                         + "alter column node_id drop not null,\n"
                         + "add primary key (id);");
+    }
+
+    // Use a custom class for address_book_service_endpoint table since its columns have changed from the current domain
+    // object
+    @Data
+    @Builder
+    @AllArgsConstructor
+    private static class MigrationAddressBookServiceEndpoint {
+        private long consensusTimestamp;
+        private String ipAddressV4;
+        private long nodeId;
+        private Integer port;
+    }
+
+    @Data
+    @NoArgsConstructor
+    private static class MigrationAddressBookEntry {
+
+        private long consensusTimestamp;
+
+        private long nodeId;
+
+        private String memo;
+
+        private EntityId nodeAccountId;
+
+        private byte[] nodeCertHash;
+
+        private String publicKey;
+
+        private String description;
+
+        private Long stake;
+    }
+
+    @Data
+    @NoArgsConstructor
+    private static class MigrationAddressBook {
+
+        private Long startConsensusTimestamp;
+
+        private Long endConsensusTimestamp;
+
+        private byte[] fileData;
+
+        private EntityId fileId;
+
+        private Integer nodeCount;
     }
 }
