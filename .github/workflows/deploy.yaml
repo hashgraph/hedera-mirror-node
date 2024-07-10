@@ -33,6 +33,17 @@ jobs:
           ref: deploy
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
+      - name: Install yq
+        env:
+          BINARY: yq_linux_amd64
+          TARGET: /home/runner/.local/bin
+          VERSION: v4.44.2
+        run: |
+          mkdir -p "${TARGET}"
+          curl -sL https://github.com/mikefarah/yq/releases/download/${VERSION}/${BINARY}.tar.gz --output - | tar -xvz "${BINARY}"
+          mv ${BINARY} "${TARGET}/yq"
+        working-directory: ${{ env.RUNNER_TEMP }}
+
       - name: Get chart version
         id: release
         run: |
@@ -41,11 +52,13 @@ jobs:
 
       - name: Set chart version in HelmRelease
         env:
-          CHART_PATH: ${{ github.event.client_payload.metadata.path }}
           CHART_VERSION: ${{ steps.release.outputs.version }}
-        uses: mikefarah/yq@f15500b20a1c991c8729870ba60a4dc3524b6a94 # v4.44.2
-        with:
-          cmd: yq eval '.spec.chart.spec.version=env(CHART_VERSION)' -i "./clusters/${CHART_PATH}/helmrelease.yaml"
+          CLUSTER: ${{ github.event.client_payload.metadata.cluster }}
+          NAMESPACES: ${{ github.event.client_payload.metadata.namespaces }}
+        run: |
+          for namespace in $(echo "${NAMESPACES}" | tr "," "\n"); do
+            yq eval '.spec.chart.spec.version=env(CHART_VERSION)' -i "./clusters/${CLUSTER}/${namespace}/helmrelease.yaml"
+          done
 
       - name: Import GPG Key
         id: gpg_importer
@@ -61,11 +74,11 @@ jobs:
         uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
         with:
           author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          body: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
-          branch: deploy-${{ github.event.client_payload.metadata.path }}-${{ steps.release.outputs.version }}
-          commit-message: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
+          body: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.namespaces }} in ${{ github.event.client_payload.metadata.cluster }}
+          branch: deploy-${{ github.event.client_payload.metadata.cluster }}-${{ steps.release.outputs.version }}
+          commit-message: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.namespaces }} in ${{ github.event.client_payload.metadata.cluster }}
           committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           delete-branch: true
           signoff: true
-          title: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
+          title: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.cluster }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}

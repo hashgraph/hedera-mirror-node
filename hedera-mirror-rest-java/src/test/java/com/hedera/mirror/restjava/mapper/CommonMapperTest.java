@@ -74,12 +74,13 @@ class CommonMapperTest {
 
         // Then
         assertThat(commonMapper.mapKey(null)).isNull();
-        assertThat(commonMapper.mapKey(ecdsa.toByteArray())).isEqualTo(toKey(bytesEcdsa, TypeEnum.ECDSA_SECP256K1));
-        assertThat(commonMapper.mapKey(ecdsaList.toByteArray())).isEqualTo(toKey(bytesEcdsa, TypeEnum.ECDSA_SECP256K1));
+        assertThat(commonMapper.mapKey(ecdsa.toByteArray())).isEqualTo(toKey(bytesEcdsa, TypeEnum.ECDSA_SECP256_K1));
+        assertThat(commonMapper.mapKey(ecdsaList.toByteArray()))
+                .isEqualTo(toKey(bytesEcdsa, TypeEnum.ECDSA_SECP256_K1));
         assertThat(commonMapper.mapKey(ed25519.toByteArray())).isEqualTo(toKey(bytesEd25519, TypeEnum.ED25519));
         assertThat(commonMapper.mapKey(ed25519.toByteArray())).isEqualTo(toKey(bytesEd25519, TypeEnum.ED25519));
         assertThat(commonMapper.mapKey(ed25519List.toByteArray())).isEqualTo(toKey(bytesEd25519, TypeEnum.ED25519));
-        assertThat(commonMapper.mapKey(protobufEncoded)).isEqualTo(toKey(protobufEncoded, TypeEnum.PROTOBUFENCODED));
+        assertThat(commonMapper.mapKey(protobufEncoded)).isEqualTo(toKey(protobufEncoded, TypeEnum.PROTOBUF_ENCODED));
     }
 
     @Test

@@ -32,6 +32,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.Int64Value;
 import com.google.protobuf.StringValue;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -87,6 +88,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
@@ -119,6 +121,8 @@ import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenReference;
+import com.hederahashgraph.api.proto.java.TokenRejectTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
@@ -740,6 +744,29 @@ public class RecordItemBuilder {
     public Builder<TokenPauseTransactionBody.Builder> tokenPause() {
         var transactionBody = TokenPauseTransactionBody.newBuilder().setToken(tokenId());
         return new Builder<>(TransactionType.TOKENPAUSE, transactionBody);
+    }
+
+    public TokenReference.Builder tokenReference(TokenTypeEnum tokenType) {
+        var builder = TokenReference.newBuilder();
+        if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
+            builder.setFungibleToken(tokenId());
+        } else {
+            var nftId = NftID.newBuilder()
+                    .setTokenID(tokenId())
+                    .setSerialNumber(id())
+                    .build();
+            builder.setNft(nftId);
+        }
+
+        return builder;
+    }
+
+    public Builder<TokenRejectTransactionBody.Builder> tokenReject() {
+        var transactionBody = TokenRejectTransactionBody.newBuilder()
+                .setOwner(accountId())
+                .addRejections(tokenReference(TokenTypeEnum.FUNGIBLE_COMMON))
+                .addRejections(tokenReference(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
+        return new Builder<>(TransactionType.TOKENREJECT, transactionBody);
     }
 
     public Builder<TokenRevokeKycTransactionBody.Builder> tokenRevokeKyc() {

@@ -19,21 +19,11 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.EXCHANGE_RATE_ENTITY_ID;
-import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.FEE_SCHEDULE_ENTITY_ID;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoTransfer;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAccountWipe;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenAssociateToAccount;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenBurn;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenCreate;
-import static com.hederahashgraph.api.proto.java.HederaFunctionality.TokenMint;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.Range;
@@ -71,18 +61,9 @@ import com.hedera.services.store.contracts.precompile.codec.KeyValueWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
 import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 import com.hedera.services.utils.EntityIdUtils;
-import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
-import com.hederahashgraph.api.proto.java.ExchangeRateSet;
-import com.hederahashgraph.api.proto.java.FeeComponents;
-import com.hederahashgraph.api.proto.java.FeeData;
-import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SubType;
-import com.hederahashgraph.api.proto.java.TimestampSeconds;
-import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -98,26 +79,12 @@ import org.springframework.beans.factory.annotation.Value;
 
 public class ContractCallTestSetup extends Web3IntegrationTest {
 
-    protected static final long expiry = 1_234_567_890L;
-
     // The block numbers lower than EVM v0.34 are considered part of EVM v0.30 which includes all precompiles
     public static final long EVM_V_34_BLOCK = 50L;
+    protected static final long expiry = 1_234_567_890L;
     protected static final long EVM_V_38_BLOCK = 100L;
     protected static final long EVM_V_46_BLOCK = 150L;
     protected static final BigInteger SUCCESS_RESULT = BigInteger.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
-
-    protected static final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
-            .setCurrentRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(1)
-                    .setHbarEquiv(12)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(expiry))
-                    .build())
-            .setNextRate(ExchangeRate.newBuilder()
-                    .setCentEquiv(2)
-                    .setHbarEquiv(31)
-                    .setExpirationTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
-                    .build())
-            .build();
 
     // Contract addresses
     protected static final Address ETH_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
@@ -191,7 +158,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final Address TRANSFRER_FROM_TOKEN_ADDRESS = toAddress(1111);
     protected static final Address FROZEN_FUNGIBLE_TOKEN_ADDRESS = toAddress(1050);
     protected static final Address NFT_TRANSFER_ADDRESS = toAddress(1051);
-    protected static final Address NFT_TRANSFER_ADDRESS_HISTORICAL = toAddress(1064);
     protected static final Address UNPAUSED_FUNGIBLE_TOKEN_ADDRESS = toAddress(1052);
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS = toAddress(1053);
     protected static final Address NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS_HISTORICAL = toAddress(1073);
@@ -257,8 +223,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
             getFungibleHbarsTokenWrapper(OWNER_ADDRESS_HISTORICAL, AUTO_RENEW_ACCOUNT_ADDRESS_HISTORICAL);
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_INHERIT_KEYS = getFungibleTokenInheritKeys();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN = getNonFungibleToken(OWNER_ADDRESS);
-    protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_HISTORICAL =
-            getNonFungibleToken(OWNER_ADDRESS_HISTORICAL);
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_WITH_KEYS = getNonFungibleTokenWithKeys();
     protected static final TokenCreateWrapper NON_FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
             getNonFungibleTokenExpiryInUint32Range();
@@ -277,195 +241,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     // Fee schedules
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
-    protected static CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
-            .setCurrentFeeSchedule(FeeSchedule.newBuilder()
-                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(ContractCall)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(CryptoTransfer)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenAccountWipe)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenMint)
-                            .addFees(FeeData.newBuilder()
-                                    .setSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setMax(1000000000000000L)
-                                            .setMin(0)
-                                            .build())
-                                    .setNodedata(FeeComponents.newBuilder()
-                                            .setBpt(40000000000L)
-                                            .setMax(1000000000000000L)
-                                            .setMin(0)
-                                            .build())
-                                    .setNetworkdata(FeeComponents.newBuilder()
-                                            .setMax(1000000000000000L)
-                                            .setBpt(160000000000L)
-                                            .setMin(0)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenBurn)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenAssociateToAccount)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())
-                                    .build()))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenCreate)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setConstant(7874923918408L)
-                                            .setGas(2331415)
-                                            .setBpt(349712319)
-                                            .setVpt(874280797002L)
-                                            .setBpr(349712319)
-                                            .setSbpr(8742808)
-                                            .setRbh(233142)
-                                            .setSbh(17486)
-                                            .setMin(0)
-                                            .setMax(1000000000000000L)
-                                            .build())
-                                    .setNetworkdata(FeeComponents.newBuilder()
-                                            .setConstant(7874923918408L)
-                                            .setGas(2331415)
-                                            .setBpt(349712319)
-                                            .setVpt(874280797002L)
-                                            .setRbh(233142)
-                                            .setSbh(17486)
-                                            .setBpr(349712319)
-                                            .setSbpr(8742808)
-                                            .setMin(0)
-                                            .setMax(1000000000000000L)
-                                            .build())
-                                    .setNodedata(FeeComponents.newBuilder()
-                                            .setConstant(393746195920L)
-                                            .setGas(116571)
-                                            .setRbh(11657)
-                                            .setSbh(874)
-                                            .setBpt(17485616)
-                                            .setSbpr(437140)
-                                            .setVpt(43714039850L)
-                                            .setBpr(17485616)
-                                            .setMin(0)
-                                            .setMax(1000000000000000L)
-                                            .build())
-                                    .build())))
-            .setNextFeeSchedule(FeeSchedule.newBuilder()
-                    .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(2_234_567_890L))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenMint)
-                            .addFees(FeeData.newBuilder()
-                                    .setSubType(SubType.TOKEN_NON_FUNGIBLE_UNIQUE)
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setMax(1000000000000000L)
-                                            .setMin(0)
-                                            .build())
-                                    .setNodedata(FeeComponents.newBuilder()
-                                            .setBpt(40000000000L)
-                                            .setMax(1000000000000000L)
-                                            .setMin(0)
-                                            .build())
-                                    .setNetworkdata(FeeComponents.newBuilder()
-                                            .setMax(1000000000000000L)
-                                            .setMin(0)
-                                            .setBpt(160000000000L)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(CryptoTransfer)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenAccountWipe)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenBurn)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenAssociateToAccount)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(ContractCall)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build())))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(TokenCreate)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setConstant(7874923918408L)
-                                            .setGas(2331415)
-                                            .setBpt(349712319)
-                                            .setVpt(874280797002L)
-                                            .setBpr(349712319)
-                                            .setSbpr(8742808)
-                                            .setRbh(233142)
-                                            .setSbh(17486)
-                                            .setMin(0)
-                                            .setMax(1000000000000000L)
-                                            .build())
-                                    .setNetworkdata(FeeComponents.newBuilder()
-                                            .setConstant(7874923918408L)
-                                            .setGas(2331415)
-                                            .setBpt(349712319)
-                                            .setVpt(874280797002L)
-                                            .setRbh(233142)
-                                            .setSbh(17486)
-                                            .setBpr(349712319)
-                                            .setSbpr(8742808)
-                                            .setMin(0)
-                                            .setMax(1000000000000000L)
-                                            .build())
-                                    .setNodedata(FeeComponents.newBuilder()
-                                            .setConstant(393746195920L)
-                                            .setGas(116571)
-                                            .setRbh(11657)
-                                            .setSbh(874)
-                                            .setBpt(17485616)
-                                            .setSbpr(437140)
-                                            .setVpt(43714039850L)
-                                            .setBpr(17485616)
-                                            .setMin(0)
-                                            .setMax(1000000000000000L)
-                                            .build())
-                                    .build()))
-                    .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
-                            .setHederaFunctionality(EthereumTransaction)
-                            .addFees(FeeData.newBuilder()
-                                    .setServicedata(FeeComponents.newBuilder()
-                                            .setGas(852000)
-                                            .build()))))
-            .build();
 
     protected static Key keyWithContractId = Key.newBuilder()
             .setContractID(contractIdFromEvmAddress(PRECOMPILE_TEST_CONTRACT_ADDRESS.toArrayUnsafe()))
@@ -1347,8 +1122,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
         contractAllowancesPersist(senderEntityId, MODIFICATION_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, ERC_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
         contractAllowancesPersist(senderEntityId, REDIRECT_CONTRACT_ADDRESS, tokenTreasuryEntityId, nftEntityId3);
-        exchangeRatesPersist();
-        feeSchedulesPersist();
     }
 
     protected void genesisBlockPersist() {
@@ -1661,24 +1434,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                     .customize(f -> f.tokenId(tokenEntityId.getId()).timestampRange(historicalBlock))
                     .persist();
         }
-    }
-
-    protected void exchangeRatesPersist() {
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(exchangeRatesSet.toByteArray())
-                        .entityId(EXCHANGE_RATE_ENTITY_ID)
-                        .consensusTimestamp(1000L))
-                .persist();
-    }
-
-    protected void feeSchedulesPersist() {
-        domainBuilder
-                .fileData()
-                .customize(f -> f.fileData(feeSchedules.toByteArray())
-                        .entityId(FEE_SCHEDULE_ENTITY_ID)
-                        .consensusTimestamp(1001L))
-                .persist();
     }
 
     private void nftCustomFeePersist(final EntityId senderEntityId, final EntityId nftEntityId) {

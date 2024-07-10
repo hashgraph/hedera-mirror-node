@@ -227,7 +227,8 @@ class HederaEvmWorldStateTest {
                 0L,
                 false,
                 null,
-                0L);
+                0L,
+                0);
         store.wrap();
         store.updateAccount(accountModel);
         actualSubject.commit();
