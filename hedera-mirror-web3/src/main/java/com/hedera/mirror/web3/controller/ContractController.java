@@ -90,7 +90,7 @@ class ContractController {
         // If both fields are missing, we are in a contract create case, but no sender to subtract the fee from, so the
         // request should fail.
         if (fromAddress.isZero() && receiver.isZero()) {
-            throw new InvalidParametersException("to field must not be empty");
+            throw new InvalidParametersException("from field must not be empty");
         }
 
         Bytes data;

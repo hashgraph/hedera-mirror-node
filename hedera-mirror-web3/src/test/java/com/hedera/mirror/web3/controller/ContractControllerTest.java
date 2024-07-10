@@ -227,7 +227,7 @@ class ContractControllerTest {
 
     @Test
     void callInvalidFromAndTo() throws Exception {
-        final var errorString = "to field must not be empty";
+        final var errorString = "from field must not be empty";
         final var request = request();
         request.setFrom(null);
         request.setTo(null);
