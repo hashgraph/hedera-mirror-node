@@ -226,18 +226,6 @@ class ContractControllerTest {
     }
 
     @Test
-    void callInvalidFromAndTo() throws Exception {
-        final var errorString = "from field must not be empty";
-        final var request = request();
-        request.setFrom(null);
-        request.setTo(null);
-        request.setValue(0);
-        contractCall(request)
-                .andExpect(status().isBadRequest())
-                .andExpect(content().string(convert(new GenericErrorResponse(errorString))));
-    }
-
-    @Test
     void callInvalidValue() throws Exception {
         final var error = "value field must be greater than or equal to 0";
         final var request = request();

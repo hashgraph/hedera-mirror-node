@@ -87,12 +87,6 @@ class ContractController {
             receiver = Address.fromHexString(request.getTo());
         }
 
-        // If both fields are missing, we are in a contract create case, but no sender to subtract the fee from, so the
-        // request should fail.
-        if (fromAddress.isZero() && receiver.isZero()) {
-            throw new InvalidParametersException("from field must not be empty");
-        }
-
         Bytes data;
         try {
             data = request.getData() != null ? Bytes.fromHexString(request.getData()) : Bytes.EMPTY;
