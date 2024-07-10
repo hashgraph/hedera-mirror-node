@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.restjava.spec;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hedera.mirror.restjava.RestJavaIntegrationTest;
 import com.hedera.mirror.restjava.RestJavaProperties;
@@ -33,7 +35,10 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClient;
 
@@ -44,6 +49,13 @@ import org.springframework.web.client.RestClient;
 public class RestSpecTest extends RestJavaIntegrationTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+//    @TestConfiguration(proxyBeanMethods = false)
+//    class Configuration {
+//        @Bean
+//        @ServiceConnection("rest-api")
+//
+//    }
 
     @Resource
     private SpecDomainBuilder specDomainBuilder;
@@ -69,12 +81,26 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     }
 
     @Test
-    void getStartedWithFile() throws Exception {
+    void phase1WithSingleFile() throws Exception {
         var file = new File("../hedera-mirror-rest/__tests__/specs/network/supply/no-params.json");
-        RestSpec restSpec = OBJECT_MAPPER.readValue(file, RestSpec.class);
+        runSpecTest(file);
+        System.out.println("ran " + file.getName());
+    }
+
+    private void runSpecTest(File specFile) throws Exception {
+        RestSpec restSpec = OBJECT_MAPPER.readValue(specFile, RestSpec.class);
         var normalizedRestSpec = RestSpecNormalized.from(restSpec);
         specDomainBuilder.addAccounts(normalizedRestSpec.setup().accounts());
-        System.out.println(restSpec);
-        System.out.println(normalizedRestSpec);
+
+        for (var specTest : normalizedRestSpec.tests()) {
+            for (var url : specTest.urls()) {
+                var restClient = restClientBuilder.baseUrl(baseUrl + url).build();
+                var response = restClient.get()
+                        .retrieve()
+                        .toEntity(String.class);
+                assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
+                JSONAssert.assertEquals(specTest.responseJson().toString(), response.getBody(), JSONCompareMode.LENIENT);
+            }
+        }
     }
 }
