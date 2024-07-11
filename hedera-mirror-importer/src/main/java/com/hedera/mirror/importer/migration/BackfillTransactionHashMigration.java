@@ -26,7 +26,6 @@ import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import java.io.IOException;
-import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -54,10 +53,10 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     private static final String STRATEGY_KEY = "strategy";
     private static final String TABLE_HAS_DATA_SQL = "select exists(select * from transaction_hash limit 1)";
     private static final String TRUNCATE_SQL = "truncate table transaction_hash;";
-    private static final String TRUNCATE_AND_BACKFILL_TRANSACTION_HASH_SQL =
-            wrap(List.of(TRUNCATE_SQL, BACKFILL_TRANSACTION_HASH_SQL));
     private static final String TRUNCATE_AND_BACKFILL_BOTH_SQL =
-            wrap(List.of(TRUNCATE_SQL, BACKFILL_TRANSACTION_HASH_SQL, BACKFILL_ETHERUM_TRANSACTION_HASH_SQL));
+            wrap(TRUNCATE_SQL, BACKFILL_TRANSACTION_HASH_SQL, BACKFILL_ETHERUM_TRANSACTION_HASH_SQL);
+    private static final String TRUNCATE_AND_BACKFILL_TRANSACTION_HASH_SQL =
+            wrap(TRUNCATE_SQL, BACKFILL_TRANSACTION_HASH_SQL);
 
     private final EntityProperties entityProperties;
 
@@ -106,7 +105,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
         return "Backfill transaction hash to consensus timestamp mapping";
     }
 
-    private static String wrap(List<String> queries) {
+    private static String wrap(String... queries) {
         return String.format(
                 """
                 begin;
@@ -127,13 +126,13 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
                                 .map(TransactionType::getProtoId)
                                 .map(Object::toString)
                                 .collect(joining(",")));
+        String backfillEthereumTransactionHashSql =
+                ethereumTransactionIncluded ? BACKFILL_ETHERUM_TRANSACTION_HASH_SQL : StringUtils.EMPTY;
         String backfillTransactionHashSql =
                 String.format(TRUNCATE_AND_BACKFILL_TRANSACTION_HASH_SQL, transactionTypesCondition);
         String backfillBothSql = ethereumTransactionIncluded
                 ? String.format(TRUNCATE_AND_BACKFILL_BOTH_SQL, transactionTypesCondition)
                 : backfillTransactionHashSql;
-        String backfillEthereumTransactionHashSql =
-                ethereumTransactionIncluded ? BACKFILL_ETHERUM_TRANSACTION_HASH_SQL : StringUtils.EMPTY;
 
         var strategy = getStrategy();
         return switch (strategy) {
