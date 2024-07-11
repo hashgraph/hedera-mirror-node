@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.web3.evm.contracts.execution.traceability;
+package com.hedera.node.app.service.mono.contracts.execution.traceability;
 
 import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 import com.hedera.services.stream.proto.ContractActionType;

@@ -28,6 +28,7 @@ import com.hedera.mirror.web3.common.ContractCallContext;
 import com.hedera.mirror.web3.convert.BytesDecoder;
 import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
@@ -232,6 +233,9 @@ public class OpcodeTracer implements HederaOperationTracer {
             return Bytes.EMPTY;
         }
 
+        // covers an edge case where the reason in the contract actions is a response code number (as a plain string)
+        // so we convert this number to an ABI-encoded string of the corresponding response code name,
+        // to at least give some relevant information to the user in the valid EVM format
         Bytes trimmedReason = revertReason.trimLeadingZeros();
         if (trimmedReason.size() <= Integer.BYTES) {
             ResponseCodeEnum responseCode = ResponseCodeEnum.forNumber(trimmedReason.toInt());
