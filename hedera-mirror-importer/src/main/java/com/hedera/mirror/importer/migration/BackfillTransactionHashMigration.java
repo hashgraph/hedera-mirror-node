@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.migration;
 
+import static com.hedera.mirror.common.domain.transaction.TransactionType.ETHEREUMTRANSACTION;
 import static java.util.stream.Collectors.joining;
 
 import com.google.common.base.Stopwatch;
@@ -25,6 +26,8 @@ import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import java.io.IOException;
+import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -35,20 +38,11 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
 
     private static final String BACKFILL_TRANSACTION_HASH_SQL =
             """
-            begin;
-
-            truncate transaction_hash;
-
             insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
             select consensus_timestamp, transaction_hash, payer_account_id
             from transaction
             where consensus_timestamp >= :startTimestamp %s;
-
-            %s
-
-            commit;
             """;
-
     private static final String BACKFILL_ETHERUM_TRANSACTION_HASH_SQL =
             """
             insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
@@ -56,8 +50,14 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
             from ethereum_transaction
             where consensus_timestamp >= :startTimestamp;
             """;
-
     private static final String START_TIMESTAMP_KEY = "startTimestamp";
+    private static final String STRATEGY_KEY = "strategy";
+    private static final String TABLE_HAS_DATA_SQL = "select exists(select * from transaction_hash limit 1)";
+    private static final String TRUNCATE_SQL = "truncate table transaction_hash;";
+    private static final String TRUNCATE_AND_BACKFILL_TRANSACTION_HASH_SQL =
+            wrap(List.of(TRUNCATE_SQL, BACKFILL_TRANSACTION_HASH_SQL));
+    private static final String TRUNCATE_AND_BACKFILL_BOTH_SQL =
+            wrap(List.of(TRUNCATE_SQL, BACKFILL_TRANSACTION_HASH_SQL, BACKFILL_ETHERUM_TRANSACTION_HASH_SQL));
 
     private final EntityProperties entityProperties;
 
@@ -88,20 +88,12 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
         }
 
         var stopwatch = Stopwatch.createStarted();
-        var transactionHashTypes = persist.getTransactionHashTypes();
-        String transactionTypesCondition = transactionHashTypes.isEmpty()
-                ? ""
-                : String.format(
-                        "and type in (%s)",
-                        transactionHashTypes.stream()
-                                .map(TransactionType::getProtoId)
-                                .map(Object::toString)
-                                .collect(joining(",")));
-        String backfillEthereumTransactionHashSql = transactionHashTypes.contains(TransactionType.ETHEREUMTRANSACTION)
-                ? BACKFILL_ETHERUM_TRANSACTION_HASH_SQL
-                : "";
-        String sql = String.format(
-                BACKFILL_TRANSACTION_HASH_SQL, transactionTypesCondition, backfillEthereumTransactionHashSql);
+        String sql = getMigrationSql();
+        if (StringUtils.isEmpty(sql)) {
+            log.info("Skipping migration based on the configured strategy and the existing data in the table");
+            return;
+        }
+
         var namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
         var params = new MapSqlParameterSource(START_TIMESTAMP_KEY, startTimestamp);
         namedParameterJdbcTemplate.update(sql, params);
@@ -112,5 +104,62 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     @Override
     public String getDescription() {
         return "Backfill transaction hash to consensus timestamp mapping";
+    }
+
+    private static String wrap(List<String> queries) {
+        return String.format(
+                """
+                begin;
+                %s
+                commit;
+                """,
+                StringUtils.join(queries, "\n"));
+    }
+
+    private String getMigrationSql() {
+        var transactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
+        boolean ethereumTransactionIncluded = transactionHashTypes.contains(ETHEREUMTRANSACTION);
+        String transactionTypesCondition = transactionHashTypes.isEmpty()
+                ? StringUtils.EMPTY
+                : String.format(
+                        "and type in (%s)",
+                        transactionHashTypes.stream()
+                                .map(TransactionType::getProtoId)
+                                .map(Object::toString)
+                                .collect(joining(",")));
+        String backfillTransactionHashSql =
+                String.format(TRUNCATE_AND_BACKFILL_TRANSACTION_HASH_SQL, transactionTypesCondition);
+        String backfillBothSql = ethereumTransactionIncluded
+                ? String.format(TRUNCATE_AND_BACKFILL_BOTH_SQL, transactionTypesCondition)
+                : backfillTransactionHashSql;
+        String backfillEthereumTransactionHashSql =
+                ethereumTransactionIncluded ? BACKFILL_ETHERUM_TRANSACTION_HASH_SQL : StringUtils.EMPTY;
+
+        var strategy = getStrategy();
+        return switch (strategy) {
+            case AUTO -> tableHasData() ? backfillEthereumTransactionHashSql : backfillBothSql;
+            case BOTH -> backfillBothSql;
+            case ETHEREUM_HASH -> backfillEthereumTransactionHashSql;
+            case TRANSACTION_HASH -> backfillTransactionHashSql;
+        };
+    }
+
+    private Strategy getStrategy() {
+        String name = migrationProperties
+                .getParams()
+                .getOrDefault(STRATEGY_KEY, Strategy.AUTO.name())
+                .toUpperCase();
+        return Strategy.valueOf(name);
+    }
+
+    private boolean tableHasData() {
+        return Boolean.TRUE.equals(jdbcTemplate.queryForObject(TABLE_HAS_DATA_SQL, Boolean.class));
+    }
+
+    private enum Strategy {
+        AUTO,
+        BOTH,
+        ETHEREUM_HASH,
+        TRANSACTION_HASH
     }
 }
