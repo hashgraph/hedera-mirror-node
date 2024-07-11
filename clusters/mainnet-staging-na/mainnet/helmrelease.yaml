@@ -88,6 +88,9 @@ spec:
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
+    stackgres:
+      coordinator:
+        instances: 1
     test:
       config:
         hedera:
