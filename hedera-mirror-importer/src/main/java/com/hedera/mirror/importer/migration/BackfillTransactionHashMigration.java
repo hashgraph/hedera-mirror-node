@@ -27,6 +27,8 @@ import jakarta.inject.Named;
 import java.io.IOException;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 @Named
 public class BackfillTransactionHashMigration extends RepeatableMigration {
@@ -34,12 +36,25 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     private static final String BACKFILL_TRANSACTION_HASH_SQL =
             """
             begin;
+
             truncate transaction_hash;
+
             insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
             select consensus_timestamp, transaction_hash, payer_account_id
             from transaction
-            where consensus_timestamp >= ? %1$s;
+            where consensus_timestamp >= :startTimestamp %s;
+
+            %s
+
             commit;
+            """;
+
+    private static final String BACKFILL_ETHERUM_TRANSACTION_HASH_SQL =
+            """
+            insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
+            select consensus_timestamp, hash, payer_account_id
+            from ethereum_transaction
+            where consensus_timestamp >= :startTimestamp;
             """;
 
     private static final String START_TIMESTAMP_KEY = "startTimestamp";
@@ -82,8 +97,14 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
                                 .map(TransactionType::getProtoId)
                                 .map(Object::toString)
                                 .collect(joining(",")));
-        String sql = String.format(BACKFILL_TRANSACTION_HASH_SQL, transactionTypesCondition);
-        jdbcTemplate.update(sql, startTimestamp);
+        String backfillEthereumTransactionHashSql = transactionHashTypes.contains(TransactionType.ETHEREUMTRANSACTION)
+                ? BACKFILL_ETHERUM_TRANSACTION_HASH_SQL
+                : "";
+        String sql = String.format(
+                BACKFILL_TRANSACTION_HASH_SQL, transactionTypesCondition, backfillEthereumTransactionHashSql);
+        var namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
+        var params = new MapSqlParameterSource(START_TIMESTAMP_KEY, startTimestamp);
+        namedParameterJdbcTemplate.update(sql, params);
 
         log.info("Backfilled transaction hash for transactions at or after {} in {}", startTimestamp, stopwatch);
     }
