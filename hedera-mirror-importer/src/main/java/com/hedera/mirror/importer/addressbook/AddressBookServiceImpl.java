@@ -485,7 +485,8 @@ public class AddressBookServiceImpl implements AddressBookService {
     private AddressBookServiceEndpoint getAddressBookServiceEndpoint(
             ServiceEndpoint serviceEndpoint, long consensusTimestamp, long nodeId) throws UnknownHostException {
         var ipAddressByteString = serviceEndpoint.getIpAddressV4();
-        if (ipAddressByteString == null || ipAddressByteString.size() != 4) {
+        if (!entityProperties.getPersist().isNodes()
+                && (ipAddressByteString == null || ipAddressByteString.size() != 4)) {
             throw new IllegalStateException(String.format("Invalid IpAddressV4: %s", ipAddressByteString));
         }
 
