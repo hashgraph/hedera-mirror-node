@@ -36,6 +36,7 @@ import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.ImporterProperties.ConsensusMode;
 import com.hedera.mirror.importer.config.CacheConfiguration;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -59,7 +60,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.ListAssert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -90,6 +93,8 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
 
     @Qualifier(CacheConfiguration.CACHE_ADDRESS_BOOK)
     private final CacheManager cacheManager;
+
+    private final EntityProperties entityProperties;
 
     private final FileDataRepository fileDataRepository;
     private final ImporterProperties importerProperties;
@@ -140,6 +145,16 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         initialAddressBookBytes = Files.readAllBytes(addressBookPath);
     }
 
+    @BeforeEach
+    void setup() {
+        entityProperties.getPersist().setNodes(true);
+    }
+
+    @AfterEach
+    void after() {
+        entityProperties.getPersist().setNodes(false);
+    }
+
     private FileData createFileData(
             byte[] contents, long consensusTimeStamp, boolean is102, TransactionType transactionType) {
         EntityId entityId = is102 ? AddressBookServiceImpl.FILE_102 : AddressBookServiceImpl.FILE_101;
@@ -169,6 +184,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         otherNetworkImporterProperties.setNetwork(ImporterProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(
                 addressBookRepository,
+                entityProperties,
                 fileDataRepository,
                 otherNetworkImporterProperties,
                 nodeStakeRepository,
@@ -207,6 +223,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         otherNetworkImporterProperties.setNetwork(ImporterProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(
                 addressBookRepository,
+                entityProperties,
                 fileDataRepository,
                 otherNetworkImporterProperties,
                 nodeStakeRepository,

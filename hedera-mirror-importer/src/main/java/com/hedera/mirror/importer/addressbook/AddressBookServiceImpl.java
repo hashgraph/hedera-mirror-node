@@ -30,6 +30,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.ImporterProperties.ConsensusMode;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
@@ -79,6 +80,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     public static final int INITIAL_NODE_ID_ACCOUNT_ID_OFFSET = 3;
 
     private final AddressBookRepository addressBookRepository;
+    private final EntityProperties entityProperties;
     private final FileDataRepository fileDataRepository;
     private final ImporterProperties importerProperties;
     private final NodeStakeRepository nodeStakeRepository;
@@ -490,10 +492,14 @@ public class AddressBookServiceImpl implements AddressBookService {
         var ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
         AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
         addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
-        addressBookServiceEndpoint.setDomainName(serviceEndpoint.getDomainName());
         addressBookServiceEndpoint.setIpAddressV4(ip);
         addressBookServiceEndpoint.setPort(serviceEndpoint.getPort());
         addressBookServiceEndpoint.setNodeId(nodeId);
+
+        if (entityProperties.getPersist().isNodes()) {
+            addressBookServiceEndpoint.setDomainName(serviceEndpoint.getDomainName());
+        }
+
         return addressBookServiceEndpoint;
     }
 

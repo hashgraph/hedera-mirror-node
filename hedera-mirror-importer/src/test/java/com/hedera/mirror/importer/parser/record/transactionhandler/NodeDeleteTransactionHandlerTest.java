@@ -16,18 +16,20 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeDeleteTransactionHandler();
+        return new NodeDeleteTransactionHandler(entityProperties);
     }
 
     @Override
@@ -39,6 +41,16 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected EntityType getExpectedEntityIdType() {
         return null;
+    }
+
+    @BeforeEach
+    void setup() {
+        entityProperties.getPersist().setNodes(true);
+    }
+
+    @AfterEach
+    void after() {
+        entityProperties.getPersist().setNodes(false);
     }
 
     @Test

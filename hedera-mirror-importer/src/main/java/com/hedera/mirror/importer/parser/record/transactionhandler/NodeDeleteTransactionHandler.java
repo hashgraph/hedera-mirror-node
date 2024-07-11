@@ -19,12 +19,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 @Named
 @RequiredArgsConstructor
 class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
+
+    private final EntityProperties entityProperties;
 
     @Override
     public TransactionType getType() {
@@ -33,7 +36,7 @@ class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
 
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!recordItem.isSuccessful()) {
+        if (!entityProperties.getPersist().isNodes() || !recordItem.isSuccessful()) {
             return;
         }
         var transactionBody = recordItem.getTransactionBody().getNodeDelete();
