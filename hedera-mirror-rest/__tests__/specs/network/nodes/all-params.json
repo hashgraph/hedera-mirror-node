@@ -89,7 +89,7 @@
         "consensus_timestamp": 187654000123457,
         "domain_name": "https://www.node5.com",
         "ip_address_v4": null,
-        "port": -1,
+        "port": 0,
         "node_id": 0
       },
       {
@@ -173,7 +173,7 @@
           {
             "domain_name": "https://www.node5.com",
             "ip_address_v4": null,
-            "port": -1
+            "port": 0
           }
         ],
         "stake": 13,
