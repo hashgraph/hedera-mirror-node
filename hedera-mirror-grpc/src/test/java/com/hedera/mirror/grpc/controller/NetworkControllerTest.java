@@ -210,7 +210,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         var endpoint = domainBuilder
                 .addressBookServiceEndpoint()
                 .customize(a ->
-                        a.domainName("www.example-node.com").ipAddressV4(null).port(-1))
+                        a.domainName("www.example-node.com").ipAddressV4("").port(-1))
                 .get();
         serviceEndpoints.add(endpoint);
         return domainBuilder
