@@ -404,6 +404,17 @@ class ContractControllerTest {
         contractCall(request).andExpect(status().isOk());
     }
 
+    @Test
+    void callSuccessOnContractCreateWithMissingFrom() throws Exception {
+        final var request = request();
+        request.setFrom(null);
+        request.setTo(null);
+        request.setValue(0);
+        request.setEstimate(false);
+
+        contractCall(request).andExpect(status().isOk());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"1", "1aa"})
     void callBadRequestWithInvalidHexData(String data) throws Exception {

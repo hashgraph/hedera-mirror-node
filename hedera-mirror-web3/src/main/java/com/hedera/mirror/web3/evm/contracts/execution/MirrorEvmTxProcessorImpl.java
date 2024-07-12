@@ -91,14 +91,12 @@ public class MirrorEvmTxProcessorImpl extends HederaEvmTxProcessor implements Mi
         this.tokenAccessor = tokenAccessor;
     }
 
-    public HederaEvmTransactionProcessingResult execute(
-            final CallServiceParameters params, final long estimatedGas) {
+    public HederaEvmTransactionProcessingResult execute(final CallServiceParameters params, final long estimatedGas) {
         final long gasPrice = gasPriceTinyBarsGiven(Instant.now());
 
         store.wrap();
-        if (params.isEstimate()
-                && store.getAccount(params.getSender().canonicalAddress(), OnMissing.DONT_THROW)
-                        .isEmptyAccount()) {
+        if (store.getAccount(params.getSender().canonicalAddress(), OnMissing.DONT_THROW)
+                .isEmptyAccount()) {
             final var senderAccount =
                     Account.getDummySenderAccount(params.getSender().canonicalAddress());
             store.updateAccount(senderAccount);

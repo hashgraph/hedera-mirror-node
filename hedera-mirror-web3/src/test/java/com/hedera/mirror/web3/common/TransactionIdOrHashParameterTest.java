@@ -79,9 +79,6 @@ class TransactionIdOrHashParameterTest {
         assertThat(parameter)
                 .isNotNull()
                 .isInstanceOf(TransactionIdParameter.class)
-                .isEqualTo(new TransactionIdParameter(
-                        EntityId.of(0, 0, 3),
-                        Instant.ofEpochSecond(1234567890, 123)
-                ));
+                .isEqualTo(new TransactionIdParameter(EntityId.of(3), Instant.ofEpochSecond(1234567890, 123)));
     }
 }

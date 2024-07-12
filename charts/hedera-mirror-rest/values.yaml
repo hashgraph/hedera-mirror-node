@@ -100,17 +100,12 @@ middleware:
       initialInterval: 100ms
 
 monitor:
-  config: |-
-    {
-      "servers": [
-        {
-          "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
-          "name": "kubernetes",
-          "restJavaUrl": "http://{{ .Release.Name }}-restjava:{{ .Values.service.port }}",
-          "web3Url": "http://{{ .Release.Name }}-web3:{{ .Values.service.port }}"
-        }
-     ]
-    }
+  config:
+    servers:
+      - baseUrl: "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}"
+        name: kubernetes
+        restJavaUrl: "http://{{ .Release.Name }}-restjava:{{ .Values.service.port }}"
+        web3Url: "http://{{ .Release.Name }}-web3:{{ .Values.service.port }}"
   enabled: true
   image:
     pullPolicy: IfNotPresent
@@ -130,10 +125,14 @@ monitor:
   service:
     type: ClusterIP
   test:
+    annotations:
+      helm.sh/hook: test-success
+      helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+      helm.sh/hook-weight: "20"
     enabled: true
     image:
       pullPolicy: IfNotPresent
-      repository: busybox
+      repository: curlimages/curl
       tag: latest
   tolerations: []
 

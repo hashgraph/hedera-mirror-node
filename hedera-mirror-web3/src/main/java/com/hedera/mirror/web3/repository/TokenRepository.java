@@ -72,38 +72,37 @@ public interface TokenRepository extends CrudRepository<Token, Long> {
      * and subtracts this amount from the historical total supply from 'token' and 'token_history' tables
      *
      * @param tokenId         the ID of the token to be retrieved.
-     * @param treasuryId      the ID of the treasury
      * @param blockTimestamp  the block timestamp used to filter the results.
      * @return the token's total supply at the specified timestamp.
      * */
     @Query(
             value =
                     """
-                    with total_supply_snapshot as (
-                        (
-                            select total_supply, timestamp_range
-                            from token
-                            where token_id = ?1 and timestamp_range @> ?2
-                        )
-                        union all
-                        (
-                            select total_supply, timestamp_range
-                            from token_history
-                            where token_id = ?1 and timestamp_range @> ?2
-                            order by lower(timestamp_range) desc
-                            limit 1
-                        )
-                        order by timestamp_range desc
-                        limit 1
+                    with snapshot_timestamp as (
+                      select consensus_timestamp
+                      from account_balance
+                      where account_id = 2 and
+                        consensus_timestamp <= ?2 and
+                        consensus_timestamp > ?2 - 2678400000000000
+                      order by consensus_timestamp desc
+                      limit 1
+                    ), snapshot as (
+                      select distinct on (account_id) balance
+                      from token_balance
+                      where token_id = ?1 and
+                        consensus_timestamp <= (select consensus_timestamp from snapshot_timestamp) and
+                        consensus_timestamp <= ?2 and
+                        consensus_timestamp > ?2 - 2678400000000000
+                      order by account_id, consensus_timestamp desc
                     ), change as (
-                        select sum(amount) as amount
-                        from token_transfer as tt, total_supply_snapshot as s
-                        where
-                            token_id = ?1 and
-                            s.timestamp_range @> tt.consensus_timestamp and
-                            tt.consensus_timestamp > ?2
+                      select amount
+                      from token_transfer
+                      where token_id = ?1 and
+                        consensus_timestamp >= (select consensus_timestamp from snapshot_timestamp) and
+                        consensus_timestamp <= ?2 and
+                        consensus_timestamp > ?2 - 2678400000000000
                     )
-                    select coalesce((select total_supply from total_supply_snapshot), 0) + coalesce((select -amount from change), 0)
+                    select coalesce((select sum(balance) from snapshot), 0) + coalesce((select sum(amount) from change), 0)
                     """,
             nativeQuery = true)
     long findFungibleTotalSupplyByTokenIdAndTimestamp(long tokenId, long blockTimestamp);

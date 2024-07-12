@@ -16,9 +16,6 @@
 
 package com.hedera.services.store.tokens;
 
-import static com.hedera.services.utils.BitPackUtils.getAlreadyUsedAutomaticAssociationsFrom;
-import static com.hedera.services.utils.BitPackUtils.setAlreadyUsedAutomaticAssociationsTo;
-import static com.hedera.services.utils.BitPackUtils.setMaxAutomaticAssociationsTo;
 import static com.hedera.services.utils.EntityIdUtils.asTypedEvmAddress;
 import static com.hedera.services.utils.IdUtils.asToken;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
@@ -87,10 +84,10 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.KeyList;
 import java.security.InvalidKeyException;
 import java.util.EnumSet;
 import java.util.function.UnaryOperator;
@@ -240,11 +237,10 @@ class HederaTokenStoreTest {
 
     @Test
     void associatingFailsWhenAutoAssociationLimitReached() {
-        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0).setNumAssociations(associatedTokensCount);
-        account = account.setAutoAssociationMetadata(
-                setMaxAutomaticAssociationsTo(account.getAutoAssociationMetadata(), maxAutoAssociations));
-        account = account.setAutoAssociationMetadata(
-                setAlreadyUsedAutomaticAssociationsTo(account.getAutoAssociationMetadata(), maxAutoAssociations));
+        var account = new Account(0L, Id.fromGrpcAccount(sponsor), 0)
+                .setNumAssociations(associatedTokensCount)
+                .setMaxAutoAssociations(maxAutoAssociations)
+                .setUsedAutoAssociations(maxAutoAssociations);
         var token = new Token(Id.fromGrpcToken(misc));
 
         given(store.getTokenRelationship(asTokenRelationshipKey(sponsor, misc), OnMissing.DONT_THROW))
@@ -343,20 +339,13 @@ class HederaTokenStoreTest {
         final long startCounterpartyANfts = 0;
 
         var counterpartyAccount = new Account(0L, Id.fromGrpcAccount(counterparty), 0)
+                .setMaxAutoAssociations(100)
                 .setNumAssociations(associatedTokensCount)
                 .setNumPositiveBalances(numPositiveBalances)
                 .setOwnedNfts(startCounterpartyNfts);
-        counterpartyAccount = counterpartyAccount.setAutoAssociationMetadata(
-                setMaxAutomaticAssociationsTo(counterpartyAccount.getAutoAssociationMetadata(), 100));
-        counterpartyAccount = counterpartyAccount.setAutoAssociationMetadata(
-                setAlreadyUsedAutomaticAssociationsTo(counterpartyAccount.getAutoAssociationMetadata(), 0));
-
         final var updated1CounterpartyAccount = counterpartyAccount
                 .setNumAssociations(associatedTokensCount + 1)
-                .setAutoAssociationMetadata(setAlreadyUsedAutomaticAssociationsTo(
-                        counterpartyAccount.getAutoAssociationMetadata(),
-                        getAlreadyUsedAutomaticAssociationsFrom(counterpartyAccount.getAutoAssociationMetadata()) + 1));
-
+                .setUsedAutoAssociations(1);
         final var updated2CounterpartyAccount = updated1CounterpartyAccount
                 .setOwnedNfts(updated1CounterpartyAccount.getOwnedNfts() + 1)
                 .setNumPositiveBalances(updated1CounterpartyAccount.getNumPositiveBalances() + 1);
@@ -830,7 +819,7 @@ class HederaTokenStoreTest {
     }
 
     @Test
-    void refusesToAdjustRevokedKycRelationship() throws InvalidKeyException {
+    void refusesToAdjustRevokedKycRelationship() {
         var account = new Account(0L, Id.fromGrpcAccount(treasury), 0);
         var token = new Token(Id.fromGrpcToken(misc)).setKycKey(kycKey);
         var tokenRelationship = new TokenRelationship(token, account).changeKycState(false);
@@ -871,8 +860,7 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustmentFailsOnAutomaticAssociationLimitNotSet() {
-        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0)
-                .setAutoAssociationMetadata(setMaxAutomaticAssociationsTo(0, 0));
+        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0);
         var token = new Token(Id.fromGrpcToken(misc));
 
         given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))
@@ -889,16 +877,11 @@ class HederaTokenStoreTest {
 
     @Test
     void adjustmentFailsOnAutomaticAssociationLimitReached() {
-        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0).setNumAssociations(1);
-        account = account.setAutoAssociationMetadata(
-                setMaxAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 3));
-        account = account.setAutoAssociationMetadata(
-                setAlreadyUsedAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 3));
+        var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0)
+                .setMaxAutoAssociations(3)
+                .setNumAssociations(3)
+                .setUsedAutoAssociations(3);
         var token = new Token(Id.fromGrpcToken(misc));
-        var tokenRelationship = new TokenRelationship(token, account)
-                .setFrozen(false)
-                .setKycGranted(true)
-                .setBalance(0);
 
         given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))
                 .willReturn(account);
@@ -918,12 +901,10 @@ class HederaTokenStoreTest {
     @Test
     void adjustmentWorksAndIncrementsAlreadyUsedAutoAssociationCountForNewAssociation() {
         var account = new Account(0L, Id.fromGrpcAccount(anotherFeeCollector), 0)
+                .setMaxAutoAssociations(5)
                 .setNumAssociations(associatedTokensCount)
-                .setNumPositiveBalances(numPositiveBalances);
-        account = account.setAutoAssociationMetadata(
-                setMaxAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 5));
-        account = account.setAutoAssociationMetadata(
-                setAlreadyUsedAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 3));
+                .setNumPositiveBalances(numPositiveBalances)
+                .setUsedAutoAssociations(3);
         var token = new Token(Id.fromGrpcToken(misc));
         var tokenRelationship = new TokenRelationship(token, account)
                 .setFrozen(false)
@@ -931,9 +912,8 @@ class HederaTokenStoreTest {
                 .setBalance(0);
 
         var updatedTokenRelationship = tokenRelationship.setBalance(1);
-        var updatedAccount1 = account.setNumAssociations(associatedTokensCount + 1)
-                .setAutoAssociationMetadata(
-                        setAlreadyUsedAutomaticAssociationsTo(account.getAutoAssociationMetadata(), 4));
+        var updatedAccount1 =
+                account.setNumAssociations(associatedTokensCount + 1).setUsedAutoAssociations(4);
         var updatedAccount2 = updatedAccount1.setNumPositiveBalances(numPositiveBalances + 1);
 
         given(store.getAccount(asTypedEvmAddress(anotherFeeCollector), OnMissing.THROW))

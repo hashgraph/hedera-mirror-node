@@ -16,9 +16,12 @@
 
 package com.hedera.mirror.importer.exception;
 
+import java.io.Serial;
+
 @SuppressWarnings("java:S110")
 public class InvalidConfigurationException extends ImporterException {
 
+    @Serial
     private static final long serialVersionUID = -2996303169427541497L;
 
     public InvalidConfigurationException(String message) {

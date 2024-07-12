@@ -108,4 +108,12 @@ public class EthereumTransaction implements Persistable<Long> {
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
+
+    public TransactionHash toTransactionHash() {
+        return TransactionHash.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .hash(hash)
+                .payerAccountId(payerAccountId.getId())
+                .build();
+    }
 }

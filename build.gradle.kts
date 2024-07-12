@@ -30,7 +30,7 @@ plugins {
 
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
-    set("grpcVersion", "1.64.0")
+    set("grpcVersion", "1.65.0")
     // Override jooq version since the official gradle plugin is on in 3.19.x, remove if not needed
     // with the next springboot release
     set("jooq.version", "3.19.6")
@@ -59,14 +59,14 @@ dependencies {
         api("com.github.vertical-blank:sql-formatter:2.0.5")
         api("org.bouncycastle:bcprov-jdk18on:1.78.1")
         api("com.bucket4j:bucket4j-core:8.10.1")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:5.4.1")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:5.4.3")
         api("com.google.guava:guava:33.2.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-runtime:2.7")
         api("com.graphql-java:graphql-java-extended-scalars:22.0")
         api("com.graphql-java:graphql-java-extended-validation:22.0")
         api("com.hedera.evm:hedera-evm:0.48.0")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.50.0")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.52.0")
         api("com.hedera.hashgraph:sdk:2.34.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:3.1.7")
@@ -77,11 +77,12 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.18.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-63:3.7.7")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.8.1")
         api("io.projectreactor:reactor-core-micrometer:1.1.7")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
+        api("io.vertx:vertx-core:$vertxVersion")
         api("jakarta.inject:jakarta.inject-api:2.0.1")
         api("net.devh:grpc-spring-boot-starter:3.1.0.RELEASE")
         api("net.java.dev.jna:jna:5.14.0")
@@ -103,7 +104,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.2")
         api("org.testcontainers:junit-jupiter:1.19.8")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.26.7")
+        api("software.amazon.awssdk:bom:2.26.16")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
         api("org.web3j:core:4.12.0")
     }
