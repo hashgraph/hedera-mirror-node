@@ -63,11 +63,6 @@ spec:
       env:
         HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
         HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
-      monitor:
-        config: |-
-          {
-            "stateproof": { "enabled": false }
-          }
     restjava:
       ingress:
         enabled: false
