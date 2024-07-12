@@ -17,12 +17,15 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader.FEE_SCHEDULE_ENTITY_ID;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.ROYALTY_FEE;
+import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
@@ -46,9 +49,15 @@ import com.hedera.mirror.web3.web3j.TestWeb3jService;
 import com.hedera.mirror.web3.web3j.TransactionReceiptCustom;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
+import com.hederahashgraph.api.proto.java.FeeComponents;
+import com.hederahashgraph.api.proto.java.FeeData;
+import com.hederahashgraph.api.proto.java.FeeSchedule;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.TimestampSeconds;
+import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
@@ -62,6 +71,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -76,9 +86,10 @@ import org.web3j.tx.Contract;
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     private final TestWeb3jService testWeb3jService;
-
     private Entity sender;
     private String senderAddress;
+    private Entity owner;
+    private String ownerAddress;
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
@@ -98,11 +109,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     @BeforeEach
-    void setup() {
+    void setupPerTest() {
         historicalBlocksPersist();
-        fileDataPersist();
+        exchangeRatePersist();
         feeSchedulesPersist();
         senderPersist();
+        ownerPersist();
     }
 
     private void senderPersist() {
@@ -114,7 +126,15 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         testWeb3jService.setSender(senderAddress);
     }
 
-    protected void fileDataPersist() {
+    private void ownerPersist() {
+        this.owner = domainBuilder
+                .entity()
+                .customize(e -> e.balance(10000 * 100_000_000L))
+                .persist();
+        this.ownerAddress = toAddress(owner.toEntityId()).toHexString();
+    }
+
+    protected void exchangeRatePersist() {
         final long nanos = 1_234_567_890L;
         final ExchangeRateSet exchangeRatesSet = ExchangeRateSet.newBuilder()
                 .setCurrentRate(ExchangeRate.newBuilder()
@@ -136,29 +156,99 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
     }
 
-    public Entity fungibleTokenPersist() {
+    @Override
+    protected void feeSchedulesPersist() {
+        final long expiry = 1_234_567_890L;
+        final CurrentAndNextFeeSchedule feeSchedules = CurrentAndNextFeeSchedule.newBuilder()
+                .setCurrentFeeSchedule(FeeSchedule.newBuilder()
+                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(expiry))
+                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                                .setHederaFunctionality(EthereumTransaction)
+                                .addFees(FeeData.newBuilder()
+                                        .setServicedata(FeeComponents.newBuilder()
+                                                .setGas(852000)
+                                                .build()))))
+                .setNextFeeSchedule(FeeSchedule.newBuilder()
+                        .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(Long.MAX_VALUE))
+                        .addTransactionFeeSchedule(TransactionFeeSchedule.newBuilder()
+                                .setHederaFunctionality(EthereumTransaction)
+                                .addFees(FeeData.newBuilder()
+                                        .setServicedata(FeeComponents.newBuilder()
+                                                .setGas(852000)
+                                                .build()))))
+                .build();
+
+        domainBuilder
+                .fileData()
+                .customize(f -> f.fileData(feeSchedules.toByteArray())
+                        .entityId(FEE_SCHEDULE_ENTITY_ID)
+                        .consensusTimestamp(1001L))
+                .persist();
+    }
+
+    private Entity fungibleTokenPersist() {
+        return fungibleTokenPersist(null);
+    }
+
+    private Entity fungibleTokenPersist(final byte[] key) {
         final var tokenEntity = domainBuilder
                 .entity()
-                .customize(e -> e.type(TOKEN).balance(1500L).memo("TestMemo"))
+                .customize(e -> e.type(TOKEN).balance(1500L).memo("TestMemo").key(key))
                 .persist();
 
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
-                        .supplyType(TokenSupplyTypeEnum.INFINITE))
+                        .supplyType(TokenSupplyTypeEnum.INFINITE)
+                        .kycKey(key)
+                        .feeScheduleKey(key)
+                        .wipeKey(key)
+                        .freezeKey(key)
+                        .pauseKey(key)
+                        .supplyKey(key))
                 .persist();
 
         return tokenEntity;
     }
 
-    // Account persist
+    protected Entity nftPersist(final byte[] key) {
+        final var nftEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(TOKEN).balance(1500L).key(key))
+                .persist();
+
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(nftEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(key)
+                        .feeScheduleKey(key)
+                        .freezeKey(key)
+                        .pauseKey(key)
+                        .wipeKey(key)
+                        .supplyKey(key)
+                        .wipeKey(key))
+                .persist();
+
+        domainBuilder
+                .nft()
+                .customize(n -> n.accountId(owner.toEntityId())
+                        .spender(owner.toEntityId())
+                        .metadata("NFT_METADATA_URI".getBytes())
+                        .accountId(owner.toEntityId())
+                        .timestampRange(Range.atLeast(1475067194949034022L))
+                        .tokenId(nftEntity.getId()))
+                .persist();
+        return nftEntity;
+    }
+
     public void tokenAccountPersist(
-            final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
+            final EntityId accountEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
         domainBuilder
                 .tokenAccount()
                 .customize(e -> e.freezeStatus(freezeStatus)
-                        .accountId(senderEntityId.getId())
+                        .accountId(accountEntityId.getId())
                         .tokenId(tokenEntityId.getId())
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .associated(true)
@@ -166,31 +256,182 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
     }
 
-    private Stream<Arguments> pocWeb3jMethod() {
-        return Stream.of(Arguments.of(BigInteger.ZERO, BigInteger.ONE));
-    }
-
-    @ParameterizedTest
-    @MethodSource("pocWeb3jMethod")
-    void pocWeb3jMethodsTest(final BigInteger input, final BigInteger expectedResult) throws Exception {
-        assertThat(input).isEqualTo(expectedResult);
-    }
-
     @Test
-    void evmPrecompileReadOnlyTokenFunctionsTestEthCallTokenFrozen() throws Exception {
+    void ethCallTokenFrozen() throws Exception {
         // Given
         final var tokenEntity = fungibleTokenPersist();
         final var tokenAddress = toAddress(tokenEntity.toEntityId()).toHexString();
-        tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
 
         // When
         var result = (TransactionReceiptCustom)
                 contract.isTokenFrozen(tokenAddress, senderAddress).send();
 
         // Then
+        final var successfulResponse =
+                functionEncodeDecoder.encodedResultFor("isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, true);
+        assertThat(result.getData()).isEqualTo(successfulResponse);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                FUNGIBLE_COMMON,      1
+                FUNGIBLE_COMMON,      4
+                FUNGIBLE_COMMON,      8
+                FUNGIBLE_COMMON,      16
+                NON_FUNGIBLE_UNIQUE,  2
+                NON_FUNGIBLE_UNIQUE,  32
+                NON_FUNGIBLE_UNIQUE,  64
+                """)
+    void ethCallGetKeyWithContractAddress(final TokenTypeEnum tokenType, final BigInteger keyType) throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        final var key = Key.newBuilder()
+                .setContractID(contractIdFromEvmAddress(contractAddress))
+                .build();
+        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(key.toByteArray())
+                : nftPersist(key.toByteArray());
+        final var tokenAddress = toAddress(tokenEntity.toEntityId()).toHexString();
+        tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.UNFROZEN);
+
+        // When
+        var result = (TransactionReceiptCustom)
+                contract.getTokenKeyPublic(tokenAddress, keyType).send();
+
+        // Then
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                "isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, new Boolean[] {true});
+                "getTokenKeyPublic",
+                PRECOMPILE_TEST_CONTRACT_ABI_PATH,
+                false,
+                contractAddress,
+                new byte[0],
+                new byte[0],
+                Address.ZERO);
+        assertThat(result.getData()).isEqualTo(successfulResponse);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                FUNGIBLE_COMMON,      1
+                FUNGIBLE_COMMON,      4
+                FUNGIBLE_COMMON,      8
+                FUNGIBLE_COMMON,      16
+                NON_FUNGIBLE_UNIQUE,  2
+                NON_FUNGIBLE_UNIQUE,  32
+                NON_FUNGIBLE_UNIQUE,  64
+                """)
+    void ethCallGetKeyWithEd25519Key(final TokenTypeEnum tokenType, final BigInteger keyType) throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var key = Key.newBuilder().setEd25519(keyWithEd25519.getEd25519()).build();
+        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(key.toByteArray())
+                : nftPersist(key.toByteArray());
+        final var tokenAddress = toAddress(tokenEntity.toEntityId()).toHexString();
+        tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.UNFROZEN);
+
+        // When
+        var result = (TransactionReceiptCustom)
+                contract.getTokenKeyPublic(tokenAddress, keyType).send();
+
+        // Then
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                "getTokenKeyPublic",
+                PRECOMPILE_TEST_CONTRACT_ABI_PATH,
+                false,
+                Address.ZERO,
+                ED25519_KEY,
+                new byte[0],
+                Address.ZERO);
+        assertThat(result.getData()).isEqualTo(successfulResponse);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                FUNGIBLE_COMMON,      1
+                FUNGIBLE_COMMON,      4
+                FUNGIBLE_COMMON,      8
+                FUNGIBLE_COMMON,      16
+                NON_FUNGIBLE_UNIQUE,  2
+                NON_FUNGIBLE_UNIQUE,  32
+                NON_FUNGIBLE_UNIQUE,  64
+                """)
+    void ethCallGetKeyWithEcdsaKey(final TokenTypeEnum tokenType, final BigInteger keyType) throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var key = Key.newBuilder()
+                .setECDSASecp256K1(keyWithECDSASecp256K1.getECDSASecp256K1())
+                .build();
+        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(key.toByteArray())
+                : nftPersist(key.toByteArray());
+        final var tokenAddress = toAddress(tokenEntity.toEntityId()).toHexString();
+        tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.UNFROZEN);
+
+        // When
+        var result = (TransactionReceiptCustom)
+                contract.getTokenKeyPublic(tokenAddress, keyType).send();
+
+        // Then
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                "getTokenKeyPublic",
+                PRECOMPILE_TEST_CONTRACT_ABI_PATH,
+                false,
+                Address.ZERO,
+                new byte[0],
+                ECDSA_KEY,
+                Address.ZERO);
+        assertThat(result.getData()).isEqualTo(successfulResponse);
+    }
+
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                FUNGIBLE_COMMON,      1
+                FUNGIBLE_COMMON,      4
+                FUNGIBLE_COMMON,      8
+                FUNGIBLE_COMMON,      16
+                NON_FUNGIBLE_UNIQUE,  2
+                NON_FUNGIBLE_UNIQUE,  32
+                NON_FUNGIBLE_UNIQUE,  64
+                """)
+    void ethCallGetKeyWithDelegatableContractAddress(final TokenTypeEnum tokenType, final BigInteger keyType)
+            throws Exception {
+        // Given
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        final var key = Key.newBuilder()
+                .setDelegatableContractId(contractIdFromEvmAddress(contractAddress))
+                .build();
+        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(key.toByteArray())
+                : nftPersist(key.toByteArray());
+        final var tokenAddress = toAddress(tokenEntity.toEntityId()).toHexString();
+        tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.UNFROZEN);
+
+        // When
+        var result = (TransactionReceiptCustom)
+                contract.getTokenKeyPublic(tokenAddress, keyType).send();
+
+        // Then
+        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
+                "getTokenKeyPublic",
+                PRECOMPILE_TEST_CONTRACT_ABI_PATH,
+                false,
+                Address.ZERO,
+                new byte[0],
+                new byte[0],
+                contractAddress);
         assertThat(result.getData()).isEqualTo(successfulResponse);
     }
 
@@ -480,7 +721,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Getter
     @RequiredArgsConstructor
     enum ContractReadFunctions implements ContractFunctionProviderEnum {
-        IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_FROZEN_WITH_ALIAS(
                 "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
         IS_KYC("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
@@ -495,118 +735,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         GET_TOKEN_TYPE_FOR_NFT("getType", new Address[] {NFT_ADDRESS}, new Long[] {1L}),
         GET_TOKEN_DEFAULT_FREEZE("getTokenDefaultFreeze", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
         GET_TOKEN_DEFAULT_FREEZE_FOR_NFT("getTokenDefaultFreeze", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_ADMIN_KEY_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 1L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_FREEZE_KEY_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 4L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_WIPE_KEY_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 8L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_SUPPLY_KEY_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 16L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_ADMIN_KEY_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 1L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_FREEZE_KEY_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 4L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_WIPE_KEY_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 8L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_SUPPLY_KEY_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 16L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_ADMIN_KEY_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 1L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_FREEZE_KEY_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 4L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_WIPE_KEY_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 8L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_SUPPLY_KEY_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 16L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_ADMIN_KEY_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 1L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_FREEZE_KEY_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 4L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_WIPE_KEY_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 8L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_SUPPLY_KEY_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 16L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_KYC_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 2L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_FEE_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 32L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 64L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_KYC_KEY_FOR_NFT_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY, 2L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_FEE_KEY_FOR_NFT_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY, 32L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY, 64L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_KYC_KEY_FOR_NFT_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 2L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_FEE_KEY_FOR_NFT_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 32L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 64L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_KYC_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 2L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_FEE_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 32L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 64L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
         GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE(
                 "getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
                     new Object[] {100L, FUNGIBLE_TOKEN_ADDRESS, false, false, SENDER_ALIAS},
