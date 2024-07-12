@@ -200,6 +200,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onEthereumTransaction(EthereumTransaction ethereumTransaction) throws ImporterException {
         context.add(ethereumTransaction);
+
+        if (entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.ETHEREUMTRANSACTION)) {
+            context.add(ethereumTransaction.toTransactionHash());
+        }
     }
 
     @Override
