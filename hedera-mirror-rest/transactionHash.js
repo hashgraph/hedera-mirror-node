@@ -44,8 +44,19 @@ const transactionHashShardedQueryEnabled = (() => {
     })();
 })();
 
-const getTransactionHashQuery = async () => {
-  return (await transactionHashShardedQueryEnabled()) ? transactionHashShardedQuery : transactionHashQuery;
+/**
+ * Get the transaction hash rows by the hash. Note if the hash is more than 32 bytes, it's queried by the 32-byte prefix
+ * then rechecked against the full hash.
+ *
+ * @param {Buffer} hash
+ * @returns {Promise<Object[]>}
+ */
+const getTransactionHash = async (hash) => {
+  const query = (await transactionHashShardedQueryEnabled()) ? transactionHashShardedQuery : transactionHashQuery;
+  const shouldNormalize = hash.length > ETH_HASH_LENGTH;
+  const normalized = shouldNormalize ? hash.subarray(0, ETH_HASH_LENGTH) : hash;
+  const {rows} = await pool.queryQuietly(query, normalized);
+  return shouldNormalize ? rows.filter((row) => row.hash.equals(hash)) : rows;
 };
 
 // The first part of the regex is for the base64url encoded 48-byte transaction hash. Note base64url replaces '+' with
@@ -55,4 +66,4 @@ const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
 
 const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 
-export {getTransactionHashQuery, isValidTransactionHash};
+export {getTransactionHash, isValidTransactionHash};

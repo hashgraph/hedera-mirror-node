@@ -22,7 +22,7 @@ import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import {NotFoundError} from './errors';
-import {getTransactionHashQuery, isValidTransactionHash} from './transactionHash';
+import {getTransactionHash, isValidTransactionHash} from './transactionHash';
 import TransactionId from './transactionId';
 import * as utils from './utils';
 
@@ -766,13 +766,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       transactionIdOrHash = transactionIdOrHash.substring(2);
     }
 
-    const query = await getTransactionHashQuery();
-    const transactionHash = Buffer.from(transactionIdOrHash, encoding);
-
-    // The index is on the leading 32-byte of the hash
-    const rows = (await pool.queryQuietly(query, [transactionHash.subarray(0, constants.ETH_HASH_LENGTH)])).rows.filter(
-      (row) => row.hash.equals(transactionHash)
-    );
+    const rows = await getTransactionHash(Buffer.from(transactionIdOrHash, encoding));
     if (rows.length === 0) {
       throw new NotFoundError();
     }
