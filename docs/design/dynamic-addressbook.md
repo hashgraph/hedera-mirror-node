@@ -63,6 +63,7 @@ create index if not exists node_history__node_id_lower_timestamp
 When parsing node transactions,
 
 - Persist `transaction_bytes` and `transaction_record_bytes` to the `transaction` table for `NodeUpdate`,`NodeCreate` and `NodeDelete`.
+- Persist `Node` and `NodeHistory` domain objects.
 
 Update the `AddressBookServiceImpl` to persist the `domain_name` in `address_book_service_endpoint`
 
@@ -73,7 +74,7 @@ Update the `AddressBookServiceImpl` to persist the `domain_name` in `address_boo
 
 #### EntityListener
 
-- Add `EntityListener.onNode` method and `CompositeEntityListener.onNode`
+- Add `EntityListener.onNode` method and `CompositeEntityListener.onNode` to handle inserts to the `node` table.
 
 #### Transaction Handlers
 
@@ -135,6 +136,12 @@ Response:
   }
 }
 ```
+
+## Acceptance Tests
+
+Add acceptance tests for the node feature that use an existing set of accounts from the existing acceptance tests and performs the following:
+
+- Send Node create, update and delete transactions and verify that the `admin_key` is updated on the (`/network/nodes`) API.
 
 ## Non-Functional Requirements
 
