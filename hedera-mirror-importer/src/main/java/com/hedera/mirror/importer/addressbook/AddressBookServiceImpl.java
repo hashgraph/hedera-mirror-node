@@ -485,12 +485,10 @@ public class AddressBookServiceImpl implements AddressBookService {
     private AddressBookServiceEndpoint getAddressBookServiceEndpoint(
             ServiceEndpoint serviceEndpoint, long consensusTimestamp, long nodeId) throws UnknownHostException {
         var ipAddressByteString = serviceEndpoint.getIpAddressV4();
-        if (!entityProperties.getPersist().isNodes()
-                && (ipAddressByteString == null || ipAddressByteString.size() != 4)) {
-            throw new IllegalStateException(String.format("Invalid IpAddressV4: %s", ipAddressByteString));
+        String ip = null;
+        if (ipAddressByteString != null && ipAddressByteString.size() == 4) {
+            ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
         }
-
-        var ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
         AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
         addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
         addressBookServiceEndpoint.setIpAddressV4(ip);

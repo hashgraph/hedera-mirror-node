@@ -69,7 +69,7 @@ class NodeCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // then
         assertThat(transaction.getTransactionBytes())
-                .containsExactly(recordItem.getTransactionBody().getNodeCreate().toByteArray());
+                .containsExactly(recordItem.getTransaction().toByteArray());
         assertThat(transaction.getTransactionRecordBytes())
                 .containsExactly(recordItem.getTransactionRecord().toByteArray());
     }

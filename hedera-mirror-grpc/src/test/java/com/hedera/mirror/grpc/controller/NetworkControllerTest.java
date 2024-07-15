@@ -122,10 +122,10 @@ class NetworkControllerTest extends GrpcIntegrationTest {
 
     @Test
     void noLimitServiceEndpointWithDomainName() {
-        AddressBook addressBook = addressBook();
-        AddressBookEntry addressBookEntry1 = addressBookEntryWithDomainName();
+        var addressBook = addressBook();
+        var addressBookEntry1 = addressBookEntryWithDomainName();
 
-        AddressBookQuery query = AddressBookQuery.newBuilder()
+        var query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder()
                         .setFileNum(addressBook.getFileId().getNum())
                         .build())
@@ -239,13 +239,12 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         } catch (Exception e) {
             // Ignore
         }
-        var assertDomain = serviceEndpoint.getDomainName() != null ? serviceEndpoint.getDomainName() : "";
         assertThat(nodeAddress.getServiceEndpointList())
                 .hasSize(1)
                 .first()
                 .returns(ipAddress, ServiceEndpoint::getIpAddressV4)
                 .returns(serviceEndpoint.getPort(), ServiceEndpoint::getPort)
-                .returns(assertDomain, ServiceEndpoint::getDomainName);
+                .returns(serviceEndpoint.getDomainName(), ServiceEndpoint::getDomainName);
     }
 
     private void assertException(Throwable t, Status.Code status, String message) {

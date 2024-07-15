@@ -601,7 +601,6 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.FREEZE, builder);
     }
 
-    @SuppressWarnings("deprecation")
     public Builder<NodeCreateTransactionBody.Builder> nodeCreate() {
         var builder = NodeCreateTransactionBody.newBuilder()
                 .addServiceEndpoint(ServiceEndpoint.newBuilder()
@@ -611,7 +610,6 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.NODECREATE, builder);
     }
 
-    @SuppressWarnings("deprecation")
     public Builder<NodeUpdateTransactionBody.Builder> nodeUpdate() {
         var builder = NodeUpdateTransactionBody.newBuilder()
                 .addServiceEndpoint(ServiceEndpoint.newBuilder()
@@ -621,7 +619,6 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.NODEUPDATE, builder);
     }
 
-    @SuppressWarnings("deprecation")
     public Builder<NodeDeleteTransactionBody.Builder> nodeDelete() {
         var builder = NodeDeleteTransactionBody.newBuilder().clearNodeId();
         return new Builder<>(TransactionType.NODEDELETE, builder);

@@ -54,7 +54,7 @@ import org.springframework.test.context.TestPropertySource;
 @RequiredArgsConstructor
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.37.0")
-class AddMigrationAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTest {
+class AddAddressBookServiceEndpointsMigrationTest extends ImporterIntegrationTest {
 
     private final String baseAccountId = "0.0.";
     private final String baseIp = "127.0.0.";

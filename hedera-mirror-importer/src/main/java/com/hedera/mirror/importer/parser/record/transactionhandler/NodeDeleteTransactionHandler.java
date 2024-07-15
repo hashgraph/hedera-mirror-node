@@ -36,11 +36,10 @@ class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
 
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isNodes() || !recordItem.isSuccessful()) {
+        if (!entityProperties.getPersist().isNodes()) {
             return;
         }
-        var transactionBody = recordItem.getTransactionBody().getNodeDelete();
-        transaction.setTransactionBytes(transactionBody.toByteArray());
+        transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
     }
 }
