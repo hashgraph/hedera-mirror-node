@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    val dockerJavaVersion = "3.3.6"
+    val dockerJavaVersion = "3.4.0"
     val flywayVersion = "10.15.2"
     val jooqVersion = "3.19.10"
 
