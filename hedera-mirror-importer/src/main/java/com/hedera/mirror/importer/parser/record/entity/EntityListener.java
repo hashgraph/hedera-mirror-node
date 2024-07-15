@@ -28,6 +28,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
@@ -95,6 +96,8 @@ public interface EntityListener {
     default void onNft(Nft nft) throws ImporterException {}
 
     default void onNftAllowance(NftAllowance nftAllowance) {}
+
+    default void onNode(Node node) throws ImporterException {}
 
     default void onNodeStake(NodeStake nodeStake) throws ImporterException {}
 
