@@ -24,7 +24,7 @@ public class HexValidator implements ConstraintValidator<Hex, String> {
 
     public static final String MESSAGE = "invalid hexadecimal string";
     private static final Pattern HEX_PATTERN = Pattern.compile("^(0x)?[0-9a-fA-F]+$");
-    private static final String HEX_PREFIX = "0x";
+    public static final String HEX_PREFIX = "0x";
 
     private long maxLength;
     private long minLength;

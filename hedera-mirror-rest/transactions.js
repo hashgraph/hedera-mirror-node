@@ -22,6 +22,7 @@ import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import {NotFoundError} from './errors';
+import {getTransactionHash, isValidTransactionHash} from './transactionHash';
 import TransactionId from './transactionId';
 import * as utils from './utils';
 
@@ -32,7 +33,6 @@ import {
   StakingRewardTransfer,
   TokenTransfer,
   Transaction,
-  TransactionHash,
   TransactionResult,
   TransactionType,
 } from './model';
@@ -720,38 +720,6 @@ const doGetTransactions = async (filters, req, timestampRange) => {
   };
 };
 
-// The first part of the regex is for the base64url encoded 48-byte transaction hash. Note base64url replaces '+' with
-// '-' and '/' with '_'. The padding character '=' is not included since base64 encoding a 48-byte array always
-// produces a 64-byte string without padding
-const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
-
-const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
-
-const transactionHashQuery = `
-    select ${TransactionHash.CONSENSUS_TIMESTAMP}, ${TransactionHash.PAYER_ACCOUNT_ID}
-    from ${TransactionHash.tableName}
-    where ${TransactionHash.HASH} = $1
-    order by ${TransactionHash.CONSENSUS_TIMESTAMP}`;
-
-const transactionHashShardedQuery = `select ${TransactionHash.CONSENSUS_TIMESTAMP}, ${TransactionHash.PAYER_ACCOUNT_ID}
-                                     from get_transaction_info_by_hash($1)`;
-
-const transactionHashShardedQueryEnabled = (() => {
-  let result = undefined;
-  return () =>
-    (async () => {
-      if (result !== undefined) {
-        return result;
-      }
-
-      const {rows} = await pool.queryQuietly(`select count(*) > 0 as enabled
-                                              from pg_proc
-                                              where proname = 'get_transaction_info_by_hash'`);
-      result = rows[0].enabled;
-      return result;
-    })();
-})();
-
 /**
  * Get the query for either getting transaction by id or getting transaction by payer account id and a list of
  * consensus timestamps
@@ -798,11 +766,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       transactionIdOrHash = transactionIdOrHash.substring(2);
     }
 
-    const v1ShardQueryEnabled = await transactionHashShardedQueryEnabled();
-    const usedTransactionHashQuery = v1ShardQueryEnabled ? transactionHashShardedQuery : transactionHashQuery;
-    const transactionHash = Buffer.from(transactionIdOrHash, encoding);
-
-    const {rows} = await pool.queryQuietly(usedTransactionHashQuery, [transactionHash]);
+    const rows = await getTransactionHash(Buffer.from(transactionIdOrHash, encoding));
     if (rows.length === 0) {
       throw new NotFoundError();
     }

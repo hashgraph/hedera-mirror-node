@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
+import static com.hedera.services.stream.proto.ContractActionType.SYSTEM;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.DefaultExceptionalHaltReason.INSUFFICIENT_GAS;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
@@ -25,10 +27,13 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
 import com.swirlds.base.utility.Pair;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
@@ -37,11 +42,28 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCallProcessor {
 
+    private final Predicate<Address> isNativePrecompileCheck;
+
     protected AbstractEvmMessageCallProcessor(
             final EVM evm,
             final PrecompileContractRegistry precompiles,
             final Map<String, PrecompiledContract> hederaPrecompileList) {
         super(evm, precompiles, hederaPrecompileList);
+        isNativePrecompileCheck = addr -> precompiles.get(addr) != null;
+    }
+
+    @Override
+    public void start(final MessageFrame frame, final OperationTracer operationTracer) {
+        super.start(frame, operationTracer);
+
+        // potential precompile execution will be done after super.start(), so trace results here
+        final Address contractAddress = frame.getContractAddress();
+        final boolean isNativePrecompile = isNativePrecompileCheck.test(contractAddress);
+        final boolean isHederaPrecompile = hederaPrecompiles.containsKey(contractAddress);
+        if ((isNativePrecompile || isHederaPrecompile)
+                && operationTracer instanceof HederaOperationTracer hederaOperationTracer) {
+            hederaOperationTracer.tracePrecompileResult(frame, isHederaPrecompile ? SYSTEM : PRECOMPILE);
+        }
     }
 
     @Override

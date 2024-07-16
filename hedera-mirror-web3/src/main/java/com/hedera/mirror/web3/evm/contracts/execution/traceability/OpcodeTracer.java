@@ -16,10 +16,21 @@
 
 package com.hedera.mirror.web3.evm.contracts.execution.traceability;
 
+import static com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS;
+import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.CODE_SUSPENDED;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_FAILED;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.Type.MESSAGE_CALL;
+
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.web3.common.ContractCallContext;
-import com.hedera.node.app.service.evm.contracts.execution.traceability.HederaEvmOperationTracer;
-import com.hedera.services.store.contracts.precompile.SyntheticTxnFactory;
+import com.hedera.mirror.web3.convert.BytesDecoder;
+import com.hedera.mirror.web3.evm.config.PrecompiledContractProvider;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.mono.contracts.execution.traceability.HederaOperationTracer;
+import com.hedera.services.stream.proto.ContractActionType;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import jakarta.inject.Named;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import lombok.CustomLog;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
@@ -34,33 +46,35 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.ModificationNotAllowedException;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.springframework.util.CollectionUtils;
 
 @Named
 @CustomLog
 @Getter
-public class OpcodeTracer implements HederaEvmOperationTracer {
+public class OpcodeTracer implements HederaOperationTracer {
 
-    @Override
-    public void traceContextEnter(final MessageFrame frame) {
-        getContext().incrementContractActionsCounter();
+    private final Map<Address, PrecompiledContract> hederaPrecompiles;
+
+    public OpcodeTracer(final PrecompiledContractProvider precompiledContractProvider) {
+        this.hederaPrecompiles = precompiledContractProvider.getHederaPrecompiles().entrySet().stream()
+                .collect(Collectors.toMap(e -> Address.fromHexString(e.getKey()), Map.Entry::getValue));
     }
 
     @Override
-    public void traceContextReEnter(final MessageFrame frame) {
-        getContext().decrementContractActionsCounter();
-    }
-
-    @Override
-    public void traceContextExit(final MessageFrame frame) {
+    public void init(final MessageFrame frame) {
         getContext().incrementContractActionsCounter();
     }
 
     @Override
     public void tracePostExecution(final MessageFrame frame, final Operation.OperationResult operationResult) {
         ContractCallContext context = getContext();
+        if (frame.getState() == CODE_SUSPENDED) {
+            context.incrementContractActionsCounter();
+        }
         OpcodeTracerOptions options = context.getOpcodeTracerOptions();
         final List<Bytes> memory = captureMemory(frame, options);
         final List<Bytes> stack = captureStack(frame, options);
@@ -83,9 +97,8 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
     @Override
     public void tracePrecompileCall(final MessageFrame frame, final long gasRequirement, final Bytes output) {
         ContractCallContext context = getContext();
-        Optional<Bytes> revertReason = isCallToHederaTokenService(frame)
-                ? getRevertReasonFromContractActions(context)
-                : frame.getRevertReason();
+        Optional<Bytes> revertReason =
+                isCallToHederaPrecompile(frame) ? getRevertReasonFromContractActions(context) : frame.getRevertReason();
         Opcode opcode = Opcode.builder()
                 .pc(frame.getPC())
                 .op(
@@ -98,10 +111,28 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
                 .stack(Collections.emptyList())
                 .memory(Collections.emptyList())
                 .storage(Collections.emptyMap())
-                .reason(revertReason.map(Bytes::toString).orElse(null))
+                .reason(revertReason.map(Bytes::toHexString).orElse(null))
                 .build();
 
         context.addOpcodes(opcode);
+    }
+
+    @Override
+    public void traceAccountCreationResult(MessageFrame frame, Optional<ExceptionalHaltReason> haltReason) {
+        if (haltReason.isPresent() && existsSyntheticActionForFrame(frame)) {
+            getContext().incrementContractActionsCounter();
+        }
+    }
+
+    @Override
+    public void tracePrecompileResult(MessageFrame frame, ContractActionType type) {
+        if (type.equals(PRECOMPILE) && frame.getState().equals(EXCEPTIONAL_HALT)) {
+            // if an ETH precompile call exceptional halted, the action is already finalized
+            return;
+        }
+        if (existsSyntheticActionForFrame(frame)) {
+            getContext().incrementContractActionsCounter();
+        }
     }
 
     private List<Bytes> captureMemory(final MessageFrame frame, OpcodeTracerOptions options) {
@@ -155,15 +186,17 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
 
     private Optional<Bytes> getRevertReasonFromContractActions(ContractCallContext context) {
         List<ContractAction> contractActions = context.getContractActions();
-        int currentActionIndex = context.getContractActionIndexOfCurrentFrame();
 
         if (CollectionUtils.isEmpty(contractActions)) {
             return Optional.empty();
         }
 
+        int currentActionIndex = context.getContractActionIndexOfCurrentFrame();
+
         return contractActions.stream()
                 .filter(action -> action.hasRevertReason() && action.getIndex() == currentActionIndex)
                 .map(action -> Bytes.of(action.getResultData()))
+                .map(this::formatRevertReason)
                 .findFirst();
     }
 
@@ -171,8 +204,46 @@ public class OpcodeTracer implements HederaEvmOperationTracer {
         return ContractCallContext.get();
     }
 
-    private boolean isCallToHederaTokenService(MessageFrame frame) {
+    private boolean isCallToHederaPrecompile(MessageFrame frame) {
         Address recipientAddress = frame.getRecipientAddress();
-        return recipientAddress.equals(Address.fromHexString(SyntheticTxnFactory.HTS_PRECOMPILED_CONTRACT_ADDRESS));
+        return hederaPrecompiles.containsKey(recipientAddress);
+    }
+
+    /**
+     * When a contract tries to call a non-existing address
+     * (resulting in a {@link HederaExceptionalHaltReason#INVALID_SOLIDITY_ADDRESS} failure),
+     * a synthetic action is created to record this, otherwise the details of the intended call
+     * (e.g. the targeted invalid address) and sequence of events leading to the failure are lost
+     */
+    private boolean existsSyntheticActionForFrame(MessageFrame frame) {
+        return (frame.getState() == EXCEPTIONAL_HALT || frame.getState() == COMPLETED_FAILED)
+                && frame.getType().equals(MESSAGE_CALL)
+                && frame.getExceptionalHaltReason().isPresent()
+                && frame.getExceptionalHaltReason().get().equals(INVALID_SOLIDITY_ADDRESS);
+    }
+
+    /**
+     * Formats the revert reason to be consistent with the revert reason format in the EVM.
+     * <a href="https://besu.hyperledger.org/23.10.2/private-networks/how-to/send-transactions/revert-reason#revert-reason-format">...</a>
+     * @param revertReason the revert reason
+     * @return the formatted revert reason
+     */
+    private Bytes formatRevertReason(final Bytes revertReason) {
+        if (revertReason == null || revertReason.isZero()) {
+            return Bytes.EMPTY;
+        }
+
+        // covers an edge case where the reason in the contract actions is a response code number (as a plain string)
+        // so we convert this number to an ABI-encoded string of the corresponding response code name,
+        // to at least give some relevant information to the user in the valid EVM format
+        Bytes trimmedReason = revertReason.trimLeadingZeros();
+        if (trimmedReason.size() <= Integer.BYTES) {
+            ResponseCodeEnum responseCode = ResponseCodeEnum.forNumber(trimmedReason.toInt());
+            if (responseCode != null) {
+                return BytesDecoder.getAbiEncodedRevertReason(responseCode.name());
+            }
+        }
+
+        return BytesDecoder.getAbiEncodedRevertReason(revertReason);
     }
 }
