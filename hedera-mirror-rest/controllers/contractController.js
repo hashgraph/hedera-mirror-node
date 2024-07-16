@@ -53,7 +53,6 @@ import {
   ContractStateViewModel,
   ContractViewModel,
 } from '../viewmodel';
-import {incrementTimestampByOneDay} from '../utils';
 
 const contractSelectFields = [
   Entity.AUTO_RENEW_ACCOUNT_ID,
@@ -570,6 +569,7 @@ class ContractController extends BaseController {
 
     return filters.filter((f) => !_.isNil(f));
   };
+
   /**
    * Extracts multiple queries to be combined in union
    *
@@ -610,13 +610,6 @@ class ContractController extends BaseController {
 
     for (const filter of filters) {
       switch (filter.key) {
-        case filterKeys.TRANSACTION_HASH:
-          if (transactionHash !== undefined) {
-            throw new InvalidArgumentError(`Only one ${filterKeys.TRANSACTION_HASH} filter is allowed`);
-          }
-
-          transactionHash = utils.parseEthHash(filter.value);
-          break;
         case filterKeys.INDEX:
           bounds.secondary.parse(filter);
           break;
@@ -646,6 +639,13 @@ class ContractController extends BaseController {
             keyFullNames[filter.key],
             conditions.length + 1
           );
+          break;
+        case filterKeys.TRANSACTION_HASH:
+          if (transactionHash !== undefined) {
+            throw new InvalidArgumentError(`Only one ${filterKeys.TRANSACTION_HASH} filter is allowed`);
+          }
+
+          transactionHash = utils.parseEthHash(filter.value);
           break;
         default:
           break;

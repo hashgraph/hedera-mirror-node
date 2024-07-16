@@ -34,7 +34,7 @@ const transactionHashShardedQuery = `select * from get_transaction_info_by_hash(
  * then rechecked against the full hash.
  *
  * @param {Buffer} hash
- * @param {{order: String, timestampFilters?: Array<{operator: string, value: any}>}} options
+ * @param {{order: string, timestampFilters: Array<{operator: string, value: any}>}} options
  * @returns {Promise<Object[]>}
  */
 const getTransactionHash = async (hash, {order = orderFilterValues.ASC, timestampFilters = []} = {}) => {
