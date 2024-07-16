@@ -88,7 +88,7 @@
       {
         "consensus_timestamp": 187654000123457,
         "domain_name": "https://www.node5.com",
-        "ip_address_v4": null,
+        "ip_address_v4": "",
         "port": 50215,
         "node_id": 0
       },
@@ -172,7 +172,7 @@
         "service_endpoints": [
           {
             "domain_name": "https://www.node5.com",
-            "ip_address_v4": null,
+            "ip_address_v4": "",
             "port": 50215
           }
         ],

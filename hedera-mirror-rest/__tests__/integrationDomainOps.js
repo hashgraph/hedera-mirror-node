@@ -560,7 +560,7 @@ const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) =>
 
   const addressBookServiceEndpoint = {
     consensus_timestamp: 0,
-    domain_name: null,
+    domain_name: '',
     ip_address_v4: '127.0.0.1',
     node_id: 0,
     port: 50211,

@@ -107,12 +107,13 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
 
         parseRecordItemAndCommit(recordItem);
 
-        assertAll(() -> assertEquals(0, entityRepository.count()), () -> assertThat(transactionRepository.findAll())
+        assertThat(entityRepository.count()).isZero();
+        assertThat(transactionRepository.findAll())
                 .hasSize(1)
                 .first()
                 .isNotNull()
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
-                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes));
+                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
     }
 
     @Test
@@ -122,12 +123,13 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
 
         parseRecordItemAndCommit(recordItem);
 
-        assertAll(() -> assertEquals(0, entityRepository.count()), () -> assertThat(transactionRepository.findAll())
+        assertThat(entityRepository.count()).isZero();
+        assertThat(transactionRepository.findAll())
                 .hasSize(1)
                 .first()
                 .isNotNull()
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
-                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes));
+                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
     }
 
     @Test
@@ -137,11 +139,12 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
 
         parseRecordItemAndCommit(recordItem);
 
-        assertAll(() -> assertEquals(0, entityRepository.count()), () -> assertThat(transactionRepository.findAll())
+        assertThat(entityRepository.count()).isZero();
+        assertThat(transactionRepository.findAll())
                 .hasSize(1)
                 .first()
                 .isNotNull()
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
-                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes));
+                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
     }
 }

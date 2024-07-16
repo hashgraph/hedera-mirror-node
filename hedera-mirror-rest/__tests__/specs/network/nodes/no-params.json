@@ -140,7 +140,7 @@
         "reward_rate_start": 6,
         "service_endpoints": [
           {
-            "domain_name": null,
+            "domain_name": "",
             "ip_address_v4": "128.0.0.5",
             "port": 50215
           }
@@ -170,7 +170,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
-            "domain_name": null,
+            "domain_name": "",
             "ip_address_v4": "128.0.0.6",
             "port": 50216
           }

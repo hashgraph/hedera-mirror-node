@@ -607,24 +607,31 @@ public class RecordItemBuilder {
                 .setAccountId(accountId())
                 .setAdminKey(key())
                 .setDescription("Node create")
+                .setGossipCaCertificate(bytes(4))
                 .addGossipEndpoint(gossipEndpoint())
+                .setGrpcCertificateHash(bytes(48))
                 .addServiceEndpoint(serviceEndpoint());
         return new Builder<>(TransactionType.NODECREATE, builder).receipt(r -> r.setNodeId(id()));
     }
 
     public Builder<NodeUpdateTransactionBody.Builder> nodeUpdate() {
+        var nodeId = id();
         var builder = NodeUpdateTransactionBody.newBuilder()
                 .setAccountId(accountId())
                 .setAdminKey(key())
                 .setDescription(StringValue.of("Node update"))
+                .setGossipCaCertificate(BytesValue.of(bytes(4)))
                 .addGossipEndpoint(gossipEndpoint())
+                .setGrpcCertificateHash(BytesValue.of(bytes(48)))
+                .setNodeId(nodeId)
                 .addServiceEndpoint(serviceEndpoint());
-        return new Builder<>(TransactionType.NODEUPDATE, builder).receipt(r -> r.setNodeId(id()));
+        return new Builder<>(TransactionType.NODEUPDATE, builder).receipt(r -> r.setNodeId(nodeId));
     }
 
     public Builder<NodeDeleteTransactionBody.Builder> nodeDelete() {
-        var builder = NodeDeleteTransactionBody.newBuilder().setNodeId(id());
-        return new Builder<>(TransactionType.NODEDELETE, builder).receipt(r -> r.setNodeId(id()));
+        var nodeId = id();
+        var builder = NodeDeleteTransactionBody.newBuilder().setNodeId(nodeId);
+        return new Builder<>(TransactionType.NODEDELETE, builder).receipt(r -> r.setNodeId(nodeId));
     }
 
     @SuppressWarnings("deprecation")
@@ -1036,9 +1043,9 @@ public class RecordItemBuilder {
     @NotNull
     private static ServiceEndpoint serviceEndpoint() {
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 2}))
-                .setPort(80)
-                .setDomainName("")
+                .setIpAddressV4(ByteString.empty())
+                .setPort(50211)
+                .setDomainName("node1.hedera.com")
                 .build();
     }
 
