@@ -26,39 +26,58 @@ import com.hedera.mirror.restjava.spec.model.RestSpec;
 import com.hedera.mirror.restjava.spec.model.RestSpecNormalized;
 import jakarta.annotation.Resource;
 import java.io.File;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestClient;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.utility.DockerImageName;
 
 @RequiredArgsConstructor
 @RunWith(SpringRunner.class)
 @EnableConfigurationProperties(value = RestJavaProperties.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class RestSpecTest extends RestJavaIntegrationTest {
-
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-//    @TestConfiguration(proxyBeanMethods = false)
-//    class Configuration {
-//        @Bean
-//        @ServiceConnection("rest-api")
-//
-//    }
+    @TestConfiguration(proxyBeanMethods = false)
+    static class Configuration {
+        @Bean
+        GenericContainer<?> jsRestApi(PostgreSQLContainer<?> postgresql) {
+            var logger = LoggerFactory.getLogger(GenericContainer.class);
+            return new GenericContainer<>(
+                    DockerImageName.parse("gcr.io/mirrornode/hedera-mirror-rest:latest"))
+//                    new ImageFromDockerfile("localhost/testcontainers/restapi", false)
+//                            .withDockerfile(Path.of("../hedera-mirror-rest/Dockerfile")))
+                    .dependsOn(postgresql)
+                    .withExposedPorts(5551)
+                    .withLogConsumer(new Slf4jLogConsumer(logger, true))
+                    .withEnv(Map.of(
+                    "HEDERA_MIRROR_REST_REDIS_ENABLED", "false",
+                    "HEDERA_MIRROR_REST_DB_HOST", postgresql.getHost(),
+                    "HEDERA_MIRROR_REST_DB_PORT", postgresql.getMappedPort(PostgreSQLContainer.POSTGRESQL_PORT).toString()));
+        }
+    }
 
     @Resource
     private SpecDomainBuilder specDomainBuilder;
+
+    @Autowired
+    GenericContainer<?> jsRestApi;
 
     @Autowired
     private RestJavaProperties properties;
@@ -66,15 +85,18 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     protected RestClient.Builder restClientBuilder;
 
     private String baseUrl;
+    private String baseJsRestApiUrl;
 
     @LocalServerPort
     private int port;
 
     @BeforeEach
     final void setup() {
+
         baseUrl = "http://localhost:%d".formatted(port);
+        baseJsRestApiUrl = "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(5551));
+
         restClientBuilder = RestClient.builder()
-                .baseUrl(baseUrl)
                 .defaultHeader("Accept", "application/json")
                 .defaultHeader("Access-Control-Request-Method", "GET")
                 .defaultHeader("Origin", "http://example.com");
@@ -94,7 +116,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
 
         for (var specTest : normalizedRestSpec.tests()) {
             for (var url : specTest.urls()) {
-                var restClient = restClientBuilder.baseUrl(baseUrl + url).build();
+                var restClient = restClientBuilder.baseUrl(baseJsRestApiUrl + url).build();
                 var response = restClient.get()
                         .retrieve()
                         .toEntity(String.class);
