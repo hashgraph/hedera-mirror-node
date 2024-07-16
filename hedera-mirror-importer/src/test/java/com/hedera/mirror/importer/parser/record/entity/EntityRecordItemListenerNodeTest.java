@@ -107,8 +107,8 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
 
         parseRecordItemAndCommit(recordItem);
 
-        assertThat(entityRepository.count()).isZero();
-        assertThat(transactionRepository.findAll())
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(transactionRepository.findAll())
                 .hasSize(1)
                 .first()
                 .isNotNull()
@@ -123,8 +123,8 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
 
         parseRecordItemAndCommit(recordItem);
 
-        assertThat(entityRepository.count()).isZero();
-        assertThat(transactionRepository.findAll())
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(transactionRepository.findAll())
                 .hasSize(1)
                 .first()
                 .isNotNull()
@@ -139,8 +139,8 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
 
         parseRecordItemAndCommit(recordItem);
 
-        assertThat(entityRepository.count()).isZero();
-        assertThat(transactionRepository.findAll())
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(transactionRepository.findAll())
                 .hasSize(1)
                 .first()
                 .isNotNull()
