@@ -72,6 +72,7 @@ const setup = async (testDataJson) => {
   await loadTokenAllowances(testDataJson.tokenAllowances);
   await loadTokenBalances(testDataJson.tokenBalance);
   await loadTransactions(testDataJson.transactions);
+  await loadTransactionHashes(testDataJson.transactionhashes);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
   await loadContractStates(testDataJson.contractStates);
 
@@ -922,6 +923,7 @@ const addTransaction = async (transaction) => {
 
 const addTransactionHash = async (transactionHash) => {
   transactionHash.hash = valueToBuffer(transactionHash.hash);
+  transactionHash.payer_account_id = EntityId.parse(transactionHash.payer_account_id).getEncodedId();
   await insertDomainObject('transaction_hash', Object.keys(transactionHash), transactionHash);
 };
 

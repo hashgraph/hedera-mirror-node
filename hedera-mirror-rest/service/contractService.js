@@ -372,15 +372,15 @@ class ContractService extends BaseService {
    * @param query
    * @returns {[string, *[]]}
    */
-  getContractLogsQuery({lower, inner, upper, params, conditions, timestampOrder, indexOrder, limit}) {
+  getContractLogsQuery({lower, inner, upper, params, conditions, order, limit}) {
     params.push(limit);
     const orderClause = super.getOrderByQuery(
-      OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
-      OrderSpec.from(ContractLog.getFullName(ContractLog.INDEX), indexOrder)
+      OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), order),
+      OrderSpec.from(ContractLog.getFullName(ContractLog.INDEX), order)
     );
     const orderClauseNoAlias = super.getOrderByQuery(
-      OrderSpec.from(ContractLog.CONSENSUS_TIMESTAMP, timestampOrder),
-      OrderSpec.from(ContractLog.INDEX, indexOrder)
+      OrderSpec.from(ContractLog.CONSENSUS_TIMESTAMP, order),
+      OrderSpec.from(ContractLog.INDEX, order)
     );
     const limitClause = super.getLimitQuery(params.length);
 
@@ -428,9 +428,16 @@ class ContractService extends BaseService {
   async getContractLogs(query) {
     const [sqlQuery, params] = this.getContractLogsQuery(query);
     const rows = await super.getRows(sqlQuery, params);
+    if (rows.length === 0) {
+      return rows;
+    }
+
     const timestamps = [];
+    // The timestamps are ordered, and may have duplicates, dedup them
     rows.forEach((row) => {
-      timestamps.push(row.consensus_timestamp);
+      if (row.consensus_timestamp !== timestamps[timestamps.length - 1]) {
+        timestamps.push(row.consensus_timestamp);
+      }
     });
     const recordFileMap = await RecordFileService.getRecordFileBlockDetailsFromTimestampArray(timestamps);
 

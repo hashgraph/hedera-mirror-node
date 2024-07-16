@@ -15,6 +15,7 @@
  */
 
 import _ from 'lodash';
+import crypto from 'crypto';
 import {proto} from '@hashgraph/proto';
 import * as utils from '../utils';
 import config from '../config';
@@ -754,6 +755,17 @@ describe('Utils parseAccountIdQueryParam tests', () => {
     },
   ];
   parseQueryParamTest(testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, 'account.id'));
+});
+
+describe('parseEthHash', () => {
+  const expected = crypto.randomBytes(32);
+
+  test.each([
+    [expected.toString('hex'), expected],
+    [`0x${expected.toString('hex')}`, expected],
+  ])('parse %s', (input, expected) => {
+    expect(utils.parseEthHash(input)).toEqual(expected);
+  });
 });
 
 describe('utils parsePublicKey tests', () => {

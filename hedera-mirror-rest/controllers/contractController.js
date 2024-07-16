@@ -41,6 +41,7 @@ import {
   TransactionType,
 } from '../model';
 import {ContractService, EntityService, FileDataService, RecordFileService, TransactionService} from '../service';
+import {getTransactionHash} from '../transactionHash';
 import TransactionId from '../transactionId';
 import * as utils from '../utils';
 import {
@@ -52,6 +53,7 @@ import {
   ContractStateViewModel,
   ContractViewModel,
 } from '../viewmodel';
+import {incrementTimestampByOneDay} from '../utils';
 
 const contractSelectFields = [
   Entity.AUTO_RENEW_ACCOUNT_ID,
@@ -246,32 +248,39 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
 };
 
 /**
- * If 2 timestamp query filters are present with the same value
- * Overwrites the Request query object to contain a single timestamp filter
+ * If there are only 2 timestamp query filters, and they have the same value, combine them into a single filter,
  * eg. timestamp=gte:A&timestamp=lte:A -> timestamp=A
  *
- * @param {Request} req
- * @returns {void}
+ * @param {[]} filters
+ * @returns {[]}
  */
-const alterTimestampRangeInReq = (req) => {
-  const timestamps = utils
-    .buildAndValidateFilters(req.query, acceptedContractLogParameters)
-    .filter((f) => f.key === filterKeys.TIMESTAMP);
-  const ops = [utils.opsMap.gte, utils.opsMap.lte];
-  const firstTimestamp = _.first(timestamps);
-  const secondTimestamp = _.last(timestamps);
+const alterTimestampRange = (filters) => {
+  const indices = [];
+  const operators = [];
+  const values = [];
+  filters.forEach((filter, index) => {
+    if (filter.key === filterKeys.TIMESTAMP) {
+      indices.push(index);
+      operators.push(filter.operator);
+      values.push(filter.value);
+    }
+  });
 
-  // checks the special cases only
-  // all other checks will be handled by the other logic
   if (
-    timestamps.length === 2 &&
-    firstTimestamp.value === secondTimestamp.value &&
-    firstTimestamp.operator !== secondTimestamp.operator &&
-    ops.includes(firstTimestamp.operator) &&
-    ops.includes(secondTimestamp.operator)
+    values.length === 2 &&
+    values[0] === values[1] &&
+    operators.includes(utils.opsMap.gte) &&
+    operators.includes(utils.opsMap.lte)
   ) {
-    req.query[filterKeys.TIMESTAMP] = utils.nsToSecNs(firstTimestamp.value);
+    return [
+      ...filters.slice(0, indices[0]),
+      ...filters.slice(indices[0] + 1, indices[1]),
+      ...filters.slice(indices[1] + 1),
+      {key: filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: values[0]},
+    ];
   }
+
+  return filters;
 };
 
 /**
@@ -348,8 +357,7 @@ const validateContractIdParam = (contractId) => {
 const getAndValidateContractIdRequestPathParam = (req) => {
   const contractIdValue = req.params.contractId;
   validateContractIdParam(contractIdValue);
-  // if it is a valid contract id and has the substring 0x, the substring 0x can only be a prefix.
-  return contractIdValue.replace('0x', '');
+  return utils.stripHexPrefix(contractIdValue);
 };
 
 /**
@@ -421,22 +429,7 @@ class ContractController extends BaseController {
 
     let blockFilter;
 
-    const supportedParams = [
-      filterKeys.FROM,
-      filterKeys.TIMESTAMP,
-      filterKeys.BLOCK_NUMBER,
-      filterKeys.BLOCK_HASH,
-      filterKeys.TRANSACTION_INDEX,
-      filterKeys.INTERNAL,
-      filterKeys.LIMIT,
-      filterKeys.ORDER,
-    ];
     for (const filter of filters) {
-      if (!supportedParams.includes(filter.key)) {
-        // param not supported for current endpoint
-        continue;
-      }
-
       switch (filter.key) {
         case filterKeys.FROM:
           // Evm addresses are not parsed by utils.buildAndValidateFilters, so they are converted to encoded ids here.
@@ -580,16 +573,17 @@ class ContractController extends BaseController {
   /**
    * Extracts multiple queries to be combined in union
    *
-   * @param {[]} filters parsed and validated filters
+   * @param {[{key: string, operator: string, value: string}]} filters parsed and validated filters
    * @param {string|undefined} contractId encoded contract ID
-   * @return {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[], conditions: [], params: [], timestampOrder: 'asc'|'desc', indexOrder: 'asc'|'desc', limit: number}}
+   * @return {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[], conditions: [], limit: number, order: 'asc'|'desc', params: [], transactionHash: Buffer}}
    */
-  extractContractLogsMultiUnionQuery = (filters, contractId) => {
-    let limit = defaultLimit;
-    let timestampOrder = orderFilterValues.DESC;
-    let indexOrder = orderFilterValues.DESC;
+  extractContractLogsMultiUnionQuery = async (filters, contractId) => {
     const conditions = [];
     const params = [];
+
+    let limit = defaultLimit;
+    let order = orderFilterValues.DESC;
+    let transactionHash;
 
     if (contractId) {
       conditions.push(`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`);
@@ -617,12 +611,11 @@ class ContractController extends BaseController {
     for (const filter of filters) {
       switch (filter.key) {
         case filterKeys.TRANSACTION_HASH:
-          if (utils.isValidEthHash(filter.value)) {
-            const transactionHash = filter.value.replace('0x', '');
-            conditions.push(
-              `${ContractLog.getFullName(ContractLog.TRANSACTION_HASH)} = (decode('${transactionHash}','hex'))`
-            );
+          if (transactionHash !== undefined) {
+            throw new InvalidArgumentError(`Only one ${filterKeys.TRANSACTION_HASH} filter is allowed`);
           }
+
+          transactionHash = utils.parseEthHash(filter.value);
           break;
         case filterKeys.INDEX:
           bounds.secondary.parse(filter);
@@ -634,8 +627,7 @@ class ContractController extends BaseController {
           limit = filter.value;
           break;
         case filterKeys.ORDER:
-          timestampOrder = filter.value;
-          indexOrder = filter.value;
+          order = filter.value;
           break;
         case filterKeys.TOPIC0:
         case filterKeys.TOPIC1:
@@ -662,21 +654,37 @@ class ContractController extends BaseController {
 
     this.validateContractLogsBounds(bounds);
 
+    const query = {
+      // Save a copy of the bounds parsed from user input since the primary (timestamp) bound will get changed when
+      // there is a transaction hash filter
+      bounds: {...bounds},
+      conditions,
+      limit,
+      order,
+      params,
+    };
+
+    if (transactionHash !== undefined) {
+      const timestampFilters = bounds.primary.getAllFilters();
+      const rows = await getTransactionHash(transactionHash, {order, timestampFilters});
+      if (rows.length === 0) {
+        return null;
+      }
+
+      bounds.primary = new Bound(filterKeys.TIMESTAMP);
+      bounds.primary.parse({key: filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: rows[0].consensus_timestamp});
+    }
+
     // update query with repeated values
     Object.keys(keyFullNames).forEach((filterKey) => {
       this.updateQueryFiltersWithInValues(params, conditions, inValues[filterKey], keyFullNames[filterKey]);
     });
 
     return {
-      bounds,
+      ...query,
       lower: this.getContractLogsLowerFilters(bounds),
       inner: this.getInnerFilters(bounds),
       upper: this.getUpperFilters(bounds),
-      conditions,
-      params,
-      timestampOrder,
-      indexOrder,
-      limit,
     };
   };
 
@@ -759,12 +767,12 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractLogsById = async (req, res) => {
-    alterTimestampRangeInReq(req);
     // get sql filter query, params, limit and limit query from query filters
-    const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(
+    let {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(
       req,
-      acceptedContractLogParameters
+      acceptedContractLogsByIdParameters
     );
+    filters = alterTimestampRange(filters);
     checkTimestampsForTopics(filters);
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
@@ -779,16 +787,14 @@ class ContractController extends BaseController {
       return;
     }
 
-    const query = this.extractContractLogsMultiUnionQuery(filters, contractId);
-
+    const query = await this.extractContractLogsMultiUnionQuery(filters, contractId);
     const rows = await ContractService.getContractLogs(query);
-
     const logs = rows.map((row) => new ContractLogViewModel(row));
 
     res.locals[responseDataLabel] = {
       logs,
       links: {
-        next: this.getPaginationLink(req, logs, query.bounds, query.limit, query.timestampOrder),
+        next: this.getPaginationLink(req, logs, query.bounds, query.limit, query.order),
       },
     };
   };
@@ -800,22 +806,31 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractLogs = async (req, res) => {
-    alterTimestampRangeInReq(req);
     // get sql filter query, params, limit and limit query from query filters
-    const filters = utils.buildAndValidateFilters(req.query, acceptedContractLogParameters);
+    const filters = alterTimestampRange(utils.buildAndValidateFilters(req.query, acceptedContractLogsParameters));
     checkTimestampsForTopics(filters);
-
-    const query = this.extractContractLogsMultiUnionQuery(filters);
-    const rows = await ContractService.getContractLogs(query);
-    const logs = rows.map((row) => new ContractLogViewModel(row));
 
     // Workaround: set the request path in handler so later in the router level generic middleware it won't be
     // set to /contracts/results/:transactionIdOrHash
     res.locals[requestPathLabel] = `${req.baseUrl}${req.route.path}`;
     res.locals[responseDataLabel] = {
+      logs: [],
+      links: {
+        next: null,
+      },
+    };
+
+    const query = await this.extractContractLogsMultiUnionQuery(filters);
+    if (query === null) {
+      return;
+    }
+
+    const rows = await ContractService.getContractLogs(query);
+    const logs = rows.map((row) => new ContractLogViewModel(row));
+    res.locals[responseDataLabel] = {
       logs,
       links: {
-        next: this.getPaginationLink(req, logs, query.bounds, query.limit, query.timestampOrder),
+        next: this.getPaginationLink(req, logs, query.bounds, query.limit, query.order),
       },
     };
   };
@@ -1080,9 +1095,8 @@ class ContractController extends BaseController {
     const excludeTransactionResults = [duplicateTransactionResult, wrongNonceTransactionResult];
     const {transactionIdOrHash} = req.params;
     if (utils.isValidEthHash(transactionIdOrHash)) {
-      const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       const detailsByHash = await ContractService.getContractTransactionDetailsByHash(
-        ethHash,
+        utils.parseEthHash(transactionIdOrHash),
         excludeTransactionResults,
         1
       );
@@ -1213,8 +1227,7 @@ class ContractController extends BaseController {
     let transactionId;
     let tx;
     if (utils.isValidEthHash(transactionIdOrHash)) {
-      const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      tx = await ContractService.getContractTransactionDetailsByHash(hash);
+      tx = await ContractService.getContractTransactionDetailsByHash(utils.parseEthHash(transactionIdOrHash));
     } else {
       transactionId = TransactionId.fromString(transactionIdOrHash);
       tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);
@@ -1280,8 +1293,7 @@ class ContractController extends BaseController {
 
 const contractCtrlInstance = new ContractController();
 
-const acceptedContractLogParameters = new Set([
-  filterKeys.TRANSACTION_HASH,
+const acceptedContractLogsByIdParameters = new Set([
   filterKeys.INDEX,
   filterKeys.LIMIT,
   filterKeys.ORDER,
@@ -1291,6 +1303,8 @@ const acceptedContractLogParameters = new Set([
   filterKeys.TOPIC2,
   filterKeys.TOPIC3,
 ]);
+
+const acceptedContractLogsParameters = new Set(acceptedContractLogsByIdParameters).add(filterKeys.TRANSACTION_HASH);
 
 const acceptedContractParameters = new Set([filterKeys.CONTRACT_ID, filterKeys.LIMIT, filterKeys.ORDER]);
 
@@ -1368,7 +1382,7 @@ if (utils.isTestEnv()) {
       getLastNonceParamValue,
       validateContractIdAndConsensusTimestampParam,
       validateContractIdParam,
-      alterTimestampRangeInReq,
+      alterTimestampRange,
     }
   );
 }

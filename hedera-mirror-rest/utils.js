@@ -612,6 +612,14 @@ const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
 };
 
 /**
+ * Parse a hex ethereum transaction hash to a buffer. Note the hash can optionally have a 0x prefix
+ *
+ * @param {string} hash - The ethereum transaction hash in hex format
+ * @returns {Buffer}
+ */
+const parseEthHash = (hash) => Buffer.from(stripHexPrefix(hash), 'hex');
+
+/**
  * Parses the integer string into a Number if it's safe or otherwise a BigInt
  *
  * @param {string} str
@@ -1740,6 +1748,7 @@ export {
   parseAccountIdQueryParam,
   parseBalanceQueryParam,
   parseBooleanValue,
+  parseEthHash,
   parseInteger,
   parseLimitAndOrderParams,
   parseParams,
