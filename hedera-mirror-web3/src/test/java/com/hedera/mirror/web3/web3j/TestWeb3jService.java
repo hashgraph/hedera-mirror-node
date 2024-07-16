@@ -80,6 +80,7 @@ public class TestWeb3jService implements Web3jService {
     private final Web3j web3j;
 
     private Address sender = Address.fromHexString("");
+    private BlockType blockType = BlockType.LATEST;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -95,6 +96,10 @@ public class TestWeb3jService implements Web3jService {
 
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
+    }
+
+    public void setBlockType(final BlockType blockType) {
+        this.blockType = blockType;
     }
 
     @SneakyThrows(Exception.class)
@@ -158,7 +163,7 @@ public class TestWeb3jService implements Web3jService {
                 rawTrxDecoded.getValue().longValue() >= 0
                         ? rawTrxDecoded.getValue().longValue()
                         : 10L,
-                BlockType.LATEST,
+                blockType,
                 GAS_LIMIT,
                 sender);
 
@@ -181,7 +186,7 @@ public class TestWeb3jService implements Web3jService {
                 Address.fromHexString(transaction.getTo()),
                 ETH_CALL,
                 transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L,
-                BlockType.LATEST,
+                blockType,
                 GAS_LIMIT,
                 sender);
         final var result = contractExecutionService.processCall(serviceParameters);
@@ -298,7 +303,7 @@ public class TestWeb3jService implements Web3jService {
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
-                .block(BlockType.LATEST)
+                .block(blockType)
                 .build();
     }
 

@@ -1746,7 +1746,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void tokenAccountPersistHistorical(
+    protected void tokenAccountPersistHistorical(
             final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
         domainBuilder
                 .tokenAccountHistory()
