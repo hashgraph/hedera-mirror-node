@@ -123,7 +123,25 @@ class NetworkControllerTest extends GrpcIntegrationTest {
     @Test
     void noLimitServiceEndpointWithDomainName() {
         var addressBook = addressBook();
-        var addressBookEntry1 = addressBookEntryWithDomainName();
+        var addressBookEntry1 = addressBookEntryCustomized("www.example-node.com", "", 5000);
+
+        var query = AddressBookQuery.newBuilder()
+                .setFileId(FileID.newBuilder()
+                        .setFileNum(addressBook.getFileId().getNum())
+                        .build())
+                .build();
+
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
+                .consumeNextWith(n -> assertEntry(addressBookEntry1, n))
+                .expectComplete()
+                .verify(WAIT);
+    }
+
+    @Test
+    void testWithEmptyDomainNameAndIpAddress() {
+        var addressBook = addressBook();
+        var addressBookEntry1 = addressBookEntryCustomized("", "", 0);
 
         var query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder()
@@ -205,12 +223,11 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .persist();
     }
 
-    private AddressBookEntry addressBookEntryWithDomainName() {
+    private AddressBookEntry addressBookEntryCustomized(String domainName, String ipAddress, int port) {
         var serviceEndpoints = new HashSet<AddressBookServiceEndpoint>();
         var endpoint = domainBuilder
                 .addressBookServiceEndpoint()
-                .customize(a ->
-                        a.domainName("www.example-node.com").ipAddressV4("").port(-1))
+                .customize(a -> a.domainName(domainName).ipAddressV4(ipAddress).port(port))
                 .get();
         serviceEndpoints.add(endpoint);
         return domainBuilder

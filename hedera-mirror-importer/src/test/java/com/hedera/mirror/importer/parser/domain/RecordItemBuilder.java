@@ -161,6 +161,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
@@ -603,25 +604,27 @@ public class RecordItemBuilder {
 
     public Builder<NodeCreateTransactionBody.Builder> nodeCreate() {
         var builder = NodeCreateTransactionBody.newBuilder()
-                .addServiceEndpoint(ServiceEndpoint.newBuilder()
-                        .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 1}))
-                        .setPort(443)
-                        .build());
-        return new Builder<>(TransactionType.NODECREATE, builder);
+                .setAccountId(accountId())
+                .setAdminKey(key())
+                .setDescription("Node create")
+                .addGossipEndpoint(gossipEndpoint())
+                .addServiceEndpoint(serviceEndpoint());
+        return new Builder<>(TransactionType.NODECREATE, builder).receipt(r -> r.setNodeId(id()));
     }
 
     public Builder<NodeUpdateTransactionBody.Builder> nodeUpdate() {
         var builder = NodeUpdateTransactionBody.newBuilder()
-                .addServiceEndpoint(ServiceEndpoint.newBuilder()
-                        .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 2}))
-                        .setPort(80)
-                        .build());
-        return new Builder<>(TransactionType.NODEUPDATE, builder);
+                .setAccountId(accountId())
+                .setAdminKey(key())
+                .setDescription(StringValue.of("Node update"))
+                .addGossipEndpoint(gossipEndpoint())
+                .addServiceEndpoint(serviceEndpoint());
+        return new Builder<>(TransactionType.NODEUPDATE, builder).receipt(r -> r.setNodeId(id()));
     }
 
     public Builder<NodeDeleteTransactionBody.Builder> nodeDelete() {
-        var builder = NodeDeleteTransactionBody.newBuilder().clearNodeId();
-        return new Builder<>(TransactionType.NODEDELETE, builder);
+        var builder = NodeDeleteTransactionBody.newBuilder().setNodeId(id());
+        return new Builder<>(TransactionType.NODEDELETE, builder).receipt(r -> r.setNodeId(id()));
     }
 
     @SuppressWarnings("deprecation")
@@ -1028,6 +1031,24 @@ public class RecordItemBuilder {
                 .setStake(stake)
                 .setStakeNotRewarded(TINYBARS_IN_ONE_HBAR)
                 .setStakeRewarded(stake - TINYBARS_IN_ONE_HBAR);
+    }
+
+    @NotNull
+    private static ServiceEndpoint serviceEndpoint() {
+        return ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 2}))
+                .setPort(80)
+                .setDomainName("")
+                .build();
+    }
+
+    @NotNull
+    private static ServiceEndpoint gossipEndpoint() {
+        return ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 5}))
+                .setPort(5112)
+                .setDomainName("")
+                .build();
     }
 
     public ScheduleID scheduleId() {

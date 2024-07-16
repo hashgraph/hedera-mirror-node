@@ -88,10 +88,11 @@ public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceI
         for (var s : addressBookEntry.getServiceEndpoints()) {
             try {
                 var ipAddressV4 = InetAddress.getByName(s.getIpAddressV4()).getAddress();
-                var serviceEndpoint = ServiceEndpoint.newBuilder().setIpAddressV4(ProtoUtil.toByteString(ipAddressV4));
-                serviceEndpoint.setDomainName(s.getDomainName());
-                serviceEndpoint.setPort(s.getPort());
-                serviceEndpoint.build();
+                var serviceEndpoint = ServiceEndpoint.newBuilder()
+                        .setDomainName(s.getDomainName())
+                        .setIpAddressV4(ProtoUtil.toByteString(ipAddressV4))
+                        .setPort(s.getPort())
+                        .build();
                 nodeAddress.addServiceEndpoint(serviceEndpoint);
             } catch (UnknownHostException e) {
                 // Shouldn't occur since we never pass hostnames to InetAddress.getByName()

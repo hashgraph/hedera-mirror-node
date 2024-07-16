@@ -24,6 +24,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -58,19 +60,27 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(transactionHandler.getEntity(null)).isNull();
     }
 
-    @Test
-    void nodeDeleteTransaction() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void nodeDeleteTransaction(boolean isPersist) {
+
+        entityProperties.getPersist().setNodes(isPersist);
+
         // given
         var recordItem = recordItemBuilder.nodeDelete().build();
-        var transaction = domainBuilder.transaction().get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.transactionBytes(null).transactionRecordBytes(null))
+                .get();
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
+        var transactionBytes = isPersist ? recordItem.getTransaction().toByteArray() : null;
+        var transactionRecordBytes =
+                isPersist ? recordItem.getTransactionRecord().toByteArray() : null;
         // then
-        assertThat(transaction.getTransactionBytes())
-                .containsExactly(recordItem.getTransaction().toByteArray());
-        assertThat(transaction.getTransactionRecordBytes())
-                .containsExactly(recordItem.getTransactionRecord().toByteArray());
+        assertThat(transaction.getTransactionBytes()).containsExactly(transactionBytes);
+        assertThat(transaction.getTransactionRecordBytes()).containsExactly(transactionRecordBytes);
     }
 }

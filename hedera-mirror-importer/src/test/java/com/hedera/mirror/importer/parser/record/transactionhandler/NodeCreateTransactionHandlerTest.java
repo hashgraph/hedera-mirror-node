@@ -23,8 +23,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class NodeCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -48,29 +48,32 @@ class NodeCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         return EntityType.ACCOUNT;
     }
 
-    @BeforeEach
-    void setup() {
-        entityProperties.getPersist().setNodes(true);
-    }
-
     @AfterEach
     void after() {
         entityProperties.getPersist().setNodes(false);
     }
 
-    @Test
-    void nodeCreateTransaction() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void nodeCreateTransaction(boolean isPersist) {
+
+        entityProperties.getPersist().setNodes(isPersist);
+
         // given
         var recordItem = recordItemBuilder.nodeCreate().build();
-        var transaction = domainBuilder.transaction().get();
+        var transaction = domainBuilder
+                .transaction()
+                .customize(t -> t.transactionBytes(null).transactionRecordBytes(null))
+                .get();
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
+        var transactionBytes = isPersist ? recordItem.getTransaction().toByteArray() : null;
+        var transactionRecordBytes =
+                isPersist ? recordItem.getTransactionRecord().toByteArray() : null;
         // then
-        assertThat(transaction.getTransactionBytes())
-                .containsExactly(recordItem.getTransaction().toByteArray());
-        assertThat(transaction.getTransactionRecordBytes())
-                .containsExactly(recordItem.getTransactionRecord().toByteArray());
+        assertThat(transaction.getTransactionBytes()).containsExactly(transactionBytes);
+        assertThat(transaction.getTransactionRecordBytes()).containsExactly(transactionRecordBytes);
     }
 }

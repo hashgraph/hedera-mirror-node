@@ -21,10 +21,10 @@ class AddressBookServiceEndpoint {
   constructor(serviceEndpoint) {
     // explicitly assign properties to restict properties and allow for composition in other models
     this.consensusTimestamp = serviceEndpoint.consensus_timestamp;
+    this.domainName = serviceEndpoint.domain_name;
     this.ipAddressV4 = serviceEndpoint.ip_address_v4;
     this.nodeId = serviceEndpoint.node_id;
     this.port = serviceEndpoint.port;
-    this.domainName = serviceEndpoint.domain_name;
   }
 
   static tableAlias = 'abse';
