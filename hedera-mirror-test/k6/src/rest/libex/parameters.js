@@ -316,6 +316,14 @@ const computeFungibleTokenParameters = wrapComputeParametersFunc(['DEFAULT_TOKEN
   });
 });
 
+const computeTokenParameters = wrapComputeParametersFunc(['DEFAULT_TOKEN_NAME'], () => {
+  const extractProperties = (token) => ({DEFAULT_TOKEN_NAME: token.name.substring(1, token.name.length - 2)});
+  return getPropertiesForEntity(extractProperties, {
+    entitiesKey: tokenListName,
+    queryParamMap: {limit: 1},
+  });
+});
+
 const computeTransactionParameters = wrapComputeParametersFunc(
   ['DEFAULT_TRANSACTION_HASH', 'DEFAULT_TRANSACTION_ID'],
   () => {
@@ -358,6 +366,7 @@ const allHandlers = [
   computeFungibleTokenParameters,
   computeNftParameters,
   computeScheduleParameters,
+  computeTokenParameters,
   computeTopicInfo,
   computeTransactionParameters,
 ];

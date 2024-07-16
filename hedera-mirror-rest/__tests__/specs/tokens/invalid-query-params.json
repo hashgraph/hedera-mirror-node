@@ -55,7 +55,13 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3",
+  "urls": [
+    "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=ne:bar",
+    "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=lt:bar",
+    "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=lte:bar",
+    "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=gt:bar",
+    "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=gte:bar"
+  ],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -74,6 +80,9 @@
         },
         {
           "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Invalid parameter: name"
         },
         {
           "message": "Unknown query parameter: block.number"

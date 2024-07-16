@@ -1074,6 +1074,7 @@ paths:
       operationId: getTokens
       parameters:
         - $ref: "#/components/parameters/accountIdQueryParam"
+        - $ref: "#/components/parameters/tokenNameQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/orderQueryParam"
         - $ref: "#/components/parameters/publicKeyQueryParam"
@@ -4795,6 +4796,13 @@ components:
           value: lte:0.0.700
       schema:
         $ref: "#/components/schemas/EntityIdQuery"
+    tokenNameQueryParam:
+      name: name
+      in: query
+      description: Partial or full token name
+      schema:
+        type: string
+
     tokenTypeQueryParam:
       name: type
       in: query

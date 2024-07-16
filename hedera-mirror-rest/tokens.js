@@ -26,6 +26,7 @@ import {
   responseDataLabel,
   tokenTypeFilter,
   EMPTY_STRING,
+  queryParamOperators,
 } from './constants';
 import EntityId from './entityId';
 import {InvalidArgumentError, NotFoundError} from './errors';
@@ -159,6 +160,10 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
     if (filter.key === filterKeys.LIMIT) {
       limit = filter.value;
       continue;
+    }
+
+    if (filter.key === filterKeys.NAME) {
+      conditions.push(`t.name ILIKE $${params.push('%' + filter.value + '%')}`);
     }
 
     // handle keys that do not require formatting first
@@ -313,6 +318,9 @@ const validateTokenQueryFilter = (param, op, val) => {
       break;
     case filterKeys.LIMIT:
       ret = utils.isPositiveLong(val);
+      break;
+    case filterKeys.NAME:
+      ret = op === queryParamOperators.eq;
       break;
     case filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -1023,6 +1031,7 @@ const acceptedTokenParameters = new Set([
   filterKeys.ACCOUNT_ID,
   filterKeys.ENTITY_PUBLICKEY,
   filterKeys.LIMIT,
+  filterKeys.NAME,
   filterKeys.ORDER,
   filterKeys.TOKEN_ID,
   filterKeys.TOKEN_TYPE,
