@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    val dockerJavaVersion = "3.3.6"
+    val dockerJavaVersion = "3.4.0"
     val flywayVersion = "10.15.2"
     val jooqVersion = "3.19.10"
 
@@ -41,7 +41,7 @@ dependencies {
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.6.1")
     implementation("gradle.plugin.org.flywaydb:gradle-plugin-publishing:$flywayVersion")
     implementation("io.freefair.gradle:lombok-plugin:8.6")
-    implementation("io.spring.gradle:dependency-management-plugin:1.1.5")
+    implementation("io.spring.gradle:dependency-management-plugin:1.1.6")
     implementation("org.apache.commons:commons-compress:1.26.1")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
     implementation("org.gradle:test-retry-gradle-plugin:1.5.9")

@@ -16,6 +16,8 @@ hedera:
         tempSchema: temporary
         username: mirror_importer
       migration:
+        backfillTransactionHashMigration:
+          checksum: 2
         blockNumberMigration:
           checksum: 4
         errataMigration:

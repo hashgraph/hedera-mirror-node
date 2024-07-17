@@ -480,6 +480,16 @@ const loadTransactions = async (transactions) => {
   }
 };
 
+const loadTransactionHashes = async (transactionHashes) => {
+  if (transactionHashes == null) {
+    return;
+  }
+
+  for (const transactionHash of transactionHashes) {
+    await addTransactionHash(transactionHash);
+  }
+};
+
 const loadTopicMessages = async (messages) => {
   if (messages == null) {
     return;
@@ -1655,6 +1665,7 @@ export default {
   loadTokenAccounts,
   loadTopicMessageLookups,
   loadTransactions,
+  loadTransactionHashes,
   loadEntityStakes,
   setAccountBalance,
   setup,

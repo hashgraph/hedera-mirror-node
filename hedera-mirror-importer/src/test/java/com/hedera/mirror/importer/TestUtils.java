@@ -174,8 +174,12 @@ public class TestUtils {
 
     public TransactionHash getTransactionHashFromSqlFunction(JdbcTemplate jdbcTemplate, byte[] hash) {
         var sql = "SELECT * from get_transaction_info_by_hash(?)";
-        var results = jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class), hash);
-        return results.iterator().hasNext() ? results.iterator().next() : null;
+        var prefix = Arrays.copyOfRange(hash, 0, 32);
+        var results = jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class), prefix);
+        return results.stream()
+                .filter(t -> Arrays.equals(t.getHash(), hash))
+                .findFirst()
+                .orElse(null);
     }
 
     public void insertIntoTransactionHash(JdbcTemplate jdbcTemplate, TransactionHash hash) {
