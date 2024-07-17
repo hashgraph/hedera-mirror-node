@@ -31,7 +31,10 @@ function cleanup() {
 function ensure_extensions() {
   echo "Ensuring required extensions are installed"
   /etc/init.d/postgresql start
-  psql -d mirror_node -U mirror_node -c 'create extension if not exists btree_gist;'
+  local extensions="create extension if not exists btree_gist;
+  create extension if not exists pg_trgm;
+  "
+  psql -d mirror_node -U mirror_node -c "${extensions}"
   /etc/init.d/postgresql stop
 }
 

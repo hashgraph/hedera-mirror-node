@@ -133,7 +133,7 @@ const isHexPositiveInt = (num, allowZero = false) => {
 };
 
 const isMaxBytes = (str, maxSize) => {
-  return new Blob([str]).size <= maxSize;
+  return Buffer.from(str).length <= maxSize;
 }
 
 const nonNegativeInt32Regex = /^\d{1,10}$/;
