@@ -56,6 +56,7 @@
     "cryptotransfers": []
   },
   "urls": [
+    "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=IAmALongStringThatIsLongerThanTheMaximumSizeForATokenNameWhichIsOneHundredBytesAndNotOneSingleByteMore",
     "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=ne:bar",
     "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=lt:bar",
     "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3&name=lte:bar",

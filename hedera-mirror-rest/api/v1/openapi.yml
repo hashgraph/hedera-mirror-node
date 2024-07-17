@@ -4802,6 +4802,7 @@ components:
       description: Partial or full token name
       schema:
         type: string
+        maxLength: 100
 
     tokenTypeQueryParam:
       name: type

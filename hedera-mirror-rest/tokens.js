@@ -320,7 +320,7 @@ const validateTokenQueryFilter = (param, op, val) => {
       ret = utils.isPositiveLong(val);
       break;
     case filterKeys.NAME:
-      ret = op === queryParamOperators.eq;
+      ret = op === queryParamOperators.eq && utils.isMaxBytes(val,100);
       break;
     case filterKeys.ORDER:
       // Acceptable words: asc or desc

@@ -132,6 +132,10 @@ const isHexPositiveInt = (num, allowZero = false) => {
   return false;
 };
 
+const isMaxBytes = (str, maxSize) => {
+  return new Blob([str]).size <= maxSize;
+}
+
 const nonNegativeInt32Regex = /^\d{1,10}$/;
 
 /**
@@ -1716,6 +1720,7 @@ export {
   gtGte,
   incrementTimestampByOneDay,
   ipMask,
+  isMaxBytes,
   isNonNegativeInt32,
   isPositiveLong,
   isRepeatedQueryParameterValidLength,
