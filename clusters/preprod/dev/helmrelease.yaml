@@ -50,6 +50,11 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    rest:
+      monitor:
+        config:
+          stateproof:
+            enabled: false
     test:
       config:
         hedera:
