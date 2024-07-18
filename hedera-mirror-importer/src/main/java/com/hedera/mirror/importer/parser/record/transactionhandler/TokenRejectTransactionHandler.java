@@ -21,6 +21,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -28,18 +29,22 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class TokenRejectTransactionHandler extends AbstractTransactionHandler {
 
+    private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
 
     @Override
-    protected void addCommonEntityIds(Transaction transaction, RecordItem recordItem) {
-        super.addCommonEntityIds(transaction, recordItem);
-        var rejections = recordItem.getTransactionBody().getTokenReject().getRejectionsList();
-        for (var rejection : rejections) {
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
+        if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
+            return;
+        }
+
+        var tokenReject = recordItem.getTransactionBody().getTokenReject();
+        tokenReject.getRejectionsList().forEach(rejection -> {
             var tokenId = rejection.hasFungibleToken()
                     ? rejection.getFungibleToken()
                     : rejection.getNft().getTokenID();
             recordItem.addEntityId(EntityId.of(tokenId));
-        }
+        });
     }
 
     @Override

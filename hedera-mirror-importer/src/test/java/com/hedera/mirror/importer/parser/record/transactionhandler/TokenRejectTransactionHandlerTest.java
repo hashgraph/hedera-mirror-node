@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 class TokenRejectTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenRejectTransactionHandler(entityIdService);
+        return new TokenRejectTransactionHandler(entityProperties, entityIdService);
     }
 
     @Override
