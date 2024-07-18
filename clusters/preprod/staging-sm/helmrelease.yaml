@@ -51,6 +51,10 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    rest:
+      monitor:
+        test:
+          enabled: false
     test:
       config:
         hedera:
@@ -60,4 +64,7 @@ spec:
                 network: OTHER
       cucumberTags: "@acceptance and not @contractbase"
       enabled: true
+    web3:
+      env:
+        HEDERA_MIRROR_WEB3_EVM_NETWORK: OTHER
 

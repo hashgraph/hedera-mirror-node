@@ -51,4 +51,11 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    rest:
+      monitor:
+        test:
+          enabled: false
+    web3:
+      env:
+        HEDERA_MIRROR_WEB3_EVM_NETWORK: OTHER
 
