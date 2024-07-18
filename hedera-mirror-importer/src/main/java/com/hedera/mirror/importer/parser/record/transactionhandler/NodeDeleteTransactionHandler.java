@@ -16,14 +16,44 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.hedera.mirror.common.domain.entity.Node;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import jakarta.inject.Named;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
+@CustomLog
 @Named
+@RequiredArgsConstructor
 class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
+
+    private final EntityListener entityListener;
 
     @Override
     public TransactionType getType() {
         return TransactionType.NODEDELETE;
+    }
+
+    @Override
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
+
+        transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
+        transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
+        parseNode(recordItem);
+    }
+
+    private void parseNode(RecordItem recordItem) {
+        var nodeCreate = recordItem.getTransactionBody().getNodeUpdate();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var node = new Node();
+        node.setAdminKey(String.valueOf(nodeCreate.getAdminKey()));
+        node.setCreatedTimestamp(consensusTimestamp);
+        node.setDeleted(true);
+        node.setTimestampLower(consensusTimestamp);
+        node.setNodeId(recordItem.getTransactionRecord().getReceipt().getNodeId());
+        entityListener.onNode(node);
     }
 }
