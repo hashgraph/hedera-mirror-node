@@ -1,33 +1,37 @@
 version: 2
 updates:
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "daily"
+  - directory: "/"
     open-pull-requests-limit: 10
-
-  - package-ecosystem: "gradle"
-    directory: "/"
+    package-ecosystem: "github-actions"
     schedule:
       interval: "weekly"
+
+  - directory: "/"
     open-pull-requests-limit: 10
-
-  - package-ecosystem: "npm"
-    directory: "/hedera-mirror-rest"
+    package-ecosystem: "gradle"
     schedule:
       interval: "weekly"
 
-  - package-ecosystem: "npm"
-    directory: "/hedera-mirror-rest/monitoring/monitor_apis"
+  - directory: "/hedera-mirror-rest"
+    open-pull-requests-limit: 10
+    package-ecosystem: "npm"
     schedule:
       interval: "weekly"
 
-  - package-ecosystem: "npm"
-    directory: "/hedera-mirror-rest/check-state-proof"
+  - directory: "/hedera-mirror-rest/monitoring"
+    open-pull-requests-limit: 10
+    package-ecosystem: "npm"
     schedule:
       interval: "weekly"
 
-  - package-ecosystem: "gomod"
-    directory: "/hedera-mirror-rosetta"
+  - directory: "/hedera-mirror-rest/check-state-proof"
+    open-pull-requests-limit: 10
+    package-ecosystem: "npm"
+    schedule:
+      interval: "weekly"
+
+  - directory: "/hedera-mirror-rosetta"
+    open-pull-requests-limit: 10
+    package-ecosystem: "gomod"
     schedule:
       interval: "weekly"

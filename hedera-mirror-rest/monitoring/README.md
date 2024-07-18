@@ -33,7 +33,7 @@ git clone git@github.com:hashgraph/hedera-mirror-node.git
 cd hedera-mirror-node/hedera-mirror-rest/monitoring
 ```
 
-To install the dependencies and configure monitor_apis:
+To install the dependencies and configure the monitor:
 
 ```
 npm install
@@ -58,7 +58,7 @@ To customize per-resource configuration:
 See [default.serverlist.json](/hedera-mirror-rest/monitoring/config/default.serverlist.json) for a full
 list of configuration properties.
 
-To run the monitor_apis backend:
+To run the monitor:
 
 ```
 PORT=3000 pm2 start server.js --node-args="--import=extensionless/register"
