@@ -20,6 +20,7 @@ import com.hedera.mirror.common.config.CommonTestConfiguration.FilteringConsumer
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,9 @@ import org.testcontainers.utility.DockerImageName;
 @TestConfiguration(proxyBeanMethods = false)
 public class SpecTestConfig {
 
+    @Value("#{environment.matchesProfiles('v2')}")
+    private boolean v2;
+
     @Bean
     Network postgresqlNetwork() {
         return Network.newNetwork();
@@ -41,7 +45,8 @@ public class SpecTestConfig {
     @Bean("postgresql")
     @ServiceConnection("postgresql")
     PostgreSQLContainer<?> postgresqlOverride(Network postgresqlNetwork) {
-        var dockerImageName = DockerImageName.parse("postgres:14-alpine").asCompatibleSubstituteFor("postgres");
+        var imageName = v2 ? "gcr.io/mirrornode/citus:12.1.1" : "postgres:14-alpine";
+        var dockerImageName = DockerImageName.parse(imageName).asCompatibleSubstituteFor("postgres");
         var logger = LoggerFactory.getLogger(PostgreSQLContainer.class);
         var excluded = "terminating connection due to unexpected postmaster exit";
         var logConsumer = new FilteringConsumer(

@@ -84,7 +84,6 @@ public class RestSpecTest extends RestJavaIntegrationTest {
 //        var file = new File("../hedera-mirror-rest/__tests__/specs/network/supply/no-params.json");
         var file = new File("../hedera-mirror-rest/__tests__/specs/blocks/no-records.json");
         runSpecTest(file);
-        System.out.println("ran " + file.getName());
     }
 
     private void runSpecTest(File specFile) throws Exception {
