@@ -16,9 +16,6 @@
 
 package com.hedera.mirror.importer.addressbook;
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ADDRESS_BOOK;
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
-
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
@@ -38,6 +35,18 @@ import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import jakarta.inject.Named;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.CollectionUtils;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -57,17 +66,9 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import lombok.CustomLog;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.util.CollectionUtils;
+
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ADDRESS_BOOK;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
 
 @CustomLog
 @Named
@@ -497,6 +498,9 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         if (entityProperties.getPersist().isNodes()) {
             addressBookServiceEndpoint.setDomainName(serviceEndpoint.getDomainName());
+        } else {
+            // Setting domain_name to empty string here only until HIP 869 goes to mainnet
+            addressBookServiceEndpoint.setDomainName("");
         }
 
         return addressBookServiceEndpoint;
