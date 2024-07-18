@@ -47,7 +47,7 @@ abstract class AbstractEntityBuilder {
     );
 
     private static final Base32 BASE32 = new Base32();
-    private static final Pattern HEX_STRING_PATTERN = Pattern.compile("/^(0x)?[0-9A-Fa-f]+$/");
+    private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
     private static final Object IGNORE_ATTRIBUTE_SIGNAL = new Object();
     private static final Map<Class<?>, Map<String, Method>> methodCache = new ConcurrentHashMap<>();
 
@@ -60,6 +60,9 @@ abstract class AbstractEntityBuilder {
 
     protected static final Function<Object, Object> ENTITY_ID_CONVERTER = value -> value == null ? null
             : value instanceof String valueStr ? EntityId.of(valueStr) : EntityId.of((Long)value);
+
+    protected static final Function<Object, Object> ENTITY_ID_TO_LONG_CONVERTER = value -> value == null ? 0L
+            : value instanceof String valueStr ? EntityId.of(valueStr).getId() : (long)value;
 
     protected static final Function<Object, Object> HEX_OR_BASE64_CONVERTER = value -> {
         if (value instanceof String valueStr) {

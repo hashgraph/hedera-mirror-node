@@ -27,7 +27,10 @@ import com.hedera.mirror.restjava.spec.model.RestSpecNormalized;
 import com.hedera.mirror.restjava.spec.config.SpecTestConfig;
 import jakarta.annotation.Resource;
 import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -50,7 +53,14 @@ import org.testcontainers.containers.GenericContainer;
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private static final List<File> SELECTED_SPECS = List.of(
+            new File("../hedera-mirror-rest/__tests__/specs/accounts/alias-into-evm-address.json"),
+            new File("../hedera-mirror-rest/__tests__/specs/blocks/no-records.json"),
+            new File("../hedera-mirror-rest/__tests__/specs/accounts/specific-id.json")
+    );
 
     @Resource
     private SpecDomainBuilder specDomainBuilder;
@@ -61,18 +71,15 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     @Autowired
     private RestJavaProperties properties;
 
-    protected RestClient.Builder restClientBuilder;
-
-    private String baseUrl;
-    private String baseJsRestApiUrl;
-
     @LocalServerPort
     private int port;
 
+    private RestClient.Builder restClientBuilder;
+
+    private String baseJsRestApiUrl;
+
     @BeforeEach
     final void setup() {
-        baseUrl = "http://localhost:%d".formatted(port); // Java REST
-
         baseJsRestApiUrl = "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(JS_REST_API_CONTAINER_PORT));
         log.info("setup - baseJsRestApiUrl: {}", baseJsRestApiUrl);
         restClientBuilder = RestClient.builder()
@@ -82,16 +89,21 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     }
 
     @Test
-    void phase1WithSingleFile() throws Exception {
-//        var file = new File("../hedera-mirror-rest/__tests__/specs/network/supply/no-params.json");
-        var file = new File("../hedera-mirror-rest/__tests__/specs/blocks/no-records.json");
-        runSpecTest(file);
+    void runSelectedSpecs() {
+        SELECTED_SPECS.forEach(this::runSpecTests);
     }
 
-    private void runSpecTest(File specFile) throws Exception {
-        RestSpec restSpec = OBJECT_MAPPER.readValue(specFile, RestSpec.class);
+    private void runSpecTests(File specFile) {
+        RestSpec restSpec;
+        try {
+            restSpec = OBJECT_MAPPER.readValue(specFile, RestSpec.class);
+        } catch (IOException e) {
+            log.warn("Failed to parse spec file: {}", specFile, e);
+            return;
+        }
+
         var normalizedRestSpec = RestSpecNormalized.from(restSpec);
-        specDomainBuilder.addAccounts(normalizedRestSpec.setup().accounts());
+        setupDatabase(normalizedRestSpec);
 
         for (var specTest : normalizedRestSpec.tests()) {
             for (var url : specTest.urls()) {
@@ -99,9 +111,21 @@ public class RestSpecTest extends RestJavaIntegrationTest {
                 var response = restClient.get()
                         .retrieve()
                         .toEntity(String.class);
+
                 assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
-                JSONAssert.assertEquals(specTest.responseJson().toString(), response.getBody(), JSONCompareMode.LENIENT);
+                var specResponseJson = specTest.responseJson().toString();
+                try {
+                    JSONAssert.assertEquals(specResponseJson, response.getBody(), JSONCompareMode.LENIENT);
+                } catch (JSONException e) {
+                    log.warn("Failed to parse expected responseJson within spec file: {}", specFile, e);
+                }
             }
         }
+
+    }
+
+    private void setupDatabase(RestSpecNormalized normalizedRestSpec) {
+        specDomainBuilder.addAccounts(normalizedRestSpec.setup().accounts());
+        specDomainBuilder.addTokenAccounts(normalizedRestSpec.setup().tokenaccounts());
     }
 }

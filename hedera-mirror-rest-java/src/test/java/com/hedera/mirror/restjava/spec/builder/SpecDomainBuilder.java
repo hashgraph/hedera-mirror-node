@@ -37,10 +37,17 @@ import org.springframework.stereotype.Component;
 public class SpecDomainBuilder {
 
     private final AccountBuilder accountBuilder;
+    private final TokenAccountBuilder tokenAccountBuilder;
 
     public void addAccounts(List<Map<String, Object>> accounts) {
         if (accounts != null) {
             accounts.forEach(accountBuilder::customizeAndPersistEntity);
+        }
+    }
+
+    public void addTokenAccounts(List<Map<String, Object>> tokenAccounts) {
+        if (tokenAccounts != null) {
+            tokenAccounts.forEach(tokenAccountBuilder::customizeAndPersistEntity);
         }
     }
 }
