@@ -9,10 +9,12 @@ changelog:
   repository: hashgraph/hedera-mirror-node
   sections:
     - title: "Enhancements"
-      labels: ["enhancement"]
+      labels: ["enhancement", "epic"]
     - title: "Bug Fixes"
       labels: ["bug"]
     - title: "Documentation"
-      labels: ["documentation", "docs"]
+      labels: ["documentation"]
     - title: "Dependency Upgrades"
-      labels: ["dependency-upgrade", "dependencies"]
+      labels: ["dependencies"]
+    - title: "Deployments"
+      labels: ["deploy"]

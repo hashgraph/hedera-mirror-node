@@ -30,6 +30,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.ImporterProperties.ConsensusMode;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
@@ -79,6 +80,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     public static final int INITIAL_NODE_ID_ACCOUNT_ID_OFFSET = 3;
 
     private final AddressBookRepository addressBookRepository;
+    private final EntityProperties entityProperties;
     private final FileDataRepository fileDataRepository;
     private final ImporterProperties importerProperties;
     private final NodeStakeRepository nodeStakeRepository;
@@ -476,22 +478,27 @@ public class AddressBookServiceImpl implements AddressBookService {
         addressBookServiceEndpoint.setIpAddressV4(ip);
         addressBookServiceEndpoint.setPort(nodeAddressProto.getPortno());
         addressBookServiceEndpoint.setNodeId(nodeId);
+        addressBookServiceEndpoint.setDomainName("");
         return addressBookServiceEndpoint;
     }
 
     private AddressBookServiceEndpoint getAddressBookServiceEndpoint(
             ServiceEndpoint serviceEndpoint, long consensusTimestamp, long nodeId) throws UnknownHostException {
         var ipAddressByteString = serviceEndpoint.getIpAddressV4();
-        if (ipAddressByteString == null || ipAddressByteString.size() != 4) {
-            throw new IllegalStateException(String.format("Invalid IpAddressV4: %s", ipAddressByteString));
+        String ip = null;
+        if (ipAddressByteString != null && ipAddressByteString.size() == 4) {
+            ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
         }
-
-        var ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
         AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
         addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
         addressBookServiceEndpoint.setIpAddressV4(ip);
         addressBookServiceEndpoint.setPort(serviceEndpoint.getPort());
         addressBookServiceEndpoint.setNodeId(nodeId);
+
+        if (entityProperties.getPersist().isNodes()) {
+            addressBookServiceEndpoint.setDomainName(serviceEndpoint.getDomainName());
+        }
+
         return addressBookServiceEndpoint;
     }
 

@@ -24,6 +24,7 @@ class AddressBookServiceEndpointViewModel {
    * @param {AddressBookServiceEndpoint} serviceEndpoint
    */
   constructor(serviceEndpoint) {
+    this.domain_name = serviceEndpoint.domainName;
     this.ip_address_v4 = serviceEndpoint.ipAddressV4;
     this.port = serviceEndpoint.port;
   }
