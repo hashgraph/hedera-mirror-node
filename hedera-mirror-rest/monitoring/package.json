@@ -27,7 +27,7 @@
     "log4js": "^6.9.1",
     "mathjs": "^12.1.0",
     "parse-duration": "^1.1.0",
-    "pretty-ms": "^8.0.0"
+    "pretty-ms": "^9.0.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
