@@ -51,7 +51,7 @@
     "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.10.3",
+    "@testcontainers/postgresql": "^10.10.4",
     "app-root-path": "^3.1.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.1.0",
@@ -68,7 +68,7 @@
     "rewire": "^7.0.0",
     "sinon": "^18.0.0",
     "supertest": "^7.0.0",
-    "@testcontainers/redis": "^10.10.3"
+    "@testcontainers/redis": "^10.10.4"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",

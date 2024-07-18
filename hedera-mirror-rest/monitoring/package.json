@@ -22,16 +22,16 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "extend": "^3.0.2",
-    "extensionless": "^1.9.6",
+    "extensionless": "^1.9.9",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "mathjs": "^12.1.0",
     "parse-duration": "^1.1.0",
-    "pretty-ms": "^8.0.0"
+    "pretty-ms": "^9.0.0"
   },
   "devDependencies": {
     "jest": "^29.7.0",
-    "nodemon": "^3.0.1",
+    "nodemon": "^3.1.4",
     "jest-junit": "^16.0.0",
     "jest-standard-reporter": "^2.0.0"
   },

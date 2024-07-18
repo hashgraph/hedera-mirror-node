@@ -38,7 +38,7 @@ extra.apply {
     set("nodeJsVersion", "18.18.0")
     set("protobufVersion", "3.25.3")
     set("reactorGrpcVersion", "1.2.4")
-    set("vertxVersion", "4.5.8")
+    set("vertxVersion", "4.5.9")
     set("tuweniVersion", "2.3.1")
 }
 
@@ -74,7 +74,7 @@ dependencies {
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.16.1")
-        api("io.cucumber:cucumber-bom:7.18.0")
+        api("io.cucumber:cucumber-bom:7.18.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
         api("io.hypersistence:hypersistence-utils-hibernate-63:3.8.1")
@@ -102,7 +102,7 @@ dependencies {
         api("org.msgpack:jackson-dataformat-msgpack:0.9.8")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.8.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
-        api("org.testcontainers:junit-jupiter:1.19.8")
+        api("org.testcontainers:junit-jupiter:1.20.0")
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.26.20")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
