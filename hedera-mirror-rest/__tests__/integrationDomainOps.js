@@ -566,10 +566,11 @@ const addAddressBookEntry = async (addressBookEntryInput) => {
 };
 
 const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) => {
-  const insertFields = ['consensus_timestamp', 'ip_address_v4', 'node_id', 'port'];
+  const insertFields = ['consensus_timestamp', 'domain_name', 'ip_address_v4', 'node_id', 'port'];
 
   const addressBookServiceEndpoint = {
     consensus_timestamp: 0,
+    domain_name: '',
     ip_address_v4: '127.0.0.1',
     node_id: 0,
     port: 50211,

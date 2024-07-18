@@ -24,13 +24,37 @@ then returns that information through its existing APIs.
 
 ```sql
 
-alter table address_book_service_endpoint
-    add column if not exists domain_name varchar(253) default null;
+alter table if exists address_book_service_endpoint drop constraint if exists address_book_service_endpoint_pkey;
 
-alter table address_book_service_endpoint drop constraint address_book_service_endpoint_pkey;
+alter table if exists address_book_service_endpoint
+    alter column ip_address_v4 set default '',
+    alter column port drop default,
+    add column if not exists domain_name varchar(253) not null default '';
 
 create index if not exists address_book_service_endpoint__timestamp_node_id
   on address_book_service_endpoint (consensus_timestamp , node_id);
+
+create table if not exists node
+(
+  admin_key              bytea           not null,
+  created_timestamp      bigint          not null,
+  deleted                boolean         default false not null,
+  node_id                bigint          not null,
+  timestamp_range        int8range       not null
+);
+
+-- add node index
+alter table if exists node
+  add constraint node__pk primary key (node_id);
+
+create table if not exists node_history
+(
+  like node including defaults
+);
+
+
+create index if not exists node_history__node_id_lower_timestamp
+  on node_history (node_id, lower(timestamp_range));
 
 ```
 
@@ -41,12 +65,18 @@ create index if not exists address_book_service_endpoint__timestamp_node_id
 When parsing node transactions,
 
 - Persist `transaction_bytes` and `transaction_record_bytes` to the `transaction` table for `NodeUpdate`,`NodeCreate` and `NodeDelete`.
+- Persist `Node` domain objects.
 
 Update the `AddressBookServiceImpl` to persist the `domain_name` in `address_book_service_endpoint`
 
 #### Domain
 
 - Modify `AddressBookServiceEndpoint` domain object to add `domain_name`.
+- Add `AbstractNode`, `Node` and `NodeHistory` domain objects in the common module.
+
+#### EntityListener
+
+- Add `EntityListener.onNode` method and `CompositeEntityListener.onNode` to handle inserts to the `node` table.
 
 #### Transaction Handlers
 
@@ -56,13 +86,15 @@ Write `transaction_bytes` and `transaction_record_bytes` in the following handle
 - Add `NodeUpdateTransactionHandler`
 - Add `NodeDeleteTransactionHandler`
 
+Update `node` table with the latest `admin_key`
+
 ### GRPC API
 
-- Update the `NetworkController` to add `domain_name` to the service endpoint.
+- Update the `NetworkController` to add `domain_name` to the service endpoint and `admin_key`.
 
 ### REST API
 
-Update the `/api/v1/network/nodes` endpoint to return `domain_name`
+- Update the `/api/v1/network/nodes` endpoint to return `domain_name` and `admin_key`
 
 Response:
 
@@ -70,6 +102,7 @@ Response:
 {
   "nodes": [
     {
+      "admin_key": "0x565fd764f0957fa170a676210c9bdbddf3bc9519702cf927fa6767a40463b96f",
       "description": "address book 1",
       "file_id": "0.0.102",
       "max_stake": 50000,
@@ -109,8 +142,3 @@ Response:
 ## Non-Functional Requirements
 
 - Ingest new transaction types at the same rate as consensus nodes
-
-## Open Questions
-
-1. Will the `admin_key` be included in `NodeInfo`, `Node` and `NodeCreateTransactionBody`? It's also important to
-   determine where the mirror_node will get this value from and how it will store the data.
