@@ -4799,7 +4799,7 @@ components:
     tokenNameQueryParam:
       name: name
       in: query
-      description: Partial or full token name
+      description: Partial or full token name. Not allowed to be used with token.id or account.id parameter.
       schema:
         type: string
         maxLength: 100

@@ -1102,7 +1102,8 @@ const buildAndValidateFilters = (
   query,
   acceptedParameters,
   filterValidator = filterValidityChecks,
-  filterDependencyChecker = filterDependencyCheck
+  filterDependencyChecker = filterDependencyCheck,
+  excludedCombinatons= [[]],
 ) => {
   const {badParams, filters} = buildFilters(query);
   const {invalidParams, unknownParams} = validateAndParseFilters(filters, filterValidator, acceptedParameters);

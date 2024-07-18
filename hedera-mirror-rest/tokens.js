@@ -347,9 +347,17 @@ const validateTokenQueryFilter = (param, op, val) => {
 };
 
 const getTokensRequest = async (req, res) => {
+  if (req.query[filterKeys.TOKEN_ID] && req.query[filterKeys.NAME]) {
+    throw new InvalidArgumentError('token.id and name cannot be used together');
+  }
+
+  if (req.query[filterKeys.ACCOUNT_ID] && req.query[filterKeys.NAME]) {
+    throw new InvalidArgumentError('account.id and name cannot be used together');
+  }
   // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle
   // per resource unique param names
   const filters = utils.buildAndValidateFilters(req.query, acceptedTokenParameters, validateTokenQueryFilter);
+
 
   const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
