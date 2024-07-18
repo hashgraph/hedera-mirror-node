@@ -89,6 +89,7 @@ public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceI
             try {
                 var ipAddressV4 = InetAddress.getByName(s.getIpAddressV4()).getAddress();
                 var serviceEndpoint = ServiceEndpoint.newBuilder()
+                        .setDomainName(s.getDomainName())
                         .setIpAddressV4(ProtoUtil.toByteString(ipAddressV4))
                         .setPort(s.getPort())
                         .build();
