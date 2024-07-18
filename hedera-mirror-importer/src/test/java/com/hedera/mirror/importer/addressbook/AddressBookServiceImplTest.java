@@ -60,9 +60,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.ListAssert;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -143,16 +141,6 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         Path addressBookPath =
                 ResourceUtils.getFile("classpath:addressbook/testnet").toPath();
         initialAddressBookBytes = Files.readAllBytes(addressBookPath);
-    }
-
-    @BeforeEach
-    void setup() {
-        entityProperties.getPersist().setNodes(true);
-    }
-
-    @AfterEach
-    void after() {
-        entityProperties.getPersist().setNodes(false);
     }
 
     private FileData createFileData(
@@ -670,6 +658,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
 
     @Test
     void verifyAddressBookWithServiceEndpointsOnly() throws UnknownHostException {
+        entityProperties.getPersist().setNodes(true);
 
         List<NodeAddress> nodeAddressList = new ArrayList<>();
         int nodeAccountStart = 3;
@@ -700,6 +689,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
         assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries, addressBookEntryRepository.count());
         assertEquals(addressBookEntries * numEndpointsPerNode, addressBookServiceEndpointRepository.count());
+        entityProperties.getPersist().setNodes(false);
     }
 
     @Test
