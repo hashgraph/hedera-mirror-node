@@ -1074,8 +1074,8 @@ paths:
       operationId: getTokens
       parameters:
         - $ref: "#/components/parameters/accountIdQueryParam"
-        - $ref: "#/components/parameters/tokenNameQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/tokenNameQueryParam"
         - $ref: "#/components/parameters/orderQueryParam"
         - $ref: "#/components/parameters/publicKeyQueryParam"
         - $ref: "#/components/parameters/tokenIdQueryParam"
