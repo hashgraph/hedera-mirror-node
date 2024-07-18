@@ -55,7 +55,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         coalesce(
           (
             select jsonb_agg(
-              jsonb_build_object('ip_address_v4',ip_address_v4,'port',port) order by ip_address_v4 asc,port asc)
+              jsonb_build_object('ip_address_v4',ip_address_v4,'port',port,'domain_name',domain_name) order by ip_address_v4 asc,port asc)
             from address_book_service_endpoint abse
             where abse.consensus_timestamp = abe.consensus_timestamp and abse.node_id = abe.node_id
           ),
@@ -102,7 +102,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       coalesce(
         (
           select jsonb_agg(
-            jsonb_build_object('ip_address_v4',ip_address_v4,'port',port) order by ip_address_v4 asc,port asc)
+            jsonb_build_object('ip_address_v4',ip_address_v4,'port',port,'domain_name',domain_name) order by ip_address_v4 asc,port asc)
           from address_book_service_endpoint abse
           where abse.consensus_timestamp = abe.consensus_timestamp and abse.node_id = abe.node_id
         ),

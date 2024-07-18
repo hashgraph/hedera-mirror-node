@@ -379,6 +379,7 @@
         "reward_rate_start": 6,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.5",
             "port": 50215
           }
@@ -408,6 +409,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.6",
             "port": 50216
           }
@@ -434,6 +436,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.7",
             "port": 50216
           }
@@ -460,6 +463,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.8",
             "port": 50216
           }
@@ -486,6 +490,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.9",
             "port": 50216
           }
@@ -512,6 +517,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.10",
             "port": 50216
           }
@@ -538,6 +544,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.11",
             "port": 50216
           }
@@ -564,6 +571,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.12",
             "port": 50216
           }
@@ -590,6 +598,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.13",
             "port": 50216
           }
@@ -616,6 +625,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.14",
             "port": 50216
           }
@@ -642,6 +652,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.15",
             "port": 50216
           }
@@ -668,6 +679,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.16",
             "port": 50216
           }
@@ -694,6 +706,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.17",
             "port": 50216
           }
@@ -720,6 +733,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.18",
             "port": 50216
           }
@@ -746,6 +760,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.19",
             "port": 50216
           }
@@ -772,6 +787,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.20",
             "port": 50216
           }
@@ -798,6 +814,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.21",
             "port": 50216
           }
@@ -824,6 +841,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.22",
             "port": 50216
           }
@@ -850,6 +868,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.23",
             "port": 50216
           }
@@ -876,6 +895,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.24",
             "port": 50216
           }
@@ -902,6 +922,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.25",
             "port": 50216
           }
@@ -928,6 +949,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.26",
             "port": 50216
           }
@@ -954,6 +976,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.27",
             "port": 50216
           }
@@ -980,6 +1003,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.28",
             "port": 50216
           }
@@ -1006,6 +1030,7 @@
         "reward_rate_start": null,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "128.0.0.29",
             "port": 50216
           }

@@ -17,15 +17,18 @@
 package com.hedera.mirror.importer.parser.record.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 @RequiredArgsConstructor
@@ -33,6 +36,11 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
 
     private final NetworkStakeRepository networkStakeRepository;
     private final NodeStakeRepository nodeStakeRepository;
+
+    @AfterEach
+    void teardown() {
+        entityProperties.getPersist().setNodes(false);
+    }
 
     @SuppressWarnings("deprecation")
     @Test
@@ -90,5 +98,53 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .returns(
                                 body.getUnreservedStakingRewardBalance(),
                                 NetworkStake::getUnreservedStakingRewardBalance));
+    }
+
+    @Test
+    void nodeCreate() {
+        entityProperties.getPersist().setNodes(true);
+        var recordItem = recordItemBuilder.nodeCreate().build();
+
+        parseRecordItemAndCommit(recordItem);
+
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .isNotNull()
+                .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
+                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
+    }
+
+    @Test
+    void nodeUpdate() {
+        entityProperties.getPersist().setNodes(true);
+        var recordItem = recordItemBuilder.nodeUpdate().build();
+
+        parseRecordItemAndCommit(recordItem);
+
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .isNotNull()
+                .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
+                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
+    }
+
+    @Test
+    void nodeDelete() {
+        entityProperties.getPersist().setNodes(true);
+        var recordItem = recordItemBuilder.nodeDelete().build();
+
+        parseRecordItemAndCommit(recordItem);
+
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .isNotNull()
+                .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
+                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
     }
 }
