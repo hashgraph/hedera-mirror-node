@@ -42,7 +42,7 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 @TestConfiguration(proxyBeanMethods = false)
-class CommonTestConfiguration {
+public class CommonTestConfiguration {
 
     @Value("#{environment.matchesProfiles('v2')}")
     private boolean v2;
@@ -113,7 +113,7 @@ class CommonTestConfiguration {
     }
 
     @RequiredArgsConstructor
-    private class FilteringConsumer implements Consumer<OutputFrame> {
+    public static class FilteringConsumer implements Consumer<OutputFrame> {
 
         private final Consumer<OutputFrame> delegate;
         private final Predicate<OutputFrame> filter;
