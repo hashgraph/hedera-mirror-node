@@ -26,7 +26,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
@@ -47,8 +46,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCallProcessor {
 
-    private static final Optional<ExceptionalHaltReason> ILLEGAL_STATE_CHANGE =
-            Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE);
+    private final int RESERVED_HTS_SYSTEM_ACCOUNT = 359;
 
     private final Predicate<Address> isNativePrecompileCheck;
 
@@ -77,7 +75,7 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
             hederaOperationTracer.tracePrecompileResult(frame, isHederaPrecompile ? SYSTEM : PRECOMPILE);
         }
 
-        final boolean nonHTS = Integer.compareUnsigned(contractAddress.getInt(16), 359) != 0;
+        final boolean nonHTS = Integer.compareUnsigned(contractAddress.getInt(16), RESERVED_HTS_SYSTEM_ACCOUNT) != 0;
 
         if (!isNativePrecompile &&
                 systemAccountDetector.test(frame.getContractAddress()) &&
