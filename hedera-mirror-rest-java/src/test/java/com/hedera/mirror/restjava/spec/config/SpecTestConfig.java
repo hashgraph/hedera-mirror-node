@@ -16,8 +16,8 @@
 
 package com.hedera.mirror.restjava.spec.config;
 
+import com.google.common.collect.ImmutableMap;
 import com.hedera.mirror.common.config.CommonTestConfiguration.FilteringConsumer;
-import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,16 +64,22 @@ public class SpecTestConfig {
 
     @Bean
     GenericContainer<?> jsRestApi(PostgreSQLContainer<?> postgresql, Network prostgresqlNetwork) {
+        var envBuilder = ImmutableMap.<String, String>builder()
+                .put("HEDERA_MIRROR_REST_REDIS_ENABLED", "false")
+                .put("HEDERA_MIRROR_REST_DB_HOST", "postgresql") // Postgresql container network alias
+                .put("HEDERA_MIRROR_REST_DB_PORT", PostgreSQLContainer.POSTGRESQL_PORT.toString());
+
+        if (v2) {
+            envBuilder
+                    .put("HEDERA_MIRROR_REST_DB_USERNAME", "mirror_rest")
+                    .put("HEDERA_MIRROR_REST_DB_PASSWORD", "mirror_rest_pass");
+        }
+
         return new GenericContainer<>(
                 DockerImageName.parse("gcr.io/mirrornode/hedera-mirror-rest:latest"))
-//                    new ImageFromDockerfile("localhost/testcontainers/restapi", false)
-//                            .withDockerfile(Path.of("../hedera-mirror-rest/Dockerfile")))
                 .dependsOn(postgresql)
                 .withNetwork(prostgresqlNetwork)
                 .withExposedPorts(5551)
-                .withEnv(Map.of(
-                        "HEDERA_MIRROR_REST_REDIS_ENABLED", "false",
-                        "HEDERA_MIRROR_REST_DB_HOST", "postgresql", // Postgresql container network alias
-                        "HEDERA_MIRROR_REST_DB_PORT", PostgreSQLContainer.POSTGRESQL_PORT.toString()));
+                .withEnv(envBuilder.build());
     }
 }

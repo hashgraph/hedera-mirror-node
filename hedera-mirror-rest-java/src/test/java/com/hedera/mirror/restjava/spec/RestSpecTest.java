@@ -49,6 +49,7 @@ import org.testcontainers.containers.GenericContainer;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {"spring.main.allow-bean-definition-overriding=true"})
 public class RestSpecTest extends RestJavaIntegrationTest {
+    private static final int JS_REST_API_CONTAINER_PORT = 5551;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Resource
@@ -70,9 +71,10 @@ public class RestSpecTest extends RestJavaIntegrationTest {
 
     @BeforeEach
     final void setup() {
-        baseUrl = "http://localhost:%d".formatted(port);
-        baseJsRestApiUrl = "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(5551));
+        baseUrl = "http://localhost:%d".formatted(port); // Java REST
 
+        baseJsRestApiUrl = "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(JS_REST_API_CONTAINER_PORT));
+        log.info("setup - baseJsRestApiUrl: {}", baseJsRestApiUrl);
         restClientBuilder = RestClient.builder()
                 .defaultHeader("Accept", "application/json")
                 .defaultHeader("Access-Control-Request-Method", "GET")
