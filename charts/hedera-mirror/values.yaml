@@ -307,6 +307,7 @@ stackgres:
     - name: btree_gist
       version: stable
     - name: pg_trgm
+      version: "1.6"
   nameOverride: citus
   pgbouncer:
     pgbouncer:
