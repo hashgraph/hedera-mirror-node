@@ -22,6 +22,7 @@ import long from 'long';
 import * as math from 'mathjs';
 import pg from 'pg';
 import pgRange, {Range} from 'pg-range';
+import {format} from 'sql-formatter';
 import util from 'util';
 
 import * as constants from './constants';
@@ -1389,8 +1390,11 @@ const getPoolClass = () => {
           const result = entry.match(/^\s*at\s+(\S+).*\/(.*\.js):(\d+):.*/);
           return result && result.length === 4 && {function: result[1], file: result[2], line: result[3]};
         })[0];
+      const prettyQuery = format(query, {language: 'postgresql'});
       logger.trace(
-        `${callerInfo.function} (${callerInfo.file}:${callerInfo.line}) query: ${query} ${JSONStringify(params)}`
+        `${callerInfo.function} (${callerInfo.file}:${callerInfo.line})\nquery: ${prettyQuery}\nparams: ${JSONStringify(
+          params
+        )}`
       );
     }
 
