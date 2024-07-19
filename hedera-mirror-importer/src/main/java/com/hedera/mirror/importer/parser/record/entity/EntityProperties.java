@@ -74,6 +74,8 @@ public class EntityProperties {
 
         private boolean tokens = true;
 
+        private boolean tokenAirdrops = false;
+
         private boolean topics = true;
 
         private boolean topicMessageLookups = false;

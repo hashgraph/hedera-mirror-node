@@ -35,6 +35,7 @@ import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -107,6 +108,8 @@ public interface EntityListener {
     default void onToken(Token token) throws ImporterException {}
 
     default void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {}
+
+    default void onTokenAirdrop(TokenAirdrop tokenAirdrop) {}
 
     default void onTokenAllowance(TokenAllowance tokenAllowance) {}
 

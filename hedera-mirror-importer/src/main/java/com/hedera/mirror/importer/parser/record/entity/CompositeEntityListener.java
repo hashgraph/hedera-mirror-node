@@ -35,6 +35,7 @@ import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -195,6 +196,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
         onEach(EntityListener::onTokenAccount, tokenAccount);
+    }
+
+    @Override
+    public void onTokenAirdrop(TokenAirdrop tokenAirdrop) throws ImporterException {
+        onEach(EntityListener::onTokenAirdrop, tokenAirdrop);
     }
 
     @Override

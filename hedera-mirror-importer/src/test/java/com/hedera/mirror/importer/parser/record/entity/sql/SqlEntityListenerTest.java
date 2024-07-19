@@ -83,6 +83,7 @@ import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenAirdropRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
@@ -145,6 +146,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     private final SqlProperties sqlProperties;
     private final StakingRewardTransferRepository stakingRewardTransferRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAirdropRepository tokenAirdropRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenRepository tokenRepository;
     private final TokenTransferRepository tokenTransferRepository;
@@ -161,6 +163,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         defaultTransactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
 
         entityProperties.getPersist().setEntityHistory(true);
+        entityProperties.getPersist().setTokenAirdrops(true);
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
     }
@@ -168,6 +171,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     @AfterEach
     void afterEach() {
         entityProperties.getPersist().setEntityHistory(true);
+        entityProperties.getPersist().setTokenAirdrops(false);
         entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
         entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
@@ -2545,6 +2549,33 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expectedTokenAccount);
         assertThat(findHistory(TokenAccount.class)).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void onTokenAirdrop() {
+        // given
+        var tokenAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
+        var tokenAirdrop2 =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).get();
+
+        // when
+        sqlEntityListener.onTokenAirdrop(tokenAirdrop);
+        sqlEntityListener.onTokenAirdrop(tokenAirdrop2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(tokenAirdrop, tokenAirdrop2);
+
+        // when
+        var currentAmount = tokenAirdrop.getAmount();
+        tokenAirdrop.setAmount(1000);
+        completeFileAndCommit();
+
+        // then
+        tokenAirdrop.setAmount(currentAmount + 1000);
+        assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(tokenAirdrop, tokenAirdrop2);
+        assertThat(findHistory(TokenAllowance.class)).isEmpty();
     }
 
     @Test

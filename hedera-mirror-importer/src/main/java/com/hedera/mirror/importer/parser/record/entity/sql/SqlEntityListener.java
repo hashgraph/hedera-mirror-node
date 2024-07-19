@@ -16,6 +16,8 @@
 
 package com.hedera.mirror.importer.parser.record.entity.sql;
 
+import static com.hedera.mirror.common.domain.token.TokenAirdropStateEnum.PENDING;
+
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -40,6 +42,7 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -281,6 +284,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
         context.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+    }
+
+    @Override
+    public void onTokenAirdrop(TokenAirdrop tokenAirdrop) {
+        if (entityProperties.getPersist().isTokenAirdrops()) {
+            context.merge(tokenAirdrop.getId(), tokenAirdrop, this::mergeTokenAirdrop);
+        }
     }
 
     @Override
@@ -733,6 +743,22 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             lastTokenAccount.setBalanceTimestamp(newTokenAccount.getBalanceTimestamp());
         }
         return lastTokenAccount;
+    }
+
+    private TokenAirdrop mergeTokenAirdrop(TokenAirdrop previous, TokenAirdrop current) {
+        // Todo test pending to cancelled here
+
+        if (previous.getState() == PENDING) {
+            previous.setState(current.getState());
+            if (previous.getAmount() != 0 && current.getState() == PENDING) {
+                previous.setAmount(previous.getAmount() + current.getAmount());
+            }
+        }
+
+        return previous;
+
+        // Todo test nft ... should not be able to alter an nft pending airdrop, it can only be canceled or claimed
+        // previous.setTimestampUpper(current.getTimestampLower());
     }
 
     private void onNftTransferList(Transaction transaction) {

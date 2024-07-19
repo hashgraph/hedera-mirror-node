@@ -39,10 +39,13 @@ import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -50,6 +53,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenAirdropRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenHistoryRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
@@ -67,6 +71,9 @@ import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.PendingAirdropId;
+import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
+import com.hederahashgraph.api.proto.java.PendingAirdropValue;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -146,6 +153,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private final JdbcTemplate jdbcTemplate;
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAirdropRepository tokenAirdropRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenRepository tokenRepository;
     private final TokenHistoryRepository tokenHistoryRepository;
@@ -3391,6 +3399,388 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, wipeTimestamp, transferAmount);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(
+            value = TokenAirdropStateEnum.class,
+            names = {"CANCELLED", "CLAIMED"})
+    void tokenAirdrop(TokenAirdropStateEnum airdropType) {
+        // given
+        entityProperties.getPersist().setTokenAirdrops(true);
+        long transferAmount = 100;
+        long pendingAmount = 1000;
+        long createTimestamp = 10L;
+        var nftTokenId = TokenID.newBuilder().setTokenNum(1234L).build();
+
+        var tokenCreateRecordItem = recordItemBuilder
+                .tokenCreate()
+                .transactionBody(b -> b.setInitialSupply(INITIAL_SUPPLY)
+                        .setTokenType(FUNGIBLE_COMMON)
+                        .setTreasury(PAYER))
+                .receipt(r -> r.setTokenID(TOKEN_ID))
+                .record(r -> r.addAutomaticTokenAssociations(TokenAssociation.newBuilder()
+                                .setAccountId(PAYER)
+                                .setTokenId(TOKEN_ID))
+                        .setConsensusTimestamp(TestUtils.toTimestamp(createTimestamp)))
+                .build();
+        parseRecordItemAndCommit(tokenCreateRecordItem);
+
+        var tokenMintRecordItem = recordItemBuilder
+                .tokenMint()
+                .transactionBody(b -> b.setToken(nftTokenId).addMetadata(DomainUtils.fromBytes(METADATA)))
+                .receipt(r -> r.clearSerialNumbers().addSerialNumbers(SERIAL_NUMBER_1))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(createTimestamp + 1)))
+                .build();
+        parseRecordItemAndCommit(tokenMintRecordItem);
+
+        // when
+        long airdropTimestamp = 20L;
+
+        // Airdrops that where directly transferred and not added to pending airdrops.
+        var fungibleAirdrop = TokenTransferList.newBuilder()
+                .setToken(TOKEN_ID)
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(PAYER)
+                        .setAmount(-transferAmount)
+                        .build())
+                .addTransfers(AccountAmount.newBuilder()
+                        .setAccountID(PAYER3)
+                        .setAmount(transferAmount)
+                        .build())
+                .build();
+        var nftAirdrop = TokenTransferList.newBuilder()
+                .setToken(nftTokenId)
+                .addNftTransfers(NftTransfer.newBuilder()
+                        .setReceiverAccountID(PAYER3)
+                        .setSenderAccountID(PAYER)
+                        .setSerialNumber(SERIAL_NUMBER_1)
+                        .build())
+                .build();
+        var pendingFungibleAirdrop = PendingAirdropRecord.newBuilder()
+                .setPendingAirdropId(PendingAirdropId.newBuilder()
+                        .setReceiverId(RECEIVER)
+                        .setSenderId(PAYER)
+                        .setFungibleTokenType(TOKEN_ID))
+                .setPendingAirdropValue(PendingAirdropValue.newBuilder()
+                        .setAmount(pendingAmount)
+                        .build());
+        var protoNftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(SERIAL_NUMBER_1);
+        var pendingNftAirdrop = PendingAirdropRecord.newBuilder()
+                .setPendingAirdropId(PendingAirdropId.newBuilder()
+                        .setReceiverId(RECEIVER)
+                        .setSenderId(PAYER)
+                        .setNonFungibleToken(protoNftId));
+        var tokenAirdrop = recordItemBuilder
+                .tokenAirdrop()
+                // TODO redo this
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(airdropTimestamp))
+                        .addNewPendingAirdrops(pendingFungibleAirdrop)
+                        .addNewPendingAirdrops(pendingNftAirdrop)
+                        .addTokenTransferLists(fungibleAirdrop)
+                        .addTokenTransferLists(nftAirdrop))
+                .build();
+        parseRecordItemAndCommit(tokenAirdrop);
+
+        // then
+        var expectedTransferFromPayer = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.amount(-transferAmount)
+                        .id(new TokenTransfer.Id(airdropTimestamp, EntityId.of(TOKEN_ID), EntityId.of(PAYER))))
+                .get();
+        var expectedTransferToReceiver = domainBuilder
+                .tokenTransfer()
+                .customize(t -> t.amount(transferAmount)
+                        .id(new TokenTransfer.Id(airdropTimestamp, EntityId.of(TOKEN_ID), EntityId.of(PAYER3))))
+                .get();
+        var expectedNftTransfer = domainBuilder
+                .nftTransfer()
+                .customize(t -> t.serialNumber(SERIAL_NUMBER_1)
+                        .receiverAccountId(EntityId.of(PAYER3))
+                        .senderAccountId(EntityId.of(PAYER))
+                        .tokenId(EntityId.of(nftTokenId))
+                        .isApproval(false))
+                .get();
+        var expectedPendingFungible = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(t -> t.amount(pendingAmount)
+                        .receiverAccountId(RECEIVER.getAccountNum())
+                        .senderAccountId(PAYER.getAccountNum())
+                        .state(TokenAirdropStateEnum.PENDING)
+                        .timestampRange(Range.atLeast(airdropTimestamp))
+                        .tokenId(TOKEN_ID.getTokenNum()))
+                .get();
+        var expectedPendingNft = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(t -> t.receiverAccountId(RECEIVER.getAccountNum())
+                        .senderAccountId(PAYER.getAccountNum())
+                        .serialNumber(SERIAL_NUMBER_1)
+                        .state(TokenAirdropStateEnum.PENDING)
+                        .timestampRange(Range.atLeast(airdropTimestamp))
+                        .tokenId(nftTokenId.getTokenNum()))
+                .get();
+
+        assertThat(tokenTransferRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorIgnoringFields("isApproval", "payerAccountId")
+                .containsExactlyInAnyOrderElementsOf(List.of(expectedTransferFromPayer, expectedTransferToReceiver));
+        assertNftTransferInRepository(airdropTimestamp, expectedNftTransfer);
+        assertThat(tokenAirdropRepository.findAll())
+                .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+
+        if (airdropType == TokenAirdropStateEnum.CANCELLED) {
+            // when
+            long cancelTimestamp = 30L;
+            var pendingFungibleAirdropId = PendingAirdropId.newBuilder()
+                    .setReceiverId(RECEIVER)
+                    .setSenderId(PAYER)
+                    .setFungibleTokenType(TOKEN_ID)
+                    .build();
+            var pendingNftAirdropId = PendingAirdropId.newBuilder()
+                    .setReceiverId(RECEIVER)
+                    .setSenderId(PAYER)
+                    .setNonFungibleToken(protoNftId)
+                    .build();
+
+            var cancelAirdrop = recordItemBuilder
+                    .tokenCancelAirdrop(pendingFungibleAirdropId)
+                    .transactionBody(b -> b.addPendingAirdrops(pendingNftAirdropId))
+                    .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(cancelTimestamp)));
+            parseRecordItemAndCommit(cancelAirdrop.build());
+
+            // then
+            expectedPendingFungible.setTimestampRange(Range.closedOpen(airdropTimestamp, cancelTimestamp));
+            expectedPendingNft.setTimestampRange(Range.closedOpen(airdropTimestamp, cancelTimestamp));
+            assertThat(findHistory(TokenAirdrop.class))
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+
+            expectedPendingFungible.setState(TokenAirdropStateEnum.CANCELLED);
+            expectedPendingFungible.setTimestampRange(Range.atLeast(cancelTimestamp));
+            expectedPendingNft.setState(TokenAirdropStateEnum.CANCELLED);
+            expectedPendingNft.setTimestampRange(Range.atLeast(cancelTimestamp));
+            assertThat(tokenAirdropRepository.findAll())
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+
+            // When cancelling the airdrop that has already been cancelled
+            long cancelTimestamp2 = 40L;
+            cancelAirdrop.record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(cancelTimestamp2)));
+            parseRecordItemAndCommit(cancelAirdrop.build());
+
+            // then no change has occurred
+            assertThat(tokenAirdropRepository.findAll())
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+        } else if (airdropType == TokenAirdropStateEnum.CLAIMED) {
+
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(
+            value = TokenAirdropStateEnum.class,
+            names = {"CANCELLED", "CLAIMED"})
+    void tokenAirdropStateMerge(TokenAirdropStateEnum airdropType) {
+        // given
+        entityProperties.getPersist().setTokenAirdrops(true);
+        long pendingAmount = 1000;
+        long createTimestamp = 10L;
+        var nftTokenId = TokenID.newBuilder().setTokenNum(1234L).build();
+
+        var tokenCreateRecordItem = recordItemBuilder
+                .tokenCreate()
+                .transactionBody(b -> b.setInitialSupply(INITIAL_SUPPLY)
+                        .setTokenType(FUNGIBLE_COMMON)
+                        .setTreasury(PAYER))
+                .receipt(r -> r.setTokenID(TOKEN_ID))
+                .record(r -> r.addAutomaticTokenAssociations(TokenAssociation.newBuilder()
+                                .setAccountId(PAYER)
+                                .setTokenId(TOKEN_ID))
+                        .setConsensusTimestamp(TestUtils.toTimestamp(createTimestamp)))
+                .build();
+        parseRecordItemAndCommit(tokenCreateRecordItem);
+
+        var tokenMintRecordItem = recordItemBuilder
+                .tokenMint()
+                .transactionBody(b -> b.setToken(nftTokenId).addMetadata(DomainUtils.fromBytes(METADATA)))
+                .receipt(r -> r.clearSerialNumbers().addSerialNumbers(SERIAL_NUMBER_1))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(createTimestamp + 1)))
+                .build();
+        parseRecordItemAndCommit(tokenMintRecordItem);
+
+        // when
+        long airdropTimestamp = 20L;
+        var pendingFungibleAirdrop = PendingAirdropRecord.newBuilder()
+                .setPendingAirdropId(PendingAirdropId.newBuilder()
+                        .setReceiverId(RECEIVER)
+                        .setSenderId(PAYER)
+                        .setFungibleTokenType(TOKEN_ID))
+                .setPendingAirdropValue(PendingAirdropValue.newBuilder()
+                        .setAmount(pendingAmount)
+                        .build());
+        var protoNftId = NftID.newBuilder().setTokenID(nftTokenId).setSerialNumber(SERIAL_NUMBER_1);
+        var pendingNftAirdrop = PendingAirdropRecord.newBuilder()
+                .setPendingAirdropId(PendingAirdropId.newBuilder()
+                        .setReceiverId(RECEIVER)
+                        .setSenderId(PAYER)
+                        .setNonFungibleToken(protoNftId));
+        var tokenAirdrop = recordItemBuilder
+                .tokenAirdrop()
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(airdropTimestamp))
+                        .addNewPendingAirdrops(pendingFungibleAirdrop)
+                        .addNewPendingAirdrops(pendingNftAirdrop))
+                .build();
+
+        // then
+        long updateTimestamp = 30L;
+        var expectedPendingFungible = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(t -> t.amount(pendingAmount)
+                        .receiverAccountId(RECEIVER.getAccountNum())
+                        .senderAccountId(PAYER.getAccountNum())
+                        .timestampRange(Range.atLeast(airdropTimestamp))
+                        .tokenId(TOKEN_ID.getTokenNum()))
+                .get();
+        var expectedPendingNft = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(t -> t.receiverAccountId(RECEIVER.getAccountNum())
+                        .senderAccountId(PAYER.getAccountNum())
+                        .serialNumber(SERIAL_NUMBER_1)
+                        .timestampRange(Range.atLeast(airdropTimestamp))
+                        .tokenId(nftTokenId.getTokenNum()))
+                .get();
+
+        var pendingFungibleAirdropId = PendingAirdropId.newBuilder()
+                .setReceiverId(RECEIVER)
+                .setSenderId(PAYER)
+                .setFungibleTokenType(TOKEN_ID)
+                .build();
+        var pendingNftAirdropId = PendingAirdropId.newBuilder()
+                .setReceiverId(RECEIVER)
+                .setSenderId(PAYER)
+                .setNonFungibleToken(protoNftId)
+                .build();
+
+        if (airdropType == TokenAirdropStateEnum.CANCELLED) {
+            // when
+            var cancelAirdrop = recordItemBuilder
+                    .tokenCancelAirdrop(pendingFungibleAirdropId)
+                    .transactionBody(b -> b.addPendingAirdrops(pendingNftAirdropId))
+                    .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp)));
+            parseRecordItemsAndCommit(List.of(tokenAirdrop, cancelAirdrop.build()));
+
+            // then
+            expectedPendingFungible.setState(TokenAirdropStateEnum.CANCELLED);
+            expectedPendingNft.setState(TokenAirdropStateEnum.CANCELLED);
+            assertThat(tokenAirdropRepository.findAll())
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+
+        } else if (airdropType == TokenAirdropStateEnum.CLAIMED) {
+
+            // then
+            expectedPendingFungible.setState(TokenAirdropStateEnum.CLAIMED);
+            expectedPendingNft.setState(TokenAirdropStateEnum.CLAIMED);
+            // assertThat(tokenAirdropRepository.findAll())
+            //        .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void tokenAirdropUpdatePendingAmount(boolean mergeUpdate) {
+        // given
+        entityProperties.getPersist().setTokenAirdrops(true);
+        long pendingAmount = 1000;
+        long createTimestamp = 10L;
+
+        var tokenCreateRecordItem = recordItemBuilder
+                .tokenCreate()
+                .transactionBody(b -> b.setInitialSupply(INITIAL_SUPPLY)
+                        .setTokenType(FUNGIBLE_COMMON)
+                        .setTreasury(PAYER))
+                .receipt(r -> r.setTokenID(TOKEN_ID))
+                .record(r -> r.addAutomaticTokenAssociations(TokenAssociation.newBuilder()
+                                .setAccountId(PAYER)
+                                .setTokenId(TOKEN_ID))
+                        .setConsensusTimestamp(TestUtils.toTimestamp(createTimestamp)))
+                .build();
+        parseRecordItemAndCommit(tokenCreateRecordItem);
+
+        // when
+        long airdropTimestamp = 20L;
+        var pendingFungibleAirdrop = PendingAirdropRecord.newBuilder()
+                .setPendingAirdropId(PendingAirdropId.newBuilder()
+                        .setReceiverId(RECEIVER)
+                        .setSenderId(PAYER)
+                        .setFungibleTokenType(TOKEN_ID))
+                .setPendingAirdropValue(PendingAirdropValue.newBuilder()
+                        .setAmount(pendingAmount)
+                        .build());
+        var tokenAirdrop = recordItemBuilder
+                .tokenAirdrop()
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(airdropTimestamp))
+                        .addNewPendingAirdrops(pendingFungibleAirdrop))
+                .build();
+
+        long updateAmount = 500;
+        long updateTimestamp = 30L;
+        var updateAmountAirdrop = PendingAirdropRecord.newBuilder()
+                .setPendingAirdropId(PendingAirdropId.newBuilder()
+                        .setReceiverId(RECEIVER)
+                        .setSenderId(PAYER)
+                        .setFungibleTokenType(TOKEN_ID))
+                .setPendingAirdropValue(
+                        PendingAirdropValue.newBuilder().setAmount(updateAmount).build());
+        var updateAirdrop = recordItemBuilder
+                .tokenAirdrop()
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp))
+                        .addNewPendingAirdrops(updateAmountAirdrop))
+                .build();
+
+        if (mergeUpdate) {
+            // update the amount with a merge inside entityListener
+            parseRecordItemsAndCommit(List.of(tokenAirdrop, updateAirdrop));
+
+            // then
+            // No history table update as the entityListener merged the airdrops before upserting
+            var expectedPendingFungible = domainBuilder
+                    .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                    .customize(t -> t.amount(pendingAmount + updateAmount)
+                            .receiverAccountId(RECEIVER.getAccountNum())
+                            .senderAccountId(PAYER.getAccountNum())
+                            .state(TokenAirdropStateEnum.PENDING)
+                            .timestampRange(Range.atLeast(airdropTimestamp))
+                            .tokenId(TOKEN_ID.getTokenNum()))
+                    .get();
+            assertThat(tokenAirdropRepository.findAll())
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible));
+        } else {
+            // when
+            parseRecordItemAndCommit(tokenAirdrop);
+
+            // then
+            var expectedPendingFungible = domainBuilder
+                    .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                    .customize(t -> t.amount(pendingAmount)
+                            .receiverAccountId(RECEIVER.getAccountNum())
+                            .senderAccountId(PAYER.getAccountNum())
+                            .state(TokenAirdropStateEnum.PENDING)
+                            .timestampRange(Range.atLeast(airdropTimestamp))
+                            .tokenId(TOKEN_ID.getTokenNum()))
+                    .get();
+
+            assertThat(tokenAirdropRepository.findAll())
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible));
+
+            parseRecordItemAndCommit(updateAirdrop);
+
+            // then
+            expectedPendingFungible.setTimestampRange(Range.closedOpen(airdropTimestamp, updateTimestamp));
+            assertThat(findHistory(TokenAirdrop.class))
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible));
+            expectedPendingFungible.setAmount(pendingAmount + updateAmount);
+            expectedPendingFungible.setTimestampRange(Range.atLeast(updateTimestamp));
+            assertThat(tokenAirdropRepository.findAll())
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible));
+        }
     }
 
     @ParameterizedTest

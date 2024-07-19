@@ -68,6 +68,9 @@ import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountHistory;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import com.hedera.mirror.common.domain.token.TokenAirdropHistory;
+import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenHistory;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -896,6 +899,42 @@ public class DomainBuilder {
                 .kycStatus(null)
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAirdrop, TokenAirdrop.TokenAirdropBuilder<?, ?>> tokenAirdrop(TokenTypeEnum type) {
+        long timestamp = timestamp();
+        var builder = TokenAirdrop.builder()
+                .receiverAccountId(id())
+                .senderAccountId(id())
+                .state(TokenAirdropStateEnum.PENDING)
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
+                .tokenId(id());
+        if (type == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
+            builder.amount(0L).serialNumber(number());
+        } else {
+            long amount = number() + 1000;
+            builder.amount(amount);
+        }
+
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAirdropHistory, TokenAirdropHistory.TokenAirdropHistoryBuilder<?, ?>> tokenAirdropHistory(
+            TokenTypeEnum type) {
+        long timestamp = timestamp();
+        var builder = TokenAirdropHistory.builder()
+                .receiverAccountId(id())
+                .senderAccountId(id())
+                .state(TokenAirdropStateEnum.PENDING)
+                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
+                .tokenId(id());
+        if (type == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
+            builder.serialNumber(number());
+        } else {
+            long amount = number() + 1000;
+            builder.amount(amount);
+        }
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
