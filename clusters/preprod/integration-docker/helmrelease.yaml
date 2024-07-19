@@ -50,6 +50,11 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    rest:
+      monitor:
+        config:
+          stateproof:
+            enabled: false
     test:
       config:
         hedera:
@@ -58,5 +63,7 @@ spec:
               acceptance:
                 network: OTHER
       enabled: true
-
+    web3:
+      env:
+        HEDERA_MIRROR_WEB3_EVM_NETWORK: OTHER
 
