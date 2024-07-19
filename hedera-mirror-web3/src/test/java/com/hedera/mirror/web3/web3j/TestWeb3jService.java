@@ -39,6 +39,7 @@ import lombok.SneakyThrows;
 import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.platform.commons.util.StringUtils;
 import org.web3j.crypto.Credentials;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.RawTransaction;
@@ -81,6 +82,8 @@ public class TestWeb3jService implements Web3jService {
 
     private Address sender = Address.fromHexString("");
 
+    private String blockHex = "";
+
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
         this.contractGasProvider = new DefaultGasProvider();
@@ -95,6 +98,14 @@ public class TestWeb3jService implements Web3jService {
 
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
+    }
+
+    public String getBlockHex() {
+        return blockHex;
+    }
+
+    public void setBlockHex(String blockHex) {
+        this.blockHex = blockHex;
     }
 
     @SneakyThrows(Exception.class)
@@ -151,6 +162,11 @@ public class TestWeb3jService implements Web3jService {
 
     private EthSendTransaction sendEthCall(RawTransaction rawTrxDecoded, String trxHex, Request request) {
         final var res = new EthSendTransaction();
+
+        BlockType blockType = BlockType.LATEST;
+        if (StringUtils.isNotBlank(blockHex)) {
+            blockType = BlockType.of(blockHex);
+        }
         var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(rawTrxDecoded.getData()),
                 Address.fromHexString(rawTrxDecoded.getTo()),
@@ -158,7 +174,7 @@ public class TestWeb3jService implements Web3jService {
                 rawTrxDecoded.getValue().longValue() >= 0
                         ? rawTrxDecoded.getValue().longValue()
                         : 10L,
-                BlockType.LATEST,
+                blockType,
                 GAS_LIMIT,
                 sender);
 

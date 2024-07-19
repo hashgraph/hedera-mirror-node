@@ -28,7 +28,6 @@ import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.ROYALTY_FEE;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.EthereumTransaction;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -46,7 +45,6 @@ import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.web3j.TestWeb3jService;
-import com.hedera.mirror.web3.web3j.TransactionReceiptCustom;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
 import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -68,7 +66,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -82,7 +79,6 @@ import org.web3j.tx.Contract;
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
 @RequiredArgsConstructor
-@TestInstance(PER_CLASS)
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     private final TestWeb3jService testWeb3jService;
@@ -263,33 +259,31 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var tokenAddress = toAddress(tokenEntity.toEntityId()).toHexString();
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.FROZEN);
-
         // When
-        var result = (TransactionReceiptCustom)
-                contract.isTokenFrozen(tokenAddress, senderAddress).send();
-
-        // Then
-        final var successfulResponse =
-                functionEncodeDecoder.encodedResultFor("isTokenFrozen", PRECOMPILE_TEST_CONTRACT_ABI_PATH, true);
-        assertThat(result.getData()).isEqualTo(successfulResponse);
+        boolean result =
+                contract.call_isTokenFrozen(tokenAddress, senderAddress).send();
+        assertThat(result).isEqualTo(true);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,      1
-                FUNGIBLE_COMMON,      4
-                FUNGIBLE_COMMON,      8
-                FUNGIBLE_COMMON,      16
-                NON_FUNGIBLE_UNIQUE,  2
-                NON_FUNGIBLE_UNIQUE,  32
-                NON_FUNGIBLE_UNIQUE,  64
-                """)
+                            FUNGIBLE_COMMON,      1
+                            FUNGIBLE_COMMON,      4
+                            FUNGIBLE_COMMON,      8
+                            FUNGIBLE_COMMON,      16
+                            NON_FUNGIBLE_UNIQUE,  2
+                            NON_FUNGIBLE_UNIQUE,  32
+                            NON_FUNGIBLE_UNIQUE,  64
+                            """)
     void ethCallGetKeyWithContractAddress(final TokenTypeEnum tokenType, final BigInteger keyType) throws Exception {
         // Given
+        // DEPLOY THE CONTRACT
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         final var contractAddress = Address.fromHexString(contract.getContractAddress());
+
+        // PERSIST ONLY NEEDED ENTITIES FOR THE TEST
         final var key = Key.newBuilder()
                 .setContractID(contractIdFromEvmAddress(contractAddress))
                 .build();
@@ -300,8 +294,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.UNFROZEN);
 
         // When
-        var result = (TransactionReceiptCustom)
-                contract.getTokenKeyPublic(tokenAddress, keyType).send();
+        var result = contract.call_getTokenKeyPublic(tokenAddress, keyType).send();
 
         // Then
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
@@ -312,24 +305,25 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new byte[0],
                 new byte[0],
                 Address.ZERO);
-        assertThat(result.getData()).isEqualTo(successfulResponse);
+        assertThat(result).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,      1
-                FUNGIBLE_COMMON,      4
-                FUNGIBLE_COMMON,      8
-                FUNGIBLE_COMMON,      16
-                NON_FUNGIBLE_UNIQUE,  2
-                NON_FUNGIBLE_UNIQUE,  32
-                NON_FUNGIBLE_UNIQUE,  64
-                """)
+                            FUNGIBLE_COMMON,      1
+                            FUNGIBLE_COMMON,      4
+                            FUNGIBLE_COMMON,      8
+                            FUNGIBLE_COMMON,      16
+                            NON_FUNGIBLE_UNIQUE,  2
+                            NON_FUNGIBLE_UNIQUE,  32
+                            NON_FUNGIBLE_UNIQUE,  64
+                            """)
     void ethCallGetKeyWithEd25519Key(final TokenTypeEnum tokenType, final BigInteger keyType) throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
         final var key = Key.newBuilder().setEd25519(keyWithEd25519.getEd25519()).build();
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersist(key.toByteArray())
@@ -338,8 +332,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.UNFROZEN);
 
         // When
-        var result = (TransactionReceiptCustom)
-                contract.getTokenKeyPublic(tokenAddress, keyType).send();
+        var result = contract.call_getTokenKeyPublic(tokenAddress, keyType);
 
         // Then
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
@@ -350,21 +343,21 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 ED25519_KEY,
                 new byte[0],
                 Address.ZERO);
-        assertThat(result.getData()).isEqualTo(successfulResponse);
+        assertThat(result).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,      1
-                FUNGIBLE_COMMON,      4
-                FUNGIBLE_COMMON,      8
-                FUNGIBLE_COMMON,      16
-                NON_FUNGIBLE_UNIQUE,  2
-                NON_FUNGIBLE_UNIQUE,  32
-                NON_FUNGIBLE_UNIQUE,  64
-                """)
+                            FUNGIBLE_COMMON,      1
+                            FUNGIBLE_COMMON,      4
+                            FUNGIBLE_COMMON,      8
+                            FUNGIBLE_COMMON,      16
+                            NON_FUNGIBLE_UNIQUE,  2
+                            NON_FUNGIBLE_UNIQUE,  32
+                            NON_FUNGIBLE_UNIQUE,  64
+                            """)
     void ethCallGetKeyWithEcdsaKey(final TokenTypeEnum tokenType, final BigInteger keyType) throws Exception {
         // Given
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
@@ -378,8 +371,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.UNFROZEN);
 
         // When
-        var result = (TransactionReceiptCustom)
-                contract.getTokenKeyPublic(tokenAddress, keyType).send();
+        var result = contract.call_getTokenKeyPublic(tokenAddress, keyType);
 
         // Then
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
@@ -390,21 +382,21 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new byte[0],
                 ECDSA_KEY,
                 Address.ZERO);
-        assertThat(result.getData()).isEqualTo(successfulResponse);
+        assertThat(result).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
     @CsvSource(
             textBlock =
                     """
-                FUNGIBLE_COMMON,      1
-                FUNGIBLE_COMMON,      4
-                FUNGIBLE_COMMON,      8
-                FUNGIBLE_COMMON,      16
-                NON_FUNGIBLE_UNIQUE,  2
-                NON_FUNGIBLE_UNIQUE,  32
-                NON_FUNGIBLE_UNIQUE,  64
-                """)
+                            FUNGIBLE_COMMON,      1
+                            FUNGIBLE_COMMON,      4
+                            FUNGIBLE_COMMON,      8
+                            FUNGIBLE_COMMON,      16
+                            NON_FUNGIBLE_UNIQUE,  2
+                            NON_FUNGIBLE_UNIQUE,  32
+                            NON_FUNGIBLE_UNIQUE,  64
+                            """)
     void ethCallGetKeyWithDelegatableContractAddress(final TokenTypeEnum tokenType, final BigInteger keyType)
             throws Exception {
         // Given
@@ -420,8 +412,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         tokenAccountPersist(sender.toEntityId(), tokenEntity.toEntityId(), TokenFreezeStatusEnum.UNFROZEN);
 
         // When
-        var result = (TransactionReceiptCustom)
-                contract.getTokenKeyPublic(tokenAddress, keyType).send();
+        var result = contract.call_getTokenKeyPublic(tokenAddress, keyType).send();
 
         // Then
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
@@ -432,7 +423,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new byte[0],
                 new byte[0],
                 contractAddress);
-        assertThat(result.getData()).isEqualTo(successfulResponse);
+        assertThat(result).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
@@ -453,7 +444,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }
         final var successfulResponse = functionEncodeDecoder.encodedResultFor(
                 contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
-
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
@@ -726,6 +716,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         IS_KYC("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
         IS_KYC_WITH_ALIAS("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
         IS_KYC_FOR_NFT("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
+
         IS_KYC_FOR_NFT_WITH_ALIAS("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
         IS_TOKEN_PRECOMPILE("isTokenAddress", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
         IS_TOKEN_PRECOMPILE_NFT("isTokenAddress", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),

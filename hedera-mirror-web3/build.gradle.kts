@@ -41,7 +41,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
-    implementation("org.web3j:core")
+    implementation("org.web3j:core:4.12.0")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("io.vertx:vertx-core")
@@ -60,9 +60,13 @@ tasks.compileTestJava { options.compilerArgs.add("--enable-preview") }
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
 // Web3j
-sourceSets { test { solidity { setVersion("0.8.24") } } }
+sourceSets { test { solidity { version = "0.8.18" } } }
 
-web3j { generatedPackageName = "com.hedera.mirror.web3.web3j.generated" }
+web3j {
+    generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
+    useNativeJavaTypes = true
+    generateBoth = true
+}
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 
