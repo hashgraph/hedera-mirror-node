@@ -497,6 +497,9 @@ public class AddressBookServiceImpl implements AddressBookService {
 
         if (entityProperties.getPersist().isNodes()) {
             addressBookServiceEndpoint.setDomainName(serviceEndpoint.getDomainName());
+        } else {
+            // Setting domain_name to empty string here only until HIP 869 goes to mainnet
+            addressBookServiceEndpoint.setDomainName("");
         }
 
         return addressBookServiceEndpoint;
