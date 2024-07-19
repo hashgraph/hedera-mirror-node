@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	initialBalance                       = 10
-	maxAutomaticTokenAssociations uint32 = 10
+	initialBalance                      = 10
+	maxAutomaticTokenAssociations int32 = 10
 )
 
 var (

@@ -46,12 +46,13 @@
     "qs": "^6.12.3",
     "quick-lru": "^6.1.2",
     "rfc4648": "^1.5.3",
+    "sql-formatter": "^15.3.2",
     "swagger-stats": "^0.99.7",
     "swagger-ui-express": "^5.0.1",
     "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.10.3",
+    "@testcontainers/postgresql": "^10.10.4",
     "app-root-path": "^3.1.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.1.0",
@@ -68,7 +69,7 @@
     "rewire": "^7.0.0",
     "sinon": "^18.0.0",
     "supertest": "^7.0.0",
-    "@testcontainers/redis": "^10.10.3"
+    "@testcontainers/redis": "^10.10.4"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",

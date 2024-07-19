@@ -32,7 +32,7 @@ type cryptoCreate struct {
 	AutoRenewPeriod               int64             `json:"auto_renew_period"`
 	InitialBalance                int64             `json:"-"`
 	Key                           *types.PublicKey  `json:"key" validate:"required"`
-	MaxAutomaticTokenAssociations uint32            `json:"max_automatic_token_associations"`
+	MaxAutomaticTokenAssociations int32             `json:"max_automatic_token_associations"`
 	Memo                          string            `json:"memo"`
 	ProxyAccountId                *hedera.AccountID `json:"proxy_account_id"`
 	// Add support for ReceiverSigRequired if needed and when the format to present an unknown account as a rosetta

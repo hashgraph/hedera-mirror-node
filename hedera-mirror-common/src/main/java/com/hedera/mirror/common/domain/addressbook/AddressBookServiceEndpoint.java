@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.IdClass;
+import java.io.Serial;
 import java.io.Serializable;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -47,13 +48,17 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     private long nodeId;
 
     @jakarta.persistence.Id
-    private int port;
+    private Integer port;
+
+    @jakarta.persistence.Id
+    private String domainName;
 
     @JsonIgnore
     @Override
     public Id getId() {
         Id id = new Id();
         id.setConsensusTimestamp(consensusTimestamp);
+        id.setDomainName(domainName);
         id.setIpAddressV4(ipAddressV4);
         id.setNodeId(nodeId);
         id.setPort(port);
@@ -69,6 +74,7 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     @Data
     public static class Id implements Serializable {
 
+        @Serial
         private static final long serialVersionUID = -7779136597707252814L;
 
         private long consensusTimestamp;
@@ -78,6 +84,8 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
 
         private long nodeId;
 
-        private int port;
+        private Integer port;
+
+        private String domainName;
     }
 }

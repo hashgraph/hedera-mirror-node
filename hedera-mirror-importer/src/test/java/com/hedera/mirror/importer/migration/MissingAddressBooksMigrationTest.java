@@ -17,7 +17,7 @@
 package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
@@ -80,6 +80,7 @@ class MissingAddressBooksMigrationTest extends ImporterIntegrationTest {
                 List<ServiceEndpoint> serviceEndpoints = new ArrayList<>();
                 for (int j = 1; j <= size; ++j) {
                     serviceEndpoints.add(ServiceEndpoint.newBuilder()
+                            .setDomainName("")
                             .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
                             .setPort(443 + j)
                             .build());
@@ -141,6 +142,7 @@ class MissingAddressBooksMigrationTest extends ImporterIntegrationTest {
         for (int j = 1; j <= serviceEndpointCount; ++j) {
             AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
             addressBookServiceEndpoint.setConsensusTimestamp(j);
+            addressBookServiceEndpoint.setDomainName("");
             addressBookServiceEndpoint.setIpAddressV4("127.0.0.1");
             addressBookServiceEndpoint.setPort(443);
             addressBookServiceEndpoint.setNodeId(100L);

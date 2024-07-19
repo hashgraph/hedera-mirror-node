@@ -36,6 +36,7 @@ import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.ImporterProperties.ConsensusMode;
 import com.hedera.mirror.importer.config.CacheConfiguration;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -91,6 +92,8 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
     @Qualifier(CacheConfiguration.CACHE_ADDRESS_BOOK)
     private final CacheManager cacheManager;
 
+    private final EntityProperties entityProperties;
+
     private final FileDataRepository fileDataRepository;
     private final ImporterProperties importerProperties;
     private final NodeStakeRepository nodeStakeRepository;
@@ -123,6 +126,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                     serviceEndpoints.add(ServiceEndpoint.newBuilder()
                             .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
                             .setPort(443 + j)
+                            .setDomainName("")
                             .build());
                 }
             }
@@ -168,6 +172,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         otherNetworkImporterProperties.setNetwork(ImporterProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(
                 addressBookRepository,
+                entityProperties,
                 fileDataRepository,
                 otherNetworkImporterProperties,
                 nodeStakeRepository,
@@ -206,6 +211,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         otherNetworkImporterProperties.setNetwork(ImporterProperties.HederaNetwork.OTHER);
         AddressBookService customAddressBookService = new AddressBookServiceImpl(
                 addressBookRepository,
+                entityProperties,
                 fileDataRepository,
                 otherNetworkImporterProperties,
                 nodeStakeRepository,
@@ -652,6 +658,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
 
     @Test
     void verifyAddressBookWithServiceEndpointsOnly() throws UnknownHostException {
+        entityProperties.getPersist().setNodes(true);
 
         List<NodeAddress> nodeAddressList = new ArrayList<>();
         int nodeAccountStart = 3;
@@ -682,6 +689,7 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         assertEquals(2, addressBookRepository.count()); // bootstrap and new address book with service endpoints
         assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + addressBookEntries, addressBookEntryRepository.count());
         assertEquals(addressBookEntries * numEndpointsPerNode, addressBookServiceEndpointRepository.count());
+        entityProperties.getPersist().setNodes(false);
     }
 
     @Test
@@ -1050,10 +1058,11 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
         assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));
     }
 
-    private ServiceEndpoint getServiceEndpoint(String ip, int port) throws UnknownHostException {
+    private ServiceEndpoint getServiceEndpoint(String ip, Integer port) throws UnknownHostException {
         return ServiceEndpoint.newBuilder()
                 .setIpAddressV4(ByteString.copyFrom(InetAddress.getByName(ip).getAddress()))
                 .setPort(port)
+                .setDomainName("")
                 .build();
     }
 
@@ -1128,8 +1137,8 @@ class AddressBookServiceImplTest extends ImporterIntegrationTest {
                             .getHostAddress());
                 });
 
-                assertThat(abe.getId().getPort()).isEqualTo(serviceEndpoint.getPort());
-                assertThat(abe.getId().getIpAddressV4()).isEqualTo(ip.get());
+                assertThat(abe.getPort()).isEqualTo(serviceEndpoint.getPort());
+                assertThat(abe.getIpAddressV4()).isEqualTo(ip.get());
             });
         }
     }
