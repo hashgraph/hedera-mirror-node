@@ -821,8 +821,7 @@ public class RecordItemBuilder {
                         .setReceiverAccountID(accountId()));
 
         return new Builder<>(TransactionType.TOKENREJECT, transactionBody)
-                .tokenTransferList(transferList)
-                .tokenTransferList(nftTransferList);
+                .record(r -> r.addTokenTransferLists(transferList).addTokenTransferLists(nftTransferList));
     }
 
     public Builder<TokenRevokeKycTransactionBody.Builder> tokenRevokeKyc() {
@@ -1210,11 +1209,6 @@ public class RecordItemBuilder {
 
         public Builder<T> transactionBodyWrapper(Consumer<TransactionBody.Builder> consumer) {
             consumer.accept(transactionBodyWrapper);
-            return this;
-        }
-
-        public Builder<T> tokenTransferList(TokenTransferList.Builder transferList) {
-            transactionRecord.addTokenTransferLists(transferList);
             return this;
         }
 
