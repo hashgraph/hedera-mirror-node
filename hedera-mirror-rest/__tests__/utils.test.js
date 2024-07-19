@@ -276,6 +276,18 @@ describe('Utils encodeKey', () => {
   });
 });
 
+describe('Utils.isMaxBytes', () => {
+  test('Single byte chars eq max size', () => expect(utils.isMaxBytes('abcde', 5)).toBeTrue());
+  test('Single byte chars gt max size', () => expect(utils.isMaxBytes('abcde', 4)).toBeFalse());
+  test('Single byte chars lt max size', () => expect(utils.isMaxBytes('abcde', 6)).toBeTrue());
+  test('Multi byte chars eq max size', () => expect(utils.isMaxBytes('ℏℏℏ', 9)).toBeTrue());
+  test('Multi byte chars gt max size', () => expect(utils.isMaxBytes('ℏℏℏ', 8)).toBeFalse());
+  test('Multi byte chars lt max size', () => expect(utils.isMaxBytes('ℏℏℏ', 10)).toBeTrue());
+  test('Multi byte chars eq max size', () => expect(utils.isMaxBytes('abcdeℏℏℏ', 14)).toBeTrue());
+  test('Multi byte chars gt max size', () => expect(utils.isMaxBytes('abcdeℏℏℏ', 13)).toBeFalse());
+  test('Multi byte chars lt max size', () => expect(utils.isMaxBytes('abcdeℏℏℏ', 15)).toBeTrue());
+});
+
 describe('Utils isValidPublicKeyQuery', () => {
   test('Null', () => expect(utils.isValidPublicKeyQuery(null)).toBeFalse());
   test('Empty', () => expect(utils.isValidPublicKeyQuery('')).toBeFalse());
