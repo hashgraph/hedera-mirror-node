@@ -645,7 +645,7 @@ class ContractController extends BaseController {
             throw new InvalidArgumentError(`Only one ${filterKeys.TRANSACTION_HASH} filter is allowed`);
           }
 
-          transactionHash = utils.parseEthHash(filter.value);
+          transactionHash = utils.parseHexStr(filter.value);
           break;
         default:
           break;
@@ -1096,7 +1096,7 @@ class ContractController extends BaseController {
     const {transactionIdOrHash} = req.params;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const detailsByHash = await ContractService.getContractTransactionDetailsByHash(
-        utils.parseEthHash(transactionIdOrHash),
+        utils.parseHexStr(transactionIdOrHash),
         excludeTransactionResults,
         1
       );
@@ -1227,7 +1227,7 @@ class ContractController extends BaseController {
     let transactionId;
     let tx;
     if (utils.isValidEthHash(transactionIdOrHash)) {
-      tx = await ContractService.getContractTransactionDetailsByHash(utils.parseEthHash(transactionIdOrHash));
+      tx = await ContractService.getContractTransactionDetailsByHash(utils.parseHexStr(transactionIdOrHash));
     } else {
       transactionId = TransactionId.fromString(transactionIdOrHash);
       tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);

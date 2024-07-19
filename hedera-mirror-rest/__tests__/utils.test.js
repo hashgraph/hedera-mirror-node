@@ -757,14 +757,14 @@ describe('Utils parseAccountIdQueryParam tests', () => {
   parseQueryParamTest(testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, 'account.id'));
 });
 
-describe('parseEthHash', () => {
+describe('parseHexStr', () => {
   const expected = crypto.randomBytes(32);
 
   test.each([
     [expected.toString('hex'), expected],
     [`0x${expected.toString('hex')}`, expected],
   ])('parse %s', (input, expected) => {
-    expect(utils.parseEthHash(input)).toEqual(expected);
+    expect(utils.parseHexStr(input)).toEqual(expected);
   });
 });
 

@@ -329,7 +329,7 @@ class ContractService extends BaseService {
   /**
    * Retrieves contract transaction details based on the eth hash
    *
-   * @param {string} hash eth transaction hash or 32-byte hedera transaction hash prefix
+   * @param {Buffer} hash eth transaction hash or 32-byte hedera transaction hash prefix
    * @param {[]}excludeTransactionResults transaction result codes to exclude in result
    * @param {number} limit number of results to return
    * @return {Promise<{ContractResult}[]>}

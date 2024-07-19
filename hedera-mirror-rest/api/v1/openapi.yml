@@ -742,7 +742,6 @@ paths:
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
       operationId: getContractsLogs
       parameters:
-        - $ref: "#/components/parameters/ethHashQueryParam"
         - $ref: "#/components/parameters/logIndexQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
         - $ref: "#/components/parameters/orderQueryParamDesc"
@@ -751,6 +750,7 @@ paths:
         - $ref: "#/components/parameters/logTopic1QueryParam"
         - $ref: "#/components/parameters/logTopic2QueryParam"
         - $ref: "#/components/parameters/logTopic3QueryParam"
+        - $ref: "#/components/parameters/transactionHashQueryParam"
       responses:
         200:
           description: OK
@@ -4947,6 +4947,19 @@ components:
       schema:
         type: boolean
         default: false
+    transactionHashQueryParam:
+      name: transaction.hash
+      in: query
+      schema:
+        pattern: ^(eq:)?(0x)?([0-9A-Fa-f]{64}|[0-9A-Fa-f]{96})$
+        type: string
+      required: false
+      description: A hex encoded 32-byte ethereum transaction hash or 48-byte hedera transaction hash.
+      examples:
+        transactionHash:
+          value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+        transactionHashWith0xPrefix:
+          value: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
     transactionIdOrEthHashPathParam:
       name: transactionIdOrHash
       in: path
@@ -4958,19 +4971,6 @@ components:
       examples:
         transactionId:
           value: 0.0.10-1234567890-000000000
-        transactionHash:
-          value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
-        transactionHashWith0xPrefix:
-          value: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-    ethHashQueryParam:
-      name: transaction.hash
-      in: query
-      schema:
-        pattern: ^(0x)?[A-Fa-f0-9]{64}$
-        type: string
-      required: false
-      description: A hex encoded ethereum transaction hash.
-      examples:
         transactionHash:
           value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
         transactionHashWith0xPrefix:
