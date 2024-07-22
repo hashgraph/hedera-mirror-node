@@ -485,7 +485,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     private AddressBookServiceEndpoint getAddressBookServiceEndpoint(
             ServiceEndpoint serviceEndpoint, long consensusTimestamp, long nodeId) throws UnknownHostException {
         var ipAddressByteString = serviceEndpoint.getIpAddressV4();
-        String ip = null;
+        String ip = StringUtils.EMPTY;
         if (ipAddressByteString != null && ipAddressByteString.size() == 4) {
             ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
         }
@@ -499,7 +499,7 @@ public class AddressBookServiceImpl implements AddressBookService {
             addressBookServiceEndpoint.setDomainName(serviceEndpoint.getDomainName());
         } else {
             // Setting domain_name to empty string here only until HIP 869 goes to mainnet
-            addressBookServiceEndpoint.setDomainName("");
+            addressBookServiceEndpoint.setDomainName(StringUtils.EMPTY);
         }
 
         return addressBookServiceEndpoint;
