@@ -67,6 +67,7 @@ const filterKeys = {
   TOPIC3: 'topic3',
   TOPIC_ID: 'topic.id',
   TRANSACTION_INDEX: 'transaction.index',
+  TRANSACTION_HASH: 'transaction.hash',
   TRANSACTION_TYPE: 'transactiontype',
   TRANSACTIONS: 'transactions',
   HASH_OR_NUMBER: 'hashOrNumber',

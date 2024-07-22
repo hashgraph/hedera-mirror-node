@@ -34,6 +34,10 @@ class Bound {
     this.upper = null;
   }
 
+  getAllFilters() {
+    return [this.equal, this.lower, this.upper].filter((filter) => filter !== null);
+  }
+
   hasBound() {
     return this.hasLower() || this.hasUpper();
   }

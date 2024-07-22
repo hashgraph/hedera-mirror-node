@@ -116,8 +116,8 @@ class RecordFileService extends BaseService {
         if (consensusEnd >= timestamp && consensusStart <= timestamp) {
           recordFileMap.set(timestamp, recordFile);
         } else if (
-          (timestampOrder == orderFilterValues.ASC && timestamp > consensusEnd) ||
-          (timestampOrder == orderFilterValues.DESC && timestamp < consensusStart)
+          (timestampOrder === orderFilterValues.ASC && timestamp > consensusEnd) ||
+          (timestampOrder === orderFilterValues.DESC && timestamp < consensusStart)
         ) {
           break;
         }
