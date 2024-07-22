@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.addressbook;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ADDRESS_BOOK;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
@@ -484,11 +485,13 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private AddressBookServiceEndpoint getAddressBookServiceEndpoint(
             ServiceEndpoint serviceEndpoint, long consensusTimestamp, long nodeId) throws UnknownHostException {
-        var ipAddressByteString = serviceEndpoint.getIpAddressV4();
-        String ip = StringUtils.EMPTY;
-        if (ipAddressByteString != null && ipAddressByteString.size() == 4) {
-            ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
+        var ipAddressByteString =
+                serviceEndpoint.getIpAddressV4() != null ? serviceEndpoint.getIpAddressV4() : ByteString.EMPTY;
+        if (ipAddressByteString.size() != 4) {
+            throw new IllegalStateException(String.format("Invalid IpAddressV4: %s", ipAddressByteString));
         }
+
+        var ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
         AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
         addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
         addressBookServiceEndpoint.setIpAddressV4(ip);
