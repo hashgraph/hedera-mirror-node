@@ -132,8 +132,9 @@ const isHexPositiveInt = (num, allowZero = false) => {
   return false;
 };
 
-const isMaxBytes = (str, maxSize) => {
-  return Buffer.from(str).length <= maxSize;
+const isByteRange = (str, minSize, maxSize) => {
+  const length = Buffer.from(str).length
+  return length >= minSize && length <= maxSize;
 }
 
 const nonNegativeInt32Regex = /^\d{1,10}$/;
@@ -1721,7 +1722,7 @@ export {
   gtGte,
   incrementTimestampByOneDay,
   ipMask,
-  isMaxBytes,
+  isByteRange,
   isNonNegativeInt32,
   isPositiveLong,
   isRepeatedQueryParameterValidLength,

@@ -44,14 +44,14 @@
     "tokens": [
       {
         "created_timestamp": "1234567890000000001",
-        "name": "nUmBeR1",
+        "name": "nUmqBeR1",
         "token_id": "0.0.1",
         "type": "FUNGIBLE_COMMON",
         "symbol": "FIRSTMOVERLPDJH"
       },
       {
         "created_timestamp": "1234567890000000002",
-        "name": "nUmBER1135",
+        "name": "nUmqBER1135",
         "token_id": "0.0.1135",
         "type": "FUNGIBLE_COMMON",
         "symbol": "ORIGINALRDKSE"
@@ -60,7 +60,7 @@
         "created_timestamp": "1234567890000000003",
         "decimals": 3,
         "metadata": null,
-        "name": "ber17v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pXQ",
+        "name": "qber17v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pX",
         "symbol": "MIRRORTOKEN",
         "token_id": "0.7.25301",
         "type": "FUNGIBLE_COMMON"
@@ -78,39 +78,20 @@
         "created_timestamp": "1234567890000000004",
         "decimals": 4,
         "metadata": [1, 1],
-        "name": "nUmBER45678",
+        "name": "nUmqBER45678",
         "symbol": "HEDERACOIN",
         "token_id": "0.23.45678",
         "type": "FUNGIBLE_COMMON"
-      }
-    ],
-    "tokenaccounts": [
-      {
-        "token_id": "0.0.1135",
-        "account_id": "0.0.2",
-        "associated": false,
-        "created_timestamp": "1234567890000000002",
-        "modified_timestamp": "1234569990000000002"
-      },
-      {
-        "token_id": "0.7.25301",
-        "account_id": "0.0.2",
-        "created_timestamp": "1234567890000000005"
-      },
-      {
-        "token_id": "0.23.45678",
-        "account_id": "0.0.2",
-        "created_timestamp": "1234567890000000006"
       }
     ]
   },
   "tests": [
     {
       "urls": [
-        "/api/v1/tokens?name=BER1&order=desc",
-        "/api/v1/tokens?name=eq:BER1&order=desc",
-        "/api/v1/tokens?name=ber1&order=desc",
-        "/api/v1/tokens?name=bEr1&order=desc"
+        "/api/v1/tokens?name=QBER1&order=desc",
+        "/api/v1/tokens?name=eq:qBER1&order=desc",
+        "/api/v1/tokens?name=qber1&order=desc",
+        "/api/v1/tokens?name=qbEr1&order=desc"
       ],
       "responseStatus": 200,
       "responseJson": {
@@ -134,7 +115,7 @@
             },
             "decimals": 3,
             "metadata": "",
-            "name": "ber17v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pXQ",
+            "name": "qber17v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pX",
             "symbol": "MIRRORTOKEN",
             "token_id": "0.7.25301",
             "type": "FUNGIBLE_COMMON"
@@ -146,7 +127,7 @@
             },
             "decimals": 1000,
             "metadata": "",
-            "name": "nUmBER1135",
+            "name": "nUmqBER1135",
             "symbol": "ORIGINALRDKSE",
             "token_id": "0.0.1135",
             "type": "FUNGIBLE_COMMON"
@@ -158,7 +139,7 @@
             },
             "decimals": 1000,
             "metadata": "",
-            "name": "nUmBeR1",
+            "name": "nUmqBeR1",
             "symbol": "FIRSTMOVERLPDJH",
             "token_id": "0.0.1",
             "type": "FUNGIBLE_COMMON"
@@ -170,7 +151,7 @@
       }
     },
     {
-      "urls": ["/api/v1/tokens?name=ber1&limit=1&order=desc"],
+      "urls": ["/api/v1/tokens?name=qber1&limit=1&order=desc"],
       "responseStatus": 200,
       "responseJson": {
         "tokens": [
@@ -194,8 +175,8 @@
     },
     {
       "urls": [
-        "/api/v1/tokens?name=ber1&name=7v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pXQ&order=desc",
-        "/api/v1/tokens?name=ber1&name=7v6xd8tj4rh1uqtwqbthpyfuc0q6h6wadzhrdcyrhbpf3hkxry54fnfehk342uaxkkjh0tmnzzm9xvjvqc34p38wh4w99pxq&order=desc"
+        "/api/v1/tokens?name=qber1&name=7v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pX&order=desc",
+        "/api/v1/tokens?name=qber1&name=7v6xd8tj4rh1uqtwqbthpyfuc0q6h6wadzhrdcyrhbpf3hkxry54fnfehk342uaxkkjh0tmnzzm9xvjvqc34p38wh4w99px&order=desc"
       ],
       "responseStatus": 200,
       "responseJson": {
@@ -219,7 +200,7 @@
             },
             "decimals": 3,
             "metadata": "",
-            "name": "ber17v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pXQ",
+            "name": "qber17v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pX",
             "symbol": "MIRRORTOKEN",
             "token_id": "0.7.25301",
             "type": "FUNGIBLE_COMMON"
@@ -232,8 +213,8 @@
     },
     {
       "urls": [
-        "/api/v1/tokens?name=ber1&name=7v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pXQber1&order=desc",
-        "/api/v1/tokens?name=ber1&name=7v6xd8tj4rh1uqtwqbthpyfuc0q6h6wadzhrdcyrhbpf3hkxry54fnfehk342uaxkkjh0tmnzzm9xvjvqc34p38wh4w99pxqber1&order=desc"
+        "/api/v1/tokens?name=qber1&name=7v6Xd8tJ4rH1uqtWQbThpYFuC0q6h6WAdZhrDCYRhBPF3hkxrY54FNfEHK342uAxKKJh0TmNZzM9XVjVqc34p38wH4W99pXQber1&order=desc",
+        "/api/v1/tokens?name=qber1&name=7v6xd8tj4rh1uqtwqbthpyfuc0q6h6wadzhrdcyrhbpf3hkxry54fnfehk342uaxkkjh0tmnzzm9xvjvqc34p38wh4w99pxqber1&order=desc"
       ],
       "responseStatus": 200,
       "responseJson": {
