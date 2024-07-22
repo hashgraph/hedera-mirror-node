@@ -20,15 +20,6 @@ import java.nio.file.Paths
 description = "Hedera Mirror Node imports data from consensus nodes and serves it via an API"
 
 // Define repositories and plugin dependencies for the buildscript
-buildscript {
-    repositories {
-        mavenCentral()
-        maven { url = uri("https://jitpack.io") }
-        gradlePluginPortal()
-    }
-    dependencies { classpath("com.github.kselveliev:web3j-gradle-plugin:v1.0.2") }
-}
-
 plugins {
     id("com.diffplug.spotless")
     id("com.github.node-gradle.node")
@@ -165,7 +156,6 @@ node {
 repositories {
     gradlePluginPortal()
     mavenCentral()
-    maven { url = uri("https://jitpack.io") }
 }
 
 spotless {
