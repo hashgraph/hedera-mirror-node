@@ -19,7 +19,6 @@ import java.nio.file.Paths
 
 description = "Hedera Mirror Node imports data from consensus nodes and serves it via an API"
 
-// Define repositories and plugin dependencies for the buildscript
 plugins {
     id("com.diffplug.spotless")
     id("com.github.node-gradle.node")
@@ -41,6 +40,7 @@ extra.apply {
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.8")
     set("tuweniVersion", "2.3.1")
+    set("org.web3j", "4.12.0")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
