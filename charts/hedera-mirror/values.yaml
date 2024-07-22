@@ -294,6 +294,8 @@ stackgres:
       work_mem: "32MB"
     enableMetricsExporter: false
     instances: 1
+    replication:
+      mode: sync-all
     resources:
       cpu: 100m
       memory: 1Gi
