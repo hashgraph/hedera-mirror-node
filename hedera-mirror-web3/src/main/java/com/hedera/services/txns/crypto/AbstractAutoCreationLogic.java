@@ -157,7 +157,7 @@ public abstract class AbstractAutoCreationLogic {
 
     private int getMaxAutoAssociations(final ByteString alias, final List<BalanceChange> changes) {
         var recordFile = ContractCallContext.get().getRecordFile();
-        if (recordFile != null && recordFile.getHapiVersion().isGreaterThanOrEqualTo(RecordFile.HAPI_VERSION_0_52_0)) {
+        if (recordFile != null && recordFile.getHapiVersion().isGreaterThanOrEqualTo(RecordFile.HAPI_VERSION_0_53_0)) {
             return Account.UNLIMITED_AUTO_ASSOCIATIONS;
         }
 
