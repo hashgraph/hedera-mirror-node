@@ -23,7 +23,6 @@ plugins {
     id("docker-conventions")
     id("java-conventions")
     id("openapi-conventions")
-    id("org.web3j")
 }
 
 dependencies {
@@ -59,7 +58,6 @@ dependencies {
     testImplementation("org.springframework.retry:spring-retry")
     testImplementation("org.apache.tuweni:tuweni-bytes")
     testImplementation("commons-codec:commons-codec")
-    testImplementation("org.web3j:core:4.12.0")
 }
 
 // Disable the default test task and only run acceptance tests during the standalone "acceptance"
@@ -103,15 +101,3 @@ tasks.shadowJar {
 }
 
 tasks.dockerBuild { dependsOn(tasks.shadowJar) }
-
-sourceSets { test { solidity { version = "0.8.18" } } }
-
-web3j {
-    generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
-    useNativeJavaTypes = true
-    generateBoth = false
-}
-
-tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
-
-tasks.processTestResources { dependsOn(tasks.named("generateTestContractWrappers")) }
