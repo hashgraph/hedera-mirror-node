@@ -89,7 +89,7 @@
     {
       "urls": [
         "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=IAmALongStringThatIsLongerThanTheMaximumSizeForATokenNameWhichIsOneHundredBytesAndNotOneSingleByteMore",
-        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=abcd",
+        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=ab",
         "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=ne:bar",
         "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=lt:bar",
         "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=lte:bar",

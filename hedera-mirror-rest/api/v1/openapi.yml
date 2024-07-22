@@ -4807,7 +4807,7 @@ components:
       schema:
         type: string
         maxLength: 100
-        minLength: 5
+        minLength: 3
 
     tokenTypeQueryParam:
       name: type
