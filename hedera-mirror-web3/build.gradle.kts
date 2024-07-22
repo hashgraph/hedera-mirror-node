@@ -19,6 +19,7 @@ description = "Hedera Mirror Node Web3"
 plugins {
     id("openapi-conventions")
     id("spring-conventions")
+    id("org.web3j")
 }
 
 dependencies {
@@ -56,3 +57,15 @@ tasks.compileJava { options.compilerArgs.add("--enable-preview") }
 tasks.compileTestJava { options.compilerArgs.add("--enable-preview") }
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
+
+sourceSets { test { solidity { version = "0.8.18" } } }
+
+web3j {
+    generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
+    useNativeJavaTypes = true
+    generateBoth = true
+}
+
+tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
+
+tasks.processTestResources { dependsOn(tasks.named("generateTestContractWrappers")) }
