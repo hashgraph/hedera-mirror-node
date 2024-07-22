@@ -22,6 +22,7 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.ContractExecutionService;
@@ -62,6 +63,7 @@ import org.web3j.protocol.core.methods.response.EthSyncing.Result;
 import org.web3j.protocol.core.methods.response.NetVersion;
 import org.web3j.protocol.websocket.events.Notification;
 import org.web3j.tx.Contract;
+import org.web3j.tx.TransactionManager;
 import org.web3j.tx.gas.ContractGasProvider;
 import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
@@ -75,12 +77,14 @@ public class TestWeb3jService implements Web3jService {
     private final ContractExecutionService contractExecutionService;
     private final ContractGasProvider contractGasProvider;
     private final Credentials credentials;
+    //    private final TransactionManager transactionManager;
     private final DomainBuilder domainBuilder;
     private final Map<String, String> trxResMap = new HashMap<>();
     private final Web3j web3j;
 
     private Address sender = Address.fromHexString("");
     private BlockType blockType = BlockType.LATEST;
+    private Range historicalRange;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -88,6 +92,7 @@ public class TestWeb3jService implements Web3jService {
         this.credentials = Credentials.create(ECKeyPair.create(Numeric.hexStringToByteArray(MOCK_KEY)));
         this.domainBuilder = domainBuilder;
         this.web3j = Web3j.build(this);
+        //        this.transactionManager = new RawTransactionManager(web3j, credentials);
     }
 
     public void setSender(Address sender) {
@@ -102,10 +107,35 @@ public class TestWeb3jService implements Web3jService {
         this.blockType = blockType;
     }
 
+    public Credentials getCredentials() {
+        return credentials;
+    }
+
+    public Web3j getWeb3j() {
+        return web3j;
+    }
+    //
+    //    public TransactionManager getTransactionManager() {
+    //        return transactionManager;
+    //    }
+
+    public void setHistoricalRange(final Range range) {
+        this.historicalRange = range;
+    }
+
+    public ContractGasProvider getContractGasProvider() {
+        return contractGasProvider;
+    }
+
     @SneakyThrows(Exception.class)
     public <T extends Contract> T deploy(Deployer<T> deployer) {
         return deployer.deploy(web3j, credentials, contractGasProvider).send();
     }
+
+    //    @SneakyThrows(Exception.class)
+    //    public <T extends Contract> T deployHistorical(HistoricalDeployer<T> deployer) {
+    //        return deployer.deployHistorical(web3j, transactionManager, contractGasProvider).send();
+    //    }
 
     @Override
     public <T extends Response> T send(Request request, Class<T> responseType) throws IOException {
@@ -132,6 +162,11 @@ public class TestWeb3jService implements Web3jService {
         }
 
         return sendEthCall(rawTransaction, trxHex, request);
+    }
+
+    public String getContractRuntimeBytecode(String initBytecode) {
+        var serviceParameters = serviceParametersForTopLevelContractCreate(initBytecode, ETH_CALL, sender);
+        return contractExecutionService.processCall(serviceParameters);
     }
 
     private EthSendTransaction sendTopLevelContractCreate(
@@ -310,16 +345,42 @@ public class TestWeb3jService implements Web3jService {
     public Address deployInternal(String binary) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
-        precompileContractPersist(binary, id);
+        if (blockType != BlockType.LATEST) {
+            historicalPrecompileContractPersist(binary, id, contractAddress);
+        } else {
+            precompileContractPersist(binary, id, contractAddress);
+        }
 
         return contractAddress;
     }
 
-    private void precompileContractPersist(String binary, long entityId) {
+    private void precompileContractPersist(String binary, long entityId, final Address contractAddress) {
         final var contractBytes = Hex.decode(binary.replace("0x", ""));
         final var entity = domainBuilder
                 .entity()
-                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
+                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).evmAddress(contractAddress.toArray()))
+                .persist();
+
+        domainBuilder
+                .contract()
+                .customize(c -> c.id(entity.getId()).runtimeBytecode(contractBytes))
+                .persist();
+
+        domainBuilder
+                .contractState()
+                .customize(c -> c.contractId(entity.getId()))
+                .persist();
+    }
+
+    private void historicalPrecompileContractPersist(String binary, long entityId, final Address contractAddress) {
+        final var contractBytes = Hex.decode(binary.replace("0x", ""));
+        final var entity = domainBuilder
+                .entity()
+                .customize(e -> e.type(CONTRACT)
+                        .id(entityId)
+                        .num(entityId)
+                        .evmAddress(contractAddress.toArray())
+                        .timestampRange(historicalRange))
                 .persist();
 
         domainBuilder
@@ -335,5 +396,10 @@ public class TestWeb3jService implements Web3jService {
 
     public interface Deployer<T extends Contract> {
         RemoteCall<T> deploy(Web3j web3j, Credentials credentials, ContractGasProvider contractGasProvider);
+    }
+
+    public interface HistoricalDeployer<T extends Contract> {
+        RemoteCall<T> deployHistorical(
+                Web3j web3j, TransactionManager transactionManager, ContractGasProvider contractGasProvider);
     }
 }

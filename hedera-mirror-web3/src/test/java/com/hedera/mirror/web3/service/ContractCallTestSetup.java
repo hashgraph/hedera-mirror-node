@@ -494,8 +494,8 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Autowired
     protected RecordFileRepository recordFileRepository;
 
-    @Value("classpath:solidity/")
-    protected Path COMPILED_WEB3J_RESOURCES_FOLDER;
+    //    @Value("classpath:solidity/")
+    //    protected Path COMPILED_WEB3J_RESOURCES_FOLDER;
 
     // The contract source `PrecompileTestContract.sol` is in test resources
     @Value("classpath:contracts/PrecompileTestContract/PrecompileTestContract.bin")
@@ -1417,10 +1417,26 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                 Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
 
         // Token relationships
-        tokenAccountPersistHistorical(ownerEntityId, tokenEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersistHistorical(senderEntityId, tokenEntityId, TokenFreezeStatusEnum.FROZEN);
-        tokenAccountPersistHistorical(ownerEntityId, nftEntityId, TokenFreezeStatusEnum.UNFROZEN);
-        tokenAccountPersistHistorical(senderEntityId, nftEntityId, TokenFreezeStatusEnum.FROZEN);
+        tokenAccountPersistHistorical(
+                ownerEntityId,
+                tokenEntityId,
+                TokenFreezeStatusEnum.UNFROZEN,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+        tokenAccountPersistHistorical(
+                senderEntityId,
+                tokenEntityId,
+                TokenFreezeStatusEnum.FROZEN,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+        tokenAccountPersistHistorical(
+                ownerEntityId,
+                nftEntityId,
+                TokenFreezeStatusEnum.UNFROZEN,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
+        tokenAccountPersistHistorical(
+                senderEntityId,
+                nftEntityId,
+                TokenFreezeStatusEnum.FROZEN,
+                Range.closedOpen(recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd()));
 
         // Contracts
         final var contractEntityId = entityIdFromEvmAddress(ERC_CONTRACT_ADDRESS);
@@ -1747,7 +1763,10 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     }
 
     protected void tokenAccountPersistHistorical(
-            final EntityId senderEntityId, final EntityId tokenEntityId, final TokenFreezeStatusEnum freezeStatus) {
+            final EntityId senderEntityId,
+            final EntityId tokenEntityId,
+            final TokenFreezeStatusEnum freezeStatus,
+            final Range<Long> historicalBlock) {
         domainBuilder
                 .tokenAccountHistory()
                 .customize(e -> e.freezeStatus(freezeStatus)
@@ -1756,8 +1775,7 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
                         .kycStatus(TokenKycStatusEnum.GRANTED)
                         .associated(true)
                         .balance(12L)
-                        .timestampRange(Range.closedOpen(
-                                recordFileAfterEvm34.getConsensusStart(), recordFileAfterEvm34.getConsensusEnd())))
+                        .timestampRange(historicalBlock))
                 .persist();
     }
 

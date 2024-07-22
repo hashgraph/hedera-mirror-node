@@ -60,9 +60,12 @@ tasks.compileTestJava { options.compilerArgs.add("--enable-preview") }
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
 // Web3j
-sourceSets { test { solidity { setVersion("0.8.24") } } }
+sourceSets { test { solidity { setVersion("0.8.7") } } }
 
-web3j { generatedPackageName = "com.hedera.mirror.web3.web3j.generated" }
+web3j {
+    generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
+    generateBoth = true
+}
 
 tasks.openApiGenerate { mustRunAfter(tasks.named("resolveSolidity")) }
 

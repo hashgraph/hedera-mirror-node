@@ -40,7 +40,7 @@ extra.apply {
     set("reactorGrpcVersion", "1.2.4")
     set("vertxVersion", "4.5.8")
     set("tuweniVersion", "2.3.1")
-    set("org.web3j", "4.12.0")
+    set("org.web3j", "1.0.1-custom")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when
@@ -107,7 +107,7 @@ dependencies {
         api("org.mockito:mockito-inline:5.2.0")
         api("software.amazon.awssdk:bom:2.26.12")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
-        api("org.web3j:core:4.12.0")
+        api("org.web3j:core:1.0.1-custom")
     }
 }
 
