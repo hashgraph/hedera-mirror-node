@@ -4803,7 +4803,7 @@ components:
     tokenNameQueryParam:
       name: name
       in: query
-      description: Partial or full token name. Not allowed to be used with token.id or account.id parameter.
+      description: Partial or full token name. Not allowed to be used with token.id or account.id parameter. Pagination is not supported with the use of this parameter and results are ordered by token.id with respect to the order parameter.
       schema:
         type: string
         maxLength: 100

@@ -152,7 +152,7 @@
         "_status": {
           "messages": [
             {
-              "message": "token.id and name cannot be used together"
+              "message": "token.id and name can not be used together. Use a more specific name instead."
             }
           ]
         }

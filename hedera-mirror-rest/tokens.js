@@ -320,7 +320,7 @@ const validateTokenQueryFilter = (param, op, val) => {
       ret = utils.isPositiveLong(val);
       break;
     case filterKeys.NAME:
-      ret = op === queryParamOperators.eq && utils.isMaxBytes(val,100);
+      ret = op === queryParamOperators.eq && utils.isMaxBytes(val, 100);
       break;
     case filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -347,17 +347,17 @@ const validateTokenQueryFilter = (param, op, val) => {
 };
 
 const getTokensRequest = async (req, res) => {
-  if (req.query[filterKeys.TOKEN_ID] && req.query[filterKeys.NAME]) {
-    throw new InvalidArgumentError('token.id and name cannot be used together');
+  const hasNameParam = !!req.query[filterKeys.NAME];
+  if (hasNameParam && req.query[filterKeys.TOKEN_ID]) {
+    throw new InvalidArgumentError('token.id and name can not be used together. Use a more specific name instead.');
   }
 
-  if (req.query[filterKeys.ACCOUNT_ID] && req.query[filterKeys.NAME]) {
+  if (hasNameParam && req.query[filterKeys.ACCOUNT_ID]) {
     throw new InvalidArgumentError('account.id and name cannot be used together');
   }
   // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle
   // per resource unique param names
   const filters = utils.buildAndValidateFilters(req.query, acceptedTokenParameters, validateTokenQueryFilter);
-
 
   const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
@@ -391,14 +391,16 @@ const getTokensRequest = async (req, res) => {
 
   // populate next link
   const lastTokenId = tokens.length > 0 ? tokens[tokens.length - 1].token_id : null;
-  const nextLink = utils.getPaginationLink(
-    req,
-    tokens.length !== limit,
-    {
-      [filterKeys.TOKEN_ID]: lastTokenId,
-    },
-    order
-  );
+  const nextLink = hasNameParam
+    ? null
+    : utils.getPaginationLink(
+        req,
+        tokens.length !== limit,
+        {
+          [filterKeys.TOKEN_ID]: lastTokenId,
+        },
+        order
+      );
 
   res.locals[responseDataLabel] = {
     tokens,
