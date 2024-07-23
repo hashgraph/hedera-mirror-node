@@ -139,6 +139,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
@@ -154,16 +155,19 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.Value;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
@@ -188,10 +192,15 @@ public class RecordItemBuilder {
             AccountID.newBuilder().setAccountNum(3).build();
     private static final RealmID REALM_ID = RealmID.getDefaultInstance();
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
+    private static final AccountID STAKING_REWARD_ACCOUNT_ID =
+            AccountID.newBuilder().setAccountNum(STAKING_REWARD_ACCOUNT).build();
 
+    private final AtomicBoolean autoCreation = new AtomicBoolean(false);
     private final Map<TransactionType, Supplier<Builder<?>>> builders = new HashMap<>();
-    private final AtomicLong id = new AtomicLong(INITIAL_ID);
+    private final AtomicLong entityId = new AtomicLong(INITIAL_ID);
+    private final AtomicLong id = new AtomicLong(0L);
     private final SecureRandom random = new SecureRandom();
+    private final Map<GeneratedMessageV3, EntityState> state = new ConcurrentHashMap<>();
 
     @Getter
     private final PersistProperties persistProperties = new PersistProperties();
@@ -202,6 +211,7 @@ public class RecordItemBuilder {
         // Dynamically lookup method references for every transaction body builder in this class
         Collection<Supplier<Builder<?>>> suppliers = TestUtils.gettersByType(this, Builder.class);
         suppliers.forEach(s -> builders.put(s.get().type, s));
+        reset();
     }
 
     public Supplier<Builder<?>> lookup(TransactionType type) {
@@ -230,14 +240,15 @@ public class RecordItemBuilder {
     }
 
     public Builder<ConsensusSubmitMessageTransactionBody.Builder> consensusSubmitMessage() {
+        var topicId = topicId();
         var transactionBody = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setMessage(bytes(128))
-                .setTopicID(topicId());
+                .setTopicID(topicId);
 
         var builder = new Builder<>(TransactionType.CONSENSUSSUBMITMESSAGE, transactionBody)
-                .receipt(r -> r.setTopicRunningHash(bytes(48))
-                        .setTopicRunningHashVersion(3)
-                        .setTopicSequenceNumber(id()));
+                .incrementer((b, r) -> r.getReceiptBuilder()
+                        .setTopicSequenceNumber(state.get(topicId).getSequenceNumber()))
+                .receipt(r -> r.setTopicRunningHash(bytes(48)).setTopicRunningHashVersion(3));
 
         transactionBody.setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
                 .setInitialTransactionID(builder.transactionBodyWrapper.getTransactionID())
@@ -293,7 +304,7 @@ public class RecordItemBuilder {
                 .setDeclineReward(true)
                 .setFileID(fileId())
                 .setGas(10_000L)
-                .setInitialBalance(20_000L)
+                .setInitialBalance(10_000_000_000_000L)
                 .setMaxAutomaticTokenAssociations(5)
                 .setMemo(text(16))
                 .setNewRealmAdminKey(key())
@@ -447,7 +458,7 @@ public class RecordItemBuilder {
                 .setAlias(bytes(20))
                 .setAutoRenewPeriod(duration(30))
                 .setDeclineReward(true)
-                .setInitialBalance(1000L)
+                .setInitialBalance(10_000_000_000_000L)
                 .setKey(key())
                 .setMaxAutomaticTokenAssociations(2)
                 .setMemo(text(16))
@@ -482,7 +493,64 @@ public class RecordItemBuilder {
     }
 
     public Builder<CryptoTransferTransactionBody.Builder> cryptoTransfer() {
-        return new Builder<>(TransactionType.CRYPTOTRANSFER, cryptoTransferTransactionBody());
+        return cryptoTransfer(TransferType.CRYPTO);
+    }
+
+    public Builder<CryptoTransferTransactionBody.Builder> cryptoTransfer(TransferType transferType) {
+        var body = CryptoTransferTransactionBody.newBuilder();
+        var builder = new Builder<>(TransactionType.CRYPTOTRANSFER, body);
+
+        if (transferType == TransferType.ALL || transferType == TransferType.CRYPTO) {
+            var transfers = TransferList.newBuilder()
+                    .addAccountAmounts(accountAmount(accountId(), -100))
+                    .addAccountAmounts(accountAmount(accountId(), 100));
+            body.setTransfers(transfers);
+            builder.record(r -> r.mergeTransferList(transfers.build()));
+        }
+
+        if (transferType == TransferType.ALL || transferType == TransferType.TOKEN) {
+            var receiver = accountId();
+            var sender = accountId();
+            var tokenId = tokenId();
+            var tokenTransfers = TokenTransferList.newBuilder()
+                    .setToken(tokenId)
+                    .addTransfers(accountAmount(sender, -100))
+                    .addTransfers(accountAmount(receiver, 100));
+            body.addTokenTransfers(tokenTransfers);
+            builder.record(r -> r.addTokenTransferLists(tokenTransfers));
+            updateState(TokenAssociation.newBuilder()
+                    .setAccountId(sender)
+                    .setTokenId(tokenId)
+                    .build());
+            updateState(TokenAssociation.newBuilder()
+                    .setAccountId(receiver)
+                    .setTokenId(tokenId)
+                    .build());
+        }
+
+        if (transferType == TransferType.ALL || transferType == TransferType.NFT) {
+            var receiver = accountId();
+            var sender = accountId();
+            var tokenId = tokenId();
+            var nftTransfers = TokenTransferList.newBuilder()
+                    .setToken(tokenId)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setSenderAccountID(sender)
+                            .setReceiverAccountID(receiver)
+                            .setSerialNumber(1));
+            body.addTokenTransfers(nftTransfers);
+            builder.record(r -> r.addTokenTransferLists(nftTransfers));
+            updateState(TokenAssociation.newBuilder()
+                    .setAccountId(sender)
+                    .setTokenId(tokenId)
+                    .build());
+            updateState(TokenAssociation.newBuilder()
+                    .setAccountId(receiver)
+                    .setTokenId(tokenId)
+                    .build());
+        }
+
+        return builder;
     }
 
     @SuppressWarnings("deprecation")
@@ -674,16 +742,23 @@ public class RecordItemBuilder {
         });
     }
 
-    public void reset(Instant start) {
-        now = start;
-        id.set(INITIAL_ID);
+    public void reset() {
+        entityId.set(INITIAL_ID);
+        id.set(0L);
+        now = Instant.now();
+        state.clear();
+    }
+
+    public void setNow(Instant now) {
+        this.now = now;
     }
 
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {
+        var cryptoTransfer = cryptoTransfer().build().getTransactionBody().getCryptoTransfer();
         var scheduledTransaction = SchedulableTransactionBody.newBuilder()
                 .setTransactionFee(1_00_000_000)
                 .setMemo(text(16))
-                .setCryptoTransfer(cryptoTransferTransactionBody());
+                .setCryptoTransfer(cryptoTransfer);
         var builder = ScheduleCreateTransactionBody.newBuilder()
                 .setScheduledTransactionBody(scheduledTransaction)
                 .setMemo(text(16))
@@ -721,6 +796,7 @@ public class RecordItemBuilder {
         var transactionBody = TokenAssociateTransactionBody.newBuilder()
                 .setAccount(accountId())
                 .addTokens(tokenId());
+
         return new Builder<>(TransactionType.TOKENASSOCIATE, transactionBody);
     }
 
@@ -927,7 +1003,34 @@ public class RecordItemBuilder {
     }
 
     public AccountID accountId() {
-        return AccountID.newBuilder().setAccountNum(id()).build();
+        var id = AccountID.newBuilder().setAccountNum(entityId()).build();
+        updateState(id);
+        return id;
+    }
+
+    public List<? extends Builder<?>> getCreateTransactions() {
+        autoCreation.set(true);
+        var createTransactions = state.entrySet().stream()
+                .filter(e -> !e.getValue().isCreated())
+                .map(this::toCreateTransaction)
+                .toList();
+        autoCreation.set(false);
+        return createTransactions;
+    }
+
+    private Builder<?> toCreateTransaction(Map.Entry<GeneratedMessageV3, EntityState> entry) {
+        entry.getValue().created.set(true);
+        return switch (entry.getKey()) {
+            case AccountID accountId -> cryptoCreate().receipt(r -> r.setAccountID(accountId));
+            case ContractID contractId -> contractCreate().receipt(r -> r.setContractID(contractId));
+            case FileID fileId -> fileCreate().receipt(r -> r.setFileID(fileId));
+            case ScheduleID scheduleId -> scheduleCreate().receipt(r -> r.setScheduleID(scheduleId));
+            case TokenAssociation ta -> tokenAssociate()
+                    .transactionBody(b -> b.setAccount(ta.getAccountId()).addTokens(ta.getTokenId()));
+            case TokenID tokenId -> tokenCreate().receipt(r -> r.setTokenID(tokenId));
+            case TopicID topicId -> consensusCreateTopic().receipt(r -> r.setTopicID(topicId));
+            default -> throw new UnsupportedOperationException("ID not supported: " + id);
+        };
     }
 
     public ByteString bytes(int length) {
@@ -957,17 +1060,6 @@ public class RecordItemBuilder {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
-    }
-
-    private CryptoTransferTransactionBody.Builder cryptoTransferTransactionBody() {
-        return CryptoTransferTransactionBody.newBuilder()
-                .setTransfers(TransferList.newBuilder()
-                        .addAccountAmounts(AccountAmount.newBuilder()
-                                .setAccountID(accountId())
-                                .setAmount(-100))
-                        .addAccountAmounts(AccountAmount.newBuilder()
-                                .setAccountID(accountId())
-                                .setAmount(100)));
     }
 
     private TransactionSidecarRecord.Builder contractActions() {
@@ -1008,7 +1100,9 @@ public class RecordItemBuilder {
     }
 
     private ContractID contractId() {
-        return ContractID.newBuilder().setContractNum(id()).build();
+        var id = ContractID.newBuilder().setContractNum(entityId()).build();
+        updateState(id);
+        return id;
     }
 
     private TransactionSidecarRecord.Builder contractStateChanges(ContractID contractId) {
@@ -1024,12 +1118,18 @@ public class RecordItemBuilder {
         return Duration.newBuilder().setSeconds(seconds).build();
     }
 
+    private long entityId() {
+        return entityId.getAndIncrement();
+    }
+
     public BytesValue evmAddress() {
         return BytesValue.of(bytes(20));
     }
 
     private FileID fileId() {
-        return FileID.newBuilder().setFileNum(id()).build();
+        var id = FileID.newBuilder().setFileNum(entityId()).build();
+        updateState(id);
+        return id;
     }
 
     private long id() {
@@ -1058,8 +1158,7 @@ public class RecordItemBuilder {
                 .setStakeRewarded(stake - TINYBARS_IN_ONE_HBAR);
     }
 
-    @NotNull
-    private static ServiceEndpoint serviceEndpoint() {
+    private ServiceEndpoint serviceEndpoint() {
         return ServiceEndpoint.newBuilder()
                 .setIpAddressV4(ByteString.empty())
                 .setPort(50211)
@@ -1067,17 +1166,18 @@ public class RecordItemBuilder {
                 .build();
     }
 
-    @NotNull
-    private static ServiceEndpoint gossipEndpoint() {
+    private ServiceEndpoint gossipEndpoint() {
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 5}))
+                .setIpAddressV4(ByteString.copyFrom(new byte[]{127, 0, 0, 5}))
                 .setPort(5112)
                 .setDomainName("")
                 .build();
     }
 
     public ScheduleID scheduleId() {
-        return ScheduleID.newBuilder().setScheduleNum(id()).build();
+        var id = ScheduleID.newBuilder().setScheduleNum(id()).build();
+        updateState(id);
+        return id;
     }
 
     private StorageChange.Builder storageChange() {
@@ -1096,15 +1196,47 @@ public class RecordItemBuilder {
     }
 
     public Timestamp timestamp(TemporalUnit unit) {
-        return Utility.instantToTimestamp(now.plus(id() - INITIAL_ID, unit));
+        return Utility.instantToTimestamp(now.plus(id(), unit));
     }
 
     public TokenID tokenId() {
-        return TokenID.newBuilder().setTokenNum(id()).build();
+        var id = TokenID.newBuilder().setTokenNum(entityId()).build();
+        updateState(id);
+        return id;
     }
 
     private TopicID topicId() {
-        return TopicID.newBuilder().setTopicNum(id()).build();
+        var id = TopicID.newBuilder().setTopicNum(entityId()).build();
+        updateState(id);
+        return id;
+    }
+
+    private void updateState(GeneratedMessageV3 id) {
+        // Don't cascade creations that occur during an auto creation to avoid infinite recursion
+        if (!autoCreation.get()) {
+            state.computeIfAbsent(id, k -> new EntityState());
+        }
+    }
+
+    public enum TransferType {
+        ALL,
+        CRYPTO,
+        NFT,
+        TOKEN
+    }
+
+    @Value
+    private class EntityState {
+        private final AtomicBoolean created = new AtomicBoolean(false);
+        private final AtomicLong sequenceNumber = new AtomicLong(0L);
+
+        long getSequenceNumber() {
+            return sequenceNumber.incrementAndGet();
+        }
+
+        boolean isCreated() {
+            return created.get();
+        }
     }
 
     public class Builder<T extends GeneratedMessageV3.Builder<T>> {
@@ -1121,6 +1253,8 @@ public class RecordItemBuilder {
         private Predicate<EntityId> entityTransactionPredicate = persistProperties::shouldPersistEntityTransaction;
         private Predicate<EntityId> contractTransactionPredicate =
                 (entityId) -> persistProperties.isContractTransaction();
+        private BiConsumer<TransactionBody.Builder, TransactionRecord.Builder> incrementer = (body, record) -> {
+        };
 
         private Builder(TransactionType type, T transactionBody) {
             this.payerAccountId = accountId();
@@ -1139,19 +1273,36 @@ public class RecordItemBuilder {
                 transactionBodyWrapper.setField(field, transactionBody.build());
             }
 
-            Transaction transaction = transaction().build();
-            TransactionRecord record = transactionRecord.build();
+            // Update the consensus timestamp. Some tests depend upon static values so use it if it's present.
+            if (!transactionRecord.hasConsensusTimestamp()) {
+                transactionRecord.setConsensusTimestamp(timestamp(ChronoUnit.NANOS));
+            }
+
+            // Update the transaction ID if one was not already assigned
+            var transactionId = getTransactionID();
+            transactionBodyWrapper.setTransactionID(transactionId);
+            transactionRecord.setTransactionID(transactionId);
+
+            incrementer.accept(transactionBodyWrapper, transactionRecord);
+            var transaction = transaction().build();
+            var record = transactionRecord.build();
             var contractId = record.getReceipt().getContractID();
+
+            record.getAutomaticTokenAssociationsList().forEach(RecordItemBuilder.this::updateState);
 
             var sidecarRecords = this.sidecarRecords.stream()
                     .map(r -> {
                         if (r.hasBytecode() && !contractId.equals(ContractID.getDefaultInstance())) {
                             r.getBytecodeBuilder().setContractId(contractId);
                         }
-                        return r.setConsensusTimestamp(record.getConsensusTimestamp())
+                        return r.setConsensusTimestamp(transactionRecord.getConsensusTimestamp())
                                 .build();
                     })
                     .collect(Collectors.toList());
+
+            // Clear these so that the builder can be reused and get new incremented values.
+            transactionRecord.clearTransactionID().clearConsensusTimestamp();
+            transactionBodyWrapper.clearTransactionID();
 
             return recordItemBuilder
                     .contractTransactionPredicate(contractTransactionPredicate)
@@ -1169,6 +1320,11 @@ public class RecordItemBuilder {
 
         public Builder<T> contractTransactionPredicate(Predicate<EntityId> contractTransactionPredicate) {
             this.contractTransactionPredicate = contractTransactionPredicate;
+            return this;
+        }
+
+        public Builder<T> incrementer(BiConsumer<TransactionBody.Builder, TransactionRecord.Builder> incrementer) {
+            this.incrementer = incrementer;
             return this;
         }
 
@@ -1222,24 +1378,39 @@ public class RecordItemBuilder {
                     .setMemo(type.name())
                     .setNodeAccountID(NODE)
                     .setTransactionFee(100L)
-                    .setTransactionID(Utility.getTransactionId(payerAccountId))
                     .setTransactionValidDuration(duration(120));
         }
 
         private TransactionRecord.Builder defaultTransactionRecord() {
             TransactionRecord.Builder transactionRecord = TransactionRecord.newBuilder()
-                    .setConsensusTimestamp(timestamp())
                     .setMemoBytes(ByteString.copyFromUtf8(transactionBodyWrapper.getMemo()))
                     .setTransactionFee(transactionBodyWrapper.getTransactionFee())
                     .setTransactionHash(bytes(48))
-                    .setTransactionID(transactionBodyWrapper.getTransactionID())
                     .setTransferList(TransferList.newBuilder()
-                            .addAccountAmounts(accountAmount(payerAccountId, -3000L))
+                            .addAccountAmounts(accountAmount(payerAccountId, -6000L))
                             .addAccountAmounts(accountAmount(NODE, 1000L))
                             .addAccountAmounts(accountAmount(FEE_COLLECTOR, 2000L))
+                            .addAccountAmounts(accountAmount(STAKING_REWARD_ACCOUNT_ID, 3000L))
                             .build());
             transactionRecord.getReceiptBuilder().setStatus(ResponseCodeEnum.SUCCESS);
             return transactionRecord;
+        }
+
+        private TransactionID getTransactionID() {
+            if (transactionRecord.hasTransactionID()) {
+                return transactionRecord.getTransactionID();
+            }
+
+            if (transactionBodyWrapper.hasTransactionID()) {
+                return transactionBodyWrapper.getTransactionID();
+            }
+
+            var instant = Utility.convertToInstant(transactionRecord.getConsensusTimestamp());
+            var validStart = Utility.instantToTimestamp(instant.minusNanos(10));
+            return TransactionID.newBuilder()
+                    .setAccountID(payerAccountId)
+                    .setTransactionValidStart(validStart)
+                    .build();
         }
 
         private Transaction.Builder transaction() {

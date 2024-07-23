@@ -17,10 +17,58 @@ hedera:
           - entity: 0.0.999
         record:
           entity:
-            persist:
-              syntheticContractResults: true
             redis:
               enabled: true
+          performance:
+            scenarios:
+              - description: 1/3 Crypto/HCS/HTS and 21 HSCS
+                duration: 150m
+                transactions:
+                  - tps: 3500
+                    type: CONSENSUSSUBMITMESSAGE
+                  - tps: 3500
+                    type: CRYPTOTRANSFER
+                  - tps: 3500
+                    subType: TOKEN_TRANSFER
+                    type: CRYPTOTRANSFER
+                  - tps: 21
+                    type: CONTRACTCALL
+              - description: 10K Crypto
+                duration: 150m
+                transactions:
+                  - tps: 10500
+                    type: CRYPTOTRANSFER
+              - description: 10K HCS
+                duration: 150m
+                transactions:
+                  - tps: 10500
+                    type: CONSENSUSSUBMITMESSAGE
+              - description: 10K HTS
+                duration: 150m
+                transactions:
+                  - tps: 10500
+                    subType: TOKEN_TRANSFER
+                    type: CRYPTOTRANSFER
+              - description: 5K HCS, 2.5K HTS, 2.5K Crypto
+                duration: 150m
+                transactions:
+                  - tps: 5200
+                    type: CONSENSUSSUBMITMESSAGE
+                  - tps: 2650
+                    type: CRYPTOTRANSFER
+                  - tps: 2650
+                    subType: TOKEN_TRANSFER
+                    type: CRYPTOTRANSFER
+              - description: 1/3 Crypto/HCS/HTS
+                duration: 150m
+                transactions:
+                  - tps: 3500
+                    type: CONSENSUSSUBMITMESSAGE
+                  - tps: 3500
+                    type: CRYPTOTRANSFER
+                  - tps: 3500
+                    subType: TOKEN_TRANSFER
+                    type: CRYPTOTRANSFER
           pubsub:
             topicName: testTopic
           retry:
