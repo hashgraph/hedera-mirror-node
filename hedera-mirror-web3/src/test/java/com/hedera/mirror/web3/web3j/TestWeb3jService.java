@@ -238,11 +238,11 @@ public class TestWeb3jService implements Web3jService {
 
     protected ContractExecutionParameters serviceParametersForTopLevelContractCreate(
             final String contractInitCode, final CallServiceParameters.CallType callType, final Address senderAddress) {
-        final var sender = new HederaEvmAccount(senderAddress);
+        final var senderEvmAccount = new HederaEvmAccount(senderAddress);
 
         final var callData = Bytes.wrap(Hex.decode(contractInitCode));
         return ContractExecutionParameters.builder()
-                .sender(sender)
+                .sender(senderEvmAccount)
                 .callData(callData)
                 .receiver(Address.ZERO)
                 .gas(15_000_000L)
