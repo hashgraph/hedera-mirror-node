@@ -18,14 +18,7 @@ import httpContext from 'express-http-context';
 import qs from 'qs';
 
 import {httpStatusCodes, requestIdLabel, requestStartTime} from '../constants';
-import {randomString} from '../utils';
-
-const lowerCaseQueryValue = (queryValue) => {
-  if (typeof queryValue === 'string') {
-    return queryValue.toLowerCase();
-  }
-  return queryValue;
-};
+import {lowerCaseQueryValue, randomString} from '../utils';
 
 const queryCanonicalizationMap = {
   order: lowerCaseQueryValue,
@@ -70,12 +63,12 @@ const requestQueryParser = (queryString) => {
   for (const [key, value] of Object.entries(parsedQueryString)) {
     const lowerKey = key.toLowerCase();
     const canonicalizationFunc = queryCanonicalizationMap[lowerKey];
-    const canonicalizedValue = canonicalizationFunc ? canonicalizationFunc(value) : value;
+    const canonicalValue = canonicalizationFunc ? canonicalizationFunc(value) : value;
     if (lowerKey in caseInsensitiveQueryString) {
       // handle repeated values, merge into an array
-      caseInsensitiveQueryString[lowerKey] = merge(caseInsensitiveQueryString[lowerKey], canonicalizedValue);
+      caseInsensitiveQueryString[lowerKey] = merge(caseInsensitiveQueryString[lowerKey], canonicalValue);
     } else {
-      caseInsensitiveQueryString[lowerKey] = canonicalizedValue;
+      caseInsensitiveQueryString[lowerKey] = canonicalValue;
     }
   }
 

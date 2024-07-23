@@ -211,6 +211,8 @@ const isValidAddressBookFileIdPattern = (fileId) => {
   return addressBookFileIdPattern.includes(fileId);
 };
 
+const lowerCaseQueryValue = (queryValue) => (typeof queryValue === 'string' ? queryValue.toLowerCase() : queryValue);
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -1743,6 +1745,7 @@ export {
   isValidSlot,
   isValidTimestampParam,
   isValidValueIgnoreCase,
+  lowerCaseQueryValue,
   ltLte,
   mergeParams,
   nowInNs,
