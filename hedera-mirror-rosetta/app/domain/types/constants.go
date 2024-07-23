@@ -401,7 +401,7 @@ var TransactionTypes = map[int32]string{
 	57: "TOKENREJECT",
 	58: "TOKENAIRDROP",
 	59: "TOKENCANCELAIRDROP",
-	60: "TOKENCLAIMAIRDROP",
+	//60: "TOKENCLAIMAIRDROP",
 }
 
 var (
