@@ -2054,3 +2054,15 @@ describe('bigIntMin', () => {
     expect(utils.bigIntMin(a, b)).toEqual(expected);
   });
 });
+
+describe('lowerCaseQueryValue', () => {
+  test.each`
+    input        | expected
+    ${'success'} | ${'success'}
+    ${'SUCCESS'} | ${'success'}
+    ${'SUCCess'} | ${'success'}
+    ${100}       | ${100}
+  `('$input', ({input, expected}) => {
+    expect(utils.lowerCaseQueryValue(input)).toEqual(expected);
+  });
+});
