@@ -18,22 +18,37 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor
 class TokenAirdropRepositoryTest extends AbstractRepositoryTest {
 
     private final TokenAirdropRepository repository;
+    private static final RowMapper<TokenAirdrop> ROW_MAPPER = rowMapper(TokenAirdrop.class);
 
     @Test
     void prune() {
-        domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).persist();
-        var tokenAirdrop2 =
-                domainBuilder.tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).persist();
-        var tokenAirdrop3 =
-                domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).persist();
+        domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(
+                        t -> t.timestampRange(Range.closedOpen(domainBuilder.timestamp(), domainBuilder.timestamp())))
+                .persist();
+        var tokenAirdrop2 = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(
+                        t -> t.timestampRange(Range.closedOpen(domainBuilder.timestamp(), domainBuilder.timestamp())))
+                .persist();
+        var tokenAirdrop3 = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(
+                        t -> t.timestampRange(Range.closedOpen(domainBuilder.timestamp(), domainBuilder.timestamp())))
+                .persist();
         repository.prune(tokenAirdrop2.getTimestampRange().upperEndpoint());
         assertThat(repository.findAll()).containsOnly(tokenAirdrop3);
     }
@@ -44,5 +59,21 @@ class TokenAirdropRepositoryTest extends AbstractRepositoryTest {
                 domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
         repository.save(tokenAirdrop);
         assertThat(repository.findAll()).containsOnly(tokenAirdrop);
+    }
+
+    /**
+     * This test verifies that the domain object and table definition are in sync with the history table.
+     */
+    @Test
+    void history() {
+        var tokenAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).persist();
+
+        jdbcOperations.update("insert into token_airdrop_history select * from token_airdrop");
+        List<TokenAirdrop> tokenAirdropHistory =
+                jdbcOperations.query("select * from token_airdrop_history", ROW_MAPPER);
+
+        assertThat(repository.findAll()).containsExactly(tokenAirdrop);
+        assertThat(tokenAirdropHistory).containsExactly(tokenAirdrop);
     }
 }

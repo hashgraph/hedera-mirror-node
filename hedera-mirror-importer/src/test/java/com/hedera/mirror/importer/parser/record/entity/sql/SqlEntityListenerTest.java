@@ -42,6 +42,8 @@ import com.hedera.mirror.common.domain.token.CustomFee;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAirdrop;
+import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
@@ -107,9 +109,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -2551,8 +2555,9 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         assertThat(findHistory(TokenAccount.class)).containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    @Test
-    void onTokenAirdrop() {
+    @ValueSource(ints = {1, 2})
+    @ParameterizedTest
+    void onTokenAirdrop(int commitIndex) {
         // given
         var tokenAirdrop =
                 domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
@@ -2562,20 +2567,86 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         // when
         sqlEntityListener.onTokenAirdrop(tokenAirdrop);
         sqlEntityListener.onTokenAirdrop(tokenAirdrop2);
-        completeFileAndCommit();
 
-        // then
-        assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(tokenAirdrop, tokenAirdrop2);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(tokenAirdrop, tokenAirdrop2);
+            assertThat(findHistory(TokenAirdrop.class)).isEmpty();
+        }
 
         // when
+        long additionalAmount = 50000L;
         var currentAmount = tokenAirdrop.getAmount();
-        tokenAirdrop.setAmount(1000);
+        long newAmount = currentAmount + additionalAmount;
+        var updatedAmountAirdrop = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(a -> a.amount(additionalAmount)
+                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
+                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .tokenId(tokenAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        sqlEntityListener.onTokenAirdrop(updatedAmountAirdrop);
         completeFileAndCommit();
 
         // then
-        tokenAirdrop.setAmount(currentAmount + 1000);
-        assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(tokenAirdrop, tokenAirdrop2);
-        assertThat(findHistory(TokenAllowance.class)).isEmpty();
+        tokenAirdrop.setTimestampRange(
+                Range.closedOpen(tokenAirdrop.getTimestampLower(), updatedAmountAirdrop.getTimestampLower()));
+        assertThat(findHistory(TokenAirdrop.class)).containsExactly(tokenAirdrop);
+        if (commitIndex > 1) {
+            updatedAmountAirdrop.setAmount(newAmount);
+        }
+        assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(updatedAmountAirdrop, tokenAirdrop2);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideAirdrops")
+    void onTokenAirdropCancel(TokenAirdropStateEnum state, int commitIndex) {
+        // given
+        var tokenAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
+        var nftAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).get();
+
+        sqlEntityListener.onTokenAirdrop(tokenAirdrop);
+        sqlEntityListener.onTokenAirdrop(nftAirdrop);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(tokenAirdrop, nftAirdrop);
+            assertThat(findHistory(TokenAirdrop.class)).isEmpty();
+        }
+
+        // when
+        var tokenAirdropUpdateState = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(a -> a.state(state)
+                        .receiverAccountId(tokenAirdrop.getReceiverAccountId())
+                        .senderAccountId(tokenAirdrop.getSenderAccountId())
+                        .tokenId(tokenAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        var nftAirdropUpdateState = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                .customize(a -> a.state(state)
+                        .receiverAccountId(nftAirdrop.getReceiverAccountId())
+                        .senderAccountId(nftAirdrop.getSenderAccountId())
+                        .serialNumber(nftAirdrop.getSerialNumber())
+                        .tokenId(nftAirdrop.getTokenId())
+                        .timestampRange(Range.atLeast(domainBuilder.timestamp())))
+                .get();
+        sqlEntityListener.onTokenAirdrop(tokenAirdropUpdateState);
+        sqlEntityListener.onTokenAirdrop(nftAirdropUpdateState);
+        completeFileAndCommit();
+
+        // then
+        tokenAirdrop.setTimestampRange(
+                Range.closedOpen(tokenAirdrop.getTimestampLower(), tokenAirdropUpdateState.getTimestampLower()));
+        nftAirdrop.setTimestampRange(
+                Range.closedOpen(nftAirdrop.getTimestampLower(), nftAirdropUpdateState.getTimestampLower()));
+        assertThat(findHistory(TokenAirdrop.class)).containsExactly(tokenAirdrop, nftAirdrop);
+        tokenAirdropUpdateState.setAmount(tokenAirdrop.getAmount());
+        assertThat(tokenAirdropRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAirdropUpdateState, nftAirdropUpdateState);
     }
 
     @Test
@@ -3119,5 +3190,13 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         tokenAccount.setTimestampRange(timestampRange);
         tokenAccount.setTokenId(tokenId.getId());
         return tokenAccount;
+    }
+
+    private static Stream<Arguments> provideAirdrops() {
+        return Stream.of(
+                Arguments.of(TokenAirdropStateEnum.CANCELLED, 1),
+                Arguments.of(TokenAirdropStateEnum.CANCELLED, 2),
+                Arguments.of(TokenAirdropStateEnum.CLAIMED, 1),
+                Arguments.of(TokenAirdropStateEnum.CLAIMED, 2));
     }
 }

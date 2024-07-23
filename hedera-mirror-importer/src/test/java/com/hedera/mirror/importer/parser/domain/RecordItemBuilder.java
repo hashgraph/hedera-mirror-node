@@ -686,7 +686,12 @@ public class RecordItemBuilder {
     }
 
     public Builder<TokenAirdropTransactionBody.Builder> tokenAirdrop() {
+        var fungibleTokenId = tokenId();
+        var nftTokenId = tokenId();
+
+        // Airdrops that transfer to the account and do not go into the pending airdrop list
         var tokenTransferList = TokenTransferList.newBuilder()
+                .setToken(fungibleTokenId)
                 .addTransfers(AccountAmount.newBuilder()
                         .setAccountID(accountId())
                         .setAmount(-100)
@@ -696,6 +701,7 @@ public class RecordItemBuilder {
                         .setAmount(100)
                         .build());
         var nftTransferList = TokenTransferList.newBuilder()
+                .setToken(nftTokenId)
                 .addNftTransfers(NftTransfer.newBuilder()
                         .setSerialNumber(1L)
                         .setReceiverAccountID(accountId())
@@ -704,7 +710,7 @@ public class RecordItemBuilder {
         var fungiblePendingAirdropId = PendingAirdropId.newBuilder()
                 .setSenderId(accountId())
                 .setReceiverId(accountId())
-                .setFungibleTokenType(tokenId());
+                .setFungibleTokenType(fungibleTokenId);
         var fungiblePendingAirdrop = PendingAirdropRecord.newBuilder()
                 .setPendingAirdropId(fungiblePendingAirdropId)
                 .setPendingAirdropValue(
@@ -713,16 +719,13 @@ public class RecordItemBuilder {
                 .setSenderId(accountId())
                 .setReceiverId(accountId())
                 .setNonFungibleToken(NftID.newBuilder()
-                        .setTokenID(tokenId())
+                        .setTokenID(nftTokenId)
                         .setSerialNumber(1L)
                         .build());
         var nftPendingAirdrop = PendingAirdropRecord.newBuilder().setPendingAirdropId(nftPendingAirdropId);
 
-        var transactionBody = TokenAirdropTransactionBody.newBuilder()
-                .addTokenTransfers(0, tokenTransferList)
-                .addTokenTransfers(1, nftTransferList);
-
-        return new Builder<>(TransactionType.TOKENAIRDROP, transactionBody)
+        return new Builder<>(TransactionType.TOKENAIRDROP, TokenAirdropTransactionBody.newBuilder())
+                .record(r -> r.addTokenTransferLists(tokenTransferList).addTokenTransferLists(nftTransferList))
                 .pendingAirdrops(fungiblePendingAirdrop)
                 .pendingAirdrops(nftPendingAirdrop);
     }

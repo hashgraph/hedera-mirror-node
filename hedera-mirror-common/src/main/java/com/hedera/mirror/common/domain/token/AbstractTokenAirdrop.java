@@ -41,7 +41,12 @@ import org.hibernate.type.SqlTypes;
 @Upsertable(history = true)
 public class AbstractTokenAirdrop implements History {
 
-    @UpsertColumn(coalesce = "coalesce(e_{0}, 0) + coalesce({0}, 0)")
+    @UpsertColumn(
+            coalesce =
+                    """
+                    case when coalesce(state, e_state) = ''PENDING'' then coalesce(e_{0}, 0) + coalesce({0}, 0)
+                            else coalesce(e_{0}, {0}, 0)
+                        end""")
     private long amount;
 
     @jakarta.persistence.Id
@@ -57,12 +62,6 @@ public class AbstractTokenAirdrop implements History {
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     private TokenAirdropStateEnum state;
 
-    @UpsertColumn(
-            coalesce =
-                    """
-                            case when coalesce(e_state, state) = ''PENDING'' then coalesce({0}, e_{0})
-                                 else coalesce(e_{0}, {0})
-                            end""")
     private Range<Long> timestampRange;
 
     @jakarta.persistence.Id

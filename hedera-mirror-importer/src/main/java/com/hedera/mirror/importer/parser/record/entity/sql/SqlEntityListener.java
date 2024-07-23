@@ -746,19 +746,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAirdrop mergeTokenAirdrop(TokenAirdrop previous, TokenAirdrop current) {
-        // Todo test pending to cancelled here
-
         if (previous.getState() == PENDING) {
-            previous.setState(current.getState());
-            if (previous.getAmount() != 0 && current.getState() == PENDING) {
-                previous.setAmount(previous.getAmount() + current.getAmount());
-            }
+            var mergedAmount =
+                    current.getState() == PENDING ? previous.getAmount() + current.getAmount() : previous.getAmount();
+            current.setAmount(mergedAmount);
         }
 
-        return previous;
-
-        // Todo test nft ... should not be able to alter an nft pending airdrop, it can only be canceled or claimed
-        // previous.setTimestampUpper(current.getTimestampLower());
+        previous.setTimestampUpper(current.getTimestampLower());
+        return current;
     }
 
     private void onNftTransferList(Transaction transaction) {

@@ -37,26 +37,10 @@ class TokenAirdropTransactionHandler extends AbstractTransactionHandler {
     private final EntityProperties entityProperties;
 
     @Override
-    protected void addCommonEntityIds(Transaction transaction, RecordItem recordItem) {
-        super.addCommonEntityIds(transaction, recordItem);
-        if (entityProperties.getPersist().isItemizedTransfers()) {
-            for (var tokenTransfer :
-                    recordItem.getTransactionBody().getTokenAirdrop().getTokenTransfersList()) {
-                tokenTransfer
-                        .getTransfersList()
-                        .forEach(transfer -> recordItem.addEntityId(EntityId.of(transfer.getAccountID())));
-                tokenTransfer
-                        .getNftTransfersList()
-                        .forEach(transfer -> recordItem.addEntityId(EntityId.of(transfer.getReceiverAccountID())));
-            }
-        }
-    }
-
-    @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (
-        // !entityProperties.getPersist().isTokenAirdrops() ||
-        !entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
+        if (!entityProperties.getPersist().isTokenAirdrops()
+                || !entityProperties.getPersist().isTokens()
+                || !recordItem.isSuccessful()) {
             return;
         }
 

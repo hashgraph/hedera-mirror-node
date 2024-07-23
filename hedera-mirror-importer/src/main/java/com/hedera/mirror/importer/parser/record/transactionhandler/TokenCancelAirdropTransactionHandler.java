@@ -38,27 +38,11 @@ class TokenCancelAirdropTransactionHandler extends AbstractTransactionHandler {
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    //    @Override
-    //    protected void addCommonEntityIds(Transaction transaction, RecordItem recordItem) {
-    //        super.addCommonEntityIds(transaction, recordItem);
-    //        // Broken, can be in doUpdate instead
-    //        var pendingAirdropIds = recordItem.getTransactionBody().getTokenCancelAirdrop().getPendingAirdropsList();
-    //        for (var pendingAirdropId : pendingAirdropIds) {
-    //            var sender = pendingAirdropId.getSenderId();
-    //            recordItem.addEntityId(EntityId.of(sender));
-    //
-    //            var tokenId = pendingAirdropId.hasFungibleTokenType()
-    //                    ? pendingAirdropId.getFungibleTokenType()
-    //                    : pendingAirdropId.getNonFungibleToken().getTokenID();
-    //            recordItem.addEntityId(EntityId.of(tokenId));
-    //        }
-    //    }
-
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (
-        // !entityProperties.getPersist().isTokenAirdrops() ||
-        !entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
+        if (!entityProperties.getPersist().isTokenAirdrops()
+                || !entityProperties.getPersist().isTokens()
+                || !recordItem.isSuccessful()) {
             return;
         }
 
@@ -67,8 +51,9 @@ class TokenCancelAirdropTransactionHandler extends AbstractTransactionHandler {
             var pendingAirdropIds = transactionBody.getTokenCancelAirdrop().getPendingAirdropsList();
             for (var pendingAirdropId : pendingAirdropIds) {
                 var receiver = EntityId.of(pendingAirdropId.getReceiverId());
-                // recordItem.addEntityId(receiver);
+                recordItem.addEntityId(receiver);
                 var sender = EntityId.of(pendingAirdropId.getSenderId());
+                recordItem.addEntityId(sender);
 
                 var tokenAirdrop = new TokenAirdrop();
                 tokenAirdrop.setState(TokenAirdropStateEnum.CANCELLED);
@@ -86,7 +71,7 @@ class TokenCancelAirdropTransactionHandler extends AbstractTransactionHandler {
                 }
 
                 var tokenEntityId = EntityId.of(tokenId);
-                // recordItem.addEntityId(tokenEntityId);
+                recordItem.addEntityId(tokenEntityId);
                 tokenAirdrop.setTokenId(tokenEntityId.getId());
                 entityListener.onTokenAirdrop(tokenAirdrop);
             }

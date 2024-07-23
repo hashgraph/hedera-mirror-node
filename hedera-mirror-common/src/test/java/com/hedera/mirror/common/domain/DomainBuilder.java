@@ -908,7 +908,7 @@ public class DomainBuilder {
                 .receiverAccountId(id())
                 .senderAccountId(id())
                 .state(TokenAirdropStateEnum.PENDING)
-                .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
+                .timestampRange(Range.atLeast(timestamp))
                 .tokenId(id());
         if (type == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
             builder.amount(0L).serialNumber(number());

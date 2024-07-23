@@ -3473,8 +3473,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .setNonFungibleToken(protoNftId));
         var tokenAirdrop = recordItemBuilder
                 .tokenAirdrop()
-                // TODO redo this
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(airdropTimestamp))
+                        .clearNewPendingAirdrops()
+                        .clearTokenTransferLists()
                         .addNewPendingAirdrops(pendingFungibleAirdrop)
                         .addNewPendingAirdrops(pendingNftAirdrop)
                         .addTokenTransferLists(fungibleAirdrop)
@@ -3526,6 +3527,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftTransferInRepository(airdropTimestamp, expectedNftTransfer);
         assertThat(tokenAirdropRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
+        assertThat(findHistory(TokenAirdrop.class)).isEmpty();
 
         if (airdropType == TokenAirdropStateEnum.CANCELLED) {
             // when
@@ -3565,7 +3567,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             cancelAirdrop.record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(cancelTimestamp2)));
             parseRecordItemAndCommit(cancelAirdrop.build());
 
-            // then no change has occurred
+            // then
+            expectedPendingFungible.setTimestampRange(Range.atLeast(cancelTimestamp2));
+            expectedPendingNft.setTimestampRange(Range.atLeast(cancelTimestamp2));
             assertThat(tokenAirdropRepository.findAll())
                     .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
         } else if (airdropType == TokenAirdropStateEnum.CLAIMED) {
@@ -3624,6 +3628,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var tokenAirdrop = recordItemBuilder
                 .tokenAirdrop()
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(airdropTimestamp))
+                        .clearNewPendingAirdrops()
                         .addNewPendingAirdrops(pendingFungibleAirdrop)
                         .addNewPendingAirdrops(pendingNftAirdrop))
                 .build();
@@ -3667,19 +3672,21 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             parseRecordItemsAndCommit(List.of(tokenAirdrop, cancelAirdrop.build()));
 
             // then
-            expectedPendingFungible.setState(TokenAirdropStateEnum.CANCELLED);
-            expectedPendingNft.setState(TokenAirdropStateEnum.CANCELLED);
-            assertThat(tokenAirdropRepository.findAll())
+            expectedPendingFungible.setTimestampRange(Range.closedOpen(airdropTimestamp, updateTimestamp));
+            expectedPendingNft.setTimestampRange(Range.closedOpen(airdropTimestamp, updateTimestamp));
+            assertThat(findHistory(TokenAirdrop.class))
                     .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
 
+            expectedPendingFungible.setState(TokenAirdropStateEnum.CANCELLED);
+            expectedPendingFungible.setTimestampRange(Range.atLeast(updateTimestamp));
+            expectedPendingNft.setState(TokenAirdropStateEnum.CANCELLED);
+            expectedPendingNft.setTimestampRange(Range.atLeast(updateTimestamp));
+            assertThat(tokenAirdropRepository.findAll())
+                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
         } else if (airdropType == TokenAirdropStateEnum.CLAIMED) {
-
             // then
             expectedPendingFungible.setState(TokenAirdropStateEnum.CLAIMED);
             expectedPendingNft.setState(TokenAirdropStateEnum.CLAIMED);
-            // assertThat(tokenAirdropRepository.findAll())
-            //        .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
-
         }
     }
 
@@ -3717,6 +3724,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var tokenAirdrop = recordItemBuilder
                 .tokenAirdrop()
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(airdropTimestamp))
+                        .clearNewPendingAirdrops()
                         .addNewPendingAirdrops(pendingFungibleAirdrop))
                 .build();
 
@@ -3732,43 +3740,38 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var updateAirdrop = recordItemBuilder
                 .tokenAirdrop()
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp))
+                        .clearNewPendingAirdrops()
                         .addNewPendingAirdrops(updateAmountAirdrop))
                 .build();
+
+        var expectedPendingFungible = domainBuilder
+                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
+                .customize(t -> t.amount(pendingAmount)
+                        .receiverAccountId(RECEIVER.getAccountNum())
+                        .senderAccountId(PAYER.getAccountNum())
+                        .state(TokenAirdropStateEnum.PENDING)
+                        .timestampRange(Range.atLeast(airdropTimestamp))
+                        .tokenId(TOKEN_ID.getTokenNum()))
+                .get();
 
         if (mergeUpdate) {
             // update the amount with a merge inside entityListener
             parseRecordItemsAndCommit(List.of(tokenAirdrop, updateAirdrop));
 
             // then
-            // No history table update as the entityListener merged the airdrops before upserting
-            var expectedPendingFungible = domainBuilder
-                    .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
-                    .customize(t -> t.amount(pendingAmount + updateAmount)
-                            .receiverAccountId(RECEIVER.getAccountNum())
-                            .senderAccountId(PAYER.getAccountNum())
-                            .state(TokenAirdropStateEnum.PENDING)
-                            .timestampRange(Range.atLeast(airdropTimestamp))
-                            .tokenId(TOKEN_ID.getTokenNum()))
-                    .get();
-            assertThat(tokenAirdropRepository.findAll())
-                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible));
+            expectedPendingFungible.setTimestampRange(Range.closedOpen(airdropTimestamp, updateTimestamp));
+            assertThat(findHistory(TokenAirdrop.class)).containsExactlyInAnyOrder(expectedPendingFungible);
+            expectedPendingFungible.setAmount(pendingAmount + updateAmount);
+            expectedPendingFungible.setTimestampRange(Range.atLeast(updateTimestamp));
+            assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(expectedPendingFungible);
         } else {
             // when
             parseRecordItemAndCommit(tokenAirdrop);
 
             // then
-            var expectedPendingFungible = domainBuilder
-                    .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
-                    .customize(t -> t.amount(pendingAmount)
-                            .receiverAccountId(RECEIVER.getAccountNum())
-                            .senderAccountId(PAYER.getAccountNum())
-                            .state(TokenAirdropStateEnum.PENDING)
-                            .timestampRange(Range.atLeast(airdropTimestamp))
-                            .tokenId(TOKEN_ID.getTokenNum()))
-                    .get();
-
             assertThat(tokenAirdropRepository.findAll())
                     .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible));
+            assertThat(findHistory(TokenAirdrop.class)).isEmpty();
 
             parseRecordItemAndCommit(updateAirdrop);
 
