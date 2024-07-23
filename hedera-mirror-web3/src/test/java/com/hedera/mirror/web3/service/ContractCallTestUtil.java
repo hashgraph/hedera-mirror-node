@@ -28,6 +28,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class ContractCallTestUtil {
 
+    static final String LEDGER_ID = "0x01";
     static final long EVM_V_34_BLOCK = 2L;
     static final long EVM_V_38_BLOCK = 3L;
     static final long EVM_V_46_BLOCK = 4L;

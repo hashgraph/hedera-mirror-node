@@ -35,6 +35,7 @@ import static com.hedera.mirror.web3.service.ContractCallTestUtil.ED25519_KEY;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.KEY_PROTO;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.KEY_WITH_ECDSASecp256K1;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.KEY_WITH_ED25519;
+import static com.hedera.mirror.web3.service.ContractCallTestUtil.LEDGER_ID;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_ADDRESS;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_PUBLIC_KEY;
@@ -61,6 +62,7 @@ import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.Expiry;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FungibleTokenInfo;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.KeyValue;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.NonFungibleTokenInfo;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenInfo;
 import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenKey;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -102,11 +104,14 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
     private final String FUNGIBLE_TOKEN_SYMBOL = "FTokenSymbol";
     private final String FUNGIBLE_TOKEN_MEMO = "FTokenMemo";
     private final int FUNGIBLE_TOKEN_DECIMALS = 12;
-    private final long FUNGIBLE_TOKEN_TOTAL_SUPPLY = 1_000_000;
+    private final long TOKEN_TOTAL_SUPPLY = 1_000_000;
     private final long CREATED_TIMESTAMP = System.currentTimeMillis();
     private final long AUTO_RENEW_PERIOD = 8_000_000L;
     private final long EXPIRATION_TIMESTAMP = CREATED_TIMESTAMP + TimeUnit.SECONDS.toNanos(AUTO_RENEW_PERIOD);
-
+    private final String NFT_METADATA = "NftMetadata";
+    private final String NFT_TOKEN_NAME = "NFTTokenName";
+    private final String NFT_TOKEN_SYMBOL = "NFTTokenSymbol";
+    private final String NFT_TOKEN_MEMO = "NFTTokenMemo";
     private Entity owner;
 
     @BeforeEach
@@ -273,11 +278,11 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
 
             // Then
             final var keyValue = new KeyValue(
-                    Bool.DEFAULT,
-                    org.web3j.abi.datatypes.Address.DEFAULT,
-                    DynamicBytes.DEFAULT,
-                    new DynamicBytes(Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length)),
-                    org.web3j.abi.datatypes.Address.DEFAULT);
+                    Boolean.FALSE,
+                    Address.ZERO.toHexString(),
+                    new byte[0],
+                    Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length),
+                    Address.ZERO.toHexString());
             final var expected = new FungibleTokenInfo(
                     new TokenInfo(
                             new HederaToken(
@@ -286,7 +291,7 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
                                     AUTO_RENEW_ACCOUNT_ADDRESS.toHexString(),
                                     FUNGIBLE_TOKEN_MEMO,
                                     Boolean.FALSE, // infinite supply
-                                    BigInteger.valueOf(FUNGIBLE_TOKEN_TOTAL_SUPPLY), // max supply
+                                    BigInteger.valueOf(TOKEN_TOTAL_SUPPLY), // max supply
                                     Boolean.FALSE, // freeze default
                                     List.of(
                                             new TokenKey(BigInteger.valueOf(1L), keyValue),
@@ -300,14 +305,14 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
                                             BigInteger.valueOf(TimeUnit.NANOSECONDS.toSeconds(EXPIRATION_TIMESTAMP)),
                                             AUTO_RENEW_ACCOUNT_ADDRESS.toHexString(),
                                             BigInteger.valueOf(AUTO_RENEW_PERIOD))),
-                            BigInteger.valueOf(FUNGIBLE_TOKEN_TOTAL_SUPPLY), // total supply
+                            BigInteger.valueOf(TOKEN_TOTAL_SUPPLY), // total supply
                             Boolean.FALSE,
                             Boolean.FALSE,
                             Boolean.FALSE,
                             List.of(),
                             List.of(),
                             List.of(),
-                            "0x01"),
+                            LEDGER_ID),
                     new BigInteger(String.valueOf(FUNGIBLE_TOKEN_DECIMALS)));
             assertThat(result).isEqualTo(expected);
         }
@@ -315,25 +320,62 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
         @Test
         void ethCallGetInformationForNFT() throws Exception {
             // Given
+            autoRenewAccountPersist();
             final var tokenEntity = nftPersist(Key.newBuilder()
                     .setECDSASecp256K1(KEY_WITH_ECDSASecp256K1.getECDSASecp256K1())
                     .build()
                     .toByteArray());
             final var tokenAddress = toAddress(tokenEntity.getTokenId()).toHexString();
-            final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+            final var contract = testWeb3jService.deploy(
+                    PrecompileTestContract::deploy); // the address is duplicated with SENDER_ADDRESS
 
             // When
             var result = contract.call_getInformationForNonFungibleToken(tokenAddress, BigInteger.ONE)
                     .send();
 
             // Then
-            //            final var expected = new NonFungibleTokenInfo(
-            //                    new TokenInfo(),
-            //                    BigInteger.ONE, // serial number
-            //                    String ownerId,
-            //                    BigInteger creationTime, byte[] metadata, String spenderId
-            //            );
-            //            assertThat(result).isEqualTo(expected);
+            final var keyValue = new KeyValue(
+                    Boolean.FALSE,
+                    Address.ZERO.toHexString(),
+                    new byte[0],
+                    Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length),
+                    Address.ZERO.toHexString());
+            final var expected = new NonFungibleTokenInfo(
+                    new TokenInfo(
+                            new HederaToken(
+                                    NFT_TOKEN_NAME,
+                                    NFT_TOKEN_SYMBOL,
+                                    AUTO_RENEW_ACCOUNT_ADDRESS.toHexString(),
+                                    NFT_TOKEN_MEMO,
+                                    Boolean.FALSE, // infinite supply
+                                    BigInteger.valueOf(TOKEN_TOTAL_SUPPLY), // max supply
+                                    Boolean.FALSE, // freeze default
+                                    List.of(
+                                            new TokenKey(BigInteger.valueOf(1L), keyValue),
+                                            new TokenKey(BigInteger.valueOf(2L), keyValue),
+                                            new TokenKey(BigInteger.valueOf(4L), keyValue),
+                                            new TokenKey(BigInteger.valueOf(8L), keyValue),
+                                            new TokenKey(BigInteger.valueOf(16L), keyValue),
+                                            new TokenKey(BigInteger.valueOf(32L), keyValue),
+                                            new TokenKey(BigInteger.valueOf(64L), keyValue)),
+                                    new Expiry(
+                                            BigInteger.valueOf(TimeUnit.NANOSECONDS.toSeconds(EXPIRATION_TIMESTAMP)),
+                                            AUTO_RENEW_ACCOUNT_ADDRESS.toHexString(),
+                                            BigInteger.valueOf(AUTO_RENEW_PERIOD))),
+                            BigInteger.valueOf(TOKEN_TOTAL_SUPPLY),
+                            Boolean.FALSE,
+                            Boolean.FALSE,
+                            Boolean.FALSE,
+                            List.of(),
+                            List.of(),
+                            List.of(),
+                            LEDGER_ID),
+                    BigInteger.ONE, // serial number
+                    OWNER_ADDRESS.toHexString(),
+                    BigInteger.valueOf(CREATED_TIMESTAMP),
+                    NFT_METADATA.getBytes(),
+                    OWNER_ADDRESS.toHexString());
+            assertThat(result).isEqualTo(expected);
         }
 
         @ParameterizedTest
@@ -585,7 +627,7 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
                 false,
                 true,
                 new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
-                "0x01"
+                LEDGER_ID
             },
             1L,
             OWNER_ADDRESS,
@@ -601,7 +643,7 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
                     false,
                     true,
                     new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
-                    "0x01"
+                    LEDGER_ID
                 }),
         GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS}, new Object[] {
             NFT_HBAR_TOKEN_AND_KEYS,
@@ -610,7 +652,7 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
             false,
             true,
             new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
-            "0x01"
+            LEDGER_ID
         });
 
         private final String name;
@@ -727,9 +769,9 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
                         .name(FUNGIBLE_TOKEN_NAME)
                         .symbol(FUNGIBLE_TOKEN_SYMBOL)
                         .decimals(FUNGIBLE_TOKEN_DECIMALS)
-                        .totalSupply(FUNGIBLE_TOKEN_TOTAL_SUPPLY)
+                        .totalSupply(TOKEN_TOTAL_SUPPLY)
                         .treasuryAccountId(entityIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS))
-                        .maxSupply(FUNGIBLE_TOKEN_TOTAL_SUPPLY)
+                        .maxSupply(TOKEN_TOTAL_SUPPLY)
                         .kycKey(key)
                         .feeScheduleKey(key)
                         .wipeKey(key)
@@ -762,7 +804,7 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
                 .nft()
                 .customize(n -> n.accountId(owner.toEntityId())
                         .spender(owner.toEntityId())
-                        .metadata("NFT_METADATA_URI".getBytes())
+                        .metadata(NFT_METADATA.getBytes())
                         .accountId(owner.toEntityId())
                         .timestampRange(Range.atLeast(1475067194949034022L))
                         .tokenId(nftEntity.getId()))
@@ -771,15 +813,29 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
     }
 
     private Token nftPersist(final byte[] key) {
-        final var nftEntity = domainBuilder
+        final var nftEntityId = entityIdFromEvmAddress(NFT_ADDRESS);
+
+        domainBuilder
                 .entity()
-                .customize(e -> e.type(TOKEN).balance(1500L).key(key))
+                .customize(e -> e.id(nftEntityId.getId())
+                        .type(TOKEN)
+                        .balance(1500L)
+                        .key(key)
+                        .memo(NFT_TOKEN_MEMO)
+                        .autoRenewAccountId(entityIdFromEvmAddress(AUTO_RENEW_ACCOUNT_ADDRESS)
+                                .getId())
+                        .autoRenewPeriod(AUTO_RENEW_PERIOD)
+                        .createdTimestamp(CREATED_TIMESTAMP)
+                        .expirationTimestamp(EXPIRATION_TIMESTAMP))
                 .persist();
 
         final var token = domainBuilder
                 .token()
-                .customize(t -> t.tokenId(nftEntity.getId())
+                .customize(t -> t.tokenId(nftEntityId.getId())
                         .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .name(NFT_TOKEN_NAME)
+                        .symbol(NFT_TOKEN_SYMBOL)
+                        .totalSupply(TOKEN_TOTAL_SUPPLY)
                         .kycKey(key)
                         .feeScheduleKey(key)
                         .freezeKey(key)
@@ -793,10 +849,10 @@ class ContractCallServicePrecompileReadonlyTest extends Web3IntegrationTest {
                 .nft()
                 .customize(n -> n.accountId(owner.toEntityId())
                         .spender(owner.toEntityId())
-                        .metadata("NFT_METADATA_URI".getBytes())
+                        .metadata(NFT_METADATA.getBytes())
                         .accountId(owner.toEntityId())
-                        .timestampRange(Range.atLeast(1475067194949034022L))
-                        .tokenId(nftEntity.getId()))
+                        //                        .timestampRange(Range.atLeast(1475067194949034022L))
+                        .tokenId(nftEntityId.getId()))
                 .persist();
         return token;
     }
