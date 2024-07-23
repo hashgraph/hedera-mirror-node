@@ -64,10 +64,10 @@ public interface CommonMapper {
         var ecdsa = PATTERN_ECDSA.matcher(hex);
 
         if (ecdsa.matches()) {
-            return new Key().key(ecdsa.group(2)).type(TypeEnum.ECDSA_SECP256K1);
+            return new Key().key(ecdsa.group(2)).type(TypeEnum.ECDSA_SECP256_K1);
         }
 
-        return new Key().key(hex).type(TypeEnum.PROTOBUFENCODED);
+        return new Key().key(hex).type(TypeEnum.PROTOBUF_ENCODED);
     }
 
     default TimestampRange mapRange(Range<Long> source) {

@@ -167,9 +167,9 @@ class AutoCreationLogicTest {
     @SneakyThrows
     @ParameterizedTest
     @CsvSource(textBlock = """
+            54, -1
             53, -1
-            52, -1
-            51, 0
+            52, 0
             """)
     void hollowAccountWithHbarChangeWorks(int hapiMinorVersion, int expectedMaxAutoAssociations) {
         final var jKey = mapKey(Key.parseFrom(ECDSA_PUBLIC_KEY));
@@ -209,9 +209,9 @@ class AutoCreationLogicTest {
     @SneakyThrows
     @ParameterizedTest
     @CsvSource(textBlock = """
+            54, -1
             53, -1
-            52, -1
-            51, 1
+            52, 1
             """)
     void happyPathWithFungibleTokenChangeWorks(int hapiMinorVersion, int expectedMaxAutoAssociations) {
         Key aPrimitiveKey = Key.newBuilder()

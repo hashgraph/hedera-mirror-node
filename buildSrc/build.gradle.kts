@@ -19,11 +19,12 @@ plugins { `kotlin-dsl` }
 repositories {
     gradlePluginPortal()
     mavenCentral()
+    maven("https://jitpack.io")
 }
 
 dependencies {
-    val dockerJavaVersion = "3.3.6"
-    val flywayVersion = "10.15.2"
+    val dockerJavaVersion = "3.4.0"
+    val flywayVersion = "10.16.0"
     val jooqVersion = "3.19.10"
 
     // Add docker-java dependencies before gradle-docker-plugin to avoid the docker-java jars
@@ -41,17 +42,18 @@ dependencies {
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.6.1")
     implementation("gradle.plugin.org.flywaydb:gradle-plugin-publishing:$flywayVersion")
     implementation("io.freefair.gradle:lombok-plugin:8.6")
-    implementation("io.spring.gradle:dependency-management-plugin:1.1.5")
+    implementation("io.spring.gradle:dependency-management-plugin:1.1.6")
     implementation("org.apache.commons:commons-compress:1.26.1")
     implementation("org.flywaydb:flyway-database-postgresql:$flywayVersion")
-    implementation("org.gradle:test-retry-gradle-plugin:1.5.9")
+    implementation("org.gradle:test-retry-gradle-plugin:1.5.10")
     implementation("org.jooq:jooq-codegen-gradle:$jooqVersion")
     implementation("org.jooq:jooq-meta:$jooqVersion")
-    implementation("org.openapitools:openapi-generator-gradle-plugin:7.6.0")
-    implementation("org.owasp:dependency-check-gradle:10.0.2")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.0.0.4638")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.1")
-    implementation("org.testcontainers:postgresql:1.19.8")
+    implementation("org.openapitools:openapi-generator-gradle-plugin:7.7.0")
+    implementation("org.owasp:dependency-check-gradle:10.0.3")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:5.1.0.4882")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.3.2")
+    implementation("org.testcontainers:postgresql:1.20.0")
+    implementation("com.github.kselveliev:web3j-gradle-plugin:4.12.0")
 }
 
 val gitHook =

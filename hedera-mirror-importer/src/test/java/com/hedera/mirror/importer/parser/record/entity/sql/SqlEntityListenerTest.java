@@ -53,6 +53,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -3022,16 +3023,22 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule);
     }
 
-    @Test
-    void onEthereumTransactionWInitCode() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void onEthereumTransactionWInitCode(boolean persistTransactionHash) {
+        entityProperties.getPersist().setTransactionHash(persistTransactionHash);
         var ethereumTransaction = domainBuilder.ethereumTransaction(true).get();
         sqlEntityListener.onEthereumTransaction(ethereumTransaction);
+        var expectedTransactionHash = persistTransactionHash
+                ? List.of(ethereumTransaction.toTransactionHash())
+                : Collections.<TransactionHash>emptyList();
 
         // when
         completeFileAndCommit();
 
         // then
-        assertThat(ethereumTransactionRepository.findAll()).hasSize(1).first().isEqualTo(ethereumTransaction);
+        assertThat(ethereumTransactionRepository.findAll()).containsExactly(ethereumTransaction);
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHash);
     }
 
     @Test
@@ -3043,12 +3050,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(ethereumTransactionRepository.findAll())
-                .hasSize(1)
-                .first()
-                .satisfies(t -> assertThat(t.getCallDataId().getId())
-                        .isEqualTo(ethereumTransaction.getCallDataId().getId()))
-                .isEqualTo(ethereumTransaction);
+        assertThat(ethereumTransactionRepository.findAll()).containsExactly(ethereumTransaction);
     }
 
     private void completeFileAndCommit() {

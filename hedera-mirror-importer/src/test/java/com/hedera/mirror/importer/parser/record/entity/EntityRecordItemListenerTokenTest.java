@@ -3846,6 +3846,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .build());
                 })
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(rejectTimestamp))
+                        .clearTokenTransferLists()
                         .addTokenTransferLists(tokenRejectTransfer))
                 .build();
 
@@ -3944,6 +3945,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             TokenReference.newBuilder().setNft(protoNftId).build());
                 })
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(rejectTimestamp))
+                        .clearTokenTransferLists()
                         .addTokenTransferLists(tokenRejectTransfer))
                 .build();
 

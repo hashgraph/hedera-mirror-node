@@ -230,6 +230,7 @@ public class DomainBuilder {
                 .consensusTimestamp(timestamp())
                 .ipAddressV4(ipAddress)
                 .nodeId(number())
+                .domainName("")
                 .port(50211);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -1056,7 +1057,10 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TransactionHash, TransactionHash.TransactionHashBuilder> transactionHash() {
-        var builder = TransactionHash.builder().consensusTimestamp(timestamp()).hash(bytes(48));
+        var builder = TransactionHash.builder()
+                .consensusTimestamp(timestamp())
+                .hash(bytes(48))
+                .payerAccountId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

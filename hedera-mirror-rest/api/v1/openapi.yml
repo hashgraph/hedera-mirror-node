@@ -750,6 +750,7 @@ paths:
         - $ref: "#/components/parameters/logTopic1QueryParam"
         - $ref: "#/components/parameters/logTopic2QueryParam"
         - $ref: "#/components/parameters/logTopic3QueryParam"
+        - $ref: "#/components/parameters/transactionHashQueryParam"
       responses:
         200:
           description: OK
@@ -1075,6 +1076,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/accountIdQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/tokenNameQueryParam"
         - $ref: "#/components/parameters/orderQueryParam"
         - $ref: "#/components/parameters/publicKeyQueryParam"
         - $ref: "#/components/parameters/tokenIdQueryParam"
@@ -1339,7 +1341,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.109.0-SNAPSHOT
+  version: 0.110.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: "https://www.apache.org/licenses/LICENSE-2.0.html"
@@ -3171,15 +3173,19 @@ components:
     ServiceEndpoint:
       type: object
       required:
+        - domain_name
         - ip_address_v4
         - port
       properties:
+        domain_name:
+          type: string
         ip_address_v4:
           type: string
         port:
           format: int32
           type: integer
       example:
+        domain_name: www.example.com
         ip_address_v4: 127.0.0.1
         port: 50211
     ServiceEndpoints:
@@ -4798,6 +4804,15 @@ components:
           value: lte:0.0.700
       schema:
         $ref: "#/components/schemas/EntityIdQuery"
+    tokenNameQueryParam:
+      name: name
+      in: query
+      description: Partial or full token name. Not allowed to be used with token.id or account.id parameter. Pagination is not supported with the use of this parameter and results are ordered by token.id with respect to the order parameter.
+      schema:
+        type: string
+        maxLength: 100
+        minLength: 3
+
     tokenTypeQueryParam:
       name: type
       in: query
@@ -4945,6 +4960,19 @@ components:
       schema:
         type: boolean
         default: false
+    transactionHashQueryParam:
+      name: transaction.hash
+      in: query
+      schema:
+        pattern: ^(eq:)?(0x)?([0-9A-Fa-f]{64}|[0-9A-Fa-f]{96})$
+        type: string
+      required: false
+      description: A hex encoded 32-byte ethereum transaction hash or 48-byte hedera transaction hash.
+      examples:
+        transactionHash:
+          value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+        transactionHashWith0xPrefix:
+          value: "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
     transactionIdOrEthHashPathParam:
       name: transactionIdOrHash
       in: path

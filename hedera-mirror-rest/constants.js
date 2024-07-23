@@ -23,6 +23,7 @@ const AUTO_RENEW_PERIOD_MULTIPLE = BigInt(1e9);
 const DECIMALS_IN_HBARS = 8;
 const EMPTY_STRING = '';
 const EVM_ADDRESS_LENGTH = 20;
+const ETH_HASH_LENGTH = 32;
 
 const apiPrefix = '/api/v1';
 
@@ -45,6 +46,7 @@ const filterKeys = {
   INDEX: 'index',
   INTERNAL: 'internal',
   LIMIT: 'limit',
+  NAME: 'name',
   NODE_ID: 'node.id',
   NONCE: 'nonce',
   ORDER: 'order',
@@ -66,6 +68,7 @@ const filterKeys = {
   TOPIC3: 'topic3',
   TOPIC_ID: 'topic.id',
   TRANSACTION_INDEX: 'transaction.index',
+  TRANSACTION_HASH: 'transaction.hash',
   TRANSACTION_TYPE: 'transactiontype',
   TRANSACTIONS: 'transactions',
   HASH_OR_NUMBER: 'hashOrNumber',
@@ -221,6 +224,7 @@ export {
   DECIMALS_IN_HBARS,
   EMPTY_STRING,
   EVM_ADDRESS_LENGTH,
+  ETH_HASH_LENGTH,
   NANOSECONDS_PER_MILLISECOND,
   MAX_INT32,
   MAX_LONG,

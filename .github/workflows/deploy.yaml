@@ -23,7 +23,7 @@ jobs:
     if: github.event.client_payload.severity == 'info'
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+        uses: step-security/harden-runner@0d381219ddf674d61a7572ddd19d7941e271515c # v2.9.0
         with:
           egress-policy: audit
 
@@ -40,9 +40,9 @@ jobs:
           VERSION: v4.44.2
         run: |
           mkdir -p "${TARGET}"
-          curl -sL https://github.com/mikefarah/yq/releases/download/${VERSION}/${BINARY}.tar.gz --output - | tar -xz
-          mv ${BINARY} "${TARGET}/yq"
-        working-directory: ${{ env.RUNNER_TEMP }}
+          cd "${TARGET}"
+          curl -sL https://github.com/mikefarah/yq/releases/download/${VERSION}/${BINARY}.tar.gz --output - | tar -xvz
+          mv ${BINARY} yq
 
       - name: Get chart version
         id: release
@@ -74,11 +74,11 @@ jobs:
         uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6.1.0
         with:
           author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          body: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
-          branch: deploy-${{ github.event.client_payload.metadata.path }}-${{ steps.release.outputs.version }}
-          commit-message: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
+          body: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.namespaces }} in ${{ github.event.client_payload.metadata.cluster }}
+          branch: deploy-${{ github.event.client_payload.metadata.cluster }}-${{ steps.release.outputs.version }}
+          commit-message: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.namespaces }} in ${{ github.event.client_payload.metadata.cluster }}
           committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           delete-branch: true
           signoff: true
-          title: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.path }}
+          title: Deploy v${{ steps.release.outputs.version }} to ${{ github.event.client_payload.metadata.cluster }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}

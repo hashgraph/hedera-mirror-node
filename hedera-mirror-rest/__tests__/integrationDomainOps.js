@@ -72,6 +72,7 @@ const setup = async (testDataJson) => {
   await loadTokenAllowances(testDataJson.tokenAllowances);
   await loadTokenBalances(testDataJson.tokenBalance);
   await loadTransactions(testDataJson.transactions);
+  await loadTransactionHashes(testDataJson.transactionhashes);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
   await loadContractStates(testDataJson.contractStates);
 
@@ -480,6 +481,16 @@ const loadTransactions = async (transactions) => {
   }
 };
 
+const loadTransactionHashes = async (transactionHashes) => {
+  if (transactionHashes == null) {
+    return;
+  }
+
+  for (const transactionHash of transactionHashes) {
+    await addTransactionHash(transactionHash);
+  }
+};
+
 const loadTopicMessages = async (messages) => {
   if (messages == null) {
     return;
@@ -556,10 +567,11 @@ const addAddressBookEntry = async (addressBookEntryInput) => {
 };
 
 const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) => {
-  const insertFields = ['consensus_timestamp', 'ip_address_v4', 'node_id', 'port'];
+  const insertFields = ['consensus_timestamp', 'domain_name', 'ip_address_v4', 'node_id', 'port'];
 
   const addressBookServiceEndpoint = {
     consensus_timestamp: 0,
+    domain_name: '',
     ip_address_v4: '127.0.0.1',
     node_id: 0,
     port: 50211,
@@ -912,6 +924,7 @@ const addTransaction = async (transaction) => {
 
 const addTransactionHash = async (transactionHash) => {
   transactionHash.hash = valueToBuffer(transactionHash.hash);
+  transactionHash.payer_account_id = EntityId.parse(transactionHash.payer_account_id).getEncodedId();
   await insertDomainObject('transaction_hash', Object.keys(transactionHash), transactionHash);
 };
 
@@ -1655,6 +1668,7 @@ export default {
   loadTokenAccounts,
   loadTopicMessageLookups,
   loadTransactions,
+  loadTransactionHashes,
   loadEntityStakes,
   setAccountBalance,
   setup,

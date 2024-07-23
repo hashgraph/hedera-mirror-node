@@ -91,8 +91,11 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.PendingAirdropId;
 import com.hederahashgraph.api.proto.java.PendingAirdropRecord;
 import com.hederahashgraph.api.proto.java.PendingAirdropValue;
@@ -104,6 +107,7 @@ import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ScheduleSignTransactionBody;
+import com.hederahashgraph.api.proto.java.ServiceEndpoint;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -164,6 +168,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
@@ -604,6 +609,38 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.FREEZE, builder);
     }
 
+    public Builder<NodeCreateTransactionBody.Builder> nodeCreate() {
+        var builder = NodeCreateTransactionBody.newBuilder()
+                .setAccountId(accountId())
+                .setAdminKey(key())
+                .setDescription("Node create")
+                .setGossipCaCertificate(bytes(4))
+                .addGossipEndpoint(gossipEndpoint())
+                .setGrpcCertificateHash(bytes(48))
+                .addServiceEndpoint(serviceEndpoint());
+        return new Builder<>(TransactionType.NODECREATE, builder).receipt(r -> r.setNodeId(id()));
+    }
+
+    public Builder<NodeUpdateTransactionBody.Builder> nodeUpdate() {
+        var nodeId = id();
+        var builder = NodeUpdateTransactionBody.newBuilder()
+                .setAccountId(accountId())
+                .setAdminKey(key())
+                .setDescription(StringValue.of("Node update"))
+                .setGossipCaCertificate(BytesValue.of(bytes(4)))
+                .addGossipEndpoint(gossipEndpoint())
+                .setGrpcCertificateHash(BytesValue.of(bytes(48)))
+                .setNodeId(nodeId)
+                .addServiceEndpoint(serviceEndpoint());
+        return new Builder<>(TransactionType.NODEUPDATE, builder).receipt(r -> r.setNodeId(nodeId));
+    }
+
+    public Builder<NodeDeleteTransactionBody.Builder> nodeDelete() {
+        var nodeId = id();
+        var builder = NodeDeleteTransactionBody.newBuilder().setNodeId(nodeId);
+        return new Builder<>(TransactionType.NODEDELETE, builder).receipt(r -> r.setNodeId(nodeId));
+    }
+
     @SuppressWarnings("deprecation")
     public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
         var builder = NodeStakeUpdateTransactionBody.newBuilder()
@@ -820,11 +857,27 @@ public class RecordItemBuilder {
     }
 
     public Builder<TokenRejectTransactionBody.Builder> tokenReject() {
+        var owner = accountId();
+        var fungibleTokenReference = tokenReference(TokenTypeEnum.FUNGIBLE_COMMON);
+        var nftTokenReference = tokenReference(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         var transactionBody = TokenRejectTransactionBody.newBuilder()
-                .setOwner(accountId())
-                .addRejections(tokenReference(TokenTypeEnum.FUNGIBLE_COMMON))
-                .addRejections(tokenReference(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
-        return new Builder<>(TransactionType.TOKENREJECT, transactionBody);
+                .setOwner(owner)
+                .addRejections(fungibleTokenReference)
+                .addRejections(nftTokenReference);
+        var transferList = TokenTransferList.newBuilder()
+                .setToken(fungibleTokenReference.getFungibleToken())
+                .addTransfers(AccountAmount.newBuilder().setAccountID(owner).setAmount(-100))
+                .addTransfers(
+                        AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100));
+        var nftTransferList = TokenTransferList.newBuilder()
+                .setToken(nftTokenReference.getNft().getTokenID())
+                .addNftTransfers(NftTransfer.newBuilder()
+                        .setSenderAccountID(owner)
+                        .setSerialNumber(nftTokenReference.getNft().getSerialNumber())
+                        .setReceiverAccountID(accountId()));
+
+        return new Builder<>(TransactionType.TOKENREJECT, transactionBody)
+                .record(r -> r.addTokenTransferLists(transferList).addTokenTransferLists(nftTransferList));
     }
 
     public Builder<TokenRevokeKycTransactionBody.Builder> tokenRevokeKyc() {
@@ -1059,6 +1112,24 @@ public class RecordItemBuilder {
                 .setStake(stake)
                 .setStakeNotRewarded(TINYBARS_IN_ONE_HBAR)
                 .setStakeRewarded(stake - TINYBARS_IN_ONE_HBAR);
+    }
+
+    @NotNull
+    private static ServiceEndpoint serviceEndpoint() {
+        return ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.empty())
+                .setPort(50211)
+                .setDomainName("node1.hedera.com")
+                .build();
+    }
+
+    @NotNull
+    private static ServiceEndpoint gossipEndpoint() {
+        return ServiceEndpoint.newBuilder()
+                .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 5}))
+                .setPort(5112)
+                .setDomainName("")
+                .build();
     }
 
     public ScheduleID scheduleId() {

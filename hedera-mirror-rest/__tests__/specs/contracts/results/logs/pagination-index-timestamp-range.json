@@ -206,7 +206,11 @@
       }
     },
     {
-      "url": "/api/v1/contracts/results/logs?timestamp=gte:1639010151.000000000&timestamp=lte:1639010161.000000000&limit=3&order=desc&index=lte:1",
+      "urls": [
+        "/api/v1/contracts/results/logs?timestamp=gte:1639010151.000000000&timestamp=lte:1639010161.000000000&limit=3&order=desc&index=lte:1",
+        "/api/v1/contracts/results/logs?timestamp=gte:1639010151.000000000&timestamp=lte:1639010161.000000000&limit=3&order=DESC&index=lte:1",
+        "/api/v1/contracts/results/logs?timestamp=gte:1639010151.000000000&timestamp=lte:1639010161.000000000&limit=3&order=DeSc&index=lte:1"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "logs": [
@@ -324,7 +328,9 @@
     },
     {
       "urls": [
-        "/api/v1/contracts/results/logs?index=gte:0&timestamp=gte:1639010141.000000000&index=lte:1&timestamp=lte:1639010141.000000000&limit=1&order=asc"
+        "/api/v1/contracts/results/logs?index=gte:0&timestamp=gte:1639010141.000000000&index=lte:1&timestamp=lte:1639010141.000000000&limit=1&order=asc",
+        "/api/v1/contracts/results/logs?index=gte:0&timestamp=gte:1639010141.000000000&index=lte:1&timestamp=lte:1639010141.000000000&limit=1&order=ASC",
+        "/api/v1/contracts/results/logs?index=gte:0&timestamp=gte:1639010141.000000000&index=lte:1&timestamp=lte:1639010141.000000000&limit=1&order=Asc"
       ],
       "responseStatus": 200,
       "responseJson": {
@@ -350,7 +356,7 @@
           }
         ],
         "links": {
-          "next": "/api/v1/contracts/results/logs?index=lte:1&index=gt:0&timestamp=1639010141.000000000&limit=1&order=asc"
+          "next": "/api/v1/contracts/results/logs?index=lte:1&index=gt:0&timestamp=gte:1639010141.000000000&timestamp=lte:1639010141.000000000&limit=1&order=asc"
         }
       }
     }

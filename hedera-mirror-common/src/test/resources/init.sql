@@ -31,6 +31,7 @@ revoke create on schema temporary from public;
 -- Add extensions
 create extension if not exists btree_gist;
 create extension if not exists pg_stat_statements;
+create extension if not exists pg_trgm;
 
 -- Grant readonly privileges
 grant connect on database mirror_node to readonly;

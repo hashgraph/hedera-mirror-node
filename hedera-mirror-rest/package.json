@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.109.0-SNAPSHOT",
+  "version": "0.110.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
@@ -19,7 +19,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@aws-sdk/client-s3": "^3.609.0",
+    "@aws-sdk/client-s3": "^3.614.0",
     "@godaddy/terminus": "^4.12.1",
     "@hashgraph/proto": "^2.13.0",
     "@trufflesuite/bigint-buffer": "^1.1.10",
@@ -38,20 +38,21 @@
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "long": "^5.2.3",
-    "mathjs": "^13.0.2",
+    "mathjs": "^13.0.3",
     "parse-duration": "^1.1.0",
     "pg": "~8.12.0",
     "pg-range": "^1.1.2",
     "prom-client": "^14.2.0",
-    "qs": "^6.12.2",
+    "qs": "^6.12.3",
     "quick-lru": "^6.1.2",
     "rfc4648": "^1.5.3",
+    "sql-formatter": "^15.3.2",
     "swagger-stats": "^0.99.7",
     "swagger-ui-express": "^5.0.1",
     "word-wrap": "npm:@aashutoshrathi/word-wrap@^1.2.6"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "^10.10.1",
+    "@testcontainers/postgresql": "^10.10.4",
     "app-root-path": "^3.1.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.1.0",
@@ -68,7 +69,7 @@
     "rewire": "^7.0.0",
     "sinon": "^18.0.0",
     "supertest": "^7.0.0",
-    "@testcontainers/redis": "^10.10.1"
+    "@testcontainers/redis": "^10.10.4"
   },
   "jest-junit": {
     "outputDirectory": "build/test-results/test",
