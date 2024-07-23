@@ -191,12 +191,12 @@ public class RecordFileBuilder {
                     return recordItem;
                 }
 
-                int count = counter.getAndDecrement();
-                if (count <= 0) {
+                int remaining = counter.getAndDecrement();
+                if (remaining <= 0) {
                     return null;
                 }
 
-                var index = count % builderSize;
+                var index = remaining % builderSize;
                 var builder = recordItemBuilders.get(index);
                 return builder.build();
             };
@@ -222,15 +222,15 @@ public class RecordFileBuilder {
         }
 
         private List<RecordItemBuilder.Builder<?>> createBuilders() {
-            List<RecordItemBuilder.Builder<?>> builders = new ArrayList<>();
+            List<RecordItemBuilder.Builder<?>> builderList = new ArrayList<>();
             int maxEntities = Math.min(entities, count);
-            var template = buildTemplate();
+            var builderTemplate = buildTemplate();
 
             for (int i = 0; i < maxEntities; i++) {
-                builders.add(template.get());
+                builderList.add(builderTemplate.get());
             }
 
-            return builders;
+            return builderList;
         }
 
         private Supplier<RecordItemBuilder.Builder<?>> recordItem(TransactionType transactionType) {

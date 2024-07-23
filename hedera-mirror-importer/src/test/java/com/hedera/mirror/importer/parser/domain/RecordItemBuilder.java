@@ -162,7 +162,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Value;
@@ -1003,9 +1002,9 @@ public class RecordItemBuilder {
     }
 
     public AccountID accountId() {
-        var id = AccountID.newBuilder().setAccountNum(entityId()).build();
-        updateState(id);
-        return id;
+        var accountId = AccountID.newBuilder().setAccountNum(entityId()).build();
+        updateState(accountId);
+        return accountId;
     }
 
     public List<? extends Builder<?>> getCreateTransactions() {
@@ -1100,9 +1099,9 @@ public class RecordItemBuilder {
     }
 
     private ContractID contractId() {
-        var id = ContractID.newBuilder().setContractNum(entityId()).build();
-        updateState(id);
-        return id;
+        var contractId = ContractID.newBuilder().setContractNum(entityId()).build();
+        updateState(contractId);
+        return contractId;
     }
 
     private TransactionSidecarRecord.Builder contractStateChanges(ContractID contractId) {
@@ -1127,9 +1126,9 @@ public class RecordItemBuilder {
     }
 
     private FileID fileId() {
-        var id = FileID.newBuilder().setFileNum(entityId()).build();
-        updateState(id);
-        return id;
+        var fileId = FileID.newBuilder().setFileNum(entityId()).build();
+        updateState(fileId);
+        return fileId;
     }
 
     private long id() {
@@ -1168,16 +1167,16 @@ public class RecordItemBuilder {
 
     private ServiceEndpoint gossipEndpoint() {
         return ServiceEndpoint.newBuilder()
-                .setIpAddressV4(ByteString.copyFrom(new byte[]{127, 0, 0, 5}))
+                .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, 5}))
                 .setPort(5112)
                 .setDomainName("")
                 .build();
     }
 
     public ScheduleID scheduleId() {
-        var id = ScheduleID.newBuilder().setScheduleNum(id()).build();
-        updateState(id);
-        return id;
+        var scheduleId = ScheduleID.newBuilder().setScheduleNum(id()).build();
+        updateState(scheduleId);
+        return scheduleId;
     }
 
     private StorageChange.Builder storageChange() {
@@ -1200,15 +1199,15 @@ public class RecordItemBuilder {
     }
 
     public TokenID tokenId() {
-        var id = TokenID.newBuilder().setTokenNum(entityId()).build();
-        updateState(id);
-        return id;
+        var tokenId = TokenID.newBuilder().setTokenNum(entityId()).build();
+        updateState(tokenId);
+        return tokenId;
     }
 
     private TopicID topicId() {
-        var id = TopicID.newBuilder().setTopicNum(entityId()).build();
-        updateState(id);
-        return id;
+        var topicId = TopicID.newBuilder().setTopicNum(entityId()).build();
+        updateState(topicId);
+        return topicId;
     }
 
     private void updateState(GeneratedMessageV3 id) {
@@ -1251,10 +1250,8 @@ public class RecordItemBuilder {
         private final RecordItem.RecordItemBuilder recordItemBuilder;
 
         private Predicate<EntityId> entityTransactionPredicate = persistProperties::shouldPersistEntityTransaction;
-        private Predicate<EntityId> contractTransactionPredicate =
-                (entityId) -> persistProperties.isContractTransaction();
-        private BiConsumer<TransactionBody.Builder, TransactionRecord.Builder> incrementer = (body, record) -> {
-        };
+        private Predicate<EntityId> contractTransactionPredicate = e -> persistProperties.isContractTransaction();
+        private BiConsumer<TransactionBody.Builder, TransactionRecord.Builder> incrementer = (b, r) -> {};
 
         private Builder(TransactionType type, T transactionBody) {
             this.payerAccountId = accountId();
@@ -1285,12 +1282,12 @@ public class RecordItemBuilder {
 
             incrementer.accept(transactionBodyWrapper, transactionRecord);
             var transaction = transaction().build();
-            var record = transactionRecord.build();
-            var contractId = record.getReceipt().getContractID();
+            var transactionRecordInstance = transactionRecord.build();
+            var contractId = transactionRecordInstance.getReceipt().getContractID();
 
-            record.getAutomaticTokenAssociationsList().forEach(RecordItemBuilder.this::updateState);
+            transactionRecordInstance.getAutomaticTokenAssociationsList().forEach(RecordItemBuilder.this::updateState);
 
-            var sidecarRecords = this.sidecarRecords.stream()
+            var sidecars = this.sidecarRecords.stream()
                     .map(r -> {
                         if (r.hasBytecode() && !contractId.equals(ContractID.getDefaultInstance())) {
                             r.getBytecodeBuilder().setContractId(contractId);
@@ -1298,7 +1295,7 @@ public class RecordItemBuilder {
                         return r.setConsensusTimestamp(transactionRecord.getConsensusTimestamp())
                                 .build();
                     })
-                    .collect(Collectors.toList());
+                    .toList();
 
             // Clear these so that the builder can be reused and get new incremented values.
             transactionRecord.clearTransactionID().clearConsensusTimestamp();
@@ -1307,9 +1304,9 @@ public class RecordItemBuilder {
             return recordItemBuilder
                     .contractTransactionPredicate(contractTransactionPredicate)
                     .entityTransactionPredicate(entityTransactionPredicate)
-                    .transactionRecord(record)
+                    .transactionRecord(transactionRecordInstance)
                     .transaction(transaction)
-                    .sidecarRecords(sidecarRecords)
+                    .sidecarRecords(sidecars)
                     .build();
         }
 
@@ -1333,6 +1330,7 @@ public class RecordItemBuilder {
             return this;
         }
 
+        @SuppressWarnings("java:S6213")
         public Builder<T> record(Consumer<TransactionRecord.Builder> consumer) {
             consumer.accept(transactionRecord);
             return this;
@@ -1382,7 +1380,7 @@ public class RecordItemBuilder {
         }
 
         private TransactionRecord.Builder defaultTransactionRecord() {
-            TransactionRecord.Builder transactionRecord = TransactionRecord.newBuilder()
+            TransactionRecord.Builder transactionRecordBuilder = TransactionRecord.newBuilder()
                     .setMemoBytes(ByteString.copyFromUtf8(transactionBodyWrapper.getMemo()))
                     .setTransactionFee(transactionBodyWrapper.getTransactionFee())
                     .setTransactionHash(bytes(48))
@@ -1392,8 +1390,8 @@ public class RecordItemBuilder {
                             .addAccountAmounts(accountAmount(FEE_COLLECTOR, 2000L))
                             .addAccountAmounts(accountAmount(STAKING_REWARD_ACCOUNT_ID, 3000L))
                             .build());
-            transactionRecord.getReceiptBuilder().setStatus(ResponseCodeEnum.SUCCESS);
-            return transactionRecord;
+            transactionRecordBuilder.getReceiptBuilder().setStatus(ResponseCodeEnum.SUCCESS);
+            return transactionRecordBuilder;
         }
 
         private TransactionID getTransactionID() {
