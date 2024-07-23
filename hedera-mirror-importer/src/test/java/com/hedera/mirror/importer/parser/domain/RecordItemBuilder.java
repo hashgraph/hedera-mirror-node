@@ -90,6 +90,7 @@ import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.NodeCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.NodeStake;
@@ -128,6 +129,7 @@ import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenReference;
 import com.hederahashgraph.api.proto.java.TokenRejectTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
@@ -799,11 +801,27 @@ public class RecordItemBuilder {
     }
 
     public Builder<TokenRejectTransactionBody.Builder> tokenReject() {
+        var owner = accountId();
+        var fungibleTokenReference = tokenReference(TokenTypeEnum.FUNGIBLE_COMMON);
+        var nftTokenReference = tokenReference(TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
         var transactionBody = TokenRejectTransactionBody.newBuilder()
-                .setOwner(accountId())
-                .addRejections(tokenReference(TokenTypeEnum.FUNGIBLE_COMMON))
-                .addRejections(tokenReference(TokenTypeEnum.NON_FUNGIBLE_UNIQUE));
-        return new Builder<>(TransactionType.TOKENREJECT, transactionBody);
+                .setOwner(owner)
+                .addRejections(fungibleTokenReference)
+                .addRejections(nftTokenReference);
+        var transferList = TokenTransferList.newBuilder()
+                .setToken(fungibleTokenReference.getFungibleToken())
+                .addTransfers(AccountAmount.newBuilder().setAccountID(owner).setAmount(-100))
+                .addTransfers(
+                        AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100));
+        var nftTransferList = TokenTransferList.newBuilder()
+                .setToken(nftTokenReference.getNft().getTokenID())
+                .addNftTransfers(NftTransfer.newBuilder()
+                        .setSenderAccountID(owner)
+                        .setSerialNumber(nftTokenReference.getNft().getSerialNumber())
+                        .setReceiverAccountID(accountId()));
+
+        return new Builder<>(TransactionType.TOKENREJECT, transactionBody)
+                .record(r -> r.addTokenTransferLists(transferList).addTokenTransferLists(nftTransferList));
     }
 
     public Builder<TokenRevokeKycTransactionBody.Builder> tokenRevokeKyc() {
