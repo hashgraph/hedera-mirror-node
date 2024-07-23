@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -33,32 +32,12 @@ class TokenClaimAirdropTransactionHandler extends AbstractTransactionHandler {
     private final EntityProperties entityProperties;
 
     @Override
-    protected void addCommonEntityIds(Transaction transaction, RecordItem recordItem) {
-        super.addCommonEntityIds(transaction, recordItem);
-        //        var rejections = recordItem.getTransactionBody().getTokenReject().getRejectionsList();
-        //        for (var rejection : rejections) {
-        //            var tokenId = rejection.hasFungibleToken()
-        //                    ? rejection.getFungibleToken()
-        //                    : rejection.getNft().getTokenID();
-        //            recordItem.addEntityId(EntityId.of(tokenId));
-        //        }
-    }
-
-    @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isTokenAirdrops()
                 || !entityProperties.getPersist().isTokens()
                 || !recordItem.isSuccessful()) {
             return;
         }
-    }
-
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        var tokenReject = recordItem.getTransactionBody().getTokenReject();
-        return tokenReject.hasOwner()
-                ? entityIdService.lookup(tokenReject.getOwner()).orElse(EntityId.EMPTY)
-                : recordItem.getPayerAccountId();
     }
 
     @Override

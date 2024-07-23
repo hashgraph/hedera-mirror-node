@@ -27,12 +27,4 @@ public enum TokenAirdropStateEnum {
     PENDING(2);
 
     private final int id;
-
-    // Todo determine if needed
-    //    private static final Map<Integer, TokenAirdropStateEnum> ID_MAP = Arrays.stream(values())
-    //            .collect(Collectors.toUnmodifiableMap(TokenAirdropStateEnum::getId, Function.identity()));
-    //
-    //    public static TokenAirdropStateEnum fromId(int id) {
-    //        return ID_MAP.getOrDefault(id, PENDING);
-    //    }
 }

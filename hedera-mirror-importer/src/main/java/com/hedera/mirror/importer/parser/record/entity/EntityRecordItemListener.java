@@ -506,7 +506,9 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         int transactionType = transaction.getType();
         if (!entityProperties.getPersist().isTokenAirdrops()
-                && transactionType == TransactionType.TOKENAIRDROP.getProtoId()) {
+                && (transactionType == TransactionType.TOKENAIRDROP.getProtoId()
+                        || transactionType == TransactionType.TOKENCANCELAIRDROP.getProtoId()
+                        || transactionType == TransactionType.TOKENCLAIMAIRDROP.getProtoId())) {
             return;
         }
 

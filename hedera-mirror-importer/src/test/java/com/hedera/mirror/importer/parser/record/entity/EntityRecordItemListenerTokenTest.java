@@ -3773,6 +3773,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                     .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible));
             assertThat(findHistory(TokenAirdrop.class)).isEmpty();
 
+            // when
             parseRecordItemAndCommit(updateAirdrop);
 
             // then

@@ -82,17 +82,13 @@ class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandle
                 .get();
 
         var expectedEntityTransactions = getExpectedEntityTransactions(
-                recordItem,
-                transaction,
-                // EntityId.of(receiver),
-                // EntityId.of(sender),
-                EntityId.of(token));
+                recordItem, transaction, EntityId.of(receiver), EntityId.of(sender), EntityId.of(token));
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
-        // assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
+        assertThat(recordItem.getEntityTransactions()).containsExactlyInAnyOrderEntriesOf(expectedEntityTransactions);
 
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())

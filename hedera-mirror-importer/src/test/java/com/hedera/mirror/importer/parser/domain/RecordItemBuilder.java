@@ -725,9 +725,10 @@ public class RecordItemBuilder {
         var nftPendingAirdrop = PendingAirdropRecord.newBuilder().setPendingAirdropId(nftPendingAirdropId);
 
         return new Builder<>(TransactionType.TOKENAIRDROP, TokenAirdropTransactionBody.newBuilder())
-                .record(r -> r.addTokenTransferLists(tokenTransferList).addTokenTransferLists(nftTransferList))
-                .pendingAirdrops(fungiblePendingAirdrop)
-                .pendingAirdrops(nftPendingAirdrop);
+                .record(r -> r.addTokenTransferLists(tokenTransferList)
+                        .addTokenTransferLists(nftTransferList)
+                        .addNewPendingAirdrops(fungiblePendingAirdrop)
+                        .addNewPendingAirdrops(nftPendingAirdrop));
     }
 
     public Builder<TokenCancelAirdropTransactionBody.Builder> tokenCancelAirdrop(PendingAirdropId pendingAirdropId) {
@@ -1153,11 +1154,6 @@ public class RecordItemBuilder {
 
         public Builder<T> contractTransactionPredicate(Predicate<EntityId> contractTransactionPredicate) {
             this.contractTransactionPredicate = contractTransactionPredicate;
-            return this;
-        }
-
-        public Builder<T> pendingAirdrops(PendingAirdropRecord.Builder pendingAirdropRecord) {
-            this.transactionRecord.addNewPendingAirdrops(pendingAirdropRecord);
             return this;
         }
 
