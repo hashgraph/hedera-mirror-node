@@ -277,6 +277,21 @@ describe('Utils encodeKey', () => {
   });
 });
 
+describe('Utils.isByteRange', () => {
+  test('Single byte chars eq max size', () => expect(utils.isByteRange('abcde', 5, 5)).toBeTrue());
+  test('Single byte chars gt max size', () => expect(utils.isByteRange('abcde', 5, 4)).toBeFalse());
+  test('Single byte chars lt max size', () => expect(utils.isByteRange('abcde', 5, 6)).toBeTrue());
+  test('Multi byte chars eq max size', () => expect(utils.isByteRange('ℏℏℏ', 5, 9)).toBeTrue());
+  test('Multi byte chars gt max size', () => expect(utils.isByteRange('ℏℏℏ', 5,8)).toBeFalse());
+  test('Multi byte chars lt max size', () => expect(utils.isByteRange('ℏℏℏ', 5, 10)).toBeTrue());
+  test('Multi byte chars eq max size', () => expect(utils.isByteRange('abcdeℏℏℏ', 5, 14)).toBeTrue());
+  test('Multi byte chars gt max size', () => expect(utils.isByteRange('abcdeℏℏℏ', 5, 13)).toBeFalse());
+  test('Multi byte chars lt max size', () => expect(utils.isByteRange('abcdeℏℏℏ', 5, 15)).toBeTrue());
+  test('Multi byte chars eq min size', () => expect(utils.isByteRange('ℏ', 3, 3)).toBeTrue());
+  test('Multi byte chars gt min size', () => expect(utils.isByteRange('ℏ', 2, 3)).toBeTrue());
+  test('Multi byte chars lt min size', () => expect(utils.isByteRange('ℏ', 4, 10)).toBeFalse());
+});
+
 describe('Utils isValidPublicKeyQuery', () => {
   test('Null', () => expect(utils.isValidPublicKeyQuery(null)).toBeFalse());
   test('Empty', () => expect(utils.isValidPublicKeyQuery('')).toBeFalse());

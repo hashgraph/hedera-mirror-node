@@ -1076,6 +1076,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/accountIdQueryParam"
         - $ref: "#/components/parameters/limitQueryParam"
+        - $ref: "#/components/parameters/tokenNameQueryParam"
         - $ref: "#/components/parameters/orderQueryParam"
         - $ref: "#/components/parameters/publicKeyQueryParam"
         - $ref: "#/components/parameters/tokenIdQueryParam"
@@ -4800,6 +4801,15 @@ components:
           value: lte:0.0.700
       schema:
         $ref: "#/components/schemas/EntityIdQuery"
+    tokenNameQueryParam:
+      name: name
+      in: query
+      description: Partial or full token name. Not allowed to be used with token.id or account.id parameter. Pagination is not supported with the use of this parameter and results are ordered by token.id with respect to the order parameter.
+      schema:
+        type: string
+        maxLength: 100
+        minLength: 3
+
     tokenTypeQueryParam:
       name: type
       in: query

@@ -133,6 +133,11 @@ const isHexPositiveInt = (num, allowZero = false) => {
   return false;
 };
 
+const isByteRange = (str, minSize, maxSize) => {
+  const length = Buffer.from(str).length
+  return length >= minSize && length <= maxSize;
+}
+
 const nonNegativeInt32Regex = /^\d{1,10}$/;
 
 /**
@@ -1110,7 +1115,8 @@ const buildAndValidateFilters = (
   query,
   acceptedParameters,
   filterValidator = filterValidityChecks,
-  filterDependencyChecker = filterDependencyCheck
+  filterDependencyChecker = filterDependencyCheck,
+  excludedCombinatons= [[]],
 ) => {
   const {badParams, filters} = buildFilters(query);
   const {invalidParams, unknownParams} = validateAndParseFilters(filters, filterValidator, acceptedParameters);
@@ -1731,6 +1737,7 @@ export {
   gtGte,
   incrementTimestampByOneDay,
   ipMask,
+  isByteRange,
   isNonNegativeInt32,
   isPositiveLong,
   isRepeatedQueryParameterValidLength,
