@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Predicate;
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static com.hedera.services.stream.proto.ContractActionType.PRECOMPILE;
 import static com.hedera.services.stream.proto.ContractActionType.SYSTEM;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
@@ -45,8 +46,6 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
 public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCallProcessor {
-
-    private final int RESERVED_HTS_SYSTEM_ACCOUNT = 359;
 
     private final Predicate<Address> isNativePrecompileCheck;
 
@@ -74,8 +73,9 @@ public abstract class AbstractEvmMessageCallProcessor extends HederaEvmMessageCa
                 && operationTracer instanceof HederaOperationTracer hederaOperationTracer) {
             hederaOperationTracer.tracePrecompileResult(frame, isHederaPrecompile ? SYSTEM : PRECOMPILE);
         }
-
-        final boolean nonHTS = Integer.compareUnsigned(contractAddress.getInt(16), RESERVED_HTS_SYSTEM_ACCOUNT) != 0;
+        final Integer evmHtsPrecompiledContractAddressNum = Integer.parseInt(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS.substring(2), 16);
+            // check a contract address because an HTS token create call can receive value
+        final boolean nonHTS = Integer.compareUnsigned(contractAddress.getInt(16), evmHtsPrecompiledContractAddressNum) != 0;
 
         if (!isNativePrecompile &&
                 systemAccountDetector.test(frame.getContractAddress()) &&
