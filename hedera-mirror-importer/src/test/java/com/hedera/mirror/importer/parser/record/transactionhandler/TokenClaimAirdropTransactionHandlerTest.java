@@ -27,25 +27,25 @@ import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hederahashgraph.api.proto.java.NftID;
 import com.hederahashgraph.api.proto.java.PendingAirdropId;
-import com.hederahashgraph.api.proto.java.TokenCancelAirdropTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenClaimAirdropTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 
-class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class TokenClaimAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenCancelAirdropTransactionHandler(
+        return new TokenClaimAirdropTransactionHandler(
                 new TokenUpdateAirdropTransactionHandler(entityIdService, entityListener, entityProperties));
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setTokenCancelAirdrop(
-                        TokenCancelAirdropTransactionBody.newBuilder().build());
+                .setTokenClaimAirdrop(
+                        TokenClaimAirdropTransactionBody.newBuilder().build());
     }
 
     @Override
@@ -60,7 +60,7 @@ class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandle
 
     @ParameterizedTest
     @EnumSource(TokenTypeEnum.class)
-    void cancelAirdrop(TokenTypeEnum tokenType) {
+    void claimAirdrop(TokenTypeEnum tokenType) {
         // given
         var tokenAirdrop = ArgumentCaptor.forClass(TokenAirdrop.class);
         var receiver = recordItemBuilder.accountId();
@@ -75,7 +75,7 @@ class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandle
                     NftID.newBuilder().setTokenID(token).setSerialNumber(1L));
         }
         var recordItem =
-                recordItemBuilder.tokenCancelAirdrop(pendingAirdropId.build()).build();
+                recordItemBuilder.tokenClaimAirdrop(pendingAirdropId.build()).build();
         long timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder
                 .transaction()
@@ -95,7 +95,7 @@ class TokenCancelAirdropTransactionHandlerTest extends AbstractTransactionHandle
         assertThat(tokenAirdrop.getValue())
                 .returns(receiver.getAccountNum(), TokenAirdrop::getReceiverAccountId)
                 .returns(sender.getAccountNum(), TokenAirdrop::getSenderAccountId)
-                .returns(TokenAirdropStateEnum.CANCELLED, TokenAirdrop::getState)
+                .returns(TokenAirdropStateEnum.CLAIMED, TokenAirdrop::getState)
                 .returns(Range.atLeast(timestamp), TokenAirdrop::getTimestampRange)
                 .returns(token.getTokenNum(), TokenAirdrop::getTokenId);
     }

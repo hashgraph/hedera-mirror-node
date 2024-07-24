@@ -16,11 +16,11 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -28,16 +28,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class TokenClaimAirdropTransactionHandler extends AbstractTransactionHandler {
 
-    private final EntityIdService entityIdService;
-    private final EntityProperties entityProperties;
+    private final TokenUpdateAirdropTransactionHandler tokenUpdateAirdropTransactionHandler;
 
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isTokenAirdrops()
-                || !entityProperties.getPersist().isTokens()
-                || !recordItem.isSuccessful()) {
-            return;
-        }
+        tokenUpdateAirdropTransactionHandler.doUpdateTransaction(recordItem, TokenAirdropStateEnum.CLAIMED);
+    }
+
+    @Override
+    public EntityId getEntity(RecordItem recordItem) {
+        return tokenUpdateAirdropTransactionHandler.getEntity(
+                recordItem.getTransactionBody(), TokenAirdropStateEnum.CLAIMED);
     }
 
     @Override

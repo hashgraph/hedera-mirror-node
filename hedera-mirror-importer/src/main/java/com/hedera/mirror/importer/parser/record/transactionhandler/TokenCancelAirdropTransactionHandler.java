@@ -16,17 +16,11 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hederahashgraph.api.proto.java.TokenID;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -34,59 +28,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class TokenCancelAirdropTransactionHandler extends AbstractTransactionHandler {
 
-    private final EntityIdService entityIdService;
-    private final EntityListener entityListener;
-    private final EntityProperties entityProperties;
+    private final TokenUpdateAirdropTransactionHandler tokenUpdateAirdropTransactionHandler;
 
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isTokenAirdrops()
-                || !entityProperties.getPersist().isTokens()
-                || !recordItem.isSuccessful()) {
-            return;
-        }
-
-        var transactionBody = recordItem.getTransactionBody();
-        if (transactionBody.hasTokenCancelAirdrop()) {
-            var pendingAirdropIds = transactionBody.getTokenCancelAirdrop().getPendingAirdropsList();
-            for (var pendingAirdropId : pendingAirdropIds) {
-                var receiver = EntityId.of(pendingAirdropId.getReceiverId());
-                recordItem.addEntityId(receiver);
-                var sender = EntityId.of(pendingAirdropId.getSenderId());
-                recordItem.addEntityId(sender);
-
-                var tokenAirdrop = new TokenAirdrop();
-                tokenAirdrop.setState(TokenAirdropStateEnum.CANCELLED);
-                tokenAirdrop.setReceiverAccountId(receiver.getId());
-                tokenAirdrop.setSenderAccountId(sender.getId());
-                tokenAirdrop.setTimestampRange(Range.atLeast(recordItem.getConsensusTimestamp()));
-
-                TokenID tokenId;
-                if (pendingAirdropId.hasFungibleTokenType()) {
-                    tokenId = pendingAirdropId.getFungibleTokenType();
-                } else {
-                    tokenId = pendingAirdropId.getNonFungibleToken().getTokenID();
-                    var serialNumber = pendingAirdropId.getNonFungibleToken().getSerialNumber();
-                    tokenAirdrop.setSerialNumber(serialNumber);
-                }
-
-                var tokenEntityId = EntityId.of(tokenId);
-                recordItem.addEntityId(tokenEntityId);
-                tokenAirdrop.setTokenId(tokenEntityId.getId());
-                entityListener.onTokenAirdrop(tokenAirdrop);
-            }
-        }
+        tokenUpdateAirdropTransactionHandler.doUpdateTransaction(recordItem, TokenAirdropStateEnum.CANCELLED);
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        var transactionBody = recordItem.getTransactionBody().getTokenCancelAirdrop();
-        if (transactionBody.getPendingAirdropsCount() > 0) {
-            var pendingAirdropId = transactionBody.getPendingAirdrops(0);
-            return entityIdService.lookup(pendingAirdropId.getReceiverId()).orElse(EntityId.EMPTY);
-        }
-
-        return null;
+        return tokenUpdateAirdropTransactionHandler.getEntity(
+                recordItem.getTransactionBody(), TokenAirdropStateEnum.CANCELLED);
     }
 
     @Override

@@ -122,6 +122,7 @@ import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCancelAirdropTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenClaimAirdropTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
@@ -771,6 +772,11 @@ public class RecordItemBuilder {
     public Builder<TokenCancelAirdropTransactionBody.Builder> tokenCancelAirdrop(PendingAirdropId pendingAirdropId) {
         var transactionBody = TokenCancelAirdropTransactionBody.newBuilder().addPendingAirdrops(pendingAirdropId);
         return new Builder<>(TransactionType.TOKENCANCELAIRDROP, transactionBody);
+    }
+
+    public Builder<TokenClaimAirdropTransactionBody.Builder> tokenClaimAirdrop(PendingAirdropId pendingAirdropId) {
+        var transactionBody = TokenClaimAirdropTransactionBody.newBuilder().addPendingAirdrops(pendingAirdropId);
+        return new Builder<>(TransactionType.TOKENCLAIMAIRDROP, transactionBody);
     }
 
     public Builder<TokenAssociateTransactionBody.Builder> tokenAssociate() {
