@@ -85,6 +85,7 @@ spec:
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
+    stackgres:
       worker:
         overrides:
           - index: 0
