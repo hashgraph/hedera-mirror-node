@@ -457,6 +457,7 @@ public class TokenFeature extends AbstractFeature {
 
         FungibleTokenIds.add(tokenId);
         networkTransactionResponse = tokenClient.rejectFungibleToken(FungibleTokenIds, carol, carolPrivateKey, carolPayer);
+
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         assertThat(getTokenBalance(carol, tokenId)).isEqualTo(0L);
@@ -470,10 +471,12 @@ public class TokenFeature extends AbstractFeature {
         var carol = accountClient.getAccount(accountNameEnum).getAccountId();
         var carolPrivateKey = accountClient.getAccount(accountNameEnum).getPrivateKey();
         var carolPayer = accountClient.getAccount(accountNameEnum);
-        NonFungibleTokenIds.add(nftId);
         long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
+
+        NonFungibleTokenIds.add(nftId);
         networkTransactionResponse = tokenClient.rejectNonFungibleToken(NonFungibleTokenIds, carol, carolPrivateKey, carolPayer);
-       assertNotNull(networkTransactionResponse.getTransactionId());
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         assertThat(getTokenBalance(carol, tokenId)).isEqualTo(0L);
         assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + 1);
