@@ -661,8 +661,6 @@ public class TokenClient extends AbstractNetworkClient {
         return new TokenRejectTransaction().setNftIds(NftIds).setTransactionMemo(getMemo("Reject NFT"));
     }
 
-
-
     @RequiredArgsConstructor
     @Getter
     public enum TokenNameEnum {
