@@ -83,7 +83,7 @@ class TokenUpdateAirdropTransactionHandler {
 
     public EntityId getEntity(TransactionBody transactionBody, TokenAirdropStateEnum state) {
         var pendingAirdrops = getPendingAirdropIds(transactionBody, state);
-        if (pendingAirdrops.size() > 0) {
+        if (!pendingAirdrops.isEmpty()) {
             var pendingAirdropId = pendingAirdrops.getFirst();
             return entityIdService.lookup(pendingAirdropId.getReceiverId()).orElse(EntityId.EMPTY);
         }

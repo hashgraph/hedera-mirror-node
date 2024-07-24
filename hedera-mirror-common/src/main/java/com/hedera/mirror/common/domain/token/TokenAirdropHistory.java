@@ -24,7 +24,7 @@ import lombok.experimental.SuperBuilder;
 @Data
 @Entity
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 public class TokenAirdropHistory extends AbstractTokenAirdrop {
     // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }
