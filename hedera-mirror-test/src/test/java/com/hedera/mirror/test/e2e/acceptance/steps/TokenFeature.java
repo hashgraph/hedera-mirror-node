@@ -472,7 +472,6 @@ public class TokenFeature extends AbstractFeature {
         var carolPayer = accountClient.getAccount(accountNameEnum);
         NonFungibleTokenIds.add(nftId);
         long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
-        System.out.println(startingBalanceTreasury);
         networkTransactionResponse = tokenClient.rejectNonFungibleToken(NonFungibleTokenIds, carol, carolPrivateKey, carolPayer);
        assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
