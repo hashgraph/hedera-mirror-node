@@ -17,7 +17,7 @@ spec:
   driftDetection:
     mode: enabled
     ignore:
-      - paths: [ "" ]
+      - paths: [""]
         target:
           kind: (MutatingWebhookConfiguration|SGConfig|ValidatingWebhookConfiguration)
   install:
@@ -62,10 +62,10 @@ spec:
               writeRelabelConfigs:
                 - action: keep
                   regex: .*(graphql|grpc|importer|monitor|rest|restjava|rosetta|traefik|web3)$
-                  sourceLabels: [ job ]
+                  sourceLabels: [job]
                 - action: drop
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
-                  sourceLabels: [ __name__ ]
+                  sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
           resources:
             limits:
@@ -92,4 +92,3 @@ spec:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-preprod-new"} } }'
     zfs:
       enabled: true
-
