@@ -315,10 +315,10 @@ const parseAccountIdQueryParam = (query, columnName) => {
         return EntityId.parse(value).getEncodedId();
       }
       if (EntityId.isValidEvmAddress(value, EvmAddressType.NO_SHARD_REALM) && ++evmAliasAddressCount === 1) {
-        return EntityService.getEncodedId(value);
+        return EntityService.getEncodedId(value, false);
       }
       if (AccountAlias.isValid(value, true) && ++evmAliasAddressCount === 1) {
-        return EntityService.getAccountIdFromAlias(AccountAlias.fromString(value));
+        return EntityService.getAccountIdFromAlias(AccountAlias.fromString(value), false);
       }
 
       if (evmAliasAddressCount > 1) {
