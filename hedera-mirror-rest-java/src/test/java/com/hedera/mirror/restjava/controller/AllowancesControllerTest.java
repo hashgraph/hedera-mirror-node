@@ -26,8 +26,8 @@ import com.hedera.mirror.rest.model.Links;
 import com.hedera.mirror.rest.model.NftAllowancesResponse;
 import com.hedera.mirror.restjava.mapper.NftAllowanceMapper;
 import java.util.List;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -56,10 +56,7 @@ class AllowancesControllerTest extends ControllerTest {
         @Override
         protected RequestHeadersSpec<?> defaultRequest(RequestHeadersUriSpec<?> uriSpec) {
             var entity = domainBuilder.entity().persist();
-            var allowance = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
+            var allowance = nftAllowance(a -> a.owner(entity.getId()));
             return uriSpec.uri("", allowance.getOwner());
         }
 
@@ -69,14 +66,8 @@ class AllowancesControllerTest extends ControllerTest {
             // Given
             var entityBuilder = domainBuilder.entity();
             var entity = persistEntity ? entityBuilder.persist() : entityBuilder.get();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
 
             // When
             var response =
@@ -84,10 +75,8 @@ class AllowancesControllerTest extends ControllerTest {
 
             // Then
             assertThat(response.getBody()).isEqualTo(getExpectedResponse(List.of(allowance1, allowance2), null));
-            // Check once. Based on application.yml response headers configuration
-            Assertions.assertThat(response.getHeaders().getAccessControlAllowOrigin())
-                    .isEqualTo("*");
-            Assertions.assertThat(response.getHeaders().getCacheControl()).isEqualTo("public, max-age=1");
+            assertThat(response.getHeaders().getAccessControlAllowOrigin()).isEqualTo("*");
+            assertThat(response.getHeaders().getCacheControl()).isEqualTo("public, max-age=1");
         }
 
         @Test
@@ -95,14 +84,8 @@ class AllowancesControllerTest extends ControllerTest {
             // Given
             var entityBuilder = domainBuilder.entity();
             var entity = entityBuilder.persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
             var baseLink = "/api/v1/accounts/%d/allowances/nfts".formatted(allowance1.getOwner());
 
             // When
@@ -113,10 +96,9 @@ class AllowancesControllerTest extends ControllerTest {
                     .body(NftAllowancesResponse.class);
             var nextParams = "?limit=1&account.id=gte:%s&token.id=gt:%s"
                     .formatted(EntityId.of(allowance1.getSpender()), EntityId.of(allowance1.getTokenId()));
+
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance1), baseLink + nextParams));
-
-            System.out.println("Next params: " + nextParams);
 
             // When follow link
             result = restClient
@@ -144,14 +126,8 @@ class AllowancesControllerTest extends ControllerTest {
         void evmAddress() {
             // Given
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
 
             // When
             var result = restClient
@@ -168,14 +144,8 @@ class AllowancesControllerTest extends ControllerTest {
         void alias() {
             // Given
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
 
             // When
             var result = restClient
@@ -192,14 +162,8 @@ class AllowancesControllerTest extends ControllerTest {
         void orderAscending() {
             // Given
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
-            domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            nftAllowance(a -> a.owner(allowance1.getOwner()));
             var uriParams = "?account.id=gte:%s&account.id=lt:%s&owner=true&token.id=gt:%s&limit=1&order=asc"
                     .formatted(
                             EntityId.of(allowance1.getSpender() - 1),
@@ -228,14 +192,8 @@ class AllowancesControllerTest extends ControllerTest {
         void allRangeConditions() {
             // Given
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
             var uriParams =
                     "?account.id=gte:%s&account.id=lte:%s&owner=true&token.id=gt:%s&token.id=lt:%s&limit=1&order=desc"
                             .formatted(
@@ -267,14 +225,8 @@ class AllowancesControllerTest extends ControllerTest {
         void noOperators() {
             // Given
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
             var uriParams = "?account.id={account.id}&limit=1&order=asc";
             var nextLink = "/api/v1/accounts/%s/allowances/nfts?account.id=%s&limit=1&order=asc&token.id=gt:%s"
                     .formatted(
@@ -296,18 +248,9 @@ class AllowancesControllerTest extends ControllerTest {
         @Test
         void orderDescending() {
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
-            var allowance3 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.owner(entity.getId()));
+            var allowance2 = nftAllowance(a -> a.owner(allowance1.getOwner()));
+            var allowance3 = nftAllowance(a -> a.owner(allowance1.getOwner()));
             var uriParams = "?account.id=gte:%s&owner=true&token.id=gt:%s&limit=2&order=desc"
                     .formatted(EntityId.of(allowance2.getSpender()), EntityId.of(allowance2.getTokenId() - 1));
 
@@ -333,14 +276,8 @@ class AllowancesControllerTest extends ControllerTest {
         @Test
         void ownerFalse() {
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.spender(entity.getId()).approvedForAll(true))
-                    .persist();
-            domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.spender(allowance1.getSpender()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.spender(entity.getId()));
+            nftAllowance(a -> a.spender(allowance1.getSpender()));
             var uriParams = "?account.id=gte:0.0.1000&owner=false&token.id=gt:0.0.1000&limit=1&order=asc";
             var next =
                     "/api/v1/accounts/%s/allowances/nfts?owner=false&limit=1&order=asc&account.id=gte:%s&token.id=gt:%s"
@@ -364,14 +301,8 @@ class AllowancesControllerTest extends ControllerTest {
         void emptyNextLink() {
             // Given
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.spender(entity.getId()).approvedForAll(true))
-                    .persist();
-            domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner()).approvedForAll(true))
-                    .persist();
+            var allowance1 = nftAllowance(a -> a.spender(entity.getId()));
+            nftAllowance(a -> a.owner(allowance1.getOwner()));
             var uriParams = "?account.id=gte:0.0.5000&owner=true&token.id=gt:0.0.5000&limit=1&order=asc";
 
             // When
@@ -445,15 +376,12 @@ class AllowancesControllerTest extends ControllerTest {
         void invalidRange(String uriParams, String message) {
             // Given
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId()).approvedForAll(true))
-                    .persist();
+            var allowance = nftAllowance(a -> a.owner(entity.getId()));
 
             // When
             ThrowingCallable callable = () -> restClient
                     .get()
-                    .uri(uriParams, allowance1.getOwner())
+                    .uri(uriParams, allowance.getOwner())
                     .retrieve()
                     .body(NftAllowancesResponse.class);
 
@@ -465,20 +393,10 @@ class AllowancesControllerTest extends ControllerTest {
         void tokenIdAllowedRange() {
             // Given
             var entity = domainBuilder.entity().persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId())
-                            .tokenId(700)
-                            .spender(2002)
-                            .approvedForAll(true))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId())
-                            .tokenId(1002)
-                            .spender(1000)
-                            .approvedForAll(true))
-                    .persist();
+            var allowance1 =
+                    nftAllowance(a -> a.owner(entity.getId()).tokenId(700).spender(2002));
+            var allowance2 =
+                    nftAllowance(a -> a.owner(entity.getId()).tokenId(1002).spender(1000));
             var uriParams =
                     "?account.id=gte:0.0.1000&account.id=lte:0.0.2002&owner=true&token.id=gt:0.0.1000&&token.id=lt:0.0.800&limit=2&order=asc";
             var next =
@@ -501,27 +419,12 @@ class AllowancesControllerTest extends ControllerTest {
             // Given
             var entityBuilder = domainBuilder.entity();
             var entity = entityBuilder.persist();
-            var allowance1 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(entity.getId())
-                            .spender(99700)
-                            .tokenId(99800)
-                            .approvedForAll(true))
-                    .persist();
-            var allowance2 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner())
-                            .spender(99701)
-                            .tokenId(99800)
-                            .approvedForAll(true))
-                    .persist();
-            var allowance3 = domainBuilder
-                    .nftAllowance()
-                    .customize(nfta -> nfta.owner(allowance1.getOwner())
-                            .spender(99702)
-                            .tokenId(99800)
-                            .approvedForAll(true))
-                    .persist();
+            var allowance1 =
+                    nftAllowance(a -> a.owner(entity.getId()).spender(99700).tokenId(99800));
+            var allowance2 = nftAllowance(
+                    a -> a.owner(allowance1.getOwner()).spender(99701).tokenId(99800));
+            var allowance3 = nftAllowance(
+                    a -> a.owner(allowance1.getOwner()).spender(99702).tokenId(99800));
 
             var uri = "?limit=2&account.id=gte:0.0.99700&token.id=0.0.99800";
             var result =
@@ -542,6 +445,14 @@ class AllowancesControllerTest extends ControllerTest {
 
             // Then
             assertThat(result).isEqualTo(getExpectedResponse(List.of(allowance3), null));
+        }
+
+        private NftAllowance nftAllowance(Consumer<NftAllowance.NftAllowanceBuilder<?, ?>> consumer) {
+            return domainBuilder
+                    .nftAllowance()
+                    .customize(a -> a.approvedForAll(true))
+                    .customize(consumer)
+                    .persist();
         }
 
         private NftAllowancesResponse getExpectedResponse(List<NftAllowance> nftAllowances, String next) {

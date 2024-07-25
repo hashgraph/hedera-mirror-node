@@ -1,0 +1,426 @@
+{
+  "description": "Contracts logs api calls with transaction.hash query parameter",
+  "setup": {
+    "recordFiles": [
+      {
+        "index": 1,
+        "consensus_start": 1639010141000000000,
+        "consensus_end": 1639010141500000000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1a"
+      },
+      {
+        "index": 2,
+        "consensus_start": 1639010151000000000,
+        "consensus_end": 1639010151500000000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b"
+      },
+      {
+        "index": 3,
+        "consensus_start": 1639010161000000000,
+        "consensus_end": 1639010161500000000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
+      }
+    ],
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 0,
+        "topic0": [10],
+        "topic1": [11],
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
+        "transaction_index": 1
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 1,
+        "topic0": [10],
+        "topic1": [11],
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
+        "transaction_index": 1
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1004,
+        "index": 0,
+        "topic0": [10],
+        "topic1": [11],
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+        "transaction_index": 2
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1004,
+        "index": 1,
+        "topic0": [10],
+        "topic1": [11],
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+        "transaction_index": 2
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1003,
+        "index": 2,
+        "topic0": [10],
+        "topic1": [11],
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+        "transaction_index": 2
+      },
+      {
+        "consensus_timestamp": 1639010161000000000,
+        "contract_id": 1003,
+        "index": 0,
+        "topic0": [10],
+        "topic1": [11],
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb00",
+        "transaction_index": 3
+      },
+      {
+        "consensus_timestamp": 1639010161000000000,
+        "contract_id": 1003,
+        "index": 1,
+        "topic0": [10],
+        "topic1": [11],
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb00",
+        "transaction_index": 3
+      }
+    ],
+    "transactionhashes": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb984d722574fc59cff4e72aea4c2781f6fe",
+        "payer_account_id": 2001
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb9975fd5495d79b456de5b3c8e1ec8ae460",
+        "payer_account_id": 2001
+      },
+      {
+        "consensus_timestamp": 1639010161000000000,
+        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb00",
+        "payer_account_id": 2001
+      }
+    ]
+  },
+  "tests": [
+    {
+      "url": "/api/v1/contracts/results/logs?transaction.hash=9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99&limit=3&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 1,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 2,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          }
+        ],
+        "links": {
+          "next": "/api/v1/contracts/results/logs?transaction.hash=9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99&limit=3&order=asc&timestamp=gte:1639010151.000000000&index=gt:2"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?transaction.hash=9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb9975fd5495d79b456de5b3c8e1ec8ae460&limit=3&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 1,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 2,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          }
+        ],
+        "links": {
+          "next": "/api/v1/contracts/results/logs?transaction.hash=9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb9975fd5495d79b456de5b3c8e1ec8ae460&limit=3&order=asc&timestamp=gte:1639010151.000000000&index=gt:2"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?transaction.hash=0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99&limit=3&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 1,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 2,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          }
+        ],
+        "links": {
+          "next": "/api/v1/contracts/results/logs?transaction.hash=0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99&limit=3&order=asc&timestamp=gte:1639010151.000000000&index=gt:2"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?transaction.hash=9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99&timestamp=gte:1639010151.000000000&timestamp=lte:1639010551.000000000&limit=2",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 2,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 1,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+            "transaction_index": 2,
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1b",
+            "block_number": 2
+          }
+        ],
+        "links": {
+          "next": "/api/v1/contracts/results/logs?transaction.hash=9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99&timestamp=gte:1639010151.000000000&timestamp=lte:1639010151.000000000&limit=2&index=lt:1"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?transaction.hash=0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb00",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+            "block_number": 3,
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 1,
+            "root_contract_id": null,
+            "timestamp": "1639010161.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb00",
+            "transaction_index": 3
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "block_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+            "block_number": 3,
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0000000000000000000000000000000000000000000000000000000000000123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010161.000000000",
+            "topics": [
+              "0x000000000000000000000000000000000000000000000000000000000000000a",
+              "0x000000000000000000000000000000000000000000000000000000000000000b",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ],
+            "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb00",
+            "transaction_index": 3
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?transaction.hash=2114e5e3914c63e6dc8b28eeede2dafd242b333abd893d7f0ddea2c0c1a75fbd",
+        "/api/v1/contracts/results/logs?transaction.hash=0x2114e5e3914c63e6dc8b28eeede2dafd242b333abd893d7f0ddea2c0c1a75fbd",
+        "/api/v1/contracts/results/logs?transaction.hash=9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99&timestamp=gt:1639010151.000000000",
+        "/api/v1/contracts/results/logs?transaction.hash=9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99&timestamp=gte:1639010151.000000000&index=gt:3"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [],
+        "links": {
+          "next": null
+        }
+      }
+    }
+  ]
+}

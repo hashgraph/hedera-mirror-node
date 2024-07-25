@@ -165,7 +165,7 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         errataMigration.doMigrate();
 
         assertBalanceOffsets(EXPECTED_ACCOUNT_BALANCE_FILES);
-        assertThat(contractResultRepository.count()).isEqualTo(13L);
+        assertThat(contractResultRepository.count()).isEqualTo(1L);
         assertThat(entityRepository.count()).isZero();
         assertThat(findHistory(Entity.class)).isEmpty();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);
@@ -196,7 +196,7 @@ public class ErrataMigrationTest extends ImporterIntegrationTest {
         assertErrataTransactions(ErrataType.DELETE, 0);
         assertErrataTransfers(ErrataType.INSERT, 566);
         assertErrataTransfers(ErrataType.DELETE, 6);
-        assertThat(contractResultRepository.count()).isEqualTo(13L);
+        assertThat(contractResultRepository.count()).isEqualTo(1L);
         assertThat(entityRepository.count()).isZero();
         assertThat(findHistory(Entity.class)).isEmpty();
         assertThat(tokenTransferRepository.count()).isEqualTo(24L);

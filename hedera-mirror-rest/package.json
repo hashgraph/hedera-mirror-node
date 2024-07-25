@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.110.0-SNAPSHOT",
+  "version": "0.111.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
@@ -38,7 +38,7 @@
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
     "long": "^5.2.3",
-    "mathjs": "^13.0.2",
+    "mathjs": "^13.0.3",
     "parse-duration": "^1.1.0",
     "pg": "~8.12.0",
     "pg-range": "^1.1.2",

@@ -52,6 +52,15 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
     private final EthereumTransactionRepository ethereumTransactionRepository;
 
+    private static Stream<Arguments> provideSignerNonceArguments() {
+        long incrementedNonce = 3L;
+        return Stream.of(
+                Arguments.of(true, false, SIGNER_NONCE),
+                Arguments.of(true, true, incrementedNonce),
+                Arguments.of(false, false, SIGNER_NONCE),
+                Arguments.of(false, true, incrementedNonce));
+    }
+
     @BeforeEach
     void before() {
         entityProperties.getPersist().setEthereumTransactions(true);
@@ -76,7 +85,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(0, contractRepository.count()),
                 () -> assertEquals(1, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertEthereumTransaction(recordItem, sender, SIGNER_NONCE));
@@ -154,7 +163,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(0, contractRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertEthereumTransaction(recordItem, null, SIGNER_NONCE));
@@ -173,7 +182,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(0, contractRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertEthereumTransaction(recordItem, null, SIGNER_NONCE));
@@ -221,14 +230,5 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
             var ethereumNonce = entityRepository.findById(sender.getId()).get().getEthereumNonce();
             assertThat(ethereumNonce).isEqualTo(expectedNonce);
         }
-    }
-
-    private static Stream<Arguments> provideSignerNonceArguments() {
-        long incrementedNonce = 3L;
-        return Stream.of(
-                Arguments.of(true, false, SIGNER_NONCE),
-                Arguments.of(true, true, incrementedNonce),
-                Arguments.of(false, false, SIGNER_NONCE),
-                Arguments.of(false, true, incrementedNonce));
     }
 }

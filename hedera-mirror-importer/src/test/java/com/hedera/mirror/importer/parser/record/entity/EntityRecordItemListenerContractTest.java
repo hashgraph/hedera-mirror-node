@@ -153,7 +153,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(1, contractRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertContractEntity(recordItem),
                 () -> assertThat(entityRepository.findById(entityId.getId()))
                         .get()
@@ -202,7 +202,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, transactionRepository.count()),
                 () -> assertEquals(3, contractRepository.count()),
                 () -> assertEquals(2, contractResultRepository.count()),
-                () -> assertEquals(6, cryptoTransferRepository.count()),
+                () -> assertEquals(8, cryptoTransferRepository.count()),
                 () -> assertContractEntity(parentRecordItem),
                 () -> assertContractCreateResult(transactionBody, record),
                 () -> assertThat(entityRepository.findById(createdId.getId()))
@@ -253,7 +253,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, transactionRepository.count()),
                 () -> assertEquals(3, contractRepository.count()),
                 () -> assertEquals(2, contractResultRepository.count()),
-                () -> assertEquals(6, cryptoTransferRepository.count()),
+                () -> assertEquals(8, cryptoTransferRepository.count()),
                 () -> assertContractCallResult(transactionBody, record),
                 () -> assertThat(entityRepository.findById(createdId.getId()))
                         .get()
@@ -283,7 +283,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertEquals(2, contractRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertContractStateChanges(recordItem),
                 () -> assertThat(transactionRepository.findAll())
                         .hasSize(1)
@@ -320,7 +320,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(1, contractRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertContractEntity(recordItem),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertContractCreateResult(transactionBody, record),
@@ -371,7 +371,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, transactionRepository.count()),
                 () -> assertEquals(2, contractRepository.count()),
                 () -> assertEquals(2, contractResultRepository.count()),
-                () -> assertEquals(6, cryptoTransferRepository.count()),
+                () -> assertEquals(8, cryptoTransferRepository.count()),
                 () -> assertContractEntity(parentRecordItem),
                 () -> assertContractEntity(childRecordItem),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(2),
@@ -399,7 +399,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertFailedContractCreate(transactionBody, record),
                 () -> assertEntityTransactions(recordItem));
     }
@@ -420,7 +420,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertFailedContractCreate(transactionBody, record),
                 () -> assertEntityTransactions(recordItem));
     }
@@ -445,7 +445,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(0, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertEntities(),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertFalse(
@@ -836,7 +836,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertEntities(EntityId.of(CONTRACT_ID)),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractCallResult(contractCallTransactionBody, record),
@@ -891,7 +891,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, transactionRepository.count()),
                 () -> assertEquals(2, contractRepository.count()),
                 () -> assertEquals(2, contractResultRepository.count()),
-                () -> assertEquals(6, cryptoTransferRepository.count()),
+                () -> assertEquals(8, cryptoTransferRepository.count()),
                 () -> assertEntities(parentId, EntityId.of(childContractId)),
                 () -> assertTransactionAndRecord(
                         parentRecordItem.getTransactionBody(), parentRecordItem.getTransactionRecord()),
@@ -1001,7 +1001,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertEntities(),
                 () -> assertFailedContractCallTransaction(transactionBody, record),
                 () -> assertEntityTransactions(recordItem));
@@ -1073,7 +1073,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertEntities(),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertNull(dbTransaction.getEntityId()),

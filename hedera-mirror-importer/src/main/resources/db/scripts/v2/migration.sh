@@ -308,7 +308,7 @@ insertRepeatableMigrations() {
   local rows=()
 
   while read -r line; do
-    local description="$(echo "${line}" | csvcut -c 1)-migrated-from-v1"
+    local description="$(echo "${line}" | csvcut -c 1)"
     local type="$(echo "${line}" | csvcut -c 2)"
     local script="$(echo "${line}" | csvcut -c 3)"
     local checksum="$(echo "${line}" | csvcut -c 4)"
