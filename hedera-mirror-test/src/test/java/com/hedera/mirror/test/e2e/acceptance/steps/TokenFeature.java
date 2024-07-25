@@ -25,9 +25,19 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.CustomFixedFee;
+import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.mirror.rest.model.AssessedCustomFee;
 import com.hedera.mirror.rest.model.CustomFees;
 import com.hedera.mirror.rest.model.FixedFee;
@@ -694,21 +704,15 @@ public class TokenFeature extends AbstractFeature {
     }
 
     public ExpandedAccountId getRecipientAccountId(AccountNameEnum accountId) {
-        switch (accountId) {
-            case AccountNameEnum.ALICE:
-                return accountClient.getAccount(AccountNameEnum.ALICE);
-            case AccountNameEnum.BOB:
-                return accountClient.getAccount(AccountNameEnum.BOB);
-            case AccountNameEnum.CAROL:
-                return accountClient.getAccount(AccountNameEnum.CAROL);
-            case AccountNameEnum.DAVE:
-                return accountClient.getAccount(AccountNameEnum.DAVE);
-            case AccountNameEnum.OPERATOR:
-                return accountClient.getAccount(AccountNameEnum.OPERATOR);
-        }
-        return null;
+        return switch (accountId) {
+            case AccountNameEnum.ALICE -> accountClient.getAccount(AccountNameEnum.ALICE);
+            case AccountNameEnum.BOB -> accountClient.getAccount(AccountNameEnum.BOB);
+            case AccountNameEnum.CAROL -> accountClient.getAccount(AccountNameEnum.CAROL);
+            case AccountNameEnum.DAVE -> accountClient.getAccount(AccountNameEnum.DAVE);
+            case AccountNameEnum.OPERATOR -> accountClient.getAccount(AccountNameEnum.OPERATOR);
+            default -> null;
+        };
     }
-
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {
         networkTransactionResponse = tokenClient.associate(accountId, tokenId);

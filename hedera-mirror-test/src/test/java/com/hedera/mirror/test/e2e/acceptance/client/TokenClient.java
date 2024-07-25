@@ -19,12 +19,36 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.nextBytes;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_BYTE_ARRAY;
 
-import com.hedera.hashgraph.sdk.*;
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.NftId;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TokenAssociateTransaction;
+import com.hedera.hashgraph.sdk.TokenBurnTransaction;
+import com.hedera.hashgraph.sdk.TokenCreateTransaction;
+import com.hedera.hashgraph.sdk.TokenDeleteTransaction;
+import com.hedera.hashgraph.sdk.TokenDissociateTransaction;
+import com.hedera.hashgraph.sdk.TokenFeeScheduleUpdateTransaction;
+import com.hedera.hashgraph.sdk.TokenFreezeTransaction;
+import com.hedera.hashgraph.sdk.TokenGrantKycTransaction;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenMintTransaction;
+import com.hedera.hashgraph.sdk.TokenPauseTransaction;
+import com.hedera.hashgraph.sdk.TokenRevokeKycTransaction;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.hashgraph.sdk.TokenUnfreezeTransaction;
+import com.hedera.hashgraph.sdk.TokenUnpauseTransaction;
+import com.hedera.hashgraph.sdk.TokenUpdateNftsTransaction;
+import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
+import com.hedera.hashgraph.sdk.TokenWipeTransaction;
+import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.TokenRejectTransaction;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-import com.hedera.hashgraph.sdk.proto.TokenReject;
-import com.hedera.hashgraph.sdk.proto.TokenRejectTransactionBody;
-import com.hedera.hashgraph.sdk.proto.TokenRejectTransactionBodyOrBuilder;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import jakarta.inject.Named;
@@ -628,7 +652,7 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse rejectFungibleToken(List<TokenId> tokenIds, AccountId ownerId, PrivateKey privateKey, ExpandedAccountId payer) {
-        TokenRejectTransaction tokenRejectTransaction =
+        var tokenRejectTransaction =
                 getFungibleTokenRejectTransaction(tokenIds).setOwnerId(ownerId).setTransactionMemo(getMemo("Reject Fungible token"));
         var response = executeTransactionAndRetrieveReceipt(
                 tokenRejectTransaction, privateKey == null ? null : KeyList.of(privateKey), payer);
@@ -645,7 +669,7 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse rejectNonFungibleToken(List<NftId> NftIds, AccountId ownerId, PrivateKey privateKey, ExpandedAccountId payer) {
-        TokenRejectTransaction tokenRejectTransaction =
+        var tokenRejectTransaction =
                 getNonFungibleTokenRejectTransaction(NftIds).setOwnerId(ownerId).setTransactionMemo(getMemo("Reject NFT"));
         var response = executeTransactionAndRetrieveReceipt(
                 tokenRejectTransaction, privateKey == null ? null : KeyList.of(privateKey), payer);
