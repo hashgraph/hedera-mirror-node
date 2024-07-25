@@ -19,7 +19,7 @@ import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import {EntityService} from './service/index';
-import {EvmAddressType} from './constants';
+import {EvmAddressType, queryParamOperators} from './constants';
 import {InvalidArgumentError} from './errors/index';
 import * as utils from './utils';
 
@@ -322,21 +322,16 @@ const parseAccountIdQueryParam = (query, columnName) => {
       }
 
       if (evmAliasAddressCount > 1) {
-        throw new InvalidArgumentError({
-          message: `Invalid parameter: ${constants.filterKeys.ACCOUNT_ID}`,
-          detail: `Only one EVM address or alias is allowed.`,
-        });
+        return Promise.reject(
+          new InvalidArgumentError({
+            message: `Invalid parameter: ${constants.filterKeys.ACCOUNT_ID}`,
+            detail: `Only one EVM address or alias is allowed.`,
+          })
+        );
       }
-      throw new InvalidArgumentError(`Invalid parameter: ${constants.filterKeys.ACCOUNT_ID}`);
+      return Promise.reject(new InvalidArgumentError(`Invalid parameter: ${constants.filterKeys.ACCOUNT_ID}`));
     },
     (op, value) => {
-      if (evmAliasAddressCount > 0 && op !== utils.opsMap.eq) {
-        throw new InvalidArgumentError({
-          message: `Invalid parameter: ${constants.filterKeys.ACCOUNT_ID}`,
-          detail: `EVM address or alias only supports equals operator`,
-        });
-      }
-
       return Array.isArray(value)
         ? [`${columnName} IN (?`.concat(', ?'.repeat(value.length - 1)).concat(')'), value]
         : [`${columnName}${op}?`, [value]];
@@ -345,9 +340,19 @@ const parseAccountIdQueryParam = (query, columnName) => {
   );
 };
 
+const validateAccountIdFilter = (op, val) => {
+  if (EntityId.isValidEntityId(val, false)) {
+    return utils.validateOpAndValue(op, val);
+  } else if (EntityId.isValidEvmAddress(val, EvmAddressType.NO_SHARD_REALM) || AccountAlias.isValid(val, true)) {
+    return val !== undefined && op === queryParamOperators.eq;
+  } else {
+    return false;
+  }
+};
+
 const balanceFilterValidator = (param, op, val) => {
   return param === constants.filterKeys.ACCOUNT_ID
-    ? utils.validateOpAndValue(op, val)
+    ? validateAccountIdFilter(op, val)
     : utils.filterValidityChecks(param, op, val);
 };
 

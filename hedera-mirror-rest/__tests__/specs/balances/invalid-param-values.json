@@ -57,8 +57,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Invalid parameter: account.id",
-              "detail": "EVM address or alias only supports equals operator"
+              "message": "Invalid parameter: account.id"
             }
           ]
         }
@@ -86,6 +85,7 @@
     {
       "urls": [
         "/api/v1/balances?account.id=account.id=lte:0.1.2.3",
+        "/api/v1/balances?account.id=account.id=abcd",
         "/api/v1/balances?account.id=0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
         "/api/v1/balances?account.id=0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
       ],
