@@ -48,6 +48,7 @@ import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -158,7 +159,7 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
         when(messageFrame.getBlockValues()).thenReturn(new HederaBlockValues(0L, 0L, Instant.EPOCH));
         when(messageFrame.getGasPrice()).thenReturn(Wei.ONE);
         when(opcodeTracer.getContext().getOpcodeTracerOptions()).thenReturn(new OpcodeTracerOptions(true, true, true));
-        when(messageFrame.getCurrentOperation()).thenReturn(createOperation());
+        when(messageFrame.getCurrentOperation()).thenReturn(mock(Operation.class));
 
         subject.start(messageFrame, opcodeTracer);
 
@@ -175,7 +176,6 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
         when(messageFrame.getContractAddress()).thenReturn(contractAddress);
         when(messageFrame.getRecipientAddress()).thenReturn(recAddress);
         when(messageFrame.getValue()).thenReturn(Wei.of(1000L));
-        when(messageFrame.getCurrentOperation()).thenReturn(createOperation());
 
         subject.start(messageFrame, opcodeTracer);
 
@@ -192,7 +192,6 @@ class MirrorEvmMessageCallProcessorTest extends MirrorEvmMessageCallProcessorBas
         when(messageFrame.getContractAddress()).thenReturn(contractAddress);
         when(messageFrame.getRecipientAddress()).thenReturn(recAddress);
         when(messageFrame.getValue()).thenReturn(Wei.of(0L));
-        when(messageFrame.getCurrentOperation()).thenReturn(createOperation());
 
         subject.start(messageFrame, opcodeTracer);
 
