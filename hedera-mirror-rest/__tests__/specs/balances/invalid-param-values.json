@@ -51,7 +51,8 @@
         "/api/v1/balances?account.id=lt:0xac384c53f03855fa1b3616052f8ba32c6c2a2fff",
         "/api/v1/balances?account.id=lt:0xac384c53f03855fa1b3616052f8ba32c6c2a2ffc",
         "/api/v1/balances?account.id=gte:0x0000000000000000000000000000000000000008",
-        "/api/v1/balances?account.id=lte:KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+        "/api/v1/balances?account.id=lte:KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "/api/v1/balances?account.id=lte:AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ"
       ],
       "responseStatus": 400,
       "responseJson": {
@@ -71,7 +72,8 @@
         "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
         "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fec&account.id=0x0000000000000000000000000000000000000009",
         "/api/v1/balances?account.id=0xac384c53f03855fa1b3616052f8ba32c6c2a2fee&account.id=0x0000000000000000000000000000000000000009",
-        "/api/v1/balances?account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff"
+        "/api/v1/balances?account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff",
+        "/api/v1/balances?account.id=AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2ffe"
       ],
       "responseStatus": 400,
       "responseJson": {
