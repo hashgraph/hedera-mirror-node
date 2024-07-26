@@ -32,6 +32,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.FungibleAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
@@ -234,6 +235,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onNftAllowance(NftAllowance nftAllowance) {
         context.merge(nftAllowance.getId(), nftAllowance, this::mergeNftAllowance);
+    }
+
+    @Override
+    public void onNode(Node node) {
+        context.merge(node.getId(), node, this::mergeNode);
     }
 
     @Override
@@ -574,6 +580,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private NftAllowance mergeNftAllowance(NftAllowance previous, NftAllowance current) {
+        previous.setTimestampUpper(current.getTimestampLower());
+        return current;
+    }
+
+    private Node mergeNode(Node previous, Node current) {
         previous.setTimestampUpper(current.getTimestampLower());
         return current;
     }

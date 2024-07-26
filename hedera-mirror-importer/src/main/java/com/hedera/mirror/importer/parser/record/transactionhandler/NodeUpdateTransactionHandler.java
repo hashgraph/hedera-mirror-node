@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -54,13 +55,13 @@ class NodeUpdateTransactionHandler extends AbstractTransactionHandler {
     }
 
     private void parseNode(RecordItem recordItem) {
-        var nodeCreate = recordItem.getTransactionBody().getNodeUpdate();
+        var nodeUpdate = recordItem.getTransactionBody().getNodeUpdate();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        var node = new Node();
-        node.setAdminKey(String.valueOf(nodeCreate.getAdminKey()));
-        node.setCreatedTimestamp(consensusTimestamp);
-        node.setTimestampLower(consensusTimestamp);
-        node.setNodeId(recordItem.getTransactionRecord().getReceipt().getNodeId());
-        entityListener.onNode(node);
+        entityListener.onNode(Node.builder()
+                .adminKey(nodeUpdate.getAdminKey().toByteArray())
+                .createdTimestamp(consensusTimestamp)
+                .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .build());
     }
 }

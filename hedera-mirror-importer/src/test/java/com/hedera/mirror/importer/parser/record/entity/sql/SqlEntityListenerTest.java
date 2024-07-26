@@ -36,6 +36,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.CustomFee;
@@ -79,6 +80,7 @@ import com.hedera.mirror.importer.repository.NetworkFreezeRepository;
 import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.repository.NodeRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
@@ -138,6 +140,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     private final NetworkStakeRepository networkStakeRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
+    private final NodeRepository nodeRepository;
     private final NodeStakeRepository nodeStakeRepository;
     private final ParserContext parserContext;
     private final PrngRepository prngRepository;
@@ -1721,6 +1724,67 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         }
         assertThat(transactionRepository.findAll()).containsExactly(transaction);
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
+    }
+
+    @Test
+    void onNode() {
+        // given
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder.node().get();
+
+        // when
+        sqlEntityListener.onNode(node1);
+        sqlEntityListener.onNode(node2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactlyInAnyOrder(node1, node2);
+    }
+
+    @ValueSource(ints = {1, 2, 3, 4})
+    @ParameterizedTest
+    void onNodeHistory(int commitIndex) {
+        // given
+        var nodeCreate1 = domainBuilder.node().get();
+        var nodeUpdate1 = nodeCreate1.toBuilder().adminKey(domainBuilder.key()).build();
+
+        var nodeCreate2 = domainBuilder.node().get();
+        var nodeDelete1 = nodeUpdate1.toBuilder().deleted(true).build();
+
+        // when
+        sqlEntityListener.onNode(nodeCreate1);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(nodeRepository.findAll()).containsExactly(nodeCreate1);
+            assertThat(findHistory(Node.class)).isEmpty();
+        }
+
+        sqlEntityListener.onNode(nodeUpdate1);
+
+        if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(nodeRepository.findAll()).containsExactly(nodeUpdate1);
+            assertThat(findHistory(Node.class)).containsExactly(nodeCreate1);
+        }
+
+        sqlEntityListener.onNode(nodeCreate2);
+        nodeUpdate1.setTimestampUpper(nodeCreate1.getTimestampLower());
+
+        if (commitIndex > 3) {
+            completeFileAndCommit();
+            assertThat(nodeRepository.findAll()).containsExactly(nodeCreate2);
+            assertThat(findHistory(Node.class)).containsExactly(nodeUpdate1);
+        }
+
+        var mergedUpdate2 = nodeCreate2.toBuilder().build();
+        mergedUpdate2.setTimestampUpper(nodeCreate2.getTimestampLower());
+
+        sqlEntityListener.onNode(nodeDelete1);
+        completeFileAndCommit();
+
+        // then
+        assertThat(nodeRepository.findAll()).containsExactly(mergedUpdate2);
+        assertThat(findHistory(Node.class)).containsExactlyInAnyOrder(nodeUpdate1, mergedUpdate2);
     }
 
     @Test

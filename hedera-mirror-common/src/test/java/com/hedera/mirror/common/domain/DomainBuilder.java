@@ -50,6 +50,7 @@ import com.hedera.mirror.common.domain.entity.EntityStakeHistory;
 import com.hedera.mirror.common.domain.entity.EntityTransaction;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowanceHistory;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -684,6 +685,19 @@ public class DomainBuilder {
                 .senderAccountId(entityId())
                 .serialNumber(1L)
                 .tokenId(entityId());
+
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<Node, Node.NodeBuilder<?, ?>> node() {
+        long timestamp = timestamp();
+
+        var builder = Node.builder()
+                .adminKey(key())
+                .createdTimestamp(timestamp)
+                .deleted(false)
+                .nodeId(number())
+                .timestampRange(Range.atLeast(timestamp));
 
         return new DomainWrapperImpl<>(builder, builder::build);
     }

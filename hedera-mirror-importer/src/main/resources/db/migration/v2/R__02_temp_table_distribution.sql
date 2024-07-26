@@ -8,6 +8,7 @@ select create_distributed_table('${tempSchema}.entity_state_start', 'id', coloca
 select create_distributed_table('${tempSchema}.entity_temp', 'id', colocate_with => 'entity');
 select create_distributed_table('${tempSchema}.nft_allowance_temp', 'owner', colocate_with => 'nft_allowance');
 select create_distributed_table('${tempSchema}.nft_temp', 'token_id', colocate_with => 'nft');
+select create_distributed_table('${tempSchema}.node_temp', 'node_id', colocate_with => 'node');
 select create_distributed_table('${tempSchema}.schedule_temp', 'schedule_id', colocate_with => 'schedule');
 select create_distributed_table('${tempSchema}.token_account_temp', 'account_id', colocate_with => 'token_account');
 select create_distributed_table('${tempSchema}.token_allowance_temp', 'owner', colocate_with => 'token_allowance');

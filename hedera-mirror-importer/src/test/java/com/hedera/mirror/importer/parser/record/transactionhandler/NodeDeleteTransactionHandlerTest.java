@@ -17,15 +17,18 @@
 package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.Node;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.testcontainers.shaded.org.apache.commons.lang.BooleanUtils;
 
 class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -43,11 +46,6 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected EntityType getExpectedEntityIdType() {
         return null;
-    }
-
-    @BeforeEach
-    void setup() {
-        entityProperties.getPersist().setNodes(true);
     }
 
     @AfterEach
@@ -82,5 +80,10 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // then
         assertThat(transaction.getTransactionBytes()).containsExactly(transactionBytes);
         assertThat(transaction.getTransactionRecordBytes()).containsExactly(transactionRecordBytes);
+        verify(entityListener, times(BooleanUtils.toInteger(isPersist))).onNode(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .returns(recordItem.getConsensusTimestamp(), Node::getCreatedTimestamp)
+                .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
+                .returns(isPersist, Node::isDeleted)));
     }
 }

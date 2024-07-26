@@ -32,12 +32,12 @@ import lombok.experimental.SuperBuilder;
 @IdClass(AbstractNode.Id.class)
 @MappedSuperclass
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @Upsertable(history = true)
 public abstract class AbstractNode implements History {
 
     @ToString.Exclude
-    private String adminKey;
+    private byte[] adminKey;
 
     @jakarta.persistence.Id
     private long nodeId;

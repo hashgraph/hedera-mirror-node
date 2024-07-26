@@ -20,11 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
+import com.hedera.mirror.common.domain.entity.Node;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.NetworkStakeRepository;
+import com.hedera.mirror.importer.repository.NodeRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +38,7 @@ import org.junit.jupiter.api.Test;
 @RequiredArgsConstructor
 class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerTest {
 
+    private final NodeRepository nodeRepository;
     private final NetworkStakeRepository networkStakeRepository;
     private final NodeStakeRepository nodeStakeRepository;
 
@@ -104,6 +109,9 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
     void nodeCreate() {
         entityProperties.getPersist().setNodes(true);
         var recordItem = recordItemBuilder.nodeCreate().build();
+        var expectedNode = getExpectedNode(recordItem);
+        expectedNode.setAdminKey(
+                recordItem.getTransactionBody().getNodeCreate().getAdminKey().toByteArray());
 
         parseRecordItemAndCommit(recordItem);
 
@@ -114,12 +122,16 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                 .isNotNull()
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
                 .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
+        softly.assertThat(nodeRepository.findAll()).containsExactly(expectedNode);
     }
 
     @Test
     void nodeUpdate() {
         entityProperties.getPersist().setNodes(true);
         var recordItem = recordItemBuilder.nodeUpdate().build();
+        var expectedNode = getExpectedNode(recordItem);
+        expectedNode.setAdminKey(
+                recordItem.getTransactionBody().getNodeUpdate().getAdminKey().toByteArray());
 
         parseRecordItemAndCommit(recordItem);
 
@@ -130,12 +142,15 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                 .isNotNull()
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
                 .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
+        softly.assertThat(nodeRepository.findAll()).containsExactly(expectedNode);
     }
 
     @Test
     void nodeDelete() {
         entityProperties.getPersist().setNodes(true);
         var recordItem = recordItemBuilder.nodeDelete().build();
+        var expectedNode = getExpectedNode(recordItem);
+        expectedNode.setDeleted(true);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -146,5 +161,14 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                 .isNotNull()
                 .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
                 .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
+        softly.assertThat(nodeRepository.findAll()).containsExactly(expectedNode);
+    }
+
+    private static Node getExpectedNode(RecordItem recordItem) {
+        return Node.builder()
+                .createdTimestamp(recordItem.getConsensusTimestamp())
+                .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
+                .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
+                .build();
     }
 }

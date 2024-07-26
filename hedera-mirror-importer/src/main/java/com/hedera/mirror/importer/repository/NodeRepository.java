@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-package com.hedera.mirror.common.domain.entity;
+package com.hedera.mirror.importer.repository;
 
-import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import com.hedera.mirror.common.domain.entity.AbstractNode;
+import com.hedera.mirror.common.domain.entity.Node;
+import org.springframework.data.repository.CrudRepository;
 
-@Data
-@Entity
-@NoArgsConstructor
-@SuperBuilder(toBuilder = true)
-public class Node extends AbstractNode {
-    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
-}
+public interface NodeRepository extends CrudRepository<Node, AbstractNode.Id> {}
