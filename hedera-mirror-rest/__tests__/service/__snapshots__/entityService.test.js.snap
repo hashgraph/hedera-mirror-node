@@ -4,8 +4,6 @@ exports[`EntityService.getAccountFromAlias tests EntityService.getAccountFromAli
 
 exports[`EntityService.getAccountIdFromAlias tests EntityService.getAccountIdFromAlias - No match - result required 1`] = `"No account with a matching alias found"`;
 
-exports[`EntityService.getAccountIdFromAlias tests EntityService.getAccountIdFromAlias - No match 1`] = `"No account with a matching alias found"`;
-
 exports[`EntityService.getEncodedId tests EntityService.getEncodedId - Invalid alias 1`] = `
 [
   "Invalid parameter: idOrAliasOrEvmAddress",
@@ -16,4 +14,3 @@ exports[`EntityService.getEntityIdFromEvmAddress tests EntityService.getEntityId
 
 exports[`EntityService.getEntityIdFromEvmAddress tests EntityService.getEntityIdFromEvmAddress - No match - result required 1`] = `"Not found"`;
 
-exports[`EntityService.getEntityIdFromEvmAddress tests EntityService.getEntityIdFromEvmAddress - No match 1`] = `"Not found"`;
