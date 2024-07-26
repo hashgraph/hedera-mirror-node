@@ -28,6 +28,7 @@ import com.hedera.mirror.monitor.subscribe.TestScenario;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import java.net.ConnectException;
 import java.net.URI;
+import java.util.concurrent.TimeoutException;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -91,6 +92,20 @@ class ClusterHealthIndicatorTest {
     void restNetworkStakeConnectException() {
         var exception = new WebClientRequestException(
                 new ConnectException("Connection refused"),
+                HttpMethod.GET,
+                new URI("http://localhost/api/v1/network/stake"),
+                HttpHeaders.EMPTY);
+        when(restApiClient.getNetworkStakeStatusCode()).thenReturn(Mono.error(exception));
+        assertThat(clusterHealthIndicator.health().block())
+                .extracting(Health::getStatus)
+                .isEqualTo(Status.DOWN);
+    }
+
+    @SneakyThrows
+    @Test
+    void restNetworkStakeTimeoutException() {
+        var exception = new WebClientRequestException(
+                new TimeoutException("Timeout occured"),
                 HttpMethod.GET,
                 new URI("http://localhost/api/v1/network/stake"),
                 HttpHeaders.EMPTY);
