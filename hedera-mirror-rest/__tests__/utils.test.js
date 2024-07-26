@@ -219,10 +219,7 @@ describe('Utils encodeKey', () => {
     {
       name: 'Immutable Sentinel',
       input: Buffer.from('3200', 'hex'),
-      expected: {
-        _type: constants.keyTypes.PROTOBUF,
-        key: null,
-      },
+      expected: null,
     },
     {
       name: 'Protobuf',

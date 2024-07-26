@@ -1040,7 +1040,11 @@ const encodeKey = (key) => {
   }
 
   // check for empty case to support differentiation between empty and null keys
-  let keyHex = _.isEmpty(key) ? '' : toHexString(key);
+  const keyHex = _.isEmpty(key) ? '' : toHexString(key);
+  if (keyHex === IMMUTABLE_SENTINEL_KEY) {
+    return null;
+  }
+
   const ed25519Key = keyHex.match(PATTERN_ED25519);
   if (ed25519Key) {
     return {
@@ -1055,10 +1059,6 @@ const encodeKey = (key) => {
       _type: constants.keyTypes.ECDSA_SECP256K1,
       key: ecdsa[2],
     };
-  }
-
-  if (keyHex === IMMUTABLE_SENTINEL_KEY) {
-    keyHex = null;
   }
 
   return {
