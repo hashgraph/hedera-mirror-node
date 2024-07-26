@@ -100,7 +100,7 @@ public class TokenFeature extends AbstractFeature {
 
     private TokenResponse tokenResponse;
     private List<TokenId> fungibleTokenIds = new ArrayList<>();
-    private List<NftId> nonFungibleTokenIds = new ArrayList<>();
+    private List<NftId> nftTokenIds = new ArrayList<>();
 
     @Given("I ensure token {token} has been created")
     public void createNamedToken(TokenNameEnum tokenName) {
@@ -483,8 +483,8 @@ public class TokenFeature extends AbstractFeature {
         var carolPayer = accountClient.getAccount(accountNameEnum);
         long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
 
-        nonFungibleTokenIds.add(nftId);
-        networkTransactionResponse = tokenClient.rejectNonFungibleToken(nonFungibleTokenIds, carol, carolPrivateKey, carolPayer);
+        nftTokenIds.add(nftId);
+        networkTransactionResponse = tokenClient.rejectNonFungibleToken(nftTokenIds, carol, carolPrivateKey, carolPayer);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
