@@ -470,7 +470,7 @@ public class TokenFeature extends AbstractFeature {
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(getTokenBalance(carol, tokenId)).isEqualTo(0L);
+        assertThat(getTokenBalance(carol, tokenId)).isZero();
         assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + amount);
     }
 
@@ -488,7 +488,7 @@ public class TokenFeature extends AbstractFeature {
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(getTokenBalance(carol, tokenId)).isEqualTo(0L);
+        assertThat(getTokenBalance(carol, tokenId)).isZero();
         assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + 1);
     }
 
