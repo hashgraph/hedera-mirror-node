@@ -56,13 +56,6 @@ spec:
     rest:
       monitor:
         enabled: false
-    stackgres:
-      coordinator:
-        config:
-          full_page_writes: "true"
-      worker:
-        config:
-          full_page_writes: "true"
     test:
       enabled: true
       config:
