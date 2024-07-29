@@ -49,28 +49,53 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "urls": [
-    "/api/v1/balances?account.id=0.0.7&account.id=0.0.9&timestamp=0.0010023",
-    "/api/v1/balances?account.id=0.0.7&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff&timestamp=0.0010023",
-    "/api/v1/balances?account.id=0.0.7&account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&timestamp=0.0010023"
-  ],
-  "responseStatus": 200,
-  "responseJson": {
-    "timestamp": "0.000002345",
-    "balances": [
-      {
-        "account": "0.0.9",
-        "balance": 90,
-        "tokens": []
-      },
-      {
-        "account": "0.0.7",
-        "balance": 70,
-        "tokens": []
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/balances?account.id=0.0.7&account.id=0.0.9&timestamp=0.0010023",
+        "/api/v1/balances?account.id=0.0.7&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2fff&timestamp=0.0010023",
+        "/api/v1/balances?account.id=0.0.7&account.id=KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ&timestamp=0.0010023"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "0.000002345",
+        "balances": [
+          {
+            "account": "0.0.9",
+            "balance": 90,
+            "tokens": []
+          },
+          {
+            "account": "0.0.7",
+            "balance": 70,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
       }
-    ],
-    "links": {
-      "next": null
+    },
+    {
+      "urls": [
+        "/api/v1/balances?account.id=0.0.7&account.id=0.0.500&timestamp=0.0010023",
+        "/api/v1/balances?account.id=0.0.7&account.id=ac384c53f03855fa1b3616052f8ba32c6c2a2ffe&timestamp=0.0010023",
+        "/api/v1/balances?account.id=0.0.7&account.id=AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ&timestamp=0.0010023"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "0.000002345",
+        "balances": [
+          {
+            "account": "0.0.7",
+            "balance": 70,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }
