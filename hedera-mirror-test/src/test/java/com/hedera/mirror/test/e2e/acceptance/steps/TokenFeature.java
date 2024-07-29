@@ -99,8 +99,8 @@ public class TokenFeature extends AbstractFeature {
     private TokenId tokenId;
 
     private TokenResponse tokenResponse;
-    private List<TokenId> fungibleTokenIds = new ArrayList<>();
-    private List<NftId> nftTokenIds = new ArrayList<>();
+    //private List<TokenId> fungibleTokenIds = new ArrayList<>();
+    //private List<NftId> nftTokenIds = new ArrayList<>();
 
     @Given("I ensure token {token} has been created")
     public void createNamedToken(TokenNameEnum tokenName) {
@@ -460,17 +460,16 @@ public class TokenFeature extends AbstractFeature {
     @Then("{account} rejects token with {int} and returns them to {account}")
     public void rejectFungibleToken(AccountNameEnum accountNameEnum, int amount, AccountNameEnum accountNameEnumTreasury) {
         var treasury = accountClient.getAccount(accountNameEnumTreasury).getAccountId();
-        var carol = accountClient.getAccount(accountNameEnum).getAccountId();
-        var carolPrivateKey = accountClient.getAccount(accountNameEnum).getPrivateKey();
-        var carolPayer = accountClient.getAccount(accountNameEnum);
+        var carol = accountClient.getAccount(accountNameEnum);
         long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
-
+        var fungibleTokenIds = new ArrayList<TokenId>();
         fungibleTokenIds.add(tokenId);
-        networkTransactionResponse = tokenClient.rejectFungibleToken(fungibleTokenIds, carol, carolPrivateKey, carolPayer);
 
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(getTokenBalance(carol, tokenId)).isZero();
+        networkTransactionResponse = tokenClient.rejectFungibleToken(fungibleTokenIds, carol.getAccountId(), carol.getPrivateKey(), carol);
+
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+        assertThat(getTokenBalance(carol.getAccountId(), tokenId)).isZero();
         assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + amount);
     }
 
@@ -478,17 +477,16 @@ public class TokenFeature extends AbstractFeature {
     public void rejectNonFungibleToken(AccountNameEnum accountNameEnum, AccountNameEnum accountNameEnumTreasury) {
         var nftId = new NftId(tokenId, 2L);
         var treasury = accountClient.getAccount(accountNameEnumTreasury).getAccountId();
-        var carol = accountClient.getAccount(accountNameEnum).getAccountId();
-        var carolPrivateKey = accountClient.getAccount(accountNameEnum).getPrivateKey();
-        var carolPayer = accountClient.getAccount(accountNameEnum);
+        var carol = accountClient.getAccount(accountNameEnum)/*.getAccountId()*/;
         long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
-
+        var nftTokenIds = new ArrayList<NftId>();
         nftTokenIds.add(nftId);
-        networkTransactionResponse = tokenClient.rejectNonFungibleToken(nftTokenIds, carol, carolPrivateKey, carolPayer);
+
+        networkTransactionResponse = tokenClient.rejectNonFungibleToken(nftTokenIds, carol.getAccountId(), carol.getPrivateKey(), carol);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(getTokenBalance(carol, tokenId)).isZero();
+        assertThat(getTokenBalance(carol.getAccountId(), tokenId)).isZero();
         assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + 1);
     }
 

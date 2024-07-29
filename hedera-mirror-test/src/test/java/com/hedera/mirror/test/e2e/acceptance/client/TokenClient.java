@@ -652,38 +652,38 @@ public class TokenClient extends AbstractNetworkClient {
     }
 
     public NetworkTransactionResponse rejectFungibleToken(List<TokenId> tokenIds, AccountId ownerId, PrivateKey privateKey, ExpandedAccountId payer) {
-        var tokenRejectTransaction =
-                getFungibleTokenRejectTransaction(tokenIds).setOwnerId(ownerId).setTransactionMemo(getMemo("Reject Fungible token"));
+//        var tokenRejectTransaction =
+//                getFungibleTokenRejectTransaction(tokenIds).setOwnerId(ownerId).setTransactionMemo(getMemo("Reject Fungible token"));
+        var tokenRejectTransaction = new TokenRejectTransaction()
+                .setTokenIds(tokenIds)
+                .setOwnerId(ownerId)
+                .setTransactionMemo(getMemo("Reject Fungible token"));
         var response = executeTransactionAndRetrieveReceipt(
                 tokenRejectTransaction, privateKey == null ? null : KeyList.of(privateKey), payer);
-        log.info("Rejected Fungible tokens {} from owner {} via {}", tokenIds, ownerId, response.getTransactionId());
-        log.info(
-                "Rejected tokens {} from owner {} to treasury",
-                tokenIds,
-                ownerId);
+        log.info("Rejected Fungible tokens {} from owner {} to treasury via {}", tokenIds, ownerId, response.getTransactionId());
         return response;
     }
 
-    private TokenRejectTransaction getFungibleTokenRejectTransaction(List<TokenId> tokenIds) {
-        return new TokenRejectTransaction().setTokenIds(tokenIds).setTransactionMemo(getMemo("Reject Fungible token"));
-    }
+//    private TokenRejectTransaction getFungibleTokenRejectTransaction(List<TokenId> tokenIds) {
+//        return new TokenRejectTransaction().setTokenIds(tokenIds).setTransactionMemo(getMemo("Reject Fungible token"));
+//    }
 
     public NetworkTransactionResponse rejectNonFungibleToken(List<NftId> nftIds, AccountId ownerId, PrivateKey privateKey, ExpandedAccountId payer) {
-        var tokenRejectTransaction =
-                getNonFungibleTokenRejectTransaction(nftIds).setOwnerId(ownerId).setTransactionMemo(getMemo("Reject NFT"));
+//        var tokenRejectTransaction =
+//                getNonFungibleTokenRejectTransaction(nftIds).setOwnerId(ownerId).setTransactionMemo(getMemo("Reject NFT"));
+        var tokenRejectTransaction = new TokenRejectTransaction()
+                .setNftIds(nftIds)
+                .setOwnerId(ownerId)
+                .setTransactionMemo(getMemo("Reject NFT"));
         var response = executeTransactionAndRetrieveReceipt(
                 tokenRejectTransaction, privateKey == null ? null : KeyList.of(privateKey), payer);
-        log.info("Rejected NFT tokens {} from owner {} via {}", nftIds, ownerId, response.getTransactionId());
-        log.info(
-                "Rejected tokens {} from owner {} to treasury",
-                nftIds,
-                ownerId);
+        log.info("Rejected NFT tokens {} from owner {} to treasury via {}", nftIds, ownerId, response.getTransactionId());
         return response;
     }
 
-    private TokenRejectTransaction getNonFungibleTokenRejectTransaction(List<NftId> nftIds) {
-        return new TokenRejectTransaction().setNftIds(nftIds).setTransactionMemo(getMemo("Reject NFT"));
-    }
+//    private TokenRejectTransaction getNonFungibleTokenRejectTransaction(List<NftId> nftIds) {
+//        return new TokenRejectTransaction().setNftIds(nftIds).setTransactionMemo(getMemo("Reject NFT"));
+//    }
 
     @RequiredArgsConstructor
     @Getter
