@@ -134,4 +134,6 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
+replace github.com/btcsuite/btcd/btcec/v2 => github.com/btcsuite/btcd/btcec/v2 v2.3.3
+
 replace golang.org/x/image/tiff => golang.org/x/image/tiff v0.16.0
