@@ -134,4 +134,5 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
+replace github.com/btcsuite/btcd/btcec/v2 => github.com/btcsuite/btcd/btcec/v2 v2.3.3 // remove when go-ethereum upgrades to be compatible with >= v2.3.4
 replace golang.org/x/image/tiff => golang.org/x/image/tiff v0.16.0
