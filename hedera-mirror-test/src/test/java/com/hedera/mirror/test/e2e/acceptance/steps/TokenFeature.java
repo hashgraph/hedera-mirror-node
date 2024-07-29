@@ -99,8 +99,6 @@ public class TokenFeature extends AbstractFeature {
     private TokenId tokenId;
 
     private TokenResponse tokenResponse;
-    //private List<TokenId> fungibleTokenIds = new ArrayList<>();
-    //private List<NftId> nftTokenIds = new ArrayList<>();
 
     @Given("I ensure token {token} has been created")
     public void createNamedToken(TokenNameEnum tokenName) {
@@ -344,12 +342,12 @@ public class TokenFeature extends AbstractFeature {
 
     @When("I set account freeze status to {int} for {account}")
     public void setFreezeStatus(int freezeStatus, AccountNameEnum accountName) {
-        setFreezeStatus(freezeStatus, getRecipientAccountId(accountName));
+        setFreezeStatus(freezeStatus, accountClient.getAccount(accountName));
     }
 
     @When("I set account kyc status to {int} for {account}")
     public void setKycStatus(int kycStatus, AccountNameEnum accountName) {
-        setKycStatus(kycStatus, getRecipientAccountId(accountName));
+        setKycStatus(kycStatus, accountClient.getAccount(accountName));
     }
 
     @Then("I transfer {int} tokens to {account}")
@@ -465,7 +463,7 @@ public class TokenFeature extends AbstractFeature {
         var fungibleTokenIds = new ArrayList<TokenId>();
         fungibleTokenIds.add(tokenId);
 
-        networkTransactionResponse = tokenClient.rejectFungibleToken(fungibleTokenIds, carol.getAccountId(), carol.getPrivateKey(), carol);
+        networkTransactionResponse = tokenClient.rejectFungibleToken(fungibleTokenIds, carol);
 
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
         assertThat(networkTransactionResponse.getReceipt()).isNotNull();
@@ -477,12 +475,12 @@ public class TokenFeature extends AbstractFeature {
     public void rejectNonFungibleToken(AccountNameEnum accountNameEnum, AccountNameEnum accountNameEnumTreasury) {
         var nftId = new NftId(tokenId, 2L);
         var treasury = accountClient.getAccount(accountNameEnumTreasury).getAccountId();
-        var carol = accountClient.getAccount(accountNameEnum)/*.getAccountId()*/;
+        var carol = accountClient.getAccount(accountNameEnum);
         long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
         var nftTokenIds = new ArrayList<NftId>();
         nftTokenIds.add(nftId);
 
-        networkTransactionResponse = tokenClient.rejectNonFungibleToken(nftTokenIds, carol.getAccountId(), carol.getPrivateKey(), carol);
+        networkTransactionResponse = tokenClient.rejectNonFungibleToken(nftTokenIds, carol);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -530,7 +528,7 @@ public class TokenFeature extends AbstractFeature {
 
     @Given("I wipe {int} from the token for {account}")
     public void wipeToken(int amount, AccountNameEnum accountName) {
-        networkTransactionResponse = tokenClient.wipeFungible(tokenId, amount, getRecipientAccountId(accountName));
+        networkTransactionResponse = tokenClient.wipeFungible(tokenId, amount, accountClient.getAccount(accountName));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -538,14 +536,14 @@ public class TokenFeature extends AbstractFeature {
     @Given("I wipe serial number index {int} from token for {account}")
     public void wipeNft(int serialNumberIndex, AccountNameEnum accountName) {
         networkTransactionResponse = tokenClient.wipeNonFungible(
-                tokenId, tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber(), getRecipientAccountId(accountName));
+                tokenId, tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber(), accountClient.getAccount(accountName));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Given("I dissociate {account} from the token")
     public void dissociateNewAccountFromToken(AccountNameEnum accountName) {
-        networkTransactionResponse = tokenClient.dissociate(getRecipientAccountId(accountName), tokenId);
+        networkTransactionResponse = tokenClient.dissociate(accountClient.getAccount(accountName), tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -699,17 +697,6 @@ public class TokenFeature extends AbstractFeature {
         verifyTransactions();
         verifyNftTransfers(tokenId, serialNumber, recipientId);
         verifyNftTransactions(tokenId, serialNumber);
-    }
-
-    public ExpandedAccountId getRecipientAccountId(AccountNameEnum accountId) {
-        return switch (accountId) {
-            case AccountNameEnum.ALICE -> accountClient.getAccount(AccountNameEnum.ALICE);
-            case AccountNameEnum.BOB -> accountClient.getAccount(AccountNameEnum.BOB);
-            case AccountNameEnum.CAROL -> accountClient.getAccount(AccountNameEnum.CAROL);
-            case AccountNameEnum.DAVE -> accountClient.getAccount(AccountNameEnum.DAVE);
-            case AccountNameEnum.OPERATOR -> accountClient.getAccount(AccountNameEnum.OPERATOR);
-            default -> null;
-        };
     }
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {
@@ -1033,7 +1020,7 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private TokenRelationshipResponse callTokenRelationship(TokenId tokenId) {
-        var accountId = getRecipientAccountId(AccountNameEnum.ALICE);
+        var accountId = accountClient.getAccount(AccountNameEnum.ALICE);
         return mirrorClient.getTokenRelationships(accountId.getAccountId(), tokenId);
     }
 
