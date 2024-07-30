@@ -51,6 +51,7 @@ import {
 
 // routes
 import {AccountRoutes, BlockRoutes, ContractRoutes, NetworkRoutes} from './routes';
+import {handleRejection, handleUncaughtException} from "./middleware/httpErrorHandler.js";
 
 // use a dummy port for jest unit tests
 const port = isTestEnv() ? 3000 : config.port;
@@ -180,6 +181,9 @@ app.useAsync(responseHandler);
 
 // response error handling middleware
 app.useAsync(handleError);
+
+process.on('unhandledRejection', handleRejection);
+process.on('uncaughtException', handleUncaughtException);
 
 if (!isTestEnv()) {
   const server = app.listen(port, () => {

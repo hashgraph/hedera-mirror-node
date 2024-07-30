@@ -57,6 +57,14 @@ const handleError = async (err, req, res, next) => {
   res.status(statusCode.code).json(errorMessageFormat(errorMessage));
 };
 
+const handleRejection = (reason, promise) => {
+    logger.warn(`Unhandled rejection at:${promise} reason: ${reason}`);
+}
+
+const handleUncaughtException = (err) => {
+    logger.error('Unhandled exception:', err);
+}
+
 const shouldReturnMessage = (statusCode) => {
   return statusCode.isClientError() || statusCode === httpStatusCodes.BAD_GATEWAY;
 };
@@ -89,4 +97,8 @@ const errorMessageFormat = (errorMessages) => {
   };
 };
 
-export {handleError};
+export {
+  handleError,
+  handleRejection,
+  handleUncaughtException
+};
