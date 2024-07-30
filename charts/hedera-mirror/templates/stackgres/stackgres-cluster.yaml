@@ -40,7 +40,7 @@ spec:
     version: {{ .Values.stackgres.postgresVersion | quote }}
   prometheusAutobind: {{ or .Values.stackgres.coordinator.enableMetricsExporter .Values.stackgres.worker.enableMetricsExporter }}
   replication:
-    mode: async  # We might consider setting coordinator to sync or the proposed sync-all in the future
+    mode: {{ .Values.stackgres.coordinator.replication.mode }}
   shards:
     clusters: {{ .Values.stackgres.worker.instances }}
     configurations:

@@ -27,19 +27,20 @@ import {ContractBytecodeViewModel, ContractViewModel} from '../../viewmodel';
 
 const {default: defaultLimit} = getResponseLimit();
 
-const timestampEq1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1002'};
-const timestampGt1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1002'};
-const timestampGte1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1002'};
-const timestampEq1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1005'};
-const timestampLt1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1005'};
-const timestampLte1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '1005'};
+const {eq, gt, gte, lt, lte, ne} = utils.opsMap;
 
-const indexEq2Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '2'};
-const indexGt2Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '2'};
-const indexGte2Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.gte, value: '2'};
-const indexEq5Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '5'};
-const indexLt5Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'};
-const indexLte5Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.lte, value: '5'};
+const timestampEq1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: eq, value: '1002'};
+const timestampGt1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: gt, value: '1002'};
+const timestampGte1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: gte, value: '1002'};
+const timestampEq1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: eq, value: '1005'};
+const timestampLt1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: lt, value: '1005'};
+const timestampLte1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: lte, value: '1005'};
+
+const indexEq2Filter = {key: constants.filterKeys.INDEX, operator: eq, value: '2'};
+const indexGt2Filter = {key: constants.filterKeys.INDEX, operator: gt, value: '2'};
+const indexGte2Filter = {key: constants.filterKeys.INDEX, operator: gte, value: '2'};
+const indexLt5Filter = {key: constants.filterKeys.INDEX, operator: lt, value: '5'};
+const indexLte5Filter = {key: constants.filterKeys.INDEX, operator: lte, value: '5'};
 
 const emptyFilterString = 'empty filters';
 const primaryContractFilter = 'cr.contract_id = $1';
@@ -64,7 +65,7 @@ describe('extractSqlFromContractFilters', () => {
       input: [
         {
           key: constants.filterKeys.LIMIT,
-          operator: utils.opsMap.eq,
+          operator: eq,
           value: 20,
         },
       ],
@@ -79,7 +80,7 @@ describe('extractSqlFromContractFilters', () => {
       input: [
         {
           key: constants.filterKeys.ORDER,
-          operator: utils.opsMap.eq,
+          operator: eq,
           value: constants.orderFilterValues.ASC,
         },
       ],
@@ -93,17 +94,17 @@ describe('extractSqlFromContractFilters', () => {
       input: [
         {
           key: constants.filterKeys.CONTRACT_ID,
-          operator: utils.opsMap.eq,
+          operator: eq,
           value: '1001',
         },
         {
           key: constants.filterKeys.CONTRACT_ID,
-          operator: utils.opsMap.eq,
+          operator: eq,
           value: '1002',
         },
         {
           key: constants.filterKeys.CONTRACT_ID,
-          operator: utils.opsMap.gt,
+          operator: gt,
           value: '1000',
         },
       ],
@@ -359,7 +360,7 @@ describe('extractContractResultsByIdQuery', () => {
         filter: [
           {
             key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: 20,
           },
         ],
@@ -376,7 +377,7 @@ describe('extractContractResultsByIdQuery', () => {
         filter: [
           {
             key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: constants.orderFilterValues.ASC,
           },
         ],
@@ -393,17 +394,17 @@ describe('extractContractResultsByIdQuery', () => {
         filter: [
           {
             key: constants.filterKeys.FROM,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '1001',
           },
           {
             key: constants.filterKeys.FROM,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '1002',
           },
           {
             key: constants.filterKeys.FROM,
-            operator: utils.opsMap.gt,
+            operator: gt,
             value: '1000',
           },
         ],
@@ -426,17 +427,17 @@ describe('extractContractResultsByIdQuery', () => {
         filter: [
           {
             key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '1001',
           },
           {
             key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '1002',
           },
           {
             key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.gt,
+            operator: gt,
             value: '1000',
           },
         ],
@@ -558,27 +559,27 @@ describe('checkTimestampsForTopics', () => {
     const filters = [
       {
         key: constants.filterKeys.TOPIC0,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '0x1234',
       },
       {
         key: constants.filterKeys.TOPIC1,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '0x1234',
       },
       {
         key: constants.filterKeys.TOPIC2,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '0x1234',
       },
       {
         key: constants.filterKeys.TOPIC3,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '0x1234',
       },
       {
         key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '123',
       },
     ];
@@ -588,12 +589,12 @@ describe('checkTimestampsForTopics', () => {
     const filters = [
       {
         key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '123',
       },
       {
         key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gt,
+        operator: gt,
         value: '111',
       },
     ];
@@ -603,7 +604,7 @@ describe('checkTimestampsForTopics', () => {
     const filters = [
       {
         key: constants.filterKeys.TOPIC0,
-        operator: utils.opsMap.gte,
+        operator: gte,
         value: '0x1234',
       },
     ];
@@ -613,12 +614,12 @@ describe('checkTimestampsForTopics', () => {
     const filters = [
       {
         key: constants.filterKeys.TOPIC1,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '0x1234',
       },
       {
         key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gte,
+        operator: gte,
         value: '123',
       },
     ];
@@ -628,12 +629,12 @@ describe('checkTimestampsForTopics', () => {
     const filters = [
       {
         key: constants.filterKeys.TOPIC2,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '0x1234',
       },
       {
         key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.lt,
+        operator: lt,
         value: '123',
       },
     ];
@@ -643,12 +644,12 @@ describe('checkTimestampsForTopics', () => {
     const filters = [
       {
         key: constants.filterKeys.TOPIC3,
-        operator: utils.opsMap.eq,
+        operator: eq,
         value: '0x1234',
       },
       {
         key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.ne,
+        operator: ne,
         value: '123',
       },
     ];
@@ -668,9 +669,8 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
     inner: [],
     upper: [],
     conditions: [defaultContractLogCondition],
+    order: constants.orderFilterValues.DESC,
     params: [defaultContractId],
-    timestampOrder: constants.orderFilterValues.DESC,
-    indexOrder: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };
   const specs = [
@@ -1388,27 +1388,27 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         filter: [
           {
             key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '0x0011',
           },
           {
             key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '0x000013',
           },
           {
             key: constants.filterKeys.TOPIC2,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '0x140',
           },
           {
             key: constants.filterKeys.TOPIC3,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '0000150',
           },
           {
             key: constants.filterKeys.TOPIC3,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: '0000150',
           },
         ],
@@ -1433,7 +1433,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         filter: [
           {
             key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: 20,
           },
         ],
@@ -1450,7 +1450,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         filter: [
           {
             key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: constants.orderFilterValues.ASC,
           },
         ],
@@ -1458,8 +1458,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
       },
       expected: {
         ...defaultExpected,
-        timestampOrder: constants.orderFilterValues.ASC,
-        indexOrder: constants.orderFilterValues.ASC,
+        order: constants.orderFilterValues.ASC,
       },
     },
     {
@@ -1468,7 +1467,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         filter: [
           {
             key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
+            operator: eq,
             value: constants.orderFilterValues.DESC,
           },
         ],
@@ -1476,16 +1475,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
       },
       expected: {
         ...defaultExpected,
-        timestampOrder: constants.orderFilterValues.DESC,
-        indexOrder: constants.orderFilterValues.DESC,
+        order: constants.orderFilterValues.DESC,
       },
     },
   ];
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(contracts.extractContractLogsMultiUnionQuery(spec.input.filter, spec.input.contractId)).toEqual(
-        spec.expected
-      );
+    test(`${spec.name}`, async () => {
+      await expect(
+        contracts.extractContractLogsMultiUnionQuery(spec.input.filter, spec.input.contractId)
+      ).resolves.toEqual(spec.expected);
     });
   });
 });
@@ -1554,7 +1552,7 @@ describe('extractContractLogsMultiUnionQuery - negative', () => {
           indexLt5Filter,
           {
             key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.lt,
+            operator: lt,
             value: '1002',
           },
         ],
@@ -1598,76 +1596,84 @@ describe('extractContractLogsMultiUnionQuery - negative', () => {
     },
   ];
   specs.forEach((spec) => {
-    test(`error - ${spec.name}`, () => {
-      expect(() => contracts.extractContractLogsMultiUnionQuery(spec.input.filter, spec.input.contractId)).toThrow();
+    test(`error - ${spec.name}`, async () => {
+      await expect(() =>
+        contracts.extractContractLogsMultiUnionQuery(spec.input.filter, spec.input.contractId)
+      ).rejects.toThrow();
     });
   });
 });
 
-describe('alterTimestampRangeInReq', () => {
-  const inputQuery = {
-    limit: '1',
-    index: '10',
-  };
-  const expectedQuery = {...inputQuery};
-  const timestamp34 = '1651061427.731522534';
-  const timestamp99 = '1651061427.731522599';
+describe('alterTimestampRange', () => {
   const specs = [
     {
+      name: 'empty',
+      filters: [],
+    },
+    {
       name: 'no timestamp',
-      input: {
-        req: {query: inputQuery},
-      },
-      expected: {query: expectedQuery},
+      filters: [{key: 'topic0', operator: eq, value: '0x1234'}],
     },
     {
-      name: 'timestamp = 34',
-      input: {
-        req: {query: {...inputQuery, timestamp: timestamp34}},
-      },
-      expected: {query: {...expectedQuery, timestamp: timestamp34}},
+      name: 'single timestamp',
+      filters: [
+        {key: 'topic0', operator: eq, value: '0x1234'},
+        {key: 'timestamp', operator: gte, value: 123456789},
+      ],
     },
     {
-      name: 'timestamp => 34 & timestamp < 34',
-      input: {
-        req: {query: {...inputQuery, timestamp: [`gte:${timestamp34}`, `lt:${timestamp34}`]}},
-      },
-      expected: {query: {...expectedQuery, timestamp: [`gte:${timestamp34}`, `lt:${timestamp34}`]}},
+      name: 'three timestamps',
+      filters: [
+        {key: 'topic0', operator: eq, value: '0x1234'},
+        {key: 'timestamp', operator: gte, value: 123456789},
+        {key: 'timestamp', operator: lte, value: 123456780},
+        {key: 'timestamp', operator: lte, value: 223456789},
+      ],
     },
     {
-      name: 'timestamp > 34 & timestamp < 34',
-      input: {
-        req: {query: {...inputQuery, timestamp: [`gt:${timestamp34}`, `lt:${timestamp34}`]}},
-      },
-      expected: {query: {...expectedQuery, timestamp: [`gt:${timestamp34}`, `lt:${timestamp34}`]}},
+      name: 'timestamp=gte:123456789&timestamp=lte:123456789',
+      filters: [
+        {key: 'topic0', operator: eq, value: '0x1234'},
+        {key: 'timestamp', operator: gte, value: 123456789},
+        {key: 'timestamp', operator: lte, value: 123456789},
+      ],
+      expected: [
+        {key: 'topic0', operator: eq, value: '0x1234'},
+        {key: 'timestamp', operator: eq, value: 123456789},
+      ],
     },
     {
-      name: 'timestamp => 34 & timestamp <= 99',
-      input: {
-        req: {query: {...inputQuery, timestamp: [`gte:${timestamp34}`, `lte:${timestamp99}`]}},
-      },
-      expected: {query: {...expectedQuery, timestamp: [`gte:${timestamp34}`, `lte:${timestamp99}`]}},
+      name: 'different values',
+      filters: [
+        {key: 'topic0', operator: eq, value: '0x1234'},
+        {key: 'timestamp', operator: gte, value: 123456780},
+        {key: 'timestamp', operator: lte, value: 123456789},
+      ],
     },
     {
-      name: 'timestamp => 99 & timestamp <= 34',
-      input: {
-        req: {query: {...inputQuery, timestamp: [`gte:${timestamp99}`, `lte:${timestamp34}`]}},
-      },
-      expected: {query: {...expectedQuery, timestamp: [`gte:${timestamp99}`, `lte:${timestamp34}`]}},
+      name: 'no gte',
+      filters: [
+        {key: 'topic0', operator: eq, value: '0x1234'},
+        {key: 'timestamp', operator: gt, value: 123456789},
+        {key: 'timestamp', operator: lte, value: 123456789},
+      ],
     },
     {
-      name: 'timestamp => 34 & timestamp <= 34',
-      input: {
-        req: {query: {...inputQuery, timestamp: [`gte:${timestamp34}`, `lte:${timestamp34}`]}},
-      },
-      expected: {query: {...expectedQuery, timestamp: timestamp34}},
+      name: 'no lte',
+      filters: [
+        {key: 'topic0', operator: eq, value: '0x1234'},
+        {key: 'timestamp', operator: gte, value: 123456789},
+        {key: 'timestamp', operator: lt, value: 123456789},
+      ],
     },
-  ];
+  ].map((spec) => {
+    if (spec.expected === undefined) {
+      spec.expected = spec.filters;
+    }
+    return spec;
+  });
 
-  specs.forEach((spec) => {
-    test(spec.name, () => {
-      contracts.alterTimestampRangeInReq(spec.input.req);
-      expect(spec.input.req).toEqual(spec.expected);
-    });
+  test.each(specs)('$name', ({filters, expected}) => {
+    expect(contracts.alterTimestampRange(filters)).toEqual(expected);
   });
 });

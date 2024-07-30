@@ -73,7 +73,7 @@ class RecordFileParserIntegrationTest extends ImporterIntegrationTest {
 
         // then
         assertRecordFile(recordFile1, recordFile2);
-        assertThat(cryptoTransferRepository.count()).isEqualTo(2 * 3 * transactions);
+        assertThat(cryptoTransferRepository.count()).isEqualTo(2 * 6 * transactions);
         assertThat(entityRepository.count()).isZero(); // Partial entities ignored
         assertThat(transactionRepository.count()).isEqualTo(2 * transactions);
     }
@@ -94,7 +94,7 @@ class RecordFileParserIntegrationTest extends ImporterIntegrationTest {
 
         // then
         assertRecordFile(recordFile1, recordFile2);
-        assertThat(cryptoTransferRepository.count()).isEqualTo(2 * 3 * transactions);
+        assertThat(cryptoTransferRepository.count()).isEqualTo(2 * 6 * transactions);
         assertThat(transactionRepository.count()).isEqualTo(2 * transactions);
     }
 
@@ -116,7 +116,7 @@ class RecordFileParserIntegrationTest extends ImporterIntegrationTest {
 
         // then
         assertRecordFile(recordFile1, recordFile2, recordFile3);
-        assertThat(cryptoTransferRepository.count()).isEqualTo(3 * 3 * transactions);
+        assertThat(cryptoTransferRepository.count()).isEqualTo(3 * 6 * transactions);
         assertThat(transactionRepository.count()).isEqualTo(3 * transactions);
     }
 
@@ -131,7 +131,7 @@ class RecordFileParserIntegrationTest extends ImporterIntegrationTest {
                 .getTopicID());
         var recordFile = recordFileBuilder
                 .recordFile()
-                .recordItems(i -> i.count(count).template(topicMessage))
+                .recordItems(i -> i.count(count).template(() -> topicMessage))
                 .build();
 
         var receive = reactiveRedisOperations

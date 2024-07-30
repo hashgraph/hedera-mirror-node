@@ -20,31 +20,72 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("hedera.mirror.importer.parser.record.performance")
 @Data
 public class ParserPerformanceProperties {
 
-    @NotNull
-    private Duration duration = Duration.ofSeconds(60L);
+    private boolean enabled = true;
 
     @NotNull
-    private List<PerformanceTransactionProperties> transactions = Collections.emptyList();
+    private List<PerformanceScenarioProperties> scenarios = List.of();
+
+    public enum SubType {
+        STANDARD,
+        TOKEN_TRANSFER
+    }
+
+    @Data
+    public static class PerformanceScenarioProperties {
+
+        private String description;
+
+        @DurationMin(seconds = 1L)
+        @NotNull
+        private Duration duration = Duration.ofSeconds(10L);
+
+        private boolean enabled = true;
+
+        @DurationMin(millis = 1)
+        @NotNull
+        private Duration latency = Duration.ofMillis(1500L);
+
+        @NotNull
+        private List<PerformanceTransactionProperties> transactions = List.of();
+
+        public String getDescription() {
+            if (description != null) {
+                return description;
+            }
+            return transactions.stream()
+                    .map(PerformanceTransactionProperties::getDescription)
+                    .collect(Collectors.joining(", "));
+        }
+    }
 
     @Data
     public static class PerformanceTransactionProperties {
 
         @Min(1)
-        private int entities = 10;
-
-        @Min(0)
-        private int tps = 100;
+        private int entities = 1;
 
         @NotNull
-        private TransactionType type;
+        private SubType subType = SubType.STANDARD;
+
+        @Min(1)
+        private int tps = 10_000;
+
+        @NotNull
+        private TransactionType type = TransactionType.CONSENSUSSUBMITMESSAGE;
+
+        public String getDescription() {
+            var name = subType != SubType.STANDARD ? subType : type;
+            return tps + " " + name;
+        }
     }
 }

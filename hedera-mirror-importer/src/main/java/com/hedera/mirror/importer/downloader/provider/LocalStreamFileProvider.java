@@ -117,7 +117,12 @@ public class LocalStreamFileProvider implements StreamFileProvider {
      */
     private Flux<Path> getBasePaths(StreamFilename streamFilename) {
         var basePath = properties.getImporterProperties().getStreamPath();
-        basePath.toFile().mkdirs();
+        var baseFile = basePath.toFile();
+        baseFile.mkdirs();
+
+        if (!baseFile.exists()) {
+            return Flux.error(new RuntimeException("Unable to create directory: " + basePath));
+        }
 
         try (var subDirs = Files.list(basePath)) {
             var date = LocalDate.ofInstant(streamFilename.getInstant(), ZoneOffset.UTC)

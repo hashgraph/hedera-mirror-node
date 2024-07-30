@@ -426,12 +426,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @BeforeEach
     void before() {
         entityProperties.getPersist().setEntityTransactions(true);
+        entityProperties.getPersist().setSyntheticContractResults(true);
         entityProperties.getPersist().setTokens(true);
     }
 
     @AfterEach
     void after() {
         entityProperties.getPersist().setEntityTransactions(false);
+        entityProperties.getPersist().setSyntheticContractResults(false);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -3452,6 +3454,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .build());
                 })
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(rejectTimestamp))
+                        .clearTokenTransferLists()
                         .addTokenTransferLists(tokenRejectTransfer))
                 .build();
 
@@ -3550,6 +3553,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             TokenReference.newBuilder().setNft(protoNftId).build());
                 })
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(rejectTimestamp))
+                        .clearTokenTransferLists()
                         .addTokenTransferLists(tokenRejectTransfer))
                 .build();
 

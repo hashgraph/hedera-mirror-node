@@ -189,9 +189,8 @@ describe('ContractService.getContractLogsQuery tests', () => {
       inner: [],
       upper: [],
       conditions: [contractLogContractIdWhereClause],
+      order: 'desc',
       params: [2],
-      timestampOrder: 'desc',
-      indexOrder: 'asc',
       limit: 5,
     });
     assertSqlQueryEqual(
@@ -203,7 +202,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
       from contract_log cl
       left join entity e on id = contract_id
       where cl.contract_id = $1
-      order by cl.consensus_timestamp desc, cl.index asc
+      order by cl.consensus_timestamp desc, cl.index desc
       limit $2`
     );
     expect(params).toEqual([2, 5]);
@@ -221,6 +220,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
         `cl.topic2 in ($4)`,
         `cl.topic3 in ($5)`,
       ],
+      order: 'desc',
       params: [
         1002,
         Buffer.from('11', 'hex'),
@@ -228,8 +228,6 @@ describe('ContractService.getContractLogsQuery tests', () => {
         Buffer.from('13', 'hex'),
         Buffer.from('14', 'hex'),
       ],
-      timestampOrder: 'desc',
-      indexOrder: 'desc',
       limit: 5,
     });
     assertSqlQueryEqual(
@@ -261,9 +259,8 @@ describe('ContractService.getContractLogsQuery tests', () => {
       inner: [{key: 'timestamp', operator: ' > ', value: '1001'}],
       upper: [],
       conditions: [`cl.contract_id  = $1`, `cl.topic0 in ($2)`],
+      order: 'desc',
       params: [1002, Buffer.from('11', 'hex')],
-      timestampOrder: 'desc',
-      indexOrder: 'desc',
       limit: 5,
     });
     assertSqlQueryEqual(
@@ -306,10 +303,9 @@ describe('ContractService.getContractLogsQuery tests', () => {
         {key: 'index', operator: ' <= ', value: '5'},
         {key: 'timestamp', operator: ' = ', value: '1005'},
       ],
+      order: 'desc',
       conditions: [`cl.contract_id  = $1`, `cl.topic0 in ($2)`],
       params: [1002, Buffer.from('11', 'hex')],
-      timestampOrder: 'desc',
-      indexOrder: 'desc',
       limit: 5,
     });
     assertSqlQueryEqual(
@@ -730,9 +726,8 @@ describe('ContractService.getContractLogs tests', () => {
     inner: [],
     upper: [],
     conditions: [],
+    order: 'desc',
     params: [],
-    timestampOrder: 'desc',
-    indexOrder: 'desc',
     limit: 100,
   };
 
@@ -870,6 +865,7 @@ describe('ContractService.getContractLogs tests', () => {
         'cl.topic2 in ($4)',
         'cl.topic3 in ($5)',
       ],
+      order: 'asc',
       params: [
         3,
         Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea', 'hex'),
@@ -877,8 +873,6 @@ describe('ContractService.getContractLogs tests', () => {
         Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec', 'hex'),
         Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed', 'hex'),
       ],
-      timestampOrder: 'desc',
-      indexOrder: 'asc',
       limit: 25,
     });
     expect(response).toMatchObject(expectedContractLog);

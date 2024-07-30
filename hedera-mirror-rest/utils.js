@@ -22,6 +22,7 @@ import long from 'long';
 import * as math from 'mathjs';
 import pg from 'pg';
 import pgRange, {Range} from 'pg-range';
+import {format} from 'sql-formatter';
 import util from 'util';
 
 import * as constants from './constants';
@@ -132,6 +133,11 @@ const isHexPositiveInt = (num, allowZero = false) => {
   return false;
 };
 
+const isByteRange = (str, minSize, maxSize) => {
+  const length = Buffer.from(str).length
+  return length >= minSize && length <= maxSize;
+}
+
 const nonNegativeInt32Regex = /^\d{1,10}$/;
 
 /**
@@ -182,15 +188,6 @@ const isValidEncoding = (query) => {
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
-const blockHashPattern = /^(0x)?([0-9A-Fa-f]{64}|[0-9A-Fa-f]{96})$/;
-const isValidBlockHash = (query) => {
-  if (query === undefined) {
-    return false;
-  }
-
-  return blockHashPattern.test(query);
-};
-
 const ethHashPattern = /^(0x)?([0-9A-Fa-f]{64})$/;
 const isValidEthHash = (hash) => {
   if (hash === undefined) {
@@ -198,6 +195,15 @@ const isValidEthHash = (hash) => {
   }
 
   return ethHashPattern.test(hash);
+};
+
+const ethHashOrHederaHashPattern = /^(0x)?([0-9A-Fa-f]{64}|[0-9A-Fa-f]{96})$/;
+const isValidEthHashOrHederaHash = (hash) => {
+  if (hash === undefined) {
+    return false;
+  }
+
+  return ethHashOrHederaHashPattern.test(hash);
 };
 
 const slotPattern = /^(0x)?[0-9A-Fa-f]{1,64}$/;
@@ -209,6 +215,8 @@ const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.
 const isValidAddressBookFileIdPattern = (fileId) => {
   return addressBookFileIdPattern.includes(fileId);
 };
+
+const lowerCaseQueryValue = (queryValue) => (typeof queryValue === 'string' ? queryValue.toLowerCase() : queryValue);
 
 /**
  * Validate input parameters for the rest apis
@@ -275,7 +283,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.BLOCK_HASH:
-      ret = isValidBlockHash(val) && op === constants.queryParamOperators.eq;
+      ret = isValidEthHashOrHederaHash(val) && op === constants.queryParamOperators.eq;
       break;
     case constants.filterKeys.BLOCK_NUMBER:
       ret = (isPositiveLong(val, true) || isHexPositiveInt(val, true)) && _.includes(basicOperators, op);
@@ -371,6 +379,9 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TRANSACTIONS:
       ret = isValidBooleanOpAndValue(op, val);
+      break;
+    case constants.filterKeys.TRANSACTION_HASH:
+      ret = isValidEthHashOrHederaHash(val) && op === constants.queryParamOperators.eq;
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -607,6 +618,14 @@ const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
     false
   );
 };
+
+/**
+ * Parse a hex string to a buffer. Note the string optionally have a 0x prefix
+ *
+ * @param {string} str - The hex string
+ * @returns {Buffer}
+ */
+const parseHexStr = (str) => Buffer.from(stripHexPrefix(str), 'hex');
 
 /**
  * Parses the integer string into a Number if it's safe or otherwise a BigInt
@@ -1098,7 +1117,8 @@ const buildAndValidateFilters = (
   query,
   acceptedParameters,
   filterValidator = filterValidityChecks,
-  filterDependencyChecker = filterDependencyCheck
+  filterDependencyChecker = filterDependencyCheck,
+  excludedCombinatons= [[]],
 ) => {
   const {badParams, filters} = buildFilters(query);
   const {invalidParams, unknownParams} = validateAndParseFilters(filters, filterValidator, acceptedParameters);
@@ -1389,8 +1409,11 @@ const getPoolClass = () => {
           const result = entry.match(/^\s*at\s+(\S+).*\/(.*\.js):(\d+):.*/);
           return result && result.length === 4 && {function: result[1], file: result[2], line: result[3]};
         })[0];
+      const prettyQuery = format(query, {language: 'postgresql'});
       logger.trace(
-        `${callerInfo.function} (${callerInfo.file}:${callerInfo.line}) query: ${query} ${JSONStringify(params)}`
+        `${callerInfo.function} (${callerInfo.file}:${callerInfo.line})\nquery: ${prettyQuery}\nparams: ${JSONStringify(
+          params
+        )}`
       );
     }
 
@@ -1716,18 +1739,20 @@ export {
   gtGte,
   incrementTimestampByOneDay,
   ipMask,
+  isByteRange,
   isNonNegativeInt32,
   isPositiveLong,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
-  isValidBlockHash,
   isValidEthHash,
+  isValidEthHashOrHederaHash,
   isValidUserFileId,
   isValidOperatorQuery,
   isValidPublicKeyQuery,
   isValidSlot,
   isValidTimestampParam,
   isValidValueIgnoreCase,
+  lowerCaseQueryValue,
   ltLte,
   mergeParams,
   nowInNs,
@@ -1737,6 +1762,7 @@ export {
   parseAccountIdQueryParam,
   parseBalanceQueryParam,
   parseBooleanValue,
+  parseHexStr,
   parseInteger,
   parseLimitAndOrderParams,
   parseParams,

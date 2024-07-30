@@ -237,7 +237,7 @@ const getEntityBalanceQuery = (
     from ${entityTable} as e
     left join
       ${getEntityStakeQuery(entityAccountQuery.query, isHistorical)}
-    as es on es.id = e.id
+    as es on es.id = e.id ${getEntityStakeAccountCondition(entityAccountQuery)}
     ${[whereClause, orderClause, limitQuery].filter(Boolean).join('\n')}`);
   const query = queries.join('\n');
 
@@ -269,15 +269,23 @@ const getAccountQuery = (
   includeBalance = true,
   isHistorical = false
 ) => {
+  // Convert MySQL style value placeholder ? to PostgreSQL style $1, $2, .... The query fragments are ordered in the
+  // same order as their params
+  let paramIndex = 1;
+  [tokenBalanceQuery, entityBalanceQuery, entityAccountQuery, pubKeyQuery, accountBalanceQuery, limitAndOrderQuery]
+    .filter((query) => !!query.query)
+    .forEach((query) => {
+      query.query = query.query.replace(/\?/g, (s) => `$${paramIndex++}`);
+    });
+
   if (!includeBalance) {
     const entityCondition = [`e.type in ('ACCOUNT', 'CONTRACT')`, entityAccountQuery.query, pubKeyQuery.query]
       .filter((x) => !!x)
       .join(' and ');
-
     const entityOnlyQuery = `
             select ${entityFields}
             from entity e
-              left join entity_stake es on es.id = e.id
+              left join entity_stake es on es.id = e.id ${getEntityStakeAccountCondition(entityAccountQuery)}
             where ${entityCondition}
             order by id ${limitAndOrderQuery.order} ${limitAndOrderQuery.query}`;
     return {
@@ -296,6 +304,10 @@ const getAccountQuery = (
     isHistorical
   );
 };
+
+// Get the account id condition for entity_stake query, this helps avoid a full index scan
+const getEntityStakeAccountCondition = (entityAccountQuery) =>
+  entityAccountQuery.query ? `and ${entityAccountQuery.query.replaceAll('e.id', 'es.id')}` : '';
 
 const toQueryObject = (queryAndParams) => {
   return {
@@ -350,13 +362,11 @@ const getAccounts = async (req, res) => {
     false
   );
 
-  const pgQuery = utils.convertMySqlStyleQueryToPostgres(query);
-
   // Execute query
   // set random_page_cost to 0 to make the cost estimation of using the index on (public_key, index)
   // lower than that of other indexes so pg planner will choose the better index when querying by public key
   const preQueryHint = pubKeyQuery.query !== '' && constants.zeroRandomPageCostQueryHint;
-  const result = await pool.queryQuietly(pgQuery, params, preQueryHint);
+  const result = await pool.queryQuietly(query, params, preQueryHint);
   const ret = {
     accounts: result.rows.map((row) => processRow(row)),
     links: {
@@ -479,8 +489,7 @@ const getOneAccount = async (req, res) => {
     timestampFilters.length > 0
   );
 
-  const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
-  const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
+  const entityPromise = pool.queryQuietly(entityQuery, entityParams);
 
   // Add the account id path parameter as a query filter for the transactions handler
   filters.push({key: filterKeys.ACCOUNT_ID, operator: opsMap.eq, value: encodedId});

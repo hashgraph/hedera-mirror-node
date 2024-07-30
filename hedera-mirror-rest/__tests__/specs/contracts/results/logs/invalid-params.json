@@ -1,0 +1,86 @@
+{
+  "description": "Contracts logs api calls with invalid parameters",
+  "setup": {},
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?index=gt:0&timestamp=lt:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?index=gte:0&timestamp=lt:1639010151.000000000&limit=3&order=desc",
+        "/api/v1/contracts/results/logs?index=gte:0&timestamp=lte:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?index=gt:0&timestamp=lte:1639010151.000000000&limit=3&order=desc"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "timestamp must have gte or eq operator"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?index=lt:0&timestamp=gt:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?index=lte:0&timestamp=gt:1639010151.000000000&limit=3&order=desc",
+        "/api/v1/contracts/results/logs?index=lte:0&timestamp=gte:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?index=lt:0&timestamp=gte:1639010151.000000000&limit=3&order=desc"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "timestamp must have lte or eq operator"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?index=0&timestamp=gt:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?index=0&timestamp=gte:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?index=0&timestamp=lt:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?index=0&timestamp=lte:1639010151.000000000&limit=3&order=asc"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "timestamp must have eq operator"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?transaction.hash=0x70d0a20087c741b3d6d5f53f2bc1b841aaa7405aba6090e8d6aa41b1a2e69250&transaction.hash=0x6877974a332466232f9a244552afc0ada3b15f31d3da4952cb898361ce6068e8",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one transaction.hash filter is allowed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?transaction.hash=gt:0x70d0a20087c741b3d6d5f53f2bc1b841aaa7405aba6090e8d6aa41b1a2e69250",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: transaction.hash"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
