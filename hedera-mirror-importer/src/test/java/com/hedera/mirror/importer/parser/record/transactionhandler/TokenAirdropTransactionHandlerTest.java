@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,7 @@ class TokenAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(amount, TokenAirdrop::getAmount)
                 .returns(receiver.getAccountNum(), TokenAirdrop::getReceiverAccountId)
                 .returns(sender.getAccountNum(), TokenAirdrop::getSenderAccountId)
+                .returns(0L, TokenAirdrop::getSerialNumber)
                 .returns(PENDING, TokenAirdrop::getState)
                 .returns(Range.atLeast(timestamp), TokenAirdrop::getTimestampRange)
                 .returns(token.getTokenNum(), TokenAirdrop::getTokenId);
@@ -140,7 +141,7 @@ class TokenAirdropTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
         verify(entityListener).onTokenAirdrop(tokenAirdrop.capture());
         assertThat(tokenAirdrop.getValue())
-                .returns(0L, TokenAirdrop::getAmount)
+                .returns(null, TokenAirdrop::getAmount)
                 .returns(receiver.getAccountNum(), TokenAirdrop::getReceiverAccountId)
                 .returns(sender.getAccountNum(), TokenAirdrop::getSenderAccountId)
                 .returns(PENDING, TokenAirdrop::getState)

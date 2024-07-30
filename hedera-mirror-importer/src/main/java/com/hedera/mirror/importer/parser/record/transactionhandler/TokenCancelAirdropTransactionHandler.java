@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.hedera.mirror.common.domain.token.TokenAirdropStateEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -28,17 +29,26 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 class TokenCancelAirdropTransactionHandler extends AbstractTransactionHandler {
 
+    private final EntityProperties entityProperties;
     private final TokenUpdateAirdropTransactionHandler tokenUpdateAirdropTransactionHandler;
 
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        tokenUpdateAirdropTransactionHandler.doUpdateTransaction(recordItem, TokenAirdropStateEnum.CANCELLED);
+        if (!entityProperties.getPersist().isTokenAirdrops() || !recordItem.isSuccessful()) {
+            return;
+        }
+
+        var pendingAirdropIds =
+                recordItem.getTransactionBody().getTokenCancelAirdrop().getPendingAirdropsList();
+        tokenUpdateAirdropTransactionHandler.doUpdateTransaction(
+                recordItem, TokenAirdropStateEnum.CANCELLED, pendingAirdropIds);
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return tokenUpdateAirdropTransactionHandler.getEntity(
-                recordItem.getTransactionBody(), TokenAirdropStateEnum.CANCELLED);
+        var pendingAirdropIds =
+                recordItem.getTransactionBody().getTokenCancelAirdrop().getPendingAirdropsList();
+        return tokenUpdateAirdropTransactionHandler.getEntity(pendingAirdropIds);
     }
 
     @Override

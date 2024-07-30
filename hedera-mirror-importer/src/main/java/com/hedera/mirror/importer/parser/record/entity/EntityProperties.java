@@ -110,6 +110,10 @@ public class EntityProperties {
         @NotNull
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
 
+        public boolean isTokenAirdrops() {
+            return tokenAirdrops && tokens;
+        }
+
         public boolean shouldPersistEntityTransaction(EntityId entityId) {
             return entityTransactions && !EntityId.isEmpty(entityId) && !entityTransactionExclusion.contains(entityId);
         }

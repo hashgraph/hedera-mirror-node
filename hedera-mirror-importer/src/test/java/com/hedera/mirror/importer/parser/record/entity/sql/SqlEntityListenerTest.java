@@ -2556,9 +2556,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         assertThat(findHistory(TokenAccount.class)).containsExactlyInAnyOrderElementsOf(expected);
     }
 
-    @ValueSource(ints = {1, 2})
-    @ParameterizedTest
-    void onTokenAirdrop(int commitIndex) {
+    @Test
+    void onTokenAirdrop() {
         // given
         var tokenAirdrop =
                 domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
@@ -2569,19 +2568,11 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         sqlEntityListener.onTokenAirdrop(tokenAirdrop);
         sqlEntityListener.onTokenAirdrop(tokenAirdrop2);
 
-        if (commitIndex > 1) {
-            completeFileAndCommit();
-            assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(tokenAirdrop, tokenAirdrop2);
-            assertThat(findHistory(TokenAirdrop.class)).isEmpty();
-        }
-
         // when
-        long additionalAmount = 50000L;
-        var currentAmount = tokenAirdrop.getAmount();
-        long newAmount = currentAmount + additionalAmount;
+        long newAmount = 50000L;
         var updatedAmountAirdrop = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
-                .customize(a -> a.amount(additionalAmount)
+                .customize(a -> a.amount(newAmount)
                         .receiverAccountId(tokenAirdrop.getReceiverAccountId())
                         .senderAccountId(tokenAirdrop.getSenderAccountId())
                         .tokenId(tokenAirdrop.getTokenId())
@@ -2594,15 +2585,13 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         tokenAirdrop.setTimestampRange(
                 Range.closedOpen(tokenAirdrop.getTimestampLower(), updatedAmountAirdrop.getTimestampLower()));
         assertThat(findHistory(TokenAirdrop.class)).containsExactly(tokenAirdrop);
-        if (commitIndex > 1) {
-            updatedAmountAirdrop.setAmount(newAmount);
-        }
+        updatedAmountAirdrop.setAmount(newAmount);
         assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(updatedAmountAirdrop, tokenAirdrop2);
     }
 
     @ParameterizedTest
     @MethodSource("provideAirdrops")
-    void onTokenAirdropCancel(TokenAirdropStateEnum state, int commitIndex) {
+    void onTokenAirdropUpdate(TokenAirdropStateEnum state, int commitIndex) {
         // given
         var tokenAirdrop =
                 domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
@@ -2621,6 +2610,8 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         var tokenAirdropUpdateState = domainBuilder
                 .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
                 .customize(a -> a.state(state)
+                        .amount(null) // Record files that change state do not include PendingAirdropValue so remove the
+                        // amount here
                         .receiverAccountId(tokenAirdrop.getReceiverAccountId())
                         .senderAccountId(tokenAirdrop.getSenderAccountId())
                         .tokenId(tokenAirdrop.getTokenId())

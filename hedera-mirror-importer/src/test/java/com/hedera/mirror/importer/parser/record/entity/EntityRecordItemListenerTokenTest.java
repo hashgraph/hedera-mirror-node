@@ -3575,7 +3575,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @EnumSource(
             value = TokenAirdropStateEnum.class,
             names = {"CANCELLED", "CLAIMED"})
-    void tokenAirdropStateMerge(TokenAirdropStateEnum airdropType) {
+    void tokenAirdropUpdateState(TokenAirdropStateEnum airdropType) {
         // given
         entityProperties.getPersist().setTokenAirdrops(true);
         long pendingAmount = 1000;
@@ -3685,94 +3685,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         expectedPendingNft.setTimestampRange(Range.atLeast(updateTimestamp));
         assertThat(tokenAirdropRepository.findAll())
                 .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible, expectedPendingNft));
-    }
-
-    @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void tokenAirdropUpdatePendingAmount(boolean mergeUpdate) {
-        // given
-        entityProperties.getPersist().setTokenAirdrops(true);
-        long pendingAmount = 1000;
-        long createTimestamp = 10L;
-
-        var tokenCreateRecordItem = recordItemBuilder
-                .tokenCreate()
-                .transactionBody(b -> b.setInitialSupply(INITIAL_SUPPLY)
-                        .setTokenType(FUNGIBLE_COMMON)
-                        .setTreasury(PAYER))
-                .receipt(r -> r.setTokenID(TOKEN_ID))
-                .record(r -> r.addAutomaticTokenAssociations(TokenAssociation.newBuilder()
-                                .setAccountId(PAYER)
-                                .setTokenId(TOKEN_ID))
-                        .setConsensusTimestamp(TestUtils.toTimestamp(createTimestamp)))
-                .build();
-        parseRecordItemAndCommit(tokenCreateRecordItem);
-
-        // when
-        long airdropTimestamp = 20L;
-        var pendingFungibleAirdrop = PendingAirdropRecord.newBuilder()
-                .setPendingAirdropId(PendingAirdropId.newBuilder()
-                        .setReceiverId(RECEIVER)
-                        .setSenderId(PAYER)
-                        .setFungibleTokenType(TOKEN_ID))
-                .setPendingAirdropValue(PendingAirdropValue.newBuilder()
-                        .setAmount(pendingAmount)
-                        .build());
-        var tokenAirdrop = recordItemBuilder
-                .tokenAirdrop()
-                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(airdropTimestamp))
-                        .clearNewPendingAirdrops()
-                        .addNewPendingAirdrops(pendingFungibleAirdrop))
-                .build();
-
-        long updateAmount = 500;
-        long updateTimestamp = 30L;
-        var updateAmountAirdrop = PendingAirdropRecord.newBuilder()
-                .setPendingAirdropId(PendingAirdropId.newBuilder()
-                        .setReceiverId(RECEIVER)
-                        .setSenderId(PAYER)
-                        .setFungibleTokenType(TOKEN_ID))
-                .setPendingAirdropValue(
-                        PendingAirdropValue.newBuilder().setAmount(updateAmount).build());
-        var updateAirdrop = recordItemBuilder
-                .tokenAirdrop()
-                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(updateTimestamp))
-                        .clearNewPendingAirdrops()
-                        .addNewPendingAirdrops(updateAmountAirdrop))
-                .build();
-
-        var expectedPendingFungible = domainBuilder
-                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
-                .customize(t -> t.amount(pendingAmount)
-                        .receiverAccountId(RECEIVER.getAccountNum())
-                        .senderAccountId(PAYER.getAccountNum())
-                        .state(TokenAirdropStateEnum.PENDING)
-                        .timestampRange(Range.atLeast(airdropTimestamp))
-                        .tokenId(TOKEN_ID.getTokenNum()))
-                .get();
-
-        if (mergeUpdate) {
-            // update the amount with a merge inside entityListener
-            parseRecordItemsAndCommit(List.of(tokenAirdrop, updateAirdrop));
-        } else {
-            // when
-            parseRecordItemAndCommit(tokenAirdrop);
-
-            // then
-            assertThat(tokenAirdropRepository.findAll())
-                    .containsExactlyInAnyOrderElementsOf(List.of(expectedPendingFungible));
-            assertThat(findHistory(TokenAirdrop.class)).isEmpty();
-
-            // when
-            parseRecordItemAndCommit(updateAirdrop);
-        }
-
-        // then
-        expectedPendingFungible.setTimestampRange(Range.closedOpen(airdropTimestamp, updateTimestamp));
-        assertThat(findHistory(TokenAirdrop.class)).containsExactlyInAnyOrder(expectedPendingFungible);
-        expectedPendingFungible.setAmount(pendingAmount + updateAmount);
-        expectedPendingFungible.setTimestampRange(Range.atLeast(updateTimestamp));
-        assertThat(tokenAirdropRepository.findAll()).containsExactlyInAnyOrder(expectedPendingFungible);
     }
 
     @ParameterizedTest

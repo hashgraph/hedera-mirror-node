@@ -912,7 +912,7 @@ public class DomainBuilder {
                 .timestampRange(Range.atLeast(timestamp))
                 .tokenId(id());
         if (type == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            builder.amount(0L).serialNumber(number());
+            builder.serialNumber(number());
         } else {
             long amount = number() + 1000;
             builder.amount(amount);

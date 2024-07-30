@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,9 +38,7 @@ class TokenAirdropTransactionHandler extends AbstractTransactionHandler {
 
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isTokenAirdrops()
-                || !entityProperties.getPersist().isTokens()
-                || !recordItem.isSuccessful()) {
+        if (!entityProperties.getPersist().isTokenAirdrops() || !recordItem.isSuccessful()) {
             return;
         }
 

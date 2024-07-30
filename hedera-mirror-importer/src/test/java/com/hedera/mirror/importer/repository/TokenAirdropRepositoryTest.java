@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,9 +54,17 @@ class TokenAirdropRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void save() {
+    void saveFungible() {
         var tokenAirdrop =
                 domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).get();
+        repository.save(tokenAirdrop);
+        assertThat(repository.findAll()).containsOnly(tokenAirdrop);
+    }
+
+    @Test
+    void saveNft() {
+        var tokenAirdrop =
+                domainBuilder.tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).get();
         repository.save(tokenAirdrop);
         assertThat(repository.findAll()).containsOnly(tokenAirdrop);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,13 +41,8 @@ import org.hibernate.type.SqlTypes;
 @Upsertable(history = true)
 public class AbstractTokenAirdrop implements History {
 
-    @UpsertColumn(
-            coalesce =
-                    """
-                    case when coalesce(state, e_state) = ''PENDING'' then coalesce(e_{0}, 0) + coalesce({0}, 0)
-                            else coalesce(e_{0}, {0}, 0)
-                        end""")
-    private long amount;
+    @UpsertColumn(coalesce = "coalesce({0}, e_{0})")
+    private Long amount;
 
     @jakarta.persistence.Id
     private long receiverAccountId;

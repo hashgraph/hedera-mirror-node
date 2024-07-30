@@ -16,8 +16,6 @@
 
 package com.hedera.mirror.importer.parser.record.entity.sql;
 
-import static com.hedera.mirror.common.domain.token.TokenAirdropStateEnum.PENDING;
-
 import com.google.common.base.Stopwatch;
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -750,10 +748,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAirdrop mergeTokenAirdrop(TokenAirdrop previous, TokenAirdrop current) {
-        if (previous.getState() == PENDING) {
-            var mergedAmount =
-                    current.getState() == PENDING ? previous.getAmount() + current.getAmount() : previous.getAmount();
-            current.setAmount(mergedAmount);
+        if (previous.getAmount() != null && current.getAmount() == null) {
+            // Cancel or claim do not contain an amount so set the amount here so as not to override it with null
+            current.setAmount(previous.getAmount());
         }
 
         previous.setTimestampUpper(current.getTimestampLower());
