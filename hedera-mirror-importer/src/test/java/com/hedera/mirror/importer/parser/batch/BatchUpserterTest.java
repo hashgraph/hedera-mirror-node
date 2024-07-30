@@ -827,6 +827,9 @@ class BatchUpserterTest extends ImporterIntegrationTest {
     }
 
     private Node deleteNode(Node node) {
-        return node.toBuilder().deleted(true).build();
+        return node.toBuilder()
+                .deleted(true)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
     }
 }

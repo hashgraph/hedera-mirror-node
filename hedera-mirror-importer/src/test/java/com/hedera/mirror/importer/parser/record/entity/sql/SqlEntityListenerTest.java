@@ -1746,10 +1746,16 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     void onNodeHistory(int commitIndex) {
         // given
         var nodeCreate1 = domainBuilder.node().get();
-        var nodeUpdate1 = nodeCreate1.toBuilder().adminKey(domainBuilder.key()).build();
+        var nodeUpdate1 = nodeCreate1.toBuilder()
+                .adminKey(domainBuilder.key())
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
 
         var nodeCreate2 = domainBuilder.node().get();
-        var nodeDelete1 = nodeUpdate1.toBuilder().deleted(true).build();
+        var nodeDelete1 = nodeUpdate1.toBuilder()
+                .deleted(true)
+                .timestampRange(Range.atLeast(domainBuilder.timestamp()))
+                .build();
 
         // when
         sqlEntityListener.onNode(nodeCreate1);
@@ -1759,32 +1765,34 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
             assertThat(findHistory(Node.class)).isEmpty();
         }
 
+        var mergedUpdate1 = nodeCreate1.toBuilder().build();
+        mergedUpdate1.setTimestampUpper(nodeUpdate1.getTimestampLower());
+
         sqlEntityListener.onNode(nodeUpdate1);
 
         if (commitIndex > 2) {
             completeFileAndCommit();
             assertThat(nodeRepository.findAll()).containsExactly(nodeUpdate1);
-            assertThat(findHistory(Node.class)).containsExactly(nodeCreate1);
+            assertThat(findHistory(Node.class)).containsExactly(mergedUpdate1);
         }
 
         sqlEntityListener.onNode(nodeCreate2);
-        nodeUpdate1.setTimestampUpper(nodeCreate1.getTimestampLower());
+
+        var mergedUpdate2 = nodeUpdate1.toBuilder().build();
+        mergedUpdate2.setTimestampUpper(nodeDelete1.getTimestampLower());
 
         if (commitIndex > 3) {
             completeFileAndCommit();
-            assertThat(nodeRepository.findAll()).containsExactly(nodeCreate2);
-            assertThat(findHistory(Node.class)).containsExactly(nodeUpdate1);
+            assertThat(nodeRepository.findAll()).containsExactly(nodeUpdate1, nodeCreate2);
+            assertThat(findHistory(Node.class)).containsExactly(mergedUpdate1);
         }
-
-        var mergedUpdate2 = nodeCreate2.toBuilder().build();
-        mergedUpdate2.setTimestampUpper(nodeCreate2.getTimestampLower());
 
         sqlEntityListener.onNode(nodeDelete1);
         completeFileAndCommit();
 
         // then
-        assertThat(nodeRepository.findAll()).containsExactly(mergedUpdate2);
-        assertThat(findHistory(Node.class)).containsExactlyInAnyOrder(nodeUpdate1, mergedUpdate2);
+        assertThat(nodeRepository.findAll()).containsExactly(nodeCreate2, nodeDelete1);
+        assertThat(findHistory(Node.class)).containsExactlyInAnyOrder(mergedUpdate1, mergedUpdate2);
     }
 
     @Test
