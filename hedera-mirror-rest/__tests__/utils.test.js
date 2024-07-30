@@ -217,6 +217,11 @@ describe('Utils encodeKey', () => {
       },
     },
     {
+      name: 'Immutable Sentinel',
+      input: Buffer.from('3200', 'hex'),
+      expected: null,
+    },
+    {
       name: 'Protobuf',
       input: Buffer.from('abcdef', 'hex'),
       expected: {
@@ -282,7 +287,7 @@ describe('Utils.isByteRange', () => {
   test('Single byte chars gt max size', () => expect(utils.isByteRange('abcde', 5, 4)).toBeFalse());
   test('Single byte chars lt max size', () => expect(utils.isByteRange('abcde', 5, 6)).toBeTrue());
   test('Multi byte chars eq max size', () => expect(utils.isByteRange('ℏℏℏ', 5, 9)).toBeTrue());
-  test('Multi byte chars gt max size', () => expect(utils.isByteRange('ℏℏℏ', 5,8)).toBeFalse());
+  test('Multi byte chars gt max size', () => expect(utils.isByteRange('ℏℏℏ', 5, 8)).toBeFalse());
   test('Multi byte chars lt max size', () => expect(utils.isByteRange('ℏℏℏ', 5, 10)).toBeTrue());
   test('Multi byte chars eq max size', () => expect(utils.isByteRange('abcdeℏℏℏ', 5, 14)).toBeTrue());
   test('Multi byte chars gt max size', () => expect(utils.isByteRange('abcdeℏℏℏ', 5, 13)).toBeFalse());
