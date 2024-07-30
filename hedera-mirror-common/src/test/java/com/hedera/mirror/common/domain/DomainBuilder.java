@@ -155,7 +155,7 @@ public class DomainBuilder {
 
     public DomainWrapper<AccountBalance, AccountBalance.AccountBalanceBuilder> accountBalance() {
         var builder = AccountBalance.builder().balance(10L).id(new AccountBalance.Id(timestamp(), entityId()));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<AccountBalanceFile, AccountBalanceFile.AccountBalanceFileBuilder> accountBalanceFile() {
@@ -171,7 +171,7 @@ public class DomainBuilder {
                 .name(name)
                 .nodeId(number())
                 .timeOffset(0);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<AddressBook, AddressBook.AddressBookBuilder> addressBook() {
@@ -181,7 +181,7 @@ public class DomainBuilder {
                 .nodeCount(6)
                 .startConsensusTimestamp(timestamp())
                 .endConsensusTimestamp(timestamp());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<AddressBookEntry, AddressBookEntry.AddressBookEntryBuilder> addressBookEntry() {
@@ -211,7 +211,7 @@ public class DomainBuilder {
             serviceEndpoints.add(endpoint);
         }
 
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<AddressBookServiceEndpoint, AddressBookServiceEndpoint.AddressBookServiceEndpointBuilder>
@@ -229,7 +229,7 @@ public class DomainBuilder {
                 .nodeId(number())
                 .domainName("")
                 .port(50211);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<AssessedCustomFee, AssessedCustomFee.AssessedCustomFeeBuilder> assessedCustomFee() {
@@ -240,7 +240,7 @@ public class DomainBuilder {
                 .effectivePayerAccountIds(List.of(id(), id()))
                 .payerAccountId(entityId())
                 .tokenId(entityId());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<Contract, Contract.ContractBuilder<?, ?>> contract() {
@@ -249,7 +249,7 @@ public class DomainBuilder {
                 .id(id())
                 .initcode(null) // Mutually exclusive with fileId
                 .runtimeBytecode(bytes(256));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<ContractAction, ContractAction.ContractActionBuilder> contractAction() {
@@ -269,7 +269,7 @@ public class DomainBuilder {
                 .resultData(bytes(256))
                 .resultDataType(ResultDataCase.OUTPUT.getNumber())
                 .value(300L);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<ContractLog, ContractLog.ContractLogBuilder> contractLog() {
@@ -286,7 +286,7 @@ public class DomainBuilder {
                 .topic3(bytes(64))
                 .transactionHash(bytes(48))
                 .transactionIndex(transactionIndex());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<ContractResult, ContractResult.ContractResultBuilder<?, ?>> contractResult() {
@@ -309,7 +309,7 @@ public class DomainBuilder {
                 .transactionIndex(1)
                 .transactionNonce(0)
                 .transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<ContractState, ContractState.ContractStateBuilder> contractState() {
@@ -320,7 +320,7 @@ public class DomainBuilder {
                 .modifiedTimestamp(createdTimestamp)
                 .slot(bytes(32))
                 .value(bytes(32));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<ContractStateChange, ContractStateChange.ContractStateChangeBuilder> contractStateChange() {
@@ -331,7 +331,7 @@ public class DomainBuilder {
                 .slot(bytes(128))
                 .valueRead(bytes(64))
                 .valueWritten(bytes(64));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<ContractTransaction, ContractTransaction.ContractTransactionBuilder> contractTransaction() {
@@ -342,7 +342,7 @@ public class DomainBuilder {
                 .entityId(contractId)
                 .payerAccountId(payerAccountId)
                 .contractIds(Arrays.asList(payerAccountId, contractId));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<ContractTransactionHash, ContractTransactionHash.ContractTransactionHashBuilder>
@@ -353,7 +353,7 @@ public class DomainBuilder {
                 .payerAccountId(id())
                 .transactionResult(ResponseCodeEnum.SUCCESS_VALUE)
                 .hash(bytes(32));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?, ?>> cryptoAllowance() {
@@ -366,7 +366,7 @@ public class DomainBuilder {
                 .payerAccountId(spender)
                 .spender(spender.getId())
                 .timestampRange(Range.atLeast(timestamp()));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder<?, ?>>
@@ -380,7 +380,7 @@ public class DomainBuilder {
                 .payerAccountId(spender)
                 .spender(spender.getId())
                 .timestampRange(Range.closedOpen(timestamp(), timestamp()));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CryptoTransfer, CryptoTransfer.CryptoTransferBuilder> cryptoTransfer() {
@@ -390,7 +390,7 @@ public class DomainBuilder {
                 .entityId(entityId().getId())
                 .isApproval(false)
                 .payerAccountId(entityId());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CustomFee, CustomFee.CustomFeeBuilder<?, ?>> customFee() {
@@ -400,7 +400,7 @@ public class DomainBuilder {
                 .royaltyFees(List.of(royaltyFee()))
                 .timestampRange(Range.atLeast(timestamp()))
                 .tokenId(entityId().getId());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<CustomFeeHistory, CustomFeeHistory.CustomFeeHistoryBuilder<?, ?>> customFeeHistory() {
@@ -411,7 +411,7 @@ public class DomainBuilder {
                 .royaltyFees(List.of(royaltyFee()))
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> entity(long id, long createdTimestamp) {
@@ -444,7 +444,7 @@ public class DomainBuilder {
                 .timestampRange(Range.atLeast(createdTimestamp))
                 .type(ACCOUNT);
 
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> entity() {
@@ -484,7 +484,7 @@ public class DomainBuilder {
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .type(ACCOUNT);
 
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder<?, ?>> entityStake() {
@@ -496,7 +496,7 @@ public class DomainBuilder {
                 .stakedToMe(0L)
                 .stakeTotalStart(0L)
                 .timestampRange(Range.atLeast(timestamp()));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<EntityStakeHistory, EntityStakeHistory.EntityStakeHistoryBuilder<?, ?>> entityStakeHistory() {
@@ -509,7 +509,7 @@ public class DomainBuilder {
                 .stakedToMe(0L)
                 .stakeTotalStart(0L)
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<EntityTransaction, EntityTransaction.EntityTransactionBuilder> entityTransaction() {
@@ -519,7 +519,7 @@ public class DomainBuilder {
                 .payerAccountId(entityId())
                 .type(TransactionType.CRYPTOCREATEACCOUNT.getProtoId())
                 .result(ResponseCodeEnum.SUCCESS_VALUE);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> ethereumTransaction(
@@ -551,7 +551,7 @@ public class DomainBuilder {
             builder.callDataId(entityId());
         }
 
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<FileData, FileData.FileDataBuilder> fileData() {
@@ -560,7 +560,7 @@ public class DomainBuilder {
                 .fileData(bytes(128))
                 .entityId(entityId())
                 .transactionType(TransactionType.FILECREATE.getProtoId());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     private FallbackFee fallbackFee() {
@@ -593,7 +593,7 @@ public class DomainBuilder {
 
     public DomainWrapper<LiveHash, LiveHash.LiveHashBuilder> liveHash() {
         var builder = LiveHash.builder().consensusTimestamp(timestamp()).livehash(bytes(64));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<NetworkFreeze, NetworkFreeze.NetworkFreezeBuilder<?, ?>> networkFreeze() {
@@ -605,7 +605,7 @@ public class DomainBuilder {
                 .payerAccountId(entityId())
                 .startTime(timestamp())
                 .type(FreezeType.FREEZE_UPGRADE_VALUE);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<NetworkStake, NetworkStake.NetworkStakeBuilder> networkStake() {
@@ -624,7 +624,7 @@ public class DomainBuilder {
                 .stakingRewardFeeNumerator(100L)
                 .stakingRewardRate(100_000_000_000L)
                 .stakingStartThreshold(25_000_000_000_000_000L);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<Nft, Nft.NftBuilder<?, ?>> nft() {
@@ -637,7 +637,7 @@ public class DomainBuilder {
                 .serialNumber(number())
                 .timestampRange(Range.atLeast(createdTimestamp))
                 .tokenId(id());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<NftHistory, NftHistory.NftHistoryBuilder<?, ?>> nftHistory() {
@@ -650,7 +650,7 @@ public class DomainBuilder {
                 .serialNumber(number())
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder<?, ?>> nftAllowance() {
@@ -661,7 +661,7 @@ public class DomainBuilder {
                 .spender(entityId().getId())
                 .timestampRange(Range.atLeast(timestamp()))
                 .tokenId(entityId().getId());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder<?, ?>>
@@ -674,7 +674,7 @@ public class DomainBuilder {
                 .spender(entityId().getId())
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(entityId().getId());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<NftTransfer, NftTransfer.NftTransferBuilder> nftTransfer() {
@@ -685,7 +685,7 @@ public class DomainBuilder {
                 .serialNumber(1L)
                 .tokenId(entityId());
 
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<NodeStake, NodeStake.NodeStakeBuilder> nodeStake() {
@@ -704,7 +704,7 @@ public class DomainBuilder {
                 .stakeNotRewarded(TINYBARS_IN_ONE_HBAR)
                 .stakeRewarded(stake - TINYBARS_IN_ONE_HBAR)
                 .stakingPeriod(timestamp());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
@@ -713,7 +713,7 @@ public class DomainBuilder {
                 .payerAccountId(id())
                 .range(Integer.MAX_VALUE)
                 .prngNumber(random.nextInt(Integer.MAX_VALUE));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<ReconciliationJob, ReconciliationJob.ReconciliationJobBuilder> reconciliationJob() {
@@ -723,7 +723,7 @@ public class DomainBuilder {
                 .status(ReconciliationStatus.SUCCESS)
                 .timestampStart(instant())
                 .timestampEnd(instant());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
@@ -758,7 +758,7 @@ public class DomainBuilder {
                         .get()))
                 .size(256 * 1024)
                 .version(6);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     private RoyaltyFee royaltyFee() {
@@ -780,7 +780,7 @@ public class DomainBuilder {
                 .scheduleId(entityId().getId())
                 .transactionBody(bytes(64))
                 .waitForExpiry(true);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<SidecarFile, SidecarFile.SidecarFileBuilder> sidecarFile() {
@@ -795,7 +795,7 @@ public class DomainBuilder {
                 .records(Collections.emptyList())
                 .size(data.length)
                 .types(List.of(1, 2));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder>
@@ -806,7 +806,7 @@ public class DomainBuilder {
                 .amount(number())
                 .consensusTimestamp(timestamp())
                 .payerAccountId(accountId);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<Token, Token.TokenBuilder<?, ?>> token() {
@@ -835,7 +835,7 @@ public class DomainBuilder {
                 .treasuryAccountId(entityId())
                 .type(TokenTypeEnum.FUNGIBLE_COMMON)
                 .wipeKey(key());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenHistory, TokenHistory.TokenHistoryBuilder<?, ?>> tokenHistory() {
@@ -864,7 +864,7 @@ public class DomainBuilder {
                 .treasuryAccountId(entityId())
                 .type(TokenTypeEnum.FUNGIBLE_COMMON)
                 .wipeKey(key());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>> tokenAccount() {
@@ -880,7 +880,7 @@ public class DomainBuilder {
                 .kycStatus(null)
                 .timestampRange(Range.atLeast(timestamp))
                 .tokenId(id());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder<?, ?>>
@@ -897,7 +897,7 @@ public class DomainBuilder {
                 .kycStatus(null)
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder<?, ?>> tokenAllowance() {
@@ -911,7 +911,7 @@ public class DomainBuilder {
                 .spender(spender.getId())
                 .timestampRange(Range.atLeast(timestamp()))
                 .tokenId(id());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder<?, ?>>
@@ -927,12 +927,12 @@ public class DomainBuilder {
                 .spender(spender.getId())
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .tokenId(id());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenBalance, TokenBalance.TokenBalanceBuilder> tokenBalance() {
         var builder = TokenBalance.builder().balance(1L).id(new TokenBalance.Id(timestamp(), entityId(), entityId()));
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
@@ -941,7 +941,7 @@ public class DomainBuilder {
                 .id(new TokenTransfer.Id(timestamp(), entityId(), entityId()))
                 .payerAccountId(entityId());
 
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<Entity, Entity.EntityBuilder<?, ?>> topic() {
@@ -974,7 +974,7 @@ public class DomainBuilder {
                 .sequenceNumber(number())
                 .topicId(entityId())
                 .validStartTimestamp(timestamp());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TopicMessageLookup, TopicMessageLookup.TopicMessageLookupBuilder> topicMessageLookup() {
@@ -985,7 +985,7 @@ public class DomainBuilder {
                 .sequenceNumberRange(Range.closedOpen(sequenceNumber, sequenceNumber + 1))
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10))
                 .topicId(id());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<Transaction, Transaction.TransactionBuilder> transaction() {
@@ -1014,7 +1014,7 @@ public class DomainBuilder {
                 .type(TransactionType.CRYPTOTRANSFER.getProtoId())
                 .validStartNs(timestamp())
                 .validDurationSeconds(120L);
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TransactionHash, TransactionHash.TransactionHashBuilder> transactionHash() {
@@ -1022,7 +1022,7 @@ public class DomainBuilder {
                 .consensusTimestamp(timestamp())
                 .hash(bytes(48))
                 .payerAccountId(id());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public DomainWrapper<TransactionSignature, TransactionSignature.TransactionSignatureBuilder>
@@ -1033,11 +1033,11 @@ public class DomainBuilder {
                 .publicKeyPrefix(bytes(16))
                 .signature(bytes(32))
                 .type(SignaturePair.SignatureCase.ED25519.getNumber());
-        return new DomainWrapperImpl<>(builder, builder::build, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, builder::build);
     }
 
     public <T, B> DomainWrapper<T, B> wrap(B builder, Supplier<T> supplier) {
-        return new DomainWrapperImpl<>(builder, supplier, entityManager, transactionOperations);
+        return new DomainWrapperImpl<>(builder, supplier);
     }
 
     public byte[] bloomFilter() {
@@ -1142,5 +1142,37 @@ public class DomainBuilder {
 
     private int transactionIndex() {
         return transactionIndex.getAndIncrement();
+    }
+
+    @Value
+    private class DomainWrapperImpl<T, B> implements DomainWrapper<T, B> {
+
+        private final B builder;
+        private final Supplier<T> supplier;
+
+        @Override
+        public DomainWrapper<T, B> customize(Consumer<B> customizer) {
+            customizer.accept(builder);
+            return this;
+        }
+
+        @Override
+        public T get() {
+            return supplier.get();
+        }
+
+        // The DomainBuilder can be used without an active ApplicationContext. If so, this method shouldn't be used.
+        @Override
+        public T persist() {
+            T entity = get();
+
+            if (entityManager == null) {
+                throw new IllegalStateException("Unable to persist entity without an EntityManager");
+            }
+
+            transactionOperations.executeWithoutResult(t -> entityManager.persist(entity));
+            log.trace("Inserted {}", entity);
+            return entity;
+        }
     }
 }

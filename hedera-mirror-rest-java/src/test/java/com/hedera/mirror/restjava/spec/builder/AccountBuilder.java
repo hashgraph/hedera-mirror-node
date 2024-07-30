@@ -17,19 +17,16 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.DomainWrapperImpl;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.Entity.EntityBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.restjava.repository.EntityRepository;
 import jakarta.inject.Named;
-import jakarta.persistence.EntityManager;
 import java.util.Map;
 import java.util.function.Function;
-import org.springframework.transaction.support.TransactionOperations;
 
 @Named
-class AccountBuilder extends AbstractEntityBuilder {
+class AccountBuilder extends AbstractEntityBuilder<Entity.EntityBuilder<?, ?>> {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "alias", BASE32_CONVERTER,
@@ -38,8 +35,11 @@ class AccountBuilder extends AbstractEntityBuilder {
             "key", HEX_OR_BASE64_CONVERTER
     );
 
-    AccountBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
-        super(entityManager, transactionOperations, METHOD_PARAMETER_CONVERTERS);
+    private final EntityRepository entityRepository;
+
+    AccountBuilder(EntityRepository entityRepository) {
+        super(METHOD_PARAMETER_CONVERTERS);
+        this.entityRepository = entityRepository;
     }
 
     @Override
@@ -63,15 +63,15 @@ class AccountBuilder extends AbstractEntityBuilder {
                 .type(EntityType.ACCOUNT);
 
         // Customize with spec setup definitions
-        var wrapper = new DomainWrapperImpl<Entity, EntityBuilder<?, ?>>(builder, builder::build, entityManager, transactionOperations);
-        customizeWithSpec(wrapper, account);
+        customizeWithSpec(builder, account);
 
         // Check and finalize
-        var entity = wrapper.get();
+        var entity = builder.build();
         if (entity.getId() == null) {
             builder.id(EntityId.of(entity.getShard(), entity.getRealm(), entity.getNum()).getId());
+            entity = builder.build();
         }
 
-        wrapper.persist();
+        entityRepository.save(entity);
     }
 }

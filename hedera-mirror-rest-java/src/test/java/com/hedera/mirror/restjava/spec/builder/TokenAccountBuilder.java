@@ -17,24 +17,25 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.DomainWrapperImpl;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.restjava.repository.TokenAccountRepository;
 import jakarta.inject.Named;
-import jakarta.persistence.EntityManager;
 import java.util.Map;
 import java.util.function.Function;
-import org.springframework.transaction.support.TransactionOperations;
 
 @Named
-class TokenAccountBuilder extends AbstractEntityBuilder {
+class TokenAccountBuilder extends AbstractEntityBuilder<TokenAccount.TokenAccountBuilder<?, ?>> {
 
     private static final Map<String, Function<Object, Object>> METHOD_PARAMETER_CONVERTERS = Map.of(
             "accountId", ENTITY_ID_TO_LONG_CONVERTER,
             "tokenId", ENTITY_ID_TO_LONG_CONVERTER
     );
 
-    TokenAccountBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
-        super(entityManager, transactionOperations, METHOD_PARAMETER_CONVERTERS);
+    private final TokenAccountRepository tokenAccountRepository;
+
+    TokenAccountBuilder(TokenAccountRepository tokenAccountRepository) {
+        super(METHOD_PARAMETER_CONVERTERS);
+        this.tokenAccountRepository = tokenAccountRepository;
     }
 
     @Override
@@ -51,15 +52,15 @@ class TokenAccountBuilder extends AbstractEntityBuilder {
                 .tokenId(0L);
 
         // Customize with spec setup definitions
-        var wrapper = new DomainWrapperImpl<TokenAccount, TokenAccount.TokenAccountBuilder<?, ?>>(builder, builder::build, entityManager, transactionOperations);
-        customizeWithSpec(wrapper, account);
+        customizeWithSpec(builder, account);
 
         // Check and finalize
-        var entity = wrapper.get();
+        var entity = builder.build();
         if (entity.getTimestampRange() == null) {
             builder.timestampRange(Range.atLeast(entity.getCreatedTimestamp()));
+            entity = builder.build();
         }
 
-        wrapper.persist();
+        tokenAccountRepository.save(entity);
     }
 }

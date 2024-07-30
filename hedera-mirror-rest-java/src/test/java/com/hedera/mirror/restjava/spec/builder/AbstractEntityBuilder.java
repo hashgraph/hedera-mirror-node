@@ -17,9 +17,7 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.base.CaseFormat;
-import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import jakarta.persistence.EntityManager;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -32,10 +30,9 @@ import java.util.stream.Collectors;
 import lombok.CustomLog;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.tuweni.bytes.Bytes;
-import org.springframework.transaction.support.TransactionOperations;
 
 @CustomLog
-abstract class AbstractEntityBuilder {
+abstract class AbstractEntityBuilder<B> {
 
     /*
      * Map builder parameter value provided in spec JSON to the type expected by the builder method.
@@ -73,60 +70,49 @@ abstract class AbstractEntityBuilder {
         return value;
     };
 
-    protected final EntityManager entityManager;
-    protected final TransactionOperations transactionOperations;
-
     // Map a synthetic spec attribute name to another attribute name convertable to a builder method name
     protected final Map<String, String> attributeNameMap;
     // Map a builder method by name to a specific attribute value converter function
     protected final Map<String, Function<Object, Object>> methodParameterConverters;
 
     protected AbstractEntityBuilder(
-            EntityManager entityManager,
-            TransactionOperations transactionOperations,
             Map<String, Function<Object, Object>> methodParameterConverters) {
-        this(entityManager, transactionOperations, methodParameterConverters, Map.of());
+        this(methodParameterConverters, Map.of());
     }
 
     protected AbstractEntityBuilder(
-            EntityManager entityManager,
-            TransactionOperations transactionOperations,
             Map<String, Function<Object, Object>> methodParameterConverters,
             Map<String, String> attributeNameMap) {
-        this.entityManager = entityManager;
-        this.transactionOperations = transactionOperations;
         this.methodParameterConverters = methodParameterConverters;
         this.attributeNameMap = attributeNameMap;
     }
 
     protected abstract void customizeAndPersistEntity(Map<String, Object> entityAttributes);
 
-    protected void customizeWithSpec(DomainWrapper<?, ?> wrapper, Map<String, Object> customizations) {
-        wrapper.customize(builder -> {
-            var builderClass = builder.getClass();
-            var builderMethods = methodCache.computeIfAbsent(builderClass, clazz -> Arrays.stream(
-                    clazz.getMethods()).collect(Collectors.toMap(Method::getName, Function.identity(), (v1, v2) -> v2)));
+    protected void customizeWithSpec(B builder, Map<String, Object> customizations) {
+        var builderClass = builder.getClass();
+        var builderMethods = methodCache.computeIfAbsent(builderClass, clazz -> Arrays.stream(
+                clazz.getMethods()).collect(Collectors.toMap(Method::getName, Function.identity(), (v1, v2) -> v2)));
 
-            for (var customization : customizations.entrySet()) {
-                var methodName = methodName(customization.getKey());
-                var method = builderMethods.get(methodName);
-                if (method != null) {
-                    try {
-                        var expectedParameterType = method.getParameterTypes()[0];
-                        var mappedBuilderParameter = mapBuilderParameter(methodName, expectedParameterType, customization.getValue());
-                        if (mappedBuilderParameter != IGNORE_ATTRIBUTE_SIGNAL) {
-                            method.invoke(builder, mappedBuilderParameter);
-                        }
-                    } catch (IllegalAccessException | InvocationTargetException e) {
-                        log.warn("Failed to invoke method '{}' for attribute override '{}' for {}",
-                                methodName, customization.getKey(), builderClass.getName(), e);
+        for (var customization : customizations.entrySet()) {
+            var methodName = methodName(customization.getKey());
+            var method = builderMethods.get(methodName);
+            if (method != null) {
+                try {
+                    var expectedParameterType = method.getParameterTypes()[0];
+                    var mappedBuilderParameter = mapBuilderParameter(methodName, expectedParameterType, customization.getValue());
+                    if (mappedBuilderParameter != IGNORE_ATTRIBUTE_SIGNAL) {
+                        method.invoke(builder, mappedBuilderParameter);
                     }
-                }
-                else {
-                    log.warn("Unknown attribute override '{}' for {}", customization.getKey(), builderClass.getName());
+                } catch (IllegalAccessException | InvocationTargetException e) {
+                    log.warn("Failed to invoke method '{}' for attribute override '{}' for {}",
+                            methodName, customization.getKey(), builderClass.getName(), e);
                 }
             }
-        });
+            else {
+                log.warn("Unknown attribute override '{}' for {}", customization.getKey(), builderClass.getName());
+            }
+        }
     }
 
     private Object mapBuilderParameter(String methodName, Class<?> expectedType, Object specParameterValue) {
