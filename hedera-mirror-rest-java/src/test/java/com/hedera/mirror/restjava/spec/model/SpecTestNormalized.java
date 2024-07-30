@@ -15,10 +15,8 @@
  */
 package com.hedera.mirror.restjava.spec.model;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * Defines a normalized spec test. Given the slightly different formats of the original REST module JSON files
@@ -41,27 +39,13 @@ public record SpecTestNormalized(
     }
 
     static SpecTestNormalized from(SpecTest specTest) {
-        List<String> urls;
-        if (StringUtils.hasText(specTest.url())) {
-            List<String> mutableUrls = CollectionUtils.isEmpty(specTest.urls())
-                    ? new ArrayList<>()
-                    : new ArrayList<>(specTest.urls());
-
-            mutableUrls.add(specTest.url());
-            urls = List.copyOf(mutableUrls);
-        }
-        else {
-            urls = specTest.urls() == null ? List.of() : List.copyOf(specTest.urls());
-        }
-
-        return new SpecTestNormalized(urls, specTest.responseStatus(), specTest.responseJson());
+        return new SpecTestNormalized(specTest.getNormalizedUrls(), specTest.responseStatus(), specTest.responseJson());
     }
 
-    public static List<SpecTestNormalized> allFrom(List<SpecTest> specTests) {
+    static List<SpecTestNormalized> allFrom(List<SpecTest> specTests) {
         if (CollectionUtils.isEmpty(specTests)) {
             return List.of();
         }
-
         return specTests.stream().map(SpecTestNormalized::from).toList();
     }
 }

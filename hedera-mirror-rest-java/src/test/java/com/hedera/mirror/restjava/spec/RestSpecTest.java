@@ -126,7 +126,8 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     }
 
     private void setupDatabase(RestSpecNormalized normalizedRestSpec) {
-        specDomainBuilder.addAccounts(normalizedRestSpec.setup().accounts());
-        specDomainBuilder.addTokenAccounts(normalizedRestSpec.setup().tokenaccounts());
+        var setup = normalizedRestSpec.setup();
+        specDomainBuilder.addAccounts(setup.accounts());
+        specDomainBuilder.addTokenAccounts(setup.tokenaccounts());
     }
 }

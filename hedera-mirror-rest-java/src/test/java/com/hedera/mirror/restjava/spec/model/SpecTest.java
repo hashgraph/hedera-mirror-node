@@ -17,6 +17,8 @@ package com.hedera.mirror.restjava.spec.model;
 
 import java.util.List;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.stream.Stream;
+import org.springframework.util.StringUtils;
 
 public record SpecTest(
         String url,
@@ -24,4 +26,11 @@ public record SpecTest(
         int responseStatus,
         @JsonDeserialize(using = JsonAsStringDeserializer.class)
         String responseJson) {
+
+        public List<String> getNormalizedUrls() {
+                return Stream.concat(
+                        Stream.ofNullable(url),
+                        Stream.ofNullable(urls).flatMap(List::stream)
+                ).filter(StringUtils::hasText).toList();
+        }
 }
