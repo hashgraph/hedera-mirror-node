@@ -43,14 +43,11 @@ class TokenAccountBuilder extends AbstractEntityBuilder {
         // Set defaults
         builder
                 .accountId(0L)
-                .associated(true)
-                .automaticAssociation(false)
+                .associated(Boolean.TRUE)
+                .automaticAssociation(Boolean.FALSE)
                 .balance(0L)
                 .balanceTimestamp(0L)
                 .createdTimestamp(0L)
-                .freezeStatus(null)
-                .kycStatus(null)
-                .timestampRange(null)
                 .tokenId(0L);
 
         // Customize with spec setup definitions

@@ -17,23 +17,20 @@
 package com.hedera.mirror.restjava.spec.builder;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import jakarta.inject.Named;
 import java.util.List;
 import java.util.Map;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 /**
  * Used to build domain objects for use in spec testing. This is different from general unit tests utilizing
  * {@link DomainBuilder}, in that default values and overrides are based on the original REST module
  * integrationDomainOps.js and attribute names provided in the spec test JSON setup.
  */
-@Component
+@Named
 @CustomLog
 @RequiredArgsConstructor
-@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SpecDomainBuilder {
 
     private final AccountBuilder accountBuilder;
