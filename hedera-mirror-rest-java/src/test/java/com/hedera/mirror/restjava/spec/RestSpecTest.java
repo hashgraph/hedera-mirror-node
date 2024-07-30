@@ -26,8 +26,8 @@ import com.hedera.mirror.restjava.spec.model.RestSpec;
 import com.hedera.mirror.restjava.spec.model.RestSpecNormalized;
 import com.hedera.mirror.restjava.spec.config.SpecTestConfig;
 import jakarta.annotation.Resource;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONException;
@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -54,21 +53,24 @@ import org.testcontainers.containers.GenericContainer;
 public class RestSpecTest extends RestJavaIntegrationTest {
     private static final int JS_REST_API_CONTAINER_PORT = 5551;
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private static final List<File> SELECTED_SPECS = List.of(
-            new File("../hedera-mirror-rest/__tests__/specs/accounts/alias-into-evm-address.json"),
-            new File("../hedera-mirror-rest/__tests__/specs/blocks/no-records.json"),
-            new File("../hedera-mirror-rest/__tests__/specs/accounts/specific-id.json")
+    private static final Path REST_BASE_PATH = Path.of("..", "hedera-mirror-rest", "__tests__", "specs");
+    private static final List<Path> SELECTED_SPECS = List.of(
+            REST_BASE_PATH.resolve("accounts/alias-into-evm-address.json"),
+            REST_BASE_PATH.resolve("blocks/no-records.json"),
+            REST_BASE_PATH.resolve("accounts/specific-id.json")
     );
+
+    @Resource
+    private ObjectMapper objectMapper;
 
     @Resource
     private SpecDomainBuilder specDomainBuilder;
 
-    @Autowired
-    GenericContainer<?> jsRestApi;
+    @Resource
+    private GenericContainer<?> jsRestApi;
 
-    @Autowired
+    @Resource
     private RestJavaProperties properties;
 
     @LocalServerPort
@@ -81,7 +83,6 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     @BeforeEach
     final void setup() {
         baseJsRestApiUrl = "http://%s:%d".formatted(jsRestApi.getHost(), jsRestApi.getMappedPort(JS_REST_API_CONTAINER_PORT));
-        log.info("setup - baseJsRestApiUrl: {}", baseJsRestApiUrl);
         restClientBuilder = RestClient.builder()
                 .defaultHeader("Accept", "application/json")
                 .defaultHeader("Access-Control-Request-Method", "GET")
@@ -93,16 +94,17 @@ public class RestSpecTest extends RestJavaIntegrationTest {
         SELECTED_SPECS.forEach(this::runSpecTests);
     }
 
-    private void runSpecTests(File specFile) {
+    private void runSpecTests(Path specFilePath) {
         RestSpec restSpec;
         try {
-            restSpec = OBJECT_MAPPER.readValue(specFile, RestSpec.class);
+            restSpec = objectMapper.readValue(specFilePath.toFile(), RestSpec.class);
         } catch (IOException e) {
-            log.warn("Failed to parse spec file: {}", specFile, e);
+            log.warn("Failed to parse spec file: {}", specFilePath, e);
             return;
         }
 
         var normalizedRestSpec = RestSpecNormalized.from(restSpec);
+        log.info("Running spec '{}' from {}", normalizedRestSpec.description(), specFilePath);
         setupDatabase(normalizedRestSpec);
 
         for (var specTest : normalizedRestSpec.tests()) {
@@ -113,15 +115,14 @@ public class RestSpecTest extends RestJavaIntegrationTest {
                         .toEntity(String.class);
 
                 assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
-                var specResponseJson = specTest.responseJson().toString();
+                var specResponseJson = specTest.responseJson();
                 try {
                     JSONAssert.assertEquals(specResponseJson, response.getBody(), JSONCompareMode.LENIENT);
                 } catch (JSONException e) {
-                    log.warn("Failed to parse expected responseJson within spec file: {}", specFile, e);
+                    log.warn("Failed to parse expected responseJson within spec file: {}", specFilePath, e);
                 }
             }
         }
-
     }
 
     private void setupDatabase(RestSpecNormalized normalizedRestSpec) {

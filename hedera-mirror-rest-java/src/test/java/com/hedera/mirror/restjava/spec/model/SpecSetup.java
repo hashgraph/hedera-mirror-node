@@ -23,7 +23,7 @@ public record SpecSetup(
         Map<String, String> features,
         List<Map<String, Object>> accounts,
         List<Map<String, Object>> contracts,
-        List<Map<String, Object>> cryptoallowances,
+        List<Map<String, Object>> cryptoAllowances,
         List<Map<String, Object>> cryptotransfers,
         List<Map<String, Object>> entities,
         List<Map<String, Object>> nfts,

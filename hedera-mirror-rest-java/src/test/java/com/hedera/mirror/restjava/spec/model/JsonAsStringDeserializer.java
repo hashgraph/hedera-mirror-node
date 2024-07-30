@@ -16,18 +16,15 @@
 
 package com.hedera.mirror.restjava.spec.model;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.util.List;
+import com.fasterxml.jackson.core.JacksonException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import java.io.IOException;
 
-public record RestSpec(
-        String description,
-        String extendedDescription,
-        String matrix,
-        SpecSetup setup,
-        List<SpecTest> tests,
-        String url,
-        List<String> urls,
-        int responseStatus,
-        @JsonDeserialize(using = JsonAsStringDeserializer.class)
-        String responseJson) {
+public class JsonAsStringDeserializer extends JsonDeserializer<String> {
+    @Override
+    public String deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JacksonException {
+        return jp.readValueAsTree().toString();
+    }
 }

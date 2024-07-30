@@ -15,7 +15,6 @@
  */
 package com.hedera.mirror.restjava.spec.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.util.CollectionUtils;
@@ -33,7 +32,7 @@ import org.springframework.util.StringUtils;
 public record SpecTestNormalized(
         List<String> urls,
         int responseStatus,
-        JsonNode responseJson) {
+        String responseJson) {
 
     public SpecTestNormalized {
         if (CollectionUtils.isEmpty(urls)) {
@@ -41,7 +40,7 @@ public record SpecTestNormalized(
         }
     }
 
-    public static SpecTestNormalized from(SpecTest specTest) {
+    static SpecTestNormalized from(SpecTest specTest) {
         List<String> urls;
         if (StringUtils.hasText(specTest.url())) {
             List<String> mutableUrls = CollectionUtils.isEmpty(specTest.urls())

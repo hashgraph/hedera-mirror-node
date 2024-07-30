@@ -15,12 +15,13 @@
  */
 package com.hedera.mirror.restjava.spec.model;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 public record SpecTest(
         String url,
         List<String> urls,
         int responseStatus,
-        JsonNode responseJson) {
+        @JsonDeserialize(using = JsonAsStringDeserializer.class)
+        String responseJson) {
 }
