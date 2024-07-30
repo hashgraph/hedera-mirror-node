@@ -26,12 +26,25 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.mirror.web3.viewmodel.BlockType;
-import com.hedera.services.store.contracts.precompile.TokenCreateWrapper;
+import com.hedera.mirror.web3.web3j.TestWeb3jService;
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract;
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.Expiry;
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.HederaToken;
+import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.TokenKey;
+import com.hedera.services.store.models.Id;
+import com.hedera.services.utils.EntityIdUtils;
+import jakarta.inject.Named;
+import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
@@ -46,10 +59,19 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.web3j.protocol.core.RemoteFunctionCall;
 
+@RequiredArgsConstructor
+@Named
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     private static final String LEDGER_ID = "0x03";
+    private static final String EMPTY_UNTRIMMED_ADDRESS =
+            "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+    @Autowired
+    private final TestWeb3jService testWeb3jService;
 
     private static Stream<Arguments> htsContractFunctionArgumentsProviderHistoricalReadOnly() {
         List<String> blockNumbers = List.of(String.valueOf(EVM_V_34_BLOCK - 1), String.valueOf(EVM_V_34_BLOCK));
@@ -294,61 +316,154 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     @Test
-    void createFungibleTokenWithInheritKeysCall() {
-        final String funcName = "createFungibleTokenWithInheritKeysExternal";
-        final var functionHash = functionEncodeDecoder.functionHashFor(funcName, MODIFICATION_CONTRACT_ABI_PATH);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash,
-                MODIFICATION_WITHOUT_KEY_CONTRACT_ADDRESS,
-                ETH_CALL,
-                10000 * 100_000_000L,
-                BlockType.LATEST);
+    void createFungibleTokenWithInheritKeysCall() throws Exception {
+        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
 
-        final var result = contractCallService.processCall(serviceParameters);
-        final var decodedAddress = functionEncodeDecoder.decodeResult(funcName, MODIFICATION_CONTRACT_ABI_PATH, result);
-        assertThat(decodedAddress.size()).isEqualTo(1);
-        assertThat(decodedAddress.get(0).getClass()).isEqualTo(com.esaulpaugh.headlong.abi.Address.class);
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        contract.send_createFungibleTokenWithInheritKeysExternal(BigInteger.valueOf(10000 * 100_000_000L))
+                .send();
+
+        final var result = testWeb3jService.getOutput();
+        assertThat(result).isNotEqualTo(EMPTY_UNTRIMMED_ADDRESS);
     }
 
     @ParameterizedTest
     @EnumSource(value = TokenCreateNegativeCases.class)
-    void invalidTokenCreateCases(final TokenCreateNegativeCases tokenCreateNegativeCase) {
-        long supply = 10L;
-        int decimals = 10;
-        TokenCreateWrapper tokenNegative = getFungibleToken(OWNER_ADDRESS);
-        String functionName = "createFungibleTokenExternal";
+    void invalidTokenCreateCases(final TokenCreateNegativeCases tokenCreateNegativeCase) throws Exception {
+        var initialSupply = BigInteger.valueOf(10L);
+        var decimals = BigInteger.valueOf(10L);
+        var value = BigInteger.valueOf(10000L * 100_000_000);
+
+        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        final var contract = testWeb3jService.deploy(ModificationPrecompileTestContract::deploy);
+        RemoteFunctionCall function = null;
+
         switch (tokenCreateNegativeCase) {
-            case INVALID_MEMO -> tokenNegative = getFungibleTokenInvalidMemo(OWNER_ADDRESS);
-            case INVALID_NAME -> tokenNegative = getFungibleTokenInvalidName(OWNER_ADDRESS);
-            case INVALID_SYMBOL -> tokenNegative = getFungibleTokenInvalidSymbol(OWNER_ADDRESS);
-            case INVALID_DECIMALS -> decimals = -1;
-            case INVALID_INITIAL_SUPPLY -> supply = -1;
-            case INITIAL_SUPPLY_GREATER_THAN_MAX_SUPPLY -> supply = 10_000_001L;
-            case NFT_NO_SUPPLY_KEY -> {
-                tokenNegative = getNonFungibleTokenInfinite(OWNER_ADDRESS);
-                functionName = "createNonFungibleTokenExternal";
-            }
-            case NFT_NO_TREASURY -> {
-                tokenNegative = getNonFungibleTokenNoTreasury(OWNER_ADDRESS);
-                functionName = "createNonFungibleTokenExternal";
-            }
-            case NFT_FREEZE_DEFAULT_NO_KEY -> {
-                tokenNegative = getNonFungibleTokenFreezeDefaultNoKey(OWNER_ADDRESS);
-                functionName = "createNonFungibleTokenExternal";
-            }
-            case NFT_INVALID_AUTORENEW_ACCOUNT -> {
-                tokenNegative = getNonFungibleTokenInvalidAutoRenewPeriod(OWNER_ADDRESS_HISTORICAL);
-                functionName = "createNonFungibleTokenExternal";
-            }
+            case INVALID_MEMO -> function = contract.send_createFungibleTokenExternal(
+                    createHederaToken(domainBuilder
+                            .token()
+                            .customize(t -> t.metadata(new byte[mirrorNodeEvmProperties.getMaxMemoUtf8Bytes() + 1]))
+                            .get()),
+                    initialSupply,
+                    decimals,
+                    value);
+            case INVALID_NAME -> function = contract.send_createFungibleTokenExternal(
+                    createHederaToken(domainBuilder
+                            .token()
+                            .customize(t -> t.name(new String(
+                                    new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1],
+                                    StandardCharsets.UTF_8)))
+                            .get()),
+                    initialSupply,
+                    decimals,
+                    value);
+            case INVALID_SYMBOL -> function = contract.send_createFungibleTokenExternal(
+                    createHederaToken(domainBuilder
+                            .token()
+                            .customize(t -> t.symbol(new String(
+                                    new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1],
+                                    StandardCharsets.UTF_8)))
+                            .get()),
+                    initialSupply,
+                    decimals,
+                    value);
+            case INVALID_DECIMALS -> function = contract.send_createFungibleTokenExternal(
+                    createHederaToken(
+                            domainBuilder.token().customize(t -> t.decimals(-1)).get()),
+                    initialSupply,
+                    decimals,
+                    value);
+            case INVALID_INITIAL_SUPPLY -> function = contract.send_createFungibleTokenExternal(
+                    createHederaToken(domainBuilder
+                            .token()
+                            .customize(t -> t.initialSupply(-1L))
+                            .get()),
+                    initialSupply,
+                    decimals,
+                    value);
+            case INITIAL_SUPPLY_GREATER_THAN_MAX_SUPPLY -> function = contract.send_createFungibleTokenExternal(
+                    createHederaToken(domainBuilder
+                            .token()
+                            .customize(t -> t.initialSupply(10_000_001L))
+                            .get()),
+                    initialSupply,
+                    decimals,
+                    value);
+            case NFT_NO_SUPPLY_KEY -> function = contract.send_createNonFungibleTokenExternal(
+                    createHederaToken(domainBuilder
+                            .token()
+                            .customize(t -> t.supplyKey(new byte[0]))
+                            .get()),
+                    value);
+            case NFT_NO_TREASURY -> function = contract.send_createNonFungibleTokenExternal(
+                    createHederaToken(domainBuilder
+                            .token()
+                            .customize(t -> t.treasuryAccountId(null))
+                            .get()),
+                    value);
+            case NFT_FREEZE_DEFAULT_NO_KEY -> function = contract.send_createNonFungibleTokenExternal(
+                    createHederaToken(domainBuilder
+                            .token()
+                            .customize(t -> t.freezeDefault(true).freezeKey(new byte[0]))
+                            .get()),
+                    value);
+            case NFT_INVALID_AUTORENEW_ACCOUNT -> function = contract.send_createNonFungibleTokenExternal(
+                    createHederaToken(
+                            domainBuilder.token().get(),
+                            domainBuilder
+                                    .entity()
+                                    .customize(e -> e.autoRenewPeriod(10L))
+                                    .get()),
+                    value);
         }
 
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                functionName, MODIFICATION_CONTRACT_ABI_PATH, tokenNegative, supply, decimals);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, MODIFICATION_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 10000 * 100_000_000L, BlockType.LATEST);
+        final var functionToCall = function;
+        assertThatThrownBy(functionToCall::send).isInstanceOf(MirrorEvmTransactionException.class);
+    }
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
-                .isInstanceOf(MirrorEvmTransactionException.class);
+    private HederaToken createHederaToken(final Token token) {
+        final var entity = domainBuilder.entity().get();
+        final var treasuryAccountId = token.getTreasuryAccountId();
+        final var keys = new ArrayList<TokenKey>();
+        final var entityRenewAccountId = entity.getAutoRenewAccountId();
+
+        return new HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                treasuryAccountId != null
+                        ? EntityIdUtils.asHexedEvmAddress(new Id(
+                                treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
+                        : Address.ZERO.toHexString(),
+                new String(token.getMetadata(), StandardCharsets.UTF_8),
+                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
+                BigInteger.valueOf(token.getMaxSupply()),
+                token.getFreezeDefault(),
+                keys,
+                new Expiry(
+                        BigInteger.valueOf(entity.getEffectiveExpiration()),
+                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId.longValue())),
+                        BigInteger.valueOf(entity.getEffectiveExpiration())));
+    }
+
+    private HederaToken createHederaToken(final Token token, final Entity entity) {
+        final var treasuryAccountId = token.getTreasuryAccountId();
+        final var keys = new ArrayList<TokenKey>();
+        final var entityRenewAccountId = entity.getAutoRenewAccountId();
+
+        return new HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                EntityIdUtils.asHexedEvmAddress(
+                        new Id(treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum())),
+                new String(token.getMetadata(), StandardCharsets.UTF_8),
+                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
+                BigInteger.valueOf(token.getMaxSupply()),
+                token.getFreezeDefault(),
+                keys,
+                new Expiry(
+                        BigInteger.valueOf(entity.getEffectiveExpiration()),
+                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId.longValue())),
+                        BigInteger.valueOf(entity.getEffectiveExpiration())));
     }
 
     @Getter

@@ -30,6 +30,7 @@ import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +66,7 @@ import org.web3j.tx.gas.DefaultGasProvider;
 import org.web3j.utils.Numeric;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
+@Named
 public class TestWeb3jService implements Web3jService {
 
     private static final Long GAS_LIMIT = 15_000_000L;
@@ -78,6 +80,7 @@ public class TestWeb3jService implements Web3jService {
     private final Web3j web3j;
 
     private Address sender = Address.fromHexString("");
+    private String output;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -93,6 +96,10 @@ public class TestWeb3jService implements Web3jService {
 
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
+    }
+
+    public String getOutput() {
+        return output;
     }
 
     @SneakyThrows(Exception.class)
@@ -164,7 +171,7 @@ public class TestWeb3jService implements Web3jService {
         res.setJsonrpc(request.getJsonrpc());
 
         transactionResults.put(transactionHash, mirrorNodeResult);
-
+        output = mirrorNodeResult;
         return res;
     }
 
@@ -180,6 +187,7 @@ public class TestWeb3jService implements Web3jService {
                 GAS_LIMIT,
                 sender);
         final var result = contractExecutionService.processCall(serviceParameters);
+        output = result;
 
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
@@ -267,7 +275,7 @@ public class TestWeb3jService implements Web3jService {
         final var contractBytes = Hex.decode(binary.replace("0x", ""));
         final var entity = domainBuilder
                 .entity()
-                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
+                .customize(e -> e.type(CONTRACT).id(entityId).num(entityId).key(null))
                 .persist();
 
         domainBuilder
