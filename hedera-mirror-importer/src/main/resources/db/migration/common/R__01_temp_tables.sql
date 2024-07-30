@@ -101,7 +101,6 @@ alter table if exists ${tempSchema}.nft_temp set (
     autovacuum_enabled = false
     );
 
-
 alter table if exists ${tempSchema}.schedule_temp set (
     autovacuum_enabled = false
     );
