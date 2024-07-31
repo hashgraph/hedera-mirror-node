@@ -435,12 +435,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @BeforeEach
     void before() {
         entityProperties.getPersist().setEntityTransactions(true);
+        entityProperties.getPersist().setSyntheticContractResults(true);
         entityProperties.getPersist().setTokens(true);
     }
 
     @AfterEach
     void after() {
         entityProperties.getPersist().setEntityTransactions(false);
+        entityProperties.getPersist().setSyntheticContractResults(false);
     }
 
     @ParameterizedTest(name = "{0}")

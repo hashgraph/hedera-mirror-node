@@ -24,16 +24,18 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.util.Utility;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder.TransferType;
+import com.hedera.mirror.importer.parser.record.ParserPerformanceProperties.SubType;
 import jakarta.inject.Named;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import lombok.AccessLevel;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
@@ -41,6 +43,7 @@ import org.springframework.util.Assert;
 /**
  * Generates record files using pre-defined templates for bulk creation of record items.
  */
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class RecordFileBuilder {
@@ -70,7 +73,8 @@ public class RecordFileBuilder {
             recordFile.customize(r -> r.items(recordItems));
 
             if (previous != null) {
-                recordItemBuilder.reset(Instant.ofEpochSecond(0, previous.getConsensusStart() + CLOSE_INTERVAL));
+                var now = Instant.ofEpochSecond(0, previous.getConsensusStart() + CLOSE_INTERVAL);
+                recordItemBuilder.setNow(now);
             }
 
             for (var itemBuilder : itemBuilders) {
@@ -107,7 +111,7 @@ public class RecordFileBuilder {
             return this;
         }
 
-        public Builder recordItem(RecordItemBuilder.Builder<?> recordItem) {
+        public Builder recordItem(Supplier<RecordItemBuilder.Builder<?>> recordItem) {
             return recordItems(i -> i.count(1).entities(1).template(recordItem));
         }
 
@@ -125,13 +129,14 @@ public class RecordFileBuilder {
 
     public class ItemBuilder {
 
-        private final AtomicLong id = new AtomicLong(0L);
         private int count = 100;
         private int entities = 10;
-        private RecordItemBuilder.Builder<?> template;
-        private TransactionType type = TransactionType.CRYPTOTRANSFER;
+        private boolean entityAutoCreation = false;
+        private SubType subType = SubType.STANDARD;
+        private TransactionType type = TransactionType.UNKNOWN;
+        private Supplier<RecordItemBuilder.Builder<?>> template;
 
-        @Getter(lazy = true)
+        @Getter(lazy = true, value = AccessLevel.PRIVATE)
         private final List<RecordItemBuilder.Builder<?>> builders = createBuilders();
 
         private ItemBuilder() {}
@@ -148,13 +153,26 @@ public class RecordFileBuilder {
             return this;
         }
 
-        public ItemBuilder template(RecordItemBuilder.Builder<?> template) {
+        public ItemBuilder entityAutoCreation(boolean entityAutoCreation) {
+            this.entityAutoCreation = entityAutoCreation;
+            return this;
+        }
+
+        public ItemBuilder subType(SubType subType) {
+            Assert.notNull(subType, "subType must not be null");
+            this.subType = subType;
+            return this;
+        }
+
+        public ItemBuilder template(Supplier<RecordItemBuilder.Builder<?>> template) {
+            Assert.notNull(template, "template must not be null");
             this.template = template;
             return this;
         }
 
         public ItemBuilder type(TransactionType type) {
             Assert.notNull(type, "type must not be null");
+            Assert.isTrue(type != TransactionType.UNKNOWN, "type must not be unknown");
             this.type = type;
             return this;
         }
@@ -163,28 +181,56 @@ public class RecordFileBuilder {
             var recordItemBuilders = getBuilders();
             int builderSize = recordItemBuilders.size();
             var counter = new AtomicInteger(count);
+            var creates = new ArrayDeque<>(recordItemBuilder.getCreateTransactions());
 
             return () -> {
-                int count = counter.getAndDecrement();
-                if (count <= 0) {
+                if (entityAutoCreation && !creates.isEmpty()) {
+                    var builder = creates.remove();
+                    var recordItem = builder.build();
+                    log.info("Creating {}", TransactionType.of(recordItem.getTransactionType()));
+                    return recordItem;
+                }
+
+                int remaining = counter.getAndDecrement();
+                if (remaining <= 0) {
                     return null;
                 }
 
-                var index = count % builderSize;
+                var index = remaining % builderSize;
                 var builder = recordItemBuilders.get(index);
-                return wrap(builder);
+                return builder.build();
             };
         }
 
-        private List<RecordItemBuilder.Builder<?>> createBuilders() {
-            List<RecordItemBuilder.Builder<?>> builders = new ArrayList<>();
-            int maxEntities = Math.min(entities, count);
-
-            for (int i = 0; i < maxEntities; i++) {
-                builders.add(template != null ? template : recordItem(type).get());
+        private Supplier<RecordItemBuilder.Builder<?>> buildTemplate() {
+            if (template != null) {
+                return template;
             }
 
-            return builders;
+            if (subType != SubType.STANDARD) {
+                return switch (subType) {
+                    case TOKEN_TRANSFER -> () -> recordItemBuilder.cryptoTransfer(TransferType.TOKEN);
+                    default -> throw new IllegalArgumentException("subType not supported: " + subType);
+                };
+            }
+
+            if (type == TransactionType.UNKNOWN) {
+                throw new IllegalArgumentException("type must not be unknown");
+            }
+
+            return recordItem(type);
+        }
+
+        private List<RecordItemBuilder.Builder<?>> createBuilders() {
+            List<RecordItemBuilder.Builder<?>> builderList = new ArrayList<>();
+            int maxEntities = Math.min(entities, count);
+            var builderTemplate = buildTemplate();
+
+            for (int i = 0; i < maxEntities; i++) {
+                builderList.add(builderTemplate.get());
+            }
+
+            return builderList;
         }
 
         private Supplier<RecordItemBuilder.Builder<?>> recordItem(TransactionType transactionType) {
@@ -193,16 +239,6 @@ public class RecordFileBuilder {
                 throw new UnsupportedOperationException("Transaction type not supported: " + transactionType);
             }
             return supplier;
-        }
-
-        private RecordItem wrap(RecordItemBuilder.Builder<?> builder) {
-            var consensusTimestamp = recordItemBuilder.timestamp(ChronoUnit.NANOS);
-            var validStart = Utility.instantToTimestamp(
-                    Utility.convertToInstant(consensusTimestamp).minusNanos(10));
-            return builder.record(r -> r.setConsensusTimestamp(consensusTimestamp))
-                    .receipt(r -> r.setTopicSequenceNumber(id.getAndIncrement()))
-                    .transactionBodyWrapper(tb -> tb.getTransactionIDBuilder().setTransactionValidStart(validStart))
-                    .build();
         }
     }
 }

@@ -1026,6 +1026,9 @@ const toHexStringNonQuantity = (byteArray) => {
 const PATTERN_ECDSA = /^(3a21|32250a233a21|2a29080112250a233a21)([A-Fa-f0-9]{66})$/;
 const PATTERN_ED25519 = /^(1220|32240a221220|2a28080112240a221220)([A-Fa-f0-9]{64})$/;
 
+// An empty or default key list appears as the sentinel value /x3200
+const IMMUTABLE_SENTINEL_KEY = '3200';
+
 /**
  * Converts a key for returning in JSON output
  * @param {Array} key Byte array representing the key
@@ -1038,6 +1041,10 @@ const encodeKey = (key) => {
 
   // check for empty case to support differentiation between empty and null keys
   const keyHex = _.isEmpty(key) ? '' : toHexString(key);
+  if (keyHex === IMMUTABLE_SENTINEL_KEY) {
+    return null;
+  }
+
   const ed25519Key = keyHex.match(PATTERN_ED25519);
   if (ed25519Key) {
     return {

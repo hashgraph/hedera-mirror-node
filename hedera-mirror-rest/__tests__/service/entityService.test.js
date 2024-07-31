@@ -80,8 +80,12 @@ describe('EntityService.getAccountFromAlias tests', () => {
 });
 
 describe('EntityService.getAccountIdFromAlias tests', () => {
-  test('EntityService.getAccountIdFromAlias - No match', async () => {
+  test('EntityService.getAccountIdFromAlias - No match - result required', async () => {
     await expect(() => EntityService.getAccountIdFromAlias(defaultEntityAlias)).rejects.toThrowErrorMatchingSnapshot();
+  });
+
+  test('EntityService.getAccountIdFromAlias - No match - result not required', async () => {
+    await expect(EntityService.getAccountIdFromAlias(defaultEntityAlias, false)).resolves.toBe(null);
   });
 
   test('EntityService.getAccountFromAlias - Matching id', async () => {
@@ -100,10 +104,14 @@ describe('EntityService.getEntityIdFromEvmAddress tests', () => {
     await expect(EntityService.getEntityIdFromEvmAddress(defaultEvmAddress)).resolves.toBe(defaultExpectedEntity.id);
   });
 
-  test('EntityService.getEntityIdFromEvmAddress - No match', async () => {
+  test('EntityService.getEntityIdFromEvmAddress - No match - result required', async () => {
     await expect(() =>
       EntityService.getEntityIdFromEvmAddress(defaultEvmAddress)
     ).rejects.toThrowErrorMatchingSnapshot();
+  });
+
+  test('EntityService.getEntityIdFromEvmAddress - No match - result not required', async () => {
+    await expect(EntityService.getEntityIdFromEvmAddress(defaultEvmAddress, false)).resolves.toBe(null);
   });
 
   test('EntityService.getEntityIdFromEvmAddress - Multiple matches', async () => {
