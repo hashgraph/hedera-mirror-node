@@ -18,6 +18,7 @@ package com.hedera.mirror.restjava.spec.builder;
 
 import com.google.common.base.CaseFormat;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import jakarta.annotation.Resource;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -30,18 +31,10 @@ import java.util.stream.Collectors;
 import lombok.CustomLog;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.tuweni.bytes.Bytes;
+import org.springframework.core.convert.ConversionService;
 
 @CustomLog
 abstract class AbstractEntityBuilder<B> {
-
-    /*
-     * Map builder parameter value provided in spec JSON to the type expected by the builder method.
-     */
-    private static final Map<Class<?>, Function<Object, Object>> DEFAULT_PARAMETER_CONVERTERS = Map.of(
-            java.lang.Boolean.class, source -> Boolean.parseBoolean(String.valueOf(source)),
-            java.lang.Integer.class, source -> Integer.parseInt(String.valueOf(source)),
-            java.lang.Long.class, source -> Long.parseLong(String.valueOf(source))
-    );
 
     private static final Base32 BASE32 = new Base32();
     private static final Pattern HEX_STRING_PATTERN = Pattern.compile("^(0x)?[0-9A-Fa-f]+$");
@@ -69,6 +62,9 @@ abstract class AbstractEntityBuilder<B> {
         }
         return value;
     };
+
+    @Resource
+    protected ConversionService conversionService;
 
     // Map a synthetic spec attribute name to another attribute name convertable to a builder method name
     protected final Map<String, String> attributeNameMap;
@@ -117,10 +113,10 @@ abstract class AbstractEntityBuilder<B> {
 
     private Object mapBuilderParameter(String methodName, Class<?> expectedType, Object specParameterValue) {
         var typeMapper = methodParameterConverters.get(methodName);
-        if (typeMapper == null) {
-            typeMapper = DEFAULT_PARAMETER_CONVERTERS.getOrDefault(expectedType, Function.identity());
+        if (typeMapper != null) {
+            return typeMapper.apply(specParameterValue);
         }
-        return typeMapper.apply(specParameterValue);
+        return conversionService.convert(specParameterValue, expectedType);
     }
 
     /*
