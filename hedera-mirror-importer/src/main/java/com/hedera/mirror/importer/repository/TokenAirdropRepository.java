@@ -18,15 +18,6 @@ package com.hedera.mirror.importer.repository;
 
 import com.hedera.mirror.common.domain.token.AbstractTokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface TokenAirdropRepository
-        extends CrudRepository<TokenAirdrop, AbstractTokenAirdrop.Id>, RetentionRepository {
-
-    @Modifying
-    @Override
-    @Query(value = "delete from token_airdrop where upper(timestamp_range) <= ?1", nativeQuery = true)
-    int prune(long consensusTimestamp);
-}
+public interface TokenAirdropRepository extends CrudRepository<TokenAirdrop, AbstractTokenAirdrop.Id> {}

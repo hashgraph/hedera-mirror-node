@@ -1,4 +1,4 @@
-create type airdrop_state as enum ('PENDING', 'CANCELLED', 'CLAIMED');
+create type airdrop_state as enum ('CANCELLED', 'CLAIMED', 'PENDING');
 
 create table if not exists token_airdrop
 (

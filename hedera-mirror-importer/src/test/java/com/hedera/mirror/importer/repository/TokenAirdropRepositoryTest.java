@@ -18,7 +18,6 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import java.util.List;
@@ -31,27 +30,6 @@ class TokenAirdropRepositoryTest extends AbstractRepositoryTest {
 
     private final TokenAirdropRepository repository;
     private static final RowMapper<TokenAirdrop> ROW_MAPPER = rowMapper(TokenAirdrop.class);
-
-    @Test
-    void prune() {
-        domainBuilder
-                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
-                .customize(
-                        t -> t.timestampRange(Range.closedOpen(domainBuilder.timestamp(), domainBuilder.timestamp())))
-                .persist();
-        var tokenAirdrop2 = domainBuilder
-                .tokenAirdrop(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
-                .customize(
-                        t -> t.timestampRange(Range.closedOpen(domainBuilder.timestamp(), domainBuilder.timestamp())))
-                .persist();
-        var tokenAirdrop3 = domainBuilder
-                .tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON)
-                .customize(
-                        t -> t.timestampRange(Range.closedOpen(domainBuilder.timestamp(), domainBuilder.timestamp())))
-                .persist();
-        repository.prune(tokenAirdrop2.getTimestampRange().upperEndpoint());
-        assertThat(repository.findAll()).containsOnly(tokenAirdrop3);
-    }
 
     @Test
     void saveFungible() {
