@@ -88,7 +88,7 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(isPersist, Node::isDeleted)));
     }
 
-    @SuppressWarnings("java:S2699")
+    @SuppressWarnings({"java:S2699", "java:S1186"})
     @Disabled("Since this handler persists data for unsuccessful transactions & has tests for that")
     @Override
     @Test
