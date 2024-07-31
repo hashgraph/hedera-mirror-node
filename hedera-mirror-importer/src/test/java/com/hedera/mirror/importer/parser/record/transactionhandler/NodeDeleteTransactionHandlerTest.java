@@ -25,6 +25,7 @@ import com.hedera.mirror.common.domain.entity.Node;
 import com.hederahashgraph.api.proto.java.NodeDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -86,4 +87,10 @@ class NodeDeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
                 .returns(isPersist, Node::isDeleted)));
     }
+
+    @SuppressWarnings("java:S2699")
+    @Disabled("Since this handler persists data for unsuccessful transactions & has tests for that")
+    @Override
+    @Test
+    void updateTransactionUnsuccessful() {}
 }
