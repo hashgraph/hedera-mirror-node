@@ -133,6 +133,11 @@ const isHexPositiveInt = (num, allowZero = false) => {
   return false;
 };
 
+const isByteRange = (str, minSize, maxSize) => {
+  const length = Buffer.from(str).length;
+  return length >= minSize && length <= maxSize;
+};
+
 const nonNegativeInt32Regex = /^\d{1,10}$/;
 
 /**
@@ -210,6 +215,8 @@ const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.
 const isValidAddressBookFileIdPattern = (fileId) => {
   return addressBookFileIdPattern.includes(fileId);
 };
+
+const lowerCaseQueryValue = (queryValue) => (typeof queryValue === 'string' ? queryValue.toLowerCase() : queryValue);
 
 /**
  * Validate input parameters for the rest apis
@@ -1019,6 +1026,9 @@ const toHexStringNonQuantity = (byteArray) => {
 const PATTERN_ECDSA = /^(3a21|32250a233a21|2a29080112250a233a21)([A-Fa-f0-9]{66})$/;
 const PATTERN_ED25519 = /^(1220|32240a221220|2a28080112240a221220)([A-Fa-f0-9]{64})$/;
 
+// An empty or default key list appears as the sentinel value /x3200
+const IMMUTABLE_SENTINEL_KEY = '3200';
+
 /**
  * Converts a key for returning in JSON output
  * @param {Array} key Byte array representing the key
@@ -1031,6 +1041,10 @@ const encodeKey = (key) => {
 
   // check for empty case to support differentiation between empty and null keys
   const keyHex = _.isEmpty(key) ? '' : toHexString(key);
+  if (keyHex === IMMUTABLE_SENTINEL_KEY) {
+    return null;
+  }
+
   const ed25519Key = keyHex.match(PATTERN_ED25519);
   if (ed25519Key) {
     return {
@@ -1110,7 +1124,8 @@ const buildAndValidateFilters = (
   query,
   acceptedParameters,
   filterValidator = filterValidityChecks,
-  filterDependencyChecker = filterDependencyCheck
+  filterDependencyChecker = filterDependencyCheck,
+  excludedCombinatons = [[]]
 ) => {
   const {badParams, filters} = buildFilters(query);
   const {invalidParams, unknownParams} = validateAndParseFilters(filters, filterValidator, acceptedParameters);
@@ -1731,6 +1746,7 @@ export {
   gtGte,
   incrementTimestampByOneDay,
   ipMask,
+  isByteRange,
   isNonNegativeInt32,
   isPositiveLong,
   isRepeatedQueryParameterValidLength,
@@ -1743,6 +1759,7 @@ export {
   isValidSlot,
   isValidTimestampParam,
   isValidValueIgnoreCase,
+  lowerCaseQueryValue,
   ltLte,
   mergeParams,
   nowInNs,

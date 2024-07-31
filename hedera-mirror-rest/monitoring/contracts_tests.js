@@ -233,7 +233,7 @@ const getContractResultsLogs = async (server) => {
   return {
     url,
     passed: true,
-    message: 'Successfully called contracts for contract results logs ',
+    message: 'Successfully called contracts for contract results logs',
   };
 };
 
@@ -277,8 +277,8 @@ const getContractState = async (server) => {
 };
 
 /**
- * Verify contract result (/contracts/results/{transacionId})
- * and actions (/contracts/results/{transacionId}/actions) can be retrieved for a given transaction
+ * Verify contract result (/contracts/results/{transactionIdOrHash})
+ * and actions (/contracts/results/{transactionIdOrHash}/actions) can be retrieved for a given transaction
  * @param {Object} server API host endpoint
  */
 const getContractResultsByTransaction = async (server) => {
@@ -288,10 +288,16 @@ const getContractResultsByTransaction = async (server) => {
     return {url, ...result};
   }
 
-  let transactionId = _.max(_.map(contractsResults, (result) => result.hash));
+  const transactionHash = contractsResults.filter((r) => r.result === 'SUCCESS')[0]?.hash;
+  if (transactionHash === undefined) {
+    return {
+      url,
+      ...result,
+    };
+  }
 
   const contractResultParams = ['address', 'failed_initcode', 'hash', 'logs'];
-  url = getUrl(server, `${contractsPath}/results/${transactionId}`);
+  url = getUrl(server, `${contractsPath}/results/${transactionHash}`);
   const contractResults = await fetchAPIResponse(url);
 
   result = new CheckRunner()
@@ -324,7 +330,7 @@ const getContractResultsByTransaction = async (server) => {
     'to',
     'value',
   ];
-  url = getUrl(server, `${contractsPath}/results/${transactionId}/actions`);
+  url = getUrl(server, `${contractsPath}/results/${transactionHash}/actions`);
   const contractActions = await fetchAPIResponse(url, jsonActionsRespKey);
 
   result = new CheckRunner()
@@ -342,7 +348,7 @@ const getContractResultsByTransaction = async (server) => {
   return {
     url,
     passed: true,
-    message: 'Successfully called contracts for contract actions ',
+    message: 'Successfully called contracts for contract actions',
   };
 };
 

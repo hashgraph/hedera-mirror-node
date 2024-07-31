@@ -360,15 +360,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var cryptoCreate = recordItemBuilder
                 .cryptoCreate()
                 .transactionBody(b -> b.setAlias(evmAddress).setInitialBalance(0))
-                .transactionBodyWrapper(w -> {
-                    var transactionId =
-                            w.getTransactionID().toBuilder().setNonce(1).build();
-                    w.setTransactionID(transactionId);
-                })
-                .record(r -> {
-                    var transactionId =
-                            r.getTransactionID().toBuilder().setNonce(1).build();
-                    r.setEvmAddress(evmAddress).setTransactionID(transactionId);
+                .record(r -> r.setEvmAddress(evmAddress))
+                .incrementer((b, r) -> {
+                    b.getTransactionIDBuilder().setNonce(1);
+                    r.getTransactionIDBuilder().setNonce(1);
                 })
                 .build();
         var transactionRecord = cryptoCreate.getTransactionRecord();
@@ -466,7 +461,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertAll(
                 () -> assertEquals(3, transactionRepository.count()),
                 () -> assertEntities(hollowAccount),
-                () -> assertCryptoTransfers(7),
+                () -> assertCryptoTransfers(8),
                 () -> assertThat(entityRepository.findByAlias(EVM_ADDRESS)).hasValue(hollowAccount.getId()),
                 () -> assertThat(transactionRepository.findAll())
                         .map(com.hedera.mirror.common.domain.transaction.Transaction::getItemizedTransfer)
@@ -634,12 +629,13 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                             accountAmount(sender.getId(), 5L).build(),
                             accountAmount(receiver1.getId(), 4L).build());
 
-                    var transferList = r.getTransferList().toBuilder()
+                    r.clearTransferList()
+                            .getTransferListBuilder()
                             .addAccountAmounts(accountAmount(sender.getId(), -15L))
                             .addAccountAmounts(accountAmount(receiver1.getId(), 9L))
                             .addAccountAmounts(accountAmount(receiver2.getId(), 15L))
                             .addAccountAmounts(accountAmount(STAKING_REWARD_ACCOUNT, -9L));
-                    r.setTransferList(transferList).addAllPaidStakingRewards(paidStakingRewards);
+                    r.addAllPaidStakingRewards(paidStakingRewards);
                 })
                 .build();
 
@@ -674,8 +670,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertAll(
                 () -> assertEquals(0, contractRepository.count()),
-                // 3 for fee, 3 for hbar transfers, and 1 for reward payout from 0.0.800
-                () -> assertEquals(7, cryptoTransferRepository.count()),
+                // 3 for hbar transfers, and 1 for reward payout from 0.0.800
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(sender, receiver1, receiver2),
                 () -> assertThat(stakingRewardTransferRepository.findAll())
                         .containsExactlyInAnyOrder(expectedStakingRewardTransfer1, expectedStakingRewardTransfer2),
@@ -1855,7 +1851,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private void assertAllowances(RecordItem recordItem, Collection<Nft> expectedNfts) {
         assertAll(
                 () -> assertEquals(1, cryptoAllowanceRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(3, nftAllowanceRepository.count()),
                 () -> assertEquals(1, tokenAllowanceRepository.count()),

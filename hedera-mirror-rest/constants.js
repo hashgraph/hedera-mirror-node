@@ -46,6 +46,7 @@ const filterKeys = {
   INDEX: 'index',
   INTERNAL: 'internal',
   LIMIT: 'limit',
+  NAME: 'name',
   NODE_ID: 'node.id',
   NONCE: 'nonce',
   ORDER: 'order',

@@ -280,7 +280,7 @@ stackgres:
       citus.executor_slow_start_interval: "20ms"
       citus.max_cached_conns_per_worker: "1"
       citus.max_shared_pool_size: "850"
-      full_page_writes: "false"  # Not needed with ZFS
+      full_page_writes: "true"  # Required for replication to work in recovery scenarios
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       maintenance_work_mem: "256MB"
@@ -308,6 +308,8 @@ stackgres:
       version: "12.1-1"
     - name: btree_gist
       version: stable
+    - name: pg_trgm
+      version: "1.6"
   nameOverride: citus
   pgbouncer:
     pgbouncer:
@@ -329,7 +331,7 @@ stackgres:
     config:
       autovacuum_max_workers: "2"
       checkpoint_timeout: "1800"
-      full_page_writes: "false"  # Not needed with ZFS
+      full_page_writes: "false"  # Not required for ZFS and Enabling this causes hash indexes to have spikes in write performance.
       log_checkpoints: "true"
       log_timezone: "Etc/UTC"
       maintenance_work_mem: "256MB"

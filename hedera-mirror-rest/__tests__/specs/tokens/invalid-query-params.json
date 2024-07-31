@@ -55,30 +55,109 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3",
-  "responseStatus": 400,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Invalid parameter: account.id"
-        },
-        {
-          "message": "Invalid parameter: token.id"
-        },
-        {
-          "message": "Invalid parameter: limit"
-        },
-        {
-          "message": "Invalid parameter: publickey"
-        },
-        {
-          "message": "Invalid parameter: order"
-        },
-        {
-          "message": "Unknown query parameter: block.number"
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/tokens?account.id=lte:0.1.2.3&token.id=abc&limit=-2&publickey=-2&order=any&block.number=3"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: account.id"
+            },
+            {
+              "message": "Invalid parameter: token.id"
+            },
+            {
+              "message": "Invalid parameter: limit"
+            },
+            {
+              "message": "Invalid parameter: publickey"
+            },
+            {
+              "message": "Invalid parameter: order"
+            },
+            {
+              "message": "Unknown query parameter: block.number"
+            }
+          ]
         }
-      ]
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=IAmALongStringThatIsLongerThanTheMaximumSizeForATokenNameWhichIsOneHundredBytesAndNotOneSingleByteMore",
+        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=ab",
+        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=ne:bar",
+        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=lt:bar",
+        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=lte:bar",
+        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=gt:bar",
+        "/api/v1/tokens?limit=-2&publickey=-2&order=any&block.number=3&name=gte:bar"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: limit"
+            },
+            {
+              "message": "Invalid parameter: publickey"
+            },
+            {
+              "message": "Invalid parameter: order"
+            },
+            {
+              "message": "Invalid parameter: name"
+            },
+            {
+              "message": "Unknown query parameter: block.number"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/tokens?account.id=gt:5&name=validname",
+        "/api/v1/tokens?account.id=gte:5&name=validname",
+        "/api/v1/tokens?account.id=lt:5&name=validname",
+        "/api/v1/tokens?account.id=lte:5&name=validname",
+        "/api/v1/tokens?account.id=eq:5&name=validname",
+        "/api/v1/tokens?account.id=5&name=validname"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "account.id and name cannot be used together"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/tokens?token.id=gt:5&name=validname",
+        "/api/v1/tokens?token.id=gte:5&name=validname",
+        "/api/v1/tokens?token.id=lt:5&name=validname",
+        "/api/v1/tokens?token.id=lte:5&name=validname",
+        "/api/v1/tokens?token.id=eq:5&name=validname",
+        "/api/v1/tokens?token.id=5&name=validname"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "token.id and name can not be used together. Use a more specific name instead."
+            }
+          ]
+        }
+      }
     }
-  }
+  ]
 }

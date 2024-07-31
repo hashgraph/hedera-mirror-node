@@ -61,7 +61,7 @@ tasks.compileTestJava {
 
 tasks.test { jvmArgs = listOf("--enable-preview") }
 
-sourceSets { test { solidity { version = "0.8.18" } } }
+sourceSets { test { solidity { version = "0.8.24" } } }
 
 web3j {
     generatedPackageName = "com.hedera.mirror.web3.web3j.generated"
