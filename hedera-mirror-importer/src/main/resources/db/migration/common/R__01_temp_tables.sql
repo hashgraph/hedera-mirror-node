@@ -35,6 +35,7 @@ call create_temp_table_safe('token_allowance', 'owner', 'spender', 'token_id');
 call create_temp_table_safe('token', 'token_id');
 call create_temp_table_safe('topic_message_lookup', 'topic_id', 'partition');
 
+drop table if exists ${tempSchema}.dissociate_token_transfer;
 call create_temp_table_safe('token_transfer', 'token_id');
 alter table if exists ${tempSchema}.token_transfer_temp rename to dissociate_token_transfer;
 
