@@ -1783,7 +1783,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
 
         if (commitIndex > 3) {
             completeFileAndCommit();
-            assertThat(nodeRepository.findAll()).containsExactly(nodeUpdate1, nodeCreate2);
+            assertThat(nodeRepository.findAll()).containsExactlyInAnyOrder(nodeUpdate1, nodeCreate2);
             assertThat(findHistory(Node.class)).containsExactly(mergedUpdate1);
         }
 
@@ -1791,7 +1791,7 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(nodeRepository.findAll()).containsExactly(nodeCreate2, nodeDelete1);
+        assertThat(nodeRepository.findAll()).containsExactlyInAnyOrder(nodeDelete1, nodeCreate2);
         assertThat(findHistory(Node.class)).containsExactlyInAnyOrder(mergedUpdate1, mergedUpdate2);
     }
 
