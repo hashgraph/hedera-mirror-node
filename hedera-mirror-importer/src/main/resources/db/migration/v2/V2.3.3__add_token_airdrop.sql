@@ -25,13 +25,3 @@ create unique index if not exists token_airdrop__sender_id on token_airdrop (sen
 create index if not exists token_airdrop__receiver_id on token_airdrop (receiver_account_id, sender_account_id, token_id, serial_number);
 create index if not exists token_airdrop_history__token_serial_lower_timestamp
     on token_airdrop_history using gist (timestamp_range);
-
-
-drop table if exists ${tempSchema}.token_airdrop_temp;
-create unlogged table if not exists ${tempSchema}.token_airdrop_temp as table token_airdrop limit 0;
-alter table if exists ${tempSchema}.token_airdrop_temp owner to temporary_admin;
-create index if not exists token_airdrop_temp_idx on ${tempSchema}.token_airdrop_temp (sender_account_id, receiver_account_id, token_id, serial_number);
-select create_distributed_table('token_airdrop_temp', 'token_id', colocate_with => 'entity');
-alter table if exists ${tempSchema}.token_airdrop_temp set (
-    autovacuum_enabled = false
-    );

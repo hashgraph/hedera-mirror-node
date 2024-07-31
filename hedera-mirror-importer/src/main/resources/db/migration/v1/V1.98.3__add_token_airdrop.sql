@@ -21,11 +21,3 @@ create table if not exists token_airdrop_history
 
 create index if not exists token_airdrop_history__timestamp_range
     on token_airdrop_history using gist (timestamp_range);
-
-drop table if exists ${tempSchema}.token_airdrop_temp;
-create unlogged table if not exists ${tempSchema}.token_airdrop_temp as table token_airdrop limit 0;
-alter table if exists ${tempSchema}.token_airdrop_temp owner to temporary_admin;
-create index if not exists token_airdrop_temp_idx on ${tempSchema}.token_airdrop_temp (sender_account_id, receiver_account_id, token_id, serial_number);
-alter table if exists ${tempSchema}.token_airdrop_temp set (
-    autovacuum_enabled = false
-    );
