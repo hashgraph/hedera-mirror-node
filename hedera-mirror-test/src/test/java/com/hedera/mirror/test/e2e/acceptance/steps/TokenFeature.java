@@ -29,6 +29,7 @@ import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
@@ -37,7 +38,6 @@ import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.mirror.rest.model.AssessedCustomFee;
 import com.hedera.mirror.rest.model.CustomFees;
 import com.hedera.mirror.rest.model.FixedFee;
@@ -455,36 +455,34 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @RetryAsserts
     @Then("{account} rejects token with {int} and returns them to {account}")
-    public void rejectFungibleToken(AccountNameEnum accountNameEnum, int amount, AccountNameEnum accountNameEnumTreasury) {
-        var treasury = accountClient.getAccount(accountNameEnumTreasury).getAccountId();
-        var carol = accountClient.getAccount(accountNameEnum);
+    public void rejectFungibleToken(AccountNameEnum ownerName, int amount, AccountNameEnum treasuryName) {
+        var treasury = accountClient.getAccount(treasuryName).getAccountId();
+        var owner = accountClient.getAccount(ownerName);
         long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
-        var fungibleTokenIds = new ArrayList<TokenId>();
-        fungibleTokenIds.add(tokenId);
 
-        networkTransactionResponse = tokenClient.rejectFungibleToken(fungibleTokenIds, carol);
+        networkTransactionResponse = tokenClient.rejectFungibleToken(List.of(tokenId), owner);
 
         assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
         assertThat(networkTransactionResponse.getReceipt()).isNotNull();
-        assertThat(getTokenBalance(carol.getAccountId(), tokenId)).isZero();
+        assertThat(getTokenBalance(owner.getAccountId(), tokenId)).isZero();
         assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + amount);
     }
 
+    @RetryAsserts
     @Then("{account} rejects token and returns it to {account}")
-    public void rejectNonFungibleToken(AccountNameEnum accountNameEnum, AccountNameEnum accountNameEnumTreasury) {
+    public void rejectNonFungibleToken(AccountNameEnum ownerName, AccountNameEnum treasuryName) {
         var nftId = new NftId(tokenId, 2L);
-        var treasury = accountClient.getAccount(accountNameEnumTreasury).getAccountId();
-        var carol = accountClient.getAccount(accountNameEnum);
+        var owner = accountClient.getAccount(ownerName);
+        var treasury = accountClient.getAccount(treasuryName).getAccountId();
         long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
-        var nftTokenIds = new ArrayList<NftId>();
-        nftTokenIds.add(nftId);
 
-        networkTransactionResponse = tokenClient.rejectNonFungibleToken(nftTokenIds, carol);
+        networkTransactionResponse = tokenClient.rejectNonFungibleToken(List.of(nftId), owner);
 
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        assertThat(getTokenBalance(carol.getAccountId(), tokenId)).isZero();
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+        assertThat(getTokenBalance(owner.getAccountId(), tokenId)).isZero();
         assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + 1);
     }
 
@@ -536,7 +534,9 @@ public class TokenFeature extends AbstractFeature {
     @Given("I wipe serial number index {int} from token for {account}")
     public void wipeNft(int serialNumberIndex, AccountNameEnum accountName) {
         networkTransactionResponse = tokenClient.wipeNonFungible(
-                tokenId, tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber(), accountClient.getAccount(accountName));
+                tokenId,
+                tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber(),
+                accountClient.getAccount(accountName));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }

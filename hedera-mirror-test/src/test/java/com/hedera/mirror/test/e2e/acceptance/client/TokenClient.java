@@ -37,6 +37,7 @@ import com.hedera.hashgraph.sdk.TokenGrantKycTransaction;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenMintTransaction;
 import com.hedera.hashgraph.sdk.TokenPauseTransaction;
+import com.hedera.hashgraph.sdk.TokenRejectTransaction;
 import com.hedera.hashgraph.sdk.TokenRevokeKycTransaction;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -46,7 +47,6 @@ import com.hedera.hashgraph.sdk.TokenUpdateNftsTransaction;
 import com.hedera.hashgraph.sdk.TokenUpdateTransaction;
 import com.hedera.hashgraph.sdk.TokenWipeTransaction;
 import com.hedera.hashgraph.sdk.TransferTransaction;
-import com.hedera.hashgraph.sdk.TokenRejectTransaction;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -652,12 +652,11 @@ public class TokenClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse rejectFungibleToken(List<TokenId> tokenIds, ExpandedAccountId owner) {
         var tokenRejectTransaction = new TokenRejectTransaction()
-                .setTokenIds(tokenIds)
                 .setOwnerId(owner.getAccountId())
+                .setTokenIds(tokenIds)
                 .setTransactionMemo(getMemo("Reject Fungible token"));
-        var response = executeTransactionAndRetrieveReceipt(
-                tokenRejectTransaction, owner.getPrivateKey() == null ? null : KeyList.of(owner.getPrivateKey()));
-        log.info("Rejected Fungible tokens {} from owner {} to treasury via {}", tokenIds, owner.getAccountId(), response.getTransactionId());
+        var response = executeTransactionAndRetrieveReceipt(tokenRejectTransaction, KeyList.of(owner.getPrivateKey()));
+        log.info("Owner {} rejected fungible tokens {} via {}", owner, tokenIds, response.getTransactionId());
         return response;
     }
 
@@ -666,9 +665,8 @@ public class TokenClient extends AbstractNetworkClient {
                 .setNftIds(nftIds)
                 .setOwnerId(owner.getAccountId())
                 .setTransactionMemo(getMemo("Reject NFT"));
-        var response = executeTransactionAndRetrieveReceipt(
-                tokenRejectTransaction, owner.getPrivateKey() == null ? null : KeyList.of(owner.getPrivateKey()));
-        log.info("Rejected NFT tokens {} from owner {} to treasury via {}", nftIds, owner.getAccountId(), response.getTransactionId());
+        var response = executeTransactionAndRetrieveReceipt(tokenRejectTransaction, KeyList.of(owner.getPrivateKey()));
+        log.info("Owner {} rejected NFT tokens {} via {}", owner, nftIds, response.getTransactionId());
         return response;
     }
 
