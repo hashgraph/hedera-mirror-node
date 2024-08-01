@@ -25,6 +25,7 @@ import org.hyperledger.besu.datatypes.Address;
 
 public class ContractCallTestUtil {
 
+    public static final long TRANSACTION_GAS_LIMIT = 15_000_000L;
     public static final ByteString SPENDER_PUBLIC_KEY =
             ByteString.fromHex("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
     public static final Address SPENDER_ALIAS = Address.wrap(

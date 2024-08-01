@@ -51,7 +51,6 @@ import java.math.BigInteger;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -69,11 +68,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @BeforeEach
     void setup() {
         recordFilePersist();
-    }
-
-    @AfterEach
-    void cleanup() {
-        testWeb3jService.setEstimateGas(false);
     }
 
     @ParameterizedTest
@@ -144,8 +138,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         // Then
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
@@ -221,8 +214,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         // Then
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
@@ -278,7 +270,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
@@ -303,8 +294,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         // Then
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
@@ -348,7 +338,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void pauseTokenGetPauseStatusUnpauseGetPauseStatusEstimateGas(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersist(treasuryEntityId)
@@ -367,8 +356,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         // Then
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
@@ -432,8 +420,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         // Then
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
@@ -541,8 +528,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -703,8 +689,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, ownerAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -800,8 +785,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(
-                getContractExecutionParameters(functionCall, contract, toAddress(treasuryEntityId)));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -885,8 +869,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, contractAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -959,7 +942,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1003,8 +985,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -1042,7 +1023,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveForAllTokenTransferFromGetAllowanceEstimateGas() throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1065,8 +1045,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -1110,7 +1089,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveForAllCryptoTransferGetAllowanceEstimateGas() throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1139,8 +1117,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -1215,7 +1192,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
             throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1260,8 +1236,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -1297,7 +1272,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void transferFromNFTGetAllowanceEstimateGas() throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = accountPersist();
 
         final var tokenEntity = nftPersist(treasuryEntityId, spenderEntityId);
@@ -1318,8 +1292,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -1377,7 +1350,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId);
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1406,8 +1378,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -1452,7 +1423,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void grantKycRevokeKycEstimateGas(final TokenTypeEnum tokenType) throws Exception {
         // Given
         final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId);
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1474,8 +1444,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
                 .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
@@ -1499,9 +1468,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void getAddressThisEstimateGas() throws Exception {
         // Given
-        final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
-
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
         // When
@@ -1512,8 +1478,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
 
         testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed =
-                gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract, treasuryAddress));
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
 
         // Then
         assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))

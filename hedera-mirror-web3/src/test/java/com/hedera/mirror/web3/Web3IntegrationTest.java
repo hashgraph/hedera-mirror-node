@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3;
 
+import static com.hedera.mirror.web3.service.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.config.CommonIntegrationTest;
@@ -58,18 +59,16 @@ public abstract class Web3IntegrationTest extends CommonIntegrationTest {
     }
 
     protected ContractExecutionParameters getContractExecutionParameters(
-            final RemoteFunctionCall<TransactionReceipt> functionCall,
-            final Contract contract,
-            final Address senderAddress) {
+            final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract) {
         return ContractExecutionParameters.builder()
                 .block(BlockType.LATEST)
                 .callData(Bytes.fromHexString(functionCall.encodeFunctionCall()))
                 .callType(CallType.ETH_CALL)
-                .gas(15_000_000L)
+                .gas(TRANSACTION_GAS_LIMIT)
                 .isEstimate(false)
                 .isStatic(false)
                 .receiver(Address.fromHexString(contract.getContractAddress()))
-                .sender(new HederaEvmAccount(senderAddress))
+                .sender(new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress()))))
                 .value(0L)
                 .build();
     }
