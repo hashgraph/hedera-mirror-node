@@ -59,6 +59,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.context.annotation.Import;
 
 @Import(Web3jTestConfiguration.class)
+@SuppressWarnings("unchecked")
 @RequiredArgsConstructor
 @TestInstance(PER_CLASS)
 class ContractCallDynamicCallsTest extends Web3IntegrationTest {
