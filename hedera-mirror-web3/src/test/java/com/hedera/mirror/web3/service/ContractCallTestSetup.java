@@ -212,7 +212,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
 
     // Token Wrappers
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN = getFungibleToken(OWNER_ADDRESS);
-    protected static final TokenCreateWrapper FUNGIBLE_TOKEN_HISTORICAL = getFungibleToken(OWNER_ADDRESS_HISTORICAL);
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN2 = getFungibleToken2();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_WITH_KEYS = getFungibleTokenWithKeys();
     protected static final TokenCreateWrapper FUNGIBLE_TOKEN_EXPIRY_IN_UINT32_RANGE =
@@ -238,7 +237,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     protected static final FractionalFeeWrapper FRACTIONAL_FEE_WRAPPER = getFractionalFee();
     protected static final TokenExpiryWrapper TOKEN_EXPIRY_WRAPPER = getTokenExpiry();
 
-    // Fee schedules
     protected static final ToLongFunction<String> longValueOf =
             value -> Bytes.fromHexString(value).toLong();
 

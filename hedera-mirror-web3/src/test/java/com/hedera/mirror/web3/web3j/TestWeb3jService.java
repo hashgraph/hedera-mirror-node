@@ -20,6 +20,8 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.validation.HexValidator.HEX_PREFIX;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static org.web3j.crypto.TransactionUtils.generateTransactionHashHexEncoded;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -31,8 +33,10 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
@@ -68,6 +72,7 @@ import org.web3j.utils.Numeric;
 public class TestWeb3jService implements Web3jService {
 
     private static final Long GAS_LIMIT = 15_000_000L;
+    private static final long DEFAULT_TRANSACTION_VALUE = 10L;
     private static final String MOCK_KEY = "0x4e3c5c727f3f4b8f8e8a8fe7e032cf78b8693a2b711e682da1d3a26a6a3b58b6";
 
     private final ContractExecutionService contractExecutionService;
@@ -78,6 +83,8 @@ public class TestWeb3jService implements Web3jService {
     private final Web3j web3j;
 
     private Address sender = Address.fromHexString("");
+    private Address receiver = null;
+    private boolean isEstimateGas = false;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
         this.contractExecutionService = contractExecutionService;
@@ -93,6 +100,14 @@ public class TestWeb3jService implements Web3jService {
 
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
+    }
+
+    public void setReceiver(Address receiver) {
+        this.receiver = receiver;
+    }
+
+    public void setEstimateGas(final boolean isEstimateGas) {
+        this.isEstimateGas = isEstimateGas;
     }
 
     @SneakyThrows(Exception.class)
@@ -117,7 +132,7 @@ public class TestWeb3jService implements Web3jService {
         var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
         final var to = rawTransaction.getTo();
 
-        if (to.equals("0x")) {
+        if (to.equals(HEX_PREFIX)) {
             return sendTopLevelContractCreate(rawTransaction, transactionHash, request);
         }
 
@@ -149,10 +164,10 @@ public class TestWeb3jService implements Web3jService {
         var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(rawTransaction.getData()),
                 Address.fromHexString(rawTransaction.getTo()),
-                ETH_CALL,
+                isEstimateGas ? ETH_ESTIMATE_GAS : ETH_CALL,
                 rawTransaction.getValue().longValue() >= 0
                         ? rawTransaction.getValue().longValue()
-                        : 10L,
+                        : DEFAULT_TRANSACTION_VALUE,
                 BlockType.LATEST,
                 GAS_LIMIT,
                 sender);
@@ -170,16 +185,29 @@ public class TestWeb3jService implements Web3jService {
 
     private EthCall ethCall(List<Transaction> reqParams, Request request) {
         var transaction = reqParams.get(0);
+        RawTransaction rawTransaction;
+        if (isAddressAlias(transaction.getTo())) {
+            // If the "to" address is an alias, the transaction could not be decoded,
+            // so we need to override the "to" field in order to generate the correct
+            // transaction hash but preserve the alias and pass it in the request.
+            rawTransaction = copyTransactionWithReceiver(transaction, receiver);
+        } else {
+            rawTransaction = TransactionDecoder.decode(transaction.toString());
+        }
+        var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
 
         final var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(transaction.getData()),
-                Address.fromHexString(transaction.getTo()),
-                ETH_CALL,
+                Optional.ofNullable(receiver).orElse(Address.fromHexString(transaction.getTo())),
+                isEstimateGas ? ETH_ESTIMATE_GAS : ETH_CALL,
                 transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L,
                 BlockType.LATEST,
                 GAS_LIMIT,
                 sender);
         final var result = contractExecutionService.processCall(serviceParameters);
+        if (isEstimateGas) {
+            transactionResults.put(transactionHash, result);
+        }
 
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
@@ -247,7 +275,7 @@ public class TestWeb3jService implements Web3jService {
                 .sender(senderEvmAccount)
                 .callData(callData)
                 .receiver(Address.ZERO)
-                .gas(15_000_000L)
+                .gas(GAS_LIMIT)
                 .isStatic(false)
                 .callType(callType)
                 .isEstimate(ETH_ESTIMATE_GAS == callType)
@@ -258,13 +286,13 @@ public class TestWeb3jService implements Web3jService {
     public Address deployInternal(String binary) {
         final var id = domainBuilder.id();
         final var contractAddress = toAddress(EntityId.of(id));
-        precompileContractPersist(binary, id);
+        contractPersist(binary, id);
 
         return contractAddress;
     }
 
-    private void precompileContractPersist(String binary, long entityId) {
-        final var contractBytes = Hex.decode(binary.replace("0x", ""));
+    private void contractPersist(String binary, long entityId) {
+        final var contractBytes = Hex.decode(binary.replace(HEX_PREFIX, ""));
         final var entity = domainBuilder
                 .entity()
                 .customize(e -> e.type(CONTRACT).id(entityId).num(entityId))
@@ -288,14 +316,35 @@ public class TestWeb3jService implements Web3jService {
     }
 
     private EthGetTransactionReceipt getTransactionReceipt(Request request) {
-        final var trxHash = request.getParams().get(0).toString();
-        final var res = new EthGetTransactionReceipt();
+        final var transactionHash = request.getParams().get(0).toString();
+        final var ethTransactionReceipt = new EthGetTransactionReceipt();
         final var transactionReceipt = new TransactionReceipt();
-        transactionReceipt.setTransactionHash(trxHash);
-        transactionReceipt.setContractAddress(transactionResults.get(trxHash));
-        res.setResult(transactionReceipt);
+        transactionReceipt.setTransactionHash(transactionHash);
+        if (isEstimateGas) {
+            transactionReceipt.setGasUsed(transactionResults.get(transactionHash));
+        } else {
+            transactionReceipt.setContractAddress(transactionResults.get(transactionHash));
+        }
+        ethTransactionReceipt.setResult(transactionReceipt);
 
-        return res;
+        return ethTransactionReceipt;
+    }
+
+    // Creates a copy of the passed transaction and replaces the receiver
+    // with the one in the method parameters.
+    private RawTransaction copyTransactionWithReceiver(final Transaction transaction, final Address receiver) {
+        return RawTransaction.createTransaction(
+                transaction.getNonce() != null ? BigInteger.valueOf(Long.parseLong(transaction.getNonce())) : null,
+                transaction.getGasPrice() != null
+                        ? BigInteger.valueOf(Long.parseLong(transaction.getGasPrice()))
+                        : null,
+                transaction.getGas() != null ? BigInteger.valueOf(Long.parseLong(transaction.getGas())) : null,
+                receiver != null ? receiver.toHexString() : transaction.getTo(),
+                transaction.getData());
+    }
+
+    private boolean isAddressAlias(String address) {
+        return isMirror(Address.fromHexString(address).toArrayUnsafe());
     }
 
     public interface Deployer<T extends Contract> {
@@ -303,7 +352,7 @@ public class TestWeb3jService implements Web3jService {
     }
 
     @TestConfiguration(proxyBeanMethods = false)
-    static class Web3jTestConfiguration {
+    public static class Web3jTestConfiguration {
 
         @Bean
         TestWeb3jService testWeb3jService(

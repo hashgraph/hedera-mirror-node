@@ -40,6 +40,7 @@ import com.hedera.mirror.web3.evm.contracts.execution.traceability.Opcode;
 import com.hedera.mirror.web3.evm.contracts.execution.traceability.OpcodeTracerOptions;
 import com.hedera.mirror.web3.evm.store.accessor.EntityDatabaseAccessor;
 import com.hedera.mirror.web3.exception.EntityNotFoundException;
+import com.hedera.mirror.web3.service.ContractDebugServiceTest.DynamicCallsContractFunctions;
 import com.hedera.mirror.web3.service.model.ContractDebugParameters;
 import com.hedera.mirror.web3.utils.ContractFunctionProviderEnum;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -265,7 +266,7 @@ class OpcodeServiceTest extends ContractCallTestSetup {
         @MethodSource("tracerOptions")
         void callWithDifferentCombinationsOfTracerOptions(final OpcodeTracerOptions options) {
             contractEntityId = dynamicEthCallContractPresist();
-            final var providerEnum = ContractCallDynamicCallsTest.DynamicCallsContractFunctions.MINT_NFT;
+            final var providerEnum = DynamicCallsContractFunctions.MINT_NFT;
 
             final TransactionIdOrHashParameter transactionIdOrHash = setUp(
                     providerEnum,
