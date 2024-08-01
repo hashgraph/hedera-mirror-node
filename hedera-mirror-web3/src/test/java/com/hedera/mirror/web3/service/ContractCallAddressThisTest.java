@@ -23,7 +23,6 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.service.model.ContractExecutionParameters;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -31,6 +30,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.testcontainers.shaded.org.apache.commons.lang3.StringUtils;
 
 public class ContractCallAddressThisTest extends ContractCallTestSetup {
 
@@ -66,9 +66,10 @@ public class ContractCallAddressThisTest extends ContractCallTestSetup {
 
     @Test
     void addressThisEthCallWithoutEvmAlias() {
-        String addressThisContractAddressWithout0x =
+        final var addressThisContractAddressWithout0x =
                 ADDRESS_THIS_CONTRACT_ADDRESS.toString().substring(2);
-        String successfulResponse = "0x000000000000000000000000" + addressThisContractAddressWithout0x;
+        final var successfulResponse = "0x" + StringUtils.leftPad(addressThisContractAddressWithout0x, 64, '0');
+        ;
         final var functionHash =
                 functionEncodeDecoder.functionHashFor("getAddressThis", ADDRESS_THIS_CONTRACT_ABI_PATH);
         final var serviceParameters = serviceParametersForExecution(
@@ -103,7 +104,7 @@ public class ContractCallAddressThisTest extends ContractCallTestSetup {
                 .build();
     }
 
-    private EntityId addressThisContractPersist() {
+    private void addressThisContractPersist() {
         final var addressThisContractBytes = functionEncodeDecoder.getContractBytes(ADDRESS_THIS_CONTRACT_BYTES_PATH);
         final var addressThisContractEntityId = entityIdFromEvmAddress(ADDRESS_THIS_CONTRACT_ADDRESS);
         final var addressThisEvmAddress = toEvmAddress(addressThisContractEntityId);
@@ -135,6 +136,5 @@ public class ContractCallAddressThisTest extends ContractCallTestSetup {
                 .recordFile()
                 .customize(f -> f.bytes(addressThisContractBytes))
                 .persist();
-        return addressThisContractEntityId;
     }
 }
