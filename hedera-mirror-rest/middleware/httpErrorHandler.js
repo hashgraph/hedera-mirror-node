@@ -16,6 +16,7 @@
 
 import {httpStatusCodes, requestStartTime, StatusCode} from '../constants';
 import {HttpError} from 'http-errors';
+import RestError from "../errors/restError.js";
 
 const defaultStatusCode = httpStatusCodes.INTERNAL_ERROR;
 
@@ -62,7 +63,11 @@ const handleRejection = (reason, promise) => {
 }
 
 const handleUncaughtException = (err) => {
+  if (err instanceof RestError) {
     logger.error('Unhandled exception:', err);
+  } else {
+    throw err;
+  }
 }
 
 const shouldReturnMessage = (statusCode) => {

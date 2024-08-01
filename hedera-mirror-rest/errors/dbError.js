@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-class DbError extends Error {
+import RestError from "./restError.js";
+
+class DbError extends RestError {
   constructor(errorMessage) {
-    super();
-    this.message = errorMessage;
+    super(errorMessage);
   }
 }
 

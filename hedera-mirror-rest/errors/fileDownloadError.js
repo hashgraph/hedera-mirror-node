@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
+import RestError from "./restError.js";
+
 const FileDownloadErrorMessage = 'Failed to download file';
 
-class FileDownloadError extends Error {
+class FileDownloadError extends RestError {
   constructor(errorMessage) {
-    super();
-    this.message = errorMessage === undefined ? FileDownloadErrorMessage : errorMessage;
+    super(errorMessage === undefined ? FileDownloadErrorMessage : errorMessage);
   }
 }
 

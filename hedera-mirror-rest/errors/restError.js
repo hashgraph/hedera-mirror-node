@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Hedera Hashgraph, LLC
+ * Copyright (C) 2024 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-import RestError from "./restError.js";
-
-const InvalidClauseErrorMessage = 'Invalid clause produced after parsing query parameters';
-
-class InvalidClauseError extends RestError {
-  constructor(errorMessage) {
-    super(errorMessage === undefined ? InvalidClauseErrorMessage : errorMessage);
-  }
+class RestError extends Error {
+    constructor(errorMessage) {
+        super();
+        this.message = errorMessage;
+    }
 }
 
-export default InvalidClauseError;
+export default RestError;
