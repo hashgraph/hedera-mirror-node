@@ -156,9 +156,8 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     @Test
     void getBlockHashReturnsCorrectHash() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
-        final var recordFileForBlockHash = domainBuilder.recordFile().persist();
-        // We need to wait enough time for the record file to be processed
-        Thread.sleep(500);
+        final var recordFileForBlockHash =
+                domainBuilder.recordFile().customize(r -> r.index(0L)).persist();
         var result = contract.call_getBlockHash(BigInteger.valueOf(recordFileForBlockHash.getIndex()))
                 .send();
         var expectedResult =
