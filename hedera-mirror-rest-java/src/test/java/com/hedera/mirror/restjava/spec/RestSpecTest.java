@@ -29,10 +29,13 @@ import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.runner.RunWith;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -89,25 +92,14 @@ public class RestSpecTest extends RestJavaIntegrationTest {
                 .defaultHeader("Origin", "http://example.com");
     }
 
-    @Test
-    void runSelectedSpecs() {
-        SELECTED_SPECS.forEach(this::runSpecTests);
-    }
+    @ParameterizedTest
+    @MethodSource("getSpecFilesToRun")
+    void runSpecTests(Path specFilePath) throws IOException, JSONException {
+        var spec = RestSpecNormalized.from(objectMapper.readValue(specFilePath.toFile(), RestSpec.class));
+        log.info("Running spec '{}'", spec.description());
+        setupDatabase(spec);
 
-    private void runSpecTests(Path specFilePath) {
-        RestSpec restSpec;
-        try {
-            restSpec = objectMapper.readValue(specFilePath.toFile(), RestSpec.class);
-        } catch (IOException e) {
-            log.warn("Failed to parse spec file: {}", specFilePath, e);
-            return;
-        }
-
-        var normalizedRestSpec = RestSpecNormalized.from(restSpec);
-        log.info("Running spec '{}' from {}", normalizedRestSpec.description(), specFilePath);
-        setupDatabase(normalizedRestSpec);
-
-        for (var specTest : normalizedRestSpec.tests()) {
+        for (var specTest : spec.tests()) {
             for (var url : specTest.urls()) {
                 var restClient = restClientBuilder.baseUrl(baseJsRestApiUrl + url).build();
                 var response = restClient.get()
@@ -115,12 +107,7 @@ public class RestSpecTest extends RestJavaIntegrationTest {
                         .toEntity(String.class);
 
                 assertThat(response.getStatusCode().value()).isEqualTo(specTest.responseStatus());
-                var specResponseJson = specTest.responseJson();
-                try {
-                    JSONAssert.assertEquals(specResponseJson, response.getBody(), JSONCompareMode.LENIENT);
-                } catch (JSONException e) {
-                    log.warn("Failed to parse expected responseJson within spec file: {}", specFilePath, e);
-                }
+                JSONAssert.assertEquals(specTest.responseJson(), response.getBody(), JSONCompareMode.LENIENT);
             }
         }
     }
@@ -128,6 +115,10 @@ public class RestSpecTest extends RestJavaIntegrationTest {
     private void setupDatabase(RestSpecNormalized normalizedRestSpec) {
         var setup = normalizedRestSpec.setup();
         specDomainBuilder.addAccounts(setup.accounts());
-        specDomainBuilder.addTokenAccounts(setup.tokenaccounts());
+        specDomainBuilder.addTokenAccounts(setup.tokenAccounts());
+    }
+
+    private static Stream<Arguments> getSpecFilesToRun() {
+        return SELECTED_SPECS.stream().map(Arguments::of);
     }
 }

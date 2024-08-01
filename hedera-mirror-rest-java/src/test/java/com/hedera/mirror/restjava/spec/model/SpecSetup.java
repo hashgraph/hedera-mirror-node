@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.restjava.spec.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 
@@ -24,12 +25,15 @@ public record SpecSetup(
         List<Map<String, Object>> accounts,
         List<Map<String, Object>> contracts,
         List<Map<String, Object>> cryptoAllowances,
-        List<Map<String, Object>> cryptotransfers,
+        @JsonProperty("cryptotransfers")
+        List<Map<String, Object>> cryptoTransfers,
         List<Map<String, Object>> entities,
         List<Map<String, Object>> nfts,
         List<Map<String, Object>> stakingRewardTransfers,
-        List<Map<String, Object>> tokenaccounts,
+        @JsonProperty("tokenaccounts")
+        List<Map<String, Object>> tokenAccounts,
         List<Map<String, Object>> tokens,
-        List<Map<String, Object>> topicmessages,
+        @JsonProperty("topicmessages")
+        List<Map<String, Object>> topicMessages,
         List<Map<String, Object>> transactions) {
 }
