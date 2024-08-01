@@ -82,7 +82,6 @@ public class TestWeb3jService implements Web3jService {
     private final Web3j web3j;
 
     private Address sender = Address.fromHexString("");
-    private Address receiver = null;
     private boolean isEstimateGas = false;
 
     public TestWeb3jService(ContractExecutionService contractExecutionService, DomainBuilder domainBuilder) {
@@ -99,10 +98,6 @@ public class TestWeb3jService implements Web3jService {
 
     public void setSender(String sender) {
         this.sender = Address.fromHexString(sender);
-    }
-
-    public void setReceiver(Address receiver) {
-        this.receiver = receiver;
     }
 
     public void setEstimateGas(final boolean isEstimateGas) {
@@ -187,7 +182,7 @@ public class TestWeb3jService implements Web3jService {
 
         final var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(transaction.getData()),
-                Optional.ofNullable(receiver).orElse(Address.fromHexString(transaction.getTo())),
+                Address.fromHexString(transaction.getTo()),
                 isEstimateGas ? ETH_ESTIMATE_GAS : ETH_CALL,
                 transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L,
                 BlockType.LATEST,

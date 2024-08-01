@@ -60,7 +60,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.context.annotation.Import;
 
 @Import(Web3jTestConfiguration.class)
-@SuppressWarnings("unchecked")
 @RequiredArgsConstructor
 @TestInstance(PER_CLASS)
 class ContractCallDynamicCallsTest extends Web3IntegrationTest {
@@ -75,7 +74,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @AfterEach
     void cleanup() {
         testWeb3jService.setEstimateGas(false);
-        testWeb3jService.setReceiver(null);
     }
 
     @ParameterizedTest
@@ -641,7 +639,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         tokenAccountPersist(tokenEntityId, ownerEntityId);
 
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId, true);
+            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
         }
 
         // When
@@ -688,7 +686,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         tokenAccountPersist(tokenEntityId, ownerEntityId);
 
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId, true);
+            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
         }
 
         // When
@@ -742,7 +740,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         tokenAccountPersist(tokenEntityId, ownerEntityId);
 
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId, true);
+            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
         }
 
         // When
@@ -787,7 +785,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         tokenAccountPersist(tokenEntityId, ownerEntityId);
 
         if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId, true);
+            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
         }
 
         // When
@@ -1535,8 +1533,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
             return contractAccount.canonicalAddress();
         });
 
-        testWeb3jService.setReceiver(contractAlias);
-
         // When
         final String result = contract.call_getAddressThis().send();
 
@@ -1659,17 +1655,14 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     }
 
     private void nftAllowancePersist(
-            final EntityId tokenEntityId,
-            final EntityId spenderEntityId,
-            final EntityId ownerEntityId,
-            final boolean approvedForAll) {
+            final EntityId tokenEntityId, final EntityId spenderEntityId, final EntityId ownerEntityId) {
         domainBuilder
                 .nftAllowance()
                 .customize(a -> a.tokenId(tokenEntityId.getId())
                         .spender(spenderEntityId.getId())
                         .owner(ownerEntityId.getId())
                         .payerAccountId(ownerEntityId)
-                        .approvedForAll(approvedForAll))
+                        .approvedForAll(true))
                 .persist();
     }
 }
