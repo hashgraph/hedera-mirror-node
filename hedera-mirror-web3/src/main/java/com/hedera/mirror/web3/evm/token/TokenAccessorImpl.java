@@ -20,6 +20,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddr
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.services.utils.MiscUtils.asKeyUnchecked;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
@@ -45,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 @RequiredArgsConstructor
@@ -253,7 +255,9 @@ public class TokenAccessorImpl implements TokenAccessor {
                 token.getSymbol(),
                 token.getName(),
                 token.getMemo(),
-                token.getTreasury().getAccountAddress(),
+                token.getTreasury().getAlias() != ByteString.EMPTY
+                        ? Address.wrap(Bytes.wrap(token.getTreasury().getAlias().toByteArray()))
+                        : token.getTreasury().getAccountAddress(),
                 token.getTotalSupply(),
                 token.getMaxSupply(),
                 token.getDecimals(),
@@ -266,7 +270,11 @@ public class TokenAccessorImpl implements TokenAccessor {
         evmTokenInfo.setIsPaused(isPaused);
 
         if (token.getAutoRenewAccount() != null) {
-            evmTokenInfo.setAutoRenewAccount(token.getAutoRenewAccount().getAccountAddress());
+            evmTokenInfo.setAutoRenewAccount(
+                    token.getAutoRenewAccount().getAlias() != ByteString.EMPTY
+                            ? Address.wrap(Bytes.wrap(
+                                    token.getAutoRenewAccount().getAlias().toByteArray()))
+                            : token.getAutoRenewAccount().getAccountAddress());
         }
 
         return Optional.of(evmTokenInfo);

@@ -18,6 +18,7 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
 import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.ROYALTY_FEE;
@@ -26,9 +27,19 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.CustomFee;
+import com.hedera.mirror.common.domain.token.FallbackFee;
+import com.hedera.mirror.common.domain.token.FractionalFee;
+import com.hedera.mirror.common.domain.token.RoyaltyFee;
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.exception.BlockNumberNotFoundException;
 import com.hedera.mirror.web3.exception.BlockNumberOutOfRangeException;
 import com.hedera.mirror.web3.exception.MirrorEvmTransactionException;
@@ -39,8 +50,15 @@ import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.Expiry;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.HederaToken;
 import com.hedera.mirror.web3.web3j.generated.ModificationPrecompileTestContract.TokenKey;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FixedFee;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.FungibleTokenInfo;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.KeyValue;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.NonFungibleTokenInfo;
+import com.hedera.mirror.web3.web3j.generated.PrecompileTestContract.TokenInfo;
 import com.hedera.services.store.models.Id;
 import com.hedera.services.utils.EntityIdUtils;
+import com.hederahashgraph.api.proto.java.Key;
 import jakarta.inject.Named;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -50,11 +68,15 @@ import java.util.List;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.util.encoders.Hex;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -69,6 +91,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     private static final String LEDGER_ID = "0x03";
     private static final String EMPTY_UNTRIMMED_ADDRESS =
             "0x0000000000000000000000000000000000000000000000000000000000000000";
+    private static final byte[] KEY_PROTO = new byte[] {
+        58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
+        77, -103, 47, -118, 107, -58, -85, -63, 55, -57
+    };
 
     @Autowired
     private final TestWeb3jService testWeb3jService;
@@ -90,26 +116,1332 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         };
     }
 
-    @ParameterizedTest
-    @EnumSource(ContractReadFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestEthCall(final ContractReadFunctions contractFunc) {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_CALL, 0L, BlockType.LATEST);
-        switch (contractFunc) {
-            case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE -> customFeePersist(FIXED_FEE);
-            case GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE,
-                    GET_INFORMATION_FOR_TOKEN_FUNGIBLE,
-                    GET_INFORMATION_FOR_TOKEN_NFT,
-                    GET_FUNGIBLE_TOKEN_INFO,
-                    GET_NFT_INFO -> customFeePersist(FRACTIONAL_FEE);
-            case GET_CUSTOM_FEES_FOR_TOKEN_WITH_ROYALTY_FEE -> customFeePersist(ROYALTY_FEE);
-        }
-        final var successfulResponse = functionEncodeDecoder.encodedResultFor(
-                contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.expectedResultFields);
+    @BeforeEach
+    void setup() {
+        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+    }
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
+    @Test
+    void isTokenFrozen() throws Exception {
+        final var account = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(
+                        t -> t.tokenId(tokenEntity.getId()).freezeDefault(true).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_isTokenFrozen(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        EntityIdUtils.asHexedEvmAddress(new Id(
+                                account.getShard(),
+                                account.getRealm(),
+                                account.toEntityId().getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isTokenFrozenWithAlias() throws Exception {
+        final ByteString senderPublicKey = ByteString.copyFrom(
+                Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
+        final Address senderAlias = Address.wrap(
+                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+
+        final var account = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT)
+                        .alias(senderPublicKey.toByteArray())
+                        .evmAddress(senderAlias.toArray()))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(
+                        t -> t.tokenId(tokenEntity.getId()).freezeDefault(true).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .freezeStatus(TokenFreezeStatusEnum.FROZEN))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_isTokenFrozen(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        Address.wrap(Bytes.wrap(account.getEvmAddress())).toHexString())
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isKycGranted() throws Exception {
+        final var account = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_isKycGranted(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        EntityIdUtils.asHexedEvmAddress(new Id(
+                                account.getShard(),
+                                account.getRealm(),
+                                account.toEntityId().getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isKycGrantedWithAlias() throws Exception {
+        final ByteString senderPublicKey = ByteString.copyFrom(
+                Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
+        final Address senderAlias = Address.wrap(
+                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+
+        final var account = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT)
+                        .alias(senderPublicKey.toByteArray())
+                        .evmAddress(senderAlias.toArray()))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_isKycGranted(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        Address.wrap(Bytes.wrap(account.getEvmAddress())).toHexString())
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isKycGrantedForNFT() throws Exception {
+        final var account = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_isKycGranted(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        EntityIdUtils.asHexedEvmAddress(new Id(
+                                account.getShard(),
+                                account.getRealm(),
+                                account.toEntityId().getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isKycGrantedForNFTWithAlias() throws Exception {
+        final ByteString senderPublicKey = ByteString.copyFrom(
+                Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
+        final Address senderAlias = Address.wrap(
+                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+
+        final var account = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT)
+                        .alias(senderPublicKey.toByteArray())
+                        .evmAddress(senderAlias.toArray()))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+        domainBuilder
+                .tokenAccount()
+                .customize(ta -> ta.tokenId(tokenEntity.getId())
+                        .accountId(account.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_isKycGranted(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        Address.wrap(Bytes.wrap(account.getEvmAddress())).toHexString())
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isTokenAddress() throws Exception {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_isTokenAddress(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isTokenAddressNFT() throws Exception {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_isTokenAddress(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void getDefaultKycToken() throws Exception {
+        domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getTokenDefaultKyc(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void getDefaultKycNFT() throws Exception {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .kycStatus(TokenKycStatusEnum.GRANTED)
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getTokenDefaultKyc(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void getTokenType() throws Exception {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getType(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+                .send();
+
+        assertThat(result).isEqualTo(BigInteger.ZERO);
+    }
+
+    @Test
+    void getTokenTypeNFT() throws Exception {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getType(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+                .send();
+
+        assertThat(result).isEqualTo(BigInteger.ONE);
+    }
+
+    @Test
+    void getTokenDefaultFreeze() throws Exception {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .freezeDefault(true))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getTokenDefaultFreeze(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void getNFTDefaultFreeze() throws Exception {
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .freezeDefault(true))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getTokenDefaultFreeze(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+                .send();
+
+        assertThat(result).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1", "4", "8", "16"})
+    void getTokenKeyWithContractAddress(final String keyType) throws Exception {
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        final Key keyWithContractId = Key.newBuilder()
+                .setContractID(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
+                .build();
+
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).key(keyWithContractId.toByteArray()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .freezeKey(keyWithContractId.toByteArray())
+                        .supplyKey(keyWithContractId.toByteArray())
+                        .wipeKey(keyWithContractId.toByteArray()))
+                .persist();
+
+        final var result = contract.call_getTokenKeyPublic(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                        BigInteger.valueOf(Long.parseLong(keyType)))
+                .send();
+
+        final var expectedKey = new KeyValue(
+                false, contract.getContractAddress(), new byte[0], new byte[0], Address.ZERO.toHexString());
+
+        assertThat(result).isEqualTo(expectedKey);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1", "4", "8", "16"})
+    void getTokenKeyWithED25519(final String keyType) throws Exception {
+        final byte[] ed25519Key = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+        final var keyWithEd25519 =
+                Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519Key)).build();
+
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).key(keyWithEd25519.toByteArray()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .freezeKey(keyWithEd25519.toByteArray())
+                        .supplyKey(keyWithEd25519.toByteArray())
+                        .wipeKey(keyWithEd25519.toByteArray()))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getTokenKeyPublic(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                        BigInteger.valueOf(Long.parseLong(keyType)))
+                .send();
+
+        final var expectedKey =
+                new KeyValue(false, Address.ZERO.toHexString(), ed25519Key, new byte[0], Address.ZERO.toHexString());
+
+        assertThat(result).isEqualTo(expectedKey);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1", "4", "8", "16"})
+    void getTokenKeyWithECDSAKey(final String keyType) throws Exception {
+        final var ecdsaKey = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+        final var keyWithECDSASecp256K1 = Key.newBuilder()
+                .setECDSASecp256K1(ByteString.copyFrom(ecdsaKey))
+                .build();
+
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).key(keyWithECDSASecp256K1.toByteArray()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .freezeKey(keyWithECDSASecp256K1.toByteArray())
+                        .supplyKey(keyWithECDSASecp256K1.toByteArray())
+                        .wipeKey(keyWithECDSASecp256K1.toByteArray()))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getTokenKeyPublic(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                        BigInteger.valueOf(Long.parseLong(keyType)))
+                .send();
+
+        final var expectedKey =
+                new KeyValue(false, Address.ZERO.toHexString(), new byte[0], ecdsaKey, Address.ZERO.toHexString());
+
+        assertThat(result).isEqualTo(expectedKey);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1", "4", "8", "16"})
+    void getTokenKeyWithDelegatableContractAddress(final String keyType) throws Exception {
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        final Key keyWithDelegatableContractId = Key.newBuilder()
+                .setDelegatableContractId(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
+                .build();
+
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN).key(keyWithDelegatableContractId.toByteArray()))
+                .persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .freezeKey(keyWithDelegatableContractId.toByteArray())
+                        .supplyKey(keyWithDelegatableContractId.toByteArray())
+                        .wipeKey(keyWithDelegatableContractId.toByteArray()))
+                .persist();
+
+        final var result = contract.call_getTokenKeyPublic(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                        BigInteger.valueOf(Long.parseLong(keyType)))
+                .send();
+
+        final var expectedKey = new KeyValue(
+                false, Address.ZERO.toHexString(), new byte[0], new byte[0], contract.getContractAddress());
+
+        assertThat(result).isEqualTo(expectedKey);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2", "32", "64"})
+    void getTokenNFTKeyWithContractAddress(final String keyType) throws Exception {
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        final Key keyWithContractId = Key.newBuilder()
+                .setContractID(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
+                .build();
+
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(keyWithContractId.toByteArray())
+                        .feeScheduleKey(keyWithContractId.toByteArray())
+                        .pauseKey(keyWithContractId.toByteArray()))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        final var result = contract.call_getTokenKeyPublic(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                        BigInteger.valueOf(Long.parseLong(keyType)))
+                .send();
+
+        final var expectedKey = new KeyValue(
+                false, contract.getContractAddress(), new byte[0], new byte[0], Address.ZERO.toHexString());
+
+        assertThat(result).isEqualTo(expectedKey);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2", "32", "64"})
+    void getTokenNFTKeyWithED25519(final String keyType) throws Exception {
+        final byte[] ed25519Key = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+        final var keyWithEd25519 =
+                Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519Key)).build();
+
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .pauseKey(keyWithEd25519.toByteArray())
+                        .feeScheduleKey(keyWithEd25519.toByteArray())
+                        .kycKey(keyWithEd25519.toByteArray()))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getTokenKeyPublic(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                        BigInteger.valueOf(Long.parseLong(keyType)))
+                .send();
+
+        final var expectedKey =
+                new KeyValue(false, Address.ZERO.toHexString(), ed25519Key, new byte[0], Address.ZERO.toHexString());
+
+        assertThat(result).isEqualTo(expectedKey);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2", "32", "64"})
+    void getTokenNFTKeyWithECDSAKey(final String keyType) throws Exception {
+        final var ecdsaKey = Arrays.copyOfRange(KEY_PROTO, 2, KEY_PROTO.length);
+        final var keyWithECDSASecp256K1 = Key.newBuilder()
+                .setECDSASecp256K1(ByteString.copyFrom(ecdsaKey))
+                .build();
+
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(keyWithECDSASecp256K1.toByteArray())
+                        .feeScheduleKey(keyWithECDSASecp256K1.toByteArray())
+                        .pauseKey(keyWithECDSASecp256K1.toByteArray()))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getTokenKeyPublic(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                        BigInteger.valueOf(Long.parseLong(keyType)))
+                .send();
+
+        final var expectedKey =
+                new KeyValue(false, Address.ZERO.toHexString(), new byte[0], ecdsaKey, Address.ZERO.toHexString());
+
+        assertThat(result).isEqualTo(expectedKey);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"2", "32", "64"})
+    void getTokenNFTKeyWithDelegatableContractAddress(final String keyType) throws Exception {
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+
+        final var contractAddress = Address.fromHexString(contract.getContractAddress());
+        final Key keyWithDelegatableContractId = Key.newBuilder()
+                .setDelegatableContractId(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
+                .build();
+
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .kycKey(keyWithDelegatableContractId.toByteArray())
+                        .feeScheduleKey(keyWithDelegatableContractId.toByteArray())
+                        .pauseKey(keyWithDelegatableContractId.toByteArray()))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        final var result = contract.call_getTokenKeyPublic(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                        BigInteger.valueOf(Long.parseLong(keyType)))
+                .send();
+
+        final var expectedKey = new KeyValue(
+                false, Address.ZERO.toHexString(), new byte[0], new byte[0], contract.getContractAddress());
+
+        assertThat(result).isEqualTo(expectedKey);
+    }
+
+    @Test
+    void getCustomFeesForTokenWithFixedFee() throws Exception {
+        final var collectorAccount = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+        final var fixedFee = com.hedera.mirror.common.domain.token.FixedFee.builder()
+                .amount(100L)
+                .collectorAccountId(collectorAccount.toEntityId())
+                .denominatingTokenId(tokenEntity.toEntityId())
+                .build();
+        domainBuilder
+                .customFee()
+                .customize(f -> f.fixedFees(List.of(fixedFee))
+                        .fractionalFees(List.of())
+                        .royaltyFees(List.of())
+                        .tokenId(tokenEntity.getId()))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getCustomFeesForToken(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+                .send();
+
+        final var expectedFee = new FixedFee(
+                BigInteger.valueOf(100L),
+                EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                false,
+                false,
+                Address.fromHexString(
+                                Bytes.wrap(collectorAccount.getEvmAddress()).toHexString())
+                        .toHexString());
+
+        assertThat(result.component1().getFirst()).isEqualTo(expectedFee);
+    }
+
+    @Test
+    void getCustomFeesForTokenWithFractionalFee() throws Exception {
+        final var collectorAccount = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+        final var fractionalFee = FractionalFee.builder()
+                .collectorAccountId(collectorAccount.toEntityId())
+                .denominator(10L)
+                .minimumAmount(1L)
+                .maximumAmount(1000L)
+                .netOfTransfers(true)
+                .numerator(100L)
+                .build();
+        domainBuilder
+                .customFee()
+                .customize(f -> f.fractionalFees(List.of(fractionalFee))
+                        .fixedFees(List.of())
+                        .royaltyFees(List.of())
+                        .tokenId(tokenEntity.getId()))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getCustomFeesForToken(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+                .send();
+
+        final var expectedFee = new PrecompileTestContract.FractionalFee(
+                BigInteger.valueOf(100L),
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(1L),
+                BigInteger.valueOf(1000L),
+                true,
+                Address.fromHexString(
+                                Bytes.wrap(collectorAccount.getEvmAddress()).toHexString())
+                        .toHexString());
+
+        assertThat(result.component2().getFirst()).isEqualTo(expectedFee);
+    }
+
+    @Test
+    void getCustomFeesForTokenWithRoyaltyFee() throws Exception {
+        final var collectorAccount = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+        final var royaltyFee = RoyaltyFee.builder()
+                .collectorAccountId(collectorAccount.toEntityId())
+                .denominator(10L)
+                .fallbackFee(FallbackFee.builder()
+                        .amount(100L)
+                        .denominatingTokenId(tokenEntity.toEntityId())
+                        .build())
+                .numerator(20L)
+                .build();
+        domainBuilder
+                .customFee()
+                .customize(f -> f.royaltyFees(List.of(royaltyFee))
+                        .fixedFees(List.of())
+                        .fractionalFees(List.of())
+                        .tokenId(tokenEntity.getId()))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getCustomFeesForToken(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+                .send();
+
+        final var expectedFee = new PrecompileTestContract.RoyaltyFee(
+                BigInteger.valueOf(20L),
+                BigInteger.valueOf(10L),
+                BigInteger.valueOf(100L),
+                EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                false,
+                Address.fromHexString(
+                                Bytes.wrap(collectorAccount.getEvmAddress()).toHexString())
+                        .toHexString());
+
+        assertThat(result.component3().getFirst()).isEqualTo(expectedFee);
+    }
+
+    @Test
+    void getExpiryForToken() throws Exception {
+        final var expiryPeriod = 9999999999999L;
+        final var autoRenewExpiry = 100000000L;
+        final var autoRenewAccount = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.TOKEN)
+                        .autoRenewAccountId(autoRenewAccount.getId())
+                        .expirationTimestamp(expiryPeriod)
+                        .autoRenewPeriod(autoRenewExpiry))
+                .persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getExpiryInfoForToken(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+                .send();
+
+        final var expectedExpiry = new PrecompileTestContract.Expiry(
+                BigInteger.valueOf(expiryPeriod).divide(BigInteger.valueOf(1_000_000_000L)),
+                Address.fromHexString(
+                                Bytes.wrap(autoRenewAccount.getEvmAddress()).toHexString())
+                        .toHexString(),
+                BigInteger.valueOf(autoRenewExpiry));
+
+        assertThat(result).isEqualTo(expectedExpiry);
+    }
+
+    @Test
+    void getAllowanceForToken() throws Exception {
+        final var amountGranted = 50L;
+        final var owner = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var spender = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+
+        domainBuilder
+                .tokenAllowance()
+                .customize(a -> a.tokenId(tokenEntity.getId())
+                        .owner(owner.getNum())
+                        .spender(spender.getNum())
+                        .amount(amountGranted)
+                        .amountGranted(amountGranted))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_htsAllowance(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        Address.fromHexString(Bytes.wrap(owner.getEvmAddress()).toHexString())
+                                .toHexString(),
+                        Address.fromHexString(
+                                        Bytes.wrap(spender.getEvmAddress()).toHexString())
+                                .toHexString())
+                .send();
+
+        assertThat(result).isEqualTo(BigInteger.valueOf(amountGranted));
+    }
+
+    @Test
+    void isApprovedForAllNFT() throws Exception {
+        final var owner = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var spender = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        domainBuilder
+                .nftAllowance()
+                .customize(a -> a.tokenId(tokenEntity.getId())
+                        .owner(owner.getNum())
+                        .spender(spender.getNum())
+                        .approvedForAll(true))
+                .persist();
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_htsIsApprovedForAll(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        Address.fromHexString(Bytes.wrap(owner.getEvmAddress()).toHexString())
+                                .toHexString(),
+                        Address.fromHexString(
+                                        Bytes.wrap(spender.getEvmAddress()).toHexString())
+                                .toHexString())
+                .send();
+
+        assertThat(result).isEqualTo(Boolean.TRUE);
+    }
+
+    @Test
+    void getFungibleTokenInfo() throws Exception {
+        final var treasury = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
+                .persist();
+        final var feeCollector = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.FUNGIBLE_COMMON)
+                        .treasuryAccountId(treasury.toEntityId()))
+                .persist();
+
+        final var customFees =
+                insertCustomFeesWithPersistedFeeCollector(feeCollector, tokenEntity, TokenTypeEnum.FUNGIBLE_COMMON);
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getInformationForFungibleToken(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+                .send();
+
+        final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
+
+        final var expectedExpiry = new PrecompileTestContract.Expiry(
+                BigInteger.valueOf(tokenEntity.getExpirationTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
+                Address.ZERO.toHexString(),
+                BigInteger.valueOf(tokenEntity.getAutoRenewPeriod()));
+        final var expectedHederaToken = new PrecompileTestContract.HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                getAddressFromEvmAddress(treasury.getEvmAddress()),
+                tokenEntity.getMemo(),
+                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
+                BigInteger.valueOf(token.getMaxSupply()),
+                token.getFreezeDefault(),
+                expectedTokenKeys,
+                expectedExpiry);
+
+        final var fixedFees = new ArrayList<FixedFee>();
+        fixedFees.add(getFixedFee(customFees.getFixedFees().getFirst(), feeCollector));
+
+        final var fractionalFees = new ArrayList<PrecompileTestContract.FractionalFee>();
+        fractionalFees.add(getFractionalFee(customFees.getFractionalFees().getFirst(), feeCollector));
+
+        final var royaltyFees = new ArrayList<PrecompileTestContract.RoyaltyFee>();
+
+        final var expectedTokenInfo = new TokenInfo(
+                expectedHederaToken,
+                BigInteger.valueOf(token.getTotalSupply()),
+                tokenEntity.getDeleted(),
+                false,
+                false,
+                fixedFees,
+                fractionalFees,
+                royaltyFees,
+                LEDGER_ID);
+        final var expectedFungibleTokenInfo =
+                new FungibleTokenInfo(expectedTokenInfo, BigInteger.valueOf(token.getDecimals()));
+
+        assertThat(result).isEqualTo(expectedFungibleTokenInfo);
+    }
+
+    @Test
+    void getNonFungibleTokenInfo() throws Exception {
+        final var owner = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
+                .persist();
+        final var treasury = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
+                .persist();
+        final var feeCollector = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId())
+                        .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE)
+                        .treasuryAccountId(treasury.toEntityId()))
+                .persist();
+        final var nft = domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L).accountId(owner.toEntityId()))
+                .persist();
+
+        final var customFees =
+                insertCustomFeesWithPersistedFeeCollector(feeCollector, tokenEntity, TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getInformationForNonFungibleToken(
+                        EntityIdUtils.asHexedEvmAddress(
+                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
+                        BigInteger.ONE)
+                .send();
+
+        final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
+
+        final var expectedExpiry = new PrecompileTestContract.Expiry(
+                BigInteger.valueOf(tokenEntity.getExpirationTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
+                Address.ZERO.toHexString(),
+                BigInteger.valueOf(tokenEntity.getAutoRenewPeriod()));
+        final var expectedHederaToken = new PrecompileTestContract.HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                getAddressFromEvmAddress(treasury.getEvmAddress()),
+                tokenEntity.getMemo(),
+                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
+                BigInteger.valueOf(token.getMaxSupply()),
+                token.getFreezeDefault(),
+                expectedTokenKeys,
+                expectedExpiry);
+
+        final var fixedFees = new ArrayList<FixedFee>();
+        fixedFees.add(getFixedFee(customFees.getFixedFees().getFirst(), feeCollector));
+
+        final var fractionalFees = new ArrayList<PrecompileTestContract.FractionalFee>();
+
+        final var royaltyFees = new ArrayList<PrecompileTestContract.RoyaltyFee>();
+        royaltyFees.add(getRoyaltyFee(customFees.getRoyaltyFees().getFirst(), feeCollector));
+
+        final var expectedTokenInfo = new TokenInfo(
+                expectedHederaToken,
+                BigInteger.valueOf(token.getTotalSupply()),
+                tokenEntity.getDeleted(),
+                false,
+                false,
+                fixedFees,
+                fractionalFees,
+                royaltyFees,
+                LEDGER_ID);
+        final var expectedNonFungibleTokenInfo = new NonFungibleTokenInfo(
+                expectedTokenInfo,
+                BigInteger.valueOf(nft.getSerialNumber()),
+                getAddressFromEntity(owner),
+                BigInteger.valueOf(token.getCreatedTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
+                nft.getMetadata(),
+                Address.ZERO.toHexString());
+
+        assertThat(result).isEqualTo(expectedNonFungibleTokenInfo);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"FUNGIBLE_COMMON", "NON_FUNGIBLE_UNIQUE"})
+    void getTokenInfo(final TokenTypeEnum tokenType) throws Exception {
+        final var treasury = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
+                .persist();
+        final var feeCollector = domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
+                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var token = domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasury.toEntityId()))
+                .persist();
+
+        final var customFees = insertCustomFeesWithPersistedFeeCollector(feeCollector, tokenEntity, tokenType);
+
+        final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
+        final var result = contract.call_getInformationForToken(EntityIdUtils.asHexedEvmAddress(
+                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+                .send();
+
+        final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
+
+        final var expectedExpiry = new PrecompileTestContract.Expiry(
+                BigInteger.valueOf(tokenEntity.getExpirationTimestamp()).divide(BigInteger.valueOf(1_000_000_000L)),
+                Address.ZERO.toHexString(),
+                BigInteger.valueOf(tokenEntity.getAutoRenewPeriod()));
+        final var expectedHederaToken = new PrecompileTestContract.HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                getAddressFromEvmAddress(treasury.getEvmAddress()),
+                tokenEntity.getMemo(),
+                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
+                BigInteger.valueOf(token.getMaxSupply()),
+                token.getFreezeDefault(),
+                expectedTokenKeys,
+                expectedExpiry);
+
+        final var fixedFees = new ArrayList<FixedFee>();
+        fixedFees.add(getFixedFee(customFees.getFixedFees().getFirst(), feeCollector));
+
+        final var fractionalFees = new ArrayList<PrecompileTestContract.FractionalFee>();
+        if (TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)) {
+            fractionalFees.add(getFractionalFee(customFees.getFractionalFees().getFirst(), feeCollector));
+        }
+
+        final var royaltyFees = new ArrayList<PrecompileTestContract.RoyaltyFee>();
+        if (TokenTypeEnum.NON_FUNGIBLE_UNIQUE.equals(tokenType)) {
+            royaltyFees.add(getRoyaltyFee(customFees.getRoyaltyFees().getFirst(), feeCollector));
+        }
+
+        final var expectedTokenInfo = new TokenInfo(
+                expectedHederaToken,
+                BigInteger.valueOf(token.getTotalSupply()),
+                tokenEntity.getDeleted(),
+                false,
+                false,
+                fixedFees,
+                fractionalFees,
+                royaltyFees,
+                LEDGER_ID);
+
+        assertThat(result).isEqualTo(expectedTokenInfo);
+    }
+
+    private CustomFee insertCustomFeesWithPersistedFeeCollector(
+            final Entity feeCollector, final Entity tokenEntity, final TokenTypeEnum tokenType) {
+        final var fixedFee = com.hedera.mirror.common.domain.token.FixedFee.builder()
+                .allCollectorsAreExempt(true)
+                .amount(domainBuilder.number())
+                .collectorAccountId(feeCollector.toEntityId())
+                .denominatingTokenId(tokenEntity.toEntityId())
+                .build();
+
+        final var fractionalFee = TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)
+                ? FractionalFee.builder()
+                        .allCollectorsAreExempt(true)
+                        .collectorAccountId(feeCollector.toEntityId())
+                        .denominator(domainBuilder.number())
+                        .maximumAmount(domainBuilder.number())
+                        .minimumAmount(1L)
+                        .numerator(domainBuilder.number())
+                        .netOfTransfers(true)
+                        .build()
+                : null;
+
+        final var fallbackFee = FallbackFee.builder()
+                .amount(domainBuilder.number())
+                .denominatingTokenId(tokenEntity.toEntityId())
+                .build();
+
+        final var royaltyFee = TokenTypeEnum.NON_FUNGIBLE_UNIQUE.equals(tokenType)
+                ? RoyaltyFee.builder()
+                        .allCollectorsAreExempt(true)
+                        .collectorAccountId(feeCollector.toEntityId())
+                        .denominator(domainBuilder.number())
+                        .fallbackFee(fallbackFee)
+                        .numerator(domainBuilder.number())
+                        .build()
+                : null;
+
+        if (TokenTypeEnum.FUNGIBLE_COMMON.equals(tokenType)) {
+            return domainBuilder
+                    .customFee()
+                    .customize(f -> f.tokenId(tokenEntity.getId())
+                            .fixedFees(List.of(fixedFee))
+                            .fractionalFees(List.of(fractionalFee))
+                            .royaltyFees(new ArrayList<>()))
+                    .persist();
+        } else if (TokenTypeEnum.NON_FUNGIBLE_UNIQUE.equals(tokenType)) {
+            return domainBuilder
+                    .customFee()
+                    .customize(f -> f.tokenId(tokenEntity.getId())
+                            .fixedFees(List.of(fixedFee))
+                            .royaltyFees(List.of(royaltyFee))
+                            .fractionalFees(new ArrayList<>()))
+                    .persist();
+        }
+
+        return CustomFee.builder().build();
+    }
+
+    private List<PrecompileTestContract.TokenKey> getExpectedTokenKeys(final Entity tokenEntity, final Token token) {
+        final var expectedTokenKeys = new ArrayList<PrecompileTestContract.TokenKey>();
+        expectedTokenKeys.add(new PrecompileTestContract.TokenKey(BigInteger.ONE, getKeyValue(tokenEntity.getKey())));
+        expectedTokenKeys.add(
+                new PrecompileTestContract.TokenKey(BigInteger.valueOf(2), getKeyValue(token.getKycKey())));
+        expectedTokenKeys.add(
+                new PrecompileTestContract.TokenKey(BigInteger.valueOf(4), getKeyValue(token.getFreezeKey())));
+        expectedTokenKeys.add(
+                new PrecompileTestContract.TokenKey(BigInteger.valueOf(8), getKeyValue(token.getWipeKey())));
+        expectedTokenKeys.add(
+                new PrecompileTestContract.TokenKey(BigInteger.valueOf(16), getKeyValue(token.getSupplyKey())));
+        expectedTokenKeys.add(
+                new PrecompileTestContract.TokenKey(BigInteger.valueOf(32), getKeyValue(token.getFeeScheduleKey())));
+        expectedTokenKeys.add(
+                new PrecompileTestContract.TokenKey(BigInteger.valueOf(64), getKeyValue(token.getPauseKey())));
+
+        return expectedTokenKeys;
+    }
+
+    private String getAliasFromEntity(Entity entity) {
+        return Address.fromHexString(Bytes.wrap(entity.getEvmAddress()).toHexString())
+                .toHexString();
+    }
+
+    private String getAddressFromEntity(Entity entity) {
+        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+    }
+
+    private String getAddressFromEntityId(EntityId entity) {
+        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+    }
+
+    private String getAddressFromEvmAddress(byte[] evmAddress) {
+        return Address.wrap(Bytes.wrap(evmAddress)).toHexString();
+    }
+
+    private KeyValue getKeyValue(byte[] serializedKey) {
+        try {
+            final var key = Key.parseFrom(serializedKey);
+            return new KeyValue(
+                    false,
+                    key.getContractID().hasContractNum()
+                            ? EntityIdUtils.asTypedEvmAddress(key.getContractID())
+                                    .toHexString()
+                            : Address.ZERO.toHexString(),
+                    key.getEd25519().toByteArray(),
+                    key.getECDSASecp256K1().toByteArray(),
+                    key.getDelegatableContractId().hasContractNum()
+                            ? EntityIdUtils.asTypedEvmAddress(key.getDelegatableContractId())
+                                    .toHexString()
+                            : Address.ZERO.toHexString());
+        } catch (InvalidProtocolBufferException e) {
+            throw new IllegalArgumentException("Unable to parse key", e);
+        }
+    }
+
+    private HederaToken convertTokenEntityToHederaToken(final Token token) {
+        final var entity = domainBuilder.entity().get();
+        final var treasuryAccountId = token.getTreasuryAccountId();
+        final var keys = new ArrayList<TokenKey>();
+        final var entityRenewAccountId = entity.getAutoRenewAccountId();
+
+        return new HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                treasuryAccountId != null
+                        ? EntityIdUtils.asHexedEvmAddress(new Id(
+                                treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
+                        : Address.ZERO.toHexString(),
+                new String(token.getMetadata(), StandardCharsets.UTF_8),
+                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
+                BigInteger.valueOf(token.getMaxSupply()),
+                token.getFreezeDefault(),
+                keys,
+                new Expiry(
+                        BigInteger.valueOf(entity.getEffectiveExpiration()),
+                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId.longValue())),
+                        BigInteger.valueOf(entity.getEffectiveExpiration())));
+    }
+
+    private HederaToken convertTokenEntityToHederaToken(final Token token, final Entity entity) {
+        final var treasuryAccountId = token.getTreasuryAccountId();
+        final var keys = new ArrayList<TokenKey>();
+        final var entityRenewAccountId = entity.getAutoRenewAccountId();
+
+        return new HederaToken(
+                token.getName(),
+                token.getSymbol(),
+                EntityIdUtils.asHexedEvmAddress(
+                        new Id(treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum())),
+                new String(token.getMetadata(), StandardCharsets.UTF_8),
+                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
+                BigInteger.valueOf(token.getMaxSupply()),
+                token.getFreezeDefault(),
+                keys,
+                new Expiry(
+                        BigInteger.valueOf(entity.getEffectiveExpiration()),
+                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId.longValue())),
+                        BigInteger.valueOf(entity.getEffectiveExpiration())));
+    }
+
+    private PrecompileTestContract.FixedFee getFixedFee(
+            final com.hedera.mirror.common.domain.token.FixedFee fixedFee, final Entity feeCollector) {
+        return new PrecompileTestContract.FixedFee(
+                BigInteger.valueOf(fixedFee.getAmount()),
+                getAddressFromEntityId(fixedFee.getDenominatingTokenId()),
+                false,
+                false,
+                getAliasFromEntity(feeCollector));
+    }
+
+    private PrecompileTestContract.FractionalFee getFractionalFee(
+            final com.hedera.mirror.common.domain.token.FractionalFee fractionalFee, final Entity feeCollector) {
+        return new PrecompileTestContract.FractionalFee(
+                BigInteger.valueOf(fractionalFee.getNumerator()),
+                BigInteger.valueOf(fractionalFee.getDenominator()),
+                BigInteger.valueOf(fractionalFee.getMinimumAmount()),
+                BigInteger.valueOf(fractionalFee.getMaximumAmount()),
+                true,
+                getAliasFromEntity(feeCollector));
+    }
+
+    private PrecompileTestContract.RoyaltyFee getRoyaltyFee(
+            final com.hedera.mirror.common.domain.token.RoyaltyFee royaltyFee, final Entity feeCollector) {
+        return new PrecompileTestContract.RoyaltyFee(
+                BigInteger.valueOf(royaltyFee.getNumerator()),
+                BigInteger.valueOf(royaltyFee.getDenominator()),
+                BigInteger.valueOf(royaltyFee.getFallbackFee().getAmount()),
+                getAddressFromEntityId(royaltyFee.getFallbackFee().getDenominatingTokenId()),
+                false,
+                getAddressFromEvmAddress(feeCollector.getEvmAddress()));
     }
 
     @ParameterizedTest
@@ -190,20 +1522,22 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         }
     }
 
-    @ParameterizedTest
-    @EnumSource(ContractReadFunctions.class)
-    void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(final ContractReadFunctions contractFunc) {
-        final var functionHash = functionEncodeDecoder.functionHashFor(
-                contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-        final var serviceParameters = serviceParametersForExecution(
-                functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-
-        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-
-        assertThat(isWithinExpectedGasRange(
-                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)), expectedGasUsed))
-                .isTrue();
-    }
+    // TODO add tests for ContractReadFunctions for eth_estimateGas
+    //    @ParameterizedTest
+    //    @EnumSource(ContractReadFunctions.class)
+    //    void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(final ContractReadFunctions contractFunc) {
+    //        final var functionHash = functionEncodeDecoder.functionHashFor(
+    //                contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
+    //        final var serviceParameters = serviceParametersForExecution(
+    //                functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
+    //
+    //        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
+    //
+    //        assertThat(isWithinExpectedGasRange(
+    //                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)),
+    // expectedGasUsed))
+    //                .isTrue();
+    //    }
 
     @ParameterizedTest
     @EnumSource(SupportedContractModificationFunctions.class)
@@ -340,7 +1674,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         switch (tokenCreateNegativeCase) {
             case INVALID_MEMO -> function = contract.send_createFungibleTokenExternal(
-                    createHederaToken(domainBuilder
+                    convertTokenEntityToHederaToken(domainBuilder
                             .token()
                             .customize(t -> t.metadata(new byte[mirrorNodeEvmProperties.getMaxMemoUtf8Bytes() + 1]))
                             .get()),
@@ -348,7 +1682,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     decimals,
                     value);
             case INVALID_NAME -> function = contract.send_createFungibleTokenExternal(
-                    createHederaToken(domainBuilder
+                    convertTokenEntityToHederaToken(domainBuilder
                             .token()
                             .customize(t -> t.name(new String(
                                     new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1],
@@ -358,7 +1692,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     decimals,
                     value);
             case INVALID_SYMBOL -> function = contract.send_createFungibleTokenExternal(
-                    createHederaToken(domainBuilder
+                    convertTokenEntityToHederaToken(domainBuilder
                             .token()
                             .customize(t -> t.symbol(new String(
                                     new byte[mirrorNodeEvmProperties.getMaxTokenNameUtf8Bytes() + 1],
@@ -368,13 +1702,13 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     decimals,
                     value);
             case INVALID_DECIMALS -> function = contract.send_createFungibleTokenExternal(
-                    createHederaToken(
+                    convertTokenEntityToHederaToken(
                             domainBuilder.token().customize(t -> t.decimals(-1)).get()),
                     initialSupply,
                     decimals,
                     value);
             case INVALID_INITIAL_SUPPLY -> function = contract.send_createFungibleTokenExternal(
-                    createHederaToken(domainBuilder
+                    convertTokenEntityToHederaToken(domainBuilder
                             .token()
                             .customize(t -> t.initialSupply(-1L))
                             .get()),
@@ -382,7 +1716,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     decimals,
                     value);
             case INITIAL_SUPPLY_GREATER_THAN_MAX_SUPPLY -> function = contract.send_createFungibleTokenExternal(
-                    createHederaToken(domainBuilder
+                    convertTokenEntityToHederaToken(domainBuilder
                             .token()
                             .customize(t -> t.initialSupply(10_000_001L))
                             .get()),
@@ -390,25 +1724,25 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     decimals,
                     value);
             case NFT_NO_SUPPLY_KEY -> function = contract.send_createNonFungibleTokenExternal(
-                    createHederaToken(domainBuilder
+                    convertTokenEntityToHederaToken(domainBuilder
                             .token()
                             .customize(t -> t.supplyKey(new byte[0]))
                             .get()),
                     value);
             case NFT_NO_TREASURY -> function = contract.send_createNonFungibleTokenExternal(
-                    createHederaToken(domainBuilder
+                    convertTokenEntityToHederaToken(domainBuilder
                             .token()
                             .customize(t -> t.treasuryAccountId(null))
                             .get()),
                     value);
             case NFT_FREEZE_DEFAULT_NO_KEY -> function = contract.send_createNonFungibleTokenExternal(
-                    createHederaToken(domainBuilder
+                    convertTokenEntityToHederaToken(domainBuilder
                             .token()
                             .customize(t -> t.freezeDefault(true).freezeKey(new byte[0]))
                             .get()),
                     value);
             case NFT_INVALID_AUTORENEW_ACCOUNT -> function = contract.send_createNonFungibleTokenExternal(
-                    createHederaToken(
+                    convertTokenEntityToHederaToken(
                             domainBuilder.token().get(),
                             domainBuilder
                                     .entity()
@@ -419,259 +1753,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var functionToCall = function;
         assertThatThrownBy(functionToCall::send).isInstanceOf(MirrorEvmTransactionException.class);
-    }
-
-    private HederaToken createHederaToken(final Token token) {
-        final var entity = domainBuilder.entity().get();
-        final var treasuryAccountId = token.getTreasuryAccountId();
-        final var keys = new ArrayList<TokenKey>();
-        final var entityRenewAccountId = entity.getAutoRenewAccountId();
-
-        return new HederaToken(
-                token.getName(),
-                token.getSymbol(),
-                treasuryAccountId != null
-                        ? EntityIdUtils.asHexedEvmAddress(new Id(
-                                treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum()))
-                        : Address.ZERO.toHexString(),
-                new String(token.getMetadata(), StandardCharsets.UTF_8),
-                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
-                BigInteger.valueOf(token.getMaxSupply()),
-                token.getFreezeDefault(),
-                keys,
-                new Expiry(
-                        BigInteger.valueOf(entity.getEffectiveExpiration()),
-                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId.longValue())),
-                        BigInteger.valueOf(entity.getEffectiveExpiration())));
-    }
-
-    private HederaToken createHederaToken(final Token token, final Entity entity) {
-        final var treasuryAccountId = token.getTreasuryAccountId();
-        final var keys = new ArrayList<TokenKey>();
-        final var entityRenewAccountId = entity.getAutoRenewAccountId();
-
-        return new HederaToken(
-                token.getName(),
-                token.getSymbol(),
-                EntityIdUtils.asHexedEvmAddress(
-                        new Id(treasuryAccountId.getShard(), treasuryAccountId.getRealm(), treasuryAccountId.getNum())),
-                new String(token.getMetadata(), StandardCharsets.UTF_8),
-                token.getSupplyType().equals(TokenSupplyTypeEnum.FINITE),
-                BigInteger.valueOf(token.getMaxSupply()),
-                token.getFreezeDefault(),
-                keys,
-                new Expiry(
-                        BigInteger.valueOf(entity.getEffectiveExpiration()),
-                        EntityIdUtils.asHexedEvmAddress(new Id(0, 0, entityRenewAccountId.longValue())),
-                        BigInteger.valueOf(entity.getEffectiveExpiration())));
-    }
-
-    @Getter
-    @RequiredArgsConstructor
-    enum ContractReadFunctions implements ContractFunctionProviderEnum {
-        IS_FROZEN("isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
-        IS_FROZEN_WITH_ALIAS(
-                "isTokenFrozen", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
-        IS_KYC("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
-        IS_KYC_WITH_ALIAS("isKycGranted", new Address[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
-        IS_KYC_FOR_NFT("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ADDRESS}, new Boolean[] {true}),
-        IS_KYC_FOR_NFT_WITH_ALIAS("isKycGranted", new Address[] {NFT_ADDRESS, SENDER_ALIAS}, new Boolean[] {true}),
-        IS_TOKEN_PRECOMPILE("isTokenAddress", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
-        IS_TOKEN_PRECOMPILE_NFT("isTokenAddress", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_DEFAULT_KYC("getTokenDefaultKyc", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_DEFAULT_KYC_NFT("getTokenDefaultKyc", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_TYPE("getType", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Long[] {0L}),
-        GET_TOKEN_TYPE_FOR_NFT("getType", new Address[] {NFT_ADDRESS}, new Long[] {1L}),
-        GET_TOKEN_DEFAULT_FREEZE("getTokenDefaultFreeze", new Address[] {FUNGIBLE_TOKEN_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_DEFAULT_FREEZE_FOR_NFT("getTokenDefaultFreeze", new Address[] {NFT_ADDRESS}, new Boolean[] {true}),
-        GET_TOKEN_ADMIN_KEY_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 1L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_FREEZE_KEY_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 4L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_WIPE_KEY_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 8L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_SUPPLY_KEY_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 16L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_ADMIN_KEY_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 1L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_FREEZE_KEY_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 4L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_WIPE_KEY_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 8L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_SUPPLY_KEY_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ED25519_KEY, 16L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_ADMIN_KEY_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 1L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_FREEZE_KEY_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 4L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_WIPE_KEY_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 8L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_SUPPLY_KEY_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 16L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_ADMIN_KEY_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 1L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_FREEZE_KEY_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 4L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_WIPE_KEY_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 8L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_SUPPLY_KEY_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 16L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_KYC_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 2L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_FEE_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 32L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_CONTRACT_ADDRESS(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_CONTRACT_ADDRESS, 64L},
-                new Object[] {false, PRECOMPILE_TEST_CONTRACT_ADDRESS, new byte[0], new byte[0], Address.ZERO}),
-        GET_TOKEN_KYC_KEY_FOR_NFT_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY, 2L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_FEE_KEY_FOR_NFT_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY, 32L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_ED25519_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ED25519_KEY, 64L},
-                new Object[] {false, Address.ZERO, ED25519_KEY, new byte[0], Address.ZERO}),
-        GET_TOKEN_KYC_KEY_FOR_NFT_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 2L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_FEE_KEY_FOR_NFT_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 32L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_ECDSA_KEY(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_ECDSA_KEY, 64L},
-                new Object[] {false, Address.ZERO, new byte[0], ECDSA_KEY, Address.ZERO}),
-        GET_TOKEN_KYC_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 2L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_FEE_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 32L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_TOKEN_PAUSE_KEY_FOR_NFT_WITH_DELEGATABLE_CONTRACT_ID(
-                "getTokenKeyPublic",
-                new Object[] {NFT_ADDRESS_GET_KEY_WITH_DELEGATABLE_CONTRACT_ID, 64L},
-                new Object[] {false, Address.ZERO, new byte[0], new byte[0], PRECOMPILE_TEST_CONTRACT_ADDRESS}),
-        GET_CUSTOM_FEES_FOR_TOKEN_WITH_FIXED_FEE(
-                "getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
-                    new Object[] {100L, FUNGIBLE_TOKEN_ADDRESS, false, false, SENDER_ALIAS},
-                    new Object[0],
-                    new Object[0]
-                }),
-        GET_CUSTOM_FEES_FOR_TOKEN_WITH_FRACTIONAL_FEE(
-                "getCustomFeesForToken",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS},
-                new Object[] {new Object[0], new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS}, new Object[0]}),
-        GET_CUSTOM_FEES_FOR_TOKEN_WITH_ROYALTY_FEE(
-                "getCustomFeesForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
-                    new Object[0], new Object[0], new Object[] {20L, 10L, 100L, FUNGIBLE_TOKEN_ADDRESS, SENDER_ALIAS}
-                }),
-        GET_TOKEN_EXPIRY("getExpiryInfoForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS_WITH_EXPIRY}, new Object[] {
-            1000L, AUTO_RENEW_ACCOUNT_ADDRESS, 8_000_000L
-        }),
-        HTS_GET_APPROVED("htsGetApproved", new Object[] {NFT_ADDRESS, 1L}, new Object[] {SPENDER_ALIAS}),
-        HTS_ALLOWANCE(
-                "htsAllowance",
-                new Object[] {FUNGIBLE_TOKEN_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS},
-                new Object[] {13L}),
-        HTS_IS_APPROVED_FOR_ALL(
-                "htsIsApprovedForAll", new Object[] {NFT_ADDRESS, SENDER_ADDRESS, SPENDER_ADDRESS}, new Object[] {true
-                }),
-        GET_FUNGIBLE_TOKEN_INFO("getInformationForFungibleToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
-            new Object[] {
-                FUNGIBLE_HBAR_TOKEN_AND_KEYS,
-                12345L,
-                false,
-                false,
-                true,
-                new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
-                LEDGER_ID
-            },
-            12
-        }),
-        GET_NFT_INFO("getInformationForNonFungibleToken", new Object[] {NFT_ADDRESS, 1L}, new Object[] {
-            new Object[] {
-                NFT_HBAR_TOKEN_AND_KEYS,
-                1_000_000_000L,
-                false,
-                false,
-                true,
-                new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
-                LEDGER_ID
-            },
-            1L,
-            OWNER_ADDRESS,
-            1475067194L,
-            "NFT_METADATA_URI".getBytes(),
-            SPENDER_ADDRESS
-        }),
-        GET_INFORMATION_FOR_TOKEN_FUNGIBLE(
-                "getInformationForToken", new Object[] {FUNGIBLE_TOKEN_ADDRESS}, new Object[] {
-                    FUNGIBLE_HBAR_TOKEN_AND_KEYS,
-                    12345L,
-                    false,
-                    false,
-                    true,
-                    new Object[] {100L, 10L, 1L, 1000L, true, SENDER_ALIAS},
-                    LEDGER_ID
-                }),
-        GET_INFORMATION_FOR_TOKEN_NFT("getInformationForToken", new Object[] {NFT_ADDRESS}, new Object[] {
-            NFT_HBAR_TOKEN_AND_KEYS,
-            1_000_000_000L,
-            false,
-            false,
-            true,
-            new Object[] {0L, 0L, 0L, 0L, false, SENDER_ALIAS},
-            LEDGER_ID
-        });
-
-        private final String name;
-        private final Object[] functionParameters;
-        private final Object[] expectedResultFields;
     }
 
     @Getter

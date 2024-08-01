@@ -19,6 +19,7 @@ package com.hedera.mirror.web3.evm.store.accessor;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.services.utils.MiscUtils.asFcKeyUnchecked;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -148,6 +149,9 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(autoRenewAccountId, t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(autoRenewAccountId))
                 .map(autoRenewAccount -> new Account(
+                        autoRenewAccount.getEvmAddress() != null
+                                ? ByteString.copyFrom(autoRenewAccount.getEvmAddress())
+                                : ByteString.EMPTY,
                         autoRenewAccount.getId(),
                         new Id(autoRenewAccount.getShard(), autoRenewAccount.getRealm(), autoRenewAccount.getNum()),
                         autoRenewAccount.getBalance() != null ? autoRenewAccount.getBalance() : 0L))
@@ -162,6 +166,7 @@ public class TokenDatabaseAccessor extends DatabaseAccessor<Object, Token> {
                 .map(t -> entityRepository.findActiveByIdAndTimestamp(treasuryId.getId(), t))
                 .orElseGet(() -> entityRepository.findByIdAndDeletedIsFalse(treasuryId.getId()))
                 .map(entity -> new Account(
+                        entity.getEvmAddress() != null ? ByteString.copyFrom(entity.getEvmAddress()) : ByteString.EMPTY,
                         entity.getId(),
                         new Id(entity.getShard(), entity.getRealm(), entity.getNum()),
                         entity.getBalance() != null ? entity.getBalance() : 0L))
