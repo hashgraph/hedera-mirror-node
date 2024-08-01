@@ -16,7 +16,6 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_ADDRESS;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static com.hedera.mirror.web3.service.ContractExecutionService.GAS_USED_METRIC;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
@@ -238,7 +237,7 @@ class ContractCallNativePrecompileTest extends Web3IntegrationTest {
 
     private ContractExecutionParameters serviceParametersForExecution(
             final Bytes callData, final Address contractAddress) {
-        final HederaEvmAccount sender = new HederaEvmAccount(SENDER_ADDRESS);
+        final HederaEvmAccount sender = new HederaEvmAccount(Address.wrap(Bytes.wrap(domainBuilder.evmAddress())));
 
         return ContractExecutionParameters.builder()
                 .sender(sender)

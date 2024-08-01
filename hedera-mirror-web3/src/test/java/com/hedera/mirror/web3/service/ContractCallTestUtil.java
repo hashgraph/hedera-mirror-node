@@ -16,13 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
-import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-
-import org.hyperledger.besu.datatypes.Address;
-
 public class ContractCallTestUtil {
 
     public static final long TRANSACTION_GAS_LIMIT = 15_000_000L;
-
-    public static final Address SENDER_ADDRESS = toAddress(1043);
 }
