@@ -32,10 +32,8 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import io.reactivex.Flowable;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.SneakyThrows;
@@ -190,12 +188,6 @@ public class TestWeb3jService implements Web3jService {
                 sender);
         final var result = contractExecutionService.processCall(serviceParameters);
 
-        if (isEstimateGas) {
-            final var rawTransaction = convertTransactionToRawTransaction(transaction);
-            final var transactionHash = generateTransactionHashHexEncoded(rawTransaction, credentials);
-            transactionResults.put(transactionHash, result);
-        }
-
         final var ethCall = new EthCall();
         ethCall.setId(request.getId());
         ethCall.setJsonrpc(request.getJsonrpc());
@@ -315,17 +307,6 @@ public class TestWeb3jService implements Web3jService {
         ethTransactionReceipt.setResult(transactionReceipt);
 
         return ethTransactionReceipt;
-    }
-
-    private RawTransaction convertTransactionToRawTransaction(final Transaction transaction) {
-        return RawTransaction.createTransaction(
-                new BigInteger(Optional.ofNullable(transaction.getNonce()).orElse("1")),
-                new BigInteger(Optional.ofNullable(transaction.getGasPrice()).orElse("123")),
-                BigInteger.valueOf(GAS_LIMIT),
-                transaction.getTo(),
-                new BigInteger(
-                        Optional.ofNullable(transaction.getValue()).orElse(String.valueOf(DEFAULT_TRANSACTION_VALUE))),
-                transaction.getData());
     }
 
     public interface Deployer<T extends Contract> {
