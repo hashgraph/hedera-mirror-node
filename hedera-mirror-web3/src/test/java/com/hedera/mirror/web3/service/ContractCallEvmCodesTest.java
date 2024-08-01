@@ -210,7 +210,7 @@ class ContractCallEvmCodesTest extends Web3IntegrationTest {
     }
 
     @Test
-    void testNonSystemContractCodeHash() throws Exception {
+    void testNonSystemContractEthCallCodeHash() throws Exception {
         final var contract = testWeb3jService.deploy(EvmCodes::deploy);
         final var ethCallContract = testWeb3jService.deploy(EthCall::deploy);
         final var result =
