@@ -20,16 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.common.domain.token.TokenAirdrop;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.RowMapper;
 
 @RequiredArgsConstructor
 class TokenAirdropRepositoryTest extends AbstractRepositoryTest {
 
     private final TokenAirdropRepository repository;
-    private static final RowMapper<TokenAirdrop> ROW_MAPPER = rowMapper(TokenAirdrop.class);
 
     @Test
     void saveFungible() {
@@ -56,8 +53,7 @@ class TokenAirdropRepositoryTest extends AbstractRepositoryTest {
                 domainBuilder.tokenAirdrop(TokenTypeEnum.FUNGIBLE_COMMON).persist();
 
         jdbcOperations.update("insert into token_airdrop_history select * from token_airdrop");
-        List<TokenAirdrop> tokenAirdropHistory =
-                jdbcOperations.query("select * from token_airdrop_history", ROW_MAPPER);
+        var tokenAirdropHistory = findHistory(TokenAirdrop.class);
 
         assertThat(repository.findAll()).containsExactly(tokenAirdrop);
         assertThat(tokenAirdropHistory).containsExactly(tokenAirdrop);

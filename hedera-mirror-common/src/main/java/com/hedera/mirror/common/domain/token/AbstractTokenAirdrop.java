@@ -19,7 +19,6 @@ package com.hedera.mirror.common.domain.token;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.History;
-import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -41,7 +40,6 @@ import org.hibernate.type.SqlTypes;
 @Upsertable(history = true)
 public class AbstractTokenAirdrop implements History {
 
-    @UpsertColumn(coalesce = "coalesce({0}, e_{0})")
     private Long amount;
 
     @jakarta.persistence.Id

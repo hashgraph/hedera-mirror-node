@@ -110,11 +110,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -2590,7 +2588,14 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
     }
 
     @ParameterizedTest
-    @MethodSource("provideAirdrops")
+    @CsvSource(
+            textBlock =
+                    """
+            CANCELLED, 1
+            CANCELLED, 2
+            CLAIMED,   1
+            CLAIMED,   2
+            """)
     void onTokenAirdropUpdate(TokenAirdropStateEnum state, int commitIndex) {
         // given
         var tokenAirdrop =
@@ -3183,13 +3188,5 @@ class SqlEntityListenerTest extends ImporterIntegrationTest {
         tokenAccount.setTimestampRange(timestampRange);
         tokenAccount.setTokenId(tokenId.getId());
         return tokenAccount;
-    }
-
-    private static Stream<Arguments> provideAirdrops() {
-        return Stream.of(
-                Arguments.of(TokenAirdropStateEnum.CANCELLED, 1),
-                Arguments.of(TokenAirdropStateEnum.CANCELLED, 2),
-                Arguments.of(TokenAirdropStateEnum.CLAIMED, 1),
-                Arguments.of(TokenAirdropStateEnum.CLAIMED, 2));
     }
 }
