@@ -94,12 +94,16 @@ class EntityService extends BaseService {
   /**
    * Gets the encoded account id from the account alias string.
    * @param {AccountAlias} accountAlias the account alias object
+   * @param {Boolean} requireResult
    * @return {Promise<BigInt>}
    */
-  async getAccountIdFromAlias(accountAlias) {
+  async getAccountIdFromAlias(accountAlias, requireResult = true) {
     const entity = await this.getAccountFromAlias(accountAlias);
     if (_.isNil(entity)) {
-      throw new NotFoundError(EntityService.missingAccountAlias);
+      if (requireResult) {
+        throw new NotFoundError(EntityService.missingAccountAlias);
+      }
+      return null;
     }
 
     return entity.id;
@@ -109,16 +113,20 @@ class EntityService extends BaseService {
    * Gets the encoded entity id from the evm address.
    *
    * @param {String} evmAddress
+   * @param {Boolean} requireResult
    * @return {Promise<BigInt|Number>}
    */
-  async getEntityIdFromEvmAddress(evmAddress) {
+  async getEntityIdFromEvmAddress(evmAddress, requireResult = true) {
     const rows = await this.getRows(
       EntityService.entityFromEvmAddressQuery,
       Buffer.from(evmAddress, 'hex'),
       'getEntityIdFromEvmAddress'
     );
     if (rows.length === 0) {
-      throw new NotFoundError();
+      if (requireResult) {
+        throw new NotFoundError();
+      }
+      return null;
     } else if (rows.length > 1) {
       logger.error(`Incorrect db state: ${rows.length} alive entities matching evm address ${evmAddress}`);
       throw new Error(EntityService.multipleEvmAddressMatch);
@@ -131,22 +139,23 @@ class EntityService extends BaseService {
    * Retrieve the encodedId of a validated EntityId from a shard.realm.num string, encoded id string, evm address with
    * optional shard and realm, or alias string.
    * Throws {@link InvalidArgumentError} if the entity id string is invalid
-   * Throws {@link NotFoundError} if the account is not present when retrieving by alias or the entity is not present
+   * Throws {@link NotFoundError} if the account is not present when retrieving by alias or the entity is not present and requireResult is true
    * when retrieving by evm address
    *
    * @param {String} entityIdString
+   * @param {Boolean} requireResult
    * @param {String} paramName the parameter name
    * @returns {Promise} entityId
    */
-  async getEncodedId(entityIdString, paramName = filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS) {
+  async getEncodedId(entityIdString, requireResult = true, paramName = filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS) {
     try {
       if (EntityId.isValidEntityId(entityIdString)) {
         const entityId = EntityId.parse(entityIdString, {paramName});
         return entityId.evmAddress === null
           ? entityId.getEncodedId()
-          : await this.getEntityIdFromEvmAddress(entityId.evmAddress);
+          : await this.getEntityIdFromEvmAddress(entityId.evmAddress, requireResult);
       } else if (AccountAlias.isValid(entityIdString)) {
-        return await this.getAccountIdFromAlias(AccountAlias.fromString(entityIdString));
+        return await this.getAccountIdFromAlias(AccountAlias.fromString(entityIdString), requireResult);
       }
     } catch (ex) {
       if (ex instanceof InvalidArgumentError) {

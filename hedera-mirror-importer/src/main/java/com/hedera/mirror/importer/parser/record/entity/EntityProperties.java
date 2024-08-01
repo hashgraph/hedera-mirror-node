@@ -62,7 +62,7 @@ public class EntityProperties {
 
         private boolean itemizedTransfers = false;
 
-        private boolean nodes = false;
+        private boolean nodes = true;
 
         private boolean pendingReward = true;
 

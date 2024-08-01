@@ -77,7 +77,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.18.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:$grpcVersion")
-        api("io.hypersistence:hypersistence-utils-hibernate-63:3.8.1")
+        api("io.hypersistence:hypersistence-utils-hibernate-63:3.8.2")
         api("io.projectreactor:reactor-core-micrometer:1.1.8")
         api("io.swagger:swagger-annotations:1.6.14")
         api("io.vertx:vertx-pg-client:$vertxVersion")
@@ -104,7 +104,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2023.0.3")
         api("org.testcontainers:junit-jupiter:1.20.0")
         api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.26.21")
+        api("software.amazon.awssdk:bom:2.26.25")
         api("uk.org.webcompere:system-stubs-jupiter:2.1.6")
         api("org.web3j:core:4.12.0")
     }
