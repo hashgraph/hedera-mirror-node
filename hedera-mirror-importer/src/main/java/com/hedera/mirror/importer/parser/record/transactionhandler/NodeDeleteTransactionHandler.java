@@ -45,13 +45,15 @@ class NodeDeleteTransactionHandler extends AbstractTransactionHandler {
         }
         transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
+        if (!recordItem.isSuccessful()) {
+            return;
+        }
         parseNode(recordItem);
     }
 
     private void parseNode(RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         entityListener.onNode(Node.builder()
-                .createdTimestamp(consensusTimestamp)
                 .deleted(true)
                 .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
                 .timestampRange(Range.atLeast(consensusTimestamp))

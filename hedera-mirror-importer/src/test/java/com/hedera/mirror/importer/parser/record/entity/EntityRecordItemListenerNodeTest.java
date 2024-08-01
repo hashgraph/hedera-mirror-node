@@ -132,7 +132,27 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
         var expectedNode = getExpectedNode(recordItem);
         expectedNode.setAdminKey(
                 recordItem.getTransactionBody().getNodeUpdate().getAdminKey().toByteArray());
+        expectedNode.setCreatedTimestamp(0);
+        parseRecordItemAndCommit(recordItem);
 
+        softly.assertThat(entityRepository.count()).isZero();
+        softly.assertThat(transactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .isNotNull()
+                .returns(recordItem.getTransaction().toByteArray(), Transaction::getTransactionBytes)
+                .returns(recordItem.getTransactionRecord().toByteArray(), Transaction::getTransactionRecordBytes);
+        softly.assertThat(nodeRepository.findAll()).containsExactly(expectedNode);
+    }
+
+    @Test
+    void nodeUpdateWithoutAdminKeyUpdate() {
+        entityProperties.getPersist().setNodes(true);
+        var recordItem = recordItemBuilder.nodeUpdate().build();
+        var expectedNode = getExpectedNode(recordItem);
+        expectedNode.setCreatedTimestamp(0);
+        expectedNode.setAdminKey(
+                recordItem.getTransactionBody().getNodeUpdate().getAdminKey().toByteArray());
         parseRecordItemAndCommit(recordItem);
 
         softly.assertThat(entityRepository.count()).isZero();
@@ -151,7 +171,7 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
         var recordItem = recordItemBuilder.nodeDelete().build();
         var expectedNode = getExpectedNode(recordItem);
         expectedNode.setDeleted(true);
-
+        expectedNode.setCreatedTimestamp(0);
         parseRecordItemAndCommit(recordItem);
 
         softly.assertThat(entityRepository.count()).isZero();

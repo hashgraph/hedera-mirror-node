@@ -707,7 +707,7 @@ public class DomainBuilder {
         long timestamp = timestamp();
         var builder = NodeHistory.builder()
                 .adminKey(key())
-                .createdTimestamp(timestamp())
+                .createdTimestamp(timestamp)
                 .deleted(false)
                 .nodeId(number())
                 .timestampRange(Range.closedOpen(timestamp, timestamp + 10));

@@ -16,50 +16,33 @@
 
 package com.hedera.mirror.common.domain.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Range;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
-import jakarta.persistence.IdClass;
+import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
-import java.io.Serializable;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 @Data
-@IdClass(AbstractNode.Id.class)
 @MappedSuperclass
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-@Upsertable(history = true)
+@Upsertable(history = true, skipPartialUpdate = true)
 public abstract class AbstractNode implements History {
 
     @ToString.Exclude
     private byte[] adminKey;
 
-    @jakarta.persistence.Id
-    private long nodeId;
-
+    @Column(updatable = false)
     private long createdTimestamp;
 
     private boolean deleted;
 
+    @jakarta.persistence.Id
+    private Long nodeId;
+
     private Range<Long> timestampRange;
-
-    @JsonIgnore
-    public AbstractNode.Id getId() {
-        Id id = new Id();
-        id.setNodeId(nodeId);
-        return id;
-    }
-
-    @Data
-    public static class Id implements Serializable {
-
-        private static final long serialVersionUID = 379145231397744621L;
-
-        private long nodeId;
-    }
 }

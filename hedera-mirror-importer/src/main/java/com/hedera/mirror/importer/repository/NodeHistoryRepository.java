@@ -16,13 +16,12 @@
 
 package com.hedera.mirror.importer.repository;
 
-import com.hedera.mirror.common.domain.entity.AbstractNode;
 import com.hedera.mirror.common.domain.entity.NodeHistory;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface NodeHistoryRepository extends CrudRepository<NodeHistory, AbstractNode.Id>, RetentionRepository {
+public interface NodeHistoryRepository extends CrudRepository<NodeHistory, Long>, RetentionRepository {
 
     @Modifying
     @Override

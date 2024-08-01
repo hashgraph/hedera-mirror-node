@@ -12,8 +12,6 @@ create table if not exists node
 alter table if exists node
     add constraint node__pk primary key (node_id);
 
-select create_distributed_table('node', 'node_id', colocate_with => 'entity');
-
 create table if not exists node_history
 (
     like node including defaults

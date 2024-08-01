@@ -25,10 +25,8 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import jakarta.inject.Named;
-import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-@CustomLog
 @Named
 @RequiredArgsConstructor
 class NodeCreateTransactionHandler extends AbstractTransactionHandler {
@@ -53,6 +51,10 @@ class NodeCreateTransactionHandler extends AbstractTransactionHandler {
         }
         transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
+
+        if (!recordItem.isSuccessful()) {
+            return;
+        }
         parseNode(recordItem);
     }
 

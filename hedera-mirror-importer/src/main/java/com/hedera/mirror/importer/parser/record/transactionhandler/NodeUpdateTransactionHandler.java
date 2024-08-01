@@ -51,17 +51,25 @@ class NodeUpdateTransactionHandler extends AbstractTransactionHandler {
         }
         transaction.setTransactionBytes(recordItem.getTransaction().toByteArray());
         transaction.setTransactionRecordBytes(recordItem.getTransactionRecord().toByteArray());
+        if (!recordItem.isSuccessful()) {
+            return;
+        }
         parseNode(recordItem);
     }
 
     private void parseNode(RecordItem recordItem) {
         var nodeUpdate = recordItem.getTransactionBody().getNodeUpdate();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        entityListener.onNode(Node.builder()
-                .adminKey(nodeUpdate.getAdminKey().toByteArray())
-                .createdTimestamp(consensusTimestamp)
-                .nodeId(recordItem.getTransactionRecord().getReceipt().getNodeId())
-                .timestampRange(Range.atLeast(consensusTimestamp))
-                .build());
+
+        var node = new Node();
+
+        if (nodeUpdate.hasAdminKey()) {
+            node.setAdminKey(nodeUpdate.getAdminKey().toByteArray());
+        }
+
+        node.setNodeId(recordItem.getTransactionRecord().getReceipt().getNodeId());
+        node.setTimestampRange(Range.atLeast(consensusTimestamp));
+
+        entityListener.onNode(node);
     }
 }

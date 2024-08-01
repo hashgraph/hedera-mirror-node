@@ -239,7 +239,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onNode(Node node) {
-        context.merge(node.getId(), node, this::mergeNode);
+        context.merge(node.getNodeId(), node, this::mergeNode);
     }
 
     @Override

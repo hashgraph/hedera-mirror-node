@@ -20,7 +20,6 @@ call create_distributed_table_safe('entity_state_start', 'id', 'entity');
 call create_distributed_table_safe('entity_temp', 'id', 'entity');
 call create_distributed_table_safe('nft_allowance_temp', 'owner', 'nft_allowance');
 call create_distributed_table_safe('nft_temp', 'token_id', 'nft');
-call create_distributed_table_safe('node_temp', 'node_id', 'node');
 call create_distributed_table_safe('schedule_temp', 'schedule_id', 'schedule');
 call create_distributed_table_safe('token_account_temp', 'account_id', 'token_account');
 call create_distributed_table_safe('token_allowance_temp', 'owner', 'token_allowance');

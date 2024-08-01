@@ -26,8 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.NodeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.shaded.org.apache.commons.lang.BooleanUtils;
@@ -83,7 +81,6 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(transaction.getTransactionRecordBytes()).containsExactly(transactionRecordBytes);
         verify(entityListener, times(BooleanUtils.toInteger(isPersist))).onNode(assertArg(t -> assertThat(t)
                 .isNotNull()
-                .returns(recordItem.getConsensusTimestamp(), Node::getCreatedTimestamp)
                 .returns(recordItem.getTransactionRecord().getReceipt().getNodeId(), Node::getNodeId)
                 .returns(
                         recordItem
@@ -95,10 +92,4 @@ class NodeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(recordItem.getConsensusTimestamp(), Node::getTimestampLower)
                 .returns(false, Node::isDeleted)));
     }
-
-    @SuppressWarnings({"java:S2699", "java:S1186"})
-    @Disabled("Since this handler persists data for unsuccessful transactions & has tests for that")
-    @Override
-    @Test
-    void updateTransactionUnsuccessful() {}
 }

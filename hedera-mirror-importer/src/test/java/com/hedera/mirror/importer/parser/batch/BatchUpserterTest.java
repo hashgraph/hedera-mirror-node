@@ -546,21 +546,21 @@ class BatchUpserterTest extends ImporterIntegrationTest {
 
     @Test
     void node() {
-        Node node1 = domainBuilder.node().get();
-        Node node2 = domainBuilder.node().get();
-        Node node3 = domainBuilder.node().get();
-        var node = List.of(node1, node2, node3);
-        persist(batchPersister, node);
-        assertThat(nodeRepository.findAll()).containsExactlyInAnyOrderElementsOf(node);
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder.node().get();
+        var node3 = domainBuilder.node().get();
+        var nodes = List.of(node1, node2, node3);
+        persist(batchPersister, nodes);
+        assertThat(nodeRepository.findAll()).containsExactlyInAnyOrderElementsOf(nodes);
     }
 
     @Test
     void nodeInsertAndUpdate() {
 
-        Node node1 = domainBuilder.node().get();
-        Node node2 = domainBuilder.node().get();
-        Node node3 = domainBuilder.node().get();
-        Node node4 = domainBuilder.node().get();
+        var node1 = domainBuilder.node().get();
+        var node2 = domainBuilder.node().get();
+        var node3 = domainBuilder.node().get();
+        var node4 = domainBuilder.node().get();
 
         // when
         persist(batchPersister, List.of(node1, node2, node3, node4));

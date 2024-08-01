@@ -41,6 +41,8 @@ class NodeHistoryRepositoryTest extends AbstractRepositoryTest {
     @Test
     void save() {
         NodeHistory nodeHistory = domainBuilder.nodeHistory().persist();
-        assertThat(nodeHistoryRepository.findById(nodeHistory.getId())).get().isEqualTo(nodeHistory);
+        assertThat(nodeHistoryRepository.findById(nodeHistory.getNodeId()))
+                .get()
+                .isEqualTo(nodeHistory);
     }
 }
