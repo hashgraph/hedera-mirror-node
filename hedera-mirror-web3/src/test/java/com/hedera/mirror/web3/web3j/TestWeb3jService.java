@@ -303,7 +303,7 @@ public class TestWeb3jService implements Web3jService {
     }
 
     @TestConfiguration(proxyBeanMethods = false)
-    static class Web3jTestConfiguration {
+    public static class Web3jTestConfiguration {
 
         @Bean
         TestWeb3jService testWeb3jService(
