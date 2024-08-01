@@ -322,17 +322,6 @@ public class TestWeb3jService implements Web3jService {
         return ethTransactionReceipt;
     }
 
-    private RawTransaction copyTransactionWithReceiver(final Transaction transaction, final Address receiver) {
-        return RawTransaction.createTransaction(
-                transaction.getNonce() != null ? BigInteger.valueOf(Long.parseLong(transaction.getNonce())) : null,
-                transaction.getGasPrice() != null
-                        ? BigInteger.valueOf(Long.parseLong(transaction.getGasPrice()))
-                        : null,
-                transaction.getGas() != null ? BigInteger.valueOf(Long.parseLong(transaction.getGas())) : null,
-                receiver != null ? receiver.toHexString() : transaction.getTo(),
-                transaction.getData());
-    }
-
     private RawTransaction convertTransactionToRawTransaction(final Transaction transaction) {
         return RawTransaction.createTransaction(
                 new BigInteger(Optional.ofNullable(transaction.getNonce()).orElse("1")),

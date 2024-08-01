@@ -17,21 +17,13 @@
 package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.DEFAULT_ENTITY_BALANCE;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.ENTITY_MEMO;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.NFT_METADATA;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.OWNER_ADDRESS;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_ADDRESS;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_ALIAS;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_PUBLIC_KEY;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.SPENDER_ADDRESS;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.SPENDER_ALIAS;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.TREASURY_ADDRESS;
 import static com.hedera.mirror.web3.service.ContractCallTestUtil.isWithinExpectedGasRange;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -96,7 +88,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void mintTokenGetTotalSupplyAndBalanceOfTreasuryEthCall(
             final TokenTypeEnum tokenType, final long amount, final String metadata) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -131,7 +123,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void mintTokenGetTotalSupplyAndBalanceOfTreasuryEstimateGas(
             final TokenTypeEnum tokenType, final long amount, final String metadata) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -173,7 +165,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void burnTokenGetTotalSupplyAndBalanceOfTreasuryEthCall(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -208,7 +200,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void burnTokenGetTotalSupplyAndBalanceOfTreasuryEthEstimateGas(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -250,8 +242,8 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void wipeTokenGetTotalSupplyAndBalanceOfTreasuryEthCall(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
-        final var senderEntityId = senderEntityPersist();
+        final var treasuryEntityId = accountPersist();
+        final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -287,9 +279,9 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void wipeTokenGetTotalSupplyAndBalanceOfTreasuryEstimateGas(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
-        final var senderEntityId = senderEntityPersist();
+        final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -329,7 +321,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 """)
     void pauseTokenGetPauseStatusUnpauseGetPauseStatusEthCall(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersist(treasuryEntityId)
@@ -357,7 +349,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 """)
     void pauseTokenGetPauseStatusUnpauseGetPauseStatusEstimateGas(final TokenTypeEnum tokenType) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -393,7 +385,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 """)
     void freezeTokenGetPauseStatusUnpauseGetPauseStatusEthCall(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -422,7 +414,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 """)
     void freezeTokenGetPauseStatusUnpauseGetPauseStatusEstimateGas(final TokenTypeEnum tokenType) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -460,9 +452,9 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 """)
     void associateTokenTransferEthCall(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
-        final var senderEntityId = senderEntityPersist();
+        final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -491,9 +483,9 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void associateTokenTransferEthCallFail() {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
-        final var senderEntityId = senderEntityPersist();
+        final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -525,9 +517,9 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void associateTokenTransferEstimateGas(final TokenTypeEnum tokenType, final long amount, final long serialNumber)
             throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
-        final var senderEntityId = senderEntityPersist();
+        final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
@@ -562,10 +554,10 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void associateTokenDissociateFailTransferFungibleTokenEthCall() {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
-        final var ownerEntityId = ownerEntityPersist();
+        final var treasuryEntityId = accountPersist();
+        final var ownerEntityId = accountPersist();
         final var ownerAddress = toAddress(ownerEntityId.getId());
-        final var senderEntityId = senderEntityPersist();
+        final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
         final var tokenEntity = fungibleTokenPersist(treasuryEntityId, null);
@@ -593,10 +585,10 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void associateTokenDissociateFailTransferNftEthCall() {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
-        final var ownerEntityId = ownerEntityPersist();
+        final var treasuryEntityId = accountPersist();
+        final var ownerEntityId = accountPersist();
         final var ownerAddress = toAddress(ownerEntityId.getId());
-        final var senderEntityId = senderEntityPersist();
+        final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
         final var tokenEntity = nftPersist(treasuryEntityId, ownerEntityId);
@@ -630,10 +622,10 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 """)
     void approveTokenGetAllowanceEthCall(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
-        final var ownerEntityId = ownerEntityPersist();
+        final var treasuryEntityId = accountPersist();
+        final var ownerEntityId = accountPersist();
         final var ownerAddress = toAddress(ownerEntityId);
-        final var spenderEntityId = spenderEntityPersist();
+        final var spenderEntityId = accountPersist();
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersist(treasuryEntityId)
@@ -677,10 +669,10 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveTokenGetAllowanceEstimateGas(final TokenTypeEnum tokenType, final long amount, final long serialNumber)
             throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
-        final var ownerEntityId = ownerEntityPersist();
+        final var treasuryEntityId = accountPersist();
+        final var ownerEntityId = accountPersist();
         final var ownerAddress = toAddress(ownerEntityId);
-        final var spenderEntityId = spenderEntityPersist();
+        final var spenderEntityId = accountPersist();
 
         final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
                 ? fungibleTokenPersist(treasuryEntityId)
@@ -731,8 +723,8 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveTokenTransferFromGetAllowanceGetBalanceEthCall(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
-        final var ownerEntityId = ownerEntityPersist();
+        final var treasuryEntityId = accountPersist();
+        final var ownerEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -776,8 +768,8 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveTokenTransferFromGetAllowanceGetBalanceEstimateGas(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
-        final var ownerEntityId = ownerEntityPersist();
+        final var treasuryEntityId = accountPersist();
+        final var ownerEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -828,7 +820,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveTokenTransferGetAllowanceGetBalanceEthCall(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var senderEntityId = senderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -867,7 +859,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveTokenTransferGetAllowanceGetBalanceEstimateGas(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var senderEntityId = senderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -913,7 +905,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveTokenCryptoTransferGetAllowanceGetBalanceEthCall(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -968,7 +960,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void approveTokenCryptoTransferGetAllowanceGetBalanceEstimateGas(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
@@ -1024,7 +1016,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void approveForAllTokenTransferFromGetAllowanceEthCall() {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1051,7 +1043,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void approveForAllTokenTransferFromGetAllowanceEstimateGas() throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
@@ -1086,7 +1078,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void approveForAllCryptoTransferGetAllowanceEthCall() {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1119,7 +1111,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void approveForAllCryptoTransferGetAllowanceEstimateGas() throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
@@ -1167,7 +1159,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void cryptoTransferFromGetAllowanceGetBalanceEthCall(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber, final boolean approvalForAll) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1224,7 +1216,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
             final TokenTypeEnum tokenType, final long amount, final long serialNumber, final boolean approvalForAll)
             throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
@@ -1281,8 +1273,8 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void transferFromNFTGetAllowanceEthCall() {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
-        final var spenderEntityId = spenderEntityPersist();
+        final var treasuryEntityId = accountPersist();
+        final var spenderEntityId = accountPersist();
 
         final var tokenEntity = nftPersist(treasuryEntityId, spenderEntityId);
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
@@ -1306,9 +1298,9 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void transferFromNFTGetAllowanceEstimateGas() throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
-        final var spenderEntityId = spenderEntityPersist();
+        final var spenderEntityId = accountPersist();
 
         final var tokenEntity = nftPersist(treasuryEntityId, spenderEntityId);
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
@@ -1346,7 +1338,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void transferFromGetAllowanceGetBalanceEthCall(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1386,7 +1378,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     void transferFromGetAllowanceGetBalanceEstimateGas(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId);
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
@@ -1431,7 +1423,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 """)
     void grantKycRevokeKycEthCall(final TokenTypeEnum tokenType) {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1461,7 +1453,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 """)
     void grantKycRevokeKycEstimateGas(final TokenTypeEnum tokenType) throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId);
         final var spenderEntityId = spenderEntityPersistWithAlias();
 
@@ -1509,7 +1501,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     @Test
     void getAddressThisEstimateGas() throws Exception {
         // Given
-        final var treasuryEntityId = treasureEntityPersist();
+        final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -1580,18 +1572,14 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
     }
 
     private Token fungibleTokenPersist(final EntityId treasuryEntityId, final byte[] kycKey) {
-        final var tokenEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(TOKEN).balance(DEFAULT_ENTITY_BALANCE).memo(ENTITY_MEMO))
-                .persist();
+        final var tokenEntity =
+                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
 
         return domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
                         .type(TokenTypeEnum.FUNGIBLE_COMMON)
                         .treasuryAccountId(treasuryEntityId)
-                        .initialSupply(10L)
-                        .maxSupply(20L)
                         .kycKey(kycKey))
                 .persist();
     }
@@ -1614,10 +1602,8 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
             final EntityId ownerEntityId,
             final EntityId spenderEntityId,
             final byte[] kycKey) {
-        final var nftEntity = domainBuilder
-                .entity()
-                .customize(e -> e.type(TOKEN).balance(DEFAULT_ENTITY_BALANCE))
-                .persist();
+        final var nftEntity =
+                domainBuilder.entity().customize(e -> e.type(TOKEN)).persist();
 
         final var token = domainBuilder
                 .token()
@@ -1631,7 +1617,6 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 .nft()
                 .customize(n -> n.accountId(treasuryEntityId)
                         .spender(spenderEntityId)
-                        .metadata(NFT_METADATA.getBytes())
                         .accountId(ownerEntityId)
                         .tokenId(nftEntity.getId())
                         .serialNumber(1))
@@ -1639,54 +1624,28 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         return token;
     }
 
-    private EntityId treasureEntityPersist() {
-        return accountPersist(TREASURY_ADDRESS);
-    }
-
-    private EntityId ownerEntityPersist() {
-        return accountPersist(OWNER_ADDRESS);
-    }
-
-    private EntityId senderEntityPersist() {
-        return accountPersist(SENDER_ADDRESS);
-    }
-
-    private EntityId spenderEntityPersist() {
-        return accountPersist(SPENDER_ADDRESS);
-    }
-
-    private EntityId accountPersist(final Address address) {
-        final var accountEntityId = entityIdFromEvmAddress(address);
-        domainBuilder
+    private EntityId accountPersist() {
+        return domainBuilder
                 .entity()
-                .customize(e -> e.id(accountEntityId.getId())
-                        .num(accountEntityId.getNum())
-                        .evmAddress(null)
-                        .alias(toEvmAddress(accountEntityId))
-                        .deleted(false))
-                .persist();
-        return accountEntityId;
+                .customize(e -> e.evmAddress(null))
+                .persist()
+                .toEntityId();
     }
 
-    private EntityId accountPersistWithAlias(final Address address, final Address alias, final ByteString publicKey) {
-        final var accountEntityId = entityIdFromEvmAddress(address);
-        domainBuilder
+    private EntityId accountPersistWithAlias(final Address alias, final ByteString publicKey) {
+        return domainBuilder
                 .entity()
-                .customize(e -> e.id(accountEntityId.getId())
-                        .num(accountEntityId.getNum())
-                        .evmAddress(alias.toArray())
-                        .alias(publicKey.toByteArray())
-                        .deleted(false))
-                .persist();
-        return accountEntityId;
+                .customize(e -> e.evmAddress(alias.toArray()).alias(publicKey.toByteArray()))
+                .persist()
+                .toEntityId();
     }
 
     private EntityId senderEntityPersistWithAlias() {
-        return accountPersistWithAlias(SENDER_ADDRESS, SENDER_ALIAS, SENDER_PUBLIC_KEY);
+        return accountPersistWithAlias(SENDER_ALIAS, SENDER_PUBLIC_KEY);
     }
 
     private EntityId spenderEntityPersistWithAlias() {
-        return accountPersistWithAlias(SPENDER_ADDRESS, SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
+        return accountPersistWithAlias(SPENDER_ALIAS, SPENDER_PUBLIC_KEY);
     }
 
     private void tokenAccountPersist(final EntityId tokenEntityId, final EntityId accountId) {
