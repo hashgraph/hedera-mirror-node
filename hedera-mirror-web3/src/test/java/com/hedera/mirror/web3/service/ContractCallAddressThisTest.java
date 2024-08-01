@@ -69,7 +69,6 @@ public class ContractCallAddressThisTest extends ContractCallTestSetup {
         final var addressThisContractAddressWithout0x =
                 ADDRESS_THIS_CONTRACT_ADDRESS.toString().substring(2);
         final var successfulResponse = "0x" + StringUtils.leftPad(addressThisContractAddressWithout0x, 64, '0');
-        ;
         final var functionHash =
                 functionEncodeDecoder.functionHashFor("getAddressThis", ADDRESS_THIS_CONTRACT_ABI_PATH);
         final var serviceParameters = serviceParametersForExecution(
