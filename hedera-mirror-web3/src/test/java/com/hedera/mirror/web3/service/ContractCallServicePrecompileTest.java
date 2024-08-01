@@ -95,6 +95,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31, -5, 72, 13, -70, 101, -111, -1,
         77, -103, 47, -118, 107, -58, -85, -63, 55, -57
     };
+    private static final ByteString SENDER_PUBLIC_KEY =
+            ByteString.copyFrom(Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
+    private static final Address SENDER_ALIAS = Address.wrap(
+            Bytes.wrap(recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
 
     @Autowired
     private final TestWeb3jService testWeb3jService;
@@ -123,13 +127,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void isTokenFrozen() throws Exception {
-        final var account = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
+        final var account = persistAccountEntity();
+        final var tokenEntity = persistTokenEntity();
+        domainBuilder
                 .token()
                 .customize(
                         t -> t.tokenId(tokenEntity.getId()).freezeDefault(true).type(TokenTypeEnum.FUNGIBLE_COMMON))
@@ -142,13 +142,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_isTokenFrozen(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        EntityIdUtils.asHexedEvmAddress(new Id(
-                                account.getShard(),
-                                account.getRealm(),
-                                account.toEntityId().getNum())))
+        final var result = contract.call_isTokenFrozen(getAddressFromEntity(tokenEntity), getAddressFromEntity(account))
                 .send();
 
         assertThat(result).isTrue();
@@ -156,20 +150,14 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void isTokenFrozenWithAlias() throws Exception {
-        final ByteString senderPublicKey = ByteString.copyFrom(
-                Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
-        final Address senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
-
         final var account = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .alias(senderPublicKey.toByteArray())
-                        .evmAddress(senderAlias.toArray()))
+                        .alias(SENDER_PUBLIC_KEY.toByteArray())
+                        .evmAddress(SENDER_ALIAS.toArray()))
                 .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
+        final var tokenEntity = persistTokenEntity();
+        domainBuilder
                 .token()
                 .customize(
                         t -> t.tokenId(tokenEntity.getId()).freezeDefault(true).type(TokenTypeEnum.FUNGIBLE_COMMON))
@@ -182,10 +170,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_isTokenFrozen(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        Address.wrap(Bytes.wrap(account.getEvmAddress())).toHexString())
+        final var result = contract.call_isTokenFrozen(getAddressFromEntity(tokenEntity), getAliasFromEntity(account))
                 .send();
 
         assertThat(result).isTrue();
@@ -193,16 +178,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void isKycGranted() throws Exception {
-        final var account = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        final var account = persistAccountEntity();
+        final var tokenEntity = persistFungibleToken();
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
@@ -211,13 +188,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_isKycGranted(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        EntityIdUtils.asHexedEvmAddress(new Id(
-                                account.getShard(),
-                                account.getRealm(),
-                                account.toEntityId().getNum())))
+        final var result = contract.call_isKycGranted(getAddressFromEntity(tokenEntity), getAddressFromEntity(account))
                 .send();
 
         assertThat(result).isTrue();
@@ -225,23 +196,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void isKycGrantedWithAlias() throws Exception {
-        final ByteString senderPublicKey = ByteString.copyFrom(
-                Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
-        final Address senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final Address senderAlias = Address.wrap(Bytes.wrap(
+                recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
 
         final var account = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .alias(senderPublicKey.toByteArray())
+                        .alias(SENDER_PUBLIC_KEY.toByteArray())
                         .evmAddress(senderAlias.toArray()))
                 .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        final var tokenEntity = persistFungibleToken();
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
@@ -250,10 +214,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_isKycGranted(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        Address.wrap(Bytes.wrap(account.getEvmAddress())).toHexString())
+        final var result = contract.call_isKycGranted(getAddressFromEntity(tokenEntity), getAliasFromEntity(account))
                 .send();
 
         assertThat(result).isTrue();
@@ -261,20 +222,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void isKycGrantedForNFT() throws Exception {
-        final var account = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
+        final var account = persistAccountEntity();
+        final var tokenEntity = persistNft();
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
@@ -283,13 +232,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_isKycGranted(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        EntityIdUtils.asHexedEvmAddress(new Id(
-                                account.getShard(),
-                                account.getRealm(),
-                                account.toEntityId().getNum())))
+        final var result = contract.call_isKycGranted(getAddressFromEntity(tokenEntity), getAddressFromEntity(account))
                 .send();
 
         assertThat(result).isTrue();
@@ -297,27 +240,16 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void isKycGrantedForNFTWithAlias() throws Exception {
-        final ByteString senderPublicKey = ByteString.copyFrom(
-                Hex.decode("3a2103af80b90d25145da28c583359beb47b21796b2fe1a23c1511e443e7a64dfdb27d"));
-        final Address senderAlias = Address.wrap(
-                Bytes.wrap(recoverAddressFromPubKey(senderPublicKey.substring(2).toByteArray())));
+        final Address senderAlias = Address.wrap(Bytes.wrap(
+                recoverAddressFromPubKey(SENDER_PUBLIC_KEY.substring(2).toByteArray())));
 
         final var account = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.ACCOUNT)
-                        .alias(senderPublicKey.toByteArray())
+                        .alias(SENDER_PUBLIC_KEY.toByteArray())
                         .evmAddress(senderAlias.toArray()))
                 .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
+        final var tokenEntity = persistNft();
         domainBuilder
                 .tokenAccount()
                 .customize(ta -> ta.tokenId(tokenEntity.getId())
@@ -326,10 +258,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_isKycGranted(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        Address.wrap(Bytes.wrap(account.getEvmAddress())).toHexString())
+        final var result = contract.call_isKycGranted(getAddressFromEntity(tokenEntity), getAliasFromEntity(account))
                 .send();
 
         assertThat(result).isTrue();
@@ -337,38 +266,22 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void isTokenAddress() throws Exception {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        final var tokenEntity = persistFungibleToken();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_isTokenAddress(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
-                .send();
+        final var result =
+                contract.call_isTokenAddress(getAddressFromEntity(tokenEntity)).send();
 
         assertThat(result).isTrue();
     }
 
     @Test
     void isTokenAddressNFT() throws Exception {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
+        final var tokenEntity = persistNft();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_isTokenAddress(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
-                .send();
+        final var result =
+                contract.call_isTokenAddress(getAddressFromEntity(tokenEntity)).send();
 
         assertThat(result).isTrue();
     }
@@ -376,8 +289,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Test
     void getDefaultKycToken() throws Exception {
         domainBuilder.recordFile().customize(f -> f.index(0L)).persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -386,8 +298,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getTokenDefaultKyc(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+        final var result = contract.call_getTokenDefaultKyc(getAddressFromEntity(tokenEntity))
                 .send();
 
         assertThat(result).isTrue();
@@ -395,8 +306,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void getDefaultKycNFT() throws Exception {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -409,8 +319,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getTokenDefaultKyc(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+        final var result = contract.call_getTokenDefaultKyc(getAddressFromEntity(tokenEntity))
                 .send();
 
         assertThat(result).isTrue();
@@ -418,46 +327,29 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void getTokenType() throws Exception {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        final var tokenEntity = persistFungibleToken();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getType(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
-                .send();
+        final var result =
+                contract.call_getType(getAddressFromEntity(tokenEntity)).send();
 
         assertThat(result).isEqualTo(BigInteger.ZERO);
     }
 
     @Test
     void getTokenTypeNFT() throws Exception {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
+        final var tokenEntity = persistNft();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getType(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
-                .send();
+        final var result =
+                contract.call_getType(getAddressFromEntity(tokenEntity)).send();
 
         assertThat(result).isEqualTo(BigInteger.ONE);
     }
 
     @Test
     void getTokenDefaultFreeze() throws Exception {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -466,8 +358,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getTokenDefaultFreeze(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+        final var result = contract.call_getTokenDefaultFreeze(getAddressFromEntity(tokenEntity))
                 .send();
 
         assertThat(result).isTrue();
@@ -475,8 +366,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void getNFTDefaultFreeze() throws Exception {
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -489,8 +379,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getTokenDefaultFreeze(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())))
+        final var result = contract.call_getTokenDefaultFreeze(getAddressFromEntity(tokenEntity))
                 .send();
 
         assertThat(result).isTrue();
@@ -520,9 +409,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var result = contract.call_getTokenKeyPublic(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
-                        BigInteger.valueOf(Long.parseLong(keyType)))
+                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
                 .send();
 
         final var expectedKey = new KeyValue(
@@ -553,9 +440,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         final var result = contract.call_getTokenKeyPublic(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
-                        BigInteger.valueOf(Long.parseLong(keyType)))
+                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
                 .send();
 
         final var expectedKey =
@@ -587,9 +472,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         final var result = contract.call_getTokenKeyPublic(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
-                        BigInteger.valueOf(Long.parseLong(keyType)))
+                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
                 .send();
 
         final var expectedKey =
@@ -622,9 +505,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var result = contract.call_getTokenKeyPublic(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
-                        BigInteger.valueOf(Long.parseLong(keyType)))
+                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
                 .send();
 
         final var expectedKey = new KeyValue(
@@ -643,8 +524,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .setContractID(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
                 .build();
 
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -659,9 +539,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var result = contract.call_getTokenKeyPublic(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
-                        BigInteger.valueOf(Long.parseLong(keyType)))
+                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
                 .send();
 
         final var expectedKey = new KeyValue(
@@ -677,8 +555,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         final var keyWithEd25519 =
                 Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519Key)).build();
 
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -694,9 +571,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         final var result = contract.call_getTokenKeyPublic(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
-                        BigInteger.valueOf(Long.parseLong(keyType)))
+                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
                 .send();
 
         final var expectedKey =
@@ -713,8 +588,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .setECDSASecp256K1(ByteString.copyFrom(ecdsaKey))
                 .build();
 
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -730,9 +604,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         final var result = contract.call_getTokenKeyPublic(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
-                        BigInteger.valueOf(Long.parseLong(keyType)))
+                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
                 .send();
 
         final var expectedKey =
@@ -751,8 +623,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .setDelegatableContractId(EntityIdUtils.contractIdFromEvmAddress(contractAddress))
                 .build();
 
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+        final var tokenEntity = persistTokenEntity();
         domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId())
@@ -767,9 +638,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var result = contract.call_getTokenKeyPublic(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
-                        BigInteger.valueOf(Long.parseLong(keyType)))
+                        getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)))
                 .send();
 
         final var expectedKey = new KeyValue(
@@ -780,16 +649,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void getCustomFeesForTokenWithFixedFee() throws Exception {
-        final var collectorAccount = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        final var collectorAccount = persistAccountEntity();
+        final var tokenEntity = persistFungibleToken();
         final var fixedFee = com.hedera.mirror.common.domain.token.FixedFee.builder()
                 .amount(100L)
                 .collectorAccountId(collectorAccount.toEntityId())
@@ -804,14 +665,12 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getCustomFeesForToken(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+        final var result = contract.call_getCustomFeesForToken(getAddressFromEntity(tokenEntity))
                 .send();
 
         final var expectedFee = new FixedFee(
                 BigInteger.valueOf(100L),
-                EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), tokenEntity.getNum())),
+                getAddressFromEntity(tokenEntity),
                 false,
                 false,
                 Address.fromHexString(
@@ -823,16 +682,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void getCustomFeesForTokenWithFractionalFee() throws Exception {
-        final var collectorAccount = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        final var collectorAccount = persistAccountEntity();
+        final var tokenEntity = persistFungibleToken();
         final var fractionalFee = FractionalFee.builder()
                 .collectorAccountId(collectorAccount.toEntityId())
                 .denominator(10L)
@@ -850,8 +701,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getCustomFeesForToken(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+        final var result = contract.call_getCustomFeesForToken(getAddressFromEntity(tokenEntity))
                 .send();
 
         final var expectedFee = new PrecompileTestContract.FractionalFee(
@@ -869,16 +719,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void getCustomFeesForTokenWithRoyaltyFee() throws Exception {
-        final var collectorAccount = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        final var collectorAccount = persistAccountEntity();
+        final var tokenEntity = persistFungibleToken();
         final var royaltyFee = RoyaltyFee.builder()
                 .collectorAccountId(collectorAccount.toEntityId())
                 .denominator(10L)
@@ -897,8 +739,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getCustomFeesForToken(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+        final var result = contract.call_getCustomFeesForToken(getAddressFromEntity(tokenEntity))
                 .send();
 
         final var expectedFee = new PrecompileTestContract.RoyaltyFee(
@@ -919,10 +760,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     void getExpiryForToken() throws Exception {
         final var expiryPeriod = 9999999999999L;
         final var autoRenewExpiry = 100000000L;
-        final var autoRenewAccount = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
+        final var autoRenewAccount = persistAccountEntity();
         final var tokenEntity = domainBuilder
                 .entity()
                 .customize(e -> e.type(EntityType.TOKEN)
@@ -930,14 +768,13 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .expirationTimestamp(expiryPeriod)
                         .autoRenewPeriod(autoRenewExpiry))
                 .persist();
-        final var token = domainBuilder
+        domainBuilder
                 .token()
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getExpiryInfoForToken(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+        final var result = contract.call_getExpiryInfoForToken(getAddressFromEntity(tokenEntity))
                 .send();
 
         final var expectedExpiry = new PrecompileTestContract.Expiry(
@@ -953,20 +790,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @Test
     void getAllowanceForToken() throws Exception {
         final var amountGranted = 50L;
-        final var owner = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var spender = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
-                .persist();
+        final var owner = persistAccountEntity();
+        final var spender = persistAccountEntity();
+        final var tokenEntity = persistFungibleToken();
 
         domainBuilder
                 .tokenAllowance()
@@ -979,13 +805,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         final var result = contract.call_htsAllowance(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        Address.fromHexString(Bytes.wrap(owner.getEvmAddress()).toHexString())
-                                .toHexString(),
-                        Address.fromHexString(
-                                        Bytes.wrap(spender.getEvmAddress()).toHexString())
-                                .toHexString())
+                        getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), getAliasFromEntity(spender))
                 .send();
 
         assertThat(result).isEqualTo(BigInteger.valueOf(amountGranted));
@@ -993,24 +813,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void isApprovedForAllNFT() throws Exception {
-        final var owner = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var spender = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT))
-                .persist();
-        final var tokenEntity =
-                domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
-        final var token = domainBuilder
-                .token()
-                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
-                .persist();
-        domainBuilder
-                .nft()
-                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
-                .persist();
+        final var owner = persistAccountEntity();
+        final var spender = persistAccountEntity();
+        final var tokenEntity = persistNft();
 
         domainBuilder
                 .nftAllowance()
@@ -1022,13 +827,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         final var result = contract.call_htsIsApprovedForAll(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        Address.fromHexString(Bytes.wrap(owner.getEvmAddress()).toHexString())
-                                .toHexString(),
-                        Address.fromHexString(
-                                        Bytes.wrap(spender.getEvmAddress()).toHexString())
-                                .toHexString())
+                        getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), getAliasFromEntity(spender))
                 .send();
 
         assertThat(result).isEqualTo(Boolean.TRUE);
@@ -1036,14 +835,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void getFungibleTokenInfo() throws Exception {
-        final var treasury = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
-                .persist();
-        final var feeCollector = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
-                .persist();
+        final var treasury = persistAccountEntity();
+        final var feeCollector = persistAccountEntity();
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
         final var token = domainBuilder
@@ -1054,11 +847,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var customFees =
-                insertCustomFeesWithPersistedFeeCollector(feeCollector, tokenEntity, TokenTypeEnum.FUNGIBLE_COMMON);
+                persistCustomFeesWithFeeCollector(feeCollector, tokenEntity, TokenTypeEnum.FUNGIBLE_COMMON);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getInformationForFungibleToken(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+        final var result = contract.call_getInformationForFungibleToken(getAddressFromEntity(tokenEntity))
                 .send();
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
@@ -1104,18 +896,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
     @Test
     void getNonFungibleTokenInfo() throws Exception {
-        final var owner = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
-                .persist();
-        final var treasury = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
-                .persist();
-        final var feeCollector = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
-                .persist();
+        final var owner = persistAccountEntity();
+        final var treasury = persistAccountEntity();
+        final var feeCollector = persistAccountEntity();
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
         final var token = domainBuilder
@@ -1130,13 +913,11 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .persist();
 
         final var customFees =
-                insertCustomFeesWithPersistedFeeCollector(feeCollector, tokenEntity, TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
+                persistCustomFeesWithFeeCollector(feeCollector, tokenEntity, TokenTypeEnum.NON_FUNGIBLE_UNIQUE);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
         final var result = contract.call_getInformationForNonFungibleToken(
-                        EntityIdUtils.asHexedEvmAddress(
-                                new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())),
-                        BigInteger.ONE)
+                        getAddressFromEntity(tokenEntity), BigInteger.ONE)
                 .send();
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
@@ -1188,14 +969,8 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     @ParameterizedTest
     @CsvSource({"FUNGIBLE_COMMON", "NON_FUNGIBLE_UNIQUE"})
     void getTokenInfo(final TokenTypeEnum tokenType) throws Exception {
-        final var treasury = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
-                .persist();
-        final var feeCollector = domainBuilder
-                .entity()
-                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
-                .persist();
+        final var treasury = persistAccountEntity();
+        final var feeCollector = persistAccountEntity();
         final var tokenEntity =
                 domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
         final var token = domainBuilder
@@ -1203,11 +978,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .customize(t -> t.tokenId(tokenEntity.getId()).type(tokenType).treasuryAccountId(treasury.toEntityId()))
                 .persist();
 
-        final var customFees = insertCustomFeesWithPersistedFeeCollector(feeCollector, tokenEntity, tokenType);
+        final var customFees = persistCustomFeesWithFeeCollector(feeCollector, tokenEntity, tokenType);
 
         final var contract = testWeb3jService.deploy(PrecompileTestContract::deploy);
-        final var result = contract.call_getInformationForToken(EntityIdUtils.asHexedEvmAddress(
-                        new Id(tokenEntity.getShard(), tokenEntity.getRealm(), token.getTokenId())))
+        final var result = contract.call_getInformationForToken(getAddressFromEntity(tokenEntity))
                 .send();
 
         final var expectedTokenKeys = getExpectedTokenKeys(tokenEntity, token);
@@ -1254,7 +1028,42 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
         assertThat(result).isEqualTo(expectedTokenInfo);
     }
 
-    private CustomFee insertCustomFeesWithPersistedFeeCollector(
+    private Entity persistAccountEntity() {
+        return domainBuilder
+                .entity()
+                .customize(e -> e.type(EntityType.ACCOUNT).deleted(false))
+                .persist();
+    }
+
+    private Entity persistTokenEntity() {
+        return domainBuilder.entity().customize(e -> e.type(EntityType.TOKEN)).persist();
+    }
+
+    private Entity persistFungibleToken() {
+        final var tokenEntity = persistTokenEntity();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.FUNGIBLE_COMMON))
+                .persist();
+
+        return tokenEntity;
+    }
+
+    private Entity persistNft() {
+        final var tokenEntity = persistTokenEntity();
+        domainBuilder
+                .token()
+                .customize(t -> t.tokenId(tokenEntity.getId()).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        domainBuilder
+                .nft()
+                .customize(n -> n.tokenId(tokenEntity.getId()).serialNumber(1L))
+                .persist();
+
+        return tokenEntity;
+    }
+
+    private CustomFee persistCustomFeesWithFeeCollector(
             final Entity feeCollector, final Entity tokenEntity, final TokenTypeEnum tokenType) {
         final var fixedFee = com.hedera.mirror.common.domain.token.FixedFee.builder()
                 .allCollectorsAreExempt(true)
