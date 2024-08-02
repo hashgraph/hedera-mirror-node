@@ -28,7 +28,8 @@ Feature: HTS Base Coverage Feature
     And I set account kyc status to <kycStatus> for CAROL
     Then the mirror node REST API should return the transaction
     And I transfer <amount> tokens to CAROL
-    Then CAROL rejects token with <amount> and returns them to OPERATOR
+    Then CAROL rejects the fungible token
+    Then the mirror node REST API should return the transaction CAROL returns <amount> fungible token to OPERATOR
     Then I burn <modifySupplyAmount> from the token
     And the mirror node REST API should return the transaction
     Then I mint <modifySupplyAmount> from the token
@@ -50,7 +51,7 @@ Feature: HTS Base Coverage Feature
       | 2350   | 2            | 1         | 100                |
 
   @nft @critical @release
-  Scenario Outline: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
+  Scenario: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
     Given I successfully create a new nft with infinite supplyType
     Then the mirror node REST API should return the transaction
     And I ensure token has the correct properties
@@ -79,7 +80,8 @@ Feature: HTS Base Coverage Feature
     And the mirror node REST API should return the transaction
     Then the mirror node REST API should return the token relationship for nft
     And I transfer serial number index 1 to CAROL
-    Then CAROL rejects token and returns it to OPERATOR
+    And CAROL rejects serial number index 1
+    Then the mirror node REST API should return the transaction CAROL returns serial number index 1 to OPERATOR
     Then I wipe serial number index 0 from token for ALICE
     And the mirror node REST API should return the transaction for token serial number index 0 transaction flow
     Then I burn serial number index 1 from token
