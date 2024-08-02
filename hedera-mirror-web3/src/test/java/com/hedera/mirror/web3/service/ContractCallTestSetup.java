@@ -362,17 +362,6 @@ public class ContractCallTestSetup extends Web3IntegrationTest {
     @Value("classpath:contracts/SelfDestructContract/SelfDestructContract.bin")
     protected Path SELF_DESTRUCT_CONTRACT_BYTES_PATH;
 
-    /**
-     * Checks if the *actual* gas usage is within 5-20% greater than the *expected* gas used from the initial call.
-     *
-     * @param actualGas   The actual gas used.
-     * @param expectedGas The expected gas used from the initial call.
-     * @return {@code true} if the actual gas usage is within the expected range, otherwise {@code false}.
-     */
-    protected static boolean isWithinExpectedGasRange(final long actualGas, final long expectedGas) {
-        return actualGas >= (expectedGas * 1.05) && actualGas <= (expectedGas * 1.20);
-    }
-
     private static TokenCreateWrapper getFungibleTokenWithKeys() {
         return new TokenCreateWrapper(
                 true,

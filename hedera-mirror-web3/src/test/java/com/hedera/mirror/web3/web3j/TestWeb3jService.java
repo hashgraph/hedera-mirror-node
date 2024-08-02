@@ -78,7 +78,7 @@ public class TestWeb3jService implements Web3jService {
     private final DomainBuilder domainBuilder;
     private final Map<String, String> transactionResults = new ConcurrentHashMap<>();
     private final Web3j web3j;
-
+    private boolean isEstimateGas = false;
     private Address sender = Address.fromHexString("");
     private String output;
 
@@ -100,6 +100,10 @@ public class TestWeb3jService implements Web3jService {
 
     public String getOutput() {
         return output;
+    }
+
+    public void setEstimateGas(final boolean isEstimateGas) {
+        this.isEstimateGas = isEstimateGas;
     }
 
     @SneakyThrows(Exception.class)
@@ -156,7 +160,7 @@ public class TestWeb3jService implements Web3jService {
         var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(rawTransaction.getData()),
                 Address.fromHexString(rawTransaction.getTo()),
-                ETH_CALL,
+                isEstimateGas ? ETH_ESTIMATE_GAS : ETH_CALL,
                 rawTransaction.getValue().longValue() >= 0
                         ? rawTransaction.getValue().longValue()
                         : 10L,
@@ -181,7 +185,7 @@ public class TestWeb3jService implements Web3jService {
         final var serviceParameters = serviceParametersForExecutionSingle(
                 Bytes.fromHexString(transaction.getData()),
                 Address.fromHexString(transaction.getTo()),
-                ETH_CALL,
+                isEstimateGas ? ETH_ESTIMATE_GAS : ETH_CALL,
                 transaction.getValue() != null ? Long.parseLong(transaction.getValue()) : 0L,
                 BlockType.LATEST,
                 GAS_LIMIT,

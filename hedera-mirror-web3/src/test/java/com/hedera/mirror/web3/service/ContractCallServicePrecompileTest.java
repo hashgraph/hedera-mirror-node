@@ -16,6 +16,7 @@
 
 package com.hedera.mirror.web3.service;
 
+import static com.hedera.mirror.web3.service.ContractCallTestUtil.isWithinExpectedGasRange;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hedera.node.app.service.evm.utils.EthSigsUtils.recoverAddressFromPubKey;
@@ -65,6 +66,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.ToLongFunction;
 import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -83,11 +85,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.web3j.protocol.core.RemoteFunctionCall;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
+import org.web3j.tx.Contract;
 
 @RequiredArgsConstructor
 @Named
 class ContractCallServicePrecompileTest extends ContractCallTestSetup {
 
+    public static final String ESTIMATE_GAS_ERROR_MESSAGE =
+            "Expected gas usage to be within the expected range, but it was not. Estimate: %d, Actual: %d";
+    protected static final ToLongFunction<String> longValueOf =
+            value -> Bytes.fromHexString(value).toLong();
     private static final String LEDGER_ID = "0x03";
     private static final String EMPTY_UNTRIMMED_ADDRESS =
             "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -146,6 +154,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall =
+                contract.send_isTokenFrozen(getAddressFromEntity(tokenEntity), getAddressFromEntity(account));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -174,6 +186,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall =
+                contract.send_isTokenFrozen(getAddressFromEntity(tokenEntity), getAliasFromEntity(account));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -192,6 +208,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall =
+                contract.send_isKycGranted(getAddressFromEntity(tokenEntity), getAddressFromEntity(account));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -218,6 +238,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall =
+                contract.send_isKycGranted(getAddressFromEntity(tokenEntity), getAliasFromEntity(account));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -236,6 +260,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall =
+                contract.send_isKycGranted(getAddressFromEntity(tokenEntity), getAddressFromEntity(account));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -262,6 +290,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall =
+                contract.send_isKycGranted(getAddressFromEntity(tokenEntity), getAliasFromEntity(account));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -273,6 +305,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 contract.call_isTokenAddress(getAddressFromEntity(tokenEntity)).send();
 
         assertThat(result).isTrue();
+
+        final var functionCall = contract.send_isTokenAddress(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -284,6 +319,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 contract.call_isTokenAddress(getAddressFromEntity(tokenEntity)).send();
 
         assertThat(result).isTrue();
+
+        final var functionCall = contract.send_isTokenAddress(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -302,6 +340,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall = contract.send_getTokenDefaultKyc(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -323,6 +364,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall = contract.send_getTokenDefaultKyc(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -334,6 +378,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 contract.call_getType(getAddressFromEntity(tokenEntity)).send();
 
         assertThat(result).isEqualTo(BigInteger.ZERO);
+
+        final var functionCall = contract.send_getType(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -345,6 +392,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 contract.call_getType(getAddressFromEntity(tokenEntity)).send();
 
         assertThat(result).isEqualTo(BigInteger.ONE);
+
+        final var functionCall = contract.send_getType(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -362,6 +412,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall = contract.send_getTokenDefaultFreeze(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -383,6 +436,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isTrue();
+
+        final var functionCall = contract.send_getTokenDefaultFreeze(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -416,6 +472,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false, contract.getContractAddress(), new byte[0], new byte[0], Address.ZERO.toHexString());
 
         assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall = contract.send_getTokenKeyPublic(
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -447,6 +507,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new KeyValue(false, Address.ZERO.toHexString(), ed25519Key, new byte[0], Address.ZERO.toHexString());
 
         assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall = contract.send_getTokenKeyPublic(
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -479,6 +543,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new KeyValue(false, Address.ZERO.toHexString(), new byte[0], ecdsaKey, Address.ZERO.toHexString());
 
         assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall = contract.send_getTokenKeyPublic(
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -512,6 +580,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false, Address.ZERO.toHexString(), new byte[0], new byte[0], contract.getContractAddress());
 
         assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall = contract.send_getTokenKeyPublic(
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -546,6 +618,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false, contract.getContractAddress(), new byte[0], new byte[0], Address.ZERO.toHexString());
 
         assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall = contract.send_getTokenKeyPublic(
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -578,6 +654,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new KeyValue(false, Address.ZERO.toHexString(), ed25519Key, new byte[0], Address.ZERO.toHexString());
 
         assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall = contract.send_getTokenKeyPublic(
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -611,6 +691,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new KeyValue(false, Address.ZERO.toHexString(), new byte[0], ecdsaKey, Address.ZERO.toHexString());
 
         assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall = contract.send_getTokenKeyPublic(
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -645,6 +729,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 false, Address.ZERO.toHexString(), new byte[0], new byte[0], contract.getContractAddress());
 
         assertThat(result).isEqualTo(expectedKey);
+
+        final var functionCall = contract.send_getTokenKeyPublic(
+                getAddressFromEntity(tokenEntity), BigInteger.valueOf(Long.parseLong(keyType)));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -678,6 +766,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .toHexString());
 
         assertThat(result.component1().getFirst()).isEqualTo(expectedFee);
+
+        final var functionCall = contract.send_getCustomFeesForToken(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -715,6 +806,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .toHexString());
 
         assertThat(result.component2().getFirst()).isEqualTo(expectedFee);
+
+        final var functionCall = contract.send_getCustomFeesForToken(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -754,6 +848,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                         .toHexString());
 
         assertThat(result.component3().getFirst()).isEqualTo(expectedFee);
+
+        final var functionCall = contract.send_getCustomFeesForToken(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -785,6 +882,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 BigInteger.valueOf(autoRenewExpiry));
 
         assertThat(result).isEqualTo(expectedExpiry);
+
+        final var functionCall = contract.send_getExpiryInfoForToken(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -809,6 +909,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isEqualTo(BigInteger.valueOf(amountGranted));
+
+        final var functionCall = contract.send_htsAllowance(
+                getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), getAliasFromEntity(spender));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -831,6 +935,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 .send();
 
         assertThat(result).isEqualTo(Boolean.TRUE);
+
+        final var functionCall = contract.send_htsIsApprovedForAll(
+                getAddressFromEntity(tokenEntity), getAliasFromEntity(owner), getAliasFromEntity(spender));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -892,6 +1000,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 new FungibleTokenInfo(expectedTokenInfo, BigInteger.valueOf(token.getDecimals()));
 
         assertThat(result).isEqualTo(expectedFungibleTokenInfo);
+
+        final var functionCall = contract.send_getInformationForFungibleToken(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -964,6 +1075,10 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 Address.ZERO.toHexString());
 
         assertThat(result).isEqualTo(expectedNonFungibleTokenInfo);
+
+        final var functionCall =
+                contract.send_getInformationForNonFungibleToken(getAddressFromEntity(tokenEntity), BigInteger.ONE);
+        testEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -1026,6 +1141,9 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 LEDGER_ID);
 
         assertThat(result).isEqualTo(expectedTokenInfo);
+
+        final var functionCall = contract.send_getInformationForToken(getAddressFromEntity(tokenEntity));
+        testEstimateGas(functionCall, contract);
     }
 
     private Entity persistAccountEntity() {
@@ -1145,7 +1263,7 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
     }
 
     private String getAddressFromEntity(Entity entity) {
-        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getNum()));
+        return EntityIdUtils.asHexedEvmAddress(new Id(entity.getShard(), entity.getRealm(), entity.getId()));
     }
 
     private String getAddressFromEntityId(EntityId entity) {
@@ -1253,6 +1371,23 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                 getAddressFromEvmAddress(feeCollector.getEvmAddress()));
     }
 
+    private void testEstimateGas(final RemoteFunctionCall<TransactionReceipt> functionCall, final Contract contract)
+            throws Exception {
+        testWeb3jService.setEstimateGas(true);
+
+        functionCall.send();
+        final var estimateGasUsedResult = longValueOf.applyAsLong(testWeb3jService.getOutput());
+
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
+
+        // Then
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
+                .isTrue();
+
+        testWeb3jService.setEstimateGas(false);
+    }
+
     @ParameterizedTest
     @MethodSource("htsContractFunctionArgumentsProviderHistoricalReadOnly")
     void evmPrecompileReadOnlyTokenFunctionsTestEthCallHistorical(
@@ -1330,23 +1465,6 @@ class ContractCallServicePrecompileTest extends ContractCallTestSetup {
                     .isInstanceOf(BlockNumberNotFoundException.class);
         }
     }
-
-    // TODO add tests for ContractReadFunctions for eth_estimateGas
-    //    @ParameterizedTest
-    //    @EnumSource(ContractReadFunctions.class)
-    //    void evmPrecompileReadOnlyTokenFunctionsTestEthEstimateGas(final ContractReadFunctions contractFunc) {
-    //        final var functionHash = functionEncodeDecoder.functionHashFor(
-    //                contractFunc.name, PRECOMPILE_TEST_CONTRACT_ABI_PATH, contractFunc.functionParameters);
-    //        final var serviceParameters = serviceParametersForExecution(
-    //                functionHash, PRECOMPILE_TEST_CONTRACT_ADDRESS, ETH_ESTIMATE_GAS, 0L, BlockType.LATEST);
-    //
-    //        final var expectedGasUsed = gasUsedAfterExecution(serviceParameters);
-    //
-    //        assertThat(isWithinExpectedGasRange(
-    //                        longValueOf.applyAsLong(contractCallService.processCall(serviceParameters)),
-    // expectedGasUsed))
-    //                .isTrue();
-    //    }
 
     @ParameterizedTest
     @EnumSource(SupportedContractModificationFunctions.class)
