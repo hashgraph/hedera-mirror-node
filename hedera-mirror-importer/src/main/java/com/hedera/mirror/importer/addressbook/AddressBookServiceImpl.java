@@ -19,6 +19,7 @@ package com.hedera.mirror.importer.addressbook;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_ADDRESS_BOOK;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_NAME;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
@@ -30,6 +31,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.ImporterProperties;
 import com.hedera.mirror.importer.ImporterProperties.ConsensusMode;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
@@ -79,6 +81,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     public static final int INITIAL_NODE_ID_ACCOUNT_ID_OFFSET = 3;
 
     private final AddressBookRepository addressBookRepository;
+    private final EntityProperties entityProperties;
     private final FileDataRepository fileDataRepository;
     private final ImporterProperties importerProperties;
     private final NodeStakeRepository nodeStakeRepository;
@@ -476,13 +479,15 @@ public class AddressBookServiceImpl implements AddressBookService {
         addressBookServiceEndpoint.setIpAddressV4(ip);
         addressBookServiceEndpoint.setPort(nodeAddressProto.getPortno());
         addressBookServiceEndpoint.setNodeId(nodeId);
+        addressBookServiceEndpoint.setDomainName("");
         return addressBookServiceEndpoint;
     }
 
     private AddressBookServiceEndpoint getAddressBookServiceEndpoint(
             ServiceEndpoint serviceEndpoint, long consensusTimestamp, long nodeId) throws UnknownHostException {
-        var ipAddressByteString = serviceEndpoint.getIpAddressV4();
-        if (ipAddressByteString == null || ipAddressByteString.size() != 4) {
+        var ipAddressByteString =
+                serviceEndpoint.getIpAddressV4() != null ? serviceEndpoint.getIpAddressV4() : ByteString.EMPTY;
+        if (ipAddressByteString.size() != 4) {
             throw new IllegalStateException(String.format("Invalid IpAddressV4: %s", ipAddressByteString));
         }
 
@@ -492,6 +497,14 @@ public class AddressBookServiceImpl implements AddressBookService {
         addressBookServiceEndpoint.setIpAddressV4(ip);
         addressBookServiceEndpoint.setPort(serviceEndpoint.getPort());
         addressBookServiceEndpoint.setNodeId(nodeId);
+
+        if (entityProperties.getPersist().isNodes()) {
+            addressBookServiceEndpoint.setDomainName(serviceEndpoint.getDomainName());
+        } else {
+            // Setting domain_name to empty string here only until HIP 869 goes to mainnet
+            addressBookServiceEndpoint.setDomainName(StringUtils.EMPTY);
+        }
+
         return addressBookServiceEndpoint;
     }
 

@@ -26,6 +26,7 @@ import {
   responseDataLabel,
   tokenTypeFilter,
   EMPTY_STRING,
+  queryParamOperators,
 } from './constants';
 import EntityId from './entityId';
 import {InvalidArgumentError, NotFoundError} from './errors';
@@ -159,6 +160,10 @@ const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
     if (filter.key === filterKeys.LIMIT) {
       limit = filter.value;
       continue;
+    }
+
+    if (filter.key === filterKeys.NAME) {
+      conditions.push(`t.name ILIKE $${params.push('%' + filter.value + '%')}`);
     }
 
     // handle keys that do not require formatting first
@@ -314,6 +319,9 @@ const validateTokenQueryFilter = (param, op, val) => {
     case filterKeys.LIMIT:
       ret = utils.isPositiveLong(val);
       break;
+    case filterKeys.NAME:
+      ret = op === queryParamOperators.eq && utils.isByteRange(val, 3, 100);
+      break;
     case filterKeys.ORDER:
       // Acceptable words: asc or desc
       ret = utils.isValidValueIgnoreCase(val, Object.values(orderFilterValues));
@@ -339,6 +347,14 @@ const validateTokenQueryFilter = (param, op, val) => {
 };
 
 const getTokensRequest = async (req, res) => {
+  const hasNameParam = !!req.query[filterKeys.NAME];
+  if (hasNameParam && req.query[filterKeys.TOKEN_ID]) {
+    throw new InvalidArgumentError('token.id and name can not be used together. Use a more specific name instead.');
+  }
+
+  if (hasNameParam && req.query[filterKeys.ACCOUNT_ID]) {
+    throw new InvalidArgumentError('account.id and name cannot be used together');
+  }
   // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle
   // per resource unique param names
   const filters = utils.buildAndValidateFilters(req.query, acceptedTokenParameters, validateTokenQueryFilter);
@@ -375,14 +391,16 @@ const getTokensRequest = async (req, res) => {
 
   // populate next link
   const lastTokenId = tokens.length > 0 ? tokens[tokens.length - 1].token_id : null;
-  const nextLink = utils.getPaginationLink(
-    req,
-    tokens.length !== limit,
-    {
-      [filterKeys.TOKEN_ID]: lastTokenId,
-    },
-    order
-  );
+  const nextLink = hasNameParam
+    ? null
+    : utils.getPaginationLink(
+        req,
+        tokens.length !== limit,
+        {
+          [filterKeys.TOKEN_ID]: lastTokenId,
+        },
+        order
+      );
 
   res.locals[responseDataLabel] = {
     tokens,
@@ -1023,6 +1041,7 @@ const acceptedTokenParameters = new Set([
   filterKeys.ACCOUNT_ID,
   filterKeys.ENTITY_PUBLICKEY,
   filterKeys.LIMIT,
+  filterKeys.NAME,
   filterKeys.ORDER,
   filterKeys.TOKEN_ID,
   filterKeys.TOKEN_TYPE,

@@ -29,6 +29,7 @@ import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.CustomFixedFee;
 import com.hedera.hashgraph.sdk.CustomFractionalFee;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
@@ -339,14 +340,14 @@ public class TokenFeature extends AbstractFeature {
         associateWithToken(accountId, tokenId);
     }
 
-    @When("I set account freeze status to {int}")
-    public void setFreezeStatus(int freezeStatus) {
-        setFreezeStatus(freezeStatus, getRecipientAccountId());
+    @When("I set account freeze status to {int} for {account}")
+    public void setFreezeStatus(int freezeStatus, AccountNameEnum accountName) {
+        setFreezeStatus(freezeStatus, accountClient.getAccount(accountName));
     }
 
-    @When("I set account kyc status to {int}")
-    public void setKycStatus(int kycStatus) {
-        setKycStatus(kycStatus, getRecipientAccountId());
+    @When("I set account kyc status to {int} for {account}")
+    public void setKycStatus(int kycStatus, AccountNameEnum accountName) {
+        setKycStatus(kycStatus, accountClient.getAccount(accountName));
     }
 
     @Then("I transfer {int} tokens to {account}")
@@ -454,6 +455,37 @@ public class TokenFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    @RetryAsserts
+    @Then("{account} rejects token with {int} and returns them to {account}")
+    public void rejectFungibleToken(AccountNameEnum ownerName, int amount, AccountNameEnum treasuryName) {
+        var treasury = accountClient.getAccount(treasuryName).getAccountId();
+        var owner = accountClient.getAccount(ownerName);
+        long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
+
+        networkTransactionResponse = tokenClient.rejectFungibleToken(List.of(tokenId), owner);
+
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+        assertThat(getTokenBalance(owner.getAccountId(), tokenId)).isZero();
+        assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + amount);
+    }
+
+    @RetryAsserts
+    @Then("{account} rejects token and returns it to {account}")
+    public void rejectNonFungibleToken(AccountNameEnum ownerName, AccountNameEnum treasuryName) {
+        var nftId = new NftId(tokenId, 2L);
+        var owner = accountClient.getAccount(ownerName);
+        var treasury = accountClient.getAccount(treasuryName).getAccountId();
+        long startingBalanceTreasury = getTokenBalance(treasury, tokenId);
+
+        networkTransactionResponse = tokenClient.rejectNonFungibleToken(List.of(nftId), owner);
+
+        assertThat(networkTransactionResponse.getTransactionId()).isNotNull();
+        assertThat(networkTransactionResponse.getReceipt()).isNotNull();
+        assertThat(getTokenBalance(owner.getAccountId(), tokenId)).isZero();
+        assertThat(getTokenBalance(treasury, tokenId)).isEqualTo(startingBalanceTreasury + 1);
+    }
+
     @Given("I burn serial number index {int} from token")
     public void burnNft(int serialNumberIndex) {
         networkTransactionResponse = tokenClient.burnNonFungible(
@@ -492,24 +524,26 @@ public class TokenFeature extends AbstractFeature {
         updateNftMetadataForSerials(serialNumberIndex);
     }
 
-    @Given("I wipe {int} from the token")
-    public void wipeToken(int amount) {
-        networkTransactionResponse = tokenClient.wipeFungible(tokenId, amount, getRecipientAccountId());
+    @Given("I wipe {int} from the token for {account}")
+    public void wipeToken(int amount, AccountNameEnum accountName) {
+        networkTransactionResponse = tokenClient.wipeFungible(tokenId, amount, accountClient.getAccount(accountName));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I wipe serial number index {int} from token")
-    public void wipeNft(int serialNumberIndex) {
+    @Given("I wipe serial number index {int} from token for {account}")
+    public void wipeNft(int serialNumberIndex, AccountNameEnum accountName) {
         networkTransactionResponse = tokenClient.wipeNonFungible(
-                tokenId, tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber(), getRecipientAccountId());
+                tokenId,
+                tokenNftInfoMap.get(tokenId).get(serialNumberIndex).serialNumber(),
+                accountClient.getAccount(accountName));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I dissociate the account from the token")
-    public void dissociateNewAccountFromToken() {
-        networkTransactionResponse = tokenClient.dissociate(getRecipientAccountId(), tokenId);
+    @Given("I dissociate {account} from the token")
+    public void dissociateNewAccountFromToken(AccountNameEnum accountName) {
+        networkTransactionResponse = tokenClient.dissociate(accountClient.getAccount(accountName), tokenId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -663,10 +697,6 @@ public class TokenFeature extends AbstractFeature {
         verifyTransactions();
         verifyNftTransfers(tokenId, serialNumber, recipientId);
         verifyNftTransactions(tokenId, serialNumber);
-    }
-
-    public ExpandedAccountId getRecipientAccountId() {
-        return accountClient.getAccount(AccountNameEnum.ALICE);
     }
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {
@@ -990,7 +1020,7 @@ public class TokenFeature extends AbstractFeature {
     }
 
     private TokenRelationshipResponse callTokenRelationship(TokenId tokenId) {
-        var accountId = getRecipientAccountId();
+        var accountId = accountClient.getAccount(AccountNameEnum.ALICE);
         return mirrorClient.getTokenRelationships(accountId.getAccountId(), tokenId);
     }
 

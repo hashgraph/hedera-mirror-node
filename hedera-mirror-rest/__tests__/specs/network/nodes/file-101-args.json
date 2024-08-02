@@ -172,6 +172,7 @@
         "reward_rate_start": 9,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "127.0.0.3",
             "port": 50213
           }
@@ -201,6 +202,7 @@
         "reward_rate_start": 10,
         "service_endpoints": [
           {
+            "domain_name": "",
             "ip_address_v4": "127.0.0.4",
             "port": 50214
           }

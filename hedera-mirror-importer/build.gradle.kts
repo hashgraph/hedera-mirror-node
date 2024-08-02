@@ -62,6 +62,7 @@ dependencies {
     testImplementation("com.redis.testcontainers:testcontainers-redis-junit-jupiter")
     testImplementation("commons-beanutils:commons-beanutils")
     testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.apache.commons:commons-math3")
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api") // Used by s3proxy
     testImplementation("org.gaul:s3proxy")

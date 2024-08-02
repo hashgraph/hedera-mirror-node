@@ -16,20 +16,26 @@
 
 package com.hedera.mirror.importer.parser.record;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.ImporterIntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.ActiveProfiles;
 
 @ActiveProfiles("performance")
+@CustomLog
 @RequiredArgsConstructor
 @Tag("performance")
 class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
@@ -41,34 +47,59 @@ class RecordFileParserPerformanceTest extends ImporterIntegrationTest {
 
     @Test
     void scenarios() {
-        long interval = StreamType.RECORD.getFileCloseInterval().toMillis();
-        long duration = performanceProperties.getDuration().toMillis();
-        long startTime = System.currentTimeMillis();
-        long endTime = startTime;
-        var builder = recordFileBuilder.recordFile();
-        boolean workDone =
-                false; // used just to assert that at least one cycle through the main "while" loop of this routine
-        // occurred.
-        recordFileRepository.findLatest().ifPresent(builder::previous);
-
-        performanceProperties.getTransactions().forEach(p -> {
-            int count = (int) (p.getTps() * interval / 1000);
-            builder.recordItems(i -> i.count(count).entities(p.getEntities()).type(p.getType()));
-        });
-
-        while (endTime - startTime < duration) {
-            var recordFile = builder.build();
-            recordFileParser.parse(recordFile);
-            workDone = true;
-
-            long sleep = interval - (System.currentTimeMillis() - endTime);
-            if (sleep > 0) {
-                Uninterruptibles.sleepUninterruptibly(sleep, TimeUnit.MILLISECONDS);
-            }
-            endTime = System.currentTimeMillis();
+        if (!performanceProperties.isEnabled()) {
+            log.info("All scenarios disabled");
+            return;
         }
 
-        assertTrue(
-                workDone); // Sonarcloud needs at least one assert per @Test, or else calls it a "critical" code smell
+        RecordFile previous = recordFileRepository.findLatest().orElse(null);
+
+        for (var scenario : performanceProperties.getScenarios()) {
+            if (!scenario.isEnabled()) {
+                log.info("Scenario {} is disabled", scenario.getDescription());
+                continue;
+            }
+
+            log.info("Executing scenario: {}", scenario);
+            long interval = StreamType.RECORD.getFileCloseInterval().toMillis();
+            long duration = scenario.getDuration().toMillis();
+            long startTime = System.currentTimeMillis();
+            long endTime = startTime;
+            var stats = new DescriptiveStatistics();
+            var stopwatch = Stopwatch.createStarted();
+            var builder = recordFileBuilder.recordFile();
+
+            scenario.getTransactions().forEach(p -> {
+                int count = (int) (p.getTps() * interval / 1000);
+                builder.recordItems(i -> i.count(count)
+                        .entities(p.getEntities())
+                        .entityAutoCreation(true)
+                        .subType(p.getSubType())
+                        .type(p.getType()));
+            });
+
+            while (endTime - startTime < duration) {
+                var recordFile = builder.previous(previous).build();
+                long startNanos = System.nanoTime();
+                recordFileParser.parse(recordFile);
+                stats.addValue(System.nanoTime() - startNanos);
+                previous = recordFile;
+
+                long sleep = interval - (System.currentTimeMillis() - endTime);
+                if (sleep > 0) {
+                    Uninterruptibles.sleepUninterruptibly(sleep, TimeUnit.MILLISECONDS);
+                }
+                endTime = System.currentTimeMillis();
+            }
+
+            long mean = (long) (stats.getMean() / 1_000_000.0);
+            log.info(
+                    "Scenario {} took {} to process {} files for a mean of {} ms per file",
+                    scenario.getDescription(),
+                    stopwatch,
+                    stats.getN(),
+                    mean);
+            assertThat(Duration.ofMillis(mean)).isLessThanOrEqualTo(scenario.getLatency());
+        }
     }
 }

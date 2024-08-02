@@ -65,15 +65,7 @@ class TokenRejectTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .transaction()
                 .customize(t -> t.consensusTimestamp(timestamp))
                 .get();
-        var rejections = recordItem.getTransactionBody().getTokenReject().getRejectionsList().stream()
-                .map(rejection -> {
-                    var tokenId = rejection.hasFungibleToken()
-                            ? rejection.getFungibleToken()
-                            : rejection.getNft().getTokenID();
-                    return EntityId.of(tokenId);
-                })
-                .toArray(EntityId[]::new);
-        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction, rejections);
+        var expectedEntityTransactions = getExpectedEntityTransactions(recordItem, transaction);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);

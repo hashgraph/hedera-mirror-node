@@ -39,7 +39,7 @@ class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListene
         assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
         softly.assertThat(transactionRepository.count()).isOne();
         softly.assertThat(entityRepository.count()).isZero();
-        softly.assertThat(cryptoTransferRepository.count()).isEqualTo(3);
+        softly.assertThat(cryptoTransferRepository.count()).isEqualTo(4);
         softly.assertThat(networkFreezeRepository.findAll())
                 .hasSize(1)
                 .first()
@@ -62,7 +62,7 @@ class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListene
         parseRecordItemAndCommit(recordItem);
 
         assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
-        softly.assertThat(cryptoTransferRepository.count()).isEqualTo(3);
+        softly.assertThat(cryptoTransferRepository.count()).isEqualTo(4);
         softly.assertThat(entityRepository.count()).isZero();
         softly.assertThat(networkFreezeRepository.count()).isZero();
         softly.assertThat(transactionRepository.count()).isOne();

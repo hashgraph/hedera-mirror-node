@@ -1,0 +1,122 @@
+{
+  "description": "Contract logs api calls with invalid params",
+  "setup": {},
+  "tests": [
+    {
+      "url": "/api/v1/contracts/0.0.1000/results/logs?index=-1&index=a",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: index"
+            },
+            {
+              "message": "Invalid parameter: index"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/0.0.1000/results/logs?index=gte:2&index=lte:7",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "index without a timestamp parameter filter"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/0.0.1000/results/logs?timestamp=ne:1639010141.000000000",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Not equal (ne) operator is not supported for timestamp"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/0.0.1000/results/logs?topic1=0xqqq",
+        "/api/v1/contracts/0.0.1000/results/logs?topic1=gt:0xaaaaaaa",
+        "/api/v1/contracts/0.0.1000/results/logs?topic1=00qqq",
+        "/api/v1/contracts/0.0.1000/results/logs?topic1=lte:00aaaaaaa"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: topic1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/0.0.1000/results/logs?scheduled=true",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Unknown query parameter: scheduled"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/0.0.1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic3=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Cannot search topics without a valid timestamp range: No timestamp range or eq operator provided"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/0.0.1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic3=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67&timestamp=lte:1739010151.000000000&timestamp=gte:1539010151.000000000",
+        "/api/v1/contracts/0.0.1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic3=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67&timestamp=lte:1639000141.000000000&timestamp=gte:1639020141.000000000",
+        "/api/v1/contracts/0.0.1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic3=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67&timestamp=lt:1639000141.000000000&timestamp=gt:1639020141.000000000"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Cannot search topics without a valid timestamp range: Timestamp range by the lower and upper bounds must be positive and within 7d"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/0.0.1000/results/logs?transaction.hash=0x33211aefe6e46246a8755b93fb9f6bf28cd001cfd64619f4c15eb52bd1a9c144",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Unknown query parameter: transaction.hash"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
