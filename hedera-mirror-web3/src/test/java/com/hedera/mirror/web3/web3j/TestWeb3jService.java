@@ -295,7 +295,7 @@ public class TestWeb3jService implements Web3jService {
     }
 
     private EthGetTransactionReceipt getTransactionReceipt(Request request) {
-        final var transactionHash = request.getParams().get(0).toString();
+        final var transactionHash = request.getParams().getFirst().toString();
         final var ethTransactionReceipt = new EthGetTransactionReceipt();
         final var transactionReceipt = new TransactionReceipt();
         transactionReceipt.setTransactionHash(transactionHash);

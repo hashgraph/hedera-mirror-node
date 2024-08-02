@@ -19,12 +19,12 @@ package com.hedera.mirror.web3.service;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_ALIAS;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.SENDER_PUBLIC_KEY;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.SPENDER_ALIAS;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.isWithinExpectedGasRange;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.ESTIMATE_GAS_ERROR_MESSAGE;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_ALIAS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SENDER_PUBLIC_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_ALIAS;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.SPENDER_PUBLIC_KEY;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.isWithinExpectedGasRange;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -49,14 +49,18 @@ import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TokenTransferList;
 import com.hedera.mirror.web3.web3j.generated.DynamicEthCalls.TransferList;
 import java.math.BigInteger;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.context.annotation.Import;
+import org.web3j.protocol.core.RemoteFunctionCall;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 
 @Import(Web3jTestConfiguration.class)
 @SuppressWarnings("unchecked")
@@ -68,7 +72,12 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
 
     @BeforeEach
     void setup() {
-        recordFilePersist();
+        domainBuilder.recordFile().persist();
+    }
+
+    @AfterEach
+    void cleanup() {
+        testWeb3jService.setEstimateGas(false);
     }
 
     @ParameterizedTest
@@ -78,7 +87,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        100,
                 NON_FUNGIBLE_UNIQUE,    0,      NftMetadata
                 """)
-    void mintTokenGetTotalSupplyAndBalanceOfTreasuryEthCall(
+    void mintTokenGetTotalSupplyAndBalanceOfTreasury(
             final TokenTypeEnum tokenType, final long amount, final String metadata) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -101,50 +110,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 treasuryAddress.toHexString());
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        100,
-                NON_FUNGIBLE_UNIQUE,    0,      NftMetadata
-                """)
-    void mintTokenGetTotalSupplyAndBalanceOfTreasuryEstimateGas(
-            final TokenTypeEnum tokenType, final long amount, final String metadata) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        // When
-        final var functionCall = contract.send_mintTokenGetTotalSupplyAndBalanceOfTreasury(
-                tokenAddress.toHexString(),
-                BigInteger.valueOf(amount),
-                metadata == null ? List.of() : List.of(metadata.getBytes()),
-                treasuryAddress.toHexString());
-
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -154,7 +120,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,    0
                 NON_FUNGIBLE_UNIQUE,    0,    1
                 """)
-    void burnTokenGetTotalSupplyAndBalanceOfTreasuryEthCall(
+    void burnTokenGetTotalSupplyAndBalanceOfTreasury(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -177,9 +143,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 treasuryAddress.toHexString());
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -189,48 +153,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,    0
                 NON_FUNGIBLE_UNIQUE,    0,    1
                 """)
-    void burnTokenGetTotalSupplyAndBalanceOfTreasuryEthEstimateGas(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        // When
-        final var functionCall = contract.send_burnTokenGetTotalSupplyAndBalanceOfTreasury(
-                tokenAddress.toHexString(),
-                BigInteger.valueOf(amount),
-                serialNumber == 0 ? List.of() : List.of(BigInteger.valueOf(serialNumber)),
-                treasuryAddress.toHexString());
-
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,    0
-                NON_FUNGIBLE_UNIQUE,    0,    1
-                """)
-    void wipeTokenGetTotalSupplyAndBalanceOfTreasuryEthCall(
+    void wipeTokenGetTotalSupplyAndBalanceOfTreasury(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -255,52 +178,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 senderAddress.toHexString());
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,    0
-                NON_FUNGIBLE_UNIQUE,    0,    1
-                """)
-    void wipeTokenGetTotalSupplyAndBalanceOfTreasuryEstimateGas(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var senderEntityId = accountPersist();
-        final var senderAddress = toAddress(senderEntityId.getId());
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, senderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), senderEntityId);
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        // When
-        final var functionCall = contract.send_wipeTokenGetTotalSupplyAndBalanceOfTreasury(
-                tokenAddress.toHexString(),
-                BigInteger.valueOf(amount),
-                serialNumber == 0 ? List.of() : List.of(BigInteger.valueOf(serialNumber)),
-                senderAddress.toHexString());
-
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -308,7 +186,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,
                 NON_FUNGIBLE_UNIQUE
                 """)
-    void pauseTokenGetPauseStatusUnpauseGetPauseStatusEthCall(final TokenTypeEnum tokenType) {
+    void pauseTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) {
         // Given
         final var treasuryEntityId = accountPersist();
 
@@ -326,9 +204,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 contract.send_pauseTokenGetPauseStatusUnpauseGetPauseStatus(tokenAddress.toHexString());
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -336,41 +212,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,
                 NON_FUNGIBLE_UNIQUE
                 """)
-    void pauseTokenGetPauseStatusUnpauseGetPauseStatusEstimateGas(final TokenTypeEnum tokenType) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        // When
-        final var functionCall =
-                contract.send_pauseTokenGetPauseStatusUnpauseGetPauseStatus(tokenAddress.toHexString());
-
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
-    }
-
-    @ParameterizedTest
-    @CsvSource(textBlock = """
-                FUNGIBLE_COMMON,
-                NON_FUNGIBLE_UNIQUE
-                """)
-    void freezeTokenGetPauseStatusUnpauseGetPauseStatusEthCall(final TokenTypeEnum tokenType) {
+    void freezeTokenGetPauseStatusUnpauseGetPauseStatus(final TokenTypeEnum tokenType) {
         // Given
         final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
@@ -389,81 +231,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 tokenAddress.toHexString(), treasuryAddress.toHexString());
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @ParameterizedTest
-    @CsvSource(textBlock = """
-                FUNGIBLE_COMMON,
-                NON_FUNGIBLE_UNIQUE
-                """)
-    void freezeTokenGetPauseStatusUnpauseGetPauseStatusEstimateGas(final TokenTypeEnum tokenType) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        // When
-        final var functionCall = contract.send_freezeTokenGetPauseStatusUnpauseGetPauseStatus(
-                tokenAddress.toHexString(), treasuryAddress.toHexString());
-
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
-    void associateTokenTransferEthCall(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var treasuryAddress = toAddress(treasuryEntityId.getId());
-        final var senderEntityId = accountPersist();
-        final var senderAddress = toAddress(senderEntityId.getId());
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId, null)
-                : nftPersist(treasuryEntityId, treasuryEntityId, treasuryEntityId, null);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), treasuryEntityId);
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        // When
-        final var functionCall = contract.send_associateTokenTransfer(
-                tokenAddress.toHexString(),
-                treasuryAddress.toHexString(),
-                senderAddress.toHexString(),
-                BigInteger.valueOf(amount),
-                BigInteger.valueOf(serialNumber));
-
-        // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -500,8 +268,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,      0
                 NON_FUNGIBLE_UNIQUE,    0,      1
                 """)
-    void associateTokenTransferEstimateGas(final TokenTypeEnum tokenType, final long amount, final long serialNumber)
-            throws Exception {
+    void associateTokenTransfer(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
         final var treasuryAddress = toAddress(treasuryEntityId.getId());
@@ -525,19 +292,21 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 BigInteger.valueOf(amount),
                 BigInteger.valueOf(serialNumber));
         // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
-    @Test
-    void associateTokenDissociateFailTransferFungibleTokenEthCall() {
+    @ParameterizedTest
+    @CsvSource(
+            textBlock =
+                    """
+                FUNGIBLE_COMMON,        1,      0,  IERC20: failed to transfer
+                NON_FUNGIBLE_UNIQUE,    0,      1,  IERC721: failed to transfer
+                """)
+    void associateTokenDissociateFailTransferEthCall(
+            final TokenTypeEnum tokenType,
+            final long amount,
+            final long serialNumber,
+            final String expectedErrorMessage) {
         // Given
         final var treasuryEntityId = accountPersist();
         final var ownerEntityId = accountPersist();
@@ -545,7 +314,9 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var senderEntityId = accountPersist();
         final var senderAddress = toAddress(senderEntityId.getId());
 
-        final var tokenEntity = fungibleTokenPersist(treasuryEntityId, null);
+        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
+                ? fungibleTokenPersist(treasuryEntityId, null)
+                : nftPersist(treasuryEntityId, ownerEntityId);
         final var tokenAddress = toAddress(tokenEntity.getTokenId());
 
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
@@ -555,46 +326,15 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 tokenAddress.toHexString(),
                 ownerAddress.toHexString(),
                 senderAddress.toHexString(),
-                BigInteger.ONE,
-                BigInteger.ZERO);
+                BigInteger.valueOf(amount),
+                BigInteger.valueOf(serialNumber));
 
         // Then
         assertThatThrownBy(functionCall::send)
                 .isInstanceOf(MirrorEvmTransactionException.class)
                 .satisfies(ex -> {
                     MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
-                    assertEquals("IERC20: failed to transfer", exception.getDetail());
-                });
-    }
-
-    @Test
-    void associateTokenDissociateFailTransferNftEthCall() {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var ownerEntityId = accountPersist();
-        final var ownerAddress = toAddress(ownerEntityId.getId());
-        final var senderEntityId = accountPersist();
-        final var senderAddress = toAddress(senderEntityId.getId());
-
-        final var tokenEntity = nftPersist(treasuryEntityId, ownerEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        // When
-        final var functionCall = contract.send_associateTokenDissociateFailTransfer(
-                tokenAddress.toHexString(),
-                ownerAddress.toHexString(),
-                senderAddress.toHexString(),
-                BigInteger.ZERO,
-                BigInteger.ONE);
-
-        // Then
-        assertThatThrownBy(functionCall::send)
-                .isInstanceOf(MirrorEvmTransactionException.class)
-                .satisfies(ex -> {
-                    MirrorEvmTransactionException exception = (MirrorEvmTransactionException) ex;
-                    assertEquals("IERC721: failed to transfer", exception.getDetail());
+                    assertEquals(expectedErrorMessage, exception.getDetail());
                 });
     }
 
@@ -605,7 +345,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,      0
                 NON_FUNGIBLE_UNIQUE,    0,      1
                 """)
-    void approveTokenGetAllowanceEthCall(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+    void approveTokenGetAllowance(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
         final var ownerEntityId = accountPersist();
@@ -639,9 +379,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 BigInteger.valueOf(serialNumber));
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -651,60 +389,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,      0
                 NON_FUNGIBLE_UNIQUE,    0,      1
                 """)
-    void approveTokenGetAllowanceEstimateGas(final TokenTypeEnum tokenType, final long amount, final long serialNumber)
-            throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var ownerEntityId = accountPersist();
-        final var ownerAddress = toAddress(ownerEntityId);
-        final var spenderEntityId = accountPersist();
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, ownerEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(toAddress(tokenEntity.getTokenId()));
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        tokenAccountPersist(tokenEntityId, contractEntityId);
-        tokenAccountPersist(tokenEntityId, ownerEntityId);
-
-        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
-        }
-
-        // When
-        final var spenderAddress =
-                tokenType == TokenTypeEnum.FUNGIBLE_COMMON ? ownerAddress : toAddress(spenderEntityId);
-        final var functionCall = contract.send_approveTokenGetAllowance(
-                tokenAddress.toHexString(),
-                spenderAddress.toHexString(),
-                BigInteger.valueOf(amount),
-                BigInteger.valueOf(serialNumber));
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
-    void approveTokenTransferFromGetAllowanceGetBalanceEthCall(
+    void approveTokenTransferFromGetAllowanceGetBalance(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -737,9 +422,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 BigInteger.valueOf(serialNumber));
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -749,58 +432,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,      0
                 NON_FUNGIBLE_UNIQUE,    0,      1
                 """)
-    void approveTokenTransferFromGetAllowanceGetBalanceEstimateGas(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var ownerEntityId = accountPersist();
-        final var spenderEntityId = spenderEntityPersistWithAlias();
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, contractEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-
-        tokenAccountPersist(tokenEntityId, contractEntityId);
-        tokenAccountPersist(tokenEntityId, spenderEntityId);
-        tokenAccountPersist(tokenEntityId, ownerEntityId);
-
-        if (tokenType == TokenTypeEnum.NON_FUNGIBLE_UNIQUE) {
-            nftAllowancePersist(tokenEntityId, contractEntityId, ownerEntityId);
-        }
-
-        // When
-        final var functionCall = contract.send_approveTokenTransferFromGetAllowanceGetBalance(
-                tokenAddress.toHexString(),
-                SPENDER_ALIAS.toHexString(),
-                BigInteger.valueOf(amount),
-                BigInteger.valueOf(serialNumber));
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
-    void approveTokenTransferGetAllowanceGetBalanceEthCall(
+    void approveTokenTransferGetAllowanceGetBalance(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -827,9 +459,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 BigInteger.valueOf(serialNumber));
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -839,52 +469,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,      0
                 NON_FUNGIBLE_UNIQUE,    0,      1
                 """)
-    void approveTokenTransferGetAllowanceGetBalanceEstimateGas(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var senderEntityId = senderEntityPersistWithAlias();
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, senderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-
-        tokenAccountPersist(tokenEntityId, senderEntityId);
-        tokenAccountPersist(tokenEntityId, contractEntityId);
-
-        // When
-        final var functionCall = contract.send_approveTokenTransferGetAllowanceGetBalance(
-                tokenAddress.toHexString(),
-                SENDER_ALIAS.toHexString(),
-                BigInteger.valueOf(amount),
-                BigInteger.valueOf(serialNumber));
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
-    void approveTokenCryptoTransferGetAllowanceGetBalanceEthCall(
+    void approveTokenCryptoTransferGetAllowanceGetBalance(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -927,74 +512,11 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 new TransferList(List.of()), List.of(tokenTransferList));
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
-    void approveTokenCryptoTransferGetAllowanceGetBalanceEstimateGas(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var spenderEntityId = spenderEntityPersistWithAlias();
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-
-        tokenAccountPersist(tokenEntityId, spenderEntityId);
-        tokenAccountPersist(tokenEntityId, contractEntityId);
-
-        TokenTransferList tokenTransferList;
-        if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
-            tokenTransferList = new TokenTransferList(
-                    tokenAddress.toHexString(),
-                    List.of(
-                            new AccountAmount(contractAddress.toHexString(), BigInteger.valueOf(-amount), false),
-                            new AccountAmount(SPENDER_ALIAS.toHexString(), BigInteger.valueOf(amount), false)),
-                    List.of());
-        } else {
-            tokenTransferList = new TokenTransferList(
-                    tokenAddress.toHexString(),
-                    List.of(),
-                    List.of(new NftTransfer(
-                            contractAddress.toHexString(),
-                            SPENDER_ALIAS.toHexString(),
-                            BigInteger.valueOf(serialNumber),
-                            Boolean.FALSE)));
-        }
-
-        // When
-        final var functionCall = contract.send_approveTokenCryptoTransferGetAllowanceGetBalance(
-                new TransferList(List.of()), List.of(tokenTransferList));
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
-    void approveForAllTokenTransferFromGetAllowanceEthCall() {
+    void approveForAllTokenTransferFromGetAllowance() {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -1015,46 +537,11 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 tokenAddress.toHexString(), SPENDER_ALIAS.toHexString(), BigInteger.ONE);
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
-    void approveForAllTokenTransferFromGetAllowanceEstimateGas() throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var spenderEntityId = spenderEntityPersistWithAlias();
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        final var tokenEntity = nftPersist(treasuryEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-
-        tokenAccountPersist(tokenEntityId, spenderEntityId);
-        tokenAccountPersist(tokenEntityId, contractEntityId);
-
-        // When
-        final var functionCall = contract.send_approveForAllTokenTransferGetAllowance(
-                tokenAddress.toHexString(), SPENDER_ALIAS.toHexString(), BigInteger.ONE);
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
-    }
-
-    @Test
-    void approveForAllCryptoTransferGetAllowanceEthCall() {
+    void approveForAllCryptoTransferGetAllowance() {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -1081,48 +568,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 new TransferList(List.of()), List.of(tokenTransferList));
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @Test
-    void approveForAllCryptoTransferGetAllowanceEstimateGas() throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var spenderEntityId = spenderEntityPersistWithAlias();
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        final var tokenEntity = nftPersist(treasuryEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-
-        tokenAccountPersist(tokenEntityId, spenderEntityId);
-        tokenAccountPersist(tokenEntityId, contractEntityId);
-
-        var tokenTransferList = new TokenTransferList(
-                tokenAddress.toHexString(),
-                List.of(),
-                List.of(new NftTransfer(
-                        contractAddress.toHexString(), SPENDER_ALIAS.toHexString(), BigInteger.ONE, Boolean.TRUE)));
-
-        // When
-        final var functionCall = contract.send_approveForAllCryptoTransferGetAllowance(
-                new TransferList(List.of()), List.of(tokenTransferList));
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -1132,7 +578,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,      0,      false
                 NON_FUNGIBLE_UNIQUE,    0,      1,      true
                 """)
-    void cryptoTransferFromGetAllowanceGetBalanceEthCall(
+    void cryptoTransferFromGetAllowanceGetBalance(
             final TokenTypeEnum tokenType, final long amount, final long serialNumber, final boolean approvalForAll) {
         // Given
         final var treasuryEntityId = accountPersist();
@@ -1176,76 +622,11 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 new TransferList(List.of()), List.of(tokenTransferList));
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,      0,      false
-                NON_FUNGIBLE_UNIQUE,    0,      1,      true
-                """)
-    void cryptoTransferFromGetAllowanceGetBalanceEstimateGas(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber, final boolean approvalForAll)
-            throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var spenderEntityId = spenderEntityPersistWithAlias();
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-
-        tokenAccountPersist(tokenEntityId, spenderEntityId);
-        tokenAccountPersist(tokenEntityId, contractEntityId);
-
-        TokenTransferList tokenTransferList;
-        if (tokenType == TokenTypeEnum.FUNGIBLE_COMMON) {
-            tokenTransferList = new TokenTransferList(
-                    tokenAddress.toHexString(),
-                    List.of(
-                            new AccountAmount(
-                                    contractAddress.toHexString(), BigInteger.valueOf(-amount), approvalForAll),
-                            new AccountAmount(SPENDER_ALIAS.toHexString(), BigInteger.valueOf(amount), approvalForAll)),
-                    List.of());
-        } else {
-            tokenTransferList = new TokenTransferList(
-                    tokenAddress.toHexString(),
-                    List.of(),
-                    List.of(new NftTransfer(
-                            contractAddress.toHexString(),
-                            SPENDER_ALIAS.toHexString(),
-                            BigInteger.valueOf(serialNumber),
-                            approvalForAll)));
-        }
-
-        // When
-        final var functionCall = contract.send_cryptoTransferFromGetAllowanceGetBalance(
-                new TransferList(List.of()), List.of(tokenTransferList));
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
-    void transferFromNFTGetAllowanceEthCall() {
+    void transferFromNFTGetAllowance() {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = accountPersist();
@@ -1264,40 +645,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var functionCall = contract.send_transferFromNFTGetAllowance(tokenAddress.toHexString(), BigInteger.ONE);
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @Test
-    void transferFromNFTGetAllowanceEstimateGas() throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var spenderEntityId = accountPersist();
-
-        final var tokenEntity = nftPersist(treasuryEntityId, spenderEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), spenderEntityId);
-        tokenAccountPersist(entityIdFromEvmAddress(tokenAddress), contractEntityId);
-
-        // When
-        final var functionCall = contract.send_transferFromNFTGetAllowance(tokenAddress.toHexString(), BigInteger.ONE);
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -1307,8 +655,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON,        1,      0
                 NON_FUNGIBLE_UNIQUE,    0,      1
                 """)
-    void transferFromGetAllowanceGetBalanceEthCall(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
+    void transferFromGetAllowanceGetBalance(final TokenTypeEnum tokenType, final long amount, final long serialNumber) {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -1335,55 +682,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 BigInteger.valueOf(serialNumber));
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-            textBlock =
-                    """
-                FUNGIBLE_COMMON,        1,      0
-                NON_FUNGIBLE_UNIQUE,    0,      1
-                """)
-    void transferFromGetAllowanceGetBalanceEstimateGas(
-            final TokenTypeEnum tokenType, final long amount, final long serialNumber) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var spenderEntityId = spenderEntityPersistWithAlias();
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-        final var contractAddress = Address.fromHexString(contract.getContractAddress());
-        final var contractEntityId = entityIdFromEvmAddress(contractAddress);
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-
-        tokenAccountPersist(tokenEntityId, treasuryEntityId);
-        tokenAccountPersist(tokenEntityId, spenderEntityId);
-        tokenAccountPersist(tokenEntityId, contractEntityId);
-
-        // When
-        final var functionCall = contract.send_transferFromGetAllowanceGetBalance(
-                tokenAddress.toHexString(),
-                SPENDER_ALIAS.toHexString(),
-                BigInteger.valueOf(amount),
-                BigInteger.valueOf(serialNumber));
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @ParameterizedTest
@@ -1391,7 +690,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 FUNGIBLE_COMMON
                 NON_FUNGIBLE_UNIQUE
                 """)
-    void grantKycRevokeKycEthCall(final TokenTypeEnum tokenType) {
+    void grantKycRevokeKyc(final TokenTypeEnum tokenType) {
         // Given
         final var treasuryEntityId = accountPersist();
         final var spenderEntityId = spenderEntityPersistWithAlias();
@@ -1411,49 +710,11 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
                 contract.send_grantKycRevokeKyc(tokenAddress.toHexString(), SPENDER_ALIAS.toHexString());
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @ParameterizedTest
-    @CsvSource(textBlock = """
-                FUNGIBLE_COMMON
-                NON_FUNGIBLE_UNIQUE
-                """)
-    void grantKycRevokeKycEstimateGas(final TokenTypeEnum tokenType) throws Exception {
-        // Given
-        final var treasuryEntityId = accountPersist();
-        final var spenderEntityId = spenderEntityPersistWithAlias();
-
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        final var tokenEntity = tokenType == TokenTypeEnum.FUNGIBLE_COMMON
-                ? fungibleTokenPersist(treasuryEntityId)
-                : nftPersist(treasuryEntityId, treasuryEntityId);
-        final var tokenAddress = toAddress(tokenEntity.getTokenId());
-        final var tokenEntityId = entityIdFromEvmAddress(tokenAddress);
-
-        tokenAccountPersist(tokenEntityId, spenderEntityId);
-
-        // When
-        final var functionCall =
-                contract.send_grantKycRevokeKyc(tokenAddress.toHexString(), SPENDER_ALIAS.toHexString());
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
-    void getAddressThisEthCall() {
+    void getAddressThis() {
         // Given
         final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
 
@@ -1461,30 +722,7 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         final var functionCall = contract.send_getAddressThis();
 
         // Then
-        assertDoesNotThrow(() -> {
-            functionCall.send();
-        });
-    }
-
-    @Test
-    void getAddressThisEstimateGas() throws Exception {
-        // Given
-        final var contract = testWeb3jService.deploy(DynamicEthCalls::deploy);
-
-        // When
-        final var functionCall = contract.send_getAddressThis();
-
-        // Then
-        testWeb3jService.setEstimateGas(true);
-        final var estimateGasUsedResult = functionCall.send().getGasUsed().longValue();
-
-        testWeb3jService.setEstimateGas(false);
-        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
-
-        // Then
-        assertThat(isWithinExpectedGasRange(estimateGasUsedResult, actualGasUsed))
-                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult, actualGasUsed)
-                .isTrue();
+        verifyEthCallAndEstimateGas(functionCall, contract);
     }
 
     @Test
@@ -1525,8 +763,20 @@ class ContractCallDynamicCallsTest extends Web3IntegrationTest {
         assertEquals(contractAlias.toHexString(), result);
     }
 
-    private void recordFilePersist() {
-        domainBuilder.recordFile().persist();
+    private void verifyEthCallAndEstimateGas(
+            final RemoteFunctionCall<TransactionReceipt> functionCall, final DynamicEthCalls contract) {
+        final var actualGasUsed = gasUsedAfterExecution(getContractExecutionParameters(functionCall, contract));
+
+        testWeb3jService.setEstimateGas(true);
+        final AtomicLong estimateGasUsedResult = new AtomicLong();
+        // Verify ethCall
+        assertDoesNotThrow(
+                () -> estimateGasUsedResult.set(functionCall.send().getGasUsed().longValue()));
+
+        // Verify estimateGas
+        assertThat(isWithinExpectedGasRange(estimateGasUsedResult.get(), actualGasUsed))
+                .withFailMessage(ESTIMATE_GAS_ERROR_MESSAGE, estimateGasUsedResult.get(), actualGasUsed)
+                .isTrue();
     }
 
     private Token fungibleTokenPersist(final EntityId treasuryEntityId) {

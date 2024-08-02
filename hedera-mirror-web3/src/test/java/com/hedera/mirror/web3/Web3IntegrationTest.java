@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3;
 
-import static com.hedera.mirror.web3.service.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
+import static com.hedera.mirror.web3.utils.ContractCallTestUtil.TRANSACTION_GAS_LIMIT;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.hedera.mirror.common.config.CommonIntegrationTest;
