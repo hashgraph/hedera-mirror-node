@@ -462,6 +462,7 @@ public class EvmConfiguration {
                 evm,
                 precompileContractRegistry(),
                 precompilesHolder,
-                gasCalculator);
+                gasCalculator,
+                systemAccountDetector);
     }
 }
