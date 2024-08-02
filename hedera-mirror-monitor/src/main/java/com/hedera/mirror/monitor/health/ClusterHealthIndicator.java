@@ -101,8 +101,8 @@ public class ClusterHealthIndicator implements ReactiveHealthIndicator {
                     var status = Status.UNKNOWN;
                     // Connection issue can be caused by database being down, since the rest API service will become
                     // unavailable eventually
-                    if (ExceptionUtils.getRootCause(e) instanceof ConnectException
-                            || ExceptionUtils.getRootCause(e) instanceof TimeoutException) {
+                    var rootCause = ExceptionUtils.getRootCause(e);
+                    if (rootCause instanceof ConnectException || rootCause instanceof TimeoutException) {
                         status = Status.DOWN;
                     }
 

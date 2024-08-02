@@ -28,7 +28,7 @@ import com.hedera.mirror.monitor.subscribe.TestScenario;
 import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 import java.net.ConnectException;
 import java.net.URI;
-import java.util.concurrent.TimeoutException;
+import java.time.Duration;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
@@ -48,10 +48,13 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ClusterHealthIndicatorTest {
+
+    private static final Duration WAIT = Duration.ofSeconds(10L);
 
     @Mock
     private MirrorSubscriber mirrorSubscriber;
@@ -104,15 +107,17 @@ class ClusterHealthIndicatorTest {
     @SneakyThrows
     @Test
     void restNetworkStakeTimeoutException() {
-        var exception = new WebClientRequestException(
-                new TimeoutException("Timeout occured"),
-                HttpMethod.GET,
-                new URI("http://localhost/api/v1/network/stake"),
-                HttpHeaders.EMPTY);
-        when(restApiClient.getNetworkStakeStatusCode()).thenReturn(Mono.error(exception));
-        assertThat(clusterHealthIndicator.health().block())
-                .extracting(Health::getStatus)
-                .isEqualTo(Status.DOWN);
+        when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(1.0)));
+        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscribeScenario(1.0)));
+        when(restApiClient.getNetworkStakeStatusCode())
+                .thenReturn(Mono.delay(Duration.ofSeconds(6L)).thenReturn(HttpStatusCode.valueOf(200)));
+
+        StepVerifier.withVirtualTime(() -> clusterHealthIndicator.health())
+                .thenAwait(Duration.ofSeconds(10L))
+                .expectNextMatches(s -> s.getStatus() == Status.DOWN
+                        && ((String) s.getDetails().get("reason")).contains("within 5000ms"))
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test
